@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการข้อมูลพร้อมบันทึกประจำวัน</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* Use Inter font with Sarabun as a fallback for Thai characters */
+        body {
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        /* Custom scrollbar for note history */
+        .note-history-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .note-history-list::-webkit-scrollbar-track {
+            background: #f1f5f9; /* slate-100 */
+        }
+        .note-history-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* slate-300 */
+            border-radius: 10px;
+        }
+        .note-history-list::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* slate-400 */
+        }
+        .user-avatar-img {
+            width: 32px;
+            height: 32px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-800">
+
+    <!-- Main Application Container -->
+    <div id="app" class="min-h-screen">
+        <!-- ===== Navigation Bar ===== -->
+        <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 text-orange-500">
+                            <i class="bi bi-box-seam-fill text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <a href="#" class="text-lg font-bold text-slate-800">Pro Worker Labour</a>
+                        </div>
+                    </div>
+                    <div id="user-menu" class="hidden md:block">
+                        <div class="ml-4 flex items-center md:ml-6">
+                            <!-- Daily Note Button -->
+                            <button id="open-note-modal-btn" type="button" class="p-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all">
+                                <i class="bi bi-journal-text text-lg"></i>
+                                <span class="sr-only">เปิดบันทึกประจำวัน</span>
+                            </button>
+
+                            <!-- Profile dropdown -->
+                            <div class="ml-3 relative">
+                                <div>
+                                    <button type="button" class="max-w-xs bg-slate-100 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                                        <span class="sr-only">Open user menu</span>
+                                        <img id="user-avatar-img" class="user-avatar-img hidden" src="" alt="User photo">
+                                        <div class="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-600 font-bold" id="user-avatar-initials"></div>
+                                        <span class="ml-2 mr-3 font-semibold text-slate-700" id="username-display"></span>
+                                    </button>
+                                </div>
+                                <div id="user-menu-dropdown" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
+                                    <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100" id="logout-btn" role="menuitem" tabindex="-1">
+                                        <i class="bi bi-box-arrow-right mr-2"></i>ออกจากระบบ
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- ===== Main Content Area ===== -->
+        <main>
+            <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                <!-- Login View -->
+                <div id="auth-view" class="hidden">
+                    <div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+                        <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
+                            <div>
+                                <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900" id="auth-title">เข้าสู่ระบบ</h2>
+                            </div>
+                            <form class="mt-8 space-y-6" id="auth-form">
+                                <div class="rounded-md shadow-sm -space-y-px">
+                                    <div>
+                                        <label for="employeeId" class="sr-only">รหัสพนักงาน</label>
+                                        <input id="employeeId" name="employeeId" type="text" required class="appearance-none rounded-t-md relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm" placeholder="รหัสพนักงาน (Username)">
+                                    </div>
+                                    <div>
+                                        <label for="password" class="sr-only">รหัสผ่าน</label>
+                                        <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-b-md relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm" placeholder="รหัสผ่าน">
+                                    </div>
+                                </div>
+                                <div>
+                                    <button type="submit" id="auth-submit-btn" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                                        เข้าสู่ระบบ
+                                    </button>
+                                </div>
+                            </form>
+                             <div id="auth-error" class="text-center text-red-500 text-sm font-semibold mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logged In View -->
+                <div id="main-content-view" class="hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h1 class="text-2xl font-bold">ยินดีต้อนรับเข้าสู่ระบบ</h1>
+                        <p class="mt-2 text-slate-600">คุณสามารถกดปุ่ม <i class="bi bi-journal-text"></i> ที่มุมขวาบนเพื่อเริ่มบันทึกประจำวันได้เลยค่ะ</p>
+                        
+                        <!-- Admin Panel -->
+                        <div id="admin-panel" class="hidden mt-8">
+                            <div class="border-b pb-4 mb-4 flex justify-between items-center">
+                                <h2 class="text-xl font-bold">Admin Panel</h2>
+                                <button id="add-user-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                                    <i class="bi bi-person-plus-fill -ml-1 mr-2"></i>
+                                    ลงทะเบียนผู้ใช้ใหม่
+                                </button>
+                            </div>
+                            
+                            <h3 class="text-lg font-semibold">ดูบันทึกย้อนหลัง</h3>
+                            <div class="max-w-md mt-2">
+                                <label for="user-select" class="block text-sm font-medium text-slate-700">เลือกพนักงานเพื่อดูบันทึก:</label>
+                                <select id="user-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm rounded-md">
+                                    <option>-- กรุณาเลือก --</option>
+                                </select>
+                            </div>
+                            <div id="admin-note-history" class="mt-4">
+                                <!-- Admin note history will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== Daily Note Modal ===== -->
+    <div id="daily-note-modal" class="fixed z-[60] inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="modal-overlay" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="bi bi-calendar-event text-xl text-orange-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                บันทึกประจำวัน - <span id="note-date-display"></span>
+                            </h3>
+                            <div class="mt-4">
+                                <textarea id="note-content-area" rows="12" class="shadow-sm focus:ring-orange-500 focus:border-orange-500 block w-full sm:text-sm border border-slate-300 rounded-md p-3" placeholder="พิมพ์บันทึกของคุณที่นี่..."></textarea>
+                            </div>
+                            <div id="note-history-container" class="mt-4 hidden">
+                                <h4 class="text-md font-semibold text-slate-800">ประวัติบันทึกย้อนหลัง</h4>
+                                <div id="note-history-list" class="mt-2 border rounded-md p-3 bg-slate-50 max-h-64 overflow-y-auto note-history-list space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse items-center">
+                    <button id="save-note-btn" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        <span id="save-spinner" class="hidden animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24"><i class="bi bi-arrow-repeat"></i></span>บันทึก
+                    </button>
+                    <button id="view-history-btn" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">ดูประวัติ</button>
+                    <button id="close-note-modal-btn" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm mr-auto">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Register User Modal (for Admin) ===== -->
+    <div id="register-user-modal" class="fixed z-[70] inset-0 overflow-y-auto hidden" aria-labelledby="register-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="register-modal-overlay" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <form id="register-form">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4" id="register-modal-title">ลงทะเบียนผู้ใช้ใหม่</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Left Column: Photo -->
+                            <div class="md:col-span-1 flex flex-col items-center">
+                                <img id="register-photo-preview" src="https://placehold.co/150x150/f8fafc/6c757d?text=Photo" class="w-36 h-36 object-cover rounded-lg border bg-slate-100">
+                                <label for="register-photo" class="mt-2 text-sm font-medium text-orange-600 hover:text-orange-500 cursor-pointer">
+                                    <span>อัปโหลดรูปภาพ</span>
+                                    <input id="register-photo" name="photo" type="file" class="sr-only" accept="image/*">
+                                </label>
+                            </div>
+                            <!-- Right Column: Details -->
+                            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="register-name-th" class="block text-sm font-medium text-gray-700">ชื่อ (ไทย)</label>
+                                    <input type="text" name="nameTh" id="register-name-th" required class="mt-1 focus:ring-orange-500 focus:border-orange-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label for="register-name-en" class="block text-sm font-medium text-gray-700">ชื่อ (อังกฤษ)</label>
+                                    <input type="text" name="nameEn" id="register-name-en" class="mt-1 focus:ring-orange-500 focus:border-orange-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label for="register-national-id" class="block text-sm font-medium text-gray-700">เลขประจำตัวประชาชน</label>
+                                    <input type="text" name="nationalId" id="register-national-id" class="mt-1 focus:ring-orange-500 focus:border-orange-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label for="register-employee-id" class="block text-sm font-medium text-gray-700">รหัสพนักงาน (Username)</label>
+                                    <input type="text" name="employeeId" id="register-employee-id" required class="mt-1 focus:ring-orange-500 focus:border-orange-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label for="register-phone" class="block text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label>
+                                    <input type="tel" name="phone" id="register-phone" class="mt-1 focus:ring-orange-500 focus:border-orange-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label for="register-email" class="block text-sm font-medium text-gray-700">อีเมล</label>
+                                    <input type="email" name="email" id="register-email" class="mt-1 focus:ring-orange-500 focus:border-orange-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label for="register-password" class="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+                                    <input type="password" name="password" id="register-password" required class="mt-1 focus:ring-orange-500 focus:border-orange-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label for="register-role" class="block text-sm font-medium text-gray-700">สิทธิ์การใช้งาน</label>
+                                    <select id="register-role" name="role" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="register-error" class="text-center text-red-500 text-sm font-semibold mt-4"></div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm">ลงทะเบียน</button>
+                        <button type="button" id="close-register-modal-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">ยกเลิก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, 
+            onAuthStateChanged, signInWithCustomToken, signInAnonymously, setPersistence, browserLocalPersistence
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- UI Element References ---
+        const authView = document.getElementById('auth-view');
+        const mainContentView = document.getElementById('main-content-view');
+        const userMenu = document.getElementById('user-menu');
+        const authForm = document.getElementById('auth-form');
+        const authError = document.getElementById('auth-error');
+        
+        const usernameDisplay = document.getElementById('username-display');
+        const userAvatarImg = document.getElementById('user-avatar-img');
+        const userAvatarInitials = document.getElementById('user-avatar-initials');
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userMenuDropdown = document.getElementById('user-menu-dropdown');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const dailyNoteModal = document.getElementById('daily-note-modal');
+        const openNoteModalBtn = document.getElementById('open-note-modal-btn');
+        const closeNoteModalBtn = document.getElementById('close-note-modal-btn');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const noteDateDisplay = document.getElementById('note-date-display');
+        const noteContentArea = document.getElementById('note-content-area');
+        const saveNoteBtn = document.getElementById('save-note-btn');
+        const viewHistoryBtn = document.getElementById('view-history-btn');
+        const noteHistoryContainer = document.getElementById('note-history-container');
+        const noteHistoryList = document.getElementById('note-history-list');
+        
+        const adminPanel = document.getElementById('admin-panel');
+        const addUserBtn = document.getElementById('add-user-btn');
+        const userSelect = document.getElementById('user-select');
+        const adminNoteHistory = document.getElementById('admin-note-history');
+
+        const registerUserModal = document.getElementById('register-user-modal');
+        const registerModalOverlay = document.getElementById('register-modal-overlay');
+        const closeRegisterModalBtn = document.getElementById('close-register-modal-btn');
+        const registerForm = document.getElementById('register-form');
+        const registerPhotoInput = document.getElementById('register-photo');
+        const registerPhotoPreview = document.getElementById('register-photo-preview');
+        const registerError = document.getElementById('register-error');
+
+        // --- App State ---
+        let currentUserData = null;
+        let tempRegisterPhotoData = null;
+
+        // --- Helper Functions ---
+        const getTodayDateString = () => new Date().toISOString().slice(0, 10);
+
+        // --- UI Update Functions ---
+        const updateUIForAuthState = (user) => {
+            if (user && currentUserData) {
+                authView.classList.add('hidden');
+                mainContentView.classList.remove('hidden');
+                userMenu.classList.remove('hidden');
+                
+                usernameDisplay.textContent = currentUserData.name;
+
+                if (currentUserData.photoUrl) {
+                    userAvatarImg.src = currentUserData.photoUrl;
+                    userAvatarImg.classList.remove('hidden');
+                    userAvatarInitials.classList.add('hidden');
+                } else {
+                    userAvatarInitials.textContent = currentUserData.name.charAt(0).toUpperCase();
+                    userAvatarInitials.classList.remove('hidden');
+                    userAvatarImg.classList.add('hidden');
+                }
+
+                if (currentUserData.role === 'admin') {
+                    adminPanel.classList.remove('hidden');
+                    addUserBtn.classList.remove('hidden');
+                    loadUsersForAdmin();
+                } else {
+                    adminPanel.classList.add('hidden');
+                    addUserBtn.classList.add('hidden');
+                }
+
+            } else {
+                authView.classList.remove('hidden');
+                mainContentView.classList.add('hidden');
+                userMenu.classList.add('hidden');
+                adminPanel.classList.add('hidden');
+                addUserBtn.classList.add('hidden');
+                currentUserData = null;
+            }
+        };
+
+        const renderNoteHistory = (notes, container) => {
+            container.innerHTML = '';
+            if (notes.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-sm">ไม่พบประวัติบันทึก</p>';
+                return;
+            }
+            notes.forEach(note => {
+                const noteEl = document.createElement('div');
+                noteEl.className = 'p-3 bg-white rounded-md border';
+                noteEl.innerHTML = `
+                    <p class="font-semibold text-slate-700">${note.date}</p>
+                    <p class="text-slate-600 text-sm whitespace-pre-wrap">${note.content}</p>
+                `;
+                container.appendChild(noteEl);
+            });
+        };
+
+        // --- Firebase Functions ---
+        const handleLogin = async (event) => {
+            event.preventDefault();
+            const employeeId = authForm.employeeId.value.trim();
+            const password = authForm.password.value;
+            const email = `${employeeId}@pro-worker-app.com`;
+            authError.textContent = '';
+
+            try {
+                await setPersistence(auth, browserLocalPersistence);
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login error:", error);
+                authError.textContent = 'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง';
+            }
+        };
+
+        const handleRegistration = async (event) => {
+            event.preventDefault();
+            registerError.textContent = '';
+            const formData = new FormData(registerForm);
+            const userData = Object.fromEntries(formData.entries());
+
+            if (!userData.employeeId || !userData.password || !userData.nameTh) {
+                registerError.textContent = 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (ชื่อไทย, รหัสพนักงาน, รหัสผ่าน)';
+                return;
+            }
+
+            const email = `${userData.employeeId.trim()}@pro-worker-app.com`;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, userData.password);
+                const user = userCredential.user;
+
+                const userProfile = {
+                    employeeId: userData.employeeId.trim(),
+                    name: userData.nameTh.trim(),
+                    nameEn: userData.nameEn.trim(),
+                    nationalId: userData.nationalId.trim(),
+                    phone: userData.phone.trim(),
+                    email: userData.email.trim(),
+                    role: userData.role,
+                    photoUrl: tempRegisterPhotoData || null
+                };
+
+                const userDocPath = `/artifacts/${appId}/public/data/users/${user.uid}`;
+                await setDoc(doc(db, userDocPath), userProfile);
+                
+                alert('ลงทะเบียนผู้ใช้ใหม่สำเร็จ!');
+                registerUserModal.classList.add('hidden');
+                registerForm.reset();
+                tempRegisterPhotoData = null;
+                registerPhotoPreview.src = 'https://placehold.co/150x150/f8fafc/6c757d?text=Photo';
+                loadUsersForAdmin(); 
+
+            } catch (error) {
+                console.error("Registration error:", error);
+                if (error.code === 'auth/email-already-in-use') {
+                    registerError.textContent = 'รหัสพนักงานนี้ถูกใช้งานแล้ว';
+                } else if (error.code === 'auth/weak-password') {
+                    registerError.textContent = 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร';
+                } else {
+                    registerError.textContent = 'เกิดข้อผิดพลาดในการลงทะเบียน';
+                }
+            }
+        };
+
+        const fetchNoteForDate = async (userId, date) => {
+            const noteDocId = `${userId}_${date}`;
+            const noteDocPath = `/artifacts/${appId}/public/data/notes/${noteDocId}`;
+            const noteDocRef = doc(db, noteDocPath);
+            const docSnap = await getDoc(noteDocRef);
+            return docSnap.exists() ? docSnap.data() : { content: '' };
+        };
+
+        const saveNoteForDate = async (userId, date, content) => {
+            const saveSpinner = document.getElementById('save-spinner');
+            saveNoteBtn.disabled = true;
+            saveSpinner.classList.remove('hidden');
+            try {
+                const noteDocId = `${userId}_${date}`;
+                const noteDocPath = `/artifacts/${appId}/public/data/notes/${noteDocId}`;
+                const noteDocRef = doc(db, noteDocPath);
+                await setDoc(noteDocRef, { 
+                    content: content, 
+                    date: date,
+                    userId: userId
+                });
+                alert('บันทึกสำเร็จ!');
+            } catch (error) {
+                console.error("Error saving note: ", error);
+                alert('เกิดข้อผิดพลาดในการบันทึก');
+            } finally {
+                saveNoteBtn.disabled = false;
+                saveSpinner.classList.add('hidden');
+            }
+        };
+        
+        const fetchNoteHistory = async (userId) => {
+            const notesColPath = `/artifacts/${appId}/public/data/notes`;
+            const notesColRef = collection(db, notesColPath);
+            const q = query(notesColRef, where("userId", "==", userId));
+            const querySnapshot = await getDocs(q);
+            const notes = [];
+            querySnapshot.forEach((doc) => {
+                notes.push(doc.data());
+            });
+            notes.sort((a, b) => b.date.localeCompare(a.date));
+            return notes.slice(0, 30);
+        };
+
+        const loadUsersForAdmin = async () => {
+            userSelect.innerHTML = '<option>-- กรุณาเลือก --</option>';
+            const usersColPath = `/artifacts/${appId}/public/data/users`;
+            const usersColRef = collection(db, usersColPath);
+            const querySnapshot = await getDocs(usersColRef);
+            const users = [];
+            querySnapshot.forEach((doc) => {
+                users.push({ id: doc.id, ...doc.data() });
+            });
+            users.sort((a, b) => a.name.localeCompare(b.name));
+
+            users.forEach((userData) => {
+                const option = document.createElement('option');
+                option.value = userData.id;
+                option.textContent = `${userData.name} (${userData.employeeId})`;
+                userSelect.appendChild(option);
+            });
+        };
+
+        // --- Event Listeners ---
+        authForm.addEventListener('submit', handleLogin);
+        logoutBtn.addEventListener('click', () => signOut(auth));
+        registerForm.addEventListener('submit', handleRegistration);
+
+        // Note Modal Listeners
+        openNoteModalBtn.addEventListener('click', async () => {
+            const today = getTodayDateString();
+            noteDateDisplay.textContent = today;
+            noteContentArea.value = '';
+            noteHistoryContainer.classList.add('hidden');
+            
+            if (currentUserData && auth.currentUser) {
+                const note = await fetchNoteForDate(auth.currentUser.uid, today);
+                noteContentArea.value = note.content;
+            }
+            dailyNoteModal.classList.remove('hidden');
+        });
+
+        closeNoteModalBtn.addEventListener('click', () => dailyNoteModal.classList.add('hidden'));
+        modalOverlay.addEventListener('click', () => dailyNoteModal.classList.add('hidden'));
+
+        saveNoteBtn.addEventListener('click', () => {
+            if (currentUserData && auth.currentUser) {
+                const today = getTodayDateString();
+                const content = noteContentArea.value;
+                saveNoteForDate(auth.currentUser.uid, today, content);
+            }
+        });
+
+        viewHistoryBtn.addEventListener('click', async () => {
+             if (currentUserData && auth.currentUser) {
+                const notes = await fetchNoteHistory(auth.currentUser.uid);
+                renderNoteHistory(notes, noteHistoryList);
+                noteHistoryContainer.classList.toggle('hidden');
+            }
+        });
+
+        // Register Modal Listeners
+        addUserBtn.addEventListener('click', () => {
+            registerForm.reset();
+            registerError.textContent = '';
+            tempRegisterPhotoData = null;
+            registerPhotoPreview.src = 'https://placehold.co/150x150/f8fafc/6c757d?text=Photo';
+            registerUserModal.classList.remove('hidden');
+        });
+        closeRegisterModalBtn.addEventListener('click', () => registerUserModal.classList.add('hidden'));
+        registerModalOverlay.addEventListener('click', () => registerUserModal.classList.add('hidden'));
+        registerPhotoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                tempRegisterPhotoData = e.target.result; // base64 string
+                registerPhotoPreview.src = tempRegisterPhotoData;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // User Menu Dropdown
+        userMenuButton.addEventListener('click', () => userMenuDropdown.classList.toggle('hidden'));
+        
+        // Admin Panel Listener
+        userSelect.addEventListener('change', async (e) => {
+            const selectedUserId = e.target.value;
+            const adminHistoryList = document.createElement('div');
+            adminHistoryList.className = 'mt-2 border rounded-md p-3 bg-slate-50 max-h-96 overflow-y-auto note-history-list space-y-3';
+            adminNoteHistory.innerHTML = '';
+            adminNoteHistory.appendChild(adminHistoryList);
+
+            if (selectedUserId && selectedUserId !== '-- กรุณาเลือก --') {
+                const notes = await fetchNoteHistory(selectedUserId);
+                renderNoteHistory(notes, adminHistoryList);
+            }
+        });
+
+        // --- Auth State Change Listener ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDocPath = `/artifacts/${appId}/public/data/users/${user.uid}`;
+                const userDocRef = doc(db, userDocPath);
+
+                const fetchUserDocWithRetry = async (retries = 3, delay = 500) => {
+                    for (let i = 0; i < retries; i++) {
+                        const docSnap = await getDoc(userDocRef);
+                        if (docSnap.exists()) {
+                            return docSnap.data();
+                        }
+                        console.log(`User doc not found, attempt ${i + 1}. Retrying in ${delay * (i + 1)}ms...`);
+                        await new Promise(res => setTimeout(res, delay * (i + 1)));
+                    }
+                    return null;
+                };
+
+                const userData = await fetchUserDocWithRetry();
+
+                if (userData) {
+                    currentUserData = { uid: user.uid, ...userData };
+                } else {
+                    console.error("User doc not found after multiple retries. Signing out.");
+                    signOut(auth);
+                    return;
+                }
+            } else {
+                currentUserData = null;
+            }
+            updateUIForAuthState(user);
+        });
+        
+        // Initial authentication check
+        (async () => {
+            if (initialAuthToken) {
+                try {
+                    await setPersistence(auth, browserLocalPersistence);
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } catch (e) {
+                    console.error("Custom token sign-in failed, trying anonymous.", e);
+                    await signInAnonymously(auth);
+                }
+            }
+        })();
+    </script>
+
+</body>
+</html>

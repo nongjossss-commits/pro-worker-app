@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมติดตามการดำเนินงาน</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --color-primary: #F97316; /* Orange-500 */
+            --color-primary-hover: #EA580C; /* Orange-600 */
+            --color-success: #10B981; /* Emerald-500 */
+            --color-success-hover: #059669; /* Emerald-600 */
+            --color-danger: #EF4444; /* Red-500 */
+            --color-danger-hover: #DC2626; /* Red-600 */
+            --color-compare-1: #8B5CF6; /* Violet-500 */
+            --color-compare-2: #38BDF8; /* Sky-400 */
+            
+            --color-text-dark: #1F2937; /* Gray-800 */
+            --color-text-light: #6B7280; /* Gray-500 */
+            --color-bg: #F8FAFC; /* Slate-50 */
+            --color-surface: #FFFFFF;
+            --color-border: #E5E7EB; /* Gray-200 */
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text-dark);
+        }
+
+        /* Navbar */
+        .navbar { 
+            background-color: var(--color-surface); 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .navbar-brand { color: var(--color-primary) !important; }
+        .nav-link.text-dark { color: var(--color-text-dark) !important; }
+
+
+        /* Main Header */
+        .main-header { font-weight: 700; color: var(--color-text-dark); }
+
+        /* Buttons */
+        .btn { border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease-in-out; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-brand-primary { background-color: var(--color-primary); color: white; border: none; }
+        .btn-brand-primary:hover { background-color: var(--color-primary-hover); color: white; }
+        .btn-brand-success { background-color: var(--color-success); color: white; border: none; }
+        .btn-brand-success:hover { background-color: var(--color-success-hover); color: white; }
+        .btn-brand-danger { background-color: var(--color-danger); color: white; border: none; }
+        .btn-brand-danger:hover { background-color: var(--color-danger-hover); color: white; }
+        .btn-check:checked+.btn-outline-primary { background-color: var(--color-primary); color: white; }
+        .btn-check:disabled+.btn-outline-primary, .btn.disabled { cursor: not-allowed; opacity: 0.65; }
+
+
+        /* Cards & Inputs */
+        .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); }
+        .card-header { background-color: #F9FAFC; color: var(--color-text-dark); }
+        .form-control, .form-select { border: 1px solid var(--color-border); border-radius: 0.5rem; }
+        .form-control:focus, .form-select:focus { box-shadow: 0 0 0 0.25rem rgba(249, 115, 22, 0.25); border-color: var(--color-primary); }
+        .input-group-text { background-color: #F9FAFB; border: 1px solid var(--color-border); }
+        
+        /* Modern Table */
+        .table { border-collapse: separate; border-spacing: 0 0.75rem; margin-top: -0.75rem; }
+        .table thead th { border: none; color: var(--color-text-light); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em; padding-top: 0; padding-bottom: 0; }
+        .table tbody tr.job-row { background-color: var(--color-surface); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); border-radius: 0.75rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .table tbody tr.job-row:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.07); }
+        .table tbody td { border: none; vertical-align: middle; }
+        .table tbody .job-row td:first-child { border-top-left-radius: 0.75rem; border-bottom-left-radius: 0.75rem; }
+        .table tbody .job-row td:last-child { border-top-right-radius: 0.75rem; border-bottom-right-radius: 0.75rem; }
+        tr.progress-row > td { padding: 0 !important; }
+        .notification-reason { font-size: 0.85rem; font-weight: 600; }
+        .notification-reason.overdue { color: var(--color-primary); }
+        .notification-reason.today { color: #059669; }
+        .job-card-id { font-size: 0.8rem; font-weight: 600; color: var(--color-text-light); }
+        .consignee-info { font-size: 0.85rem; font-weight: 600; color: var(--color-primary); }
+
+
+        /* Progress Tracker */
+        .progress-tracker { background-color: #F9FAFB; padding: 1.5rem; }
+        .progress-tracker-grid { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+        .progress-step { display: flex; align-items:flex-start; gap: 0.75rem; min-width: 280px; }
+        .progress-step .icon { font-size: 1.5rem; margin-top: -2px; cursor: pointer; }
+        .progress-step .icon.checked { color: var(--color-success); }
+        .progress-step .icon.unchecked { color: var(--color-border); }
+        .progress-step .details { display: flex; flex-direction: column; }
+        .progress-step .details label { font-weight: 600; }
+        .progress-step .details .date { font-size: 0.85rem; color: var(--color-text-light); }
+        .progress-step input[type="date"], .progress-step input[type="text"], .progress-step .form-select { font-size: 0.9rem; padding: 0.25rem 0.5rem; }
+
+        /* Tabs */
+        .nav-tabs .nav-link { border: none; border-bottom: 3px solid transparent; color: var(--color-text-light); }
+        .nav-tabs .nav-link.active { border-bottom-color: var(--color-primary); color: var(--color-primary); font-weight: 600; }
+        .nav-tabs .nav-link .badge { transition: background-color .15s ease-in-out; }
+        .nav-tabs .nav-link.active .badge { background-color: var(--color-primary) !important; color: white !important; }
+        
+        /* Dashboard */
+        .dashboard-card { height: 400px; }
+        .form-switch .form-check-label { color: var(--color-text-dark); }
+
+        /* Badge Overrides */
+        .badge-brand-orange { background-color: #FFF7ED; color: #F97316; border: 1px solid #FED7AA; }
+        .badge-brand-green { background-color: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+        .badge-brand-yellow { background-color: #FEFCE8; color: #CA8A04; border: 1px solid #FEF08A; }
+        .badge-brand-blue { background-color: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+        .badge-brand-gray { background-color: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; }
+        .badge-brand-red { background-color: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+
+        /* Modal */
+        .modal-content { border-radius: 0.75rem; border: none; }
+        .modal-header, .modal-footer { border-color: var(--color-border); }
+        .modal-footer { background-color: #F9FAFB; }
+
+        /* Other Styles */
+        .flag-icon-table { width: 24px; height: auto; border-radius: 3px; vertical-align: middle; }
+        .nationality-display { display: inline-flex; align-items: center; margin-bottom: 0.5rem; }
+        .pagination-controls { color: var(--color-text-light); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid mx-auto px-4">
+            <a class="navbar-brand fw-bold fs-5 d-flex align-items-center" href="#">
+                <i class="bi bi-buildings-fill me-2 fs-4"></i>
+                WORKFLOW
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                    <li class="nav-item">
+                        <span class="nav-link text-dark" id="user-display">ผู้ใช้งาน: Wing</span>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-danger"><i class="bi bi-box-arrow-right me-1"></i> Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h1 class="h2 main-header">ระบบติดตามการทำงาน</h1>
+            <button type="button" class="btn btn-brand-success px-4 py-2" id="add-new-job-btn">
+                <i class="bi bi-plus-circle-fill me-2"></i>
+                เพิ่มงานใหม่
+            </button>
+        </div>
+
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-tab-pane" type="button" role="tab" aria-controls="dashboard-tab-pane" aria-selected="false">
+                <i class="bi bi-bar-chart-line-fill me-1"></i> สรุปผล
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="current-tab" data-bs-toggle="tab" data-bs-target="#current-tab-pane" type="button" role="tab" aria-controls="current-tab-pane" aria-selected="true">รายการปัจจุบัน</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="consigned-tab" data-bs-toggle="tab" data-bs-target="#consigned-tab-pane" type="button" role="tab" aria-controls="consigned-tab-pane" aria-selected="false">งานฝากยื่น</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications-tab-pane" type="button" role="tab" aria-controls="notifications-tab-pane" aria-selected="false">
+                แจ้งเตือน <span class="badge bg-danger rounded-pill ms-2 d-none" id="notifications-badge">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="false">ประวัติงาน</button>
+          </li>
+           <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trash-tab" data-bs-toggle="tab" data-bs-target="#trash-tab-pane" type="button" role="tab" aria-controls="trash-tab-pane" aria-selected="false">
+                <i class="bi bi-trash3-fill me-1"></i> ถังขยะ
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+          <div class="tab-pane fade" id="dashboard-tab-pane" role="tabpanel" aria-labelledby="dashboard-tab" tabindex="0">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <h5 class="mb-0 fw-bold">ภาพรวมการทำงาน</h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="compare-data-switch">
+                        <label class="form-check-label" for="compare-data-switch">เปรียบเทียบข้อมูล</label>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-md-6">
+                            <fieldset class="border p-3 rounded-3">
+                                <legend class="fs-6 fw-bold px-2" id="period-1-legend">เลือกช่วงเวลา</legend>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <div class="btn-group" role="group" aria-label="Dashboard Date Range">
+                                        <input type="radio" class="btn-check" name="date-range-1" id="range-weekly-1" autocomplete="off" value="weekly" checked>
+                                        <label class="btn btn-sm btn-outline-primary" for="range-weekly-1">สัปดาห์</label>
+
+                                        <input type="radio" class="btn-check" name="date-range-1" id="range-monthly-1" value="monthly" autocomplete="off">
+                                        <label class="btn btn-sm btn-outline-primary" for="range-monthly-1">เดือน</label>
+
+                                        <input type="radio" class="btn-check" name="date-range-1" id="range-yearly-1" value="yearly" autocomplete="off">
+                                        <label class="btn btn-sm btn-outline-primary" for="range-yearly-1">ปี</label>
+                                    </div>
+                                    <div id="date-selectors-1" class="d-flex gap-2">
+                                       <select class="form-select form-select-sm" id="year-selector-1"></select>
+                                       <select class="form-select form-select-sm d-none" id="month-selector-1"></select>
+                                       <select class="form-select form-select-sm" id="week-selector-1"></select>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                        <div class="col-md-6 d-none" id="compare-period-2">
+                             <fieldset class="border p-3 rounded-3 border-primary">
+                                <legend class="fs-6 fw-bold px-2 text-primary">ช่วงเวลาเปรียบเทียบ</legend>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <div class="btn-group" role="group" aria-label="Dashboard Date Range 2">
+                                        <input type="radio" class="btn-check" name="date-range-2" id="range-weekly-2" autocomplete="off" value="weekly" checked>
+                                        <label class="btn btn-sm btn-outline-primary" for="range-weekly-2">สัปดาห์</label>
+
+                                        <input type="radio" class="btn-check" name="date-range-2" id="range-monthly-2" value="monthly" autocomplete="off">
+                                        <label class="btn btn-sm btn-outline-primary" for="range-monthly-2">เดือน</label>
+
+                                        <input type="radio" class="btn-check" name="date-range-2" id="range-yearly-2" value="yearly" autocomplete="off">
+                                        <label class="btn btn-sm btn-outline-primary" for="range-yearly-2">ปี</label>
+                                    </div>
+                                    <div id="date-selectors-2" class="d-flex gap-2">
+                                       <select class="form-select form-select-sm" id="year-selector-2"></select>
+                                       <select class="form-select form-select-sm d-none" id="month-selector-2"></select>
+                                       <select class="form-select form-select-sm" id="week-selector-2"></select>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="card dashboard-card bg-transparent border-0">
+                                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                    <canvas id="status-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card dashboard-card bg-transparent border-0">
+                                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                    <canvas id="task-type-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <div class="card dashboard-card bg-transparent border-0">
+                                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                     <canvas id="trend-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+          <div class="tab-pane fade show active" id="current-tab-pane" role="tabpanel" aria-labelledby="current-tab" tabindex="0">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control filter-input" data-target-table="active-jobs-table-body" placeholder="ค้นหารหัสงาน, ชื่อนายจ้าง...">
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <select class="form-select filter-input" data-target-table="active-jobs-table-body" data-filter-type="taskType">
+                                <option value="">ทุกประเภทงาน</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3">
+                            <select class="form-select filter-input" data-target-table="active-jobs-table-body" data-filter-type="nationality">
+                                <option value="">ทุกสัญชาติ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center my-3 pagination-controls">
+                <span id="active-jobs-count-display"></span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="active-jobs-pagination"></ul>
+                </nav>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4">รหัสงาน / นายจ้าง</th>
+                            <th class="py-3 px-4 text-center">จำนวนคน</th>
+                            <th class="py-3 px-4">ประเภทงาน / สัญชาติ</th>
+                            <th class="py-3 px-4 text-center">การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="active-jobs-table-body"></tbody>
+                </table>
+            </div>
+          </div>
+           <div class="tab-pane fade" id="consigned-tab-pane" role="tabpanel" aria-labelledby="consigned-tab" tabindex="0">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control filter-input" data-target-table="consigned-jobs-table-body" placeholder="ค้นหารหัสงาน, ชื่อนายจ้าง, ผู้รับฝาก...">
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <select class="form-select filter-input" data-target-table="consigned-jobs-table-body" data-filter-type="taskType">
+                                <option value="">ทุกประเภทงาน</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3">
+                            <select class="form-select filter-input" data-target-table="consigned-jobs-table-body" data-filter-type="nationality">
+                                <option value="">ทุกสัญชาติ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center my-3 pagination-controls">
+                <span id="consigned-jobs-count-display"></span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="consigned-jobs-pagination"></ul>
+                </nav>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4">รหัสงาน / นายจ้าง / ผู้รับฝาก</th>
+                            <th class="py-3 px-4 text-center">จำนวนคน</th>
+                            <th class="py-3 px-4">ประเภทงาน / สัญชาติ</th>
+                            <th class="py-3 px-4 text-center">การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="consigned-jobs-table-body"></tbody>
+                </table>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="notifications-tab-pane" role="tabpanel" aria-labelledby="notifications-tab" tabindex="0">
+             <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control filter-input" data-target-table="notifications-table-body" placeholder="ค้นหารหัสงาน, ชื่องาน, นายจ้าง...">
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <select class="form-select filter-input" data-target-table="notifications-table-body" data-filter-type="taskType">
+                                <option value="">ทุกประเภทงาน</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3">
+                            <select class="form-select filter-input" data-target-table="notifications-table-body" data-filter-type="nationality">
+                                <option value="">ทุกสัญชาติ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center my-3 pagination-controls">
+                <span id="notifications-count-display"></span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="notifications-pagination"></ul>
+                </nav>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4">รหัสงาน / นายจ้าง / กำหนดการ</th>
+                            <th class="py-3 px-4 text-center">จำนวนคน</th>
+                            <th class="py-3 px-4">ประเภทงาน / สัญชาติ</th>
+                            <th class="py-3 px-4 text-center">การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="notifications-table-body"></tbody>
+                </table>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+             <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control filter-input" data-target-table="completed-jobs-table-body" placeholder="ค้นหารหัสงาน, ชื่องาน, นายจ้าง...">
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <select class="form-select filter-input" data-target-table="completed-jobs-table-body" data-filter-type="taskType">
+                                <option value="">ทุกประเภทงาน</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3">
+                            <select class="form-select filter-input" data-target-table="completed-jobs-table-body" data-filter-type="nationality">
+                                <option value="">ทุกสัญชาติ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center my-3 pagination-controls">
+                <span id="completed-jobs-count-display"></span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="completed-jobs-pagination"></ul>
+                </nav>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4">รหัสงาน / นายจ้าง</th>
+                            <th class="py-3 px-4 text-center">จำนวนคน</th>
+                            <th class="py-3 px-4">ประเภทงาน / สัญชาติ</th>
+                            <th class="py-3 px-4 text-center">การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="completed-jobs-table-body"></tbody>
+                </table>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="trash-tab-pane" role="tabpanel" aria-labelledby="trash-tab" tabindex="0">
+             <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control filter-input" data-target-table="deleted-jobs-table-body" placeholder="ค้นหารหัสงาน, ชื่องาน, นายจ้าง...">
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <select class="form-select filter-input" data-target-table="deleted-jobs-table-body" data-filter-type="taskType">
+                                <option value="">ทุกประเภทงาน</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3">
+                            <select class="form-select filter-input" data-target-table="deleted-jobs-table-body" data-filter-type="nationality">
+                                <option value="">ทุกสัญชาติ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="d-flex justify-content-between align-items-center my-3 pagination-controls">
+                <span id="deleted-jobs-count-display"></span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="deleted-jobs-pagination"></ul>
+                </nav>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4">รหัสงาน / นายจ้าง</th>
+                            <th class="py-3 px-4 text-center">จำนวนคน</th>
+                            <th class="py-3 px-4">ประเภทงาน / สัญชาติ</th>
+                            <th class="py-3 px-4 text-center">การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deleted-jobs-table-body"></tbody>
+                </table>
+            </div>
+          </div>
+        </div>
+    </main>
+
+    <div class="modal fade" id="jobModal" tabindex="-1" aria-labelledby="jobModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="jobModalLabel">ข้อมูลบันทึกงาน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="job-form">
+                        <input type="hidden" id="jobId">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="officeSelect" class="form-label">ออฟฟิศ</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="officeSelect" required></select>
+                                    <button class="btn btn-outline-secondary" type="button" id="addOfficeBtn" title="เพิ่มออฟฟิศใหม่"><i class="bi bi-plus-lg"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="employerName" class="form-label">ชื่อนายจ้าง</label>
+                                <input type="text" class="form-control" id="employerName" list="employer-list" required>
+                                <datalist id="employer-list"></datalist>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="jobOwnerSelect" class="form-label">เจ้าของงาน</label>
+                                <select class="form-select" id="jobOwnerSelect">
+                                    <option value="">-- ไม่ได้เลือก --</option>
+                                    </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="employerId" class="form-label">เลขที่บัตรประจำตัวประชาชน</label>
+                                <input type="text" class="form-control" id="employerId">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="contactNumber" class="form-label">เบอร์ติดต่อ</label>
+                                <input type="tel" class="form-control" id="contactNumber">
+                            </div>
+
+                            <div class="col-12">
+                                <label for="addressInput" class="form-label">ที่อยู่</label>
+                                <input type="text" class="form-control" id="addressInput" list="address-list" placeholder="เลือกหรือพิมพ์ที่อยู่...">
+                                <datalist id="address-list"></datalist>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="submissionArea" class="form-label">พื้นที่ยื่นเอกสาร</label>
+                                <input type="text" class="form-control" id="submissionArea">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="businessType" class="form-label">ประเภทกิจการ</label>
+                                <input type="text" class="form-control" id="businessType">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">จำนวนคน</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">ชาย</span>
+                                    <input type="number" class="form-control" id="maleCount" value="0" min="0">
+                                    <span class="input-group-text">หญิง</span>
+                                    <input type="number" class="form-control" id="femaleCount" value="0" min="0">
+                                    <span class="input-group-text">รวม</span>
+                                    <input type="number" class="form-control" id="totalCount" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+
+                        <div id="steps-container">
+                            <h6 class="fw-semibold mb-3">รายการ ประเภทงาน (เลือก 1 รายการ)</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input task-radio" type="radio" name="taskType" value="MOU นำเข้า" id="task_mou_import" data-options-target="#mouImportOptions">
+                                <label class="form-check-label" for="task_mou_import">MOU นำเข้า</label>
+                                <div class="mt-2 ps-4 d-none task-options" id="mouImportOptions">
+                                    <select class="form-select form-select-sm" name="nationality">
+                                        <option selected disabled value="">เลือกสัญชาติ...</option>
+                                        <option>ลาว</option>
+                                        <option>กัมพูชา</option>
+                                        <option>เมียนมา</option>
+                                        <option>เวียดนาม</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input task-radio" type="radio" name="taskType" value="ต่ออายุ MOU2ปีหลัง" id="task_mou_renew" data-options-target="#mouRenewOptions">
+                                <label class="form-check-label" for="task_mou_renew">ต่ออายุ MOU2ปีหลัง</label>
+                                <div class="mt-2 ps-4 d-none task-options" id="mouRenewOptions">
+                                    <select class="form-select form-select-sm mb-2" name="nationality">
+                                        <option selected disabled value="">เลือกสัญชาติ...</option>
+                                        <option>ลาว</option>
+                                        <option>กัมพูชา</option>
+                                        <option>เมียนมา</option>
+                                        <option>เวียดนาม</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input task-radio" type="radio" name="taskType" value="ขั้นตอนสุดท้าย MOU (บ.ต.13)" id="task_mou_final" data-options-target="#mouFinalOptions">
+                                <label class="form-check-label" for="task_mou_final">ขั้นตอนสุดท้าย MOU (บ.ต.13)</label>
+                                <div class="mt-2 ps-4 d-none task-options" id="mouFinalOptions">
+                                    <select class="form-select form-select-sm mb-2" name="nationality">
+                                        <option selected disabled value="">เลือกสัญชาติ...</option>
+                                        <option>ลาว</option>
+                                        <option>กัมพูชา</option>
+                                        <option>เมียนมา</option>
+                                        <option>เวียดนาม</option>
+                                    </select>
+                                </div>
+                            </div>
+                             <div class="form-check mb-2">
+                                <input class="form-check-input task-radio" type="radio" name="taskType" value="ตี VISA" id="task_visa" data-options-target="#visaOptions">
+                                <label class="form-check-label" for="task_visa">ตี VISA</label>
+                                <div class="mt-2 ps-4 d-none task-options" id="visaOptions">
+                                    <select class="form-select form-select-sm mb-2" name="nationality">
+                                        <option selected disabled value="">เลือกสัญชาติ...</option>
+                                        <option>ลาว</option>
+                                        <option>กัมพูชา</option>
+                                        <option>เมียนมา</option>
+                                        <option>เวียดนาม</option>
+                                    </select>
+                                    <select class="form-select form-select-sm mb-2 sub-task-select" name="subtask">
+                                        <option selected disabled value="">เลือกประเภท...</option>
+                                        <option>MOU</option>
+                                        <option>มติต่ออายุในประเทศ</option>
+                                        <option>มติขึ้นทะเบียน</option>
+                                        <option value="other">อื่นๆ ระบุ</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm mb-3 d-none other-input" placeholder="ระบุประเภทอื่นๆ">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="visa_subtask_visa" name="visa_subtask" value="VISA">
+                                                <label class="form-check-label" for="visa_subtask_visa">VISA</label>
+                                            </div>
+                                            <input type="number" class="form-control form-control-sm mt-1" id="visa_subtask_visa_count" placeholder="จำนวน" min="0" value="0">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="visa_subtask_stamp" name="visa_subtask" value="ย้ายตรา">
+                                                <label class="form-check-label" for="visa_subtask_stamp">ย้ายตรา</label>
+                                            </div>
+                                            <input type="number" class="form-control form-control-sm mt-1" id="visa_subtask_stamp_count" placeholder="จำนวน" min="0" value="0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input task-radio" type="radio" name="taskType" value="แจ้งเข้า/เปลี่ยนนายจ้าง" id="task_change_employer" data-options-target="#changeEmployerOptions">
+                                <label class="form-check-label" for="task_change_employer">แจ้งเข้า/เปลี่ยนนายจ้าง</label>
+                                <div class="mt-2 ps-4 d-none task-options" id="changeEmployerOptions">
+                                    <select class="form-select form-select-sm mb-2" name="nationality">
+                                        <option selected disabled value="">เลือกสัญชาติ...</option>
+                                        <option>ลาว</option>
+                                        <option>กัมพูชา</option>
+                                        <option>เมียนมา</option>
+                                        <option>เวียดนาม</option>
+                                    </select>
+                                    <select class="form-select form-select-sm mb-2 sub-task-select" name="subtask">
+                                        <option selected disabled value="">เลือกประเภท...</option>
+                                        <option>MOU</option>
+                                        <option>มติต่ออายุในประเทศ</option>
+                                        <option>มติขึ้นทะเบียน</option>
+                                        <option value="other">อื่นๆ ระบุ</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm mb-3 d-none other-input" placeholder="ระบุประเภทอื่นๆ">
+                                </div>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input task-radio" type="radio" name="taskType" value="แจ้งออก" id="task_terminate" data-options-target="#terminateOptions">
+                                <label class="form-check-label" for="task_terminate">แจ้งออก</label>
+                                <div class="mt-2 ps-4 d-none task-options" id="terminateOptions">
+                                    <select class="form-select form-select-sm mb-2" name="nationality">
+                                        <option selected disabled value="">เลือกสัญชาติ...</option>
+                                        <option>ลาว</option>
+                                        <option>กัมพูชา</option>
+                                        <option>เมียนมา</option>
+                                        <option>เวียดนาม</option>
+                                    </select>
+                                    <select class="form-select form-select-sm mb-2 sub-task-select" name="subtask">
+                                        <option selected disabled value="">เลือกประเภท...</option>
+                                        <option>MOU</option>
+                                        <option>มติต่ออายุในประเทศ</option>
+                                        <option>มติขึ้นทะเบียน</option>
+                                        <option value="other">อื่นๆ ระบุ</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm mb-3 d-none other-input" placeholder="ระบุประเภทอื่นๆ">
+                                </div>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input task-radio" type="radio" name="taskType" value="อื่นๆ ระบุ" id="task_other" data-options-target="#otherOptions">
+                                <label class="form-check-label" for="task_other">อื่นๆ ระบุ</label>
+                                <div class="mt-2 ps-4 d-none task-options" id="otherOptions">
+                                    <input type="text" class="form-control form-control-sm mb-2" name="other_task_name" placeholder="ระบุชื่องาน..." required>
+                                    <select class="form-select form-select-sm" name="nationality">
+                                        <option selected disabled value="">เลือกสัญชาติ (ถ้ามี)...</option>
+                                        <option>ไม่มี</option>
+                                        <option>ลาว</option>
+                                        <option>กัมพูชา</option>
+                                        <option>เมียนมา</option>
+                                        <option>เวียดนาม</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary me-auto" id="edit-in-modal-btn"><i class="bi bi-pencil-fill me-2"></i>แก้ไขข้อมูล</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-brand-primary px-4" id="save-job-button">บันทึกงาน</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="addOfficeModal" tabindex="-1" aria-labelledby="addOfficeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addOfficeModalLabel">เพิ่มออฟฟิศใหม่</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-office-form">
+                        <div class="mb-3">
+                            <label for="officeName" class="form-label">ชื่อออฟฟิศ</label>
+                            <input type="text" class="form-control" id="officeName" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" id="save-office-button">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmActionModalLabel"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="confirmActionModalBody"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" id="confirm-action-btn">ยืนยัน</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="consignJobModal" tabindex="-1" aria-labelledby="consignJobModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="consignJobModalLabel">ฝากยื่นงาน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="consign-job-form">
+                        <div class="mb-3">
+                            <label for="consigneeName" class="form-label">ชื่อผู้รับฝากงาน</label>
+                            <input type="text" class="form-control" id="consigneeName" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" id="save-consignee-button">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- ELEMENT SELECTORS ---
+            const jobModalEl = document.getElementById('jobModal');
+            const jobModal = new bootstrap.Modal(jobModalEl);
+            const addOfficeModalEl = document.getElementById('addOfficeModal');
+            const addOfficeModal = new bootstrap.Modal(addOfficeModalEl);
+            const confirmActionModalEl = document.getElementById('confirmActionModal');
+            const confirmActionModal = new bootstrap.Modal(confirmActionModalEl);
+            const consignJobModalEl = document.getElementById('consignJobModal');
+            const consignJobModal = new bootstrap.Modal(consignJobModalEl);
+            
+            const jobForm = document.getElementById('job-form');
+            const saveJobButton = document.getElementById('save-job-button');
+            const addNewJobBtn = document.getElementById('add-new-job-btn');
+            const confirmActionBtn = document.getElementById('confirm-action-btn');
+            const editInModalBtn = document.getElementById('edit-in-modal-btn');
+            const addOfficeBtn = document.getElementById('addOfficeBtn');
+            const saveOfficeBtn = document.getElementById('save-office-button');
+            const saveConsigneeBtn = document.getElementById('save-consignee-button');
+            
+            const activeJobsBody = document.getElementById('active-jobs-table-body');
+            const consignedJobsBody = document.getElementById('consigned-jobs-table-body');
+            const completedJobsBody = document.getElementById('completed-jobs-table-body');
+            const deletedJobsBody = document.getElementById('deleted-jobs-table-body');
+            const notificationsTableBody = document.getElementById('notifications-table-body');
+            const notificationsBadge = document.getElementById('notifications-badge');
+            const filterInputs = document.querySelectorAll('.filter-input');
+
+            // Dashboard selectors
+            const compareDataSwitch = document.getElementById('compare-data-switch');
+            const comparePeriod2Div = document.getElementById('compare-period-2');
+            const period1Legend = document.getElementById('period-1-legend');
+            const allDashboardSelectors = document.querySelectorAll('#dashboard-tab-pane select, #dashboard-tab-pane input[type="radio"]');
+
+            const dashboardDateRangeRadios1 = document.querySelectorAll('input[name="date-range-1"]');
+            const yearSelector1 = document.getElementById('year-selector-1');
+            const monthSelector1 = document.getElementById('month-selector-1');
+            const weekSelector1 = document.getElementById('week-selector-1');
+
+            const dashboardDateRangeRadios2 = document.querySelectorAll('input[name="date-range-2"]');
+            const yearSelector2 = document.getElementById('year-selector-2');
+            const monthSelector2 = document.getElementById('month-selector-2');
+            const weekSelector2 = document.getElementById('week-selector-2');
+
+
+            let currentAction = null;
+            let currentJobId = null;
+            let statusChart = null;
+            let trendChart = null;
+            let taskTypeChart = null;
+            let progressTrackerHasChanges = new Set();
+            
+            // --- STATE MANAGEMENT ---
+            let currentPages = {
+                'active-jobs-table-body': 1,
+                'consigned-jobs-table-body': 1,
+                'completed-jobs-table-body': 1,
+                'deleted-jobs-table-body': 1,
+                'notifications-table-body': 1
+            };
+            const ITEMS_PER_PAGE = 25;
+
+            // --- DATA HANDLING ---
+            const JOBS_STORAGE_KEY = 'proWorkerJobs_v2';
+            const OFFICES_STORAGE_KEY = 'proWorkerOffices_v2';
+            const COUNTERS_STORAGE_KEY = 'proWorkerCounters_v2';
+            // Keys from index.html
+            const JOBOWNERS_STORAGE_KEY = 'jobOwnerRecords';
+            const EMPLOYERS_STORAGE_KEY = 'employerRecords';
+
+            const getJobs = () => JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
+            const saveJobs = (jobs, expandedIds = new Set()) => {
+                localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs.sort((a, b) => (b.jobCardId || '').localeCompare(a.jobCardId || ''))));
+                renderAll(expandedIds);
+            };
+            const getJobById = (id) => getJobs().find(job => job.id === id);
+            
+            const getOffices = () => JSON.parse(localStorage.getItem(OFFICES_STORAGE_KEY) || '[]');
+            const saveOffices = (offices) => localStorage.setItem(OFFICES_STORAGE_KEY, JSON.stringify(offices));
+
+            const getCounters = () => JSON.parse(localStorage.getItem(COUNTERS_STORAGE_KEY) || '{ "lastOfficeNum": 0, "lastItemNum": 0 }');
+            const saveCounters = (counters) => localStorage.setItem(COUNTERS_STORAGE_KEY, JSON.stringify(counters));
+            
+            // Functions to get data from index.html's localStorage
+            const getJobOwners = () => JSON.parse(localStorage.getItem(JOBOWNERS_STORAGE_KEY) || '[]');
+            const getEmployers = () => JSON.parse(localStorage.getItem(EMPLOYERS_STORAGE_KEY) || '[]');
+
+            const updateJob = (updatedJob, fullRender = true) => {
+                const jobs = getJobs();
+                const jobIndex = jobs.findIndex(j => j.id === updatedJob.id);
+                if (jobIndex > -1) {
+                    jobs[jobIndex] = updatedJob;
+                    if (fullRender) {
+                        const expandedIds = new Set([...document.querySelectorAll('.progress-row.collapse.show')].map(el => el.id));
+                        saveJobs(jobs, expandedIds);
+                    } else {
+                        localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs.sort((a, b) => (b.jobCardId || '').localeCompare(a.jobCardId || ''))));
+                    }
+                }
+            };
+
+            // --- MAPPINGS & DEFAULTS ---
+            const flagMap = { 'ลาว': 'la', 'กัมพูชา': 'kh', 'เมียนมา': 'mm', 'เวียดนาม': 'vn', 'ไม่มี': '' };
+            const badgeMap = {
+                'MOU นำเข้า': 'badge-brand-blue', 'ต่ออายุ MOU2ปีหลัง': 'badge-brand-green',
+                'ขั้นตอนสุดท้าย MOU (บ.ต.13)': 'badge-brand-yellow', 'ตี VISA': 'badge-brand-gray',
+                'แจ้งเข้า/เปลี่ยนนายจ้าง': 'badge-brand-orange', 'แจ้งออก': 'badge-brand-red'
+            };
+
+            const bangkokAreaMap = {
+                'บางรัก': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1', 'ปทุมวัน': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1', 'ยานนาวา': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1', 'สาทร': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1', 'บางคอแหลม': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1',
+                'จอมทอง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2', 'ทุ่งครุ': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2', 'บางขุนเทียน': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2', 'บางบอน': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2', 'ราษฎร์บูรณะ': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2',
+                'คลองเตย': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3', 'บางนา': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3', 'ประเวศ': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3', 'พระโขนง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3', 'วัฒนา': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3', 'สวนหลวง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3',
+                'คันนายาว': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4', 'บางกะปิ': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4', 'ลาดพร้าว': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4', 'บึงกุ่ม': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4', 'วังทองหลาง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4',
+                'คลองสามวา': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5', 'มีนบุรี': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5', 'ลาดกระบัง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5', 'สะพานสูง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5', 'หนองจอก': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5', 'สายไหม': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5',
+                'คลองสาน': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6', 'ธนบุรี': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6', 'บางกอกน้อย': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6', 'บางกอกใหญ่': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6', 'บางพลัด': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6',
+                'ตลิ่งชัน': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7', 'ทวีวัฒนา': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7', 'บางแค': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7', 'ภาษีเจริญ': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7', 'หนองแขม': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7',
+                'ดุสิต': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8', 'พระนคร': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8', 'ป้อมปราบศัตรูพ่าย': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8', 'สัมพันธวงศ์': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8',
+                'จตุจักร': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9', 'ดอนเมือง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9', 'บางซื่อ': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9', 'บางเขน': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9', 'หลักสี่': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9',
+                'ดินแดง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10', 'พญาไท': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10', 'ราชเทวี': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10', 'ห้วยขวาง': 'สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10'
+            };
+            
+            // --- PROGRESS STEP DEFINITIONS ---
+            const MOU_MYANMAR_STEPS = {
+                step1: { label: 'จัดเอกสาร', checked: false, date: null },
+                step2: { label: 'ยื่นDemand', checked: false, date: null },
+                step3: { label: 'นัดรับDemand', checked: false, date: null, appointmentDate: null },
+                step4: { label: 'รับDemand', checked: false, date: null },
+                step5: { label: 'เซ็นสัญญา', checked: false, date: null },
+                step6: { label: 'ได้รับNamlist', checked: false, date: null },
+                step8: { label: 'จ่ายเงิน', checked: false, date: null },
+                step9: { label: 'นัดรับจ่ายNamlist', checked: false, date: null, appointmentDate: null },
+                step10: { label: 'รับเอกสารจ่ายเงิน', checked: false, date: null },
+                step11: { label: 'เอกสารเข้ากรม', checked: false, date: null, appointmentNumber: '' },
+                step12: { label: 'นัดรับCalling Visa', checked: false, date: null, appointmentDate: null },
+                step13: { label: 'รับCalling Visa', checked: false, date: null },
+            };
+            const MOU_LAOS_STEPS = { ...MOU_MYANMAR_STEPS, step2: { label: 'ยื่นDemand', checked: false, date: null }, step5: { label: 'ขอNamlist', checked: false, date: null } };
+            const MOU_CAMBODIA_STEPS = {
+                step1: { label: 'ยื่นDemand online', checked: false, date: null },
+                step2: { label: 'ได้รับNamlist', checked: false, date: null },
+                step3: { label: 'จ่ายเงิน', checked: false, date: null },
+                step4: { label: 'นัดรับจ่ายNamlist', checked: false, date: null, appointmentDate: null },
+                step5: { label: 'รับเอกสารจ่ายเงิน', checked: false, date: null },
+                step6: { label: 'เอกสารเข้ากรม', checked: false, date: null, appointmentNumber: '' },
+                step7: { label: 'นัดรับ calling Visa', checked: false, date: null, appointmentDate: null },
+                step8: { label: 'รับ Calling Visa', checked: false, date: null },
+            };
+            const RENEW_MOU_STEPS = {
+                step1: { label: 'มีใบแพทย์', checked: false, date: null },
+                step2: { label: 'ประกัน', checked: false, date: null, selection: 'ซื้อประกัน', options: ['ซื้อประกัน', 'ประกันสังคม'] },
+                step3: { label: 'ยื่นต่ออายุ', checked: false, date: null },
+                step4: { label: 'นัดรับใบอนุญาติทำงาน', checked: false, date: null, appointmentDate: null },
+                step5: { label: 'ได้รับใบอนุญาตทำงาน', checked: false, date: null },
+            };
+            const GENERAL_3_STEPS = {
+                step1: { label: 'ยื่นเอกสาร', checked: false, date: null },
+                step2: { label: 'นัดรับเอกสาร', checked: false, date: null, appointmentDate: null },
+                step3: { label: 'รับเอกสารแล้ว', checked: false, date: null },
+            };
+
+            // --- TASK DEFINITION OBJECT ---
+            const TASK_DEFINITIONS = {
+                "MOU นำเข้า": {
+                    optionsTarget: "#mouImportOptions",
+                    details: {
+                        nationality: { selector: '[name="nationality"]', type: 'value' }
+                    },
+                    progress: (details) => {
+                        if (details.nationality === 'เมียนมา') return JSON.parse(JSON.stringify(MOU_MYANMAR_STEPS));
+                        if (details.nationality === 'ลาว') return JSON.parse(JSON.stringify(MOU_LAOS_STEPS));
+                        if (details.nationality === 'กัมพูชา') return JSON.parse(JSON.stringify(MOU_CAMBODIA_STEPS));
+                        if (details.nationality === 'เวียดนาม') return JSON.parse(JSON.stringify(MOU_MYANMAR_STEPS));
+                        return null;
+                    }
+                },
+                "ต่ออายุ MOU2ปีหลัง": {
+                    optionsTarget: "#mouRenewOptions",
+                    details: {
+                        nationality: { selector: '[name="nationality"]', type: 'value' }
+                    },
+                    progress: () => JSON.parse(JSON.stringify(RENEW_MOU_STEPS))
+                },
+                "ขั้นตอนสุดท้าย MOU (บ.ต.13)": {
+                    optionsTarget: "#mouFinalOptions",
+                    details: {
+                        nationality: { selector: '[name="nationality"]', type: 'value' }
+                    },
+                    progress: () => JSON.parse(JSON.stringify(GENERAL_3_STEPS))
+                },
+                "ตี VISA": {
+                    optionsTarget: "#visaOptions",
+                    details: {
+                        nationality: { selector: '[name="nationality"]', type: 'value' },
+                        subtask: { selector: '.sub-task-select', type: 'value' },
+                        subtaskOther: { selector: '.other-input', type: 'value' },
+                        visaCount: { selector: '#visa_subtask_visa_count', type: 'value' },
+                        stampCount: { selector: '#visa_subtask_stamp_count', type: 'value' }
+                    },
+                    progress: () => JSON.parse(JSON.stringify(GENERAL_3_STEPS))
+                },
+                "แจ้งเข้า/เปลี่ยนนายจ้าง": {
+                    optionsTarget: "#changeEmployerOptions",
+                    details: {
+                        nationality: { selector: '[name="nationality"]', type: 'value' },
+                        subtask: { selector: '.sub-task-select', type: 'value' },
+                        subtaskOther: { selector: '.other-input', type: 'value' }
+                    },
+                    progress: () => JSON.parse(JSON.stringify(GENERAL_3_STEPS))
+                },
+                "แจ้งออก": {
+                    optionsTarget: "#terminateOptions",
+                    details: {
+                        nationality: { selector: '[name="nationality"]', type: 'value' },
+                        subtask: { selector: '.sub-task-select', type: 'value' },
+                        subtaskOther: { selector: '.other-input', type: 'value' }
+                    },
+                    progress: () => JSON.parse(JSON.stringify(GENERAL_3_STEPS))
+                },
+                 "อื่นๆ ระบุ": {
+                    optionsTarget: "#otherOptions",
+                    details: {
+                        customTaskName: { selector: '[name="other_task_name"]', type: 'value' },
+                        nationality: { selector: '[name="nationality"]', type: 'value' }
+                    },
+                    progress: () => JSON.parse(JSON.stringify(GENERAL_3_STEPS))
+                }
+            };
+
+            // --- RENDERING & FILTERING ---
+            function renderAll(expandedIds = new Set()) {
+                const allJobs = getJobs();
+                
+                // Get the current set of expanded progress trackers before re-rendering
+                const currentExpandedIds = new Set([...document.querySelectorAll('.progress-row.collapse.show')].map(el => el.id));
+
+                renderTab('active-jobs-table-body', allJobs.filter(j => j.status === 'active'), 'active', currentExpandedIds);
+                renderTab('consigned-jobs-table-body', allJobs.filter(j => j.status === 'consigned'), 'consigned', currentExpandedIds);
+                renderTab('completed-jobs-table-body', allJobs.filter(j => j.status === 'completed'), 'completed', currentExpandedIds);
+                renderTab('deleted-jobs-table-body', allJobs.filter(j => j.status === 'deleted'), 'deleted', currentExpandedIds);
+                
+                const notificationJobs = getNotificationJobs(allJobs);
+                renderTab('notifications-table-body', notificationJobs, 'notification', currentExpandedIds, true);
+
+                // Update notification badge
+                if (notificationJobs.length > 0) {
+                    notificationsBadge.textContent = notificationJobs.length;
+                    notificationsBadge.classList.remove('d-none');
+                } else {
+                    notificationsBadge.classList.add('d-none');
+                }
+                
+                updateDashboard();
+            }
+
+            function renderTab(tableBodyId, jobs, status, expandedIds, isNotification = false) {
+                const tableBody = document.getElementById(tableBodyId);
+                if (!tableBody) return;
+
+                const parentTabPane = tableBody.closest('.tab-pane');
+                const filters = {
+                    searchTerm: parentTabPane.querySelector('.filter-input[type="text"]').value.toLowerCase(),
+                    taskType: parentTabPane.querySelector('.filter-input[data-filter-type="taskType"]').value,
+                    nationality: parentTabPane.querySelector('.filter-input[data-filter-type="nationality"]').value,
+                };
+
+                let filteredJobs = jobs.filter(job => {
+                    const step = job.step || {};
+                    const details = step.details || {};
+                    const employerName = job.employerName || '';
+                    const jobCardId = job.jobCardId || '';
+                    const taskText = (step.text === 'อื่นๆ ระบุ' && details.customTaskName) ? details.customTaskName : step.text;
+                    const submissionArea = job.submissionArea || ''; 
+                    const consigneeName = job.consigneeName || '';
+
+                    const searchMatch = employerName.toLowerCase().includes(filters.searchTerm) || 
+                                      jobCardId.toLowerCase().includes(filters.searchTerm) || 
+                                      (taskText || '').toLowerCase().includes(filters.searchTerm) ||
+                                      submissionArea.toLowerCase().includes(filters.searchTerm) ||
+                                      consigneeName.toLowerCase().includes(filters.searchTerm);
+                    const taskTypeMatch = !filters.taskType || (step.text === filters.taskType);
+                    const nationalityMatch = !filters.nationality || (details.nationality === filters.nationality);
+
+                    return searchMatch && taskTypeMatch && nationalityMatch;
+                });
+
+                const currentPage = currentPages[tableBodyId] || 1;
+                const totalItems = filteredJobs.length;
+                const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                const start = (currentPage - 1) * ITEMS_PER_PAGE;
+                const end = start + ITEMS_PER_PAGE;
+                const paginatedJobs = filteredJobs.slice(start, end);
+
+                tableBody.innerHTML = '';
+                if (paginatedJobs.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-5 text-muted">ไม่พบข้อมูล...</td></tr>`;
+                } else {
+                    paginatedJobs.forEach(job => {
+                        const hasProgress = job.progress && Object.keys(job.progress).length > 0;
+                        
+                        const row = document.createElement('tr');
+                        row.className = 'job-row';
+                        // ######## START: MODIFIED CODE ########
+                        row.innerHTML = generateJobRowHTML(job, status, hasProgress, isNotification, tableBodyId);
+                        // ######## END: MODIFIED CODE ########
+                        tableBody.appendChild(row);
+
+                        if (hasProgress && (status === 'active' || isNotification || status === 'consigned')) {
+                            // ######## START: MODIFIED CODE ########
+                            const uniqueProgressId = `progress-${job.id}-${tableBodyId}`;
+                            const isExpanded = expandedIds.has(uniqueProgressId);
+                            // ######## END: MODIFIED CODE ########
+
+                            const progressRow = document.createElement('tr');
+                            progressRow.className = `progress-row collapse ${isExpanded ? 'show' : ''}`;
+                            // ######## START: MODIFIED CODE ########
+                            progressRow.id = uniqueProgressId;
+                            // ######## END: MODIFIED CODE ########
+                            progressRow.innerHTML = `<td colspan="4">${renderProgressTracker(job)}</td>`;
+                            tableBody.appendChild(progressRow);
+
+                            const collapseElement = new bootstrap.Collapse(progressRow, { toggle: false });
+                            progressRow.addEventListener('show.bs.collapse', () => {
+                                expandedIds.add(uniqueProgressId);
+                            });
+                            progressRow.addEventListener('hide.bs.collapse', (event) => {
+                                if (progressTrackerHasChanges.has(job.id)) {
+                                    event.preventDefault();
+                                } else {
+                                    expandedIds.delete(uniqueProgressId);
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                const countDisplayId = tableBodyId.replace('-table-body', '-count-display');
+                const paginationId = tableBodyId.replace('-table-body', '-pagination');
+                updatePaginationUI(countDisplayId, paginationId, currentPage, totalPages, totalItems, start, paginatedJobs.length);
+            }
+
+            function updatePaginationUI(countId, navId, currentPage, totalPages, totalItems, start, pageItemsCount) {
+                const countDisplay = document.getElementById(countId);
+                const paginationNav = document.getElementById(navId);
+
+                if (totalItems > 0) {
+                    countDisplay.textContent = `แสดง ${start + 1} - ${start + pageItemsCount} จาก ${totalItems} รายการ`;
+                } else {
+                    countDisplay.textContent = 'ไม่พบรายการ';
+                }
+
+                paginationNav.innerHTML = '';
+                if (totalPages > 1) {
+                    paginationNav.innerHTML += `
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${currentPage - 1}" data-target="${navId}">ก่อนหน้า</a>
+                        </li>
+                    `;
+                    paginationNav.innerHTML += `
+                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${currentPage + 1}" data-target="${navId}">ถัดไป</a>
+                        </li>
+                    `;
+                }
+            }
+
+            // ######## START: MODIFIED CODE ########
+            function generateJobRowHTML(job, status, hasProgress, isNotification = false, tableBodyId) {
+            // ######## END: MODIFIED CODE ########
+                const totalCount = (parseInt(job.maleCount) || 0) + (parseInt(job.femaleCount) || 0);
+                const step = job.step || {};
+                const details = step.details || {};
+                const nationality = details.nationality || '';
+                const taskTextRaw = step.text || '';
+                const badgeColor = badgeMap[taskTextRaw.split(' (')[0]] || 'badge-brand-gray';
+                const flagCode = flagMap[nationality];
+                const nationalityHTML = nationality && flagCode ? `<div class="nationality-display fw-semibold"><img src="https://flagcdn.com/h20/${flagCode}.png" class="flag-icon-table me-2" alt="${nationality}">${nationality}</div>` : '';
+                const stepDescription = generateStepDescription(step);
+
+                const submissionAreaHTML = job.submissionArea ? `<div class="text-muted small" style="font-size: 0.8rem;"><i class="bi bi-geo-alt-fill me-1"></i>${job.submissionArea}</div>` : '';
+
+                let firstColumnHTML;
+                const baseFirstColumn = `
+                    <div class="job-card-id">${job.jobCardId || 'N/A'}</div>
+                    <div class="fw-semibold">${job.employerName}</div>
+                    ${submissionAreaHTML}
+                `;
+
+                if (isNotification && job.notificationReason) {
+                    firstColumnHTML = `
+                        <td class="p-3">
+                            ${baseFirstColumn}
+                            <div class="notification-reason ${job.notificationClass}"><i class="bi bi-bell-fill me-1"></i>${job.notificationReason}</div>
+                        </td>
+                    `;
+                } else if (status === 'consigned' && job.consigneeName) {
+                     firstColumnHTML = `
+                        <td class="p-3">
+                            ${baseFirstColumn}
+                            <div class="consignee-info mt-1"><i class="bi bi-person-check-fill me-1"></i>ผู้รับฝาก: ${job.consigneeName}</div>
+                        </td>
+                    `;
+                } 
+                else {
+                    firstColumnHTML = `<td class="p-3">${baseFirstColumn}</td>`;
+                }
+
+                // ######## START: MODIFIED CODE ########
+                const uniqueProgressId = `progress-${job.id}-${tableBodyId}`;
+                // ######## END: MODIFIED CODE ########
+
+                let actionButtons = '';
+                if (status === 'active' || isNotification) {
+                    actionButtons = `
+                        <button class="btn btn-sm btn-outline-primary consign-job-btn" data-id="${job.id}" title="ฝากงาน"><i class="bi bi-person-plus-fill"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary view-job-btn" data-id="${job.id}" title="ดู/แก้ไขข้อมูล"><i class="bi bi-pencil-fill"></i></button>
+                        <button class="btn btn-sm btn-outline-danger move-to-trash-btn" data-id="${job.id}" title="ย้ายไปถังขยะ"><i class="bi bi-trash-fill"></i></button>
+                        ${hasProgress ? `<button class="btn btn-sm btn-outline-secondary toggle-progress-btn" data-bs-toggle="collapse" data-bs-target="#${uniqueProgressId}" title="ดูความคืบหน้า"><i class="bi bi-chevron-down"></i></button>` : ''}
+                    `;
+                } else if (status === 'consigned') {
+                     actionButtons = `
+                        <button class="btn btn-sm btn-outline-success return-job-btn" data-id="${job.id}" title="คืนงาน"><i class="bi bi-arrow-counterclockwise"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary view-job-btn" data-id="${job.id}" title="ดู/แก้ไขข้อมูล"><i class="bi bi-pencil-fill"></i></button>
+                        <button class="btn btn-sm btn-outline-danger move-to-trash-btn" data-id="${job.id}" title="ย้ายไปถังขยะ"><i class="bi bi-trash-fill"></i></button>
+                        ${hasProgress ? `<button class="btn btn-sm btn-outline-secondary toggle-progress-btn" data-bs-toggle="collapse" data-bs-target="#${uniqueProgressId}" title="ดูความคืบหน้า"><i class="bi bi-chevron-down"></i></button>` : ''}
+                    `;
+                } else {
+                    switch(status) {
+                        case 'completed':
+                            actionButtons = `
+                                <button class="btn btn-sm btn-outline-secondary view-job-btn" data-id="${job.id}" title="ดูข้อมูล"><i class="bi bi-eye-fill"></i></button>
+                                <button class="btn btn-sm btn-outline-primary restore-job-btn" data-id="${job.id}" title="ย้ายกลับไปรายการปัจจุบัน"><i class="bi bi-arrow-counterclockwise"></i></button>
+                            `;
+                            break;
+                        case 'deleted':
+                             actionButtons = `
+                                <button class="btn btn-sm btn-success restore-job-btn" data-id="${job.id}" title="กู้คืนการทำงาน"><i class="bi bi-arrow-repeat"></i></button>
+                                <button class="btn btn-sm btn-brand-danger delete-permanently-btn" data-id="${job.id}" title="ลบถาวร"><i class="bi bi-x-circle-fill"></i></button>
+                            `;
+                            break;
+                    }
+                }
+
+
+                return `
+                    ${firstColumnHTML}
+                    <td class="p-3 text-center fs-5"><strong>${totalCount}</strong></td>
+                    <td class="p-3">
+                        ${nationalityHTML}
+                        <span class="badge rounded-pill ${badgeColor} px-3 py-2">${stepDescription}</span>
+                    </td>
+                    <td class="p-3 text-center table-action-buttons">${actionButtons}</td>
+                `;
+            }
+
+            function generateStepDescription(step) {
+                if (!step || !step.text) return 'N/A';
+                const details = step.details || {};
+                let description = step.text;
+
+                if (description === 'อื่นๆ ระบุ') {
+                    return details.customTaskName || 'งานอื่นๆ';
+                }
+
+                if (details.subtask && details.subtask !== 'other') {
+                    description += ` (${details.subtask})`;
+                } else if (details.subtask === 'other' && details.subtaskOther) {
+                    description += ` (${details.subtaskOther})`;
+                }
+                if (step.text === 'ตี VISA') {
+                    const visaDetails = [];
+                    if (parseFloat(details.visaCount) > 0) visaDetails.push(`VISA: ${details.visaCount}`);
+                    if (parseFloat(details.stampCount) > 0) visaDetails.push(`ย้ายตรา: ${details.stampCount}`);
+                    if (visaDetails.length > 0) description += ` <span class="text-secondary">[${visaDetails.join(', ')}]</span>`;
+                }
+                return description;
+            }
+            
+            function renderProgressTracker(job) {
+                let html = '<div class="progress-tracker">';
+                if (!job.progress) return '<div>ไม่มีข้อมูลความคืบหน้า</div>';
+                
+                const allStepsCompleted = Object.values(job.progress).every(step => step.checked);
+
+                html += '<div class="progress-tracker-grid">';
+                for (const [key, step] of Object.entries(job.progress)) {
+                    const iconClass = step.checked ? 'bi-check-circle-fill checked' : 'bi-circle unchecked';
+                    const dateDisplay = step.date ? `<div class="date">วันที่: ${step.date}</div>` : '';
+                    let extraInput = '';
+
+                    if (step.options && Array.isArray(step.options)) {
+                        extraInput += `<select class="form-select form-select-sm mt-1 progress-input" data-job-id="${job.id}" data-step-key="${key}" data-field="selection">`;
+                        step.options.forEach(option => {
+                            extraInput += `<option value="${option}" ${step.selection === option ? 'selected' : ''}>${option}</option>`;
+                        });
+                        extraInput += `</select>`;
+                    } else if (step.hasOwnProperty('appointmentDate')) {
+                        extraInput = `<input type="date" class="form-control form-control-sm mt-1 progress-input" data-job-id="${job.id}" data-step-key="${key}" data-field="appointmentDate" value="${step.appointmentDate || ''}">`;
+                    } else if (step.hasOwnProperty('appointmentNumber')) {
+                         extraInput = `<input type="text" class="form-control form-control-sm mt-1 progress-input" placeholder="เลขใบนัดรับ..." data-job-id="${job.id}" data-step-key="${key}" data-field="appointmentNumber" value="${step.appointmentNumber || ''}">`;
+                    }
+
+                    html += `
+                        <div class="progress-step">
+                            <i class="bi ${iconClass} progress-icon" data-job-id="${job.id}" data-step-key="${key}"></i>
+                            <div class="details">
+                                <label for="${key}-${job.id}">${step.label}</label>
+                                ${dateDisplay}
+                                ${extraInput}
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                
+                html += `<hr class="my-4"><div class="notes-section">
+                            <label for="notes-${job.id}" class="form-label fw-semibold">หมายเหตุ</label>
+                            <textarea class="form-control progress-input" id="notes-${job.id}" rows="3" placeholder="บันทึกข้อมูลเพิ่มเติม..." data-job-id="${job.id}" data-step-key="none" data-field="notes">${job.notes || ''}</textarea>
+                         </div>`;
+
+                html += `<div class="w-100 text-end mt-4 d-flex justify-content-end align-items-center gap-3">`;
+                html += `<button class="btn btn-brand-primary d-none confirm-progress-changes-btn" data-id="${job.id}"><i class="bi bi-check-lg me-1"></i> ยืนยันการเปลี่ยนแปลง</button>`;
+                if (allStepsCompleted) {
+                    html += `<button class="btn btn-brand-success complete-job-btn" data-id="${job.id}"><i class="bi bi-check2-circle me-2"></i>เสร็จสิ้นงาน</button>`;
+                }
+                html += `</div>`;
+
+
+                html += '</div>';
+                return html;
+            }
+            
+            // --- NOTIFICATIONS ---
+            function getNotificationJobs(allJobs) {
+                const notificationJobs = [];
+                const activeJobs = allJobs.filter(j => j.status === 'active' || j.status === 'consigned');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                activeJobs.forEach(job => {
+                    if (!job.progress) return;
+                    
+                    const stepKeys = Object.keys(job.progress);
+                    stepKeys.forEach((key, index) => {
+                        const step = job.progress[key];
+                        // Check if the step has an appointment date
+                        if(step.hasOwnProperty('appointmentDate') && step.appointmentDate) {
+                            const nextStepKey = stepKeys[index + 1];
+                            const nextStep = nextStepKey ? job.progress[nextStepKey] : null;
+
+                            // Notify only if the next step is NOT completed
+                            if (!nextStep || !nextStep.checked) {
+                                const appointmentDate = new Date(step.appointmentDate);
+                                const diffTime = appointmentDate - today;
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                
+                                let reason = '', notificationClass = '';
+                                
+                                // Generate notification if within 5 days or overdue
+                                if (diffDays <= 5) {
+                                    if (diffDays < 0) {
+                                        reason = `${step.label} เลยกำหนดนัด ${Math.abs(diffDays)} วัน`;
+                                        notificationClass = 'overdue';
+                                    } else if (diffDays === 0) {
+                                        reason = `${step.label} นัดหมายวันนี้`;
+                                        notificationClass = 'today';
+                                    } else {
+                                        reason = `${step.label} นัดหมายในอีก ${diffDays} วัน`;
+                                        notificationClass = '';
+                                    }
+                                }
+                                
+                                if(reason) {
+                                    // Use a Set to avoid duplicate notifications for the same job
+                                    if (!notificationJobs.some(nj => nj.id === job.id)) {
+                                       notificationJobs.push({...job, notificationReason: reason, notificationClass: notificationClass});
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+                return notificationJobs;
+            }
+
+            // --- EVENT HANDLERS & HELPERS ---
+            function getFullAddressString(addr) {
+                const partsTh = [];
+                if (addr.addrNo) partsTh.push(`เลขที่ ${addr.addrNo}`);
+                if (addr.addrMoo) partsTh.push(`หมู่ ${addr.addrMoo}`);
+                if (addr.addrSoi) partsTh.push(`ซอย${addr.addrSoi}`);
+                if (addr.addrRoad) partsTh.push(`ถนน${addr.addrRoad}`);
+                if (addr.addrSubDistrict) partsTh.push(`แขวง/ตำบล ${addr.addrSubDistrict}`);
+                if (addr.addrDistrict) partsTh.push(`เขต/อำเภอ ${addr.addrDistrict}`);
+                if (addr.addrProvince) partsTh.push(addr.addrProvince);
+                if (addr.addrZipCode) partsTh.push(addr.addrZipCode);
+                return partsTh.join(' ');
+            }
+
+            function determineSubmissionArea(addressObject) {
+                if (!addressObject || !addressObject.addrProvince) {
+                    return '';
+                }
+                if (addressObject.addrProvince === 'กรุงเทพมหานคร') {
+                    const district = addressObject.addrDistrict;
+                    return bangkokAreaMap[district] || 'สำนักงานจัดหางานกรุงเทพมหานคร (ไม่ระบุพื้นที่)';
+                }
+                return `สำนักงานจัดหางานจังหวัด${addressObject.addrProvince}`;
+            }
+
+            function handleEmployerSelection(selectedName) {
+                const employers = getEmployers();
+                const selectedEmployer = employers.find(e => e.employerNameTh === selectedName);
+
+                const employerIdInput = document.getElementById('employerId');
+                const businessTypeInput = document.getElementById('businessType');
+                const addressDatalist = document.getElementById('address-list');
+                const addressInput = document.getElementById('addressInput');
+                const jobOwnerSelect = document.getElementById('jobOwnerSelect');
+                
+                document.getElementById('submissionArea').value = '';
+                addressDatalist.innerHTML = '';
+                addressInput.value = '';
+
+                if (selectedEmployer) {
+                    employerIdInput.value = selectedEmployer.employerTaxId || '';
+                    businessTypeInput.value = selectedEmployer.businessType || '';
+                    jobOwnerSelect.value = selectedEmployer.jobOwnerId || ''; // Auto-select job owner
+                    
+                    if (selectedEmployer.registeredAddresses && selectedEmployer.registeredAddresses.length > 0) {
+                        selectedEmployer.registeredAddresses.forEach((addr) => {
+                            const addressString = getFullAddressString(addr);
+                            const option = document.createElement('option');
+                            option.value = `[ทะเบียน] ${addressString}`;
+                            addressDatalist.appendChild(option);
+                        });
+                    }
+                    if (selectedEmployer.workplaceAddresses && selectedEmployer.workplaceAddresses.length > 0) {
+                        selectedEmployer.workplaceAddresses.forEach((addr) => {
+                             const addressString = getFullAddressString(addr);
+                            const option = document.createElement('option');
+                            option.value = `[ที่ทำงาน] ${addressString}`;
+                            addressDatalist.appendChild(option);
+                        });
+                    }
+                } else {
+                    employerIdInput.value = '';
+                    businessTypeInput.value = '';
+                    jobOwnerSelect.value = ''; // Reset if no employer found
+                }
+            }
+            
+            function handleProgressClick(e) {
+                const target = e.target;
+                if (!target || !target.classList.contains('progress-icon')) return;
+
+                const jobId = parseInt(target.dataset.jobId, 10);
+                if (!jobId) return;
+
+                // Directly manipulate the DOM for immediate visual feedback.
+                // This avoids a full re-render and is much more efficient.
+                const isChecked = target.classList.contains('checked');
+                target.classList.toggle('checked', !isChecked);
+                target.classList.toggle('unchecked', isChecked);
+                target.classList.toggle('bi-check-circle-fill', !isChecked);
+                target.classList.toggle('bi-circle', isChecked);
+
+                // Mark that changes have been made so the confirm button can be shown.
+                progressTrackerHasChanges.add(jobId);
+                // ######## START: MODIFIED CODE ########
+                // Use closest() to find the correct progress row instance, avoiding ID conflicts
+                const progressRow = target.closest('.progress-row');
+                // ######## END: MODIFIED CODE ########
+                if (progressRow) {
+                    const confirmBtn = progressRow.querySelector('.confirm-progress-changes-btn');
+                    if (confirmBtn) confirmBtn.classList.remove('d-none');
+                }
+            }
+
+            function handleProgressInputChange(e) {
+                const target = e.target;
+                if (!target || !target.classList.contains('progress-input')) return;
+
+                const jobId = parseInt(target.dataset.jobId, 10);
+                const field = target.dataset.field;
+
+                if (jobId && field) {
+                    // Mark that this tracker has changes
+                    progressTrackerHasChanges.add(jobId);
+                    // ######## START: MODIFIED CODE ########
+                    // Use closest() to find the correct progress row instance
+                    const progressRow = target.closest('.progress-row');
+                    // ######## END: MODIFIED CODE ########
+                    if (progressRow) {
+                        const confirmBtn = progressRow.querySelector('.confirm-progress-changes-btn');
+                        if (confirmBtn) confirmBtn.classList.remove('d-none');
+                    }
+                }
+            }
+            
+            function handleJobAction(e) {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                currentJobId = parseInt(target.dataset.id, 10);
+                if (target.classList.contains('move-to-trash-btn')) {
+                    currentAction = 'trash';
+                    showConfirmModal('ยืนยันการย้ายไปถังขยะ', 'คุณแน่ใจหรือไม่ว่าต้องการย้ายรายการนี้ไปที่ถังขยะ?', 'btn-danger');
+                } else if (target.classList.contains('view-job-btn')) {
+                    handleFormOpen(target, 'view');
+                } else if (target.classList.contains('restore-job-btn')) {
+                    currentAction = 'restore';
+                    showConfirmModal('ยืนยันการกู้คืน', 'คุณต้องการกู้คืนงานนี้กลับไปที่รายการปัจจุบันใช่หรือไม่?', 'btn-success');
+                } else if (target.classList.contains('complete-job-btn')) {
+                    currentAction = 'complete';
+                    showConfirmModal('ยืนยันการเสร็จสิ้นงาน', 'คุณต้องการย้ายงานนี้ไปที่ประวัติการทำงานใช่หรือไม่?', 'btn-primary');
+                } else if (target.classList.contains('delete-permanently-btn')) {
+                    currentAction = 'delete-permanent';
+                    showConfirmModal('ยืนยันการลบถาวร', 'การกระทำนี้ไม่สามารถย้อนกลับได้ คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?', 'btn-brand-danger');
+                } else if (target.classList.contains('consign-job-btn')) {
+                    document.getElementById('consign-job-form').reset();
+                    consignJobModal.show();
+                } else if (target.classList.contains('return-job-btn')) {
+                    currentAction = 'return';
+                    showConfirmModal('ยืนันการคืนงาน', 'คุณต้องการย้ายงานนี้กลับไปที่รายการปัจจุบันใช่หรือไม่?', 'btn-primary');
+                } else if (target.classList.contains('confirm-progress-changes-btn')) {
+                    const jobToUpdate = getJobById(currentJobId);
+                    if (jobToUpdate) {
+                        const progressContainer = target.closest('.progress-tracker');
+
+                        // Read all inputs and icon states from the DOM to update the job object
+                        progressContainer.querySelectorAll('.progress-icon').forEach(icon => {
+                            const stepKey = icon.dataset.stepKey;
+                            if (jobToUpdate.progress && jobToUpdate.progress[stepKey]) {
+                                const isCheckedInDOM = icon.classList.contains('checked');
+                                // Update checked status from DOM
+                                jobToUpdate.progress[stepKey].checked = isCheckedInDOM;
+                                
+                                // Update the date: set if checked and no date exists, clear if unchecked
+                                if (isCheckedInDOM && !jobToUpdate.progress[stepKey].date) {
+                                     jobToUpdate.progress[stepKey].date = new Date().toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                } else if (!isCheckedInDOM) {
+                                    jobToUpdate.progress[stepKey].date = null;
+                                }
+                            }
+                        });
+
+                        progressContainer.querySelectorAll('.progress-input').forEach(input => {
+                            const stepKey = input.dataset.stepKey;
+                            const field = input.dataset.field;
+                            if (!field) return;
+
+                            if (field === 'notes') {
+                                jobToUpdate.notes = input.value;
+                            } else if (jobToUpdate.progress && jobToUpdate.progress[stepKey]) {
+                                jobToUpdate.progress[stepKey][field] = input.value;
+                            }
+                        });
+
+                        // Save the job. The updateJob function will trigger a full re-render.
+                        updateJob(jobToUpdate);
+
+                        // Clear the "has changes" flag for this job ID
+                        progressTrackerHasChanges.delete(currentJobId);
+
+                        // No need to manually hide the button or collapse the row,
+                        // as the full re-render from updateJob() will handle it.
+                    }
+                }
+            }
+
+            // --- MODAL & FORM LOGIC ---
+            function showConfirmModal(title, body, btnClass) {
+                confirmActionModalEl.querySelector('.modal-title').textContent = title;
+                confirmActionModalEl.querySelector('.modal-body').textContent = body;
+                confirmActionBtn.className = `btn ${btnClass}`;
+                confirmActionModal.show();
+            }
+
+            confirmActionBtn.addEventListener('click', () => {
+                if (currentAction === 'saveJob') {
+                    performSaveJob();
+                } else {
+                    const job = getJobById(currentJobId);
+                    if (!job) return;
+
+                    if (currentAction === 'delete-permanent') {
+                        const jobs = getJobs().filter(j => j.id !== currentJobId);
+                        saveJobs(jobs);
+                    } else if (currentAction === 'trash') {
+                        job.status = 'deleted';
+                        updateJob(job);
+                    } else if (currentAction === 'restore') {
+                        job.status = 'active';
+                        job.consigneeName = ''; // Clear consignee name on restore
+                        updateJob(job);
+                    } else if (currentAction === 'complete') {
+                        job.status = 'completed';
+                        updateJob(job);
+                    } else if (currentAction === 'return') {
+                        job.status = 'active';
+                        job.consigneeName = ''; // Clear consignee name on return
+                        updateJob(job);
+                    }
+                }
+                confirmActionModal.hide();
+                currentJobId = null;
+                currentAction = null;
+            });
+
+             saveConsigneeBtn.addEventListener('click', () => {
+                const consigneeName = document.getElementById('consigneeName').value.trim();
+                if (consigneeName && currentJobId) {
+                    const job = getJobById(currentJobId);
+                    if (job) {
+                        job.status = 'consigned';
+                        job.consigneeName = consigneeName;
+                        updateJob(job);
+                        consignJobModal.hide();
+                        currentJobId = null;
+                    }
+                }
+            });
+
+            function setModalMode(mode) {
+                const isViewMode = mode === 'view';
+                const isAddMode = mode === 'add';
+                jobForm.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = isViewMode; });
+                
+                if (isAddMode) {
+                    jobModalEl.querySelector('.modal-title').textContent = 'เพิ่มข้อมูลบันทึกงาน';
+                    saveJobButton.style.display = 'block';
+                    editInModalBtn.style.display = 'none';
+                } else if (isViewMode) {
+                    jobModalEl.querySelector('.modal-title').textContent = 'ข้อมูลบันทึกงาน';
+                    saveJobButton.style.display = 'none';
+                    editInModalBtn.style.display = 'block';
+                } else { // edit mode
+                    jobModalEl.querySelector('.modal-title').textContent = 'แก้ไขข้อมูลงาน';
+                    saveJobButton.style.display = 'block';
+                    editInModalBtn.style.display = 'none';
+                    jobForm.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = false; });
+                }
+            }
+
+            function handleFormOpen(target, mode) {
+                const jobId = parseInt(target.dataset.id, 10);
+                const job = getJobById(jobId);
+                if (!job) return;
+
+                resetForm();
+                setModalMode(mode);
+                
+                document.getElementById('jobId').value = job.id;
+                document.getElementById('officeSelect').value = job.officeId || '';
+                document.getElementById('employerName').value = job.employerName || '';
+                document.getElementById('jobOwnerSelect').value = job.jobOwnerId || '';
+                document.getElementById('contactNumber').value = job.contactNumber || '';
+                document.getElementById('submissionArea').value = job.submissionArea || '';
+                updateTotalCount();
+                
+                handleEmployerSelection(job.employerName || '');
+                
+                setTimeout(() => {
+                    document.getElementById('addressInput').value = job.address || '';
+                }, 100);
+
+                document.getElementById('maleCount').value = job.maleCount || 0;
+                document.getElementById('femaleCount').value = job.femaleCount || 0;
+
+                const step = job.step;
+                if (step && step.text) {
+                    const radio = document.querySelector(`.task-radio[value="${step.text}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change'));
+
+                        const definition = TASK_DEFINITIONS[step.text];
+                        const details = step.details || {};
+                        
+                        if (definition && definition.optionsTarget) {
+                            const optionsContainer = document.querySelector(definition.optionsTarget);
+                            for (const [key, prop] of Object.entries(definition.details)) {
+                                const el = optionsContainer.querySelector(prop.selector);
+                                if (el) {
+                                    if (prop.type === 'value') {
+                                        el.value = details[key] || '';
+                                    } else if (prop.type === 'checked') {
+                                        el.checked = details[key] || false;
+                                    }
+                                }
+                            }
+                            const subtaskSelect = optionsContainer.querySelector('.sub-task-select');
+                            if (subtaskSelect) {
+                                const otherInput = optionsContainer.querySelector('.other-input');
+                                if (otherInput) {
+                                    otherInput.classList.toggle('d-none', subtaskSelect.value !== 'other');
+                                }
+                            }
+                            if (step.text === 'ตี VISA') {
+                                document.getElementById('visa_subtask_visa').checked = parseFloat(details.visaCount) > 0;
+                                document.getElementById('visa_subtask_stamp').checked = parseFloat(details.stampCount) > 0;
+                            }
+                        }
+                    }
+                }
+                
+                jobModal.show();
+            }
+
+            function resetForm() {
+                jobForm.reset();
+                document.getElementById('jobId').value = '';
+                document.getElementById('addressInput').value = '';
+                document.getElementById('address-list').innerHTML = '';
+                document.getElementById('submissionArea').value = '';
+                document.querySelectorAll('.task-options').forEach(el => el.classList.add('d-none'));
+                document.getElementById('visa_subtask_visa_count').value = '0';
+                document.getElementById('visa_subtask_stamp_count').value = '0';
+                document.getElementById('visa_subtask_visa').checked = false;
+                document.getElementById('visa_subtask_stamp').checked = false;
+                updateTotalCount();
+            }
+
+            function initiateSave(event) {
+                event.preventDefault();
+                currentAction = 'saveJob';
+                showConfirmModal('ยืนยันการบันทึก', 'คุณต้องการบันทึกข้อมูลงานนี้ใช่หรือไม่?', 'btn-primary');
+            }
+
+            function performSaveJob() {
+                saveJobButton.disabled = true;
+                saveJobButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+
+                const checkedRadio = document.querySelector('#steps-container .task-radio:checked');
+                if (!checkedRadio) {
+                    saveJobButton.disabled = false;
+                    saveJobButton.innerHTML = 'บันทึกงาน';
+                    return; 
+                }
+
+                let taskText = checkedRadio.value;
+                const definition = TASK_DEFINITIONS[taskText];
+                const stepDetails = {};
+
+                if (definition && definition.optionsTarget) {
+                    const optionsContainer = document.querySelector(definition.optionsTarget);
+                    for (const [key, prop] of Object.entries(definition.details)) {
+                        const el = optionsContainer.querySelector(prop.selector);
+                        if (el) {
+                            stepDetails[key] = (prop.type === 'checked') ? el.checked : el.value;
+                        }
+                    }
+                }
+                
+                if (taskText === 'ตี VISA') {
+                    if (!document.getElementById('visa_subtask_visa').checked) stepDetails.visaCount = '0';
+                    if (!document.getElementById('visa_subtask_stamp').checked) stepDetails.stampCount = '0';
+                }
+                
+                const stepData = { text: taskText, details: stepDetails };
+                const jobId = document.getElementById('jobId').value;
+                const isNewJob = !jobId;
+
+                let progressData = null;
+                const existingJob = isNewJob ? null : getJobById(parseInt(jobId));
+
+                if (isNewJob || !existingJob || existingJob.step.text !== taskText) {
+                    if (definition.progress) {
+                        progressData = definition.progress(stepDetails);
+                    }
+                } else {
+                    progressData = existingJob.progress;
+                }
+                
+                const jobData = {
+                    id: isNewJob ? Date.now() : parseInt(jobId),
+                    officeId: document.getElementById('officeSelect').value,
+                    employerName: document.getElementById('employerName').value,
+                    employerId: document.getElementById('employerId').value,
+                    address: document.getElementById('addressInput').value,
+                    businessType: document.getElementById('businessType').value,
+                    submissionArea: document.getElementById('submissionArea').value,
+                    maleCount: document.getElementById('maleCount').value || 0,
+                    femaleCount: document.getElementById('femaleCount').value || 0,
+                    contactNumber: document.getElementById('contactNumber').value,
+                    jobOwnerId: document.getElementById('jobOwnerSelect').value,
+                    step: stepData,
+                    status: 'active',
+                    progress: progressData,
+                    notes: existingJob ? existingJob.notes : '',
+                    consigneeName: existingJob ? existingJob.consigneeName : '',
+                    createdAt: existingJob ? existingJob.createdAt : new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                if (isNewJob) {
+                    const counters = getCounters();
+                    counters.lastItemNum += 1;
+                    const itemId = `ITEM-${String(counters.lastItemNum).padStart(5, '0')}`;
+                    jobData.jobCardId = `${jobData.officeId}/${itemId}`;
+                    saveCounters(counters);
+                } else {
+                    jobData.jobCardId = existingJob.jobCardId;
+                    // Preserve status unless it's being edited from a non-active state
+                    jobData.status = existingJob.status;
+                }
+
+                let currentJobs = getJobs();
+                if (isNewJob) {
+                    currentJobs.push(jobData);
+                } else {
+                    const jobIndex = currentJobs.findIndex(j => j.id === jobData.id);
+                    if (jobIndex > -1) {
+                        currentJobs[jobIndex] = jobData;
+                    }
+                }
+                
+                setTimeout(() => {
+                    saveJobs(currentJobs);
+                    jobModal.hide();
+                    saveJobButton.disabled = false;
+                    saveJobButton.innerHTML = 'บันทึกงาน';
+                }, 500);
+            }
+
+            function updateTotalCount() {
+                const maleCount = parseInt(document.getElementById('maleCount').value, 10) || 0;
+                const femaleCount = parseInt(document.getElementById('femaleCount').value, 10) || 0;
+                document.getElementById('totalCount').value = maleCount + femaleCount;
+            }
+
+            function populateFilters() {
+                const taskTypeSelects = document.querySelectorAll('[data-filter-type="taskType"]');
+                const nationalitySelects = document.querySelectorAll('[data-filter-type="nationality"]');
+                
+                const taskTypes = Object.keys(TASK_DEFINITIONS);
+                const nationalities = Object.keys(flagMap).filter(n => n !== 'ไม่มี');
+
+                taskTypeSelects.forEach(select => {
+                    select.innerHTML = '<option value="">ทุกประเภทงาน</option>';
+                    taskTypes.forEach(type => {
+                        select.add(new Option(type, type));
+                    });
+                });
+
+                nationalitySelects.forEach(select => {
+                    select.innerHTML = '<option value="">ทุกสัญชาติ</option>';
+                    nationalities.forEach(nat => {
+                        select.add(new Option(nat, nat));
+                    });
+                });
+            }
+
+            function initializeOffices() {
+                let offices = getOffices();
+                if (offices.length === 0) {
+                    offices = [{ id: 'OF-01', name: 'สำนักงานใหญ่' }];
+                    saveOffices(offices);
+                    const counters = getCounters();
+                    counters.lastOfficeNum = 1;
+                    saveCounters(counters);
+                }
+                populateOfficeDropdown();
+            }
+
+            function populateOfficeDropdown() {
+                const officeSelect = document.getElementById('officeSelect');
+                const offices = getOffices();
+                officeSelect.innerHTML = '';
+                offices.forEach(office => {
+                    const option = new Option(`${office.id} - ${office.name}`, office.id);
+                    officeSelect.add(option);
+                });
+            }
+            
+            function populateJobOwnerDropdown() {
+                const owners = getJobOwners();
+                const dropdown = document.getElementById('jobOwnerSelect');
+                dropdown.innerHTML = '<option value="">-- ไม่ได้เลือก --</option>'; 
+                owners.forEach(owner => {
+                    const option = new Option(`${owner.id} - ${owner.name}`, owner.id);
+                    dropdown.add(option);
+                });
+            }
+
+            function populateEmployerDatalist() {
+                const employers = getEmployers();
+                const datalist = document.getElementById('employer-list');
+                datalist.innerHTML = '';
+                employers.forEach(emp => {
+                    if (emp.employerNameTh) {
+                        const option = document.createElement('option');
+                        option.value = emp.employerNameTh;
+                        datalist.appendChild(option);
+                    }
+                });
+            }
+
+            function handleAddOffice() {
+                const officeNameInput = document.getElementById('officeName');
+                const officeName = officeNameInput.value.trim();
+                if (officeName) {
+                    const counters = getCounters();
+                    counters.lastOfficeNum += 1;
+                    const newOfficeId = `OF-${String(counters.lastOfficeNum).padStart(2, '0')}`;
+                    
+                    const newOffice = { id: newOfficeId, name: officeName };
+                    const offices = getOffices();
+                    offices.push(newOffice);
+
+                    saveOffices(offices);
+                    saveCounters(counters);
+                    
+                    populateOfficeDropdown();
+                    document.getElementById('officeSelect').value = newOfficeId;
+                    officeNameInput.value = '';
+                    addOfficeModal.hide();
+                }
+            }
+            
+            // --- DASHBOARD & CHARTS ---
+            const style = getComputedStyle(document.documentElement);
+            const chartColors = {
+                primary: style.getPropertyValue('--color-primary').trim(),
+                success: style.getPropertyValue('--color-success').trim(),
+                danger: style.getPropertyValue('--color-danger').trim(),
+                compare1: style.getPropertyValue('--color-compare-1').trim(),
+                compare2: style.getPropertyValue('--color-compare-2').trim(),
+                textLight: style.getPropertyValue('--color-text-light').trim(),
+                textDark: style.getPropertyValue('--color-text-dark').trim(),
+            };
+
+            function setupDashboardSelectors() {
+                const jobs = getJobs();
+                const years = [...new Set(jobs.map(j => new Date(j.createdAt).getFullYear()))].sort((a,b) => b-a);
+                const currentYear = new Date().getFullYear();
+                if (!years.includes(currentYear)) {
+                    years.unshift(currentYear);
+                }
+
+                [yearSelector1, yearSelector2].forEach(selector => {
+                    selector.innerHTML = '';
+                    years.forEach(y => selector.add(new Option(y, y)));
+                    selector.value = currentYear;
+                });
+
+                const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                 [monthSelector1, monthSelector2].forEach(selector => {
+                    selector.innerHTML = '';
+                    monthNames.forEach((m, i) => selector.add(new Option(m, i)));
+                    selector.value = new Date().getMonth();
+                });
+                
+                populateWeekSelector(yearSelector1.value, weekSelector1);
+                populateWeekSelector(yearSelector2.value, weekSelector2);
+                weekSelector1.value = getWeekNumber(new Date());
+                weekSelector2.value = getWeekNumber(new Date());
+
+                updateDashboard();
+            }
+
+            function populateWeekSelector(year, selector) {
+                const currentWeek = selector.value;
+                selector.innerHTML = '';
+                const weeks = getWeeksInYear(year);
+                weeks.forEach(week => {
+                    const option = new Option(`สัปดาห์ที่ ${week.week} (${week.start.toLocaleDateString('th-TH')} - ${week.end.toLocaleDateString('th-TH')})`, week.week);
+                    selector.add(option);
+                });
+                if (Array.from(selector.options).some(opt => opt.value == currentWeek)) {
+                    selector.value = currentWeek;
+                }
+            }
+            
+            function getWeekNumber(d) {
+                d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+                var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+                var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+                return weekNo;
+            }
+
+            function getWeeksInYear(year) {
+                const weeks = [];
+                let d = new Date(year, 0, 1);
+                d.setDate(d.getDate() + (1 + 7 - d.getDay()) % 7); 
+                while (d.getFullYear() <= year) {
+                     const start = new Date(d.getTime());
+                     if (start.getFullYear() > year) break;
+                     const end = new Date(d.getTime());
+                     end.setDate(end.getDate() + 6);
+                     weeks.push({ week: getWeekNumber(start), start, end });
+                     d.setDate(d.getDate() + 7);
+                }
+                return weeks;
+            }
+
+            function updateDashboardUI(period, range) {
+                const yearSel = document.getElementById(`year-selector-${period}`);
+                const monthSel = document.getElementById(`month-selector-${period}`);
+                const weekSel = document.getElementById(`week-selector-${period}`);
+
+                yearSel.classList.toggle('d-none', false); 
+                monthSel.classList.toggle('d-none', range !== 'monthly');
+                weekSel.classList.toggle('d-none', range !== 'weekly');
+            }
+
+            function updateDashboard() {
+                const isComparing = compareDataSwitch.checked;
+                const allJobs = getJobs();
+                
+                const statusCounts = { active: 0, consigned: 0, completed: 0, deleted: 0 };
+                allJobs.forEach(job => {
+                    if (statusCounts.hasOwnProperty(job.status)) {
+                        statusCounts[job.status]++;
+                    }
+                });
+
+                const statusCtx = document.getElementById('status-chart').getContext('2d');
+                if (statusChart) statusChart.destroy();
+                statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['กำลังดำเนินการ', 'ฝากยื่น', 'เสร็จสิ้น', 'ยกเลิก'],
+                        datasets: [{
+                            label: 'สถานะงาน',
+                            data: [statusCounts.active, statusCounts.consigned, statusCounts.completed, statusCounts.deleted],
+                            backgroundColor: ['#3B82F6', '#F97316', chartColors.success, chartColors.danger],
+                            borderColor: 'var(--color-surface)',
+                            borderWidth: 4,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: chartColors.textLight } },
+                            title: { display: true, text: 'สรุปสถานะงานทั้งหมด', font: { size: 16 }, color: chartColors.textDark }
+                        }
+                    }
+                });
+                
+                const activeJobs = allJobs.filter(j => j.status === 'active' || j.status === 'consigned');
+                const taskTypeCounts = {};
+                activeJobs.forEach(job => {
+                    if (job.step && job.step.text) {
+                        let taskName = job.step.text;
+                        if (taskName === 'อื่นๆ ระบุ' && job.step.details && job.step.details.customTaskName) {
+                            taskName = job.step.details.customTaskName;
+                        }
+                        taskTypeCounts[taskName] = (taskTypeCounts[taskName] || 0) + 1;
+                    }
+                });
+
+                const taskTypeLabels = Object.keys(taskTypeCounts);
+                const taskTypeData = Object.values(taskTypeCounts);
+                const taskTypeColors = [ '#3B82F6', '#10B981', '#FBBF24', '#8B5CF6', '#F97316', '#EF4444', '#6B7280' ];
+
+                const taskTypeCtx = document.getElementById('task-type-chart').getContext('2d');
+                if (taskTypeChart) taskTypeChart.destroy();
+                taskTypeChart = new Chart(taskTypeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: taskTypeLabels,
+                        datasets: [{
+                            label: 'ประเภทงาน',
+                            data: taskTypeData,
+                            backgroundColor: taskTypeColors,
+                            borderColor: 'var(--color-surface)',
+                            borderWidth: 4,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: chartColors.textLight } },
+                            title: { display: true, text: 'ประเภทงานที่กำลังดำเนินการ/ฝากยื่น', font: { size: 16 }, color: chartColors.textDark }
+                        }
+                    }
+                });
+
+                const trendCtx = document.getElementById('trend-chart').getContext('2d');
+                if (trendChart) trendChart.destroy();
+                
+                let chartData;
+                if (isComparing) {
+                    const range1 = document.querySelector('input[name="date-range-1"]:checked').value;
+                    const range2 = document.querySelector('input[name="date-range-2"]:checked').value;
+                    
+                    const data1 = getTrendData(allJobs, range1, yearSelector1.value, monthSelector1.value, weekSelector1.value);
+                    const data2 = getTrendData(allJobs, range2, yearSelector2.value, monthSelector2.value, weekSelector2.value);
+                    
+                    let combinedLabels;
+                    if (range1 === range2) {
+                        combinedLabels = data1.labels.length >= data2.labels.length ? data1.labels : data2.labels;
+                        if (data1.data.datasets[0].data.length < combinedLabels.length) {
+                           data1.data.datasets.forEach(ds => { ds.data.length = combinedLabels.length; ds.data.fill(0, data1.data.datasets[0].data.length); });
+                        }
+                        if (data2.data.datasets[0].data.length < combinedLabels.length) {
+                           data2.data.datasets.forEach(ds => { ds.data.length = combinedLabels.length; ds.data.fill(0, data2.data.datasets[0].data.length); });
+                        }
+                    } else {
+                        combinedLabels = data1.labels;
+                    }
+
+                    chartData = {
+                        labels: combinedLabels,
+                        datasets: [
+                            { ...data1.data.datasets[0], label: `งานใหม่ (${data1.title})` },
+                            { ...data2.data.datasets[0], label: `งานใหม่ (${data2.title})`, backgroundColor: chartColors.compare1 },
+                            { ...data1.data.datasets[1], label: `งานเสร็จสิ้น (${data1.title})` },
+                            { ...data2.data.datasets[1], label: `งานเสร็จสิ้น (${data2.title})`, backgroundColor: chartColors.compare2 },
+                        ]
+                    };
+                    
+                } else {
+                    const range1 = document.querySelector('input[name="date-range-1"]:checked').value;
+                    const singleData = getTrendData(allJobs, range1, yearSelector1.value, monthSelector1.value, weekSelector1.value);
+                    chartData = {
+                        labels: singleData.labels,
+                        datasets: singleData.data.datasets
+                    };
+                }
+
+                trendChart = new Chart(trendCtx, {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { 
+                            y: { beginAtZero: true, ticks: { stepSize: 1, color: chartColors.textLight }, grid: { color: 'var(--color-border)' } },
+                            x: { ticks: { color: chartColors.textLight }, grid: { color: 'transparent' } }
+                        },
+                        plugins: {
+                            legend: { position: 'top', labels: { color: chartColors.textLight } },
+                            title: { display: true, text: isComparing ? 'เปรียบเทียบแนวโน้มการทำงาน' : 'แนวโน้มการทำงาน', font: { size: 16 }, color: chartColors.textDark }
+                        }
+                    }
+                });
+            }
+
+            function getTrendData(jobs, range, year, month, week) {
+                const datasets = [
+                    { label: 'งานใหม่', data: [], backgroundColor: chartColors.primary, borderRadius: 4 },
+                    { label: 'งานเสร็จสิ้น', data: [], backgroundColor: chartColors.success, borderRadius: 4 }
+                ];
+                let labels = [];
+                let title = '';
+
+                if (range === 'yearly') {
+                    title = `ปี ${year}`;
+                    labels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                    datasets.forEach(d => d.data = Array(12).fill(0));
+                     jobs.forEach(job => {
+                        const createdAt = new Date(job.createdAt);
+                        if (createdAt.getFullYear() == year) {
+                            datasets[0].data[createdAt.getMonth()]++;
+                             if (job.status === 'completed' && job.updatedAt) {
+                                const updatedAt = new Date(job.updatedAt);
+                                if (updatedAt.getFullYear() == year) {
+                                    datasets[1].data[updatedAt.getMonth()]++;
+                                }
+                            }
+                        }
+                    });
+                } else if (range === 'monthly') {
+                    const monthName = monthSelector1.options[month].text;
+                    title = `${monthName} ${year}`;
+                    const daysInMonth = new Date(year, parseInt(month) + 1, 0).getDate();
+                    labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                    datasets.forEach(d => d.data = Array(daysInMonth).fill(0));
+                    
+                    jobs.forEach(job => {
+                        const createdAt = new Date(job.createdAt);
+                        if (createdAt.getFullYear() == year && createdAt.getMonth() == month) {
+                            datasets[0].data[createdAt.getDate() - 1]++;
+                             if (job.status === 'completed' && job.updatedAt) {
+                                const updatedAt = new Date(job.updatedAt);
+                                if (updatedAt.getFullYear() == year && updatedAt.getMonth() == month) {
+                                    datasets[1].data[updatedAt.getDate() - 1]++;
+                                }
+                            }
+                        }
+                    });
+                } else if (range === 'weekly') {
+                    const weekData = getWeeksInYear(year).find(w => w.week == week);
+                    if (!weekData) return { labels: [], data: {datasets}, title: 'N/A' };
+
+                    title = `สัปดาห์ ${week}, ${year}`;
+                    labels = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+                    datasets.forEach(d => d.data = Array(7).fill(0));
+                    
+                    const startOfWeek = weekData.start;
+                    const endOfWeek = weekData.end;
+                    endOfWeek.setHours(23, 59, 59, 999); 
+
+                    jobs.forEach(job => {
+                        const createdAt = new Date(job.createdAt);
+                        if (createdAt >= startOfWeek && createdAt <= endOfWeek) {
+                            const dayIndex = createdAt.getDay();
+                            datasets[0].data[dayIndex]++;
+                            if (job.status === 'completed' && job.updatedAt) {
+                                const updatedAt = new Date(job.updatedAt);
+                                if (updatedAt >= startOfWeek && updatedAt <= endOfWeek) {
+                                    datasets[1].data[updatedAt.getDay()]++;
+                                }
+                            }
+                        }
+                    });
+                }
+                return { labels, data: {datasets}, title };
+            }
+
+
+            // --- EVENT LISTENERS ---
+            if (saveJobButton) saveJobButton.addEventListener('click', initiateSave);
+            if (addNewJobBtn) addNewJobBtn.addEventListener('click', () => { resetForm(); setModalMode('add'); jobModal.show(); });
+            if (editInModalBtn) editInModalBtn.addEventListener('click', () => { setModalMode('edit'); });
+            if (addOfficeBtn) addOfficeBtn.addEventListener('click', () => addOfficeModal.show());
+            if (saveOfficeBtn) saveOfficeBtn.addEventListener('click', handleAddOffice);
+            
+            document.getElementById('employerName').addEventListener('input', (e) => {
+                handleEmployerSelection(e.target.value);
+            });
+            
+            document.getElementById('addressInput').addEventListener('input', (e) => {
+                const currentAddressString = e.target.value.replace(/\[.*?\]\s/g, '');
+                const employerName = document.getElementById('employerName').value;
+                const employer = getEmployers().find(emp => emp.employerNameTh === employerName);
+                let submissionArea = '';
+
+                if (employer) {
+                    const allAddresses = [
+                        ...(employer.registeredAddresses || []).map(addr => ({ ...addr, type: 'registered' })),
+                        ...(employer.workplaceAddresses || []).map(addr => ({ ...addr, type: 'workplace' }))
+                    ];
+                    
+                    const matchedAddressObject = allAddresses.find(addr => getFullAddressString(addr) === currentAddressString);
+                    
+                    if (matchedAddressObject) {
+                        submissionArea = determineSubmissionArea(matchedAddressObject);
+                    }
+                }
+                document.getElementById('submissionArea').value = submissionArea;
+            });
+
+            filterInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    const tableBodyId = input.dataset.targetTable;
+                    currentPages[tableBodyId] = 1; 
+                    renderAll();
+                });
+            });
+
+            document.getElementById('myTabContent').addEventListener('click', (e) => {
+                if (e.target.classList.contains('page-link')) {
+                    e.preventDefault();
+                    const targetNavId = e.target.dataset.target;
+                    const page = parseInt(e.target.dataset.page, 10);
+                    
+                    if (page && targetNavId) {
+                        const tableBodyId = targetNavId.replace('-pagination', '-table-body');
+                        currentPages[tableBodyId] = page;
+                        renderAll();
+                    }
+                }
+            });
+
+            // Dashboard Listeners
+            compareDataSwitch.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                comparePeriod2Div.classList.toggle('d-none', !isChecked);
+                period1Legend.textContent = isChecked ? 'ช่วงเวลาที่ 1' : 'เลือกช่วงเวลา';
+                updateDashboard();
+            });
+            allDashboardSelectors.forEach(el => el.addEventListener('change', updateDashboard));
+            
+            dashboardDateRangeRadios1.forEach(radio => radio.addEventListener('change', () => updateDashboardUI(1, radio.value)));
+            dashboardDateRangeRadios2.forEach(radio => radio.addEventListener('change', () => updateDashboardUI(2, radio.value)));
+            yearSelector1.addEventListener('change', () => populateWeekSelector(yearSelector1.value, weekSelector1));
+            yearSelector2.addEventListener('change', () => populateWeekSelector(yearSelector2.value, weekSelector2));
+
+            
+            jobModalEl.addEventListener('shown.bs.modal', () => {
+                document.getElementById('maleCount').addEventListener('input', updateTotalCount);
+                document.getElementById('femaleCount').addEventListener('input', updateTotalCount);
+            });
+
+            [activeJobsBody, consignedJobsBody, completedJobsBody, notificationsTableBody, deletedJobsBody].forEach(body => {
+                if(body) {
+                    body.addEventListener('click', handleJobAction);
+                    body.addEventListener('click', handleProgressClick);
+                    body.addEventListener('input', handleProgressInputChange); // Use 'input' to catch typing
+                }
+            });
+
+            document.querySelectorAll('.task-radio').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.querySelectorAll('.task-options').forEach(el => el.classList.add('d-none'));
+                    const targetId = e.target.dataset.optionsTarget;
+                    if (targetId) {
+                        const targetElement = document.querySelector(targetId);
+                        if (targetElement) targetElement.classList.remove('d-none');
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.sub-task-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    const otherInput = e.target.closest('.task-options')?.querySelector('.other-input');
+                    if (otherInput) {
+                        otherInput.classList.toggle('d-none', e.target.value !== 'other');
+                    }
+                });
+            });
+            
+            document.getElementById('visa_subtask_visa').addEventListener('change', (e) => {
+                const countInput = document.getElementById('visa_subtask_visa_count');
+                if (!e.target.checked) countInput.value = 0;
+            });
+            document.getElementById('visa_subtask_stamp').addEventListener('change', (e) => {
+                const countInput = document.getElementById('visa_subtask_stamp_count');
+                if (!e.target.checked) countInput.value = 0;
+            });
+
+
+            // --- INITIAL LOAD ---
+            initializeOffices();
+            populateJobOwnerDropdown();
+            populateEmployerDatalist();
+            populateFilters();
+            setupDashboardSelectors();
+            updateDashboardUI(1, 'weekly');
+            updateDashboardUI(2, 'weekly');
+            renderAll();
+        });
+    </script>

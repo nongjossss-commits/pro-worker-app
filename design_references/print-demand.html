@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <title>Demand Form - Modern Design</title>
+
+    <style>
+        :root {
+            --bs-primary: #F97316;
+            --bs-primary-rgb: 249, 115, 22;
+            --bs-link-color: #F97316;
+            --bs-link-hover-color: #EA580C;
+            --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+            --bs-body-font-family: 'Sarabun', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #fff4ec 0%, #f7f8fc 100%);
+            position: relative;
+        }
+
+        .form-container {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease-in-out, background-image 0.7s ease-in-out, opacity 0.7s ease-in-out;
+            position: relative;
+            overflow: hidden;
+            background-repeat: no-repeat;
+            background-position: right top;
+            background-size: 150px auto;
+        }
+
+        .form-container:hover {
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+        }
+
+        .custom-fieldset {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1;
+        }
+
+        .custom-fieldset > legend {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--bs-primary);
+            background-color: #fff;
+            padding: 0 0.75rem;
+            width: auto;
+            float: none;
+            position: absolute;
+            top: -0.9rem;
+            left: 1rem;
+        }
+        
+        .form-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #4b5563;
+            margin-bottom: 0.3rem;
+        }
+
+        .form-control, .form-select {
+            font-size: 1rem;
+            border: 1px solid #d1d5db;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+        }
+
+        .job-type-card {
+            border: 2px solid transparent;
+            border-radius: 0.75rem !important;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .job-type-card.selected {
+             border-color: var(--bs-primary);
+             box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.1);
+        }
+
+        .job-type-card .form-check-input {
+            cursor: pointer;
+        }
+        
+        .job-type-card .form-check-input:checked {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+        
+        .job-type-card .form-check-label h5 {
+            font-size: 1.05rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .job-type-card .form-check-input:checked ~ .form-check-label h5 {
+            color: var(--bs-primary);
+            font-weight: 700;
+        }
+        
+        .form-check-label {
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            --bs-btn-bg: var(--bs-primary);
+            --bs-btn-border-color: var(--bs-primary);
+            --bs-btn-hover-bg: #EA580C;
+            --bs-btn-hover-border-color: #EA580C;
+            --bs-btn-active-bg: #C2410C;
+            --bs-btn-active-border-color: #C2410C;
+            font-weight: 700;
+            padding-top: 0.8rem;
+            padding-bottom: 0.8rem;
+            letter-spacing: 0.05em;
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(var(--bs-primary-rgb), 0.2), 0 3px 6px rgba(0,0,0,0.08);
+        }
+
+        .navbar-brand {
+            color: var(--bs-primary) !important;
+            font-weight: 700;
+        }
+
+        .nav-link.active {
+            color: var(--bs-primary) !important;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-box-seam me-2"></i>MyBrand
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="ProgramHomepage.html">หน้าหลัก</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">กรอกแบบฟอร์ม</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">เกี่ยวกับเรา</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">ติดต่อเรา</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-5">
+        <div class="col-lg-10 col-xl-9 mx-auto p-4 p-md-5 form-container">
+            <h1 class="text-center mb-5 display-5 fw-bold text-dark">Demand</h1>
+
+            <form action="#" method="post" id="demand-form" novalidate>
+
+                <div class="custom-fieldset">
+                    <legend>ข้อมูลนายจ้าง</legend>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="employer_name" class="form-label">ชื่อนายจ้าง/สถานประกอบการ</label>
+                            <input type="text" class="form-control" id="employer_name" name="employer_name" list="employer-list">
+                            <datalist id="employer-list"></datalist>
+                        </div>
+                        <div class="col-md-6">
+                             <label for="nationality_main" class="form-label">สัญชาติ (ภาษาอังกฤษ)</label>
+                             <select class="form-select" id="nationality_main" name="nationality_main">
+                                 <option selected disabled>Please select nationality...</option>
+                                 <option value="laos">Laos</option>
+                                 <option value="cambodia">Cambodia</option>
+                                 <option value="myanmar">Myanmar</option>
+                                 <option value="vietnam">Vietnam</option>
+                             </select>
+                        </div>
+                        <div class="col-md-6">
+                             <label for="nationality_other" class="form-label">สัญชาติ (ภาษาไทย)</label>
+                             <select class="form-select" id="nationality_other" name="nationality_other">
+                                 <option selected disabled>กรุณาเลือกสัญชาติ...</option>
+                                 <option value="laos">ลาว</option>
+                                 <option value="cambodia">กัมพูชา</option>
+                                 <option value="myanmar">เมียนมา</option>
+                                 <option value="vietnam">เวียดนาม</option>
+                             </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">ที่อยู่</label>
+                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                        <div class="form-text" style="font-size: 0.8rem;">เมื่อกรอกที่อยู่เสร็จสิ้น ระบบจะค้นหาสถานที่พิมพ์เอกสารให้โดยอัตโนมัติ</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="workplace_address" class="form-label">ที่อยู่สถานที่ทำงาน</label>
+                        <textarea class="form-control" id="workplace_address" name="workplace_address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="printed_at" class="form-label">สถานที่พิมพ์เอกสาร ณ</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="printed_at" name="printed_at">
+                            <span class="input-group-text d-none" id="location-spinner">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="custom-fieldset">
+                    <legend>Demand</legend>
+                    <div class="mb-3">
+                        <label for="total_workers" class="form-label">ประสงค์จะจ้างคนต่างด้าว จำนวน (We would like to hire.....(number of) foreign worker (s))</label>
+                        <div class="input-group" style="max-width: 200px;">
+                             <input type="number" class="form-control" id="total_workers" name="total_workers" min="0">
+                             <span class="input-group-text">คน</span>
+                        </div>
+                        <div id="total-workers-error" class="invalid-feedback d-block"></div>
+                    </div>
+                    <div id="job-types-container">
+                        <div class="card mb-3 job-type-card">
+                            <div class="card-body">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input me-3 job-type-radio" type="radio" name="jobType" id="radioLabourer" value="labourer" style="width: 1.5em; height: 1.5em;">
+                                    <label class="form-check-label w-100" for="radioLabourer">
+                                        <h5 class="card-title mb-0">งานกรรมกร (Labourer)</h5>
+                                    </label>
+                                </div>
+                                <div class="job-details mt-3 ps-4">
+                                    <div class="row g-3">
+                                        <div class="col-md">
+                                            <label for="labourer_male" class="form-label">เพศชาย (Male)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="labourer_male" name="labourer_male" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md">
+                                            <label for="labourer_female" class="form-label">เพศหญิง (Female)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="labourer_female" name="labourer_female" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3 job-type-card">
+                            <div class="card-body">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input me-3 job-type-radio" type="radio" name="jobType" id="radioDomestic" value="domestic" style="width: 1.5em; height: 1.5em;">
+                                    <label class="form-check-label w-100" for="radioDomestic">
+                                        <h5 class="card-title mb-0">งานรับใช้ในบ้าน (Domestic Worker)</h5>
+                                    </label>
+                                </div>
+                                <div class="job-details mt-3 ps-4">
+                                     <div class="row g-3">
+                                        <div class="col-md">
+                                            <label for="domestic_male" class="form-label">เพศชาย (Male)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="domestic_male" name="domestic_male" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md">
+                                            <label for="domestic_female" class="form-label">เพศหญิง (Female)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="domestic_female" name="domestic_female" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         <div class="card mb-3 job-type-card">
+                            <div class="card-body">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input me-3 job-type-radio" type="radio" name="jobType" id="radioMechanic" value="mechanic" style="width: 1.5em; height: 1.5em;">
+                                    <label class="form-check-label w-100" for="radioMechanic">
+                                        <h5 class="card-title mb-0">งานช่างเครื่องยนต์ในเรือประมงทะเล</h5>
+                                    </label>
+                                </div>
+                                <div class="job-details mt-3 ps-4">
+                                     <div class="row g-3">
+                                        <div class="col-md">
+                                            <label for="mechanic_male" class="form-label">เพศชาย (Male)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="mechanic_male" name="mechanic_male" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md">
+                                            <label for="mechanic_female" class="form-label">เพศหญิง (Female)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="mechanic_female" name="mechanic_female" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card job-type-card">
+                            <div class="card-body">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input me-3 job-type-radio" type="radio" name="jobType" id="radioOther" value="other" style="width: 1.5em; height: 1.5em;">
+                                    <label class="form-check-label w-100" for="radioOther">
+                                        <h5 class="card-title mb-0">งานอื่นๆ (Other)</h5>
+                                    </label>
+                                </div>
+                                <div class="job-details mt-3 ps-4">
+                                    <div class="mb-3">
+                                        <label for="other_specify" class="form-label">ระบุ (specify)</label>
+                                        <input type="text" class="form-control job-input" id="other_specify" name="other_specify">
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md">
+                                            <label for="other_male" class="form-label">เพศชาย (Male)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="other_male" name="other_male" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md">
+                                            <label for="other_female" class="form-label">เพศหญิง (Female)</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control job-input" id="other_female" name="other_female" min="0">
+                                                <span class="input-group-text">คน</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="custom-fieldset">
+                    <legend>คุณสมบัติและค่าจ้าง</legend>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="wages" class="form-label">ค่าจ้าง (Wages)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="wages" name="wages" min="0" step="0.01">
+                                <span class="input-group-text">บาท</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="age_min" class="form-label">อายุไม่น้อยกว่า</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="age_min" name="age_min" min="0">
+                                <span class="input-group-text">ปี</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="age_max" class="form-label">อายุไม่เกินกว่า</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="age_max" name="age_max" min="0">
+                                <span class="input-group-text">ปี</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="height_min" class="form-label">ส่วนสูงไม่ต่ำกว่า</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="height_min" name="height_min" min="0">
+                                <span class="input-group-text">ซม.</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="height_max" class="form-label">ส่วนสูงไม่เกินกว่า</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="height_max" name="height_max" min="0">
+                                <span class="input-group-text">ซม.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="weight_min" class="form-label">น้ำหนักไม่ต่ำกว่า</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="weight_min" name="weight_min" min="0">
+                                <span class="input-group-text">กก.</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="weight_max" class="form-label">น้ำหนักไม่เกินกว่า</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="weight_max" name="weight_max" min="0">
+                                <span class="input-group-text">กก.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="custom-fieldset">
+                    <legend>ข้อมูลบริษัทตัวแทนประเทศต้นทาง</legend>
+                    <div class="mb-3">
+                       <label for="agent_company" class="form-label">แต่งตั้งให้บริษัทประเทศต้นทาง</label>
+                       <input type="text" class="form-control" id="agent_company" name="agent_company" list="agent-list">
+                       <datalist id="agent-list"></datalist>
+                   </div>
+                    <div class="mb-3">
+                       <label for="agent_license" class="form-label">ใบอนุญาตเลขที่</label>
+                       <input type="text" class="form-control" id="agent_license" name="agent_license">
+                   </div>
+                    <div class="mb-3">
+                       <label for="agent_address" class="form-label">ที่อยู่</label>
+                       <textarea class="form-control" id="agent_address" name="agent_address" rows="4"></textarea>
+                   </div>
+                </div>
+
+                <div class="custom-fieldset">
+                    <legend>ผู้มอบอำนาจและพยาน</legend>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="authorizer" class="form-label">นายจ้างมอบ บจ.</label>
+                            <input type="text" class="form-control" id="authorizer" name="authorizer" list="importer-list">
+                            <datalist id="importer-list"></datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="assignee" class="form-label">ผู้รับมอบ</label>
+                            <input type="text" class="form-control" id="assignee" name="assignee" list="delegate-list">
+                            <datalist id="delegate-list"></datalist>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="witness1" class="form-label">พยานที่1</label>
+                            <input type="text" class="form-control" id="witness1" name="witness1" list="delegate-list">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="witness2" class="form-label">พยานที่2</label>
+                            <input type="text" class="form-control" id="witness2" name="witness2" list="delegate-list">
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="custom-fieldset">
+                    <legend>ข้อมูลเอกสารและการเดินทาง</legend>
+                    <div class="mb-3">
+                        <label for="immigration_checkpoint_th" class="form-label">คนต่างด้าวจะเดินทางเข้ามาผ่านด่านตรวจคนเข้าเมือง</label>
+                        <input type="text" class="form-control" id="immigration_checkpoint_th" name="immigration_checkpoint_th">
+                    </div>
+                    <div>
+                        <label for="immigration_checkpoint_en" class="form-label">The Immigration checkpoint which foreign worker will enter</label>
+                        <input type="text" class="form-control" id="immigration_checkpoint_en" name="immigration_checkpoint_en">
+                    </div>
+                </div>
+                
+                <div class="d-grid mt-5">
+                    <button type="submit" class="btn btn-primary btn-lg">ส่งข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="py-4 bg-dark text-white mt-5">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 MyBrand. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- START: NEW CODE FOR SHARED DATABASE ---
+            let allEmployers = [];
+            let allAgents = [];
+            let allImporters = [];
+            let allDelegates = [];
+
+            /**
+             * Helper function to format an address object into a readable string.
+             */
+            function getFullAddressString(addr) {
+                if (!addr) return { th: '', en: '' };
+                const partsTh = [];
+                if (addr.addrNo) partsTh.push(`เลขที่ ${addr.addrNo}`);
+                if (addr.addrMoo) partsTh.push(`หมู่ ${addr.addrMoo}`);
+                if (addr.addrSoi) partsTh.push(`ซอย${addr.addrSoi}`);
+                if (addr.addrRoad) partsTh.push(`ถนน${addr.addrRoad}`);
+                if (addr.addrSubDistrict) partsTh.push(`แขวง/ตำบล ${addr.addrSubDistrict}`);
+                if (addr.addrDistrict) partsTh.push(`เขต/อำเภอ ${addr.addrDistrict}`);
+                if (addr.addrProvince) partsTh.push(addr.addrProvince);
+                if (addr.addrZipCode) partsTh.push(addr.addrZipCode);
+                return { th: partsTh.join(' ') };
+            }
+
+            /**
+             * Populates a <datalist> element with options from a given array of records.
+             */
+            function populateDatalist(datalistId, records, fieldName) {
+                const datalist = document.getElementById(datalistId);
+                if (!datalist) return;
+                datalist.innerHTML = ''; 
+                const uniqueValues = new Set();
+                records.forEach(record => {
+                    if (record && record[fieldName]) {
+                        uniqueValues.add(record[fieldName]);
+                    }
+                });
+                uniqueValues.forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    datalist.appendChild(option);
+                });
+            }
+
+            /**
+             * Auto-fills form fields when an employer is selected from the datalist.
+             */
+            function handleEmployerSelect(e) {
+                const selectedName = e.target.value;
+                const employer = allEmployers.find(emp => emp.employerNameTh === selectedName);
+                if (employer) {
+                    const registeredAddress = employer.registeredAddresses && employer.registeredAddresses.length > 0 ? getFullAddressString(employer.registeredAddresses[0]).th : '';
+                    const workplaceAddress = employer.workplaceAddresses && employer.workplaceAddresses.length > 0 ? getFullAddressString(employer.workplaceAddresses[0]).th : '';
+
+                    document.getElementById('address').value = registeredAddress;
+                    document.getElementById('workplace_address').value = workplaceAddress || registeredAddress;
+                    
+                    // Trigger the blur event to find the employment office automatically
+                    document.getElementById('address').dispatchEvent(new Event('blur'));
+                }
+            }
+
+            /**
+             * Auto-fills form fields when an agent is selected from the datalist.
+             */
+            function handleAgentSelect(e) {
+                const selectedName = e.target.value;
+                const agent = allAgents.find(ag => ag.agentNameEn === selectedName);
+                if (agent) {
+                    document.getElementById('agent_license').value = agent.agentLicense || '';
+                    document.getElementById('agent_address').value = agent.agentAddress || '';
+                }
+            }
+            
+            /**
+             * Main function to load all data from localStorage and set up autocomplete functionality.
+             */
+            function setupAutocomplete() {
+                allEmployers = JSON.parse(localStorage.getItem('employerRecords') || '[]');
+                allAgents = JSON.parse(localStorage.getItem('agentRecords') || '[]');
+                allImporters = JSON.parse(localStorage.getItem('importerRecords') || '[]');
+                allDelegates = JSON.parse(localStorage.getItem('delegateRecords') || '[]');
+
+                populateDatalist('employer-list', allEmployers, 'employerNameTh');
+                populateDatalist('agent-list', allAgents, 'agentNameEn');
+                populateDatalist('importer-list', allImporters, 'importerNameTh');
+                populateDatalist('delegate-list', allDelegates, 'delegateNameTh');
+
+                document.getElementById('employer_name').addEventListener('input', handleEmployerSelect);
+                document.getElementById('agent_company').addEventListener('input', handleAgentSelect);
+            }
+            
+            // --- END: NEW CODE FOR SHARED DATABASE ---
+
+            const form = document.getElementById('demand-form');
+            const jobTypeRadios = document.querySelectorAll('.job-type-radio');
+            const jobTypeCards = document.querySelectorAll('.job-type-card');
+            const totalWorkersInput = document.getElementById('total_workers');
+            const totalWorkersError = document.getElementById('total-workers-error');
+            const allJobInputs = document.querySelectorAll('.job-input');
+            
+            const nationalityMainSelect = document.getElementById('nationality_main'); 
+            const nationalityOtherSelect = document.getElementById('nationality_other'); 
+            const formContainer = document.querySelector('.form-container');
+            
+            const addressTextarea = document.getElementById('address');
+            const printedAtInput = document.getElementById('printed_at');
+            const locationSpinner = document.getElementById('location-spinner');
+
+            const flagUrls = {
+                laos: 'https://flagcdn.com/w1280/la.png',
+                cambodia: 'https://flagcdn.com/w1280/kh.png',
+                myanmar: 'https://flagcdn.com/w1280/mm.png',
+                vietnam: 'https://flagcdn.com/w1280/vn.png'
+            };
+
+            const setInputsDisabled = (card, isDisabled) => {
+                const inputs = card.querySelectorAll('.job-input');
+                inputs.forEach(input => {
+                    input.disabled = isDisabled;
+                    if (isDisabled) {
+                        input.value = '';
+                    }
+                });
+            };
+
+            const validateTotalWorkers = () => {
+                const total = parseInt(totalWorkersInput.value, 10) || 0;
+                let currentJobSum = 0;
+                
+                const selectedRadio = document.querySelector('.job-type-radio:checked');
+                if (selectedRadio) {
+                    const parentCard = selectedRadio.closest('.job-type-card');
+                    const inputs = parentCard.querySelectorAll('.job-input[type="number"]');
+                    inputs.forEach(input => {
+                        currentJobSum += parseInt(input.value, 10) || 0;
+                    });
+                }
+
+                if (selectedRadio && total !== currentJobSum) {
+                    totalWorkersError.textContent = `ผลรวมของจำนวนเพศชายและหญิง (${currentJobSum}) ไม่ตรงกับจำนวนที่ประสงค์จะจ้าง (${total}) กรุณาตรวจสอบอีกครั้ง`;
+                    totalWorkersInput.classList.add('is-invalid');
+                    return false;
+                } else {
+                    totalWorkersError.textContent = '';
+                    totalWorkersInput.classList.remove('is-invalid');
+                    return true;
+                }
+            };
+
+            const handleRadioChange = () => {
+                jobTypeCards.forEach(c => c.classList.remove('selected'));
+                jobTypeCards.forEach(card => {
+                    const radio = card.querySelector('.job-type-radio');
+                    const isChecked = radio.checked;
+                    setInputsDisabled(card, !isChecked);
+                    if (isChecked) {
+                        card.classList.add('selected');
+                    }
+                });
+                validateTotalWorkers();
+            };
+
+            const updateBackgroundFlag = (event) => {
+                const selectedNationality = event.target.value;
+                const flagUrl = flagUrls[selectedNationality];
+
+                if (flagUrl) {
+                    formContainer.style.backgroundImage = `url('${flagUrl}')`;
+                } else {
+                    formContainer.style.backgroundImage = 'none';
+                }
+            };
+
+            const synchronizeNationalities = (changedSelect) => {
+                const selectedValue = changedSelect.value;
+                nationalityMainSelect.removeEventListener('change', handleNationalityMainChange);
+                nationalityOtherSelect.removeEventListener('change', handleNationalityOtherChange);
+
+                if (changedSelect.id === 'nationality_main') {
+                    nationalityOtherSelect.value = selectedValue;
+                } else if (changedSelect.id === 'nationality_other') {
+                    nationalityMainSelect.value = selectedValue;
+                }
+
+                nationalityMainSelect.addEventListener('change', handleNationalityMainChange);
+                nationalityOtherSelect.addEventListener('change', handleNationalityOtherChange);
+            };
+
+            const handleNationalityMainChange = (event) => {
+                synchronizeNationalities(event.target);
+                updateBackgroundFlag(event);
+            };
+
+            const handleNationalityOtherChange = (event) => {
+                synchronizeNationalities(event.target);
+                updateBackgroundFlag(event);
+            };
+
+            const findEmploymentOffice = async () => {
+                const addressText = addressTextarea.value.trim();
+                if (!addressText) {
+                    printedAtInput.value = "";
+                    return;
+                }
+
+                locationSpinner.classList.remove('d-none');
+                printedAtInput.disabled = true;
+
+                let prompt = '';
+                const isBangkok = addressText.includes('กรุงเทพ') || addressText.toLowerCase().includes('bangkok') || addressText.includes('กทม');
+
+                if (isBangkok) {
+                    prompt = `จากข้อมูลสำนักงานจัดหางานในกรุงเทพฯ ต่อไปนี้:
+- เขตพื้นที่ 1 (รับผิดชอบ: บางรัก, ปทุมวัน, ยานนาวา, สาทร, บางคอแหลม)
+- เขตพื้นที่ 2 (รับผิดชอบ: จอมทอง, ทุ่งครุ, บางขุนเทียน, บางบอน, ราษฎร์บูรณะ)
+... (rest of the prompt)
+
+เมื่อได้รับที่อยู่ของนายจ้างคือ: "${addressText}"
+ให้ระบุว่าที่อยู่นี้อยู่ในความรับผิดชอบของสำนักงานจัดหางานเขตพื้นที่ใด และตอบกลับมาเฉพาะชื่อเต็มของสำนักงานนั้นๆ เท่านั้น เช่น "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1"`;
+                } else {
+                    prompt = `จากที่อยู่นี้ในประเทศไทย ให้ระบุชื่อ "สำนักงานจัดหางานจังหวัด" ที่ใกล้ที่สุด ตอบเป็นภาษาไทยและตอบเฉพาะชื่อสำนักงานเท่านั้น: "${addressText}"`;
+                }
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+
+                    const result = await response.json();
+                    
+                    let officeName = "ไม่สามารถค้นหาได้";
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts.length > 0) {
+                        officeName = result.candidates[0].content.parts[0].text.trim();
+                    }
+                    
+                    printedAtInput.value = officeName;
+
+                } catch (error) {
+                    console.error("Error finding employment office:", error);
+                    printedAtInput.value = "เกิดข้อผิดพลาดในการค้นหา";
+                } finally {
+                    locationSpinner.classList.add('d-none');
+                    printedAtInput.disabled = false;
+                }
+            };
+
+            jobTypeRadios.forEach(radio => radio.addEventListener('change', handleRadioChange));
+            totalWorkersInput.addEventListener('input', validateTotalWorkers);
+            allJobInputs.forEach(input => input.addEventListener('input', validateTotalWorkers));
+            
+            nationalityMainSelect.addEventListener('change', handleNationalityMainChange);
+            nationalityOtherSelect.addEventListener('change', handleNationalityOtherChange);
+            addressTextarea.addEventListener('blur', findEmploymentOffice);
+
+            form.addEventListener('submit', function(event) {
+                if (!validateTotalWorkers()) {
+                    event.preventDefault();
+                    totalWorkersInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            jobTypeCards.forEach(card => {
+                setInputsDisabled(card, true);
+                card.querySelector('.job-type-radio').checked = false;
+            });
+
+            setupAutocomplete();
+        });
+    </script>
+</body>
+</ht

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons for edit/delete icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Google Fonts (Sarabun for Thai) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SortableJS for Drag and Drop functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <title>แบบฟอร์มข้อมูลแรงงานต่างด้าว</title>
+
+    <style>
+        :root {
+            --primary-orange: #F57C00;
+            --primary-orange-dark: #E65100;
+            --primary-orange-light: rgba(245, 124, 0, 0.2);
+            --light-bg-start: #ffd8b1;
+            --light-bg-end: #ffffff;
+            --dark-text: #333;
+            --border-color: #ced4da;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: linear-gradient(to bottom, var(--light-bg-start), var(--light-bg-end));
+            background-attachment: fixed;
+            color: var(--dark-text);
+        }
+
+        .container {
+            max-width: 960px;
+        }
+
+        .main-title {
+            color: var(--primary-orange);
+            font-weight: 700;
+        }
+
+        .form-section {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2.5rem;
+            border: 1px solid #eee;
+        }
+
+        .form-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-orange);
+            border-bottom: 2px solid var(--primary-orange);
+            padding-bottom: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            background-color: #fff;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #fff;
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 3px var(--primary-orange-light), inset 0 1px 3px rgba(0,0,0,0.06);
+            outline: none;
+        }
+        
+        .form-control.is-invalid, .form-select.is-invalid {
+            border-color: #dc3545;
+        }
+        .form-control.is-invalid:focus, .form-select.is-invalid:focus {
+             box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25), inset 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-orange);
+            border-color: var(--primary-orange);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-orange-dark);
+            border-color: var(--primary-orange-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(230, 81, 0, 0.3);
+        }
+
+        .btn-info {
+            background-color: transparent;
+            color: var(--primary-orange);
+            border-color: var(--primary-orange);
+        }
+        .btn-info:hover {
+            background-color: var(--primary-orange);
+            color: #fff;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #5a6268;
+        }
+
+        .table {
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+        .table thead th {
+            background-color: var(--primary-orange);
+            color: #fff;
+            border: none;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .table tbody tr {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            cursor: grab;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            overflow: hidden;
+            border-left: 4px solid transparent;
+        }
+        .table tbody tr:nth-child(odd) {
+            background-color: #fff;
+        }
+        .table tbody tr:nth-child(even) {
+            background-color: #fffaf2;
+        }
+        .table td, .table th {
+            vertical-align: middle;
+            border: none;
+        }
+        .table tbody tr:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+            transform: translateY(-3px) scale(1.01);
+            border-left-color: var(--primary-orange);
+        }
+        
+        .action-buttons .btn {
+            margin-right: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+        }
+
+        .sortable-ghost {
+            background-color: #ffedd5;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container my-5">
+        <div class="text-center mb-5">
+            <h1 class="display-4 main-title">แบบฟอร์มข้อมูลแรงงานต่างด้าว</h1>
+            <p class="lead text-muted">กรุณากรอกข้อมูลให้ครบถ้วน</p>
+        </div>
+
+        <form id="workerForm">
+            <div class="form-section">
+                <h2>ข้อมูลนายจ้างใหม่</h2>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="newEmployerName" class="form-label">ชื่อนายจ้าง</label>
+                        <input type="text" class="form-control employer-data" id="newEmployerName" placeholder="ชื่อ-นามสกุล หรือ ชื่อบริษัท" list="newEmployerName-list">
+                        <datalist id="newEmployerName-list"></datalist>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="employerAddress" class="form-label">ที่อยู่</label>
+                        <textarea class="form-control employer-data" id="employerAddress" rows="2" placeholder="ที่อยู่ตามทะเบียนบ้าน หรือที่อยู่บริษัท"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="workplaceAddress" class="form-label">ที่อยู่สถานที่ทำงาน</label>
+                        <textarea class="form-control employer-data" id="workplaceAddress" rows="2" placeholder="ที่อยู่ของสถานที่ปฏิบัติงาน"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="printLocation" class="form-label">สถานที่พิมพ์เอกสาร ณ</label>
+                        <input type="text" class="form-control" id="printLocation" list="printLocation-list">
+                        <datalist id="printLocation-list"></datalist>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>ข้อมูลส่วนตัว</h2>
+                <div class="row">
+                    <div class="col-md-2 mb-3">
+                        <label for="sequence" class="form-label">ลำดับที่</label>
+                        <input type="number" class="form-control" id="sequence" value="1" readonly>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label for="workerName" class="form-label">ชื่อคนงาน</label>
+                        <input type="text" class="form-control" id="workerName" placeholder="ชื่อ-นามสกุล">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="nationality" class="form-label">สัญชาติ</label>
+                        <input type="text" class="form-control" id="nationality" list="nationality-list">
+                        <datalist id="nationality-list"></datalist>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="gender" class="form-label">เพศ</label>
+                        <select id="gender" class="form-select">
+                            <option selected>เลือก...</option>
+                            <option>ชาย</option>
+                            <option>หญิง</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">วันเกิด</label>
+                        <div class="input-group has-validation">
+                            <input type="number" class="form-control" placeholder="วัน" min="1" max="31" id="birthDay">
+                            <input type="number" class="form-control" placeholder="เดือน (1-12)" min="1" max="12" id="birthMonth">
+                            <input type="number" class="form-control" placeholder="ปี (ค.ศ.)" id="birthYear">
+                            <div class="invalid-feedback w-100" id="dateFeedback">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="age" class="form-label">อายุ (ปี)</label>
+                        <input type="number" class="form-control" id="age" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>ข้อมูลเอกสารประจำตัว</h2>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="passportNo" class="form-label">เลขพาสปอร์ต</label>
+                        <input type="text" class="form-control" id="passportNo">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="idNo" class="form-label">เลขประจำตัว</label>
+                        <input type="text" class="form-control" id="idNo">
+                    </div>
+                </div>
+                 <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="passportIssueDate" class="form-label">วันที่ทำพาสปอร์ต</label>
+                        <input type="date" class="form-control" id="passportIssueDate">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="passportExpiryDate" class="form-label">วันที่หมดอายุพาสปอร์ต</label>
+                        <input type="date" class="form-control" id="passportExpiryDate">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="passportIssuePlace" class="form-label">สถานที่ออกพาสปอร์ต</label>
+                        <input type="text" class="form-control" id="passportIssuePlace" list="passportIssuePlace-list">
+                        <datalist id="passportIssuePlace-list"></datalist>
+                    </div>
+                     <div class="col-md-2 mb-3">
+                        <label for="passportCountry" class="form-label">ประเทศ</label>
+                        <input type="text" class="form-control" id="passportCountry" list="passportCountry-list">
+                        <datalist id="passportCountry-list"></datalist>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>ข้อมูลการจ้างงาน</h2>
+                 <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="jobType" class="form-label">ประเภทงาน</label>
+                        <input type="text" class="form-control" id="jobType" list="jobType-list">
+                        <datalist id="jobType-list"></datalist>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label for="jobDescription" class="form-label">ลักษณะงาน</label>
+                        <input type="text" class="form-control" id="jobDescription" list="jobDescription-list">
+                        <datalist id="jobDescription-list"></datalist>
+                    </div>
+                     <div class="col-md-3 mb-3">
+                        <label for="employmentDuration" class="form-label">ระยะเวลาจ้าง (ปี)</label>
+                        <input type="number" class="form-control" id="employmentDuration" list="employmentDuration-list">
+                        <datalist id="employmentDuration-list"></datalist>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="workPermitNo" class="form-label">เลขใบอนุญาตทำงาน</label>
+                        <input type="text" class="form-control" id="workPermitNo">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="workPermitPlace" class="form-label">สถานที่ออกใบอนุญาตทำงาน</label>
+                        <input type="text" class="form-control" id="workPermitPlace" list="workPermitPlace-list">
+                        <datalist id="workPermitPlace-list"></datalist>
+                    </div>
+                </div>
+                <div class="row">
+                     <div class="col-md-4 mb-3">
+                        <label for="workPermitStartDate" class="form-label">ตั้งแต่วันที่</label>
+                        <input type="date" class="form-control" id="workPermitStartDate">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="workPermitEndDate" class="form-label">ใช้ได้ถึงวันที่</label>
+                        <input type="date" class="form-control" id="workPermitEndDate">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="wage" class="form-label">ค่าจ้าง (บาท/วัน)</label>
+                        <input type="number" class="form-control" id="wage" step="0.01" list="wage-list">
+                        <datalist id="wage-list"></datalist>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h2>การแจ้งย้าย/ออก</h2>
+                <div class="mb-3">
+                    <label for="terminationReason" class="form-label">แจ้งออก (เหตุผลออกจากงาน)</label>
+                    <textarea class="form-control" id="terminationReason" rows="2"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="previousEmployer" class="form-label">เปลี่ยนนายจ้าง (นายจ้างเดิม)</label>
+                        <input type="text" class="form-control" id="previousEmployer" list="previousEmployer-list">
+                        <datalist id="previousEmployer-list"></datalist>
+                    </div>
+                </div>
+                 <div class="mb-3">
+                    <label for="bt44Reason" class="form-label">เหตุผลใน บต.44</label>
+                    <textarea class="form-control" id="bt44Reason" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>มอบอำนาจและพยาน</h2>
+                 <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="employerAssign" class="form-label">นายจ้างมอบ บนจ.</label>
+                        <input type="text" class="form-control" id="employerAssign">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="authorizedPerson" class="form-label">ผู้รับมอบ</label>
+                        <input type="text" class="form-control" id="authorizedPerson" list="authorizedPerson-list">
+                        <datalist id="authorizedPerson-list"></datalist>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-3">
+                        <label for="witness1" class="form-label">พยานที่ 1</label>
+                        <input type="text" class="form-control" id="witness1" list="witness1-list">
+                        <datalist id="witness1-list"></datalist>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="witness2" class="form-label">พยานที่ 2</label>
+                        <input type="text" class="form-control" id="witness2" list="witness2-list">
+                        <datalist id="witness2-list"></datalist>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-5">
+                <button type="button" id="saveBtn" class="btn btn-primary btn-lg mx-2">บันทึกข้อมูล</button>
+                <button type="button" id="clearBtn" class="btn btn-info btn-lg mx-2">ล้างฟอร์ม</button>
+                <button type="button" class="btn btn-secondary btn-lg mx-2">พิมพ์เอกสาร</button>
+            </div>
+        </form>
+
+        <div class="form-section mt-5" id="savedDataSection" style="display: none;">
+            <h2>ข้อมูลที่บันทึกไว้</h2>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ลำดับที่</th>
+                            <th>ชื่อคนงาน</th>
+                            <th>สัญชาติ</th>
+                            <th>เลขพาสปอร์ต</th>
+                            <th>ประเภทงาน</th>
+                            <th>นายจ้าง</th>
+                            <th>การกระทำ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workerTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmClearModal" tabindex="-1" aria-labelledby="confirmClearModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmClearModalLabel">ยืนยันการล้างฟอร์ม</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            คุณต้องการล้างข้อมูลในฟอร์มและข้อมูลที่บันทึกไว้ทั้งหมดใช่หรือไม่?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-danger" id="confirmClearBtn">ยืนยัน</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- START: NEW CODE FOR SHARED DATABASE ---
+            let allEmployers = [];
+            let allDelegates = [];
+
+            /**
+             * Helper function to format an address object into a readable string.
+             * This function is copied from the database.html logic to ensure consistency.
+             */
+            function getFullAddressString(addr) {
+                if (!addr) return '';
+                const partsTh = [];
+                if (addr.addrNo) partsTh.push(`เลขที่ ${addr.addrNo}`);
+                if (addr.addrMoo) partsTh.push(`หมู่ ${addr.addrMoo}`);
+                if (addr.addrSoi) partsTh.push(`ซอย${addr.addrSoi}`);
+                if (addr.addrRoad) partsTh.push(`ถนน${addr.addrRoad}`);
+                if (addr.addrSubDistrict) partsTh.push(`แขวง/ตำบล ${addr.addrSubDistrict}`);
+                if (addr.addrDistrict) partsTh.push(`เขต/อำเภอ ${addr.addrDistrict}`);
+                if (addr.addrProvince) partsTh.push(addr.addrProvince);
+                if (addr.addrZipCode) partsTh.push(addr.addrZipCode);
+                return partsTh.join(' ');
+            }
+            
+            /**
+             * Populates a <datalist> element with options from a given array of records.
+             * @param {string} datalistId - The ID of the <datalist> element.
+             * @param {Array} records - The array of record objects.
+             * @param {string} fieldName - The name of the property to use for the option's value.
+             */
+            function populateDatalistForSharedDB(datalistId, records, fieldName) {
+                const datalist = document.getElementById(datalistId);
+                if (!datalist) return;
+                datalist.innerHTML = ''; 
+                const uniqueValues = new Set();
+                records.forEach(record => {
+                    if (record && record[fieldName]) {
+                        uniqueValues.add(record[fieldName]);
+                    }
+                });
+                uniqueValues.forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    datalist.appendChild(option);
+                });
+            }
+
+            /**
+             * Auto-fills form fields when an employer is selected from the datalist.
+             */
+            function handleEmployerSelect(e) {
+                const selectedName = e.target.value;
+                const employer = allEmployers.find(emp => emp.employerNameTh === selectedName);
+                if (employer) {
+                    const registeredAddress = employer.registeredAddresses && employer.registeredAddresses.length > 0 ? getFullAddressString(employer.registeredAddresses[0]) : '';
+                    const workplaceAddress = employer.workplaceAddresses && employer.workplaceAddresses.length > 0 ? getFullAddressString(employer.workplaceAddresses[0]) : '';
+                    
+                    document.getElementById('employerAddress').value = registeredAddress;
+                    document.getElementById('workplaceAddress').value = workplaceAddress || registeredAddress;
+                    
+                    document.getElementById('employerAddress').dispatchEvent(new Event('blur'));
+                }
+            }
+            
+            /**
+             * Main function to load all data from localStorage and set up autocomplete functionality.
+             */
+            function setupSharedDatabaseAutocomplete() {
+                allEmployers = JSON.parse(localStorage.getItem('employerRecords') || '[]');
+                allDelegates = JSON.parse(localStorage.getItem('delegateRecords') || '[]');
+
+                populateDatalistForSharedDB('newEmployerName-list', allEmployers, 'employerNameTh');
+                populateDatalistForSharedDB('previousEmployer-list', allEmployers, 'employerNameTh');
+                populateDatalistForSharedDB('authorizedPerson-list', allDelegates, 'delegateNameTh');
+                populateDatalistForSharedDB('witness1-list', allDelegates, 'delegateNameTh');
+                populateDatalistForSharedDB('witness2-list', allDelegates, 'delegateNameTh');
+
+                document.getElementById('newEmployerName').addEventListener('input', handleEmployerSelect);
+            }
+            // --- END: NEW CODE FOR SHARED DATABASE ---
+
+            let editingRow = null;
+            const formInputs = document.querySelectorAll('#workerForm .form-control, #workerForm .form-select');
+            const workerForm = document.getElementById('workerForm');
+            const birthDayInput = document.getElementById('birthDay');
+            const birthMonthInput = document.getElementById('birthMonth');
+            const birthYearInput = document.getElementById('birthYear');
+            const dateFeedback = document.getElementById('dateFeedback');
+            const ageInput = document.getElementById('age');
+            const saveBtn = document.getElementById('saveBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const sequenceInput = document.getElementById('sequence');
+            const savedDataSection = document.getElementById('savedDataSection');
+            const workerTableBody = document.getElementById('workerTableBody');
+            const employerAddressInput = document.getElementById('employerAddress');
+            const printLocationInput = document.getElementById('printLocation');
+            
+            const confirmClearModal = new bootstrap.Modal(document.getElementById('confirmClearModal'));
+            const confirmClearBtn = document.getElementById('confirmClearBtn');
+            
+            const autocompleteFields = [
+                'newEmployerName', 'nationality', 'passportIssuePlace', 
+                'passportCountry', 'jobType', 'jobDescription', 'workPermitPlace',
+                'wage', 'employmentDuration', 'previousEmployer', 'printLocation', 'authorizedPerson'
+            ];
+
+            const employmentOffices = {
+                "บางรัก": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่1", "ปทุมวัน": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1", "ยานนาวา": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1", "สาทร": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1", "บางคอแหลม": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 1",
+                "จอมทอง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2", "ทุ่งครุ": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2", "บางขุนเทียน": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2", "บางบอน": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2", "ราษฎร์บูรณะ": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 2",
+                "คลองเตย": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3", "บางนา": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3", "ประเวศ": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3", "พระโขนง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3", "วัฒนา": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3", "สวนหลวง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 3",
+                "คันนายาว": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4", "บางกะปิ": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4", "ลาดพร้าว": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4", "บึงกุ่ม": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4", "วังทองหลาง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 4",
+                "คลองสามวา": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5", "มีนบุรี": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5", "ลาดกระบัง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5", "สะพานสูง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5", "หนองจอก": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5", "สายไหม": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 5",
+                "คลองสาน": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6", "ธนบุรี": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6", "บางกอกน้อย": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6", "บางกอกใหญ่": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6", "บางพลัด": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 6",
+                "ตลิ่งชัน": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7", "ทวีวัฒนา": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7", "บางแค": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7", "ภาษีเจริญ": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7", "หนองแขม": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 7",
+                "ดุสิต": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8", "พระนคร": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8", "ป้อมปราบศัตรูพ่าย": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8", "สัมพันธวงศ์": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 8",
+                "จตุจักร": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9", "ดอนเมือง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9", "บางซื่อ": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9", "บางเขน": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9", "หลักสี่": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 9",
+                "ดินแดง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10", "พญาไท": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10", "ราชเทวี": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10", "ห้วยขวาง": "สำนักงานจัดหางานกรุงเทพมหานครพื้นที่ 10",
+                "กระบี่": "สำนักงานจัดหางานจังหวัดกระบี่", "กาญจนบุรี": "สำนักงานจัดหางานจังหวัดกาญจนบุรี", "กาฬสินธุ์": "สำนักงานจัดหางานจังหวัดกาฬสินธุ์", "กำแพงเพชร": "สำนักงานจัดหางานจังหวัดกำแพงเพชร", "ขอนแก่น": "สำนักงานจัดหางานจังหวัดขอนแก่น", "จันทบุรี": "สำนักงานจัดหางานจังหวัดจันทบุรี", "ฉะเชิงเทรา": "สำนักงานจัดหางานจังหวัดฉะเชิงเทรา", "ชลบุรี": "สำนักงานจัดหางานจังหวัดชลบุรี", "ชัยนาท": "สำนักงานจัดหางานจังหวัดชัยนาท", "ชัยภูมิ": "สำนักงานจัดหางานจังหวัดชัยภูมิ", "ชุมพร": "สำนักงานจัดหางานจังหวัดชุมพร", "เชียงราย": "สำนักงานจัดหางานจังหวัดเชียงราย", "เชียงใหม่": "สำนักงานจัดหางานจังหวัดเชียงใหม่", "ตรัง": "สำนักงานจัดหางานจังหวัดตรัง", "ตราด": "สำนักงานจัดหางานจังหวัดตราด", "ตาก": "สำนักงานจัดหางานจังหวัดตาก", "นครนายก": "สำนักงานจัดหางานจังหวัดนครนายก", "นครปฐม": "สำนักงานจัดหางานจังหวัดนครปฐม", "นครพนม": "สำนักงานจัดหางานจังหวัดนครพนม", "นครราชสีมา": "สำนักงานจัดหางานจังหวัดนครราชสีมา", "นครศรีธรรมราช": "สำนักงานจัดหางานจังหวัดนครศรีธรรมราช", "นครสวรรค์": "สำนักงานจัดหางานจังหวัดนครสวรรค์", "นนทบุรี": "สำนักงานจัดหางานจังหวัดนนทบุรี", "นราธิวาส": "สำนักงานจัดหางานจังหวัดนราธิวาส", "น่าน": "สำนักงานจัดหางานจังหวัดน่าน", "บึงกาฬ": "สำนักงานจัดหางานจังหวัดบึงกาฬ", "บุรีรัมย์": "สำนักงานจัดหางานจังหวัดบุรีรัมย์", "ปทุมธานี": "สำนักงานจัดหางานจังหวัดปทุมธานี", "ประจวบคีรีขันธ์": "สำนักงานจัดหางานจังหวัดประจวบคีรีขันธ์", "ปราจีนบุรี": "สำนักงานจัดหางานจังหวัดปราจีนบุรี", "ปัตตานี": "สำนักงานจัดหางานจังหวัดปัตตานี", "พระนครศรีอยุธยา": "สำนักงานจัดหางานจังหวัดพระนครศรีอยุธยา", "พะเยา": "สำนักงานจัดหางานจังหวัดพะเยา", "พังงา": "สำนักงานจัดหางานจังหวัดพังงา", "พัทลุง": "สำนักงานจัดหางานจังหวัดพัทลุง", "พิจิตร": "สำนักงานจัดหางานจังหวัดพิจิตร", "พิษณุโลก": "สำนักงานจัดหางานจังหวัดพิษณุโลก", "เพชรบุรี": "สำนักงานจัดหางานจังหวัดเพชรบุรี", "เพชรบูรณ์": "สำนักงานจัดหางานจังหวัดเพชรบูรณ์", "แพร่": "สำนักงานจัดหางานจังหวัดแพร่", "ภูเก็ต": "สำนักงานจัดหางานจังหวัดภูเก็ต", "มหาสารคาม": "สำนักงานจัดหางานจังหวัดมหาสารคาม", "มุกดาหาร": "สำนักงานจัดหางานจังหวัดมุกดาหาร", "แม่ฮ่องสอน": "สำนักงานจัดหางานจังหวัดแม่ฮ่องสอน", "ยโสธร": "สำนักงานจัดหางานจังหวัดยโสธร", "ยะลา": "สำนักงานจัดหางานจังหวัดยะลา", "ร้อยเอ็ด": "สำนักงานจัดหางานจังหวัดร้อยเอ็ด", "ระนอง": "สำนักงานจัดหางานจังหวัดระนอง", "ระยอง": "สำนักงานจัดหางานจังหวัดระยอง", "ราชบุรี": "สำนักงานจัดหางานจังหวัดราชบุรี", "ลพบุรี": "สำนักงานจัดหางานจังหวัดลพบุรี", "ลำปาง": "สำนักงานจัดหางานจังหวัดลำปาง", "ลำพูน": "สำนักงานจัดหางานจังหวัดลำพูน", "เลย": "สำนักงานจัดหางานจังหวัดเลย", "ศรีสะเกษ": "สำนักงานจัดหางานจังหวัดศรีสะเกษ", "สกลนคร": "สำนักงานจัดหางานจังหวัดสกลนคร", "สงขลา": "สำนักงานจัดหางานจังหวัดสงขลา", "สตูล": "สำนักงานจัดหางานจังหวัดสตูล", "สมุทรปราการ": "สำนักงานจัดหางานจังหวัดสมุทรปราการ", "สมุทรสงคราม": "สำนักงานจัดหางานจังหวัดสมุทรสงคราม", "สมุทรสาคร": "สำนักงานจัดหางานจังหวัดสมุทรสาคร", "สระแก้ว": "สำนักงานจัดหางานจังหวัดสระแก้ว", "สระบุรี": "สำนักงานจัดหางานจังหวัดสระบุรี", "สิงห์บุรี": "สำนักงานจัดหางานจังหวัดสิงห์บุรี", "สุโขทัย": "สำนักงานจัดหางานจังหวัดสุโขทัย", "สุพรรณบุรี": "สำนักงานจัดหางานจังหวัดสุพรรณบุรี", "สุราษฎร์ธานี": "สำนักงานจัดหางานจังหวัดสุราษฎร์ธานี", "สุรินทร์": "สำนักงานจัดหางานจังหวัดสุรินทร์", "หนองคาย": "สำนักงานจัดหางานจังหวัดหนองคาย", "หนองบัวลำภู": "สำนักงานจัดหางานจังหวัดหนองบัวลำภู", "อ่างทอง": "สำนักงานจัดหางานจังหวัดอ่างทอง", "อำนาจเจริญ": "สำนักงานจัดหางานจังหวัดอำนาจเจริญ", "อุดรธานี": "สำนักงานจัดหางานจังหวัดอุดรธานี", "อุตรดิตถ์": "สำนักงานจัดหางานจังหวัดอุตรดิตถ์", "อุทัยธานี": "สำนักงานจัดหางานจังหวัดอุทัยธานี", "อุบลราชธานี": "สำนักงานจัดหางานจังหวัดอุบลราชธานี"
+            };
+
+            employerAddressInput.addEventListener('blur', function() {
+                const address = this.value;
+                const provinceRegex = /(?:จังหวัด|จ\.)\s*([^\s,]+)/;
+                const districtRegex = /(?:เขต)\s*([^\s,]+)/;
+                
+                let locationKey = null;
+                let match = address.match(districtRegex);
+                
+                if (match && match[1]) {
+                    locationKey = match[1];
+                } else {
+                    match = address.match(provinceRegex);
+                    if (match && match[1]) {
+                        locationKey = match[1];
+                    }
+                }
+
+                if (locationKey && employmentOffices[locationKey]) {
+                    printLocationInput.value = employmentOffices[locationKey];
+                } else {
+                    printLocationInput.value = '';
+                }
+            });
+
+            function validateDateOfBirth() {
+                const day = parseInt(birthDayInput.value, 10);
+                const month = parseInt(birthMonthInput.value, 10);
+                const year = parseInt(birthYearInput.value, 10);
+                const dateInputs = [birthDayInput, birthMonthInput, birthYearInput];
+
+                dateInputs.forEach(el => el.classList.remove('is-invalid'));
+                dateFeedback.textContent = '';
+                ageInput.value = '';
+
+                if (!birthDayInput.value && !birthMonthInput.value && !birthYearInput.value) {
+                    return true; 
+                }
+                
+                if (!day || !month || !year || year.toString().length !== 4) {
+                    return false; 
+                }
+
+                const today = new Date();
+                const currentYear = today.getFullYear();
+
+                if (year < 1900 || year > currentYear) {
+                    dateFeedback.textContent = 'ปี ค.ศ. ไม่ถูกต้อง (ต้องอยู่ระหว่าง 1900 และปีปัจจุบัน)';
+                    dateInputs.forEach(el => el.classList.add('is-invalid'));
+                    return false;
+                }
+                
+                if (month < 1 || month > 12) {
+                    dateFeedback.textContent = 'เดือนไม่ถูกต้อง (ต้องเป็น 1-12)';
+                    dateInputs.forEach(el => el.classList.add('is-invalid'));
+                    return false;
+                }
+
+                const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+                const daysInMonth = [31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                
+                if (day < 1 || day > daysInMonth[month - 1]) {
+                    dateFeedback.textContent = `วันที่ไม่ถูกต้อง (เดือนนี้มีได้ไม่เกิน ${daysInMonth[month - 1]} วัน)`;
+                    dateInputs.forEach(el => el.classList.add('is-invalid'));
+                    return false;
+                }
+
+                const birthDate = new Date(year, month - 1, day);
+                if (birthDate > today) {
+                    dateFeedback.textContent = 'วันเกิดต้องไม่เป็นวันในอนาคต';
+                    dateInputs.forEach(el => el.classList.add('is-invalid'));
+                    return false;
+                }
+                
+                let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    calculatedAge--;
+                }
+                ageInput.value = calculatedAge;
+
+                return true;
+            }
+
+            [birthDayInput, birthMonthInput, birthYearInput].forEach(el => {
+                el.addEventListener('input', validateDateOfBirth);
+            });
+
+            const updateSuggestions = (fieldId) => {
+                const input = document.getElementById(fieldId);
+                const value = input.value.trim();
+                if (!value) return;
+
+                const storageKey = `suggestions_${fieldId}`;
+                let suggestions = JSON.parse(localStorage.getItem(storageKey)) || [];
+                
+                if (!suggestions.includes(value)) {
+                    suggestions.push(value);
+                    localStorage.setItem(storageKey, JSON.stringify(suggestions));
+                    populateDatalist(fieldId);
+                }
+            };
+            
+            const populateDatalist = (fieldId) => {
+                const storageKey = `suggestions_${fieldId}`;
+                const suggestions = JSON.parse(localStorage.getItem(storageKey)) || [];
+                const datalist = document.getElementById(`${fieldId}-list`);
+                if (datalist) {
+                    datalist.innerHTML = '';
+                    suggestions.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item;
+                        datalist.appendChild(option);
+                    });
+                }
+            };
+
+            const saveTableData = () => {
+                const rows = workerTableBody.querySelectorAll('tr');
+                const tableData = Array.from(rows).map(row => ({ ...row.dataset }));
+                localStorage.setItem('workerTableData', JSON.stringify(tableData));
+            };
+
+            const loadTableData = () => {
+                const tableData = JSON.parse(localStorage.getItem('workerTableData'));
+                if (tableData && tableData.length > 0) {
+                    savedDataSection.style.display = 'block';
+                    tableData.forEach(data => {
+                        const newRow = workerTableBody.insertRow();
+                        Object.keys(data).forEach(key => { newRow.dataset[key] = data[key]; });
+                        populateRowCells(newRow);
+                    });
+                }
+            };
+            
+            const updateSequenceNumbers = () => {
+                const rows = workerTableBody.querySelectorAll('tr');
+                rows.forEach((row, index) => {
+                    const newSeq = index + 1;
+                    row.cells[0].textContent = newSeq;
+                    row.dataset.sequence = newSeq;
+                });
+                saveTableData();
+            };
+
+            const updateNextSequenceInForm = () => {
+                sequenceInput.value = workerTableBody.rows.length + 1;
+            };
+
+            const populateRowCells = (row) => {
+                row.innerHTML = '';
+                row.insertCell(0).textContent = row.dataset.sequence;
+                row.insertCell(1).textContent = row.dataset.workerName;
+                row.insertCell(2).textContent = row.dataset.nationality;
+                row.insertCell(3).textContent = row.dataset.passportNo;
+                row.insertCell(4).textContent = row.dataset.jobType;
+                row.insertCell(5).textContent = row.dataset.newEmployerName;
+                const actionCell = row.insertCell(6);
+                actionCell.classList.add('action-buttons');
+                actionCell.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-warning edit-btn" title="แก้ไข"><i class="bi bi-pencil-fill"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger delete-btn" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                `;
+            };
+
+            autocompleteFields.forEach(populateDatalist);
+            loadTableData();
+            updateNextSequenceInForm();
+            
+            new Sortable(workerTableBody, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: updateSequenceNumbers
+            });
+
+            const clearForm = () => {
+                workerForm.reset();
+                [birthDayInput, birthMonthInput, birthYearInput].forEach(el => el.classList.remove('is-invalid'));
+                dateFeedback.textContent = '';
+                editingRow = null;
+                saveBtn.textContent = 'บันทึกข้อมูล';
+                saveBtn.classList.replace('btn-success', 'btn-primary');
+                updateNextSequenceInForm();
+                document.getElementById('workerName').focus();
+
+                workerTableBody.innerHTML = '';
+                localStorage.removeItem('workerTableData');
+                savedDataSection.style.display = 'none';
+            };
+
+            clearBtn.addEventListener('click', () => confirmClearModal.show());
+            confirmClearBtn.addEventListener('click', () => {
+                clearForm();
+                confirmClearModal.hide();
+            });
+
+            saveBtn.addEventListener('click', function() {
+                if (!document.getElementById('workerName').value) {
+                    alert('กรุณากรอกชื่อคนงาน'); 
+                    return;
+                }
+
+                if (!validateDateOfBirth() && (birthDayInput.value || birthMonthInput.value || birthYearInput.value)) {
+                    alert('กรุณากรอกวันเกิดให้ถูกต้อง');
+                    birthDayInput.focus();
+                    return;
+                }
+
+                autocompleteFields.forEach(updateSuggestions);
+
+                const targetRow = editingRow || workerTableBody.insertRow();
+                formInputs.forEach(input => {
+                    if (input.id) targetRow.dataset[input.id] = input.value;
+                });
+                
+                populateRowCells(targetRow);
+
+                if (editingRow) {
+                    editingRow = null;
+                    saveBtn.textContent = 'บันทึกข้อมูล';
+                    saveBtn.classList.replace('btn-success', 'btn-primary');
+                } else {
+                    if (savedDataSection.style.display === 'none') {
+                        savedDataSection.style.display = 'block';
+                    }
+                }
+                updateSequenceNumbers();
+                updateNextSequenceInForm();
+            });
+
+            workerTableBody.addEventListener('click', function(e) {
+                const target = e.target.closest('button');
+                if (!target) return;
+                const row = target.closest('tr');
+
+                if (target.classList.contains('edit-btn')) {
+                    editingRow = row;
+                    formInputs.forEach(input => {
+                        if (input.id && row.dataset[input.id] !== undefined) {
+                            input.value = row.dataset[input.id];
+                        }
+                    });
+                    validateDateOfBirth();
+                    saveBtn.textContent = 'อัปเดตข้อมูล';
+                    saveBtn.classList.replace('btn-primary', 'btn-success');
+                    workerForm.scrollIntoView({ behavior: 'smooth' });
+                }
+
+                if (target.classList.contains('delete-btn')) {
+                    row.remove();
+                    if (editingRow === row) clearForm();
+                    updateSequenceNumbers();
+                    updateNextSequenceInForm();
+                }
+            });
+
+            // --- CALL THE NEW SETUP FUNCTION ---
+            setupSharedDatabaseAutocomplete();
+        });
+    </script>
+</body>
+</ht
