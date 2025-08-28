@@ -12,7 +12,8 @@ class EmployerController extends Controller
      */
     public function index()
     {
-        //
+        $employers = Employer::all();
+        return view('employers.index', compact('employers'));
     }
 
     /**
@@ -20,7 +21,7 @@ class EmployerController extends Controller
      */
     public function create()
     {
-        //
+        return view('employers.create');
     }
 
     /**
@@ -28,7 +29,16 @@ class EmployerController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'employerNameTh' => 'required|string|max:255',
+            'employerId' => 'required|string|max:255|unique:employers',
+            'employerTaxId' => 'nullable|string|max:255',
+            'businessType' => 'nullable|string|max:255',
+        ]);
+
+        Employer::create($validated);
+
+        return redirect()->route('employers.index')->with('success', 'เพิ่มข้อมูลนายจ้างเรียบร้อยแล้ว');
     }
 
     /**
