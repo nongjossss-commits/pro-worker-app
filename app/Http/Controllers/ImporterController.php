@@ -13,7 +13,7 @@ class ImporterController extends Controller
     public function index()
     {
         $importers = Importer::all();
-        // return view('importers.index', compact('importers'));
+        return view('importers.index', compact('importers'));
     }
 
     /**
@@ -21,7 +21,7 @@ class ImporterController extends Controller
      */
     public function create()
     {
-        // return view('importers.create');
+        return view('importers.create');
     }
 
     /**

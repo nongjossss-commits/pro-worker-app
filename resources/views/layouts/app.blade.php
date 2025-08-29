@@ -116,7 +116,7 @@
                 </a>
                 <hr>
                 <a href="{{ route('employers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employers.*') ? 'active' : '' }}"><i class="bi bi-person-vcard-fill me-2"></i>ข้อมูลนายจ้าง</a>
-                <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-box-arrow-in-down-left me-2"></i>ข้อมูลบริษัทนำเข้า</a>
+                <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>ข้อมูลบริษัทนำเข้า</a>
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-person-square me-2"></i>ข้อมูลเอเจนซี่</a>
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-people-fill me-2"></i>ข้อมูลพนักงาน</a>
             </div>
