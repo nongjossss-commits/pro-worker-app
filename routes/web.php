@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AgentController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\ImporterController;
 use App\Http\Controllers\ProfileController;
@@ -17,5 +18,6 @@ Route::middleware('auth')->group(function () {
     // Application routes that require login
     Route::resource('employers', EmployerController::class);
     Route::resource('importers', ImporterController::class);
+    Route::resource('agents', AgentController::class);
 });
 require __DIR__.'/auth.php';
