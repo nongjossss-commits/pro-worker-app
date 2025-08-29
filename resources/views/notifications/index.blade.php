@@ -14,8 +14,8 @@ $tabs = [
 ];
 
 // Segregate "Permits/Visa" notifications
-$workPermitNotifications = collect($notifications['work_permit_expiry'] ?? []);
-$visaNotifications = collect($notifications['visa_expiry'] ?? [])->sortBy('due_date');
+$workPermitNotifications = collect($groupedNotifications['work_permit_expiry'] ?? []);
+$visaNotifications = collect($groupedNotifications['visa_expiry'] ?? [])->sortBy('due_date');
 
 $workPermitNearingExpiry = $workPermitNotifications->filter(function($item) {
     return $item->due_date && \Carbon\Carbon::parse($item->due_date)->isFuture();
@@ -26,11 +26,11 @@ $workPermitExpired = $workPermitNotifications->filter(function($item) {
 })->sortByDesc('due_date');
 
 // Helper function to get the count for each tab's badge
-function getTabNotificationCount($tabType, $notifications, $specialCounts) {
+function getTabNotificationCount($tabType, $groupedNotifications, $specialCounts) {
     if ($tabType === 'permits') {
         return $specialCounts['permits'];
     }
-    return count($notifications[$tabType] ?? []);
+    return count($groupedNotifications[$tabType] ?? []);
 }
 
 $permitsTotalCount = $workPermitNearingExpiry->count() + $workPermitExpired->count() + $visaNotifications->count();
@@ -44,7 +44,7 @@ $isFirstActiveTab = true;
 <div class="content-section">
     <h2 class="mb-4">รายการแจ้งเตือน</h2>
 
-    @if(empty($notifications))
+    @if(empty($groupedNotifications))
         <div class="alert alert-success text-center">
             <i class="bi bi-check-circle-fill me-2"></i> ไม่มีรายการแจ้งเตือนค้าง
         </div>
@@ -53,7 +53,7 @@ $isFirstActiveTab = true;
         <ul class="nav nav-tabs" id="notificationTab" role="tablist">
             @foreach($tabs as $tabId => $tabDetails)
                 @php
-                    $count = getTabNotificationCount($tabDetails['type'], $notifications, ['permits' => $permitsTotalCount]);
+                    $count = getTabNotificationCount($tabDetails['type'], $groupedNotifications, ['permits' => $permitsTotalCount]);
                 @endphp
                 @if($count > 0)
                     <li class="nav-item" role="presentation">
@@ -71,10 +71,10 @@ $isFirstActiveTab = true;
         <div class="tab-content pt-4" id="notificationTabContent">
             @php $isFirstActiveTab = true; @endphp
 
-            @if(!empty($notifications['ninety_day_report']))
+            @if(!empty($groupedNotifications['ninety_day_report']))
             <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="90day-pane" role="tabpanel" aria-labelledby="90day-tab">
                 <div class="vstack gap-3">
-                    @foreach(collect($notifications['ninety_day_report'])->sortBy('due_date') as $notification)
+                    @foreach(collect($groupedNotifications['ninety_day_report'])->sortBy('due_date') as $notification)
                         <x-notification-item :notification="$notification" label="รายงานตัว 90 วัน" />
                     @endforeach
                 </div>
@@ -82,10 +82,10 @@ $isFirstActiveTab = true;
             @php $isFirstActiveTab = false; @endphp
             @endif
 
-            @if(!empty($notifications['passport_expiry']))
+            @if(!empty($groupedNotifications['passport_expiry']))
             <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="passport-pane" role="tabpanel" aria-labelledby="passport-tab">
                 <div class="vstack gap-3">
-                    @foreach(collect($notifications['passport_expiry'])->sortBy('due_date') as $notification)
+                    @foreach(collect($groupedNotifications['passport_expiry'])->sortBy('due_date') as $notification)
                         <x-notification-item :notification="$notification" label="Passport" />
                     @endforeach
                 </div>
@@ -131,10 +131,10 @@ $isFirstActiveTab = true;
             @php $isFirstActiveTab = false; @endphp
             @endif
 
-            @if(!empty($notifications['ci_renewal']))
+            @if(!empty($groupedNotifications['ci_renewal']))
             <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="ci-renew-pane" role="tabpanel" aria-labelledby="ci-renew-tab">
                 <div class="vstack gap-3">
-                    @foreach(collect($notifications['ci_renewal'])->sortBy('due_date') as $notification)
+                    @foreach(collect($groupedNotifications['ci_renewal'])->sortBy('due_date') as $notification)
                         <x-notification-item :notification="$notification" label="ต่ออายุ CI" />
                     @endforeach
                 </div>
@@ -142,10 +142,10 @@ $isFirstActiveTab = true;
             @php $isFirstActiveTab = false; @endphp
             @endif
 
-            @if(!empty($notifications['resolution_renewal']))
+            @if(!empty($groupedNotifications['resolution_renewal']))
             <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="resolution-renew-pane" role="tabpanel" aria-labelledby="resolution-renew-tab">
                 <div class="vstack gap-3">
-                    @foreach(collect($notifications['resolution_renewal'])->sortBy('due_date') as $notification)
+                    @foreach(collect($groupedNotifications['resolution_renewal'])->sortBy('due_date') as $notification)
                         <x-notification-item :notification="$notification" label="ต่ออายุมติ" />
                     @endforeach
                 </div>
@@ -153,10 +153,10 @@ $isFirstActiveTab = true;
             @php $isFirstActiveTab = false; @endphp
             @endif
 
-            @if(!empty($notifications['cancelled_renewal']))
+            @if(!empty($groupedNotifications['cancelled_renewal']))
             <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="cancelled-renew-pane" role="tabpanel" aria-labelledby="cancelled-renew-tab">
                 <div class="vstack gap-3">
-                    @foreach(collect($notifications['cancelled_renewal'])->sortBy('due_date') as $notification)
+                    @foreach(collect($groupedNotifications['cancelled_renewal'])->sortBy('due_date') as $notification)
                         <x-notification-item :notification="$notification" label="รายการที่ยกเลิก" />
                     @endforeach
                 </div>
