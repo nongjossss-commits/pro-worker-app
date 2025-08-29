@@ -4,6 +4,7 @@ use App\Http\Controllers\AgentController;
 use App\Http\Controllers\DelegateController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\ImporterController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProfileController;
 Route::get('/', function () {
     return view('welcome');
@@ -18,6 +19,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     // Application routes that require login
     Route::resource('employers', EmployerController::class);
+    Route::resource('employers.employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
     Route::resource('delegates', DelegateController::class);
