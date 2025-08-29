@@ -13,37 +13,9 @@ $tabs = [
     'cancelled-renew' => ['name' => 'รายการที่ยกเลิก', 'color' => 'secondary', 'type' => 'cancelled_renewal'],
 ];
 
-// 2. Helper function to calculate days remaining and determine alert class
-function getNotificationPresentationInfo($dueDate) {
-    if (!$dueDate) {
-        return (object)['daysRemainingText' => 'ไม่มีข้อมูล', 'alertClass' => 'alert-secondary'];
-    }
-    $today = \Carbon\Carbon::today();
-    $dueDate = \Carbon\Carbon::parse($dueDate);
-    $daysRemaining = $today->diffInDays($dueDate, false);
-
-    $alertClass = 'alert-secondary'; // Default
-    if ($daysRemaining < 0) {
-        $alertClass = 'alert-dark'; // Expired
-    } elseif ($daysRemaining <= 15) {
-        $alertClass = 'alert-danger';
-    } elseif ($daysRemaining <= 45) {
-        $alertClass = 'alert-warning';
-    }
-
-    $daysRemainingText = $daysRemaining < 0
-        ? 'หมดอายุ ' . abs($daysRemaining) . ' วัน'
-        : 'เหลือ ' . $daysRemaining . ' วัน';
-
-    return (object)[
-        'daysRemainingText' => $daysRemainingText,
-        'alertClass' => $alertClass,
-    ];
-}
-
-// 3. Segregate "Permits/Visa" notifications
-$workPermitNotifications = $groupedNotifications->get('work_permit_expiry', collect());
-$visaNotifications = $groupedNotifications->get('visa_expiry', collect())->sortBy('due_date');
+// Segregate "Permits/Visa" notifications
+$workPermitNotifications = collect($notifications['work_permit_expiry'] ?? []);
+$visaNotifications = collect($notifications['visa_expiry'] ?? [])->sortBy('due_date');
 
 $workPermitNearingExpiry = $workPermitNotifications->filter(function($item) {
     return $item->due_date && \Carbon\Carbon::parse($item->due_date)->isFuture();
@@ -53,15 +25,18 @@ $workPermitExpired = $workPermitNotifications->filter(function($item) {
     return $item->due_date && \Carbon\Carbon::parse($item->due_date)->isPast();
 })->sortByDesc('due_date');
 
-// 4. Helper function to get the count for each tab's badge
-function getTabNotificationCount($tabType, $groupedNotifications, $specialCounts) {
+// Helper function to get the count for each tab's badge
+function getTabNotificationCount($tabType, $notifications, $specialCounts) {
     if ($tabType === 'permits') {
         return $specialCounts['permits'];
     }
-    return $groupedNotifications->get($tabType, collect())->count();
+    return count($notifications[$tabType] ?? []);
 }
 
 $permitsTotalCount = $workPermitNearingExpiry->count() + $workPermitExpired->count() + $visaNotifications->count();
+
+// This flag is used to set the 'active' class on the first visible tab.
+$isFirstActiveTab = true;
 
 @endphp
 
@@ -69,7 +44,7 @@ $permitsTotalCount = $workPermitNearingExpiry->count() + $workPermitExpired->cou
 <div class="content-section">
     <h2 class="mb-4">รายการแจ้งเตือน</h2>
 
-    @if($groupedNotifications->isEmpty())
+    @if(empty($notifications))
         <div class="alert alert-success text-center">
             <i class="bi bi-check-circle-fill me-2"></i> ไม่มีรายการแจ้งเตือนค้าง
         </div>
@@ -78,173 +53,116 @@ $permitsTotalCount = $workPermitNearingExpiry->count() + $workPermitExpired->cou
         <ul class="nav nav-tabs" id="notificationTab" role="tablist">
             @foreach($tabs as $tabId => $tabDetails)
                 @php
-                    $count = getTabNotificationCount($tabDetails['type'], $groupedNotifications, ['permits' => $permitsTotalCount]);
+                    $count = getTabNotificationCount($tabDetails['type'], $notifications, ['permits' => $permitsTotalCount]);
                 @endphp
                 @if($count > 0)
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $tabId }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $tabId }}-pane" type="button" role="tab" aria-controls="{{ $tabId }}-pane" aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                        <button class="nav-link @if($isFirstActiveTab) active @endif" id="{{ $tabId }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $tabId }}-pane" type="button" role="tab" aria-controls="{{ $tabId }}-pane" aria-selected="{{ $isFirstActiveTab ? 'true' : 'false' }}">
                             {{ $tabDetails['name'] }}
                             <span class="badge bg-{{ $tabDetails['color'] }} rounded-pill ms-1">{{ $count }}</span>
                         </button>
                     </li>
+                    @php $isFirstActiveTab = false; @endphp
                 @endif
             @endforeach
         </ul>
 
         {{-- Tab Content --}}
         <div class="tab-content pt-4" id="notificationTabContent">
-            @foreach($tabs as $tabId => $tabDetails)
-                @php
-                    $count = getTabNotificationCount($tabDetails['type'], $groupedNotifications, ['permits' => $permitsTotalCount]);
-                @endphp
-                @if($count > 0)
-                    <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $tabId }}-pane" role="tabpanel" aria-labelledby="{{ $tabId }}-tab">
+            @php $isFirstActiveTab = true; @endphp
 
-                        {{-- Special handling for the nested 'Permits/Visa' tab --}}
-                        @if($tabId === 'permits')
-                            <div class="row g-4">
-                                {{-- Column 1: Work Permit Nearing Expiry --}}
-                                <div class="col-lg-4">
-                                    <h5 class="mb-3">ใบอนุญาตทำงานใกล้หมดอายุ ({{ $workPermitNearingExpiry->count() }})</h5>
-                                    <div class="vstack gap-3">
-                                        @forelse($workPermitNearingExpiry as $notification)
-                                            @php
-                                                $presentation = getNotificationPresentationInfo($notification->due_date);
-                                                $employee = $notification->employee;
-                                            @endphp
-                                            <div class="alert {{ $presentation->alertClass }} notification-item" role="alert">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <img src="{{ $employee->employeePhoto['data'] ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo">
-                                                    <div class="d-flex justify-content-between align-items-start w-100">
-                                                        <div class="flex-grow-1">
-                                                            <h5 class="alert-heading mb-1">{{ $employee->employeeNameTh ?? 'N/A' }}</h5>
-                                                            @if(isset($employee->employer))<p class="mb-1"><strong>นายจ้าง:</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>@endif
-                                                            <p class="mb-0 small"><strong>วันหมดอายุ ใบอนุญาตทำงาน:</strong> {{ $notification->due_date ? \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') : 'N/A' }}</p>
-                                                        </div>
-                                                        <div class="text-end flex-shrink-0 ms-2">
-                                                            <span class="badge bg-dark mb-2 d-block text-nowrap">{{ $presentation->daysRemainingText }}</span>
-                                                            <div class="btn-group btn-group-sm">
-                                                                <button type="button" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></button>
-                                                                <button type="button" class="btn btn-success" title="ต่ออายุ"><i class="bi bi-calendar-check"></i></button>
-                                                                <button type="button" class="btn btn-warning" title="ยกเลิก"><i class="bi bi-x-circle"></i></button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <div class="alert alert-light text-center">ไม่มีรายการ</div>
-                                        @endforelse
-                                    </div>
-                                </div>
+            @if(!empty($notifications['ninety_day_report']))
+            <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="90day-pane" role="tabpanel" aria-labelledby="90day-tab">
+                <div class="vstack gap-3">
+                    @foreach(collect($notifications['ninety_day_report'])->sortBy('due_date') as $notification)
+                        <x-notification-item :notification="$notification" label="รายงานตัว 90 วัน" />
+                    @endforeach
+                </div>
+            </div>
+            @php $isFirstActiveTab = false; @endphp
+            @endif
 
-                                {{-- Column 2: Expired/New Application --}}
-                                <div class="col-lg-4">
-                                    <h5 class="mb-3">ขาดต่อขอรับใหม่ ({{ $workPermitExpired->count() }})</h5>
-                                    <div class="vstack gap-3">
-                                        @forelse($workPermitExpired as $notification)
-                                            @php
-                                                $presentation = getNotificationPresentationInfo($notification->due_date);
-                                                $employee = $notification->employee;
-                                            @endphp
-                                            <div class="alert {{ $presentation->alertClass }} notification-item" role="alert">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <img src="{{ $employee->employeePhoto['data'] ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo">
-                                                    <div class="d-flex justify-content-between align-items-start w-100">
-                                                        <div class="flex-grow-1">
-                                                            <h5 class="alert-heading mb-1">{{ $employee->employeeNameTh ?? 'N/A' }}</h5>
-                                                            @if(isset($employee->employer))<p class="mb-1"><strong>นายจ้าง:</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>@endif
-                                                            <p class="mb-0 small"><strong>วันหมดอายุ ใบอนุญาตทำงาน:</strong> {{ $notification->due_date ? \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') : 'N/A' }}</p>
-                                                        </div>
-                                                        <div class="text-end flex-shrink-0 ms-2">
-                                                            <span class="badge bg-dark mb-2 d-block text-nowrap">{{ $presentation->daysRemainingText }}</span>
-                                                            <div class="btn-group btn-group-sm">
-                                                                <button type="button" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></button>
-                                                                <button type="button" class="btn btn-success" title="ต่ออายุ"><i class="bi bi-calendar-check"></i></button>
-                                                                <button type="button" class="btn btn-warning" title="ยกเลิก"><i class="bi bi-x-circle"></i></button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <div class="alert alert-light text-center">ไม่มีรายการ</div>
-                                        @endforelse
-                                    </div>
-                                </div>
+            @if(!empty($notifications['passport_expiry']))
+            <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="passport-pane" role="tabpanel" aria-labelledby="passport-tab">
+                <div class="vstack gap-3">
+                    @foreach(collect($notifications['passport_expiry'])->sortBy('due_date') as $notification)
+                        <x-notification-item :notification="$notification" label="Passport" />
+                    @endforeach
+                </div>
+            </div>
+            @php $isFirstActiveTab = false; @endphp
+            @endif
 
-                                {{-- Column 3: Visa Expired --}}
-                                <div class="col-lg-4">
-                                    <h5 class="mb-3">วีซ่าหมดอายุ ({{ $visaNotifications->count() }})</h5>
-                                    <div class="vstack gap-3">
-                                        @forelse($visaNotifications as $notification)
-                                            @php
-                                                $presentation = getNotificationPresentationInfo($notification->due_date);
-                                                $employee = $notification->employee;
-                                            @endphp
-                                            <div class="alert {{ $presentation->alertClass }} notification-item" role="alert">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <img src="{{ $employee->employeePhoto['data'] ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo">
-                                                    <div class="d-flex justify-content-between align-items-start w-100">
-                                                        <div class="flex-grow-1">
-                                                            <h5 class="alert-heading mb-1">{{ $employee->employeeNameTh ?? 'N/A' }}</h5>
-                                                            @if(isset($employee->employer))<p class="mb-1"><strong>นายจ้าง:</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>@endif
-                                                            <p class="mb-0 small"><strong>วันหมดอายุ วีซ่า:</strong> {{ $notification->due_date ? \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') : 'N/A' }}</p>
-                                                        </div>
-                                                        <div class="text-end flex-shrink-0 ms-2">
-                                                            <span class="badge bg-dark mb-2 d-block text-nowrap">{{ $presentation->daysRemainingText }}</span>
-                                                            <div class="btn-group btn-group-sm">
-                                                                <button type="button" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></button>
-                                                                <button type="button" class="btn btn-success" title="ต่ออายุ"><i class="bi bi-calendar-check"></i></button>
-                                                                <button type="button" class="btn btn-warning" title="ยกเลิก"><i class="bi bi-x-circle"></i></button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <div class="alert alert-light text-center">ไม่มีรายการ</div>
-                                        @endforelse
-                                    </div>
-                                </div>
-                            </div>
-                        @else
-                        {{-- Standard handling for other tabs --}}
-                            <div class="vstack gap-3">
-                                @php
-                                    $notificationsForTab = $groupedNotifications->get($tabDetails['type'], collect())->sortBy('due_date');
-                                @endphp
-                                @foreach($notificationsForTab as $notification)
-                                    @php
-                                        $presentation = getNotificationPresentationInfo($notification->due_date);
-                                        $employee = $notification->employee;
-                                    @endphp
-                                    <div class="alert {{ $presentation->alertClass }} notification-item" role="alert">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <img src="{{ $employee->employeePhoto['data'] ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo">
-                                            <div class="d-flex justify-content-between align-items-start w-100">
-                                                <div class="flex-grow-1">
-                                                    <h5 class="alert-heading mb-1">{{ $employee->employeeNameTh ?? 'N/A' }}</h5>
-                                                    @if(isset($employee->employer))<p class="mb-1"><strong>นายจ้าง:</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>@endif
-                                                    <p class="mb-0 small"><strong>วันหมดอายุ {{ $tabDetails['name'] }}:</strong> {{ $notification->due_date ? \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') : 'N/A' }}</p>
-                                                </div>
-                                                <div class="text-end flex-shrink-0 ms-2">
-                                                    <span class="badge bg-dark mb-2 d-block text-nowrap">{{ $presentation->daysRemainingText }}</span>
-                                                    <div class="btn-group btn-group-sm">
-                                                        <button type="button" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></button>
-                                                        <button type="button" class="btn btn-success" title="ต่ออายุ"><i class="bi bi-calendar-check"></i></button>
-                                                        <button type="button" class="btn btn-warning" title="ยกเลิก"><i class="bi bi-x-circle"></i></button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
+            @if($permitsTotalCount > 0)
+            <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="permits-pane" role="tabpanel" aria-labelledby="permits-tab">
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <h5 class="mb-3">ใบอนุญาตทำงานใกล้หมดอายุ ({{ $workPermitNearingExpiry->count() }})</h5>
+                        <div class="vstack gap-3">
+                            @forelse($workPermitNearingExpiry as $notification)
+                                <x-notification-item :notification="$notification" label="ใบอนุญาตทำงาน" />
+                            @empty
+                                <div class="alert alert-light text-center">ไม่มีรายการ</div>
+                            @endforelse
+                        </div>
                     </div>
-                @endif
-            @endforeach
+                    <div class="col-lg-4">
+                        <h5 class="mb-3">ขาดต่อขอรับใหม่ ({{ $workPermitExpired->count() }})</h5>
+                        <div class="vstack gap-3">
+                            @forelse($workPermitExpired as $notification)
+                                <x-notification-item :notification="$notification" label="ใบอนุญาตทำงาน" />
+                            @empty
+                                <div class="alert alert-light text-center">ไม่มีรายการ</div>
+                            @endforelse
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <h5 class="mb-3">วีซ่าหมดอายุ ({{ $visaNotifications->count() }})</h5>
+                        <div class="vstack gap-3">
+                            @forelse($visaNotifications as $notification)
+                                <x-notification-item :notification="$notification" label="วีซ่า" />
+                            @empty
+                                <div class="alert alert-light text-center">ไม่มีรายการ</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @php $isFirstActiveTab = false; @endphp
+            @endif
+
+            @if(!empty($notifications['ci_renewal']))
+            <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="ci-renew-pane" role="tabpanel" aria-labelledby="ci-renew-tab">
+                <div class="vstack gap-3">
+                    @foreach(collect($notifications['ci_renewal'])->sortBy('due_date') as $notification)
+                        <x-notification-item :notification="$notification" label="ต่ออายุ CI" />
+                    @endforeach
+                </div>
+            </div>
+            @php $isFirstActiveTab = false; @endphp
+            @endif
+
+            @if(!empty($notifications['resolution_renewal']))
+            <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="resolution-renew-pane" role="tabpanel" aria-labelledby="resolution-renew-tab">
+                <div class="vstack gap-3">
+                    @foreach(collect($notifications['resolution_renewal'])->sortBy('due_date') as $notification)
+                        <x-notification-item :notification="$notification" label="ต่ออายุมติ" />
+                    @endforeach
+                </div>
+            </div>
+            @php $isFirstActiveTab = false; @endphp
+            @endif
+
+            @if(!empty($notifications['cancelled_renewal']))
+            <div class="tab-pane fade @if($isFirstActiveTab) show active @endif" id="cancelled-renew-pane" role="tabpanel" aria-labelledby="cancelled-renew-tab">
+                <div class="vstack gap-3">
+                    @foreach(collect($notifications['cancelled_renewal'])->sortBy('due_date') as $notification)
+                        <x-notification-item :notification="$notification" label="รายการที่ยกเลิก" />
+                    @endforeach
+                </div>
+            </div>
+            @php $isFirstActiveTab = false; @endphp
+            @endif
         </div>
     @endif
 </div>
