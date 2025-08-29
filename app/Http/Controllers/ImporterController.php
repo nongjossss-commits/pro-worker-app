@@ -59,7 +59,7 @@ class ImporterController extends Controller
      */
     public function edit(Importer $importer)
     {
-        // return view('importers.edit', compact('importer'));
+        return view('importers.edit', compact('importer'));
     }
 
     /**
@@ -67,6 +67,7 @@ class ImporterController extends Controller
      */
     public function update(Request $request, Importer $importer)
     {
+        // Validate and update the importer
         $request->validate([
             'importerNameTh' => 'nullable',
             'importerNameEn' => 'nullable',
@@ -89,6 +90,7 @@ class ImporterController extends Controller
      */
     public function destroy(Importer $importer)
     {
+        // Delete the importer
         $importer->delete();
 
         return redirect()->route('importers.index')
