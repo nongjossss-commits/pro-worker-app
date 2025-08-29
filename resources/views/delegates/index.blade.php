@@ -30,14 +30,14 @@
                     <tr>
                         <td>
                             @if ($delegate->delegatePhoto)
-                                <img src="{{ $delegate->delegatePhoto }}" alt="{{ $delegate->delegateNameEn }}" width="50">
+                                <img src="{{ asset('storage/' . $delegate->delegatePhoto) }}" alt="{{ $delegate->delegateNameEn }}" width="50">
                             @endif
                         </td>
                         <td>{{ $delegate->delegateNameTh }}</td>
                         <td>{{ $delegate->delegateId }}</td>
                         <td>
                             <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">Edit</a>
-                            <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;">
+                            <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to delete this delegate?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
