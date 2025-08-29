@@ -32,4 +32,41 @@
         <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
     </form>
 </div>
+
+<div class="content-section mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>ข้อมูลพนักงาน</h2>
+        <a href="{{ route('employers.employees.create', ['employer' => $employer->id]) }}" class="btn btn-primary">เพิ่มพนักงาน</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>รูปภาพ</th>
+                    <th>ชื่อ (ไทย)</th>
+                    <th>เลขพาสปอร์ต</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($employees as $employee)
+                <tr>
+                    <td>
+                        @if ($employee->employeePhoto)
+                            <img src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Employee Photo" width="50">
+                        @else
+                            N/A
+                        @endif
+                    </td>
+                    <td>{{ $employee->employeeNameTh }}</td>
+                    <td>{{ $employee->employeePassport }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="3" class="text-center">ไม่พบข้อมูลพนักงาน</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
 @endsection
