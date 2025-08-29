@@ -34,8 +34,8 @@
                         <td>{{ $importer->importerId }}</td>
                         <td>{{ $importer->importerLicenseNo }}</td>
                         <td class="text-center">
-                            <a href="#" class="btn btn-sm btn-outline-primary">แก้ไข</a>
-                            <form action="#" method="POST" class="d-inline">
+                            <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')">ลบ</button>
