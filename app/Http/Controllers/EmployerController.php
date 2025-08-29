@@ -53,7 +53,7 @@ class EmployerController extends Controller
      */
     public function edit(Employer $employer)
     {
-        //
+        return view('employers.edit', compact('employer'));
     }
 
     /**
@@ -61,7 +61,15 @@ class EmployerController extends Controller
      */
     public function update(Request $request, Employer $employer)
     {
-        //
+        $request->validate([
+            'employerNameTh' => 'required',
+            'employerId' => 'required|unique:employers,employerId,' . $employer->id,
+        ]);
+
+        $employer->update($request->all());
+
+        return redirect()->route('employers.index')
+            ->with('success', 'อัปเดตข้อมูลนายจ้างเรียบร้อยแล้ว');
     }
 
     /**
@@ -69,6 +77,9 @@ class EmployerController extends Controller
      */
     public function destroy(Employer $employer)
     {
-        //
+        $employer->delete();
+
+        return redirect()->route('employers.index')
+            ->with('success', 'ลบข้อมูลนายจ้างเรียบร้อยแล้ว');
     }
 }
