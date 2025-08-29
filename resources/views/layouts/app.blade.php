@@ -111,7 +111,7 @@
             <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
             <div class="list-group" id="main-nav">
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>ภาพรวม</a>
-                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                     <span><i class="bi bi-bell-fill me-2"></i>แจ้งเตือน</span>
                 </a>
                 <hr>
