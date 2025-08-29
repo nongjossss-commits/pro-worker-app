@@ -10,3 +10,5 @@ Route::get('/', function () {
 
 Route::resource('employers', EmployerController::class);
 Route::resource('importers', ImporterController::class)->middleware('auth');
+
+require __DIR__.'/auth.php';
