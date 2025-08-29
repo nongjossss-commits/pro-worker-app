@@ -4,6 +4,11 @@
 
 @section('content')
 <div class="content-section">
+    @if ($message = Session::get('success'))
+        <div class="alert alert-success mb-4" role="alert">
+            {{ $message }}
+        </div>
+    @endif
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
          <h2 class="mb-3 mb-md-0">รายการข้อมูลนายจ้าง</h2>
          <div class="d-flex gap-2">
@@ -27,7 +32,7 @@
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $employer->employerNameTh }}</td>
                         <td>{{ $employer->employerId }}</td>
-                        <td>{{ $employer.businessType }}</td>
+                        <td>{{ $employer->businessType }}</td>
                         <td class="text-center">
                             <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a>
                             <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline">
