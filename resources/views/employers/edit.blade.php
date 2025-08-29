@@ -45,6 +45,7 @@
                     <th>รูปภาพ</th>
                     <th>ชื่อ (ไทย)</th>
                     <th>เลขพาสปอร์ต</th>
+                    <th class="text-center">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,10 +60,18 @@
                     </td>
                     <td>{{ $employee->employeeNameTh }}</td>
                     <td>{{ $employee->employeePassport }}</td>
+                    <td class="text-center">
+                        <a href="{{ route('employers.employees.edit', [$employer, $employee]) }}" class="btn btn-warning btn-sm">แก้ไข</a>
+                        <form action="{{ route('employers.employees.destroy', [$employer, $employee]) }}" method="POST" style="display:inline-block;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลพนักงานคนนี้?')">ลบ</button>
+                        </form>
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="3" class="text-center">ไม่พบข้อมูลพนักงาน</td>
+                    <td colspan="4" class="text-center">ไม่พบข้อมูลพนักงาน</td>
                 </tr>
                 @endforelse
             </tbody>
