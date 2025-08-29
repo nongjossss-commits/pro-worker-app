@@ -15,4 +15,9 @@ class Employer extends Model
         'employerTaxId',
         'businessType',
     ];
+
+    public function employees()
+    {
+        return $this->hasMany(Employee::class);
+    }
 }
