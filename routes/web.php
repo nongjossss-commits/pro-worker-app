@@ -6,6 +6,7 @@ use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\ImporterController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NotificationController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -23,5 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
     Route::resource('delegates', DelegateController::class);
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
 });
 require __DIR__.'/auth.php';
