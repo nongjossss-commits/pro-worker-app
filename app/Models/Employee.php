@@ -26,4 +26,9 @@ class Employee extends Model
     {
         return $this->belongsTo(Employer::class);
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }
