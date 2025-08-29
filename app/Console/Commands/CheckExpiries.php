@@ -28,6 +28,7 @@ class CheckExpiries extends Command
      */
     public function handle()
     {
+        \App\Models\Notification::truncate();
         $this->info('Checking for expiring documents...');
 
         $thresholdDate = Carbon::now()->addDays(45);
