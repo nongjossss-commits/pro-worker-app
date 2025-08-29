@@ -45,8 +45,8 @@ class DelegateController extends Controller
         $data = $request->all();
 
         if ($request->hasFile('delegatePhoto')) {
-            $path = $request->file('delegatePhoto')->store('public/delegate_photos');
-            $data['delegatePhoto'] = Storage::url($path);
+            $path = $request->file('delegatePhoto')->store('delegate_photos', 'public');
+            $data['delegatePhoto'] = $path;
         }
 
         Delegate::create($data);
@@ -93,10 +93,10 @@ class DelegateController extends Controller
         if ($request->hasFile('delegatePhoto')) {
             // Delete old photo
             if ($delegate->delegatePhoto) {
-                Storage::delete(str_replace('/storage', 'public', $delegate->delegatePhoto));
+                Storage::disk('public')->delete($delegate->delegatePhoto);
             }
-            $path = $request->file('delegatePhoto')->store('public/delegate_photos');
-            $data['delegatePhoto'] = Storage::url($path);
+            $path = $request->file('delegatePhoto')->store('delegate_photos', 'public');
+            $data['delegatePhoto'] = $path;
         }
 
         $delegate->update($data);
