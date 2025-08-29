@@ -74,7 +74,7 @@ function getNotificationsForTab($tabId, $groupedNotifications, $typeToTabMapping
                                     <div class="d-flex w-100 justify-content-between">
                                         <h5 class="alert-heading mb-1">{{ $notification->employee->employeeNameTh ?? 'N/A' }}</h5>
                                         @if($notification->due_date)
-                                        <small class="text-muted">ครบกำหนด: {{ \Carbon\Carbon::parse($notification->due_date)->thaidate('j M Y') }}</small>
+                                        <small class="text-muted">ครบกำหนด: {{ \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') }}</small>
                                         @endif
                                     </div>
                                     @if(isset($notification->employee->employer))
