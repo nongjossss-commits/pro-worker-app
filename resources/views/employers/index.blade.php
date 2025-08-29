@@ -34,11 +34,11 @@
                         <td>{{ $employer->employerId }}</td>
                         <td>{{ $employer->businessType }}</td>
                         <td class="text-center">
-                            <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a>
+                            <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
                             <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')"><i class="bi bi-trash3"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')">ลบ</button>
                             </form>
                         </td>
                     </tr>
