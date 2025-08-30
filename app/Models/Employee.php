@@ -36,12 +36,18 @@ class Employee extends Model
         'startDate',
         'employeePhone',
         'employeePosition',
-        'employeePassportFile',
-        'employeeWorkPermitFile',
-        'pinkCardFile',
         'workPermitMOUGroup',
         'workPermitMOUGroupOther',
         'employeePhoto',
+        'document_1',
+        'document_2',
+        'document_3',
+        'document_4',
+        'document_description_4',
+        'document_5',
+        'document_description_5',
+        'document_6',
+        'document_description_6',
     ];
 
     public function employer()

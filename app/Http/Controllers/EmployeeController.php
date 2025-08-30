@@ -58,10 +58,16 @@ class EmployeeController extends Controller
             'startDate' => 'nullable|date',
             'employeePhone' => 'nullable|string|max:255',
             'employeePosition' => 'nullable|string|max:255',
-            'employeePassportFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'employeeWorkPermitFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'pinkCardFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'employeePhoto' => 'nullable|image|max:2048',
+            'document_1' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_2' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_3' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_4' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_description_4' => 'nullable|string|max:255',
+            'document_5' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_description_5' => 'nullable|string|max:255',
+            'document_6' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_description_6' => 'nullable|string|max:255',
         ]);
 
         $data = $validated;
@@ -72,8 +78,8 @@ class EmployeeController extends Controller
             $data['employeePhoto'] = $path;
         }
 
-        $fileFields = ['employeePassportFile', 'employeeWorkPermitFile', 'pinkCardFile'];
-        foreach ($fileFields as $field) {
+        for ($i = 1; $i <= 6; $i++) {
+            $field = 'document_' . $i;
             if ($request->hasFile($field)) {
                 $path = $request->file($field)->store('employee_documents', 'public');
                 $data[$field] = $path;
@@ -135,10 +141,16 @@ class EmployeeController extends Controller
             'startDate' => 'nullable|date',
             'employeePhone' => 'nullable|string|max:255',
             'employeePosition' => 'nullable|string|max:255',
-            'employeePassportFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'employeeWorkPermitFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'pinkCardFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'employeePhoto' => 'nullable|image|max:2048',
+            'document_1' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_2' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_3' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_4' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_description_4' => 'nullable|string|max:255',
+            'document_5' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_description_5' => 'nullable|string|max:255',
+            'document_6' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_description_6' => 'nullable|string|max:255',
         ]);
 
         $data = $validated;
@@ -153,8 +165,8 @@ class EmployeeController extends Controller
             $data['employeePhoto'] = $path;
         }
 
-        $fileFields = ['employeePassportFile', 'employeeWorkPermitFile', 'pinkCardFile'];
-        foreach ($fileFields as $field) {
+        for ($i = 1; $i <= 6; $i++) {
+            $field = 'document_' . $i;
             if ($request->hasFile($field)) {
                 // Delete old file if it exists
                 if ($employee->{$field}) {
@@ -183,8 +195,8 @@ class EmployeeController extends Controller
         }
 
         // Delete document files from storage
-        $fileFields = ['employeePassportFile', 'employeeWorkPermitFile', 'pinkCardFile'];
-        foreach ($fileFields as $field) {
+        for ($i = 1; $i <= 6; $i++) {
+            $field = 'document_' . $i;
             if ($employee->{$field}) {
                 Storage::disk('public')->delete($employee->{$field});
             }

@@ -49,13 +49,23 @@
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="employeeDob" class="form-label">วันเดือนปีเกิด</label>
                         <input type="date" class="form-control" id="employeeDob" name="employeeDob" value="{{ old('employeeDob', $employee->employeeDob) }}">
                     </div>
-                     <div class="col-md-6">
+                    <div class="col-md-2">
+                        <label for="employeeAge" class="form-label">อายุ</label>
+                        <input type="text" class="form-control" id="employeeAge" name="employeeAge" readonly>
+                    </div>
+                    <div class="col-md-6">
                         <label for="employeeNationality" class="form-label">สัญชาติ</label>
-                        <input type="text" class="form-control" id="employeeNationality" name="employeeNationality" value="{{ old('employeeNationality', $employee->employeeNationality) }}">
+                        <select class="form-select" id="employeeNationality" name="employeeNationality">
+                            <option value="">-- เลือกสัญชาติ --</option>
+                            <option value="ลาว" {{ old('employeeNationality', $employee->employeeNationality) == 'ลาว' ? 'selected' : '' }}>ลาว</option>
+                            <option value="กัมพูชา" {{ old('employeeNationality', $employee->employeeNationality) == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
+                            <option value="เมียนมา" {{ old('employeeNationality', $employee->employeeNationality) == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
+                            <option value="เวียดนาม" {{ old('employeeNationality', $employee->employeeNationality) == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
+                        </select>
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -76,9 +86,9 @@
             <div class="col-md-4 text-center">
                 <label for="employeePhoto" class="form-label">รูปภาพพนักงาน</label>
                 @if ($employee->employeePhoto)
-                    <img id="employeePhotoPreview" src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Employee Photo" class="employee-photo-preview mb-2">
+                    <img id="employeePhotoPreview" src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Employee Photo" class="employee-photo-preview mb-2" style="max-width: 150px; height: auto;">
                 @else
-                    <img id="employeePhotoPreview" src="https://placehold.co/120x120/f8fafc/6c757d?text=Photo" class="employee-photo-preview mb-2">
+                    <img id="employeePhotoPreview" src="https://placehold.co/120x120/f8fafc/6c757d?text=Photo" class="employee-photo-preview mb-2" style="max-width: 150px; height: auto;">
                 @endif
                 <input type="file" class="form-control form-control-sm" id="employeePhoto" name="employeePhoto" accept="image/*">
                  @if ($employee->employeePhoto)
@@ -189,32 +199,75 @@
         <h5 class="mt-4">เอกสารแนบ</h5>
         <hr>
         <div class="row">
-            <div class="col-md-4">
-                <label for="employeePassportFile" class="form-label">ไฟล์ Passport</label>
-                <input type="file" class="form-control form-control-sm" id="employeePassportFile" name="employeePassportFile">
-                @if ($employee->employeePassportFile)
+            <div class="col-md-4 mb-3">
+                <label for="document_1" class="form-label">1. passport/visa/workpermit</label>
+                <input type="file" class="form-control form-control-sm" id="document_1" name="document_1">
+                @if ($employee->document_1)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employee->employeePassportFile) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                        <a href="{{ asset('storage/' . $employee->document_1) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
             </div>
-            <div class="col-md-4">
-                <label for="employeeWorkPermitFile" class="form-label">ไฟล์ใบอนุญาตทำงาน</label>
-                <input type="file" class="form-control form-control-sm" id="employeeWorkPermitFile" name="employeeWorkPermitFile">
-                 @if ($employee->employeeWorkPermitFile)
+            <div class="col-md-4 mb-3">
+                <label for="document_2" class="form-label">2. บัตรชมพู</label>
+                <input type="file" class="form-control form-control-sm" id="document_2" name="document_2">
+                @if ($employee->document_2)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employee->employeeWorkPermitFile) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                        <a href="{{ asset('storage/' . $employee->document_2) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
             </div>
-            <div class="col-md-4">
-                <label for="pinkCardFile" class="form-label">ไฟล์บัตรชมพู</label>
-                <input type="file" class="form-control form-control-sm" id="pinkCardFile" name="pinkCardFile">
-                @if ($employee->pinkCardFile)
+            <div class="col-md-4 mb-3">
+                <label for="document_3" class="form-label">3. สัญญาแรงงาน</label>
+                <input type="file" class="form-control form-control-sm" id="document_3" name="document_3">
+                @if ($employee->document_3)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employee->pinkCardFile) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                        <a href="{{ asset('storage/' . $employee->document_3) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="document_4" class="form-label">4. เอกสารอื่นๆ 1</label>
+                <input type="file" class="form-control form-control-sm" id="document_4" name="document_4">
+                 @if ($employee->document_4)
+                    <div class="file-upload-display mt-1">
+                        <a href="{{ asset('storage/' . $employee->document_4) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                    </div>
+                @endif
+                <label for="document_description_4" class="form-label mt-2">คำอธิบาย</label>
+                <input type="text" class="form-control form-control-sm" id="document_description_4" name="document_description_4" value="{{ old('document_description_4', $employee->document_description_4) }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="document_5" class="form-label">5. เอกสารอื่นๆ 2</label>
+                <input type="file" class="form-control form-control-sm" id="document_5" name="document_5">
+                 @if ($employee->document_5)
+                    <div class="file-upload-display mt-1">
+                        <a href="{{ asset('storage/' . $employee->document_5) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                    </div>
+                @endif
+                <label for="document_description_5" class="form-label mt-2">คำอธิบาย</label>
+                <input type="text" class="form-control form-control-sm" id="document_description_5" name="document_description_5" value="{{ old('document_description_5', $employee->document_description_5) }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="document_6" class="form-label">6. เอกสารอื่นๆ 3</label>
+                <input type="file" class="form-control form-control-sm" id="document_6" name="document_6">
+                @if ($employee->document_6)
+                    <div class="file-upload-display mt-1">
+                        <a href="{{ asset('storage/' . $employee->document_6) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                    </div>
+                @endif
+                <label for="document_description_6" class="form-label mt-2">คำอธิบาย</label>
+                <input type="text" class="form-control form-control-sm" id="document_description_6" name="document_description_6" value="{{ old('document_description_6', $employee->document_description_6) }}">
+            </div>
+             <div class="col-md-6 mb-3" id="myanmar-id-field" style="display: none;">
+                <label for="myanmar_id" class="form-label">Myanmar ID</label>
+                <input type="file" class="form-control form-control-sm" id="myanmar_id" name="myanmar_id">
+            </div>
+
+            <div class="col-md-6 mb-3" id="myanmar-house-reg-field" style="display: none;">
+                <label for="myanmar_house_reg" class="form-label">Myanmar House Reg</label>
+                <input type="file" class="form-control form-control-sm" id="myanmar_house_reg" name="myanmar_house_reg">
             </div>
         </div>
 
@@ -229,6 +282,47 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Age calculation
+    const dobInput = document.getElementById('employeeDob');
+    const ageInput = document.getElementById('employeeAge');
+
+    function calculateAge() {
+        const dob = new Date(dobInput.value);
+        if (!isNaN(dob.getTime())) {
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            ageInput.value = age;
+        } else {
+            ageInput.value = '';
+        }
+    }
+
+    dobInput.addEventListener('change', calculateAge);
+    calculateAge(); // Initial calculation
+
+    // Conditional fields for Myanmar nationality
+    const nationalitySelect = document.getElementById('employeeNationality');
+    const myanmarIdField = document.getElementById('myanmar-id-field');
+    const myanmarHouseRegField = document.getElementById('myanmar-house-reg-field');
+
+    function toggleMyanmarFields() {
+        if (nationalitySelect.value === 'เมียนมา') {
+            myanmarIdField.style.display = 'block';
+            myanmarHouseRegField.style.display = 'block';
+        } else {
+            myanmarIdField.style.display = 'none';
+            myanmarHouseRegField.style.display = 'none';
+        }
+    }
+
+    nationalitySelect.addEventListener('change', toggleMyanmarFields);
+    toggleMyanmarFields(); // Initial check
+
+    // MOU Group Other field
     const mouGroupSelect = document.getElementById('workPermitMOUGroup');
     const mouGroupOtherInput = document.getElementById('workPermitMOUGroupOther');
 
@@ -243,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
     mouGroupSelect.addEventListener('change', toggleMouGroupOther);
     toggleMouGroupOther(); // Initial check
 
+    // Photo preview
     const employeePhotoInput = document.getElementById('employeePhoto');
     const employeePhotoPreview = document.getElementById('employeePhotoPreview');
 
