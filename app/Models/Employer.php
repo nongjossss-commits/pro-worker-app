@@ -11,6 +11,7 @@ class Employer extends Model
 
     protected $fillable = [
         'employerNameTh',
+        'employerNameEn',
         'employerId',
         'employerTaxId',
         'businessType',
@@ -19,6 +20,10 @@ class Employer extends Model
         'businessTypeEn',
         'regCapital',
         'regDate',
+        'minimum_wage',
+        'document_company_registration',
+        'document_vat_registration',
+        'document_map',
     ];
 
     public function employees()
