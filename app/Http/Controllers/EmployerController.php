@@ -31,15 +31,36 @@ class EmployerController extends Controller
     {
         $request->validate([
             'employerNameTh' => 'required',
+            'employerNameEn' => 'nullable',
             'employerId' => 'required|unique:employers',
             'signerNameTh' => 'nullable',
             'signerNameEn' => 'nullable',
             'businessTypeEn' => 'nullable',
             'regCapital' => 'nullable',
             'regDate' => 'nullable|date',
+            'minimum_wage' => 'nullable|string',
+            'document_company_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_vat_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_map' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
-        Employer::create($request->all());
+        $data = $request->except(['document_company_registration', 'document_vat_registration', 'document_map']);
+
+        $employer = Employer::create($data);
+
+        if ($request->hasFile('document_company_registration')) {
+            $path = $request->file('document_company_registration')->store("employer_documents/{$employer->id}", 'public');
+            $employer->document_company_registration = $path;
+        }
+        if ($request->hasFile('document_vat_registration')) {
+            $path = $request->file('document_vat_registration')->store("employer_documents/{$employer->id}", 'public');
+            $employer->document_vat_registration = $path;
+        }
+        if ($request->hasFile('document_map')) {
+            $path = $request->file('document_map')->store("employer_documents/{$employer->id}", 'public');
+            $employer->document_map = $path;
+        }
+        $employer->save();
 
         return redirect()->route('employers.index')
             ->with('success', 'เพิ่มข้อมูลนายจ้างเรียบร้อยแล้ว');
@@ -69,15 +90,35 @@ class EmployerController extends Controller
     {
         $request->validate([
             'employerNameTh' => 'required',
+            'employerNameEn' => 'nullable',
             'employerId' => 'required|unique:employers,employerId,' . $employer->id,
             'signerNameTh' => 'nullable',
             'signerNameEn' => 'nullable',
             'businessTypeEn' => 'nullable',
             'regCapital' => 'nullable',
             'regDate' => 'nullable|date',
+            'minimum_wage' => 'nullable|string',
+            'document_company_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_vat_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'document_map' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
-        $employer->update($request->all());
+        $data = $request->except(['document_company_registration', 'document_vat_registration', 'document_map']);
+
+        if ($request->hasFile('document_company_registration')) {
+            $path = $request->file('document_company_registration')->store("employer_documents/{$employer->id}", 'public');
+            $data['document_company_registration'] = $path;
+        }
+        if ($request->hasFile('document_vat_registration')) {
+            $path = $request->file('document_vat_registration')->store("employer_documents/{$employer->id}", 'public');
+            $data['document_vat_registration'] = $path;
+        }
+        if ($request->hasFile('document_map')) {
+            $path = $request->file('document_map')->store("employer_documents/{$employer->id}", 'public');
+            $data['document_map'] = $path;
+        }
+
+        $employer->update($data);
 
         return redirect()->route('employers.index')
             ->with('success', 'อัปเดตข้อมูลนายจ้างเรียบร้อยแล้ว');
