@@ -1,7 +1,7 @@
 @props(['notification', 'label'])
 <div class="alert alert-danger notification-item">
     <div class="d-flex align-items-start gap-3">
-        <div class="flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; border-radius: 50%; background-color: #e2e8f0; color: #64748b;">
+        <div class="flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; border-radius: 50%; background-color: #e2e8f0; color: #64748b; font-weight: bold;">
             <span>PIC</span>
         </div>
         <div class="flex-grow-1">
@@ -20,11 +20,6 @@
                     หมดอายุแล้ว {{ abs($daysRemaining) }} วัน
                 @endif
             </span>
-            {{-- Action Buttons Placeholder --}}
-            <div>
-                <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-search"></i></button>
-                <button class="btn btn-sm btn-outline-success" disabled><i class="bi bi-check2"></i></button>
-            </div>
         </div>
     </div>
 </div>
