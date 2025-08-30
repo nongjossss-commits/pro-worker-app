@@ -27,6 +27,32 @@
                 <input type="text" class="form-control" id="businessType" name="businessType">
             </div>
         </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="signerNameTh" class="form-label">ผู้มีอำนาจลงนาม (ไทย)</label>
+                <input type="text" class="form-control" id="signerNameTh" name="signerNameTh">
+            </div>
+            <div class="col-md-6">
+                <label for="signerNameEn" class="form-label">ผู้มีอำนาจลงนาม (อังกฤษ)</label>
+                <input type="text" class="form-control" id="signerNameEn" name="signerNameEn">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="businessTypeEn" class="form-label">Type of Business</label>
+                <input type="text" class="form-control" id="businessTypeEn" name="businessTypeEn">
+            </div>
+            <div class="col-md-6">
+                <label for="regCapital" class="form-label">ทุนจดทะเบียน</label>
+                <input type="text" class="form-control" id="regCapital" name="regCapital">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="regDate" class="form-label">จดทะเบียนวันที่</label>
+                <input type="date" class="form-control" id="regDate" name="regDate">
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary">บันทึก</button>
         <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
     </form>

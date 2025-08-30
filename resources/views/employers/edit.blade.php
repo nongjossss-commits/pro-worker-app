@@ -28,6 +28,32 @@
                 <input type="text" class="form-control" id="businessType" name="businessType" value="{{ $employer->businessType }}">
             </div>
         </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="signerNameTh" class="form-label">ผู้มีอำนาจลงนาม (ไทย)</label>
+                <input type="text" class="form-control" id="signerNameTh" name="signerNameTh" value="{{ $employer->signerNameTh }}">
+            </div>
+            <div class="col-md-6">
+                <label for="signerNameEn" class="form-label">ผู้มีอำนาจลงนาม (อังกฤษ)</label>
+                <input type="text" class="form-control" id="signerNameEn" name="signerNameEn" value="{{ $employer->signerNameEn }}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="businessTypeEn" class="form-label">Type of Business</label>
+                <input type="text" class="form-control" id="businessTypeEn" name="businessTypeEn" value="{{ $employer->businessTypeEn }}">
+            </div>
+            <div class="col-md-6">
+                <label for="regCapital" class="form-label">ทุนจดทะเบียน</label>
+                <input type="text" class="form-control" id="regCapital" name="regCapital" value="{{ $employer->regCapital }}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="regDate" class="form-label">จดทะเบียนวันที่</label>
+                <input type="date" class="form-control" id="regDate" name="regDate" value="{{ $employer->regDate }}">
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary">อัปเดต</button>
         <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
     </form>
