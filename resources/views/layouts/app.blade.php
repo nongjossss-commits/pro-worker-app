@@ -114,6 +114,7 @@
                 <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                     <span><i class="bi bi-bell-fill me-2"></i>แจ้งเตือน</span>
                 </a>
+                <a href="{{ route('print-center.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('print-center.*') ? 'active' : '' }}"><i class="bi bi-printer-fill me-2"></i>โรงพิมพ์อัจฉริยะ</a>
                 <hr>
                 <a href="{{ route('employers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employers.*') ? 'active' : '' }}"><i class="bi bi-person-vcard-fill me-2"></i>ข้อมูลนายจ้าง</a>
                 <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>ข้อมูลบริษัทนำเข้า</a>
@@ -146,5 +147,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    @stack('scripts')
 </body>
 </html>

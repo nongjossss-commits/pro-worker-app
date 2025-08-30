@@ -7,6 +7,7 @@ use App\Http\Controllers\ImporterController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PrintController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -26,5 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('delegates', DelegateController::class);
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+
+    Route::get('/print-center', [PrintController::class, 'index'])->name('print-center.index');
 });
 require __DIR__.'/auth.php';
