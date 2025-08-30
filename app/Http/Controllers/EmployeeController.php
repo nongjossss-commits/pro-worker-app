@@ -30,13 +30,55 @@ class EmployeeController extends Controller
      */
     public function store(Request $request, Employer $employer)
     {
-        $request->validate([
-            'employeeNameTh' => 'required',
-            'employeePassport' => 'required|unique:employees',
+        $validated = $request->validate([
+            'employeeNameTh' => 'required|string|max:255',
+            'employeeNameEn' => 'nullable|string|max:255',
+            'employeeTitleTh' => 'nullable|string|max:255',
+            'employeeTitleEn' => 'nullable|string|max:255',
+            'employeeDob' => 'nullable|date',
+            'employeeNationality' => 'nullable|string|max:255',
+            'employeePassport' => 'required|string|max:255|unique:employees,employeePassport',
+            'passportType' => 'nullable|string|max:255',
+            'passportExpiryDate' => 'nullable|date',
+            'namelistNo' => 'nullable|string|max:255',
+            'requestNo' => 'nullable|string|max:255',
+            'workerRefNo' => 'nullable|string|max:255',
+            'personalId' => 'nullable|string|max:255',
+            'companyWorkerId' => 'nullable|string|max:255',
+            'pinkCardNo' => 'nullable|string|max:255',
+            'socialSecurityNo' => 'nullable|string|max:255',
+            'taxIdNo' => 'nullable|string|max:255',
+            'designatedHospital' => 'nullable|string|max:255',
+            'employeeWorkPermit' => 'nullable|string|max:255',
+            'workPermitExpiryDate' => 'nullable|date',
+            'workPermitMOUGroup' => 'nullable|string|max:255',
+            'workPermitMOUGroupOther' => 'nullable|string|max:255',
+            'visaExpiryDate' => 'nullable|date',
+            'ninetyDayReportDate' => 'nullable|date',
+            'startDate' => 'nullable|date',
+            'employeePhone' => 'nullable|string|max:255',
+            'employeePosition' => 'nullable|string|max:255',
+            'employeePassportFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'employeeWorkPermitFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'pinkCardFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'employeePhoto' => 'nullable|image|max:2048',
         ]);
 
-        $data = $request->all();
+        $data = $validated;
         $data['employer_id'] = $employer->id;
+
+        if ($request->hasFile('employeePhoto')) {
+            $path = $request->file('employeePhoto')->store('employee_photos', 'public');
+            $data['employeePhoto'] = $path;
+        }
+
+        $fileFields = ['employeePassportFile', 'employeeWorkPermitFile', 'pinkCardFile'];
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $path = $request->file($field)->store('employee_documents', 'public');
+                $data[$field] = $path;
+            }
+        }
 
         Employee::create($data);
 
@@ -65,13 +107,41 @@ class EmployeeController extends Controller
      */
     public function update(Request $request, Employer $employer, Employee $employee)
     {
-        $request->validate([
-            'employeeNameTh' => 'required',
-            'employeePassport' => 'required|unique:employees,employeePassport,' . $employee->id,
-            'employeePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        $validated = $request->validate([
+            'employeeNameTh' => 'required|string|max:255',
+            'employeeNameEn' => 'nullable|string|max:255',
+            'employeeTitleTh' => 'nullable|string|max:255',
+            'employeeTitleEn' => 'nullable|string|max:255',
+            'employeeDob' => 'nullable|date',
+            'employeeNationality' => 'nullable|string|max:255',
+            'employeePassport' => 'required|string|max:255|unique:employees,employeePassport,' . $employee->id,
+            'passportType' => 'nullable|string|max:255',
+            'passportExpiryDate' => 'nullable|date',
+            'namelistNo' => 'nullable|string|max:255',
+            'requestNo' => 'nullable|string|max:255',
+            'workerRefNo' => 'nullable|string|max:255',
+            'personalId' => 'nullable|string|max:255',
+            'companyWorkerId' => 'nullable|string|max:255',
+            'pinkCardNo' => 'nullable|string|max:255',
+            'socialSecurityNo' => 'nullable|string|max:255',
+            'taxIdNo' => 'nullable|string|max:255',
+            'designatedHospital' => 'nullable|string|max:255',
+            'employeeWorkPermit' => 'nullable|string|max:255',
+            'workPermitExpiryDate' => 'nullable|date',
+            'workPermitMOUGroup' => 'nullable|string|max:255',
+            'workPermitMOUGroupOther' => 'nullable|string|max:255',
+            'visaExpiryDate' => 'nullable|date',
+            'ninetyDayReportDate' => 'nullable|date',
+            'startDate' => 'nullable|date',
+            'employeePhone' => 'nullable|string|max:255',
+            'employeePosition' => 'nullable|string|max:255',
+            'employeePassportFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'employeeWorkPermitFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'pinkCardFile' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'employeePhoto' => 'nullable|image|max:2048',
         ]);
 
-        $data = $request->all();
+        $data = $validated;
 
         if ($request->hasFile('employeePhoto')) {
             // Delete old photo if it exists
@@ -81,6 +151,19 @@ class EmployeeController extends Controller
             // Store new photo
             $path = $request->file('employeePhoto')->store('employee_photos', 'public');
             $data['employeePhoto'] = $path;
+        }
+
+        $fileFields = ['employeePassportFile', 'employeeWorkPermitFile', 'pinkCardFile'];
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                // Delete old file if it exists
+                if ($employee->{$field}) {
+                    Storage::disk('public')->delete($employee->{$field});
+                }
+                // Store new file
+                $path = $request->file($field)->store('employee_documents', 'public');
+                $data[$field] = $path;
+            }
         }
 
         $employee->update($data);
@@ -97,6 +180,14 @@ class EmployeeController extends Controller
         // Delete photo from storage if it exists
         if ($employee->employeePhoto) {
             Storage::disk('public')->delete($employee->employeePhoto);
+        }
+
+        // Delete document files from storage
+        $fileFields = ['employeePassportFile', 'employeeWorkPermitFile', 'pinkCardFile'];
+        foreach ($fileFields as $field) {
+            if ($employee->{$field}) {
+                Storage::disk('public')->delete($employee->{$field});
+            }
         }
 
         $employee->delete();
