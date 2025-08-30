@@ -32,6 +32,11 @@ class EmployerController extends Controller
         $request->validate([
             'employerNameTh' => 'required',
             'employerId' => 'required|unique:employers',
+            'signerNameTh' => 'nullable',
+            'signerNameEn' => 'nullable',
+            'businessTypeEn' => 'nullable',
+            'regCapital' => 'nullable',
+            'regDate' => 'nullable|date',
         ]);
 
         Employer::create($request->all());
@@ -65,6 +70,11 @@ class EmployerController extends Controller
         $request->validate([
             'employerNameTh' => 'required',
             'employerId' => 'required|unique:employers,employerId,' . $employer->id,
+            'signerNameTh' => 'nullable',
+            'signerNameEn' => 'nullable',
+            'businessTypeEn' => 'nullable',
+            'regCapital' => 'nullable',
+            'regDate' => 'nullable|date',
         ]);
 
         $employer->update($request->all());

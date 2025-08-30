@@ -14,6 +14,11 @@ class Employer extends Model
         'employerId',
         'employerTaxId',
         'businessType',
+        'signerNameTh',
+        'signerNameEn',
+        'businessTypeEn',
+        'regCapital',
+        'regDate',
     ];
 
     public function employees()
