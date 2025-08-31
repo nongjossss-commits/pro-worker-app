@@ -185,6 +185,10 @@
                 <label for="employeePosition" class="form-label">ตำแหน่ง</label>
                 <input type="text" class="form-control" id="employeePosition" name="employeePosition" value="{{ old('employeePosition') }}">
             </div>
+            <div class="col-md-6">
+                <label for="nature_of_work" class="form-label">ลักษณะงาน (Nature of Work)</label>
+                <textarea class="form-control" id="nature_of_work" name="nature_of_work" rows="3">{{ old('nature_of_work') }}</textarea>
+            </div>
         </div>
 
         <h5 class="mt-4">เอกสารแนบ</h5>

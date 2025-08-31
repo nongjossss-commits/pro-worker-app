@@ -68,6 +68,7 @@ class EmployeeController extends Controller
             'document_description_5' => 'nullable|string|max:255',
             'document_6' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'document_description_6' => 'nullable|string|max:255',
+            'nature_of_work' => 'nullable|string',
         ]);
 
         $data = $validated;
@@ -151,6 +152,7 @@ class EmployeeController extends Controller
             'document_description_5' => 'nullable|string|max:255',
             'document_6' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'document_description_6' => 'nullable|string|max:255',
+            'nature_of_work' => 'nullable|string',
         ]);
 
         $data = $validated;

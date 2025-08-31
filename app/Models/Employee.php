@@ -48,6 +48,7 @@ class Employee extends Model
         'document_description_5',
         'document_6',
         'document_description_6',
+        'nature_of_work',
     ];
 
     public function employer()
