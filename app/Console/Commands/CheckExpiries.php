@@ -49,15 +49,26 @@ class CheckExpiries extends Command
                     $expiryDate = Carbon::parse($expiryDate);
 
                     if ($expiryDate->between($today, $thresholdDate)) {
+                        $notificationType = $type;
+                        $message = "The employee's " . str_replace('_', ' ', $type) . " is expiring on " . $expiryDate->format('Y-m-d') . ".";
+
+                        if ($type === 'passport_expiry' && $employee->passportType === 'CI') {
+                            $notificationType = 'ci_renewal';
+                            $message = "The employee's CI (passport) is expiring on " . $expiryDate->format('Y-m-d') . ".";
+                        } elseif ($type === 'work_permit_expiry' && $employee->workPermitMOUGroup === 'มติต่ออายุในประเทศ') {
+                            $notificationType = 'resolution_renewal';
+                             $message = "The employee's work permit (resolution renewal) is expiring on " . $expiryDate->format('Y-m-d') . ".";
+                        }
+
                         $existingNotification = Notification::where('employee_id', $employee->id)
-                            ->where('type', $type)
+                            ->where('type', $notificationType)
                             ->first();
 
                         if (!$existingNotification) {
                             Notification::create([
                                 'employee_id' => $employee->id,
-                                'type' => $type,
-                                'message' => "The employee's " . str_replace('_', ' ', $type) . " is expiring on " . $expiryDate->format('Y-m-d') . ".",
+                                'type' => $notificationType,
+                                'message' => $message,
                                 'due_date' => $expiryDate,
                             ]);
                         }

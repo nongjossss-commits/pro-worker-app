@@ -15,7 +15,6 @@ class NotificationController extends Controller
 
         $groupedNotifications = $notifications->groupBy('type');
 
-        dd($groupedNotifications);
         return view('notifications.index', ['groupedNotifications' => $groupedNotifications]);
     }
 }
