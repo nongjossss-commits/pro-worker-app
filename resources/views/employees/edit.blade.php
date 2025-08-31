@@ -299,14 +299,17 @@ document.addEventListener('DOMContentLoaded', function () {
             if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
                 age--;
             }
-            ageInput.value = age;
+            ageInput.value = age > 0 ? age : 0;
         } else {
             ageInput.value = '';
         }
     }
 
-    dobInput.addEventListener('change', calculateAge);
-    calculateAge(); // Initial calculation
+    if(dobInput){
+        dobInput.addEventListener('change', calculateAge);
+        calculateAge(); // Initial calculation
+    }
+
 
     // Conditional fields for Myanmar nationality
     const nationalitySelect = document.getElementById('employeeNationality');

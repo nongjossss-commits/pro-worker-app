@@ -14,6 +14,8 @@
                 'ninety_day_report' => 'รายงานตัว 90 วัน',
                 'passport_expiry' => 'Passport',
                 'permits' => 'ใบอนุญาต/วีซ่า',
+                'ci_renewal' => 'ต่ออายุ CI',
+                'resolution_renewal' => 'ต่ออายุมติ',
             ];
             // Filter only the tabs that have notifications
             $visibleTabs = collect($tabs)->filter(function($name, $key) use ($groupedNotifications) {
@@ -68,8 +70,17 @@
                         </div>
                     @else
                         <div class="vstack gap-3">
-                            @foreach($groupedNotifications->get($key, collect())->sortBy('due_date') as $notification)
-                                @include('notifications._notification_item', ['notification' => $notification, 'label' => $name])
+                            @php
+                                $notifications = $groupedNotifications->get($key, collect());
+                                $label = $name;
+                                if ($key === 'ci_renewal') {
+                                    $label = 'CI ใกล้หมดอายุ';
+                                } elseif ($key === 'resolution_renewal') {
+                                    $label = 'มติใกล้หมดอายุ';
+                                }
+                            @endphp
+                            @foreach($notifications->sortBy('due_date') as $notification)
+                                @include('notifications._notification_item', ['notification' => $notification, 'label' => $label])
                             @endforeach
                         </div>
                     @endif
