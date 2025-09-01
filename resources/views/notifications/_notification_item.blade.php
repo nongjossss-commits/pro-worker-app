@@ -15,7 +15,7 @@
                     <span class="fw-bold">นายจ้าง:</span> {{ $notification->employee->employer->name ?? 'N/A' }}
                 </p>
                 <p class="card-text small text-muted">
-                    <span class="fw-bold">{{ $label }} หมดอายุ:</span> {{ \Carbon\Carbon::parse($notification->due_date)->thaidate('j M Y') }}
+                    <span class="fw-bold">{{ $label }} หมดอายุ:</span> {{ \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') }}
                 </p>
             </div>
             <div class="text-end flex-shrink-0 ms-2">
@@ -59,7 +59,7 @@
         </div>
         @else
         <div class="alert alert-warning mt-3 mb-0">
-            <p class="mb-1 fw-bold">ยกเลิกเมื่อ: {{ \Carbon\Carbon::parse($notification->cancelled_at)->thaidate('j M Y, H:i') }}</p>
+            <p class="mb-1 fw-bold">ยกเลิกเมื่อ: {{ \Carbon\Carbon::parse($notification->cancelled_at)->format('d/m/Y H:i') }}</p>
             <p class="mb-0"><strong>เหตุผล:</strong> {{ $notification->cancellation_reason }}</p>
         </div>
         @endif
