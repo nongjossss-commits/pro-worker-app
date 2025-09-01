@@ -5,65 +5,51 @@ namespace App\Http\Controllers;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Database\Eloquent\Builder;
 
 class NotificationController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index(Request $request)
     {
-        // 1. Determine the active tab and set the base status
-        $activeTab = $request->input('tab', 'unread');
-        $query = Notification::with('employee.employer')
-                             ->where('status', $activeTab);
+        $tabs = [
+            '90day', 'passport', 'permits', 'ci_renew', 'resolution_renew', 'cancelled'
+        ];
 
-        // 2. Apply search filter
-        if ($request->filled('search')) {
-            $searchTerm = $request->input('search');
-            $query->whereHas('employee', function ($q) use ($searchTerm) {
-                $q->where('name_th', 'like', "%{$searchTerm}%")
-                  ->orWhere('name_en', 'like', "%{$searchTerm}%")
-                  ->orWhere('employee_code', 'like', "%{$searchTerm}%");
-            });
-        }
+        $data = [];
 
-        // 3. Apply nationality filter
-        if ($request->filled('nationality')) {
-            $query->whereHas('employee', function ($q) use ($request) {
-                $q->where('nationality', $request->input('nationality'));
-            });
-        }
-
-        // 4. Apply MOU type filter
-        if ($request->filled('mou_type')) {
-            $query->whereHas('employee', function ($q) use ($request) {
-                $q->where('mou_type', $request->input('mou_type'));
-            });
-        }
-
-        // 5. Apply month filter (on due_date)
-        if ($request->filled('month')) {
-            $month = $request->input('month'); // Expects 'YYYY-MM' format
-            if (preg_match('/^(\d{4})-(\d{2})$/', $month, $matches)) {
-                $year = $matches[1];
-                $month = $matches[2];
-                $query->whereYear('due_date', '=', $year)
-                      ->whereMonth('due_date', '=', $month);
+        foreach ($tabs as $tab) {
+            if ($tab === 'permits') {
+                $data['notificationsWorkPermit'] = $this->getFilteredNotificationsQuery($request, 'work_permit', 'permits')->paginate(10, ['*'], 'work_permit_page');
+                $data['notificationsWorkPermitExpired'] = $this->getFilteredNotificationsQuery($request, 'work_permit_expired', 'permits')->paginate(10, ['*'], 'work_permit_expired_page');
+                $data['notificationsVisa'] = $this->getFilteredNotificationsQuery($request, 'visa', 'permits')->paginate(10, ['*'], 'visa_page');
+            } else {
+                $data['notifications' . ucfirst($tab)] = $this->getFilteredNotificationsQuery($request, $tab)->paginate(15, ['*'], $tab . '_page');
             }
         }
 
-        // Fetch the notifications
-        $notifications = $query->orderBy('due_date', 'asc')->get();
-
-        // Group them for the view
-        $groupedNotifications = $notifications->groupBy('type');
-
-        // Pass data to the view
-        return view('notifications.index', [
-            'groupedNotifications' => $groupedNotifications,
-            'activeTab' => $activeTab,
-            'filters' => $request->only(['search', 'nationality', 'mou_type', 'month']),
-        ]);
+        return view('notifications.index', $data);
     }
 
+    /**
+     * Restore a cancelled notification.
+     */
+    public function restore(Notification $notification)
+    {
+        $notification->update([
+            'status' => 'unread',
+            'cancellation_reason' => null,
+            'cancelled_at' => null,
+        ]);
+
+        return back()->with('success', 'รายการถูกนำกลับมาเรียบร้อยแล้ว');
+    }
+
+    /**
+     * Cancel a notification.
+     */
     public function cancel(Request $request, Notification $notification)
     {
         $request->validate([
@@ -79,44 +65,18 @@ class NotificationController extends Controller
         return back()->with('success', 'การต่ออายุถูกยกเลิกสำเร็จ');
     }
 
+    /**
+     * Handle the export of notifications to CSV.
+     */
     public function export(Request $request)
     {
-        // Reuse the same filtering logic from index
-        $activeTab = $request->input('tab', 'unread');
-        $query = Notification::with('employee.employer')
-                             ->where('status', $activeTab);
+        $exportType = $request->input('export_type', '90day');
 
-        if ($request->filled('search')) {
-            $searchTerm = $request->input('search');
-            $query->whereHas('employee', function ($q) use ($searchTerm) {
-                $q->where('name_th', 'like', "%{$searchTerm}%")
-                  ->orWhere('name_en', 'like', "%{$searchTerm}%")
-                  ->orWhere('employee_code', 'like', "%{$searchTerm}%");
-            });
-        }
-        if ($request->filled('nationality')) {
-            $query->whereHas('employee', function ($q) use ($request) {
-                $q->where('nationality', $request->input('nationality'));
-            });
-        }
-        if ($request->filled('mou_type')) {
-            $query->whereHas('employee', function ($q) use ($request) {
-                $q->where('mou_type', $request->input('mou_type'));
-            });
-        }
-        if ($request->filled('month')) {
-            $month = $request->input('month');
-            if (preg_match('/^(\d{4})-(\d{2})$/', $month, $matches)) {
-                $year = $matches[1];
-                $month = $matches[2];
-                $query->whereYear('due_date', '=', $year)
-                      ->whereMonth('due_date', '=', $month);
-            }
-        }
+        $query = $this->getFilteredNotificationsQuery($request, $exportType, $request->input('tab'));
 
-        $notifications = $query->orderBy('due_date', 'asc')->get();
+        $notifications = $query->get();
 
-        $fileName = "notifications_{$activeTab}_" . date('Y-m-d') . ".csv";
+        $fileName = "notifications_{$exportType}_" . date('Y-m-d') . ".csv";
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
             "Content-Disposition" => "attachment; filename=$fileName",
@@ -129,27 +89,102 @@ class NotificationController extends Controller
 
         $callback = function() use($notifications, $columns) {
             $file = fopen('php://output', 'w');
-            // Add BOM to support UTF-8 in Excel
             fputs($file, $bom =( chr(0xEF) . chr(0xBB) . chr(0xBF) ));
             fputcsv($file, $columns);
 
             foreach ($notifications as $notification) {
                 $row = [
                     $notification->id,
-                    $notification->employee->employee_code,
-                    $notification->employee->name_th . ' / ' . $notification->employee->name_en,
-                    $notification->employee->employer->name,
+                    $notification->employee->employee_code ?? 'N/A',
+                    ($notification->employee->name_th ?? 'N/A') . ' / ' . ($notification->employee->name_en ?? 'N/A'),
+                    $notification->employee->employer->name ?? 'N/A',
                     $notification->type,
                     $notification->due_date,
                     $notification->status,
                 ];
-
                 fputcsv($file, $row);
             }
-
             fclose($file);
         };
 
         return new StreamedResponse($callback, 200, $headers);
+    }
+
+    /**
+     * Reusable private method to get filtered notification queries.
+     */
+    private function getFilteredNotificationsQuery(Request $request, string $type, ?string $formPrefix = null): Builder
+    {
+        $prefix = $formPrefix ?? $type;
+
+        $query = Notification::with('employee.employer')->orderBy('due_date', 'asc');
+
+        // Base query conditions based on type
+        switch ($type) {
+            case 'cancelled':
+                $query->where('status', 'cancelled');
+                break;
+            case 'work_permit_expired':
+                $query->where('type', 'work_permit_expiry')->whereDate('due_date', '<', now());
+                break;
+            default:
+                $query->where('status', 'unread');
+                if ($type !== 'permits') {
+                     $query->where('type', $type);
+                }
+        }
+
+        if (in_array($type, ['work_permit', 'visa'])) {
+            $query->where('type', $type . '_expiry');
+        }
+
+
+        // Apply filters
+        if ($request->filled("search_{$prefix}")) {
+            $searchTerm = $request->input("search_{$prefix}");
+            $query->whereHas('employee', function ($q) use ($searchTerm) {
+                $q->where('name_th', 'like', "%{$searchTerm}%")
+                  ->orWhere('name_en', 'like', "%{$searchTerm}%")
+                  ->orWhere('employee_code', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        if ($request->filled("nationality_{$prefix}")) {
+            $query->whereHas('employee', function ($q) use ($request, $prefix) {
+                $q->where('nationality', $request->input("nationality_{$prefix}"));
+            });
+        }
+
+        if ($request->filled("mou_{$prefix}")) {
+            $query->whereHas('employee', function ($q) use ($request, $prefix) {
+                $q->where('mou_type', $request->input("mou_{$prefix}"));
+            });
+        }
+
+        if ($request->filled("month_{$prefix}")) {
+            $month = $request->input("month_{$prefix}");
+            $query->whereMonth('due_date', '=', (int)$month + 1);
+        }
+
+        if ($type === 'resolution_renew' && $request->filled("step_{$prefix}")) {
+            // This requires a more complex condition based on employee's JSON data
+            // Assuming 'task_tracking_data' is a JSON field on the employee model
+            $step = $request->input("step_{$prefix}");
+            $query->whereHas('employee', function($q) use ($step) {
+                // Example logic, may need adjustment based on actual JSON structure
+                switch($step) {
+                    case 'not_started':
+                        $q->whereJsonContains('task_tracking_data->step1_checked', false);
+                        break;
+                    case 'step1':
+                        $q->whereJsonContains('task_tracking_data->step1_checked', true)
+                          ->whereJsonContains('task_tracking_data->step2_checked', false);
+                        break;
+                    // ... and so on for other steps
+                }
+            });
+        }
+
+        return $query;
     }
 }
