@@ -23,32 +23,32 @@ $activeTab = request()->input('tab', '90day');
     <ul class="nav nav-tabs" id="notificationTab" role="tablist">
         <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === '90day' ? 'active' : '' }}" id="90day-tab" href="{{ route('notifications.index', ['tab' => '90day']) }}" role="tab">
-                รายงานตัว 90 วัน <span class="badge bg-danger rounded-pill ms-1">{{ $notifications90day->total() }}</span>
+                รายงานตัว 90 วัน <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('90day', collect())->total() }}</span>
             </a>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'passport' ? 'active' : '' }}" id="passport-tab" href="{{ route('notifications.index', ['tab' => 'passport']) }}" role="tab">
-                Passport <span class="badge bg-danger rounded-pill ms-1">{{ $notificationsPassport->total() }}</span>
+                Passport <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('passport', collect())->total() }}</span>
             </a>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'permits' ? 'active' : '' }}" id="permits-tab" href="{{ route('notifications.index', ['tab' => 'permits']) }}" role="tab">
-                ใบอนุญาต/วีซ่า <span class="badge bg-danger rounded-pill ms-1">{{ $notificationsWorkPermit->total() + $notificationsWorkPermitExpired->total() + $notificationsVisa->total() }}</span>
+                ใบอนุญาต/วีซ่า <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('work_permit', collect())->total() + $groupedNotifications->get('work_permit_expired', collect())->total() + $groupedNotifications->get('visa', collect())->total() }}</span>
             </a>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'ci_renew' ? 'active' : '' }}" id="ci-renew-tab" href="{{ route('notifications.index', ['tab' => 'ci_renew']) }}" role="tab">
-                ต่ออายุ CI <span class="badge bg-danger rounded-pill ms-1">{{ $notificationsCiRenew->total() }}</span>
+                ต่ออายุ CI <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('ci_renew', collect())->total() }}</span>
             </a>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'resolution_renew' ? 'active' : '' }}" id="resolution-renew-tab" href="{{ route('notifications.index', ['tab' => 'resolution_renew']) }}" role="tab">
-                ต่ออายุมติ <span class="badge bg-danger rounded-pill ms-1">{{ $notificationsResolutionRenew->total() }}</span>
+                ต่ออายุมติ <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('resolution_renew', collect())->total() }}</span>
             </a>
         </li>
          <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'cancelled' ? 'active' : '' }}" id="cancelled-renew-tab" href="{{ route('notifications.index', ['tab' => 'cancelled']) }}" role="tab">
-                รายการที่ยกเลิก <span class="badge bg-secondary rounded-pill ms-1">{{ $notificationsCancelled->total() }}</span>
+                รายการที่ยกเลิก <span class="badge bg-secondary rounded-pill ms-1">{{ $groupedNotifications->get('cancelled', collect())->total() }}</span>
             </a>
         </li>
     </ul>
@@ -81,12 +81,12 @@ $activeTab = request()->input('tab', '90day');
                     <a href="{{ route('notifications.export', ['export_type' => '90day'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
                 </div>
             </form>
-            <h5 class="mb-3">รายการรายงานตัว 90 วัน ({{ $notifications90day->total() }})</h5>
+            <h5 class="mb-3">รายการรายงานตัว 90 วัน ({{ $groupedNotifications->get('90day', collect())->total() }})</h5>
             <div id="notification90DayListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $notifications90day, 'notification')
+                @each('notifications._notification_item', $groupedNotifications->get('90day', collect()), 'notification')
             </div>
             <div class="mt-4">
-                {{ $notifications90day->withQueryString()->links() }}
+                {{ $groupedNotifications->get('90day', collect())->links() }}
             </div>
         </div>
 
@@ -118,12 +118,12 @@ $activeTab = request()->input('tab', '90day');
                     <a href="{{ route('notifications.export', ['export_type' => 'passport'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
                 </div>
             </form>
-            <h5 class="mb-3">รายการ Passport หมดอายุ ({{ $notificationsPassport->total() }})</h5>
+            <h5 class="mb-3">รายการ Passport หมดอายุ ({{ $groupedNotifications->get('passport', collect())->total() }})</h5>
             <div id="notificationPassportListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $notificationsPassport, 'notification')
+                @each('notifications._notification_item', $groupedNotifications->get('passport', collect()), 'notification')
             </div>
              <div class="mt-4">
-                {{ $notificationsPassport->withQueryString()->links() }}
+                {{ $groupedNotifications->get('passport', collect())->links() }}
             </div>
         </div>
 
@@ -157,38 +157,38 @@ $activeTab = request()->input('tab', '90day');
             <div class="row g-4">
                 <div class="col-lg-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">ใบอนุญาตทำงานใกล้หมดอายุ ({{ $notificationsWorkPermit->total() }})</h5>
+                        <h5 class="mb-0">ใบอนุญาตทำงานใกล้หมดอายุ ({{ $groupedNotifications->get('work_permit', collect())->total() }})</h5>
                         <a href="{{ route('notifications.export', ['export_type' => 'work_permit'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
                     </div>
                     <div id="notificationWorkPermitListContainer" class="vstack gap-2">
-                         @each('notifications._notification_item', $notificationsWorkPermit, 'notification')
+                         @each('notifications._notification_item', $groupedNotifications->get('work_permit', collect()), 'notification')
                     </div>
                     <div class="mt-4">
-                        {{ $notificationsWorkPermit->withQueryString()->links() }}
+                        {{ $groupedNotifications->get('work_permit', collect())->links() }}
                     </div>
                 </div>
                 <div class="col-lg-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">ขาดต่อขอรับใหม่ ({{ $notificationsWorkPermitExpired->total() }})</h5>
+                        <h5 class="mb-0">ขาดต่อขอรับใหม่ ({{ $groupedNotifications->get('work_permit_expired', collect())->total() }})</h5>
                         <a href="{{ route('notifications.export', ['export_type' => 'work_permit_expired'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
                     </div>
                     <div id="notificationWorkPermitExpiredListContainer" class="vstack gap-2">
-                        @each('notifications._notification_item', $notificationsWorkPermitExpired, 'notification')
+                        @each('notifications._notification_item', $groupedNotifications->get('work_permit_expired', collect()), 'notification')
                     </div>
                      <div class="mt-4">
-                        {{ $notificationsWorkPermitExpired->withQueryString()->links() }}
+                        {{ $groupedNotifications->get('work_permit_expired', collect())->links() }}
                     </div>
                 </div>
                 <div class="col-lg-4">
                      <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">วีซ่าหมดอายุ ({{ $notificationsVisa->total() }})</h5>
+                        <h5 class="mb-0">วีซ่าหมดอายุ ({{ $groupedNotifications->get('visa', collect())->total() }})</h5>
                         <a href="{{ route('notifications.export', ['export_type' => 'visa'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
                     </div>
                     <div id="notificationVisaListContainer" class="vstack gap-2">
-                        @each('notifications._notification_item', $notificationsVisa, 'notification')
+                        @each('notifications._notification_item', $groupedNotifications->get('visa', collect()), 'notification')
                     </div>
                      <div class="mt-4">
-                        {{ $notificationsVisa->withQueryString()->links() }}
+                        {{ $groupedNotifications->get('visa', collect())->links() }}
                     </div>
                 </div>
             </div>
@@ -222,12 +222,12 @@ $activeTab = request()->input('tab', '90day');
                     <a href="{{ route('notifications.export', ['export_type' => 'ci_renew'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
                 </div>
             </form>
-            <h5 class="mb-3">รายการต่ออายุเล่ม CI ({{ $notificationsCiRenew->total() }})</h5>
+            <h5 class="mb-3">รายการต่ออายุเล่ม CI ({{ $groupedNotifications->get('ci_renew', collect())->total() }})</h5>
             <div id="notificationCi_renewListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $notificationsCiRenew, 'notification')
+                @each('notifications._notification_item', $groupedNotifications->get('ci_renew', collect()), 'notification')
             </div>
             <div class="mt-4">
-                {{ $notificationsCiRenew->withQueryString()->links() }}
+                {{ $groupedNotifications->get('ci_renew', collect())->links() }}
             </div>
         </div>
 
@@ -265,12 +265,12 @@ $activeTab = request()->input('tab', '90day');
                     <a href="{{ route('notifications.export', ['export_type' => 'resolution_renew'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
                 </div>
             </form>
-            <h5 class="mb-3">รายการต่ออายุมติในประเทศ ({{ $notificationsResolutionRenew->total() }})</h5>
+            <h5 class="mb-3">รายการต่ออายุมติในประเทศ ({{ $groupedNotifications->get('resolution_renew', collect())->total() }})</h5>
             <div id="notificationResolution_renewListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $notificationsResolutionRenew, 'notification')
+                @each('notifications._notification_item', $groupedNotifications->get('resolution_renew', collect()), 'notification')
             </div>
             <div class="mt-4">
-                {{ $notificationsResolutionRenew->withQueryString()->links() }}
+                {{ $groupedNotifications->get('resolution_renew', collect())->links() }}
             </div>
         </div>
 
@@ -302,9 +302,9 @@ $activeTab = request()->input('tab', '90day');
                     <a href="{{ route('notifications.export', ['export_type' => 'cancelled'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
                 </div>
             </form>
-            <h5 class="mb-3">รายการที่ยกเลิกการต่ออายุ ({{ $notificationsCancelled->total() }})</h5>
+            <h5 class="mb-3">รายการที่ยกเลิกการต่ออายุ ({{ $groupedNotifications->get('cancelled', collect())->total() }})</h5>
             <div id="notificationCancelled_renewListContainer" class="vstack gap-2">
-                @foreach($notificationsCancelled as $notification)
+                @foreach($groupedNotifications->get('cancelled', collect()) as $notification)
                     <div class="alert alert-info notification-item">
                         <div class="d-flex align-items-center gap-3">
                             <div class="d-flex justify-content-between align-items-start w-100">
@@ -327,7 +327,7 @@ $activeTab = request()->input('tab', '90day');
                 @endforeach
             </div>
             <div class="mt-4">
-                {{ $notificationsCancelled->withQueryString()->links() }}
+                {{ $groupedNotifications->get('cancelled', collect())->links() }}
             </div>
         </div>
     </div>

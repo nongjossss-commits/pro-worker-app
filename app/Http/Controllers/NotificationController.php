@@ -14,23 +14,26 @@ class NotificationController extends Controller
      */
     public function index(Request $request)
     {
-        $tabs = [
-            '90day', 'passport', 'permits', 'ci_renew', 'resolution_renew', 'cancelled'
+        $notificationTypes = [
+            '90day', 'passport', 'work_permit', 'work_permit_expired', 'visa',
+            'ci_renew', 'resolution_renew', 'cancelled'
         ];
 
-        $data = [];
+        $groupedNotifications = collect();
 
-        foreach ($tabs as $tab) {
-            if ($tab === 'permits') {
-                $data['notificationsWorkPermit'] = $this->getFilteredNotificationsQuery($request, 'work_permit', 'permits')->paginate(10, ['*'], 'work_permit_page');
-                $data['notificationsWorkPermitExpired'] = $this->getFilteredNotificationsQuery($request, 'work_permit_expired', 'permits')->paginate(10, ['*'], 'work_permit_expired_page');
-                $data['notificationsVisa'] = $this->getFilteredNotificationsQuery($request, 'visa', 'permits')->paginate(10, ['*'], 'visa_page');
-            } else {
-                $data['notifications' . ucfirst($tab)] = $this->getFilteredNotificationsQuery($request, $tab)->paginate(15, ['*'], $tab . '_page');
+        foreach ($notificationTypes as $type) {
+            $formPrefix = $type;
+            if (in_array($type, ['work_permit', 'work_permit_expired', 'visa'])) {
+                $formPrefix = 'permits';
             }
+
+            $query = $this->getFilteredNotificationsQuery($request, $type, $formPrefix);
+            $pageName = str_replace('_', '', $type) . '_page';
+            $notifications = $query->paginate(10, ['*'], $pageName)->withQueryString();
+            $groupedNotifications->put($type, $notifications);
         }
 
-        return view('notifications.index', $data);
+        return view('notifications.index', ['groupedNotifications' => $groupedNotifications]);
     }
 
     /**
