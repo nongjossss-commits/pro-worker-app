@@ -20,6 +20,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     // Application routes that require login
     Route::resource('employers', EmployerController::class);
+    Route::get('employers/{employer}/filter-employees', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
+    Route::get('employers/{employer}/filter-history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
+    Route::post('employees/{employee}/terminate', [EmployerController::class, 'terminate'])->name('employees.terminate');
     Route::resource('employers.employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
