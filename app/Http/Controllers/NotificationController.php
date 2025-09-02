@@ -98,8 +98,8 @@ class NotificationController extends Controller
             foreach ($notifications as $notification) {
                 $row = [
                     $notification->id,
-                    $notification->employee->employee_code ?? 'N/A',
-                    ($notification->employee->name_th ?? 'N/A') . ' / ' . ($notification->employee->name_en ?? 'N/A'),
+                    $notification->employee->companyWorkerId ?? 'N/A',
+                    ($notification->employee->employeeNameTh ?? 'N/A') . ' / ' . ($notification->employee->employeeNameEn ?? 'N/A'),
                     $notification->employee->employer->name ?? 'N/A',
                     $notification->type,
                     $notification->due_date,
@@ -146,21 +146,21 @@ class NotificationController extends Controller
         if ($request->filled("search_{$prefix}")) {
             $searchTerm = $request->input("search_{$prefix}");
             $query->whereHas('employee', function ($q) use ($searchTerm) {
-                $q->where('name_th', 'like', "%{$searchTerm}%")
-                  ->orWhere('name_en', 'like', "%{$searchTerm}%")
-                  ->orWhere('employee_code', 'like', "%{$searchTerm}%");
+                $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                  ->orWhere('companyWorkerId', 'like', "%{$searchTerm}%");
             });
         }
 
         if ($request->filled("nationality_{$prefix}")) {
             $query->whereHas('employee', function ($q) use ($request, $prefix) {
-                $q->where('nationality', $request->input("nationality_{$prefix}"));
+                $q->where('employeeNationality', $request->input("nationality_{$prefix}"));
             });
         }
 
         if ($request->filled("mou_{$prefix}")) {
             $query->whereHas('employee', function ($q) use ($request, $prefix) {
-                $q->where('mou_type', $request->input("mou_{$prefix}"));
+                $q->where('workPermitMOUGroup', $request->input("mou_{$prefix}"));
             });
         }
 
