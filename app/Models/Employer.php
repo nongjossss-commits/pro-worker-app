@@ -30,4 +30,9 @@ class Employer extends Model
     {
         return $this->hasMany(Employee::class);
     }
+
+    public function addresses()
+    {
+        return $this->morphMany(Address::class, 'addressable');
+    }
 }
