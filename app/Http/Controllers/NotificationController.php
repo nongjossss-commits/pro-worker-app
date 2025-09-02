@@ -15,15 +15,21 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $notificationTypes = [
-            '90day', 'passport', 'work_permit', 'work_permit_expired', 'visa',
-            'ci_renew', 'resolution_renew', 'cancelled'
+            'ninety_day_report',
+            'passport_expiry',
+            'work_permit_expiry',
+            'work_permit_expired',
+            'visa_expiry',
+            'ci_renewal',
+            'resolution_renewal',
+            'cancelled'
         ];
 
         $groupedNotifications = collect();
 
         foreach ($notificationTypes as $type) {
             $formPrefix = $type;
-            if (in_array($type, ['work_permit', 'work_permit_expired', 'visa'])) {
+            if (in_array($type, ['work_permit_expiry', 'work_permit_expired', 'visa_expiry'])) {
                 $formPrefix = 'permits';
             }
 
@@ -136,11 +142,6 @@ class NotificationController extends Controller
                      $query->where('type', $type);
                 }
         }
-
-        if (in_array($type, ['work_permit', 'visa'])) {
-            $query->where('type', $type . '_expiry');
-        }
-
 
         // Apply filters
         if ($request->filled("search_{$prefix}")) {
