@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employer;
+use App\Models\Employee;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class EmployerController extends Controller
 {
@@ -81,8 +83,9 @@ class EmployerController extends Controller
      */
     public function edit(Employer $employer)
     {
-        $employees = $employer->employees;
-        return view('employers.edit', compact('employer', 'employees'));
+        $employees = $employer->employees()->whereNull('terminated_at')->get();
+        $terminated_employees = $employer->employees()->whereNotNull('terminated_at')->get();
+        return view('employers.edit', compact('employer', 'employees', 'terminated_employees'));
     }
 
     /**
@@ -137,5 +140,71 @@ class EmployerController extends Controller
 
         return redirect()->route('employers.index')
             ->with('success', 'ลบข้อมูลนายจ้างเรียบร้อยแล้ว');
+    }
+
+    public function terminate(Request $request, Employee $employee)
+    {
+        $request->validate([
+            'terminateDate' => 'required|date',
+            'terminationReason' => 'nullable|string',
+        ]);
+
+        $employee->terminated_at = Carbon::parse($request->terminateDate);
+        $employee->termination_reason = $request->terminationReason;
+        $employee->save();
+
+        return response()->json(['success' => true, 'message' => 'Employee terminated successfully.']);
+    }
+
+    public function filterEmployees(Request $request, Employer $employer)
+    {
+        $query = $employer->employees()->whereNull('terminated_at');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('nationality')) {
+            $query->where('employeeNationality', $request->nationality);
+        }
+
+        if ($request->filled('mouGroup')) {
+            $query->where('workPermitMOUGroup', $request->mouGroup);
+        }
+
+        if ($request->filled('pinkCard')) {
+            if ($request->pinkCard === 'has_card') {
+                $query->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+            } elseif ($request->pinkCard === 'no_card') {
+                $query->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+            }
+        }
+
+        $employees = $query->get();
+
+        return response()->json($employees);
+    }
+
+    public function filterHistory(Request $request, Employer $employer)
+    {
+        $query = $employer->employees()->whereNotNull('terminated_at');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
+
+        $employees = $query->get();
+
+        return response()->json($employees);
     }
 }
