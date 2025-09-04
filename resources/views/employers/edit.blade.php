@@ -175,7 +175,7 @@
 <div class="content-section mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <h5>ข้อมูลพนักงาน <span id="employeeTotalCount" class="badge bg-secondary fw-normal">{{ count($employees) }}</span></h5>
-        {{-- <div class="d-flex gap-2 flex-wrap">
+        <div class="d-flex gap-2 flex-wrap">
             <input type="text" class="form-control form-control-sm" id="searchEmployeeInput" placeholder="ค้นหาพนักงาน..." style="width: 150px;">
             <select class="form-select form-select-sm" id="searchEmployeeNationality" style="width: 150px;">
                 <option value="">-- ทุกสัญชาติ --</option>
@@ -198,13 +198,13 @@
             </select>
             <button type="button" class="btn btn-sm btn-outline-success export-btn" data-export-type="employees"><i class="bi bi-download"></i> ส่งออก</button>
             <a href="{{ route('employers.employees.create', $employer) }}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
-        </div> --}}
+        </div>
     </div>
     <div id="employeeList" class="vstack gap-3">
         @forelse ($employees as $employee)
         <div class="employee-card d-flex justify-content-between align-items-start gap-3">
             <div class="d-flex align-items-center flex-grow-1">
-                <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo">
+                <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                 <div class="flex-grow-1">
                     <p class="mb-0"><strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong></p>
                     <p class="mb-1 text-muted small">{{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }} ({{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }})</p>
@@ -255,44 +255,84 @@
                     @csrf
                     <input type="hidden" id="addressId" name="id">
                     <input type="hidden" id="addressType" name="type">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="addrNo" class="form-label">บ้านเลขที่</label>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrNo" class="form-label">บ้านเลขที่ (ไทย)</label>
                             <input type="text" class="form-control" id="addrNo" name="addrNo">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="addrMoo" class="form-label">หมู่</label>
+                        <div class="col-md-6">
+                            <label for="addrNoEn" class="form-label">Address No. (EN)</label>
+                            <input type="text" class="form-control" id="addrNoEn" name="addrNoEn">
+                        </div>
+                    </div>
+                     <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrMoo" class="form-label">หมู่ (ไทย)</label>
                             <input type="text" class="form-control" id="addrMoo" name="addrMoo">
                         </div>
+                        <div class="col-md-6">
+                            <label for="addrMooEn" class="form-label">Moo (EN)</label>
+                            <input type="text" class="form-control" id="addrMooEn" name="addrMooEn">
+                        </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="addrSoi" class="form-label">ซอย</label>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrSoi" class="form-label">ซอย (ไทย)</label>
                             <input type="text" class="form-control" id="addrSoi" name="addrSoi">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="addrRoad" class="form-label">ถนน</label>
+                        <div class="col-md-6">
+                            <label for="addrSoiEn" class="form-label">Soi (EN)</label>
+                            <input type="text" class="form-control" id="addrSoiEn" name="addrSoiEn">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrRoad" class="form-label">ถนน (ไทย)</label>
                             <input type="text" class="form-control" id="addrRoad" name="addrRoad">
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="addrProvince" class="form-label">จังหวัด</label>
-                            <input type="text" class="form-control" id="addrProvince" name="addrProvince">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="addrDistrict" class="form-label">อำเภอ/เขต</label>
-                            <input type="text" class="form-control" id="addrDistrict" name="addrDistrict">
+                        <div class="col-md-6">
+                            <label for="addrRoadEn" class="form-label">Road (EN)</label>
+                            <input type="text" class="form-control" id="addrRoadEn" name="addrRoadEn">
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง</label>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง (ไทย)</label>
                             <input type="text" class="form-control" id="addrSubDistrict" name="addrSubDistrict">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="addrZipCode" class="form-label">รหัสไปรษณีย์</label>
+                        <div class="col-md-6">
+                            <label for="addrSubDistrictEn" class="form-label">Sub-district (EN)</label>
+                            <input type="text" class="form-control" id="addrSubDistrictEn" name="addrSubDistrictEn">
+                        </div>
+                    </div>
+                     <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrDistrict" class="form-label">อำเภอ/เขต (ไทย)</label>
+                            <input type="text" class="form-control" id="addrDistrict" name="addrDistrict">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="addrDistrictEn" class="form-label">District (EN)</label>
+                            <input type="text" class="form-control" id="addrDistrictEn" name="addrDistrictEn">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrProvince" class="form-label">จังหวัด (ไทย)</label>
+                            <input type="text" class="form-control" id="addrProvince" name="addrProvince">
+                        </div>
+                         <div class="col-md-6">
+                            <label for="addrProvinceEn" class="form-label">Province (EN)</label>
+                            <input type="text" class="form-control" id="addrProvinceEn" name="addrProvinceEn">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrZipCode" class="form-label">รหัสไปรษณีย์ (ไทย)</label>
                             <input type="text" class="form-control" id="addrZipCode" name="addrZipCode">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="addrZipCodeEn" class="form-label">Zipcode (EN)</label>
+                            <input type="text" class="form-control" id="addrZipCodeEn" name="addrZipCodeEn">
                         </div>
                     </div>
                 </form>
@@ -468,7 +508,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(error => console.error('Error:', error));
     });
 
-    /*
     // Filter Employees
     const searchInput = document.getElementById('searchEmployeeInput');
     const nationalitySelect = document.getElementById('searchEmployeeNationality');
@@ -497,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const card = `
                         <div class="employee-card d-flex justify-content-between align-items-start gap-3">
                             <div class="d-flex align-items-center flex-grow-1">
-                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo">
+                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                                 <div class="flex-grow-1">
                                     <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
                                     <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
@@ -525,7 +564,6 @@ document.addEventListener('DOMContentLoaded', function () {
     nationalitySelect.addEventListener('change', filterEmployees);
     mouGroupSelect.addEventListener('change', filterEmployees);
     pinkCardSelect.addEventListener('change', filterEmployees);
-    */
 
     // Filter History
     const searchHistoryInput = document.getElementById('searchHistoryInput');
@@ -545,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const card = `
                         <div class="employee-card bg-light d-flex justify-content-between align-items-start gap-3">
                              <div class="d-flex align-items-center flex-grow-1">
-                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo">
+                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                                 <div class="flex-grow-1">
                                     <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
                                     <p class="mb-1 text-muted small">${employee.employeeNameTh ?? ''} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>

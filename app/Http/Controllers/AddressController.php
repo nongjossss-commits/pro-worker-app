@@ -22,6 +22,14 @@ class AddressController extends Controller
             'addrDistrict' => 'nullable|string|max:255',
             'addrSubDistrict' => 'nullable|string|max:255',
             'addrZipCode' => 'nullable|string|max:255',
+            'addrNoEn' => 'nullable|string|max:255',
+            'addrMooEn' => 'nullable|string|max:255',
+            'addrSoiEn' => 'nullable|string|max:255',
+            'addrRoadEn' => 'nullable|string|max:255',
+            'addrSubDistrictEn' => 'nullable|string|max:255',
+            'addrDistrictEn' => 'nullable|string|max:255',
+            'addrProvinceEn' => 'nullable|string|max:255',
+            'addrZipCodeEn' => 'nullable|string|max:255',
         ]);
 
         $modelClass = 'App\\Models\\' . ucfirst($request->addressable_type);
@@ -49,6 +57,14 @@ class AddressController extends Controller
             'addrDistrict' => 'nullable|string|max:255',
             'addrSubDistrict' => 'nullable|string|max:255',
             'addrZipCode' => 'nullable|string|max:255',
+            'addrNoEn' => 'nullable|string|max:255',
+            'addrMooEn' => 'nullable|string|max:255',
+            'addrSoiEn' => 'nullable|string|max:255',
+            'addrRoadEn' => 'nullable|string|max:255',
+            'addrSubDistrictEn' => 'nullable|string|max:255',
+            'addrDistrictEn' => 'nullable|string|max:255',
+            'addrProvinceEn' => 'nullable|string|max:255',
+            'addrZipCodeEn' => 'nullable|string|max:255',
         ]);
 
         $address->update($request->all());
