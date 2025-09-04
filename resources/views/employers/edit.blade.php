@@ -175,7 +175,7 @@
 <div class="content-section mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <h5>ข้อมูลพนักงาน <span id="employeeTotalCount" class="badge bg-secondary fw-normal">{{ count($employees) }}</span></h5>
-        <div class="d-flex gap-2 flex-wrap">
+        {{-- <div class="d-flex gap-2 flex-wrap">
             <input type="text" class="form-control form-control-sm" id="searchEmployeeInput" placeholder="ค้นหาพนักงาน..." style="width: 150px;">
             <select class="form-select form-select-sm" id="searchEmployeeNationality" style="width: 150px;">
                 <option value="">-- ทุกสัญชาติ --</option>
@@ -198,7 +198,7 @@
             </select>
             <button type="button" class="btn btn-sm btn-outline-success export-btn" data-export-type="employees"><i class="bi bi-download"></i> ส่งออก</button>
             <a href="{{ route('employers.employees.create', $employer) }}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
-        </div>
+        </div> --}}
     </div>
     <div id="employeeList" class="vstack gap-3">
         @forelse ($employees as $employee)
@@ -467,6 +467,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(error => console.error('Error:', error));
     });
 
+    /*
     // Filter Employees
     const searchInput = document.getElementById('searchEmployeeInput');
     const nationalitySelect = document.getElementById('searchEmployeeNationality');
@@ -523,6 +524,7 @@ document.addEventListener('DOMContentLoaded', function () {
     nationalitySelect.addEventListener('change', filterEmployees);
     mouGroupSelect.addEventListener('change', filterEmployees);
     pinkCardSelect.addEventListener('change', filterEmployees);
+    */
 
     // Filter History
     const searchHistoryInput = document.getElementById('searchHistoryInput');
