@@ -171,6 +171,14 @@
 </div>
 
 
+@php
+$nationalityFlags = [
+    'ลาว' => 'la',
+    'กัมพูชา' => 'kh',
+    'เมียนมา' => 'mm',
+    'เวียดนาม' => 'vn',
+];
+@endphp
 {{-- Employee List Section --}}
 <div class="content-section mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
@@ -206,7 +214,12 @@
             <div class="d-flex align-items-center flex-grow-1">
                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                 <div class="flex-grow-1">
-                    <p class="mb-0"><strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong></p>
+                    <p class="mb-0">
+                        @if (isset($employee->nationality) && array_key_exists($employee->nationality, $nationalityFlags))
+                            <img src="https://flagcdn.com/w20/{{ $nationalityFlags[$employee->nationality] }}.png" srcset="https://flagcdn.com/w40/{{ $nationalityFlags[$employee->nationality] }}.png 2x" width="20" alt="{{ $employee->nationality }}" class="me-2" style="vertical-align: middle;">
+                        @endif
+                        <strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong>
+                    </p>
                     <p class="mb-1 text-muted small">{{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }} ({{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }})</p>
                     <p class="mb-1 text-muted small">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d M Y') : '-' }})</p>
                     <p class="mb-1 text-muted small">Work Permit: {{ $employee->employeeWorkPermit ?? '-' }} (หมดอายุ: {{ $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d M Y') : '-' }})</p>
@@ -297,42 +310,32 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง (ไทย)</label>
-                            <input type="text" class="form-control" id="addrSubDistrict" name="addrSubDistrict">
+                            <label for="addrProvince" class="form-label">จังหวัด</label>
+                            <select class="form-select" id="addrProvince" name="addrProvince">
+                                <option selected disabled>--- เลือกจังหวัด ---</option>
+                            </select>
+                            <input type="hidden" id="addrProvinceEn" name="addrProvinceEn">
                         </div>
                         <div class="col-md-6">
-                            <label for="addrSubDistrictEn" class="form-label">Sub-district (EN)</label>
-                            <input type="text" class="form-control" id="addrSubDistrictEn" name="addrSubDistrictEn">
-                        </div>
-                    </div>
-                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="addrDistrict" class="form-label">อำเภอ/เขต (ไทย)</label>
-                            <input type="text" class="form-control" id="addrDistrict" name="addrDistrict">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="addrDistrictEn" class="form-label">District (EN)</label>
-                            <input type="text" class="form-control" id="addrDistrictEn" name="addrDistrictEn">
+                            <label for="addrDistrict" class="form-label">อำเภอ/เขต</label>
+                            <select class="form-select" id="addrDistrict" name="addrDistrict" disabled>
+                                <option selected disabled>--- เลือกอำเภอ/เขต ---</option>
+                            </select>
+                            <input type="hidden" id="addrDistrictEn" name="addrDistrictEn">
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrProvince" class="form-label">จังหวัด (ไทย)</label>
-                            <input type="text" class="form-control" id="addrProvince" name="addrProvince">
-                        </div>
-                         <div class="col-md-6">
-                            <label for="addrProvinceEn" class="form-label">Province (EN)</label>
-                            <input type="text" class="form-control" id="addrProvinceEn" name="addrProvinceEn">
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="addrZipCode" class="form-label">รหัสไปรษณีย์ (ไทย)</label>
-                            <input type="text" class="form-control" id="addrZipCode" name="addrZipCode">
+                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง</label>
+                            <select class="form-select" id="addrSubDistrict" name="addrSubDistrict" disabled>
+                                <option selected disabled>--- เลือกตำบล/แขวง ---</option>
+                            </select>
+                            <input type="hidden" id="addrSubDistrictEn" name="addrSubDistrictEn">
                         </div>
                         <div class="col-md-6">
-                            <label for="addrZipCodeEn" class="form-label">Zipcode (EN)</label>
-                            <input type="text" class="form-control" id="addrZipCodeEn" name="addrZipCodeEn">
+                            <label for="addrZipCode" class="form-label">รหัสไปรษณีย์</label>
+                            <input type="text" class="form-control" id="addrZipCode" name="addrZipCode" readonly>
+                            <input type="hidden" id="addrZipCodeEn" name="addrZipCodeEn">
                         </div>
                     </div>
                 </form>
@@ -379,85 +382,290 @@
 document.addEventListener('DOMContentLoaded', function () {
     const employerId = '{{ $employer->id }}';
 
-    // Address Management
-    const addressModal = new bootstrap.Modal(document.getElementById('addressModal'));
-    const addressForm = document.getElementById('addressForm'); // Assuming you will add this form to the modal
+    // Thai Address & Address Management (AJAX version)
+    const addressModalEl = document.getElementById('addressModal');
+    const addressModal = new bootstrap.Modal(addressModalEl);
+    const addressForm = document.getElementById('addressForm');
     const addressModalLabel = document.getElementById('addressModalLabel');
+    const provinceSelect = document.getElementById('addrProvince');
+    const districtSelect = document.getElementById('addrDistrict');
+    const subDistrictSelect = document.getElementById('addrSubDistrict');
+    const zipCodeInput = document.getElementById('addrZipCode');
+    const provinceEnInput = document.getElementById('addrProvinceEn');
+    const districtEnInput = document.getElementById('addrDistrictEn');
+    const subDistrictEnInput = document.getElementById('addrSubDistrictEn');
+    const zipCodeEnInput = document.getElementById('addrZipCodeEn'); // Assuming this exists for consistency
 
-    document.querySelectorAll('.add-address-btn, .edit-address-btn').forEach(button => {
-        button.addEventListener('click', function () {
-            const addressId = this.dataset.id;
-            const addressType = this.dataset.addressType || this.closest('.content-section').querySelector('.add-address-btn').dataset.addressType;
+    let addressData = [];
+    let isAddressDataLoaded = false;
 
-            addressForm.reset();
-            addressForm.querySelector('#addressId').value = '';
-            addressForm.querySelector('#addressType').value = addressType;
-
-            if (addressId) { // Edit
-                addressModalLabel.textContent = 'แก้ไขที่อยู่';
-                fetch(`/addresses/${addressId}/edit`)
-                    .then(response => response.json())
-                    .then(data => {
-                        addressForm.querySelector('#addressId').value = data.id;
-                        Object.keys(data).forEach(key => {
-                            const field = addressForm.querySelector(`#${key}`);
-                            if(field) field.value = data[key];
-                        });
-                    });
-            } else { // Add
-                addressModalLabel.textContent = 'เพิ่มที่อยู่';
-            }
-            addressModal.show();
+    // Fetch Thai address data
+    fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json')
+        .then(response => response.json())
+        .then(data => {
+            addressData = data;
+            isAddressDataLoaded = true;
+            populateProvinces();
         });
+
+    function populateProvinces() {
+        provinceSelect.innerHTML = '<option selected disabled>--- เลือกจังหวัด ---</option>';
+        addressData.forEach(province => {
+            const option = new Option(province.name_th, province.name_th);
+            option.dataset.name_en = province.name_en;
+            provinceSelect.add(option);
+        });
+    }
+
+    // Event listeners for dropdowns to cascade
+    provinceSelect.addEventListener('change', function () {
+        districtSelect.innerHTML = '<option selected disabled>--- เลือกอำเภอ/เขต ---</option>';
+        subDistrictSelect.innerHTML = '<option selected disabled>--- เลือกตำบล/แขวง ---</option>';
+        zipCodeInput.value = '';
+        districtSelect.disabled = true;
+        subDistrictSelect.disabled = true;
+
+        const selectedOption = this.options[this.selectedIndex];
+        provinceEnInput.value = selectedOption.dataset.name_en || '';
+
+        const selectedProvince = addressData.find(p => p.name_th === this.value);
+        if (selectedProvince) {
+            selectedProvince.amphure.forEach(district => {
+                 const option = new Option(district.name_th, district.name_th);
+                 option.dataset.name_en = district.name_en;
+                 districtSelect.add(option);
+            });
+            districtSelect.disabled = false;
+        }
     });
 
+    districtSelect.addEventListener('change', function () {
+        subDistrictSelect.innerHTML = '<option selected disabled>--- เลือกตำบล/แขวง ---</option>';
+        zipCodeInput.value = '';
+        subDistrictSelect.disabled = true;
+
+        const selectedOption = this.options[this.selectedIndex];
+        districtEnInput.value = selectedOption.dataset.name_en || '';
+
+        const selectedProvince = addressData.find(p => p.name_th === provinceSelect.value);
+        if (selectedProvince) {
+            const selectedDistrict = selectedProvince.amphure.find(d => d.name_th === this.value);
+            if (selectedDistrict) {
+                selectedDistrict.tambon.forEach(subDistrict => {
+                    const option = new Option(subDistrict.name_th, subDistrict.name_th);
+                    option.dataset.name_en = subDistrict.name_en;
+                    option.dataset.zip_code = subDistrict.zip_code;
+                    subDistrictSelect.add(option);
+                });
+                subDistrictSelect.disabled = false;
+            }
+        }
+    });
+
+    subDistrictSelect.addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const zipCode = selectedOption.dataset.zip_code || '';
+        zipCodeInput.value = zipCode;
+        zipCodeEnInput.value = zipCode; // Assuming we store zip in EN field too
+        subDistrictEnInput.value = selectedOption.dataset.name_en || '';
+    });
+
+    function resetAddressForm() {
+        addressForm.reset();
+        addressForm.querySelector('#addressId').value = '';
+        provinceSelect.selectedIndex = 0;
+        districtSelect.innerHTML = '<option selected disabled>--- เลือกอำเภอ/เขต ---</option>';
+        districtSelect.disabled = true;
+        subDistrictSelect.innerHTML = '<option selected disabled>--- เลือกตำบล/แขวง ---</option>';
+        subDistrictSelect.disabled = true;
+    }
+
+    // Use event delegation for address buttons
+    document.body.addEventListener('click', function(e) {
+        const target = e.target.closest('.add-address-btn, .edit-address-btn');
+        if (!target) return;
+
+        resetAddressForm();
+        const addressId = target.dataset.id;
+        const addressType = target.dataset.addressType || target.closest('.content-section').querySelector('.add-address-btn').dataset.addressType;
+        addressForm.querySelector('#addressType').value = addressType;
+
+        if (addressId) { // Edit mode
+            addressModalLabel.textContent = 'แก้ไขที่อยู่';
+            const populateEditForm = (data) => {
+                addressForm.querySelector('#addressId').value = data.id;
+                // Populate regular inputs
+                Object.keys(data).forEach(key => {
+                    const field = addressForm.querySelector(`#${key}`);
+                    if (field && field.tagName !== 'SELECT') field.value = data[key];
+                });
+
+                // Function to handle dropdown population once data is ready
+                const populateDropdowns = () => {
+                    provinceSelect.value = data.addrProvince;
+                    const selectedProvince = addressData.find(p => p.name_th === data.addrProvince);
+                    if (selectedProvince) {
+                        provinceEnInput.value = selectedProvince.name_en;
+                        districtSelect.innerHTML = ''; // Clear previous options
+                        selectedProvince.amphure.forEach(d => {
+                            const option = new Option(d.name_th, d.name_th);
+                            option.dataset.name_en = d.name_en;
+                            districtSelect.add(option);
+                        });
+                        districtSelect.disabled = false;
+                        districtSelect.value = data.addrDistrict;
+                        districtEnInput.value = selectedProvince.amphure.find(d => d.name_th === data.addrDistrict)?.name_en || '';
+
+
+                        const selectedDistrict = selectedProvince.amphure.find(d => d.name_th === data.addrDistrict);
+                        if (selectedDistrict) {
+                            subDistrictSelect.innerHTML = ''; // Clear previous options
+                            selectedDistrict.tambon.forEach(sd => {
+                                const option = new Option(sd.name_th, sd.name_th);
+                                option.dataset.name_en = sd.name_en;
+                                option.dataset.zip_code = sd.zip_code;
+                                subDistrictSelect.add(option);
+                            });
+                            subDistrictSelect.disabled = false;
+                            subDistrictSelect.value = data.addrSubDistrict;
+                            subDistrictEnInput.value = selectedDistrict.tambon.find(sd => sd.name_th === data.addrSubDistrict)?.name_en || '';
+
+                            zipCodeInput.value = selectedDistrict.tambon.find(sd => sd.name_th === data.addrSubDistrict)?.zip_code || '';
+                        }
+                    }
+                };
+
+                // Check if address data from API is loaded
+                if (isAddressDataLoaded) {
+                    populateDropdowns();
+                } else {
+                    const waitInterval = setInterval(() => {
+                        if (isAddressDataLoaded) {
+                            clearInterval(waitInterval);
+                            populateDropdowns();
+                        }
+                    }, 100);
+                }
+            };
+            // Fetch the specific address details
+            fetch(`/addresses/${addressId}/edit`)
+                .then(response => response.json())
+                .then(data => populateEditForm(data));
+
+        } else { // Add mode
+            addressModalLabel.textContent = 'เพิ่มที่อยู่';
+        }
+        addressModal.show();
+    });
+
+    // Save Address (Create/Update)
     document.getElementById('saveAddress').addEventListener('click', function() {
         const addressId = addressForm.querySelector('#addressId').value;
         const url = addressId ? `/addresses/${addressId}` : '/addresses';
         const method = addressId ? 'PUT' : 'POST';
         const formData = new FormData(addressForm);
-        if(method === 'PUT') {
+
+        // Laravel needs _method field for PUT/PATCH requests sent via POST
+        if (method === 'PUT') {
             formData.append('_method', 'PUT');
         }
         formData.append('addressable_id', employerId);
         formData.append('addressable_type', 'App\\Models\\Employer');
 
-
         fetch(url, {
-            method: 'POST',
+            method: 'POST', // Always POST, with _method for spoofing
             body: formData,
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if(data.success){
-                location.reload(); // Simple reload to show changes
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
             }
+            return response.json();
+        })
+        .then(data => {
+            // Assuming the controller returns the saved address object with an 'id' and 'type'
+            const address = data.address;
+            const addressCardHtml = `
+                <div class="address-card d-flex justify-content-between align-items-start" id="address-card-${address.id}">
+                    <div>
+                        <p class="mb-0">
+                            เลขที่ ${address.addrNo || ''} หมู่ ${address.addrMoo || ''} ซอย${address.addrSoi || ''} ถนน${address.addrRoad || ''}
+                            แขวง/ตำบล ${address.addrSubDistrict || ''} เขต/อำเภอ ${address.addrDistrict || ''}
+                            ${address.addrProvince || ''} ${address.addrZipCode || ''}
+                        </p>
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary edit-address-btn" data-id="${address.id}" data-bs-toggle="modal" data-bs-target="#addressModal"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="${address.id}"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>`;
+
+            const listId = address.type === 'registered' ? 'registeredAddressList' : 'workplaceAddressList';
+            const addressList = document.getElementById(listId);
+
+            if (addressId) { // It was an update
+                const oldCard = document.getElementById(`address-card-${addressId}`);
+                if (oldCard) {
+                    oldCard.outerHTML = addressCardHtml;
+                }
+            } else { // It was a new address
+                // Remove the "no address" placeholder if it exists
+                const placeholder = addressList.querySelector('.text-muted');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+                addressList.insertAdjacentHTML('beforeend', addressCardHtml);
+            }
+
+            addressModal.hide();
+        })
+        .catch(error => {
+            console.error('Save Address Error:', error);
+            // You can display errors to the user here, e.g., in the modal
+            let errorMsg = 'เกิดข้อผิดพลาดในการบันทึก';
+            if (error.errors) {
+                 errorMsg += ':\n' + Object.values(error.errors).join('\n');
+            }
+            alert(errorMsg);
         });
     });
 
-    document.querySelectorAll('.delete-address-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            if(confirm('Are you sure you want to delete this address?')) {
-                const addressId = this.dataset.id;
-                fetch(`/addresses/${addressId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
+    // Delete Address
+    document.body.addEventListener('click', function(e) {
+        const target = e.target.closest('.delete-address-btn');
+        if (!target) return;
+
+        if (confirm('Are you sure you want to delete this address?')) {
+            const addressId = target.dataset.id;
+            fetch(`/addresses/${addressId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const cardToRemove = document.getElementById(`address-card-${addressId}`);
+                    if (cardToRemove) {
+                        const parentList = cardToRemove.parentElement;
+                        cardToRemove.remove();
+                        // If it was the last card, show placeholder text
+                        if (parentList.children.length === 0) {
+                             parentList.innerHTML = '<p class="text-muted">ยังไม่มีที่อยู่</p>';
+                        }
                     }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        this.closest('.address-card').remove();
-                    }
-                });
-            }
-        });
+                } else {
+                     alert(data.message || 'Error deleting address.');
+                }
+            })
+            .catch(error => console.error('Delete Address Error:', error));
+        }
     });
 
 

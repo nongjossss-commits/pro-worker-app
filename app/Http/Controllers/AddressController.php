@@ -37,7 +37,7 @@ class AddressController extends Controller
 
         $address = $parent->addresses()->create($request->except(['addressable_id', 'addressable_type']));
 
-        return response()->json($address);
+        return response()->json(['address' => $address]);
     }
 
     public function edit(Address $address)
@@ -69,13 +69,13 @@ class AddressController extends Controller
 
         $address->update($request->all());
 
-        return response()->json($address);
+        return response()->json(['address' => $address]);
     }
 
     public function destroy(Address $address)
     {
         $address->delete();
 
-        return response()->json(['success' => 'Address deleted successfully.']);
+        return response()->json(['success' => true]);
     }
 }
