@@ -227,7 +227,7 @@ $nationalityFlags = [
                 </div>
             </div>
             <div class="btn-group btn-group-sm">
-                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
+                <a href="{{ route('employers.employees.edit', ['employer' => $employer, 'employee' => $employee]) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
                 <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
                 <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
             </div>
