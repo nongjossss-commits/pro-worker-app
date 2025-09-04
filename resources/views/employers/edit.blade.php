@@ -197,7 +197,7 @@
                 <option value="no_card">ไม่มีบัตรชมพู</option>
             </select>
             <button type="button" class="btn btn-sm btn-outline-success export-btn" data-export-type="employees"><i class="bi bi-download"></i> ส่งออก</button>
-            <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
+            <a href="{{ route('employers.employees.create', $employer) }}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
         </div>
     </div>
     <div id="employeeList" class="vstack gap-3">
