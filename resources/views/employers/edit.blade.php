@@ -242,7 +242,6 @@
 
 @endsection
 
-@push('scripts')
 {{-- Add/Edit Address Modal --}}
 <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -334,6 +333,8 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const employerId = '{{ $employer->id }}';
