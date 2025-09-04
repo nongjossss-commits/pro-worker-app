@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employer;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -12,10 +13,23 @@ class EmployerController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $employers = Employer::all();
-        return view('employers.index', compact('employers'));
+        $query = Employer::query();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('employerNameTh', 'like', "%{$search}%")
+                  ->orWhere('employerNameEn', 'like', "%{$search}%")
+                  ->orWhere('employerId', 'like', "%{$search}%");
+            });
+        }
+
+        $employers = $query->get();
+        $jobOwners = User::pluck('name', 'id');
+
+        return view('employers.index', compact('employers', 'jobOwners'));
     }
 
     /**

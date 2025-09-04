@@ -10,10 +10,15 @@
         </div>
     @endif
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-         <h2 class="mb-3 mb-md-0">รายการข้อมูลนายจ้าง</h2>
-         <div class="d-flex gap-2">
+        <h2 class="mb-3 mb-md-0">รายการข้อมูลนายจ้าง</h2>
+        <div class="d-flex gap-2">
+            <form action="{{ route('employers.index') }}" method="GET" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}">
+                <button type="submit" class="btn btn-sm btn-primary">ค้นหา</button>
+            </form>
+            <a href="#" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> Export</a>
             <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
-         </div>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle">
@@ -23,6 +28,7 @@
                     <th>ชื่อนายจ้าง (ไทย)</th>
                     <th>รหัสนายจ้าง</th>
                     <th>ประเภทกิจการ</th>
+                    <th>เจ้าของงาน</th>
                     <th class="text-center">จัดการ</th>
                 </tr>
             </thead>
@@ -33,6 +39,7 @@
                         <td>{{ $employer->employerNameTh }}</td>
                         <td>{{ $employer->employerId }}</td>
                         <td>{{ $employer->businessType }}</td>
+                        <td>{{ $jobOwners[$employer->jobOwnerId] ?? 'N/A' }}</td>
                         <td class="text-center">
                             <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
                             <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline">
@@ -44,7 +51,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted">ไม่พบข้อมูลนายจ้าง</td>
+                        <td colspan="6" class="text-center text-muted">ไม่พบข้อมูลนายจ้าง</td>
                     </tr>
                 @endforelse
             </tbody>
