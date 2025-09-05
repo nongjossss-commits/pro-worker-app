@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->string('passportType')->nullable();
-            $table->string('workPermitMOUGroup')->nullable();
+        Schema::table('addresses', function (Blueprint $table) {
+            //
         });
     }
 
@@ -22,9 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->dropColumn('passportType');
-            $table->dropColumn('workPermitMOUGroup');
+        Schema::table('addresses', function (Blueprint $table) {
+            //
         });
     }
 };
