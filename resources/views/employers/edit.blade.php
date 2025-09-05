@@ -125,9 +125,14 @@
             <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
                 <div>
                     <p class="mb-0">
-                        เลขที่ {{ $address->addrNo }} หมู่ {{ $address->addrMoo }} ซอย{{ $address->addrSoi }} ถนน{{ $address->addrRoad }}
-                        แขวง/ตำบล {{ $address->addrSubDistrict }} เขต/อำเภอ {{ $address->addrDistrict }}
-                        {{ $address->addrProvince }} {{ $address->addrZipCode }}
+                        เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
+                        แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
+                        {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
+                    </p>
+                    <p class="mb-0 text-muted small">
+                        Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
+                        {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
+                        {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
                     </p>
                 </div>
                 <div class="btn-group btn-group-sm">
@@ -154,9 +159,14 @@
             <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
                 <div>
                     <p class="mb-0">
-                        เลขที่ {{ $address->addrNo }} หมู่ {{ $address->addrMoo }} ซอย{{ $address->addrSoi }} ถนน{{ $address->addrRoad }}
-                        แขวง/ตำบล {{ $address->addrSubDistrict }} เขต/อำเภอ {{ $address->addrDistrict }}
-                        {{ $address->addrProvince }} {{ $address->addrZipCode }}
+                        เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
+                        แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
+                        {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
+                    </p>
+                    <p class="mb-0 text-muted small">
+                        Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
+                        {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
+                        {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
                     </p>
                 </div>
                 <div class="btn-group btn-group-sm">
@@ -240,17 +250,13 @@ $nationalityFlags = [
 
 {{-- Employment History Section --}}
 <div class="content-section mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
-        <h5>ประวัติการจ้างงาน</h5>
-        <div class="d-flex gap-2">
-            <input type="text" class="form-control form-control-sm" id="searchHistoryInput" placeholder="ค้นหาในประวัติ..." style="width: 200px;">
-            <button type="button" class="btn btn-sm btn-outline-success export-btn" data-export-type="employmentHistory"><i class="bi bi-download"></i> ส่งออก</button>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">ประวัติการจ้างงาน</h5>
+        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#historyModal">
+            <i class="bi bi-clock-history"></i> ดูประวัติการจ้างงาน
+        </button>
     </div>
-    <div id="employmentHistoryList" class="vstack gap-3">
-        {{-- Terminated employees will be loaded here via JavaScript --}}
-         <p class="text-muted">ไม่มีประวัติการจ้างงาน</p>
-    </div>
+    <p>ดูประวัติพนักงานที่เคยจ้างงานทั้งหมดได้ที่นี่</p>
 </div>
 
 @endsection
@@ -343,6 +349,33 @@ $nationalityFlags = [
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                 <button type="button" class="btn btn-primary" id="saveAddress">บันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Employment History Modal --}}
+<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historyModalLabel">ประวัติการจ้างงาน</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" id="searchHistoryInput" placeholder="ค้นหาในประวัติ..." style="width: 200px;">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-success export-btn" data-export-type="employmentHistory"><i class="bi bi-download"></i> ส่งออก</button>
+                </div>
+                <div id="employmentHistoryList" class="vstack gap-3">
+                    {{-- Terminated employees will be loaded here via JavaScript --}}
+                     <p class="text-muted">กำลังโหลด...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
             </div>
         </div>
     </div>
@@ -596,6 +629,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             เลขที่ ${address.addrNo || ''} หมู่ ${address.addrMoo || ''} ซอย${address.addrSoi || ''} ถนน${address.addrRoad || ''}
                             แขวง/ตำบล ${address.addrSubDistrict || ''} เขต/อำเภอ ${address.addrDistrict || ''}
                             ${address.addrProvince || ''} ${address.addrZipCode || ''}
+                        </p>
+                        <p class="mb-0 text-muted small">
+                            Addr: ${address.addrNoEn || ''}, Moo: ${address.addrMooEn || ''}, Soi: ${address.addrSoiEn || ''}, Road: ${address.addrRoadEn || ''},
+                            ${address.addrSubDistrictEn || ''}, ${address.addrDistrictEn || ''},
+                            ${address.addrProvinceEn || ''} ${address.addrZipCodeEn || ''}
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
