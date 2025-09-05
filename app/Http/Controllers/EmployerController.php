@@ -82,6 +82,27 @@ class EmployerController extends Controller
         }
         $employer->save();
 
+        // Handle Addresses from JSON
+        if ($request->filled('registered_addresses')) {
+            $addresses = json_decode($request->registered_addresses, true);
+            if (is_array($addresses)) {
+                foreach ($addresses as $addressData) {
+                    // The 'type' is already in the JSON data from the form
+                    $employer->addresses()->create($addressData);
+                }
+            }
+        }
+
+        if ($request->filled('workplace_addresses')) {
+            $addresses = json_decode($request->workplace_addresses, true);
+            if (is_array($addresses)) {
+                foreach ($addresses as $addressData) {
+                    // The 'type' is already in the JSON data from the form
+                    $employer->addresses()->create($addressData);
+                }
+            }
+        }
+
         return redirect()->route('employers.index')
             ->with('success', 'เพิ่มข้อมูลนายจ้างเรียบร้อยแล้ว');
     }
