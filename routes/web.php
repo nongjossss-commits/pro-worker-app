@@ -19,6 +19,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     // Application routes that require login
+    Route::get('/employers/export', [EmployerController::class, 'export'])->name('employers.export');
     Route::resource('employers', EmployerController::class);
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/filter-history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');

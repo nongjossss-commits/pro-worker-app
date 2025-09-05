@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployerController extends Controller
 {
@@ -220,5 +221,39 @@ class EmployerController extends Controller
         $employees = $query->get();
 
         return response()->json($employees);
+    }
+
+    public function export()
+    {
+        $employers = Employer::all();
+        $csvHeader = ['ID', 'Employer ID', 'Thai Name', 'English Name', 'Business Type', 'Signer Name TH', 'Signer Name EN', 'Tax ID', 'Reg Capital', 'Reg Date'];
+
+        $response = new StreamedResponse(function() use ($employers, $csvHeader) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $csvHeader);
+
+            foreach ($employers as $employer) {
+                $data = [
+                    $employer->id,
+                    $employer->employerId,
+                    $employer->employerNameTh,
+                    $employer->employerNameEn,
+                    $employer->businessType,
+                    $employer->signerNameTh,
+                    $employer->signerNameEn,
+                    $employer->employerTaxId,
+                    $employer->regCapital,
+                    $employer->regDate,
+                ];
+                fputcsv($handle, $data);
+            }
+
+            fclose($handle);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="employers.csv"',
+        ]);
+
+        return $response;
     }
 }

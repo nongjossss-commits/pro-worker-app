@@ -16,7 +16,7 @@
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}">
                 <button type="submit" class="btn btn-sm btn-primary">ค้นหา</button>
             </form>
-            <a href="#" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> Export</a>
+            <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
             <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
         </div>
     </div>
