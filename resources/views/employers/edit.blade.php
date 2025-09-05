@@ -836,6 +836,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <p class="mb-0 text-danger small"><strong>เลิกจ้างวันที่:</strong> ${new Date(employee.terminated_at).toLocaleDateString('en-GB')} - ${employee.termination_reason || 'N/A'}</p>
                                 </div>
                             </div>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-success restore-employee-btn" data-id="${employee.id}" title="นำกลับ"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                <button type="button" class="btn btn-outline-danger permanent-delete-btn" data-id="${employee.id}" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
+                            </div>
                         </div>`;
                         historyList.innerHTML += card;
                     });
