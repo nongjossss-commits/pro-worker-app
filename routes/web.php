@@ -20,10 +20,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     // Application routes that require login
     Route::get('/employers/export', [EmployerController::class, 'export'])->name('employers.export');
+    Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
+    Route::get('/employers/{employer}/export-history', [EmployerController::class, 'exportHistory'])->name('employers.exportHistory');
     Route::resource('employers', EmployerController::class);
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/filter-history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
     Route::post('employees/{employee}/terminate', [EmployerController::class, 'terminate'])->name('employees.terminate');
+    Route::post('/employees/{employee}/restore', [EmployerController::class, 'restoreEmployee'])->name('employees.restore');
+    Route::delete('/employees/{employee}/force-delete', [EmployerController::class, 'forceDeleteEmployee'])->name('employees.forceDelete');
     Route::resource('employers.employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
