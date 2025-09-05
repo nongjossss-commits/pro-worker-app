@@ -49,6 +49,8 @@ class Employee extends Model
         'document_6',
         'document_description_6',
         'nature_of_work',
+        'terminated_at',
+        'termination_reason',
     ];
 
     public function employer()
