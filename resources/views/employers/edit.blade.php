@@ -270,6 +270,7 @@ $nationalityFlags = [
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div id="address-errors" class="alert alert-danger" style="display: none;"></div>
                 <form id="addressForm">
                     @csrf
                     <input type="hidden" id="addressId" name="id">
@@ -548,6 +549,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function resetAddressForm() {
+        document.getElementById('address-errors').style.display = 'none';
         addressForm.reset();
         addressForm.querySelector('#addressId').value = '';
         provinceSelect.selectedIndex = 0;
@@ -679,7 +681,7 @@ document.addEventListener('DOMContentLoaded', function () {
             formData.append('_method', 'PUT');
         }
         formData.append('addressable_id', employerId);
-        formData.append('addressable_type', 'App\\Models\\Employer');
+        formData.append('addressable_type', 'Employer');
 
         fetch(url, {
             method: 'POST', // Always POST, with _method for spoofing
@@ -739,12 +741,22 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(error => {
             console.error('Save Address Error:', error);
-            // You can display errors to the user here, e.g., in the modal
-            let errorMsg = 'เกิดข้อผิดพลาดในการบันทึก';
+            const errorDiv = document.getElementById('address-errors');
+            errorDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
+
             if (error.errors) {
-                 errorMsg += ':\n' + Object.values(error.errors).join('\n');
+                let errorList = '<ul>';
+                for (const key in error.errors) {
+                    errorList += `<li>${error.errors[key][0]}</li>`;
+                }
+                errorList += '</ul>';
+                errorDiv.innerHTML = errorList;
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.innerHTML = '<ul><li>เกิดข้อผิดพลาดในการบันทึกที่ไม่ทราบสาเหตุ</li></ul>';
+                errorDiv.style.display = 'block';
             }
-            alert(errorMsg);
         });
     });
 
