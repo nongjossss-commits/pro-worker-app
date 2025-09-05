@@ -214,7 +214,7 @@ $nationalityFlags = [
                 <option value="has_card">มีบัตรชมพู</option>
                 <option value="no_card">ไม่มีบัตรชมพู</option>
             </select>
-            <button type="button" class="btn btn-sm btn-outline-success export-btn" data-export-type="employees"><i class="bi bi-download"></i> ส่งออก</button>
+            <a href="{{ route('employers.exportEmployees', $employer) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> ส่งออก</a>
             <a href="{{ route('employers.employees.create', $employer) }}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
         </div>
     </div>
@@ -316,28 +316,47 @@ $nationalityFlags = [
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrProvince" class="form-label">จังหวัด</label>
+                            <label for="addrProvince" class="form-label">จังหวัด (Thai)</label>
                             <select class="form-select" id="addrProvince" name="addrProvince">
                                 <option selected disabled>--- เลือกจังหวัด ---</option>
                             </select>
-                            <input type="hidden" id="addrProvinceEn" name="addrProvinceEn">
                         </div>
                         <div class="col-md-6">
-                            <label for="addrDistrict" class="form-label">อำเภอ/เขต</label>
-                            <select class="form-select" id="addrDistrict" name="addrDistrict" disabled>
-                                <option selected disabled>--- เลือกอำเภอ/เขต ---</option>
+                            <label for="addrProvinceEn" class="form-label">Province (EN)</label>
+                            <select class="form-select" id="addrProvinceEn" name="addrProvinceEn" disabled>
+                                <option selected disabled>--- Province ---</option>
                             </select>
-                            <input type="hidden" id="addrDistrictEn" name="addrDistrictEn">
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง</label>
+                            <label for="addrDistrict" class="form-label">อำเภอ/เขต (Thai)</label>
+                            <select class="form-select" id="addrDistrict" name="addrDistrict" disabled>
+                                <option selected disabled>--- เลือกอำเภอ/เขต ---</option>
+                            </select>
+                        </div>
+                         <div class="col-md-6">
+                            <label for="addrDistrictEn" class="form-label">District (EN)</label>
+                            <select class="form-select" id="addrDistrictEn" name="addrDistrictEn" disabled>
+                                <option selected disabled>--- District ---</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง (Thai)</label>
                             <select class="form-select" id="addrSubDistrict" name="addrSubDistrict" disabled>
                                 <option selected disabled>--- เลือกตำบล/แขวง ---</option>
                             </select>
-                            <input type="hidden" id="addrSubDistrictEn" name="addrSubDistrictEn">
                         </div>
+                        <div class="col-md-6">
+                            <label for="addrSubDistrictEn" class="form-label">Sub-district (EN)</label>
+                            <select class="form-select" id="addrSubDistrictEn" name="addrSubDistrictEn" disabled>
+                                <option selected disabled>--- Sub-district ---</option>
+                            </select>
+                        </div>
+                    </div>
+                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrZipCode" class="form-label">รหัสไปรษณีย์</label>
                             <input type="text" class="form-control" id="addrZipCode" name="addrZipCode" readonly>
@@ -367,7 +386,7 @@ $nationalityFlags = [
                     <div class="d-flex gap-2">
                         <input type="text" class="form-control form-control-sm" id="searchHistoryInput" placeholder="ค้นหาในประวัติ..." style="width: 200px;">
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-success export-btn" data-export-type="employmentHistory"><i class="bi bi-download"></i> ส่งออก</button>
+                    <a href="{{ route('employers.exportHistory', $employer) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> ส่งออก</a>
                 </div>
                 <div id="employmentHistoryList" class="vstack gap-3">
                     {{-- Terminated employees will be loaded here via JavaScript --}}
@@ -415,19 +434,23 @@ $nationalityFlags = [
 document.addEventListener('DOMContentLoaded', function () {
     const employerId = '{{ $employer->id }}';
 
-    // Thai Address & Address Management (AJAX version)
+    // --- Address Management ---
     const addressModalEl = document.getElementById('addressModal');
     const addressModal = new bootstrap.Modal(addressModalEl);
     const addressForm = document.getElementById('addressForm');
     const addressModalLabel = document.getElementById('addressModalLabel');
+
+    // Thai dropdowns
     const provinceSelect = document.getElementById('addrProvince');
     const districtSelect = document.getElementById('addrDistrict');
     const subDistrictSelect = document.getElementById('addrSubDistrict');
     const zipCodeInput = document.getElementById('addrZipCode');
-    const provinceEnInput = document.getElementById('addrProvinceEn');
-    const districtEnInput = document.getElementById('addrDistrictEn');
-    const subDistrictEnInput = document.getElementById('addrSubDistrictEn');
-    const zipCodeEnInput = document.getElementById('addrZipCodeEn'); // Assuming this exists for consistency
+
+    // English dropdowns
+    const provinceEnSelect = document.getElementById('addrProvinceEn');
+    const districtEnSelect = document.getElementById('addrDistrictEn');
+    const subDistrictEnSelect = document.getElementById('addrSubDistrictEn');
+    const zipCodeEnInput = document.getElementById('addrZipCodeEn');
 
     let addressData = [];
     let isAddressDataLoaded = false;
@@ -450,6 +473,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Function to populate an English select
+    function populateEnglishSelect(selectElement, enName, placeholder) {
+        selectElement.innerHTML = ''; // Clear options
+        if (enName) {
+            const enOption = new Option(enName, enName);
+            selectElement.add(enOption);
+            selectElement.value = enName;
+        } else {
+            selectElement.innerHTML = `<option selected disabled>--- ${placeholder} ---</option>`;
+        }
+    }
+
     // Event listeners for dropdowns to cascade
     provinceSelect.addEventListener('change', function () {
         districtSelect.innerHTML = '<option selected disabled>--- เลือกอำเภอ/เขต ---</option>';
@@ -457,9 +492,14 @@ document.addEventListener('DOMContentLoaded', function () {
         zipCodeInput.value = '';
         districtSelect.disabled = true;
         subDistrictSelect.disabled = true;
+        populateEnglishSelect(districtEnSelect, '', 'District');
+        populateEnglishSelect(subDistrictEnSelect, '', 'Sub-district');
+
 
         const selectedOption = this.options[this.selectedIndex];
-        provinceEnInput.value = selectedOption.dataset.name_en || '';
+        const provinceEnName = selectedOption.dataset.name_en || '';
+        populateEnglishSelect(provinceEnSelect, provinceEnName, 'Province');
+
 
         const selectedProvince = addressData.find(p => p.name_th === this.value);
         if (selectedProvince) {
@@ -476,9 +516,11 @@ document.addEventListener('DOMContentLoaded', function () {
         subDistrictSelect.innerHTML = '<option selected disabled>--- เลือกตำบล/แขวง ---</option>';
         zipCodeInput.value = '';
         subDistrictSelect.disabled = true;
+        populateEnglishSelect(subDistrictEnSelect, '', 'Sub-district');
 
         const selectedOption = this.options[this.selectedIndex];
-        districtEnInput.value = selectedOption.dataset.name_en || '';
+        const districtEnName = selectedOption.dataset.name_en || '';
+        populateEnglishSelect(districtEnSelect, districtEnName, 'District');
 
         const selectedProvince = addressData.find(p => p.name_th === provinceSelect.value);
         if (selectedProvince) {
@@ -499,8 +541,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedOption = this.options[this.selectedIndex];
         const zipCode = selectedOption.dataset.zip_code || '';
         zipCodeInput.value = zipCode;
-        zipCodeEnInput.value = zipCode; // Assuming we store zip in EN field too
-        subDistrictEnInput.value = selectedOption.dataset.name_en || '';
+        if(zipCodeEnInput) zipCodeEnInput.value = zipCode; // Assuming we store zip in EN field too
+
+        const subDistrictEnName = selectedOption.dataset.name_en || '';
+        populateEnglishSelect(subDistrictEnSelect, subDistrictEnName, 'Sub-district');
     });
 
     function resetAddressForm() {
@@ -511,6 +555,9 @@ document.addEventListener('DOMContentLoaded', function () {
         districtSelect.disabled = true;
         subDistrictSelect.innerHTML = '<option selected disabled>--- เลือกตำบล/แขวง ---</option>';
         subDistrictSelect.disabled = true;
+        populateEnglishSelect(provinceEnSelect, '', 'Province');
+        populateEnglishSelect(districtEnSelect, '', 'District');
+        populateEnglishSelect(subDistrictEnSelect, '', 'Sub-district');
     }
 
     // Use event delegation for address buttons
@@ -530,15 +577,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Populate regular inputs
                 Object.keys(data).forEach(key => {
                     const field = addressForm.querySelector(`#${key}`);
-                    if (field && field.tagName !== 'SELECT') field.value = data[key];
+                    if (field && field.tagName !== 'SELECT') {
+                        // Check if the field is not one of the English dropdowns
+                        if (!['addrProvinceEn', 'addrDistrictEn', 'addrSubDistrictEn'].includes(field.id)) {
+                            field.value = data[key];
+                        }
+                    }
                 });
 
                 // Function to handle dropdown population once data is ready
                 const populateDropdowns = () => {
+                    // Thai Province
                     provinceSelect.value = data.addrProvince;
                     const selectedProvince = addressData.find(p => p.name_th === data.addrProvince);
                     if (selectedProvince) {
-                        provinceEnInput.value = selectedProvince.name_en;
+                        // English Province
+                        populateEnglishSelect(provinceEnSelect, data.addrProvinceEn, 'Province');
+
+                        // Thai District
                         districtSelect.innerHTML = ''; // Clear previous options
                         selectedProvince.amphure.forEach(d => {
                             const option = new Option(d.name_th, d.name_th);
@@ -547,11 +603,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         });
                         districtSelect.disabled = false;
                         districtSelect.value = data.addrDistrict;
-                        districtEnInput.value = selectedProvince.amphure.find(d => d.name_th === data.addrDistrict)?.name_en || '';
-
-
                         const selectedDistrict = selectedProvince.amphure.find(d => d.name_th === data.addrDistrict);
+
                         if (selectedDistrict) {
+                            // English District
+                            populateEnglishSelect(districtEnSelect, data.addrDistrictEn, 'District');
+
+                            // Thai Sub-district
                             subDistrictSelect.innerHTML = ''; // Clear previous options
                             selectedDistrict.tambon.forEach(sd => {
                                 const option = new Option(sd.name_th, sd.name_th);
@@ -561,9 +619,15 @@ document.addEventListener('DOMContentLoaded', function () {
                             });
                             subDistrictSelect.disabled = false;
                             subDistrictSelect.value = data.addrSubDistrict;
-                            subDistrictEnInput.value = selectedDistrict.tambon.find(sd => sd.name_th === data.addrSubDistrict)?.name_en || '';
+                            const selectedSubDistrict = selectedDistrict.tambon.find(sd => sd.name_th === data.addrSubDistrict);
 
-                            zipCodeInput.value = selectedDistrict.tambon.find(sd => sd.name_th === data.addrSubDistrict)?.zip_code || '';
+                            if (selectedSubDistrict) {
+                                // English Sub-district
+                                populateEnglishSelect(subDistrictEnSelect, data.addrSubDistrictEn, 'Sub-district');
+                                // Zipcode
+                                zipCodeInput.value = selectedSubDistrict.zip_code || '';
+                                if(zipCodeEnInput) zipCodeEnInput.value = selectedSubDistrict.zip_code || '';
+                            }
                         }
                     }
                 };
@@ -596,7 +660,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const addressId = addressForm.querySelector('#addressId').value;
         const url = addressId ? `/addresses/${addressId}` : '/addresses';
         const method = addressId ? 'PUT' : 'POST';
+
+        // Temporarily enable selects to include them in FormData
+        provinceEnSelect.disabled = false;
+        districtEnSelect.disabled = false;
+        subDistrictEnSelect.disabled = false;
+
         const formData = new FormData(addressForm);
+
+        // Re-disable them
+        provinceEnSelect.disabled = true;
+        districtEnSelect.disabled = true;
+        subDistrictEnSelect.disabled = true;
+
 
         // Laravel needs _method field for PUT/PATCH requests sent via POST
         if (method === 'PUT') {
@@ -852,6 +928,62 @@ document.addEventListener('DOMContentLoaded', function () {
     searchHistoryInput.addEventListener('input', filterHistory);
     // Initial load of history
     filterHistory();
+
+    // --- History Action Buttons ---
+    const historyList = document.getElementById('employmentHistoryList');
+
+    historyList.addEventListener('click', function(e) {
+        const restoreBtn = e.target.closest('.restore-employee-btn');
+        const deleteBtn = e.target.closest('.permanent-delete-btn');
+
+        if (restoreBtn) {
+            const employeeId = restoreBtn.dataset.id;
+            const employeeCard = restoreBtn.closest('.employee-card');
+            if (confirm('Are you sure you want to restore this employee?')) {
+                fetch(`/employees/${employeeId}/restore`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        employeeCard.remove();
+                        // For simplicity, reload the page to update both lists
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Failed to restore employee.');
+                    }
+                })
+                .catch(error => console.error('Restore Error:', error));
+            }
+        }
+
+        if (deleteBtn) {
+            const employeeId = deleteBtn.dataset.id;
+            const employeeCard = deleteBtn.closest('.employee-card');
+            if (confirm('This action is irreversible. Are you sure you want to permanently delete this employee?')) {
+                fetch(`/employees/${employeeId}/force-delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        employeeCard.remove();
+                    } else {
+                        alert(data.message || 'Failed to delete employee.');
+                    }
+                })
+                .catch(error => console.error('Delete Error:', error));
+            }
+        }
+    });
 });
 </script>
 @endpush

@@ -132,8 +132,40 @@
                 @enderror
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">บันทึก</button>
-        <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
+        <hr>
+        <p class="text-muted">* ส่วนนี้จะใช้งานได้หลังจากบันทึกข้อมูลนายจ้างแล้ว</p>
+        <fieldset disabled>
+            {{-- Registered Address Section --}}
+            <div class="content-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
+                    <button type="button" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+                    </button>
+                </div>
+                <div class="vstack gap-3">
+                    <p class="text-muted">ยังไม่มีที่อยู่</p>
+                </div>
+            </div>
+
+            {{-- Workplace Address Section --}}
+            <div class="content-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
+                    <button type="button" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+                    </button>
+                </div>
+                <div class="vstack gap-3">
+                    <p class="text-muted">ยังไม่มีที่อยู่</p>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">บันทึก</button>
+            <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
+        </div>
     </form>
 </div>
 @endsection

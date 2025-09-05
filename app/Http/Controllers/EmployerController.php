@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployerController extends Controller
@@ -171,6 +172,28 @@ class EmployerController extends Controller
         return response()->json(['success' => true, 'message' => 'Employee terminated successfully.']);
     }
 
+    public function restoreEmployee(Employee $employee)
+    {
+        $employee->update([
+            'terminated_at' => null,
+            'termination_reason' => null,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Employee restored successfully.']);
+    }
+
+    public function forceDeleteEmployee(Employee $employee)
+    {
+        // Delete photo from storage if it exists
+        if ($employee->employeePhoto && Storage::disk('public')->exists($employee->employeePhoto)) {
+            Storage::disk('public')->delete($employee->employeePhoto);
+        }
+
+        $employee->forceDelete();
+
+        return response()->json(['success' => true, 'message' => 'Employee permanently deleted.']);
+    }
+
     public function filterEmployees(Request $request, Employer $employer)
     {
         $query = $employer->employees()->whereNull('terminated_at');
@@ -252,6 +275,82 @@ class EmployerController extends Controller
         }, 200, [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="employers.csv"',
+        ]);
+
+        return $response;
+    }
+
+    public function exportEmployees(Employer $employer)
+    {
+        $employees = $employer->employees()->whereNull('terminated_at')->get();
+        $csvHeader = [
+            'ID', 'English Name', 'Thai Name', 'Position', 'Nationality', 'Passport No', 'Passport Expiry',
+            'Work Permit No', 'Work Permit Expiry', 'MOU Group', 'Visa Expiry', '90-Day Report'
+        ];
+        $fileName = "{$employer->employerId}_employees.csv";
+
+        $response = new StreamedResponse(function() use ($employees, $csvHeader) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $csvHeader);
+
+            foreach ($employees as $employee) {
+                $data = [
+                    $employee->id,
+                    $employee->employeeNameEn,
+                    $employee->employeeNameTh,
+                    $employee->employeePosition,
+                    $employee->employeeNationality,
+                    $employee->employeePassport,
+                    $employee->passportExpiryDate,
+                    $employee->employeeWorkPermit,
+                    $employee->workPermitExpiryDate,
+                    $employee->workPermitMOUGroup,
+                    $employee->visaExpiryDate,
+                    $employee->ninetyDayReportDate,
+                ];
+                fputcsv($handle, $data);
+            }
+
+            fclose($handle);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        ]);
+
+        return $response;
+    }
+
+    public function exportHistory(Employer $employer)
+    {
+        $employees = $employer->employees()->whereNotNull('terminated_at')->get();
+        $csvHeader = [
+            'ID', 'English Name', 'Thai Name', 'Position', 'Nationality', 'Passport No',
+            'Terminated Date', 'Termination Reason'
+        ];
+        $fileName = "{$employer->employerId}_history.csv";
+
+        $response = new StreamedResponse(function() use ($employees, $csvHeader) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $csvHeader);
+
+            foreach ($employees as $employee) {
+                $data = [
+                    $employee->id,
+                    $employee->employeeNameEn,
+                    $employee->employeeNameTh,
+                    $employee->employeePosition,
+                    $employee->employeeNationality,
+                    $employee->employeePassport,
+                    $employee->terminated_at,
+                    $employee->termination_reason,
+                ];
+                fputcsv($handle, $data);
+            }
+
+            fclose($handle);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
         ]);
 
         return $response;
