@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('notifications.cancel');
     Route::post('/notifications/{notification}/renew', [NotificationController::class, 'renew'])->name('notifications.renew');
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
+    Route::delete('/notifications/{notification}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.forceDelete');
     Route::get('/notifications/export', [NotificationController::class, 'export'])->name('notifications.export');
 });
 require __DIR__.'/auth.php';

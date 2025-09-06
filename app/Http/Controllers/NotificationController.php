@@ -95,20 +95,20 @@ class NotificationController extends Controller
         $employee = $notification->employee;
         switch ($notification->type) {
             case 'passport_expiry':
-                $employee->passportExpiryDate = $newDueDate;
+                $employee->passport_expiry_date = $newDueDate;
                 break;
             case 'ninety_day_report':
-                $employee->ninetyDaysReportDate = $newDueDate;
+                $employee->ninety_day_report_date = $newDueDate;
                 break;
             case 'visa_expiry':
-                $employee->visaExpiryDate = $newDueDate;
+                $employee->visa_expiry_date = $newDueDate;
                 break;
              case 'work_permit_expiry':
                 // This might need more specific logic if work_permit_expiry is a generic type
                 // For now, assuming it updates a general work permit date.
-                // Adjust field name if necessary, e.g., 'workPermitExpiryDate'
-                 if (isset($employee->workPermitExpiryDate)) {
-                    $employee->workPermitExpiryDate = $newDueDate;
+                // Adjust field name if necessary, e.g., 'work_permit_expiry_date'
+                 if (isset($employee->work_permit_expiry_date)) {
+                    $employee->work_permit_expiry_date = $newDueDate;
                  }
                 break;
             // Add other cases as needed for ci_renewal, etc.
@@ -164,6 +164,16 @@ class NotificationController extends Controller
     }
 
     /**
+     * Permanently delete a notification.
+     */
+    public function forceDelete(Notification $notification)
+    {
+        $notification->delete();
+
+        return back()->with('success', 'รายการถูกลบอย่างถาวร');
+    }
+
+    /**
      * Reusable private method to get filtered notification queries.
      */
     private function getFilteredNotificationsQuery(Request $request, string $type, ?string $formPrefix = null): Builder
@@ -195,38 +205,36 @@ class NotificationController extends Controller
         }
 
         // Apply filters
-        if ($request->filled("search_{$prefix}")) {
-            $searchTerm = $request->input("search_{$prefix}");
+        if ($searchTerm = $request->input("search_{$prefix}")) {
             $query->whereHas('employee', function ($q) use ($searchTerm) {
-                $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                  ->orWhere('companyWorkerId', 'like', "%{$searchTerm}%");
+                $q->where(function ($q) use ($searchTerm) {
+                    $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                      ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                      ->orWhere('companyWorkerId', 'like', "%{$searchTerm}%");
+                });
             });
         }
 
-        if ($request->filled("nationality_{$prefix}")) {
-            $query->whereHas('employee', function ($q) use ($request, $prefix) {
-                $q->where('employeeNationality', $request->input("nationality_{$prefix}"));
+        if ($nationality = $request->input("nationality_{$prefix}")) {
+            $query->whereHas('employee', function ($q) use ($nationality) {
+                $q->where('employeeNationality', $nationality);
             });
         }
 
-        if ($request->filled("mou_{$prefix}")) {
-            $query->whereHas('employee', function ($q) use ($request, $prefix) {
-                $q->where('workPermitMOUGroup', $request->input("mou_{$prefix}"));
+        if ($mouGroup = $request->input("mou_{$prefix}")) {
+            $query->whereHas('employee', function ($q) use ($mouGroup) {
+                $q->where('workPermitMOUGroup', $mouGroup);
             });
         }
 
-        if ($request->filled("month_{$prefix}")) {
-            $month = $request->input("month_{$prefix}");
-            $query->whereMonth('due_date', '=', (int)$month + 1);
+        if ($month = $request->input("month_{$prefix}")) {
+            if (is_numeric($month)) {
+                $query->whereMonth('due_date', '=', (int)$month + 1);
+            }
         }
 
-        if ($type === 'resolution_renew' && $request->filled("step_{$prefix}")) {
-            // This requires a more complex condition based on employee's JSON data
-            // Assuming 'task_tracking_data' is a JSON field on the employee model
-            $step = $request->input("step_{$prefix}");
+        if ($type === 'resolution_renew' && ($step = $request->input("step_{$prefix}"))) {
             $query->whereHas('employee', function($q) use ($step) {
-                // Example logic, may need adjustment based on actual JSON structure
                 switch($step) {
                     case 'not_started':
                         $q->whereJsonContains('task_tracking_data->step1_checked', false);
