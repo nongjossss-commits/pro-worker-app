@@ -7,6 +7,7 @@ use App\Http\Controllers\ImporterController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\JobOwnerController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -32,6 +33,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
     Route::resource('delegates', DelegateController::class);
+
+    Route::resource('job-owners', JobOwnerController::class)->only(['index', 'store', 'destroy']);
 
     Route::post('/addresses', [App\Http\Controllers\AddressController::class, 'store'])->name('addresses.store');
     Route::get('/addresses/{address}/edit', [App\Http\Controllers\AddressController::class, 'edit'])->name('addresses.edit');

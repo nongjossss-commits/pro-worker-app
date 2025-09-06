@@ -37,7 +37,7 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="employerId" class="form-label">รหัสนายจ้าง</label>
-                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="{{ old('employerId') }}" required>
+                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="{{ $newEmployerId }}" readonly required>
                 @error('employerId')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
