@@ -39,6 +39,21 @@
                 <input type="text" class="form-control" id="employerId" name="employerId" value="{{ old('employerId', $employer->employerId) }}" readonly required>
             </div>
             <div class="col-md-6">
+                <label for="job_owner_id" class="form-label">เจ้าของงาน</label>
+                <div class="input-group">
+                    <select class="form-select" id="job_owner_id" name="job_owner_id">
+                        <option selected disabled>--- เลือกเจ้าของงาน ---</option>
+                        @foreach($jobOwners as $owner)
+                            <option value="{{ $owner->id }}" {{ $employer->job_owner_id == $owner->id ? 'selected' : '' }}>{{ $owner->name }}</option>
+                        @endforeach
+                    </select>
+                    <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#jobOwnerModal">+</button>
+                    <button class="btn btn-outline-danger" type="button" id="deleteJobOwnerBtn">-</button>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
                 <label for="employerTaxId" class="form-label">เลขประจำตัวนายจ้าง</label>
                 <input type="text" class="form-control" id="employerTaxId" name="employerTaxId" value="{{ old('employerTaxId', $employer->employerTaxId) }}">
             </div>

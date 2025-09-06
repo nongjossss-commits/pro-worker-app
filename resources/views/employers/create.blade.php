@@ -33,6 +33,19 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
+            <div class="col-md-6">
+                <label for="job_owner_id" class="form-label">เจ้าของงาน</label>
+                <div class="input-group">
+                    <select class="form-select" id="job_owner_id" name="job_owner_id">
+                        <option selected disabled>--- เลือกเจ้าของงาน ---</option>
+                        @foreach($jobOwners as $owner)
+                            <option value="{{ $owner->id }}">{{ $owner->name }}</option>
+                        @endforeach
+                    </select>
+                    <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#jobOwnerModal">+</button>
+                    <button class="btn btn-outline-danger" type="button" id="deleteJobOwnerBtn">-</button>
+                </div>
+            </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
