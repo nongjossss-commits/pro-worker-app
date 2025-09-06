@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('notifications.cancel');
+    Route::post('/notifications/{notification}/renew', [NotificationController::class, 'renew'])->name('notifications.renew');
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
     Route::get('/notifications/export', [NotificationController::class, 'export'])->name('notifications.export');
 });
