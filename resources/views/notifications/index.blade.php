@@ -332,4 +332,82 @@ $activeTab = request()->input('tab', 'ninety_day_report');
         </div>
     </div>
 </div>
+
+<!-- Cancel Notification Modal -->
+<div class="modal fade" id="cancelNotificationModal" tabindex="-1" aria-labelledby="cancelNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelNotificationModalLabel">ยืนยันการยกเลิกการต่ออายุ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="cancelNotificationForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <input type="hidden" name="notification_id" id="cancelNotificationId">
+                    <div class="mb-3">
+                        <label for="cancellation_reason" class="form-label">กรุณาระบุเหตุผลที่ยกเลิก:</label>
+                        <textarea class="form-control" id="cancellation_reason" name="cancellation_reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="submit" class="btn btn-danger">ยืนยันการยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Renew Notification Modal -->
+<div class="modal fade" id="renewNotificationModal" tabindex="-1" aria-labelledby="renewNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renewNotificationModalLabel">ต่ออายุการแจ้งเตือน</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="renewNotificationForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <input type="hidden" name="notification_id" id="renewNotificationId">
+                    <div class="mb-3">
+                        <label for="new_due_date" class="form-label">เลือกวันหมดอายุใหม่:</label>
+                        <input type="date" class="form-control" id="new_due_date" name="new_due_date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var cancelModal = document.getElementById('cancelNotificationModal');
+    cancelModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var notificationId = button.getAttribute('data-notification-id');
+        var form = document.getElementById('cancelNotificationForm');
+        form.action = '/notifications/' + notificationId + '/cancel';
+        var modalNotificationIdInput = cancelModal.querySelector('#cancelNotificationId');
+        modalNotificationIdInput.value = notificationId;
+    });
+
+    var renewModal = document.getElementById('renewNotificationModal');
+    renewModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var notificationId = button.getAttribute('data-notification-id');
+        var form = document.getElementById('renewNotificationForm');
+        form.action = '/notifications/' + notificationId + '/renew';
+        var modalNotificationIdInput = renewModal.querySelector('#renewNotificationId');
+        modalNotificationIdInput.value = notificationId;
+    });
+});
+</script>
+@endpush

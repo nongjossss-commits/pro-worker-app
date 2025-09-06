@@ -75,6 +75,50 @@ class NotificationController extends Controller
     }
 
     /**
+     * Renew a notification's due date.
+     */
+    public function renew(Request $request, Notification $notification)
+    {
+        $request->validate([
+            'new_due_date' => 'required|date',
+        ]);
+
+        $newDueDate = $request->input('new_due_date');
+
+        // Update the notification
+        $notification->update([
+            'due_date' => $newDueDate,
+            'status' => 'unread', // Reset status in case it was acted upon
+        ]);
+
+        // Update the corresponding employee field
+        $employee = $notification->employee;
+        switch ($notification->type) {
+            case 'passport_expiry':
+                $employee->passportExpiryDate = $newDueDate;
+                break;
+            case 'ninety_day_report':
+                $employee->ninetyDaysReportDate = $newDueDate;
+                break;
+            case 'visa_expiry':
+                $employee->visaExpiryDate = $newDueDate;
+                break;
+             case 'work_permit_expiry':
+                // This might need more specific logic if work_permit_expiry is a generic type
+                // For now, assuming it updates a general work permit date.
+                // Adjust field name if necessary, e.g., 'workPermitExpiryDate'
+                 if (isset($employee->workPermitExpiryDate)) {
+                    $employee->workPermitExpiryDate = $newDueDate;
+                 }
+                break;
+            // Add other cases as needed for ci_renewal, etc.
+        }
+        $employee->save();
+
+        return back()->with('success', 'การแจ้งเตือนได้รับการต่ออายุเรียบร้อยแล้ว');
+    }
+
+    /**
      * Handle the export of notifications to CSV.
      */
     public function export(Request $request)
@@ -134,12 +178,19 @@ class NotificationController extends Controller
                 $query->where('status', 'cancelled');
                 break;
             case 'work_permit_expired':
-                $query->where('type', 'work_permit_expiry')->whereDate('due_date', '<', now());
+                $query->where('type', 'work_permit_expiry')
+                      ->whereDate('due_date', '<', now())
+                      ->where('status', 'unread');
+                break;
+            case 'work_permit_expiry':
+                $query->where('type', 'work_permit_expiry')
+                      ->whereDate('due_date', '>=', now())
+                      ->where('status', 'unread');
                 break;
             default:
                 $query->where('status', 'unread');
-                if ($type !== 'permits') {
-                     $query->where('type', $type);
+                if ($type !== 'permits') { // 'permits' is a tab group, not a notification type
+                    $query->where('type', $type);
                 }
         }
 

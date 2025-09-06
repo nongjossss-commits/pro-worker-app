@@ -19,11 +19,9 @@
 
 <div class="alert {{ $alertClass }} notification-item">
     <div class="d-flex align-items-center gap-3">
-        {{-- Employee Photo Placeholder --}}
+        {{-- Employee Photo --}}
         <div class="flex-shrink-0">
-             <div class="d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background-color: #e9ecef; border-radius: 50%;">
-                <i class="bi bi-person fs-4 text-muted"></i>
-            </div>
+            <img src="{{ $notification->employee->employeePhoto ? asset('storage/' . $notification->employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
         </div>
         <div class="d-flex justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
@@ -59,24 +57,27 @@
                  <p class="mb-0 small"><strong>วันหมดอายุ:</strong> {{ $dueDate->format('d/m/Y') }}</p>
             </div>
             <div class="text-end flex-shrink-0 ms-2">
-                @if($daysRemaining !== null)
-                <span class="badge bg-dark mb-2 d-block text-nowrap">
+                {{-- Days Remaining Badge --}}
+                @php
+                    $dueDate = \Carbon\Carbon::parse($notification->due_date);
+                    $now = \Carbon\Carbon::today(); // Use today() to ignore time part
+                    $daysRemaining = $now->diffInDays($dueDate, false);
+                @endphp
+
+                <span class="badge {{ $daysRemaining < 0 ? 'bg-dark' : ($daysRemaining <= 15 ? 'bg-danger' : 'bg-warning') }} mb-2 d-block text-nowrap">
                     @if ($daysRemaining >= 0)
                         เหลือ {{ $daysRemaining }} วัน
                     @else
                         เลยกำหนด {{ abs($daysRemaining) }} วัน
                     @endif
                 </span>
-                @endif
 
                 <div class="btn-group btn-group-sm">
-                    <a href="#" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></a>
-                    @if($activeTab === 'resolution_renew')
-                        <button type="button" class="btn btn-primary" title="ติดตามงาน"><i class="bi bi-clipboard-check"></i></button>
-                    @else
-                        <button type="button" class="btn btn-success" title="ต่ออายุ"><i class="bi bi-calendar-check"></i></button>
+                    <a href="{{ route('employers.edit', $notification->employee->employer_id) }}" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></a>
+                    @if($activeTab !== 'resolution_renew')
+                        <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
                     @endif
-                    <button type="button" class="btn btn-warning" title="ยกเลิกการต่ออายุ"><i class="bi bi-x-circle"></i></button>
+                    <a href="#" class="btn btn-warning" title="ยกเลิกการต่ออายุ" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
                 </div>
             </div>
         </div>
