@@ -35,7 +35,7 @@ class NotificationController extends Controller
 
             $query = $this->getFilteredNotificationsQuery($request, $type, $formPrefix);
             $pageName = str_replace('_', '', $type) . '_page';
-            $notifications = $query->paginate(10, ['*'], $pageName)->withQueryString();
+            $notifications = $query->with('employee.employer')->paginate(10, ['*'], $pageName)->withQueryString();
             $groupedNotifications->put($type, $notifications);
         }
 
@@ -106,7 +106,7 @@ class NotificationController extends Controller
                     $notification->id,
                     $notification->employee->companyWorkerId ?? 'N/A',
                     ($notification->employee->employeeNameTh ?? 'N/A') . ' / ' . ($notification->employee->employeeNameEn ?? 'N/A'),
-                    $notification->employee->employer->name ?? 'N/A',
+                    $notification->employee->employer->employerNameTh ?? 'N/A',
                     $notification->type,
                     $notification->due_date,
                     $notification->status,
