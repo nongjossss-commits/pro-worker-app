@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employer;
 use App\Models\Employee;
 use App\Models\User;
+use App\Models\JobOwner;
 use App\Models\Counter;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -44,8 +45,9 @@ class EmployerController extends Controller
         $counter = Counter::firstOrCreate(['name' => 'employer'], ['value' => 0]);
         $nextId = $counter->value + 1;
         $newEmployerId = 'MC-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        $jobOwners = JobOwner::all();
 
-        return view('employers.create', compact('newEmployerId'));
+        return view('employers.create', compact('newEmployerId', 'jobOwners'));
     }
 
     /**
@@ -130,7 +132,8 @@ class EmployerController extends Controller
     {
         $employees = $employer->employees()->whereNull('terminated_at')->get();
         $terminated_employees = $employer->employees()->whereNotNull('terminated_at')->get();
-        return view('employers.edit', compact('employer', 'employees', 'terminated_employees'));
+        $jobOwners = JobOwner::all();
+        return view('employers.edit', compact('employer', 'employees', 'terminated_employees', 'jobOwners'));
     }
 
     /**

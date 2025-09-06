@@ -146,6 +146,201 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+    {{-- Job Owner Management Modal --}}
+    <div class="modal fade" id="jobOwnerModal" tabindex="-1" aria-labelledby="jobOwnerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="jobOwnerModalLabel">จัดการข้อมูลเจ้าของงาน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {{-- List of current owners --}}
+                    <h5>เจ้าของงานทั้งหมด</h5>
+                    <ul class="list-group mb-3" id="jobOwnerList">
+                        {{-- Owners will be loaded here via JS --}}
+                        <li class="list-group-item text-muted">กำลังโหลด...</li>
+                    </ul>
+
+                    <hr>
+
+                    {{-- Add new owner form --}}
+                    <h6>เพิ่มเจ้าของงานใหม่</h6>
+                    <div class="input-group">
+                        <input type="text" id="newJobOwnerName" class="form-control" placeholder="ชื่อเจ้าของงาน">
+                        <button class="btn btn-primary" type="button" id="saveNewJobOwnerBtn">บันทึก</button>
+                    </div>
+                    <div id="jobOwnerError" class="text-danger small mt-1" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @stack('scripts')
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const jobOwnerModalEl = document.getElementById('jobOwnerModal');
+        if (!jobOwnerModalEl) return;
+
+        const jobOwnerModal = new bootstrap.Modal(jobOwnerModalEl);
+        const jobOwnerList = document.getElementById('jobOwnerList');
+        const newJobOwnerNameInput = document.getElementById('newJobOwnerName');
+        const saveNewJobOwnerBtn = document.getElementById('saveNewJobOwnerBtn');
+        const jobOwnerError = document.getElementById('jobOwnerError');
+        const mainJobOwnerSelect = document.getElementById('job_owner_id');
+        const deleteJobOwnerBtn = document.getElementById('deleteJobOwnerBtn');
+
+        // --- Main Logic ---
+
+        // 1. Open Modal: Fetch and display all current job owners
+        jobOwnerModalEl.addEventListener('show.bs.modal', function () {
+            fetchJobOwners();
+        });
+
+        // 2. Add Owner: Handle click on "Save New Owner" button
+        saveNewJobOwnerBtn.addEventListener('click', function () {
+            const name = newJobOwnerNameInput.value.trim();
+            if (!name) {
+                showError('กรุณาใส่ชื่อเจ้าของงาน');
+                return;
+            }
+
+            fetch('{{ route('job-owners.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ name: name })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Add to modal list
+                    appendOwnerToList(data.jobOwner);
+                    // Add to main dropdown and select it
+                    if (mainJobOwnerSelect) {
+                        const newOption = new Option(data.jobOwner.name, data.jobOwner.id, true, true);
+                        mainJobOwnerSelect.add(newOption, null);
+                    }
+                    newJobOwnerNameInput.value = '';
+                    hideError();
+                }
+            })
+            .catch(error => {
+                if (error.errors && error.errors.name) {
+                    showError(error.errors.name[0]);
+                } else {
+                    showError('เกิดข้อผิดพลาดในการบันทึก');
+                }
+            });
+        });
+
+        // 3. Delete Owner: Handle clicks on delete icons in the modal
+        jobOwnerList.addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-job-owner-icon')) {
+                const ownerId = e.target.dataset.id;
+                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบเจ้าของงานนี้?')) {
+                    deleteOwner(ownerId);
+                }
+            }
+        });
+
+        // 4. Delete selected owner from the main form
+        if (deleteJobOwnerBtn && mainJobOwnerSelect) {
+            deleteJobOwnerBtn.addEventListener('click', function() {
+                const selectedOwnerId = mainJobOwnerSelect.value;
+                if (selectedOwnerId && selectedOwnerId !== '--- เลือกเจ้าของงาน ---') {
+                     if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบเจ้าของงานที่เลือก?')) {
+                        deleteOwner(selectedOwnerId);
+                    }
+                } else {
+                    alert('กรุณาเลือกเจ้าของงานที่ต้องการลบ');
+                }
+            });
+        }
+
+
+        // --- Helper Functions ---
+
+        function fetchJobOwners() {
+            jobOwnerList.innerHTML = '<li class="list-group-item text-muted">กำลังโหลด...</li>';
+            fetch('{{ route('job-owners.index') }}')
+                .then(response => response.json())
+                .then(data => {
+                    jobOwnerList.innerHTML = '';
+                    if (data.length === 0) {
+                        jobOwnerList.innerHTML = '<li class="list-group-item text-muted">ไม่มีข้อมูลเจ้าของงาน</li>';
+                    } else {
+                        data.forEach(owner => appendOwnerToList(owner));
+                    }
+                });
+        }
+
+        function appendOwnerToList(owner) {
+             // Check if "no data" placeholder exists and remove it
+            const placeholder = jobOwnerList.querySelector('.text-muted');
+            if (placeholder) {
+                placeholder.parentElement.innerHTML = '';
+            }
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.id = `job-owner-${owner.id}`;
+            li.textContent = owner.name;
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'bi bi-trash-fill text-danger delete-job-owner-icon';
+            deleteIcon.style.cursor = 'pointer';
+            deleteIcon.dataset.id = owner.id;
+            li.appendChild(deleteIcon);
+            jobOwnerList.appendChild(li);
+        }
+
+        function deleteOwner(ownerId) {
+            fetch(`/job-owners/${ownerId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove from modal list
+                    const listItem = document.getElementById(`job-owner-${ownerId}`);
+                    if (listItem) listItem.remove();
+
+                    // Remove from main dropdown
+                    if (mainJobOwnerSelect) {
+                        const optionToRemove = mainJobOwnerSelect.querySelector(`option[value='${ownerId}']`);
+                        if (optionToRemove) optionToRemove.remove();
+                    }
+                } else {
+                    alert(data.message || 'ไม่สามารถลบข้อมูลได้');
+                }
+            });
+        }
+
+        function showError(message) {
+            jobOwnerError.textContent = message;
+            jobOwnerError.style.display = 'block';
+            newJobOwnerNameInput.classList.add('is-invalid');
+        }
+
+        function hideError() {
+            jobOwnerError.textContent = '';
+            jobOwnerError.style.display = 'none';
+            newJobOwnerNameInput.classList.remove('is-invalid');
+        }
+    });
+    </script>
 </body>
 </html>

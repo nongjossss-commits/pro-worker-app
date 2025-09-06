@@ -27,7 +27,7 @@ class JobOwnerController extends Controller
 
         $jobOwner = JobOwner::create($request->all());
 
-        return response()->json($jobOwner, 201);
+        return response()->json(['success' => true, 'jobOwner' => $jobOwner], 201);
     }
 
     /**
@@ -37,6 +37,6 @@ class JobOwnerController extends Controller
     {
         $jobOwner->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['success' => true, 'message' => 'Job owner deleted successfully.']);
     }
 }
