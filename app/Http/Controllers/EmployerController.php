@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Employer;
 use App\Models\Employee;
 use App\Models\User;
+use App\Models\Counter;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\DB;
 
 class EmployerController extends Controller
 {
@@ -39,7 +41,11 @@ class EmployerController extends Controller
      */
     public function create()
     {
-        return view('employers.create');
+        $counter = Counter::firstOrCreate(['name' => 'employer'], ['value' => 0]);
+        $nextId = $counter->value + 1;
+        $newEmployerId = 'MC-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+        return view('employers.create', compact('newEmployerId'));
     }
 
     /**
@@ -64,44 +70,46 @@ class EmployerController extends Controller
             'document_map' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
-        $data = $request->except(['document_company_registration', 'document_vat_registration', 'document_map']);
+        DB::transaction(function () use ($request) {
+            $data = $request->except(['document_company_registration', 'document_vat_registration', 'document_map', 'registered_addresses', 'workplace_addresses']);
 
-        $employer = Employer::create($data);
+            $employer = Employer::create($data);
 
-        if ($request->hasFile('document_company_registration')) {
-            $path = $request->file('document_company_registration')->store("employer_documents/{$employer->id}", 'public');
-            $employer->document_company_registration = $path;
-        }
-        if ($request->hasFile('document_vat_registration')) {
-            $path = $request->file('document_vat_registration')->store("employer_documents/{$employer->id}", 'public');
-            $employer->document_vat_registration = $path;
-        }
-        if ($request->hasFile('document_map')) {
-            $path = $request->file('document_map')->store("employer_documents/{$employer->id}", 'public');
-            $employer->document_map = $path;
-        }
-        $employer->save();
+            if ($request->hasFile('document_company_registration')) {
+                $path = $request->file('document_company_registration')->store("employer_documents/{$employer->id}", 'public');
+                $employer->document_company_registration = $path;
+            }
+            if ($request->hasFile('document_vat_registration')) {
+                $path = $request->file('document_vat_registration')->store("employer_documents/{$employer->id}", 'public');
+                $employer->document_vat_registration = $path;
+            }
+            if ($request->hasFile('document_map')) {
+                $path = $request->file('document_map')->store("employer_documents/{$employer->id}", 'public');
+                $employer->document_map = $path;
+            }
+            $employer->save();
 
-        // Handle Addresses from JSON
-        if ($request->filled('registered_addresses')) {
-            $addresses = json_decode($request->registered_addresses, true);
-            if (is_array($addresses)) {
-                foreach ($addresses as $addressData) {
-                    // The 'type' is already in the JSON data from the form
-                    $employer->addresses()->create($addressData);
+            // Handle Addresses from JSON
+            if ($request->filled('registered_addresses')) {
+                $addresses = json_decode($request->registered_addresses, true);
+                if (is_array($addresses)) {
+                    foreach ($addresses as $addressData) {
+                        $employer->addresses()->create($addressData);
+                    }
                 }
             }
-        }
 
-        if ($request->filled('workplace_addresses')) {
-            $addresses = json_decode($request->workplace_addresses, true);
-            if (is_array($addresses)) {
-                foreach ($addresses as $addressData) {
-                    // The 'type' is already in the JSON data from the form
-                    $employer->addresses()->create($addressData);
+            if ($request->filled('workplace_addresses')) {
+                $addresses = json_decode($request->workplace_addresses, true);
+                if (is_array($addresses)) {
+                    foreach ($addresses as $addressData) {
+                        $employer->addresses()->create($addressData);
+                    }
                 }
             }
-        }
+
+            Counter::where('name', 'employer')->increment('value');
+        });
 
         return redirect()->route('employers.index')
             ->with('success', 'เพิ่มข้อมูลนายจ้างเรียบร้อยแล้ว');
