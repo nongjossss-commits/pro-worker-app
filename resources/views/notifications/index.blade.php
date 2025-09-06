@@ -309,17 +309,22 @@ $activeTab = request()->input('tab', 'ninety_day_report');
                         <div class="d-flex align-items-center gap-3">
                             <div class="d-flex justify-content-between align-items-start w-100">
                                 <div class="flex-grow-1">
-                                    <h5 class="alert-heading mb-1">{{ $notification->employee->name_en ?? 'N/A' }}</h5>
-                                    <p class="mb-1"><strong>นายจ้าง:</strong> {{ $notification->employee->employer->name ?? 'N/A' }}</p>
+                                    <h5 class="alert-heading mb-1">{{ $notification->employee->employeeNameEn ?? 'N/A' }}</h5>
+                                    <p class="mb-1"><strong>นายจ้าง:</strong> {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}</p>
                                     <p class="mb-0 small"><strong>ประเภทที่ยกเลิก:</strong> {{ $notification->type }}</p>
                                     <p class="mb-0 small text-danger"><strong>เหตุผล:</strong> {{ $notification->cancellation_reason }}</p>
                                 </div>
                                 <div class="text-end flex-shrink-0 ms-2">
+                                    <a href="{{ route('employers.edit', $notification->employee->employer_id) }}#employee-card-{{ $notification->employee_id }}" class="btn btn-info btn-sm"><i class="bi bi-search"></i> View Info</a>
                                     <form action="{{ route('notifications.restore', $notification) }}" method="POST" class="d-inline">
                                         @csrf
-                                        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-arrow-counterclockwise"></i> นำกลับ</button>
+                                        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
                                     </form>
-                                    <a href="#" class="btn btn-info btn-sm"><i class="bi bi-search"></i> ดูข้อมูล</a>
+                                    <form action="{{ route('notifications.forceDelete', $notification) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this notification?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> Permanent Delete</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>

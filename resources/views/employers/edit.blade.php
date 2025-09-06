@@ -235,7 +235,7 @@ $nationalityFlags = [
     </div>
     <div id="employeeList" class="vstack gap-3">
         @forelse ($employees as $employee)
-        <div class="employee-card d-flex justify-content-between align-items-start gap-3">
+        <div class="employee-card d-flex justify-content-between align-items-start gap-3" id="employee-card-{{ $employee->id }}">
             <div class="d-flex align-items-center flex-grow-1">
                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                 <div class="flex-grow-1">
