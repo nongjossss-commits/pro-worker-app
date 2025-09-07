@@ -9,21 +9,18 @@ class Employee extends Model
 {
     use HasFactory;
 
+    // This is the cleaned up and correct fillable array.
     protected $fillable = [
         'employer_id',
         'employeeNameTh',
         'employeeNameEn',
         'employeeNationality',
         'employeePassport',
-        'passportExpiryDate',
-        'passport_expiry_date',
+        'passportExpiryDate', // Correct camelCase
         'employeeWorkPermit',
-        'workPermitExpiryDate',
-        'work_permit_expiry_date',
-        'visaExpiryDate',
-        'visa_expiry_date',
-        'ninetyDayReportDate',
-        'ninety_day_report_date',
+        'workPermitExpiryDate', // Correct camelCase
+        'visaExpiryDate',       // Correct camelCase
+        'ninetyDayReportDate',  // Correct camelCase
         'employeeTitleTh',
         'employeeTitleEn',
         'employeeDob',

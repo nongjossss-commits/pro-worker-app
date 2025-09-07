@@ -79,45 +79,40 @@ class NotificationController extends Controller
      */
     public function renew(Request $request, Notification $notification)
     {
-        $request->validate([
-            'new_due_date' => 'required|date',
-        ]);
+        $request->validate(['new_due_date' => 'required|date']);
+        $newDate = $request->input('new_due_date');
 
-        $newDueDate = $request->input('new_due_date');
+        // Update the notification itself
+        $notification->update(['due_date' => $newDate]);
 
-        // Update the notification
-        $notification->update([
-            'due_date' => $newDueDate,
-            'status' => 'unread', // Reset status in case it was acted upon
-        ]);
-
-        // Update the corresponding employee field
+        // Update the corresponding field on the employee record
         $employee = $notification->employee;
-        $updateField = null;
+        if ($employee) {
+            $updateField = null;
+            switch ($notification->type) {
+                case 'passport_expiry':
+                case 'ci_renewal':
+                    $updateField = 'passportExpiryDate';
+                    break;
+                case 'visa_expiry':
+                    $updateField = 'visaExpiryDate';
+                    break;
+                case 'work_permit_expiry':
+                case 'resolution_renewal':
+                    $updateField = 'workPermitExpiryDate';
+                    break;
+                case 'ninety_day_report':
+                    $updateField = 'ninetyDayReportDate';
+                    break;
+            }
 
-        switch ($notification->type) {
-            case 'passport_expiry':
-                $updateField = 'passport_expiry_date';
-                break;
-            case 'ninety_day_report':
-                $updateField = 'ninety_day_report_date';
-                break;
-            case 'visa_expiry':
-                $updateField = 'visa_expiry_date';
-                break;
-            case 'work_permit_expiry':
-                $updateField = 'work_permit_expiry_date';
-                break;
-            // No default case needed, handled by the if below
+            if ($updateField) {
+                // Use the correct camelCase field name to update
+                $employee->update([$updateField => $newDate]);
+            }
         }
 
-        if ($updateField) {
-            $employee->update([
-                $updateField => $newDueDate,
-            ]);
-        }
-
-        return back()->with('success', 'การแจ้งเตือนได้รับการต่ออายุเรียบร้อยแล้ว');
+        return back()->with('success', 'ต่ออายุสำเร็จ');
     }
 
     /**
