@@ -31,6 +31,9 @@ class CheckExpiries extends Command
             ];
 
             foreach ($standardChecks as $type => $expiryDateString) {
+                if ($type === 'passport_expiry' && $employee->passportType === 'CI') {
+                    continue; // Skip standard passport check for CI employees
+                }
                 if ($expiryDateString) {
                     $expiryDate = Carbon::parse($expiryDateString)->startOfDay();
                     $thresholdDate = $today->copy()->addDays(45);

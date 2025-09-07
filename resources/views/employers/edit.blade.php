@@ -1011,6 +1011,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
+
+    // Highlight employee card from URL hash
+    if (window.location.hash) {
+        try {
+            const elementId = window.location.hash.substring(1);
+            const element = document.getElementById(elementId);
+            if (element && element.classList.contains('employee-card')) {
+                element.classList.add('highlight');
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } catch (e) {
+            console.error("Error handling URL hash for highlighting:", e);
+        }
+    }
 });
 </script>
 @endpush

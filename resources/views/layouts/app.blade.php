@@ -102,6 +102,10 @@
             letter-spacing: 0.05em;
             font-weight: 600;
         }
+        .employee-card.highlight {
+            border: 2px solid var(--bs-primary-dark);
+            box-shadow: 0 0 12px rgba(var(--bs-primary-rgb), 0.4);
+        }
     </style>
 </head>
 <body>
