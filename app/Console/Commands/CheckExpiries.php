@@ -29,12 +29,11 @@ class CheckExpiries extends Command
 public function handle()
 {
     $this->info('Checking for expiring documents...');
-    Notification::truncate(); // Start fresh each time
     $employees = Employee::whereNull('terminated_at')->get();
     $today = Carbon::today();
 
     foreach ($employees as $employee) {
-        // Standard 45-day checks
+        // --- Standard 45-day checks ---
         $standardChecks = [
             'passport_expiry' => $employee->passport_expiry_date,
             'visa_expiry' => $employee->visa_expiry_date,
@@ -45,38 +44,43 @@ public function handle()
         foreach ($standardChecks as $type => $expiryDateString) {
             if ($expiryDateString) {
                 $expiryDate = Carbon::parse($expiryDateString)->startOfDay();
-                if ($expiryDate->isBetween($today, $today->copy()->addDays(45))) {
-                    Notification::create([
-                        'employee_id' => $employee->id, 'type' => $type,
-                        'due_date' => $expiryDate, 'status' => 'unread',
-                    ]);
+                $thresholdDate = $today->copy()->addDays(45);
+                // CORRECT LOGIC: Check if the date is on or after today AND on or before the threshold
+                if ($expiryDate->gte($today) && $expiryDate->lte($thresholdDate)) {
+                    Notification::updateOrCreate(
+                        ['employee_id' => $employee->id, 'type' => $type],
+                        ['due_date' => $expiryDate, 'message' => 'Standard expiry check.']
+                    );
                 }
             }
         }
 
-        // Special check for CI Renewal (1 year threshold)
+        // --- Special check for CI Renewal (1.5 years / 548 days threshold) ---
         if ($employee->passportType === 'CI' && $employee->passport_expiry_date) {
             $expiryDate = Carbon::parse($employee->passport_expiry_date)->startOfDay();
-            if ($expiryDate->isBetween($today, $today->copy()->addYear())) {
-                Notification::create([
-                    'employee_id' => $employee->id, 'type' => 'ci_renewal',
-                    'due_date' => $expiryDate, 'status' => 'unread',
-                ]);
+            $thresholdDate = $today->copy()->addDays(548);
+            if ($expiryDate->gte($today) && $expiryDate->lte($thresholdDate)) {
+                Notification::updateOrCreate(
+                    ['employee_id' => $employee->id, 'type' => 'ci_renewal'],
+                    ['due_date' => $expiryDate, 'message' => 'CI Renewal check.']
+                );
             }
         }
 
-        // Special check for Resolution Renewal (1 year threshold)
+        // --- Special check for Resolution Renewal (1.5 years / 548 days threshold) ---
         $resolutionTypes = ['มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน'];
         if (in_array($employee->workPermitMOUGroup, $resolutionTypes) && $employee->work_permit_expiry_date) {
             $expiryDate = Carbon::parse($employee->work_permit_expiry_date)->startOfDay();
-            if ($expiryDate->isBetween($today, $today->copy()->addYear())) {
-                Notification::create([
-                    'employee_id' => $employee->id, 'type' => 'resolution_renewal',
-                    'due_date' => $expiryDate, 'status' => 'unread',
-                ]);
+            $thresholdDate = $today->copy()->addDays(548);
+             if ($expiryDate->gte($today) && $expiryDate->lte($thresholdDate)) {
+                Notification::updateOrCreate(
+                    ['employee_id' => $employee->id, 'type' => 'resolution_renewal'],
+                    ['due_date' => $expiryDate, 'message' => 'Resolution Renewal check.']
+                );
             }
         }
     }
+
     $this->info('Notification check complete.');
 }
 }
