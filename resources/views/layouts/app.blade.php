@@ -105,6 +105,7 @@
         .employee-card.highlight {
             border: 2px solid var(--bs-primary-dark);
             box-shadow: 0 0 12px rgba(var(--bs-primary-rgb), 0.4);
+            background-color: #fffbeb;
         }
     </style>
 </head>
