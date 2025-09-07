@@ -93,27 +93,29 @@ class NotificationController extends Controller
 
         // Update the corresponding employee field
         $employee = $notification->employee;
+        $updateField = null;
+
         switch ($notification->type) {
             case 'passport_expiry':
-                $employee->passport_expiry_date = $newDueDate;
+                $updateField = 'passport_expiry_date';
                 break;
             case 'ninety_day_report':
-                $employee->ninety_day_report_date = $newDueDate;
+                $updateField = 'ninety_day_report_date';
                 break;
             case 'visa_expiry':
-                $employee->visa_expiry_date = $newDueDate;
+                $updateField = 'visa_expiry_date';
                 break;
-             case 'work_permit_expiry':
-                // This might need more specific logic if work_permit_expiry is a generic type
-                // For now, assuming it updates a general work permit date.
-                // Adjust field name if necessary, e.g., 'work_permit_expiry_date'
-                 if (isset($employee->work_permit_expiry_date)) {
-                    $employee->work_permit_expiry_date = $newDueDate;
-                 }
+            case 'work_permit_expiry':
+                $updateField = 'work_permit_expiry_date';
                 break;
-            // Add other cases as needed for ci_renewal, etc.
+            // No default case needed, handled by the if below
         }
-        $employee->save();
+
+        if ($updateField) {
+            $employee->update([
+                $updateField => $newDueDate,
+            ]);
+        }
 
         return back()->with('success', 'การแจ้งเตือนได้รับการต่ออายุเรียบร้อยแล้ว');
     }
