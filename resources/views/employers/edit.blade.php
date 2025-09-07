@@ -1027,4 +1027,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.location.hash) {
+            const elementId = window.location.hash.substring(1); // Remove the '#'
+            const targetElement = document.getElementById(elementId);
+
+            if (targetElement) {
+                // Add a highlight class
+                targetElement.classList.add('highlight');
+
+                // Scroll to the element
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }
+    });
+</script>
 @endpush
