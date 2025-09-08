@@ -6,6 +6,9 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Employee;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class NotificationController extends Controller
 {
@@ -246,5 +249,68 @@ class NotificationController extends Controller
         }
 
         return $query;
+    }
+
+    /**
+     * Handles the renewal of an employee's document from a notification.
+     * This function fixes the issue where the employee's record was not updated.
+     */
+    public function renewDocument(Request $request, $notificationId)
+    {
+        $notification = Auth::user()->notifications()->findOrFail($notificationId);
+
+        // Extract data from the notification's 'data' column
+        $employeeId = $notification->data['employee_id'] ?? null;
+        $documentTypeSnake = $notification->data['document_type'] ?? null; // e.g., 'visa_expiry_date'
+
+        if (!$employeeId || !$documentTypeSnake) {
+            return back()->with('error', 'Notification data is invalid.');
+        }
+
+        $employee = Employee::find($employeeId);
+        if (!$employee) {
+            return back()->with('error', 'Employee not found.');
+        }
+
+        // Set the new expiry date (e.g., 1 year from now)
+        $newExpiryDate = Carbon::now()->addYear();
+
+        // The documentTypeSnake should be a snake_case column name like 'visa_expiry_date',
+        // which matches the database schema.
+        $employee->update([
+            $documentTypeSnake => $newExpiryDate
+        ]);
+
+        // Mark the notification as read after successful renewal
+        $notification->markAsRead();
+
+        // Redirect back to the employer's page and add a fragment for scrolling
+        return redirect()->route('employers.edit', $employee->employer_id)
+            ->with('success', 'Document for ' . $employee->name_en . ' has been renewed.')
+            ->withFragment('employee-card-' . $employee->id);
+    }
+
+    /**
+     * Redirects to the employer's page and highlights the specific employee.
+     * This function fixes the "View Info" button functionality.
+     */
+    public function viewEmployee($notificationId)
+    {
+        $notification = Auth::user()->notifications()->findOrFail($notificationId);
+
+        $employeeId = $notification->data['employee_id'] ?? null;
+        if (!$employeeId) {
+            return back()->with('error', 'Notification data is invalid.');
+        }
+
+        $employee = Employee::findOrFail($employeeId);
+
+        // Mark as read when the user views the employee info
+        $notification->markAsRead();
+
+        // Redirect to the employer's edit page with a fragment identifier
+        // The fragment will be used by JavaScript to scroll and highlight.
+        return redirect()->route('employers.edit', ['employer' => $employee->employer_id])
+            ->withFragment('employee-card-' . $employeeId);
     }
 }

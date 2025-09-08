@@ -54,6 +54,21 @@ class Employee extends Model
         'termination_reason',
     ];
 
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'passport_expiry_date' => 'date:Y-m-d',
+        'work_permit_expiry_date' => 'date:Y-m-d',
+        'visa_expiry_date' => 'date:Y-m-d',
+        'ninety_day_report_date' => 'date:Y-m-d',
+        'employee_dob' => 'date:Y-m-d',
+        'start_date' => 'date:Y-m-d',
+        'terminated_at' => 'datetime',
+    ];
+
     public function employer()
     {
         return $this->belongsTo(Employer::class);
