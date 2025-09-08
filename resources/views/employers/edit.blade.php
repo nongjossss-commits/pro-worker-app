@@ -251,8 +251,11 @@ $nationalityFlags = [
                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                 <div class="flex-grow-1">
                     <p class="mb-0">
-                        <strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong>@if($flagCode)
-    <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-2" style="width: 20px; vertical-align: middle;">
+                        <strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong>@if($nationality)
+    <span class="text-muted small"> - {{ $nationality }}</span>
+    @if($flagCode)
+        <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
+    @endif
 @endif
                     </p>
                     <p class="mb-1 text-muted small">{{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }} ({{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }})</p>

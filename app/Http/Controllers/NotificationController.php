@@ -39,6 +39,20 @@ class NotificationController extends Controller
             $query = $this->getFilteredNotificationsQuery($request, $type, $formPrefix);
             $pageName = str_replace('_', '', $type) . '_page';
             $notifications = $query->with('employee.employer')->paginate(10, ['*'], $pageName)->withQueryString();
+
+            $notifications->getCollection()->transform(function ($notification) {
+                $notification->title = match ($notification->type) {
+                    'ninety_day_report' => 'รายงานตัว 90 วัน',
+                    'passport_expiry' => 'Passport หมดอายุ',
+                    'work_permit_expiry' => 'ใบอนุญาตทำงานหมดอายุ',
+                    'visa_expiry' => 'วีซ่าหมดอายุ',
+                    'ci_renewal' => 'กำหนดต่ออายุ CI',
+                    'resolution_renewal' => 'กำหนดต่ออายุมติ',
+                    default => 'การแจ้งเตือน',
+                };
+                return $notification;
+            });
+
             $groupedNotifications->put($type, $notifications);
         }
 
