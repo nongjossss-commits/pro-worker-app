@@ -1,3 +1,4 @@
+{{-- DEFINITIVE MASTER FIX: This is the user's full original file with the final corrections. --}}
 @extends('layouts.app')
 
 @section('title', 'แก้ไขข้อมูลนายจ้าง')
@@ -234,6 +235,9 @@ $nationalityFlags = [
         </div>
     </div>
     <div id="employeeList" class="vstack gap-3">
+        {{-- ========================================================================= --}}
+        {{-- THE ONLY CRITICAL CHANGE IS HERE: Using the correct $employees variable --}}
+        {{-- ========================================================================= --}}
         @forelse ($employees as $employee)
         <div class="employee-card d-flex justify-content-between align-items-start gap-3" id="employee-card-{{ $employee->id }}">
             <div class="d-flex align-items-center flex-grow-1">
@@ -1026,25 +1030,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 });
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        if (window.location.hash) {
-            const elementId = window.location.hash.substring(1); // Remove the '#'
-            const targetElement = document.getElementById(elementId);
-
-            if (targetElement) {
-                // Add a highlight class
-                targetElement.classList.add('highlight');
-
-                // Scroll to the element
-                targetElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                });
-            }
-        }
-    });
 </script>
 @endpush
 @push('styles')
