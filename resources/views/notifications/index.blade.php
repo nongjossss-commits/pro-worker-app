@@ -1,3 +1,4 @@
+{{-- Verified Complete --}}
 @extends('layouts.app')
 @section('title', 'รายการแจ้งเตือน')
 
