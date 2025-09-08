@@ -1,4 +1,4 @@
-{{-- This is the CORRECTED and COMPLETE file content. --}}
+{{-- This is the FINAL CORRECTED and COMPLETE file content. --}}
 
 @extends('layouts.app')
 
@@ -34,13 +34,12 @@
         </div>
         <div class="card-body">
             <div class="list-group">
-                {{-- Use @forelse to handle cases with no employees --}}
-                @forelse($employer->employees as $employee)
-                    {{--
-                        THIS IS THE CRITICAL PART:
-                        The id="employee-card-{{ $employee->id }}" is the hook for our JavaScript.
-                        The rest of the employee display logic is the user's original, correct code.
-                    --}}
+                {{--
+                    THE CRITICAL FIX IS HERE:
+                    Changed from ($employer->employees as $employee) to ($employees as $employee)
+                    to match the variable passed from EmployerController@edit.
+                --}}
+                @forelse($employees as $employee)
                     <div class="list-group-item list-group-item-action" id="employee-card-{{ $employee->id }}">
                         <div class="d-flex w-100 justify-content-between">
                             <h5 class="mb-1">{{ $employee->name_th ?? 'N/A' }} / {{ $employee->name_en ?? 'N/A' }}</h5>
@@ -65,14 +64,11 @@
 {{-- This section pushes the necessary CSS to the main layout's <head> --}}
 @push('styles')
 <style>
-    /*
-      This style creates the visual highlight effect as per the design.
-      The transition properties make the effect appear and disappear smoothly.
-    */
+    /* This style creates the visual highlight effect */
     .employee-card-highlight {
         transition: all 0.5s ease-in-out;
-        background-color: #fffbeb !important; /* A light yellow background */
-        border: 2px solid #f97316 !important; /* An orange border */
+        background-color: #fffbeb !important;
+        border: 2px solid #f97316 !important;
         box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);
         transform: scale(1.01);
     }
@@ -83,30 +79,27 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // This script runs after the page's HTML has been fully loaded.
-
         // Check if the URL has a hash (e.g., #employee-card-123)
         if (window.location.hash) {
             const hash = window.location.hash;
 
-            // Use the hash as a selector to find the target employee card
             const targetElement = document.querySelector(hash);
 
             if (targetElement) {
-                // 1. Add the highlight class to apply the visual effect immediately.
+                // Add the highlight class for the visual effect
                 targetElement.classList.add('employee-card-highlight');
 
-                // 2. Scroll the element into the middle of the viewport smoothly.
+                // Scroll the element into the middle of the viewport smoothly
                 targetElement.scrollIntoView({
                     behavior: 'smooth',
                     block: 'center',
                     inline: 'nearest'
                 });
 
-                // 3. Set a timer to remove the highlight class after 5 seconds.
+                // Remove the highlight class after 5 seconds
                 setTimeout(() => {
                     targetElement.classList.remove('employee-card-highlight');
-                }, 5000); // 5000 milliseconds = 5 seconds
+                }, 5000); // 5 seconds
             }
         }
     });
