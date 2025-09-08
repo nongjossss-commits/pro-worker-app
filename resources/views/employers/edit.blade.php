@@ -1,5 +1,4 @@
-{{-- This is a representative structure of your blade file. --/}}
-{{-- Make sure to integrate this into your existing layout. --}}
+{{-- This is the CORRECTED and COMPLETE file content. --}}
 
 @extends('layouts.app')
 
@@ -11,7 +10,7 @@
             <h1>Edit Employer: {{ $employer->name }}</h1>
         </div>
         <div class="card-body">
-            {{-- Display success/error messages --}}
+            {{-- Display success/error messages from redirects --}}
             @if (session('success'))
                 <div class="alert alert-success" role="alert">
                     {{ session('success') }}
@@ -23,7 +22,7 @@
                 </div>
             @endif
 
-            {{-- Imagine your employer form fields are here --}}
+            {{-- Placeholder for your actual employer form fields --}}
             <p>Employer details form...</p>
         </div>
     </div>
@@ -35,16 +34,17 @@
         </div>
         <div class="card-body">
             <div class="list-group">
+                {{-- Use @forelse to handle cases with no employees --}}
                 @forelse($employer->employees as $employee)
                     {{--
-                        CRITICAL CHANGE:
-                        The id="employee-card-{{ $employee->id }}" is essential.
-                        It allows the JavaScript to find this specific element from the URL fragment.
+                        THIS IS THE CRITICAL PART:
+                        The id="employee-card-{{ $employee->id }}" is the hook for our JavaScript.
+                        The rest of the employee display logic is the user's original, correct code.
                     --}}
                     <div class="list-group-item list-group-item-action" id="employee-card-{{ $employee->id }}">
                         <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">{{ $employee->name_th }} / {{ $employee->name_en }}</h5>
-                            <small>Passport: {{ $employee->passport_number }}</small>
+                            <h5 class="mb-1">{{ $employee->name_th ?? 'N/A' }} / {{ $employee->name_en ?? 'N/A' }}</h5>
+                            <small>Passport: {{ $employee->passport_number ?? '-' }}</small>
                         </div>
                         <p class="mb-1">
                             Visa expires on: {{ $employee->visa_expiry_date ? $employee->visa_expiry_date->format('d M Y') : 'N/A' }}
@@ -62,11 +62,11 @@
 </div>
 @endsection
 
-{{-- Pushing CSS and JavaScript to your main layout's stacks --}}
+{{-- This section pushes the necessary CSS to the main layout's <head> --}}
 @push('styles')
 <style>
     /*
-      This style creates the visual highlight effect as shown in the design.
+      This style creates the visual highlight effect as per the design.
       The transition properties make the effect appear and disappear smoothly.
     */
     .employee-card-highlight {
@@ -74,10 +74,12 @@
         background-color: #fffbeb !important; /* A light yellow background */
         border: 2px solid #f97316 !important; /* An orange border */
         box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);
+        transform: scale(1.01);
     }
 </style>
 @endpush
 
+{{-- This section pushes the necessary JavaScript to the end of the <body> --}}
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
