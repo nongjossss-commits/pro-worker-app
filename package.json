@@ -1,4 +1,5 @@
 {
+    "name": "pro-worker-app",
     "$schema": "https://json.schemastore.org/package.json",
     "private": true,
     "type": "module",
