@@ -78,6 +78,19 @@ $nationalityFlags = [
 
 @endsection
 
+@push('styles')
+<style>
+    /* FIX 3: New, more beautiful highlight style */
+    .employee-card-highlight {
+        transition: all 0.5s ease-in-out;
+        background-color: #fffbeb !important; /* Light creamy yellow */
+        border-color: #f59e0b !important; /* A richer, more pleasant amber color */
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5) !important;
+        transform: scale(1.015);
+    }
+</style>
+@endpush
+
 @push('scripts')
 {{-- The original scripts from the user's file are preserved here, including the highlighting logic --}}
 <script>
