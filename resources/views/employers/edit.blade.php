@@ -1047,3 +1047,19 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 </script>
 @endpush
+@push('styles')
+<style>
+    .highlight {
+        animation: highlight-bg 2s ease-out;
+    }
+
+    @keyframes highlight-bg {
+        0% {
+            background-color: #fceb92;
+        }
+        100% {
+            background-color: transparent;
+        }
+    }
+</style>
+@endpush
