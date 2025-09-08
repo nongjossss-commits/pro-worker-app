@@ -1,5 +1,20 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    /*
+      This style creates the visual highlight effect.
+      The transition properties make the effect appear and disappear smoothly.
+    */
+    .employee-card.highlight {
+        transition: background-color 1s ease-out, box-shadow 1s ease-out;
+        background-color: #fffbeb;
+        box-shadow: 0 0 0 3px #fde047;
+        border-radius: 0.375rem; /* Match list-group-item radius */
+    }
+</style>
+@endpush
+
 @section('title', 'แก้ไขข้อมูลนายจ้าง')
 
 @section('content')
@@ -1012,38 +1027,33 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Highlight employee card from URL hash
-    if (window.location.hash) {
-        try {
-            const elementId = window.location.hash.substring(1);
-            const element = document.getElementById(elementId);
-            if (element && element.classList.contains('employee-card')) {
-                element.classList.add('highlight');
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        } catch (e) {
-            console.error("Error handling URL hash for highlighting:", e);
-        }
-    }
-});
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
+    // This script runs after the entire page has loaded
+    window.addEventListener('load', function () {
+        // Check if the URL contains a hash (e.g., #employee-card-123)
         if (window.location.hash) {
-            const elementId = window.location.hash.substring(1); // Remove the '#'
-            const targetElement = document.getElementById(elementId);
+            const hash = window.location.hash;
+
+            // Try to find the element with the ID from the URL hash
+            const targetElement = document.querySelector(hash);
 
             if (targetElement) {
-                // Add a highlight class
-                targetElement.classList.add('highlight');
-
-                // Scroll to the element
+                // 1. Scroll the element into the middle of the view smoothly
                 targetElement.scrollIntoView({
                     behavior: 'smooth',
-                    block: 'center'
+                    block: 'center',
+                    inline: 'nearest'
                 });
+
+                // 2. Add the 'highlight' class to apply the visual effect
+                targetElement.classList.add('highlight');
+
+                // 3. Remove the highlight after 5 seconds so it doesn't stay yellow forever
+                setTimeout(() => {
+                    targetElement.classList.remove('highlight');
+                }, 5000); // 5000 milliseconds = 5 seconds
             }
         }
     });
+});
 </script>
 @endpush
