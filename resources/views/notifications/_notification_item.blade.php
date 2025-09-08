@@ -15,7 +15,7 @@
 <div class="alert {{ $alertClass }} notification-item">
     <div class="d-flex align-items-center gap-3">
         @if($employee)
-            {{-- CRITICAL FIX: Added the 'employee-photo-thumb' class to control image size --}}
+            {{-- FIX 1: Added 'employee-photo-thumb' class to control image size --}}
             <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : '[https://placehold.co/48x48/e2e8f0/6c757d?text=PIC](https://placehold.co/48x48/e2e8f0/6c757d?text=PIC)' }}" class="employee-photo-thumb" alt="Photo">
         @endif
         <div class="d-flex justify-content-between align-items-start w-100">
@@ -34,7 +34,13 @@
                     <a href="{{ route('notifications.viewEmployee', ['notificationId' => $notification->id]) }}" class="btn btn-info" title="ดูข้อมูล">
                         <i class="bi bi-search"></i>
                     </a>
-                    {{-- Other buttons remain the same --}}
+                    {{-- FIX 2: Restored missing Renew and Cancel buttons --}}
+                    <button type="button" class="btn btn-success renew-btn" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}">
+                        <i class="bi bi-calendar-check"></i>
+                    </button>
+                    <button type="button" class="btn btn-warning" title="ยกเลิกการต่ออายุ" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
                 </div>
             </div>
         </div>
