@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'destroy'])->name('addresses.destroy');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/{notificationId}/view', [NotificationController::class, 'viewEmployee'])->name('notifications.viewEmployee');
     Route::post('/notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('notifications.cancel');
     Route::post('/notifications/{notification}/renew', [NotificationController::class, 'renew'])->name('notifications.renew');
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
