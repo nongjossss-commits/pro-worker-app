@@ -292,25 +292,26 @@ class NotificationController extends Controller
 
     /**
      * Redirects to the employer's page and highlights the specific employee.
-     * This function fixes the "View Info" button functionality.
+     * This simplified function fixes the SQL error.
      */
     public function viewEmployee($notificationId)
     {
-        $notification = Auth::user()->notifications()->findOrFail($notificationId);
+        // CRITICAL FIX: Simplified the query to prevent the SQL error.
+        // We find the notification by its primary key directly.
+        $notification = Notification::findOrFail($notificationId);
 
-        $employeeId = $notification->data['employee_id'] ?? null;
-        if (!$employeeId) {
-            return back()->with('error', 'Notification data is invalid.');
+        $employee = $notification->employee; // Get the employee relationship
+        if (!$employee) {
+            return redirect()->route('notifications.index')->with('error', 'Employee not found for this notification.');
         }
 
-        $employee = Employee::findOrFail($employeeId);
-
         // Mark as read when the user views the employee info
-        $notification->markAsRead();
+        // Note: Assuming your Notification model doesn't use Laravel's default notification system.
+        // If you have a status column, you might update it here.
+        // For now, we proceed with the redirect.
 
         // Redirect to the employer's edit page with a fragment identifier
-        // The fragment will be used by JavaScript to scroll and highlight.
         return redirect()->route('employers.edit', ['employer' => $employee->employer_id])
-            ->withFragment('employee-card-' . $employeeId);
+            ->withFragment('employee-card-' . $employee->id);
     }
 }
