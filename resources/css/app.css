@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Employee photo thumbnail style */
 .employee-photo-thumb {
     width: 48px;
     height: 48px;
