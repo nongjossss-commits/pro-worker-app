@@ -15,7 +15,10 @@
 <div class="alert {{ $alertClass }} notification-item">
     <div class="d-flex align-items-center gap-3">
         @if($employee)
-            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : '[https://placehold.co/48x48/e2e8f0/6c757d?text=PIC](https://placehold.co/48x48/e2e8f0/6c757d?text=PIC)' }}" class="employee-photo-thumb" alt="Photo">
+            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
+                 class="employee-photo-thumb"
+                 style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-right: 1rem;"
+                 alt="Photo">
         @endif
         <div class="d-flex justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
