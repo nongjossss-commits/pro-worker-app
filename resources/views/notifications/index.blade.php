@@ -84,7 +84,9 @@ $activeTab = request()->input('tab', 'ninety_day_report');
             </form>
             <h5 class="mb-3">รายการรายงานตัว 90 วัน ({{ $groupedNotifications->get('ninety_day_report', collect())->total() }})</h5>
             <div id="notification90DayListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $groupedNotifications->get('ninety_day_report', collect()), 'notification')
+                @foreach($groupedNotifications->get('ninety_day_report', collect()) as $notification)
+                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                @endforeach
             </div>
             <div class="mt-4">
                 {{ $groupedNotifications->get('ninety_day_report', collect())->links() }}
@@ -121,7 +123,9 @@ $activeTab = request()->input('tab', 'ninety_day_report');
             </form>
             <h5 class="mb-3">รายการ Passport หมดอายุ ({{ $groupedNotifications->get('passport_expiry', collect())->total() }})</h5>
             <div id="notificationPassportListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $groupedNotifications->get('passport_expiry', collect()), 'notification')
+                @foreach($groupedNotifications->get('passport_expiry', collect()) as $notification)
+                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                @endforeach
             </div>
              <div class="mt-4">
                 {{ $groupedNotifications->get('passport_expiry', collect())->links() }}
@@ -162,7 +166,9 @@ $activeTab = request()->input('tab', 'ninety_day_report');
                         <a href="{{ route('notifications.export', ['export_type' => 'work_permit_expiry'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
                     </div>
                     <div id="notificationWorkPermitListContainer" class="vstack gap-2">
-                         @each('notifications._notification_item', $groupedNotifications->get('work_permit_expiry', collect()), 'notification')
+                         @foreach($groupedNotifications->get('work_permit_expiry', collect()) as $notification)
+                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                        @endforeach
                     </div>
                     <div class="mt-4">
                         {{ $groupedNotifications->get('work_permit_expiry', collect())->links() }}
@@ -174,7 +180,9 @@ $activeTab = request()->input('tab', 'ninety_day_report');
                         <a href="{{ route('notifications.export', ['export_type' => 'work_permit_expired'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
                     </div>
                     <div id="notificationWorkPermitExpiredListContainer" class="vstack gap-2">
-                        @each('notifications._notification_item', $groupedNotifications->get('work_permit_expired', collect()), 'notification')
+                        @foreach($groupedNotifications->get('work_permit_expired', collect()) as $notification)
+                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                        @endforeach
                     </div>
                      <div class="mt-4">
                         {{ $groupedNotifications->get('work_permit_expired', collect())->links() }}
@@ -186,7 +194,9 @@ $activeTab = request()->input('tab', 'ninety_day_report');
                         <a href="{{ route('notifications.export', ['export_type' => 'visa_expiry'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
                     </div>
                     <div id="notificationVisaListContainer" class="vstack gap-2">
-                        @each('notifications._notification_item', $groupedNotifications->get('visa_expiry', collect()), 'notification')
+                        @foreach($groupedNotifications->get('visa_expiry', collect()) as $notification)
+                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                        @endforeach
                     </div>
                      <div class="mt-4">
                         {{ $groupedNotifications->get('visa_expiry', collect())->links() }}
@@ -225,7 +235,9 @@ $activeTab = request()->input('tab', 'ninety_day_report');
             </form>
             <h5 class="mb-3">รายการต่ออายุเล่ม CI ({{ $groupedNotifications->get('ci_renewal', collect())->total() }})</h5>
             <div id="notificationCi_renewListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $groupedNotifications->get('ci_renewal', collect()), 'notification')
+                @foreach($groupedNotifications->get('ci_renewal', collect()) as $notification)
+                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                @endforeach
             </div>
             <div class="mt-4">
                 {{ $groupedNotifications->get('ci_renewal', collect())->links() }}
@@ -268,7 +280,9 @@ $activeTab = request()->input('tab', 'ninety_day_report');
             </form>
             <h5 class="mb-3">รายการต่ออายุมติในประเทศ ({{ $groupedNotifications->get('resolution_renewal', collect())->total() }})</h5>
             <div id="notificationResolution_renewalListContainer" class="vstack gap-2">
-                @each('notifications._notification_item', $groupedNotifications->get('resolution_renewal', collect()), 'notification')
+                @foreach($groupedNotifications->get('resolution_renewal', collect()) as $notification)
+                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                @endforeach
             </div>
             <div class="mt-4">
                 {{ $groupedNotifications->get('resolution_renewal', collect())->links() }}
