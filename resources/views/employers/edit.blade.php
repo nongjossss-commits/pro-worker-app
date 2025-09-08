@@ -80,7 +80,7 @@ $nationalityFlags = [
 
 @push('styles')
 <style>
-    /* FIX 3: New, more beautiful highlight style */
+    /* New, more beautiful highlight style */
     .employee-card-highlight {
         transition: all 0.5s ease-in-out;
         background-color: #fffbeb !important; /* Light creamy yellow */
