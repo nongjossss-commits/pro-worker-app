@@ -239,15 +239,21 @@ $nationalityFlags = [
         {{-- THE ONLY CRITICAL CHANGE IS HERE: Using the correct $employees variable --}}
         {{-- ========================================================================= --}}
         @forelse ($employees as $employee)
+@php
+    $flagCodes = [
+        'เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn',
+    ];
+    $nationality = $employee->employeeNationality ?? null;
+    $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
+@endphp
         <div class="employee-card d-flex justify-content-between align-items-start gap-3" id="employee-card-{{ $employee->id }}">
             <div class="d-flex align-items-center flex-grow-1">
                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                 <div class="flex-grow-1">
                     <p class="mb-0">
-                        @if (isset($employee->nationality) && array_key_exists($employee->nationality, $nationalityFlags))
-                            <img src="https://flagcdn.com/w20/{{ $nationalityFlags[$employee->nationality] }}.png" srcset="https://flagcdn.com/w40/{{ $nationalityFlags[$employee->nationality] }}.png 2x" width="20" alt="{{ $employee->nationality }}" class="me-2" style="vertical-align: middle;">
-                        @endif
-                        <strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong>
+                        <strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong>@if($flagCode)
+    <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-2" style="width: 20px; vertical-align: middle;">
+@endif
                     </p>
                     <p class="mb-1 text-muted small">{{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }} ({{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }})</p>
                     <p class="mb-1 text-muted small">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d M Y') : '-' }})</p>

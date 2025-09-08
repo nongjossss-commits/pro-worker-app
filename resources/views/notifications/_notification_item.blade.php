@@ -4,7 +4,6 @@
     $daysRemaining = $notification->days_remaining;
     $dueDate = \Carbon\Carbon::parse($notification->due_date);
 
-    // Set locale to Thai for date formatting
     \Carbon\Carbon::setLocale('th');
 
     $alertClass = 'alert-secondary';
@@ -14,12 +13,8 @@
         $alertClass = 'alert-danger';
     }
 
-    // Nationality to Flag code mapping
     $flagCodes = [
-        'เมียนมา' => 'mm',
-        'ลาว' => 'la',
-        'กัมพูชา' => 'kh',
-        'เวียดนาม' => 'vn',
+        'เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn',
     ];
     $nationality = $employee->employeeNationality ?? null;
     $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
@@ -37,16 +32,16 @@
             <div class="flex-grow-1">
                 <h5 class="alert-heading mb-1">
                     {{ $loop->iteration }}. {{ $employee->employeeNameEn ?? 'N/A' }}
-
                     @if($nationality)
                         <span class="text-muted fw-normal small">
-                            {{ $nationality }}
+                             - {{ $nationality }}
                             @if($flagCode)
                                 <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
                             @endif
                         </span>
                     @endif
                 </h5>
+                <p class="mb-1 text-muted small">{{ $employee->employeeNameTh ?? '' }}</p>
                 <p class="mb-1"><strong>นายจ้าง:</strong> {{ $employer->employerNameTh ?? 'N/A' }}</p>
                 <p class="mb-0 small">
                     <strong>{{ $notification->title }}:</strong> {{ $dueDate->translatedFormat('d F Y') }}
