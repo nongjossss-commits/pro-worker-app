@@ -208,7 +208,20 @@ $nationalityFlags = [
 {{-- Employee List Section --}}
 <div class="content-section mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h5>ข้อมูลพนักงาน <span id="employeeTotalCount" class="badge bg-secondary fw-normal">{{ count($employees) }}</span></h5>
+@php
+    $totalEmployees = $employer->employees->count();
+    $maleCount = 0;
+    $femaleCount = 0;
+    foreach ($employer->employees as $employee) {
+        $title = $employee->employeeTitleTh ?? 'นาย'; // Default to male if not set
+        if (in_array($title, ['นาย', 'Mr.'])) {
+            $maleCount++;
+        } elseif (in_array($title, ['นางสาว', 'นาง', 'Miss', 'Mrs.'])) {
+            $femaleCount++;
+        }
+    }
+@endphp
+        <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
         <div class="d-flex gap-2 flex-wrap">
             <input type="text" class="form-control form-control-sm" id="searchEmployeeInput" placeholder="ค้นหาพนักงาน..." style="width: 150px;">
             <select class="form-select form-select-sm" id="searchEmployeeNationality" style="width: 150px;">
@@ -251,7 +264,7 @@ $nationalityFlags = [
                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
                 <div class="flex-grow-1">
                     <p class="mb-0">
-                        <strong>{{ $employee->employeeNameEn ?? 'No English Name' }}</strong>@if($nationality)
+                        <strong>{{ $loop->iteration }}. {{ $employee->employeeNameEn ?? 'No English Name' }}</strong>@if($nationality)
     <span class="text-muted small"> - {{ $nationality }}</span>
     @if($flagCode)
         <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
