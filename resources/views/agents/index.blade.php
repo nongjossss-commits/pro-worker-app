@@ -7,6 +7,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
          <h2 class="mb-3 mb-md-0">รายการข้อมูลเอเจนซี่</h2>
          <div class="d-flex gap-2">
+            <input type="text" id="agent-search-input" class="form-control form-control-sm" placeholder="ค้นหา...">
             <a href="{{ route('agents.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
          </div>
     </div>
@@ -21,7 +22,7 @@
                     <th class="text-center">จัดการ</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="agent-table-body">
                 @forelse ($agents as $agent)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
@@ -47,3 +48,19 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Live Search for Agents Table
+    const searchInput_agent = document.getElementById('agent-search-input');
+    const tableBody_agent = document.getElementById('agent-table-body');
+    const tableRows_agent = tableBody_agent.getElementsByTagName('tr');
+
+    searchInput_agent.addEventListener('keyup', function() {
+        const searchTerm = searchInput_agent.value.toLowerCase();
+        for (let row of tableRows_agent) {
+            row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
+        }
+    });
+</script>
+@endpush
