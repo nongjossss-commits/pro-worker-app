@@ -8,7 +8,10 @@
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1>Delegates</h1>
-                <a href="{{ route('delegates.create') }}" class="btn btn-primary">Add Delegate</a>
+                <div class="d-flex gap-2">
+                    <input type="text" id="delegate-search-input" class="form-control form-control-sm" placeholder="Search...">
+                    <a href="{{ route('delegates.create') }}" class="btn btn-primary">Add Delegate</a>
+                </div>
             </div>
             <hr>
             @if (session('success'))
@@ -25,7 +28,7 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="delegate-table-body">
                     @foreach ($delegates as $delegate)
                     <tr>
                         <td>
@@ -51,3 +54,19 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Live Search for Delegates Table
+    const searchInput_delegate = document.getElementById('delegate-search-input');
+    const tableBody_delegate = document.getElementById('delegate-table-body');
+    const tableRows_delegate = tableBody_delegate.getElementsByTagName('tr');
+
+    searchInput_delegate.addEventListener('keyup', function() {
+        const searchTerm = searchInput_delegate.value.toLowerCase();
+        for (let row of tableRows_delegate) {
+            row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
+        }
+    });
+</script>
+@endpush

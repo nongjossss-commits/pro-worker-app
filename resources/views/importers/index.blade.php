@@ -12,6 +12,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
          <h2 class="mb-3 mb-md-0">รายการข้อมูลบริษัทนำเข้า</h2>
          <div class="d-flex gap-2">
+            <input type="text" id="importer-search-input" class="form-control form-control-sm" placeholder="ค้นหา...">
             <a href="{{ route('importers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
          </div>
     </div>
@@ -26,7 +27,7 @@
                     <th class="text-center">จัดการ</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="importer-table-body">
                 @forelse ($importers as $importer)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
@@ -52,3 +53,19 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Live Search for Importers Table
+    const searchInput_importer = document.getElementById('importer-search-input');
+    const tableBody_importer = document.getElementById('importer-table-body');
+    const tableRows_importer = tableBody_importer.getElementsByTagName('tr');
+
+    searchInput_importer.addEventListener('keyup', function() {
+        const searchTerm = searchInput_importer.value.toLowerCase();
+        for (let row of tableRows_importer) {
+            row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
+        }
+    });
+</script>
+@endpush
