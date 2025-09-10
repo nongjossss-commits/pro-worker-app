@@ -56,32 +56,29 @@ $activeTab = request()->input('tab', 'ninety_day_report');
     <div class="tab-content pt-4" id="notificationTabContent">
         {{-- 90 Day Tab Pane --}}
         <div class="tab-pane fade {{ $activeTab === 'ninety_day_report' ? 'show active' : '' }}" id="n-90day" role="tabpanel">
-            <form method="GET" action="{{ route('notifications.index') }}">
+            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-ninety_day_report">
                 <input type="hidden" name="tab" value="ninety_day_report">
-                <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
-                    <input type="text" class="form-control form-control-sm w-auto" name="search_ninety_day_report" placeholder="ค้นหา..." value="{{ request('search_ninety_day_report') }}">
-                    <select class="form-select form-select-sm w-auto" name="nationality_ninety_day_report">
-                        <option value="">-- ทุกสัญชาติ --</option>
-                        @foreach($nationalities as $nat)
-                        <option value="{{ $nat }}" @selected(request('nationality_ninety_day_report') == $nat)>{{ $nat }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="mou_ninety_day_report">
-                        <option value="">-- ทุกประเภท มติ. --</option>
-                         @foreach($mouTypes as $mou)
-                        <option value="{{ $mou }}" @selected(request('mou_ninety_day_report') == $mou)>{{ $mou }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="month_ninety_day_report">
-                        <option value="">-- ทุกเดือน --</option>
-                        @foreach($months as $num => $name)
-                        <option value="{{ $num }}" @selected(request('month_ninety_day_report') == $num)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                    <a href="{{ route('notifications.export', ['export_type' => 'ninety_day_report'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-                </div>
-            </form>
+                <input type="text" class="form-control form-control-sm w-auto" name="search_ninety_day_report" placeholder="ค้นหา..." value="{{ request('search_ninety_day_report') }}">
+                <select class="form-select form-select-sm w-auto" name="nationality_ninety_day_report">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                    @foreach($nationalities as $nat)
+                    <option value="{{ $nat }}" @selected(request('nationality_ninety_day_report') == $nat)>{{ $nat }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="mou_ninety_day_report">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                     @foreach($mouTypes as $mou)
+                    <option value="{{ $mou }}" @selected(request('mou_ninety_day_report') == $mou)>{{ $mou }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="month_ninety_day_report">
+                    <option value="">-- ทุกเดือน --</option>
+                    @foreach($months as $num => $name)
+                    <option value="{{ $num }}" @selected(request('month_ninety_day_report') == $num)>{{ $name }}</option>
+                    @endforeach
+                </select>
+                <a href="{{ route('notifications.export', ['export_type' => 'ninety_day_report'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
+            </div>
             <h5 class="mb-3">รายการรายงานตัว 90 วัน ({{ $groupedNotifications->get('ninety_day_report', collect())->total() }})</h5>
             <div id="notification90DayListContainer" class="vstack gap-2">
                 @foreach($groupedNotifications->get('ninety_day_report', collect()) as $notification)
@@ -95,32 +92,29 @@ $activeTab = request()->input('tab', 'ninety_day_report');
 
         {{-- Passport Tab Pane --}}
         <div class="tab-pane fade {{ $activeTab === 'passport_expiry' ? 'show active' : '' }}" id="n-passport" role="tabpanel">
-            <form method="GET" action="{{ route('notifications.index') }}">
+            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-passport_expiry">
                 <input type="hidden" name="tab" value="passport_expiry">
-                <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
-                    <input type="text" class="form-control form-control-sm w-auto" name="search_passport_expiry" placeholder="ค้นหา..." value="{{ request('search_passport_expiry') }}">
-                    <select class="form-select form-select-sm w-auto" name="nationality_passport_expiry">
-                        <option value="">-- ทุกสัญชาติ --</option>
-                         @foreach($nationalities as $nat)
-                        <option value="{{ $nat }}" @selected(request('nationality_passport_expiry') == $nat)>{{ $nat }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="mou_passport_expiry">
-                        <option value="">-- ทุกประเภท มติ. --</option>
-                        @foreach($mouTypes as $mou)
-                        <option value="{{ $mou }}" @selected(request('mou_passport_expiry') == $mou)>{{ $mou }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="month_passport_expiry">
-                        <option value="">-- ทุกเดือน --</option>
-                        @foreach($months as $num => $name)
-                        <option value="{{ $num }}" @selected(request('month_passport_expiry') == $num)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                    <a href="{{ route('notifications.export', ['export_type' => 'passport_expiry'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-                </div>
-            </form>
+                <input type="text" class="form-control form-control-sm w-auto" name="search_passport_expiry" placeholder="ค้นหา..." value="{{ request('search_passport_expiry') }}">
+                <select class="form-select form-select-sm w-auto" name="nationality_passport_expiry">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                     @foreach($nationalities as $nat)
+                    <option value="{{ $nat }}" @selected(request('nationality_passport_expiry') == $nat)>{{ $nat }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="mou_passport_expiry">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                    @foreach($mouTypes as $mou)
+                    <option value="{{ $mou }}" @selected(request('mou_passport_expiry') == $mou)>{{ $mou }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="month_passport_expiry">
+                    <option value="">-- ทุกเดือน --</option>
+                    @foreach($months as $num => $name)
+                    <option value="{{ $num }}" @selected(request('month_passport_expiry') == $num)>{{ $name }}</option>
+                    @endforeach
+                </select>
+                <a href="{{ route('notifications.export', ['export_type' => 'passport_expiry'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
+            </div>
             <h5 class="mb-3">รายการ Passport หมดอายุ ({{ $groupedNotifications->get('passport_expiry', collect())->total() }})</h5>
             <div id="notificationPassportListContainer" class="vstack gap-2">
                 @foreach($groupedNotifications->get('passport_expiry', collect()) as $notification)
@@ -134,31 +128,28 @@ $activeTab = request()->input('tab', 'ninety_day_report');
 
         {{-- Permits Tab Pane --}}
         <div class="tab-pane fade {{ $activeTab === 'permits' ? 'show active' : '' }}" id="n-permits" role="tabpanel">
-            <form method="GET" action="{{ route('notifications.index') }}">
+            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-permits">
                 <input type="hidden" name="tab" value="permits">
-                <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
-                    <input type="text" class="form-control form-control-sm w-auto" name="search_permits" placeholder="ค้นหา..." value="{{ request('search_permits') }}">
-                    <select class="form-select form-select-sm w-auto" name="nationality_permits">
-                        <option value="">-- ทุกสัญชาติ --</option>
-                         @foreach($nationalities as $nat)
-                        <option value="{{ $nat }}" @selected(request('nationality_permits') == $nat)>{{ $nat }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="mou_permits">
-                        <option value="">-- ทุกประเภท มติ. --</option>
-                         @foreach($mouTypes as $mou)
-                        <option value="{{ $mou }}" @selected(request('mou_permits') == $mou)>{{ $mou }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="month_permits">
-                        <option value="">-- ทุกเดือน --</option>
-                        @foreach($months as $num => $name)
-                        <option value="{{ $num }}" @selected(request('month_permits') == $num)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                </div>
-            </form>
+                <input type="text" class="form-control form-control-sm w-auto" name="search_permits" placeholder="ค้นหา..." value="{{ request('search_permits') }}">
+                <select class="form-select form-select-sm w-auto" name="nationality_permits">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                     @foreach($nationalities as $nat)
+                    <option value="{{ $nat }}" @selected(request('nationality_permits') == $nat)>{{ $nat }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="mou_permits">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                     @foreach($mouTypes as $mou)
+                    <option value="{{ $mou }}" @selected(request('mou_permits') == $mou)>{{ $mou }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="month_permits">
+                    <option value="">-- ทุกเดือน --</option>
+                    @foreach($months as $num => $name)
+                    <option value="{{ $num }}" @selected(request('month_permits') == $num)>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="row g-4">
                 <div class="col-lg-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -207,32 +198,29 @@ $activeTab = request()->input('tab', 'ninety_day_report');
 
         {{-- CI Renew Tab Pane --}}
         <div class="tab-pane fade {{ $activeTab === 'ci_renewal' ? 'show active' : '' }}" id="n-ci-renew" role="tabpanel">
-            <form method="GET" action="{{ route('notifications.index') }}">
+            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-ci_renewal">
                 <input type="hidden" name="tab" value="ci_renewal">
-                <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
-                    <input type="text" class="form-control form-control-sm w-auto" name="search_ci_renewal" placeholder="ค้นหา..." value="{{ request('search_ci_renewal') }}">
-                    <select class="form-select form-select-sm w-auto" name="nationality_ci_renewal">
-                        <option value="">-- ทุกสัญชาติ --</option>
-                         @foreach($nationalities as $nat)
-                        <option value="{{ $nat }}" @selected(request('nationality_ci_renewal') == $nat)>{{ $nat }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="mou_ci_renewal">
-                        <option value="">-- ทุกประเภท มติ. --</option>
-                         @foreach($mouTypes as $mou)
-                        <option value="{{ $mou }}" @selected(request('mou_ci_renewal') == $mou)>{{ $mou }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="month_ci_renewal">
-                        <option value="">-- ทุกเดือน --</option>
-                        @foreach($months as $num => $name)
-                        <option value="{{ $num }}" @selected(request('month_ci_renewal') == $num)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                    <a href="{{ route('notifications.export', ['export_type' => 'ci_renewal'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-                </div>
-            </form>
+                <input type="text" class="form-control form-control-sm w-auto" name="search_ci_renewal" placeholder="ค้นหา..." value="{{ request('search_ci_renewal') }}">
+                <select class="form-select form-select-sm w-auto" name="nationality_ci_renewal">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                     @foreach($nationalities as $nat)
+                    <option value="{{ $nat }}" @selected(request('nationality_ci_renewal') == $nat)>{{ $nat }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="mou_ci_renewal">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                     @foreach($mouTypes as $mou)
+                    <option value="{{ $mou }}" @selected(request('mou_ci_renewal') == $mou)>{{ $mou }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="month_ci_renewal">
+                    <option value="">-- ทุกเดือน --</option>
+                    @foreach($months as $num => $name)
+                    <option value="{{ $num }}" @selected(request('month_ci_renewal') == $num)>{{ $name }}</option>
+                    @endforeach
+                </select>
+                <a href="{{ route('notifications.export', ['export_type' => 'ci_renewal'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
+            </div>
             <h5 class="mb-3">รายการต่ออายุเล่ม CI ({{ $groupedNotifications->get('ci_renewal', collect())->total() }})</h5>
             <div id="notificationCi_renewListContainer" class="vstack gap-2">
                 @foreach($groupedNotifications->get('ci_renewal', collect()) as $notification)
@@ -246,38 +234,35 @@ $activeTab = request()->input('tab', 'ninety_day_report');
 
         {{-- Resolution Renew Tab Pane --}}
         <div class="tab-pane fade {{ $activeTab === 'resolution_renewal' ? 'show active' : '' }}" id="n-resolution-renew" role="tabpanel">
-            <form method="GET" action="{{ route('notifications.index') }}">
+            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-resolution_renewal">
                 <input type="hidden" name="tab" value="resolution_renewal">
-                <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
-                    <input type="text" class="form-control form-control-sm w-auto" name="search_resolution_renewal" placeholder="ค้นหา..." value="{{ request('search_resolution_renewal') }}">
-                    <select class="form-select form-select-sm w-auto" name="nationality_resolution_renewal">
-                        <option value="">-- ทุกสัญชาติ --</option>
-                         @foreach($nationalities as $nat)
-                        <option value="{{ $nat }}" @selected(request('nationality_resolution_renewal') == $nat)>{{ $nat }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="mou_resolution_renewal">
-                        <option value="">-- ทุกประเภท มติ. --</option>
-                         @foreach($mouTypes as $mou)
-                        <option value="{{ $mou }}" @selected(request('mou_resolution_renewal') == $mou)>{{ $mou }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="month_resolution_renewal">
-                        <option value="">-- ทุกเดือน --</option>
-                        @foreach($months as $num => $name)
-                        <option value="{{ $num }}" @selected(request('month_resolution_renewal') == $num)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="step_resolution_renewal">
-                        <option value="">-- ทุกขั้นตอน --</option>
-                        @foreach($resolutionSteps as $key => $name)
-                        <option value="{{ $key }}" @selected(request('step_resolution_renewal') == $key)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                    <a href="{{ route('notifications.export', ['export_type' => 'resolution_renewal'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-                </div>
-            </form>
+                <input type="text" class="form-control form-control-sm w-auto" name="search_resolution_renewal" placeholder="ค้นหา..." value="{{ request('search_resolution_renewal') }}">
+                <select class="form-select form-select-sm w-auto" name="nationality_resolution_renewal">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                     @foreach($nationalities as $nat)
+                    <option value="{{ $nat }}" @selected(request('nationality_resolution_renewal') == $nat)>{{ $nat }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="mou_resolution_renewal">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                     @foreach($mouTypes as $mou)
+                    <option value="{{ $mou }}" @selected(request('mou_resolution_renewal') == $mou)>{{ $mou }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="month_resolution_renewal">
+                    <option value="">-- ทุกเดือน --</option>
+                    @foreach($months as $num => $name)
+                    <option value="{{ $num }}" @selected(request('month_resolution_renewal') == $num)>{{ $name }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="step_resolution_renewal">
+                    <option value="">-- ทุกขั้นตอน --</option>
+                    @foreach($resolutionSteps as $key => $name)
+                    <option value="{{ $key }}" @selected(request('step_resolution_renewal') == $key)>{{ $name }}</option>
+                    @endforeach
+                </select>
+                <a href="{{ route('notifications.export', ['export_type' => 'resolution_renewal'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
+            </div>
             <h5 class="mb-3">รายการต่ออายุมติในประเทศ ({{ $groupedNotifications->get('resolution_renewal', collect())->total() }})</h5>
             <div id="notificationResolution_renewalListContainer" class="vstack gap-2">
                 @foreach($groupedNotifications->get('resolution_renewal', collect()) as $notification)
@@ -291,32 +276,29 @@ $activeTab = request()->input('tab', 'ninety_day_report');
 
         {{-- Cancelled Tab Pane --}}
         <div class="tab-pane fade {{ $activeTab === 'cancelled' ? 'show active' : '' }}" id="n-cancelled-renew" role="tabpanel">
-            <form method="GET" action="{{ route('notifications.index') }}">
+            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-cancelled">
                 <input type="hidden" name="tab" value="cancelled">
-                <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap">
-                    <input type="text" class="form-control form-control-sm w-auto" name="search_cancelled" placeholder="ค้นหา..." value="{{ request('search_cancelled') }}">
-                    <select class="form-select form-select-sm w-auto" name="nationality_cancelled">
-                        <option value="">-- ทุกสัญชาติ --</option>
-                         @foreach($nationalities as $nat)
-                        <option value="{{ $nat }}" @selected(request('nationality_cancelled') == $nat)>{{ $nat }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="mou_cancelled">
-                        <option value="">-- ทุกประเภท มติ. --</option>
-                         @foreach($mouTypes as $mou)
-                        <option value="{{ $mou }}" @selected(request('mou_cancelled') == $mou)>{{ $mou }}</option>
-                        @endforeach
-                    </select>
-                    <select class="form-select form-select-sm w-auto" name="month_cancelled">
-                        <option value="">-- ทุกเดือน --</option>
-                        @foreach($months as $num => $name)
-                        <option value="{{ $num }}" @selected(request('month_cancelled') == $num)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                    <a href="{{ route('notifications.export', ['export_type' => 'cancelled'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-                </div>
-            </form>
+                <input type="text" class="form-control form-control-sm w-auto" name="search_cancelled" placeholder="ค้นหา..." value="{{ request('search_cancelled') }}">
+                <select class="form-select form-select-sm w-auto" name="nationality_cancelled">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                     @foreach($nationalities as $nat)
+                    <option value="{{ $nat }}" @selected(request('nationality_cancelled') == $nat)>{{ $nat }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="mou_cancelled">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                     @foreach($mouTypes as $mou)
+                    <option value="{{ $mou }}" @selected(request('mou_cancelled') == $mou)>{{ $mou }}</option>
+                    @endforeach
+                </select>
+                <select class="form-select form-select-sm w-auto" name="month_cancelled">
+                    <option value="">-- ทุกเดือน --</option>
+                    @foreach($months as $num => $name)
+                    <option value="{{ $num }}" @selected(request('month_cancelled') == $num)>{{ $name }}</option>
+                    @endforeach
+                </select>
+                <a href="{{ route('notifications.export', ['export_type' => 'cancelled'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
+            </div>
             <h5 class="mb-3">รายการที่ยกเลิกการต่ออายุ ({{ $groupedNotifications->get('cancelled', collect())->total() }})</h5>
             <div id="notificationCancelled_renewListContainer" class="vstack gap-2">
                 @foreach($groupedNotifications->get('cancelled', collect()) as $notification)
