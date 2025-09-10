@@ -36,7 +36,7 @@
                         <td>{{ $employer->employerNameTh }}</td>
                         <td>{{ $employer->employerId }}</td>
                         <td>{{ $employer->businessType }}</td>
-                        <td>{{ $jobOwners[$employer->jobOwnerId] ?? 'N/A' }}</td>
+                        <td>{{ $employer->jobOwner->name ?? 'N/A' }}</td>
                         <td class="text-center">
                             <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
                             <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline">
