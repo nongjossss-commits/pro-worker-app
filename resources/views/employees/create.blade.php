@@ -16,8 +16,9 @@
         </div>
     @endif
 
-    <form action="{{ route('employers.employees.store', $employer) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('employees.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
+        <input type="hidden" name="employer_id" value="{{ $employer->id }}">
         <h5>ข้อมูลส่วนตัว</h5>
         <hr>
         <div class="row">
