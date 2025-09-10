@@ -12,7 +12,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">รายการข้อมูลนายจ้าง</h2>
         <div class="d-flex gap-2">
-            <input type="text" name="search" id="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}">
+            <input type="text" name="search" id="employer-search-input" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}">
             <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
             <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
         </div>
@@ -29,7 +29,7 @@
                     <th class="text-center">จัดการ</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="employer-table-body">
                 @forelse ($employers as $employer)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
@@ -56,3 +56,28 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('employer-search-input');
+        const tableBody = document.getElementById('employer-table-body');
+        if (searchInput && tableBody) {
+            const tableRows = tableBody.getElementsByTagName('tr');
+
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = searchInput.value.toLowerCase();
+                for (let row of tableRows) {
+                    // Check all cells in the row for the search term
+                    const rowText = row.textContent || row.innerText;
+                    if (rowText.toLowerCase().includes(searchTerm)) {
+                        row.style.display = ""; // Show row if it matches
+                    } else {
+                        row.style.display = "none"; // Hide row if it doesn't match
+                    }
+                }
+            });
+        }
+    });
+</script>
+@endpush
