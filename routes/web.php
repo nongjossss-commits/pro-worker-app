@@ -29,8 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/{employee}/terminate', [EmployerController::class, 'terminate'])->name('employees.terminate');
     Route::post('/employees/{employee}/restore', [EmployerController::class, 'restoreEmployee'])->name('employees.restore');
     Route::delete('/employees/{employee}/force-delete', [EmployerController::class, 'forceDeleteEmployee'])->name('employees.forceDelete');
-    Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
-    Route::resource('employers.employees', EmployeeController::class)->except(['index']);
+    Route::resource('employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
     Route::resource('delegates', DelegateController::class);
