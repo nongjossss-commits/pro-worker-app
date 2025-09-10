@@ -277,7 +277,7 @@
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary">อัปเดตข้อมูลพนักงาน</button>
-            <a href="{{ route('employers.edit', $employer) }}" class="btn btn-secondary">ยกเลิก</a>
+            <a href="{{ route('employers.edit', $employee->employer) }}" class="btn btn-secondary">ยกเลิก</a>
         </div>
     </form>
 </div>
