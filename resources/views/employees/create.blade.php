@@ -315,6 +315,26 @@ document.addEventListener('DOMContentLoaded', function () {
             employeePhotoPreview.src = URL.createObjectURL(file);
         }
     });
+
+    const titleTh = document.getElementById('employeeTitleTh');
+    const titleEn = document.getElementById('employeeTitleEn');
+
+    const thToEnMap = { 'นาย': 'Mr.', 'นางสาว': 'Miss', 'นาง': 'Mrs.' };
+    const enToThMap = { 'Mr.': 'นาย', 'Miss': 'นางสาว', 'Mrs.': 'นาง' };
+
+    titleTh.addEventListener('change', function() {
+        const selectedTh = this.value;
+        if (thToEnMap[selectedTh]) {
+            titleEn.value = thToEnMap[selectedTh];
+        }
+    });
+
+    titleEn.addEventListener('change', function() {
+        const selectedEn = this.value;
+        if (enToThMap[selectedEn]) {
+            titleTh.value = enToThMap[selectedEn];
+        }
+    });
 });
 </script>
 @endpush

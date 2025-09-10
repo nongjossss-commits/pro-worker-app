@@ -31,7 +31,7 @@
         <div class="d-flex justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
                 <h5 class="alert-heading mb-1">
-                    {{ $loop->iteration }}. {{ $employee->employeeNameEn ?? 'N/A' }}
+                    {{ $loop->iteration }}. {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
                     @if($nationality)
                         <span class="text-muted fw-normal small">
                              - {{ $nationality }}
@@ -41,7 +41,7 @@
                         </span>
                     @endif
                 </h5>
-                <p class="mb-1 text-muted small">{{ $employee->employeeNameTh ?? '' }}</p>
+                <p class="mb-1 text-muted small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? '' }}</p>
                 <p class="mb-1"><strong>นายจ้าง:</strong> {{ $employer->employerNameTh ?? 'N/A' }}</p>
                 <p class="mb-0 small">
                     <strong>{{ $notification->title }}:</strong> {{ $dueDate->translatedFormat('d F Y') }}
