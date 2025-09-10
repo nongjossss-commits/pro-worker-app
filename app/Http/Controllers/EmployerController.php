@@ -20,21 +20,23 @@ class EmployerController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Employer::with('jobOwner');
+        $perPage = $request->input('per_page', 25);
+        $search = $request->input('search');
 
-        if ($request->filled('search')) {
-            $search = $request->input('search');
+        $query = Employer::with('jobOwner')->latest();
+
+        if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('employerNameTh', 'like', "%{$search}%")
                   ->orWhere('employerNameEn', 'like', "%{$search}%")
-                  ->orWhere('employerId', 'like', "%{$search}%");
+                  ->orWhere('employerId', 'like', "%{$search}%")
+                  ->orWhere('employerTaxId', 'like', "%{$search}%");
             });
         }
 
-        $employers = $query->latest()->paginate(10);
-        $jobOwners = User::pluck('name', 'id');
+        $employers = $query->paginate($perPage)->withQueryString();
 
-        return view('employers.index', compact('employers', 'jobOwners'));
+        return view('employers.index', compact('employers'));
     }
 
     /**
