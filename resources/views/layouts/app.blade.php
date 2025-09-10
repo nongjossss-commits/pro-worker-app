@@ -139,7 +139,7 @@
             </div>
         </aside>
 
-        <main id="main-content">
+        <main id="main-content" style="position: relative; z-index: 1;">
             @if (session('success'))
                 <div class="alert alert-success">
                     {{ session('success') }}
