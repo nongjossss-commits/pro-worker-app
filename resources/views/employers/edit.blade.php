@@ -197,96 +197,123 @@
 </div>
 
 
-@php
-$nationalityFlags = [
-    'ลาว' => 'la',
-    'กัมพูชา' => 'kh',
-    'เมียนมา' => 'mm',
-    'เวียดนาม' => 'vn',
-];
-@endphp
-{{-- Employee List Section --}}
-<div class="content-section mt-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-@php
-    $totalEmployees = $employer->employees->count();
-    $maleCount = 0;
-    $femaleCount = 0;
-    foreach ($employer->employees as $employee) {
-        $title = $employee->employeeTitleTh ?? 'นาย'; // Default to male if not set
-        if (in_array($title, ['นาย', 'Mr.'])) {
-            $maleCount++;
-        } elseif (in_array($title, ['นางสาว', 'นาง', 'Miss', 'Mrs.'])) {
-            $femaleCount++;
-        }
-    }
-@endphp
-        <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
-        <div class="d-flex gap-2 flex-wrap">
-            <input type="text" class="form-control form-control-sm" id="searchEmployeeInput" placeholder="ค้นหาพนักงาน..." style="width: 150px;">
-            <select class="form-select form-select-sm" id="searchEmployeeNationality" style="width: 150px;">
+<hr class="my-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    @php
+        $totalEmployees = $employees->total();
+        $maleCount = $employer->employees()->whereIn('employeeTitleTh', ['นาย'])->count();
+        $femaleCount = $employer->employees()->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+    @endphp
+    <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
+    <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ route('employers.edit', $employer->id) }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+            <input type="text" name="search_employee" class="form-control form-control-sm" placeholder="ค้นหาลูกจ้าง..." value="{{ request('search_employee') }}" style="width: 150px;">
+
+            <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
                 <option value="">-- ทุกสัญชาติ --</option>
-                <option>ลาว</option>
-                <option>กัมพูชา</option>
-                <option>เมียนมา</option>
-                <option>เวียดนาม</option>
+                <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
+                <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
+                <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
+                <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
             </select>
-            <select class="form-select form-select-sm" id="searchEmployeeMOUGroup" style="width: 200px;">
+
+            <select name="mou_type" class="form-select form-select-sm" style="width: 200px;">
                 <option value="">-- ทุกประเภท มติ. --</option>
-                <option>MOU</option>
-                <option>มติต่ออายุในประเทศ</option>
-                <option>มติขึ้นทะเบียน</option>
-                <option>อื่นๆ</option>
+                <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
+                <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
+                <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
+                <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
             </select>
-            <select class="form-select form-select-sm" id="searchEmployeePinkCard" style="width: 150px;">
-                <option value="">-- บัตรชมพู --</option>
-                <option value="has_card">มีบัตรชมพู</option>
-                <option value="no_card">ไม่มีบัตรชมพู</option>
+
+            <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
+
+            <div class="btn-group btn-group-sm ms-md-auto">
+                <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked($currentView === 'card')>
+                <label class="btn btn-outline-secondary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i></label>
+
+                <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked($currentView === 'table')>
+                <label class="btn btn-outline-secondary" for="view-table"><i class="bi bi-table"></i></label>
+            </div>
+
+            <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                @foreach($perPageOptions as $option)
+                <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>แสดง {{ $option }}</option>
+                @endforeach
             </select>
-            <a href="{{ route('employers.exportEmployees', $employer) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> ส่งออก</a>
-            <a href="{{ route('employers.employees.create', $employer) }}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
-        </div>
+        </form>
     </div>
-    <div id="employeeList" class="vstack gap-3">
-        {{-- ========================================================================= --}}
-        {{-- THE ONLY CRITICAL CHANGE IS HERE: Using the correct $employees variable --}}
-        {{-- ========================================================================= --}}
-        @forelse ($employees as $employee)
-@php
-    $flagCodes = [
-        'เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn',
-    ];
-    $nationality = $employee->employeeNationality ?? null;
-    $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
-@endphp
-        <div class="employee-card d-flex justify-content-between align-items-start gap-3" id="employee-card-{{ $employee->id }}">
-            <div class="d-flex align-items-center flex-grow-1">
-                <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-                <div class="flex-grow-1">
-                    <p class="mb-0">
-                        <strong>{{ $loop->iteration }}. {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}</strong>@if($nationality)
-    <span class="text-muted small"> - {{ $nationality }}</span>
-    @if($flagCode)
-        <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
-    @endif
-@endif
-                    </p>
-                    <p class="mb-1 text-muted small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }} ({{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }})</p>
-                    <p class="mb-1 text-muted small">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d M Y') : '-' }})</p>
-                    <p class="mb-1 text-muted small">Work Permit: {{ $employee->employeeWorkPermit ?? '-' }} (หมดอายุ: {{ $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d M Y') : '-' }})</p>
-                    <p class="mb-0 text-muted small">Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) หมดอายุ: {{ $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d M Y') : '-' }} | 90-Day: {{ $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d M Y') : '-' }}</p>
-                </div>
-            </div>
-            <div class="btn-group btn-group-sm">
-                <a href="{{ route('employers.employees.edit', ['employer' => $employer, 'employee' => $employee]) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
-                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
-            </div>
-        </div>
+</div>
+
+<div id="employeeList">
+    @if($currentView === 'card')
+        @forelse($employees as $employee)
+            @include('employers._employee_card', ['employee' => $employee])
         @empty
-            <p class="text-muted">ไม่พบข้อมูลพนักงาน</p>
+            <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</p>
         @endforelse
-    </div>
+    @else
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 10%;">Photo</th>
+                        <th style="width: 25%;">Name (EN)</th>
+                        <th style="width: 25%;">Name (TH)</th>
+                        <th style="width: 15%;">Passport</th>
+                        <th style="width: 10%;">Nationality</th>
+                        <th style="width: 10%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($employees as $employee)
+                        <tr>
+                            <td>{{ $employees->firstItem() + $loop->index }}</td>
+                            <td>
+                                <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">
+                            </td>
+                            <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}</td>
+                            <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}<br><small class="text-muted">{{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }}</small></td>
+                            <td>{{ $employee->employeePassport ?? '-' }}</td>
+                            <td>
+                                @php
+                                    $flagCodes = ['เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn'];
+                                    $nationality = $employee->employeeNationality ?? null;
+                                    $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
+                                @endphp
+                                @if($nationality)
+                                    {{ $nationality }}
+                                    @if($flagCode)
+                                        <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
+                                    <button type="button" class="btn btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
+
+<div class="mt-3">
+    {{ $employees->links() }}
 </div>
 
 {{-- Employment History Section --}}
