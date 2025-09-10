@@ -20,7 +20,7 @@ class EmployerController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Employer::query();
+        $query = Employer::with('jobOwner');
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -31,7 +31,7 @@ class EmployerController extends Controller
             });
         }
 
-        $employers = $query->get();
+        $employers = $query->latest()->paginate(10);
         $jobOwners = User::pluck('name', 'id');
 
         return view('employers.index', compact('employers', 'jobOwners'));
