@@ -24,6 +24,7 @@ class Employer extends Model
         'document_company_registration',
         'document_vat_registration',
         'document_map',
+        'job_owner_id',
     ];
 
     public function employees()

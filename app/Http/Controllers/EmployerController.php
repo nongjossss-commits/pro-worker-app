@@ -55,7 +55,7 @@ class EmployerController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'employerNameTh' => 'required',
             'employerNameEn' => 'nullable',
             'employerId' => 'required|unique:employers',
@@ -70,12 +70,12 @@ class EmployerController extends Controller
             'document_company_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'document_vat_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'document_map' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'job_owner_id' => 'nullable|exists:job_owners,id',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $data = $request->except(['document_company_registration', 'document_vat_registration', 'document_map', 'registered_addresses', 'workplace_addresses']);
-
-            $employer = Employer::create($data);
+        DB::transaction(function () use ($request, $validatedData) {
+            $employerData = collect($validatedData)->except(['document_company_registration', 'document_vat_registration', 'document_map'])->all();
+            $employer = Employer::create($employerData);
 
             if ($request->hasFile('document_company_registration')) {
                 $path = $request->file('document_company_registration')->store("employer_documents/{$employer->id}", 'public');
@@ -141,7 +141,7 @@ class EmployerController extends Controller
      */
     public function update(Request $request, Employer $employer)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'employerNameTh' => 'required',
             'employerNameEn' => 'nullable',
             'employerId' => 'required|unique:employers,employerId,' . $employer->id,
@@ -156,9 +156,10 @@ class EmployerController extends Controller
             'document_company_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'document_vat_registration' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'document_map' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'job_owner_id' => 'nullable|exists:job_owners,id',
         ]);
 
-        $data = $request->except(['document_company_registration', 'document_vat_registration', 'document_map']);
+        $data = collect($validatedData)->except(['document_company_registration', 'document_vat_registration', 'document_map'])->all();
 
         if ($request->hasFile('document_company_registration')) {
             $path = $request->file('document_company_registration')->store("employer_documents/{$employer->id}", 'public');
