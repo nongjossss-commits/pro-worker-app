@@ -1,6 +1,21 @@
 {{-- DEFINITIVE MASTER FIX: This is the user's full original file with the final corrections. --}}
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    @keyframes highlight-fade {
+        from { background-color: #fef9c3; } /* A light yellow */
+        to { background-color: transparent; }
+    }
+    .highlight {
+        animation: highlight-fade 3s ease-out forwards;
+        border: 2px solid #f97316 !important; /* An orange border */
+        border-radius: 0.5rem; /* Match card/row radius */
+        box-shadow: 0 0 15px rgba(249, 115, 22, 0.5);
+    }
+</style>
+@endpush
+
 @section('title', 'แก้ไขข้อมูลนายจ้าง')
 
 @section('content')
@@ -1072,28 +1087,24 @@ document.addEventListener('DOMContentLoaded', function () {
         const elementToHighlight = document.getElementById(highlightId);
 
         if (elementToHighlight) {
-            // Scroll to the element
+            // Scroll the element into the middle of the view
             elementToHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // Add highlight class and remove it after animation
+            // Add the highlight class
             elementToHighlight.classList.add('highlight');
+
+            // Optional: Remove the class after the animation to clean up styles
             setTimeout(() => {
                 elementToHighlight.classList.remove('highlight');
-            }, 3000); // 3 seconds, matching the animation
+                // Also clear the hash from the URL for a cleaner experience
+                if (history.pushState) {
+                    history.pushState(null, null, window.location.pathname + window.location.search);
+                } else {
+                    window.location.hash = '';
+                }
+            }, 3100); // Slightly longer than the animation
         }
     }
 });
 </script>
-@endpush
-@push('styles')
-<style>
-    @keyframes highlight-fade {
-        from { background-color: #fef9c3; } /* yellow-100 */
-        to { background-color: transparent; }
-    }
-    .highlight {
-        animation: highlight-fade 3s ease-out;
-        border-color: #f97316 !important; /* orange-500 */
-    }
-</style>
 @endpush
