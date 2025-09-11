@@ -3,15 +3,15 @@
 
 @push('styles')
 <style>
-    @keyframes highlight-fade {
-        from { background-color: #fef9c3; } /* A light yellow */
-        to { background-color: transparent; }
-    }
     .highlight {
         animation: highlight-fade 3s ease-out forwards;
         border: 2px solid #f97316 !important; /* An orange border */
         border-radius: 0.5rem; /* Match card/row radius */
         box-shadow: 0 0 15px rgba(249, 115, 22, 0.5);
+    }
+    @keyframes highlight-fade {
+        from { background-color: #fef9c3; } /* A light yellow */
+        to { background-color: transparent; }
     }
 </style>
 @endpush
@@ -926,61 +926,61 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Filter Employees
-    const searchInput = document.getElementById('searchEmployeeInput');
-    const nationalitySelect = document.getElementById('searchEmployeeNationality');
-    const mouGroupSelect = document.getElementById('searchEmployeeMOUGroup');
-    const pinkCardSelect = document.getElementById('searchEmployeePinkCard');
+    // const searchInput = document.getElementById('searchEmployeeInput');
+    // const nationalitySelect = document.getElementById('searchEmployeeNationality');
+    // const mouGroupSelect = document.getElementById('searchEmployeeMOUGroup');
+    // const pinkCardSelect = document.getElementById('searchEmployeePinkCard');
 
-    function filterEmployees() {
-        const search = searchInput.value;
-        const nationality = nationalitySelect.value;
-        const mouGroup = mouGroupSelect.value;
-        const pinkCard = pinkCardSelect.value;
+    // function filterEmployees() {
+    //     const search = searchInput.value;
+    //     const nationality = nationalitySelect.value;
+    //     const mouGroup = mouGroupSelect.value;
+    //     const pinkCard = pinkCardSelect.value;
 
-        const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
-        url.searchParams.append('search', search);
-        url.searchParams.append('nationality', nationality);
-        url.searchParams.append('mouGroup', mouGroup);
-        url.searchParams.append('pinkCard', pinkCard);
+    //     const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
+    //     url.searchParams.append('search', search);
+    //     url.searchParams.append('nationality', nationality);
+    //     url.searchParams.append('mouGroup', mouGroup);
+    //     url.searchParams.append('pinkCard', pinkCard);
 
-        fetch(url)
-            .then(response => response.json())
-            .then(employees => {
-                const employeeList = document.getElementById('employeeList');
-                employeeList.innerHTML = '';
-                if (employees.length > 0) {
-                    employees.forEach(employee => {
-                        const card = `
-                        <div class="employee-card d-flex justify-content-between align-items-start gap-3">
-                            <div class="d-flex align-items-center flex-grow-1">
-                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-                                <div class="flex-grow-1">
-                                    <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
-                                    <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
-                                    <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-                                    <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-                                    <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
-                                </div>
-                            </div>
-                            <div class="btn-group btn-group-sm">
-                                <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                                <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
-                                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
-                            </div>
-                        </div>`;
-                        employeeList.innerHTML += card;
-                    });
-                } else {
-                    employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
-                }
-                 document.getElementById('employeeTotalCount').textContent = employees.length;
-            });
-    }
+    //     fetch(url)
+    //         .then(response => response.json())
+    //         .then(employees => {
+    //             const employeeList = document.getElementById('employeeList');
+    //             employeeList.innerHTML = '';
+    //             if (employees.length > 0) {
+    //                 employees.forEach(employee => {
+    //                     const card = `
+    //                     <div class="employee-card d-flex justify-content-between align-items-start gap-3">
+    //                         <div class="d-flex align-items-center flex-grow-1">
+    //                             <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
+    //                             <div class="flex-grow-1">
+    //                                 <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
+    //                                 <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
+    //                                 <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
+    //                                 <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
+    //                                 <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
+    //                             </div>
+    //                         </div>
+    //                         <div class="btn-group btn-group-sm">
+    //                             <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
+    //                             <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
+    //                             <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+    //                         </div>
+    //                     </div>`;
+    //                     employeeList.innerHTML += card;
+    //                 });
+    //             } else {
+    //                 employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
+    //             }
+    //              document.getElementById('employeeTotalCount').textContent = employees.length;
+    //         });
+    // }
 
-    searchInput.addEventListener('input', filterEmployees);
-    nationalitySelect.addEventListener('change', filterEmployees);
-    mouGroupSelect.addEventListener('change', filterEmployees);
-    pinkCardSelect.addEventListener('change', filterEmployees);
+    // searchInput.addEventListener('input', filterEmployees);
+    // nationalitySelect.addEventListener('change', filterEmployees);
+    // mouGroupSelect.addEventListener('change', filterEmployees);
+    // pinkCardSelect.addEventListener('change', filterEmployees);
 
     // Filter History
     const searchHistoryInput = document.getElementById('searchHistoryInput');
@@ -1084,6 +1084,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (window.location.hash) {
         // The hash will be #employee-card-XX or #employee-row-XX
         const highlightId = window.location.hash.substring(1);
+        console.log("TEST " + highlightId)
         const elementToHighlight = document.getElementById(highlightId);
 
         if (elementToHighlight) {
@@ -1092,17 +1093,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Add the highlight class
             elementToHighlight.classList.add('highlight');
-
+            elementToHighlight.style.border = "2px solid #f97316";
+            elementToHighlight.style.borderRadius = "0.5rem";
+            elementToHighlight.style.boxShadow = "0 0 15px rgba(249, 115, 22, 0.5)";
             // Optional: Remove the class after the animation to clean up styles
-            setTimeout(() => {
-                elementToHighlight.classList.remove('highlight');
-                // Also clear the hash from the URL for a cleaner experience
-                if (history.pushState) {
-                    history.pushState(null, null, window.location.pathname + window.location.search);
-                } else {
-                    window.location.hash = '';
-                }
-            }, 3100); // Slightly longer than the animation
+            // setTimeout(() => {
+            //     elementToHighlight.classList.remove('highlight');
+            //     // Also clear the hash from the URL for a cleaner experience
+            //     if (history.pushState) {
+            //         history.pushState(null, null, window.location.pathname + window.location.search);
+            //     } else {
+            //         window.location.hash = '';
+            //     }
+            // }, 3100); // Slightly longer than the animation
         }
     }
 });

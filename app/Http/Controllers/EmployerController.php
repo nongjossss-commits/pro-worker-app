@@ -322,6 +322,7 @@ class EmployerController extends Controller
 
         $response = new StreamedResponse(function() use ($employers, $csvHeader) {
             $handle = fopen('php://output', 'w');
+            fwrite($handle,"\xEF\xBB\xBF");
             fputcsv($handle, $csvHeader);
 
             foreach ($employers as $employer) {
@@ -342,7 +343,7 @@ class EmployerController extends Controller
 
             fclose($handle);
         }, 200, [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="employers.csv"',
         ]);
 
