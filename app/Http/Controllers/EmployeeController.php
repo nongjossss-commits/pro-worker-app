@@ -12,42 +12,42 @@ class EmployeeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        // Define options for items per page
-        $cardPerPageOptions = [10, 15, 20];
-        $tablePerPageOptions = [25, 50, 100];
+public function index(Request $request)
+{
+    // Define options for items per page
+    $cardPerPageOptions = [10, 15, 20];
+    $tablePerPageOptions = [25, 50, 100];
 
-        // Determine the current view, default to 'card'
-        $currentView = $request->input('view', 'card');
+    // Determine the current view, default to 'card'
+    $currentView = $request->input('view', 'card');
 
-        // Determine per_page based on the current view
-        $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
-        $currentPerPage = $request->input('per_page', $defaultPerPage);
+    // Determine per_page based on the current view
+    $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
+    $currentPerPage = $request->input('per_page', $defaultPerPage);
 
-        // Determine which set of options to pass to the view
-        $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
+    // Determine which set of options to pass to the view
+    $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
-        // Build the query
-        $query = Employee::with(['employer', 'documents']); // Eager load relationships
+    // Build the query for ALL employees
+    $query = Employee::with('employer')->latest(); // Eager load employer relationship
 
-        // Handle search if present
-        if ($request->has('search') && $request->input('search') != '') {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%")
-                  ->orWhereHas('employer', function($q_employer) use ($search) {
-                      $q_employer->where('employerNameTh', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        $employees = $query->latest()->paginate($currentPerPage)->withQueryString();
-
-        return view('employees.index', compact('employees', 'currentView', 'currentPerPage', 'perPageOptions'));
+    // Handle search if present
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->where(function($q) use ($search) {
+            $q->where('employeeNameTh', 'like', "%{$search}%")
+              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+              ->orWhere('employeePassport', 'like', "%{$search}%")
+              ->orWhereHas('employer', function($q_employer) use ($search) {
+                  $q_employer->where('employerNameTh', 'like', "%{$search}%");
+              });
+        });
     }
+
+    $employees = $query->paginate($currentPerPage)->withQueryString();
+
+    return view('employees.index', compact('employees', 'currentView', 'currentPerPage', 'perPageOptions'));
+}
 
     /**
      * Show the form for creating a new resource.
