@@ -23,7 +23,10 @@
 <div class="p-4 p-md-5 content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">รายการข้อมูลลูกจ้างทั้งหมด</h2>
-        <a href="{{ route('employees.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+        <h2 class="h5 text-muted fw-normal">
+            (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
+        </h2>
+        <a href="{{ route('employers.index') }}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
     </div>
 
     <div class="card mb-4">
@@ -83,7 +86,7 @@
                             {{-- ADDED .employee-photo-thumb class --}}
                             <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
                                  class="employee-photo-thumb"
-                                 style="width: 48px; height: 48px;"
+                                 style="width: 48px; height: 48px; border-radius: 50%;"
                                  alt="Photo">
                         </td>
                         <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn }}</td>
