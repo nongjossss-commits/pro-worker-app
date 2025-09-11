@@ -17,19 +17,23 @@ public function index(Request $request)
     // Define options for items per page
     $cardPerPageOptions = [10, 15, 20];
     $tablePerPageOptions = [25, 50, 100];
-
-    // Determine the current view, default to 'card'
     $currentView = $request->input('view', 'card');
-
-    // Determine per_page based on the current view
     $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
     $currentPerPage = $request->input('per_page', $defaultPerPage);
-
-    // Determine which set of options to pass to the view
     $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
-    // Build the query for ALL employees
-    $query = Employee::with('employer')->latest(); // Eager load employer relationship
+    // Build the base query for ALL employees
+    $query = Employee::query();
+
+    // --- START: COUNTING LOGIC ---
+    // Calculate counts before filtering for search
+    $totalEmployees = $query->count();
+    $maleCount = (clone $query)->whereIn('employeeTitleTh', ['นาย'])->count();
+    $femaleCount = (clone $query)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+    // --- END: COUNTING LOGIC ---
+
+    // Eager load employer relationship
+    $query->with('employer')->latest();
 
     // Handle search if present
     if ($request->filled('search')) {
@@ -46,7 +50,10 @@ public function index(Request $request)
 
     $employees = $query->paginate($currentPerPage)->withQueryString();
 
-    return view('employees.index', compact('employees', 'currentView', 'currentPerPage', 'perPageOptions'));
+    return view('employees.index', compact(
+        'employees', 'currentView', 'currentPerPage', 'perPageOptions',
+        'totalEmployees', 'maleCount', 'femaleCount' // Pass new variables
+    ));
 }
 
     /**
