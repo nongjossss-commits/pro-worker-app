@@ -218,17 +218,14 @@ public function index(Request $request)
             ->with('success', 'ลบข้อมูลพนักงานเรียบร้อยแล้ว');
     }
 
-    public function locate(Employee $employee)
-    {
-        $employer = $employee->employer;
-        if (!$employer) {
-            // Handle case where employee has no employer, though this shouldn't happen
-            return redirect()->route('employees.index')->with('error', 'ไม่พบข้อมูลนายจ้างของลูกจ้างคนนี้');
-        }
-
-        // Redirect to the employer's edit page with a URL hash
-        $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
-
-        return redirect($url);
+public function locate(Employee $employee)
+{
+    $employer = $employee->employer;
+    if (!$employer) {
+        return redirect()->route('employees.index')->with('error', 'ไม่พบข้อมูลนายจ้างของลูกจ้างคนนี้');
     }
+    // Always generate a hash pointing to the card ID for consistency
+    $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
+    return redirect($url);
+}
 }
