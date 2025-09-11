@@ -15,49 +15,74 @@ class NotificationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        $notificationTypes = [
-            'ninety_day_report',
-            'passport_expiry',
-            'work_permit_expiry',
-            'work_permit_expired',
-            'visa_expiry',
-            'ci_renewal',
-            'resolution_renewal',
-            'cancelled'
-        ];
+public function index(Request $request)
+{
+    $notificationTypeNames = [
+        'ninety_day_report' => 'รายงานตัว 90 วัน',
+        'passport_expiry' => 'Passport หมดอายุ',
+        'work_permit_expiry' => 'ใบอนุญาตทำงานหมดอายุ',
+        'visa_expiry' => 'วีซ่าหมดอายุ',
+        'ci_renewal' => 'กำหนดต่ออายุ CI',
+        'resolution_renewal' => 'กำหนดต่ออายุมติ',
+    ];
 
-        $groupedNotifications = collect();
+    // --- View & Pagination Logic ---
+    $cardPerPageOptions = [10, 15, 20];
+    $tablePerPageOptions = [25, 50, 100];
+    $currentView = $request->input('view', 'card');
+    $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
+    $currentPerPage = $request->input('per_page', $defaultPerPage);
+    $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
-        foreach ($notificationTypes as $type) {
-            $formPrefix = $type;
-            if (in_array($type, ['work_permit_expiry', 'work_permit_expired', 'visa_expiry'])) {
-                $formPrefix = 'permits';
-            }
+    // --- Query & Filtering Logic ---
+    $query = \App\Models\Notification::with('employee.employer')
+        ->where('status', '!=', 'cancelled') // Exclude cancelled items by default
+        ->latest('due_date');
 
-            $query = $this->getFilteredNotificationsQuery($request, $type, $formPrefix);
-            $pageName = str_replace('_', '', $type) . '_page';
-            $notifications = $query->with('employee.employer')->paginate(10, ['*'], $pageName)->withQueryString();
-
-            $notifications->getCollection()->transform(function ($notification) {
-                $notification->title = match ($notification->type) {
-                    'ninety_day_report' => 'รายงานตัว 90 วัน',
-                    'passport_expiry' => 'Passport หมดอายุ',
-                    'work_permit_expiry' => 'ใบอนุญาตทำงานหมดอายุ',
-                    'visa_expiry' => 'วีซ่าหมดอายุ',
-                    'ci_renewal' => 'กำหนดต่ออายุ CI',
-                    'resolution_renewal' => 'กำหนดต่ออายุมติ',
-                    default => 'การแจ้งเตือน',
-                };
-                return $notification;
-            });
-
-            $groupedNotifications->put($type, $notifications);
-        }
-
-        return view('notifications.index', ['groupedNotifications' => $groupedNotifications]);
+    // Filter by Search Term
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->whereHas('employee', function ($q) use ($search) {
+            $q->where('employeeNameTh', 'like', "%{$search}%")
+              ->orWhere('employeeNameEn', 'like', "%{$search}%");
+        });
     }
+
+    // Filter by Nationality
+    if ($request->filled('nationality')) {
+        $query->whereHas('employee', function ($q) use ($request) {
+            $q->where('employeeNationality', $request->input('nationality'));
+        });
+    }
+
+    // Filter by MOU Type
+    if ($request->filled('mou_type')) {
+        $query->whereHas('employee', function ($q) use ($request) {
+            $q->where('workPermitMOUGroup', $request->input('mou_type'));
+        });
+    }
+
+    $allNotifications = $query->get();
+    $groupedNotifications = $allNotifications->groupBy('type');
+    $paginatedNotifications = $query->paginate($currentPerPage)->withQueryString();
+
+
+    // --- Cancelled Items Logic ---
+    $cancelledNotifications = \App\Models\Notification::with('employee.employer')
+        ->where('status', 'cancelled')
+        ->latest('updated_at')
+        ->paginate(25, ['*'], 'cancelled_page');
+
+
+    return view('notifications.index', compact(
+        'groupedNotifications',
+        'paginatedNotifications',
+        'cancelledNotifications',
+        'currentView',
+        'perPageOptions',
+        'notificationTypeNames'
+    ));
+}
 
     /**
      * Restore a cancelled notification.

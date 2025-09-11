@@ -1,406 +1,297 @@
-{{-- Verified Complete --}}
 @extends('layouts.app')
 @section('title', 'รายการแจ้งเตือน')
-
-@php
-$nationalities = ['ลาว', 'กัมพูชา', 'เมียนมา', 'เวียดนาม'];
-$mouTypes = ['MOU', 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน', 'อื่นๆ'];
-$months = [
-    '0' => 'มกราคม', '1' => 'กุมภาพันธ์', '2' => 'มีนาคม', '3' => 'เมษายน',
-    '4' => 'พฤษภาคม', '5' => 'มิถุนายน', '6' => 'กรกฎาคม', '7' => 'สิงหาคม',
-    '8' => 'กันยายน', '9' => 'ตุลาคม', '10' => 'พฤศจิกายน', '11' => 'ธันวาคม'
-];
-$resolutionSteps = [
-    'not_started' => 'ยังไม่เริ่ม', 'step1' => 'ขั้นตอนที่ 1', 'step2' => 'ขั้นตอนที่ 2',
-    'step3' => 'ขั้นตอนที่ 3', 'step4' => 'ขั้นตอนที่ 4', 'step5' => 'ขั้นตอนที่ 5',
-    'step6' => 'ขั้นตอนที่ 6 (เสร็จสิ้น)'
-];
-$activeTab = request()->input('tab', 'ninety_day_report');
-@endphp
 
 @section('content')
 <div class="p-4 p-md-5 content-section">
     <h2 class="mb-4">รายการแจ้งเตือน</h2>
-    <ul class="nav nav-tabs" id="notificationTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'ninety_day_report' ? 'active' : '' }}" id="90day-tab" href="{{ route('notifications.index', ['tab' => 'ninety_day_report']) }}" role="tab">
-                รายงานตัว 90 วัน <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('ninety_day_report', collect())->total() }}</span>
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'passport_expiry' ? 'active' : '' }}" id="passport-tab" href="{{ route('notifications.index', ['tab' => 'passport_expiry']) }}" role="tab">
-                Passport <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('passport_expiry', collect())->total() }}</span>
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'permits' ? 'active' : '' }}" id="permits-tab" href="{{ route('notifications.index', ['tab' => 'permits']) }}" role="tab">
-                ใบอนุญาต/วีซ่า <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('work_permit_expiry', collect())->total() + $groupedNotifications->get('work_permit_expired', collect())->total() + $groupedNotifications->get('visa_expiry', collect())->total() }}</span>
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'ci_renewal' ? 'active' : '' }}" id="ci-renew-tab" href="{{ route('notifications.index', ['tab' => 'ci_renewal']) }}" role="tab">
-                ต่ออายุ CI <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('ci_renewal', collect())->total() }}</span>
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'resolution_renewal' ? 'active' : '' }}" id="resolution-renew-tab" href="{{ route('notifications.index', ['tab' => 'resolution_renewal']) }}" role="tab">
-                ต่ออายุมติ <span class="badge bg-danger rounded-pill ms-1">{{ $groupedNotifications->get('resolution_renewal', collect())->total() }}</span>
-            </a>
-        </li>
-         <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'cancelled' ? 'active' : '' }}" id="cancelled-renew-tab" href="{{ route('notifications.index', ['tab' => 'cancelled']) }}" role="tab">
-                รายการที่ยกเลิก <span class="badge bg-secondary rounded-pill ms-1">{{ $groupedNotifications->get('cancelled', collect())->total() }}</span>
-            </a>
-        </li>
-    </ul>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
+
+                <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                    <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
+                    <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
+                    <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
+                    <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
+                </select>
+
+                <select name="mou_type" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                    <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
+                    <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
+                    <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
+                    <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
+                <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm">ล้าง</a>
+
+                <div class="btn-group btn-group-sm ms-md-auto">
+                    <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
+                    <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i></label>
+
+                    <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked(request('view') === 'table')>
+                    <label class="btn btn-outline-primary" for="view-table"><i class="bi bi-table"></i></label>
+                </div>
+
+                <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    @foreach($perPageOptions as $option)
+                    <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>แสดง {{ $option }}</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+    </div>
+
+
+
     <div class="tab-content pt-4" id="notificationTabContent">
-        {{-- 90 Day Tab Pane --}}
-        <div class="tab-pane fade {{ $activeTab === 'ninety_day_report' ? 'show active' : '' }}" id="n-90day" role="tabpanel">
-            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-ninety_day_report">
-                <input type="hidden" name="tab" value="ninety_day_report">
-                <input type="text" class="form-control form-control-sm w-auto" name="search_ninety_day_report" placeholder="ค้นหา..." value="{{ request('search_ninety_day_report') }}">
-                <select class="form-select form-select-sm w-auto" name="nationality_ninety_day_report">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                    @foreach($nationalities as $nat)
-                    <option value="{{ $nat }}" @selected(request('nationality_ninety_day_report') == $nat)>{{ $nat }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="mou_ninety_day_report">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                     @foreach($mouTypes as $mou)
-                    <option value="{{ $mou }}" @selected(request('mou_ninety_day_report') == $mou)>{{ $mou }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="month_ninety_day_report">
-                    <option value="">-- ทุกเดือน --</option>
-                    @foreach($months as $num => $name)
-                    <option value="{{ $num }}" @selected(request('month_ninety_day_report') == $num)>{{ $name }}</option>
-                    @endforeach
-                </select>
-                <a href="{{ route('notifications.export', ['export_type' => 'ninety_day_report'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-            </div>
-            <h5 class="mb-3">รายการรายงานตัว 90 วัน ({{ $groupedNotifications->get('ninety_day_report', collect())->total() }})</h5>
-            <div id="notification90DayListContainer" class="vstack gap-2">
-                @foreach($groupedNotifications->get('ninety_day_report', collect()) as $notification)
+        <div class="tab-pane fade show active" id="all-notifications" role="tabpanel">
+            @if($currentView === 'card')
+                {{-- Card View --}}
+                @forelse($paginatedNotifications as $notification)
                     @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                @endforeach
-            </div>
-            <div class="mt-4">
-                {{ $groupedNotifications->get('ninety_day_report', collect())->links() }}
-            </div>
-        </div>
+                @empty
+                    <p class="text-center text-muted">ไม่พบการแจ้งเตือนที่ตรงกับเงื่อนไข</p>
+                @endforelse
+            @else
+                {{-- Table View --}}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">พนักงาน</th>
+                                <th scope="col">นายจ้าง</th>
+                                <th scope="col">ประเภทการแจ้งเตือน</th>
+                                <th scope="col">วันที่ครบกำหนด</th>
+                                <th scope="col">สถานะ</th>
+                                <th scope="col" class="text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($paginatedNotifications as $notification)
+                                @php
+                                    $employee = $notification->employee;
+                                    $employer = $employee?->employer;
+                                    $daysRemaining = $notification->days_remaining;
+                                    $dueDate = \Carbon\Carbon::parse($notification->due_date);
+                                    \Carbon\Carbon::setLocale('th');
 
-        {{-- Passport Tab Pane --}}
-        <div class="tab-pane fade {{ $activeTab === 'passport_expiry' ? 'show active' : '' }}" id="n-passport" role="tabpanel">
-            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-passport_expiry">
-                <input type="hidden" name="tab" value="passport_expiry">
-                <input type="text" class="form-control form-control-sm w-auto" name="search_passport_expiry" placeholder="ค้นหา..." value="{{ request('search_passport_expiry') }}">
-                <select class="form-select form-select-sm w-auto" name="nationality_passport_expiry">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                     @foreach($nationalities as $nat)
-                    <option value="{{ $nat }}" @selected(request('nationality_passport_expiry') == $nat)>{{ $nat }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="mou_passport_expiry">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                    @foreach($mouTypes as $mou)
-                    <option value="{{ $mou }}" @selected(request('mou_passport_expiry') == $mou)>{{ $mou }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="month_passport_expiry">
-                    <option value="">-- ทุกเดือน --</option>
-                    @foreach($months as $num => $name)
-                    <option value="{{ $num }}" @selected(request('month_passport_expiry') == $num)>{{ $name }}</option>
-                    @endforeach
-                </select>
-                <a href="{{ route('notifications.export', ['export_type' => 'passport_expiry'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-            </div>
-            <h5 class="mb-3">รายการ Passport หมดอายุ ({{ $groupedNotifications->get('passport_expiry', collect())->total() }})</h5>
-            <div id="notificationPassportListContainer" class="vstack gap-2">
-                @foreach($groupedNotifications->get('passport_expiry', collect()) as $notification)
-                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                @endforeach
-            </div>
-             <div class="mt-4">
-                {{ $groupedNotifications->get('passport_expiry', collect())->links() }}
-            </div>
-        </div>
-
-        {{-- Permits Tab Pane --}}
-        <div class="tab-pane fade {{ $activeTab === 'permits' ? 'show active' : '' }}" id="n-permits" role="tabpanel">
-            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-permits">
-                <input type="hidden" name="tab" value="permits">
-                <input type="text" class="form-control form-control-sm w-auto" name="search_permits" placeholder="ค้นหา..." value="{{ request('search_permits') }}">
-                <select class="form-select form-select-sm w-auto" name="nationality_permits">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                     @foreach($nationalities as $nat)
-                    <option value="{{ $nat }}" @selected(request('nationality_permits') == $nat)>{{ $nat }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="mou_permits">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                     @foreach($mouTypes as $mou)
-                    <option value="{{ $mou }}" @selected(request('mou_permits') == $mou)>{{ $mou }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="month_permits">
-                    <option value="">-- ทุกเดือน --</option>
-                    @foreach($months as $num => $name)
-                    <option value="{{ $num }}" @selected(request('month_permits') == $num)>{{ $name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="row g-4">
-                <div class="col-lg-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">ใบอนุญาตทำงานใกล้หมดอายุ ({{ $groupedNotifications->get('work_permit_expiry', collect())->total() }})</h5>
-                        <a href="{{ route('notifications.export', ['export_type' => 'work_permit_expiry'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
-                    </div>
-                    <div id="notificationWorkPermitListContainer" class="vstack gap-2">
-                         @foreach($groupedNotifications->get('work_permit_expiry', collect()) as $notification)
-                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                        @endforeach
-                    </div>
-                    <div class="mt-4">
-                        {{ $groupedNotifications->get('work_permit_expiry', collect())->links() }}
-                    </div>
+                                    $rowClass = '';
+                                    if ($daysRemaining < 0) {
+                                        $rowClass = 'table-dark';
+                                    } elseif ($daysRemaining <= $notification->danger_threshold) {
+                                        $rowClass = 'table-danger';
+                                    }
+                                @endphp
+                                <tr class="{{ $rowClass }}">
+                                    <td>{{ $loop->iteration + ($paginatedNotifications->currentPage() - 1) * $paginatedNotifications->perPage() }}</td>
+                                    <td>
+                                        @if($employee)
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
+                                                 class="employee-photo-thumb"
+                                                 style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 1rem;"
+                                                 alt="Photo">
+                                            <div>
+                                                <div class="fw-bold">{{ $employee->employeeNameEn ?? 'N/A' }}</div>
+                                                <div class="text-muted small">{{ $employee->employeeNameTh ?? '' }}</div>
+                                            </div>
+                                        </div>
+                                        @else
+                                        <span class="text-danger">Employee not found</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $employer->employerNameTh ?? 'N/A' }}</td>
+                                    <td>
+                                        {{ $notificationTypeNames[$notification->type] ?? ucfirst(str_replace('_', ' ', $notification->type)) }}
+                                    </td>
+                                    <td>{{ $dueDate->translatedFormat('d F Y') }}</td>
+                                    <td>
+                                        <span class="badge {{ $daysRemaining < 0 ? 'bg-dark' : 'bg-secondary' }}">
+                                            {{ $daysRemaining < 0 ? 'เลยกำหนด ' . abs($daysRemaining) . ' วัน' : 'เหลือ ' . $daysRemaining . ' วัน' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ route('notifications.viewEmployee', ['notificationId' => $notification->id]) }}" class="btn btn-info" title="ดูข้อมูล">
+                                                <i class="bi bi-search"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-success renew-btn" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}">
+                                                <i class="bi bi-calendar-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-warning" title="ยกเลิกการต่ออายุ" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">ไม่พบการแจ้งเตือนที่ตรงกับเงื่อนไข</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
-                <div class="col-lg-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">ขาดต่อขอรับใหม่ ({{ $groupedNotifications->get('work_permit_expired', collect())->total() }})</h5>
-                        <a href="{{ route('notifications.export', ['export_type' => 'work_permit_expired'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
-                    </div>
-                    <div id="notificationWorkPermitExpiredListContainer" class="vstack gap-2">
-                        @foreach($groupedNotifications->get('work_permit_expired', collect()) as $notification)
-                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                        @endforeach
-                    </div>
-                     <div class="mt-4">
-                        {{ $groupedNotifications->get('work_permit_expired', collect())->links() }}
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">วีซ่าหมดอายุ ({{ $groupedNotifications->get('visa_expiry', collect())->total() }})</h5>
-                        <a href="{{ route('notifications.export', ['export_type' => 'visa_expiry'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i></a>
-                    </div>
-                    <div id="notificationVisaListContainer" class="vstack gap-2">
-                        @foreach($groupedNotifications->get('visa_expiry', collect()) as $notification)
-                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                        @endforeach
-                    </div>
-                     <div class="mt-4">
-                        {{ $groupedNotifications->get('visa_expiry', collect())->links() }}
-                    </div>
-                </div>
-            </div>
-        </div>
+            @endif
 
-        {{-- CI Renew Tab Pane --}}
-        <div class="tab-pane fade {{ $activeTab === 'ci_renewal' ? 'show active' : '' }}" id="n-ci-renew" role="tabpanel">
-            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-ci_renewal">
-                <input type="hidden" name="tab" value="ci_renewal">
-                <input type="text" class="form-control form-control-sm w-auto" name="search_ci_renewal" placeholder="ค้นหา..." value="{{ request('search_ci_renewal') }}">
-                <select class="form-select form-select-sm w-auto" name="nationality_ci_renewal">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                     @foreach($nationalities as $nat)
-                    <option value="{{ $nat }}" @selected(request('nationality_ci_renewal') == $nat)>{{ $nat }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="mou_ci_renewal">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                     @foreach($mouTypes as $mou)
-                    <option value="{{ $mou }}" @selected(request('mou_ci_renewal') == $mou)>{{ $mou }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="month_ci_renewal">
-                    <option value="">-- ทุกเดือน --</option>
-                    @foreach($months as $num => $name)
-                    <option value="{{ $num }}" @selected(request('month_ci_renewal') == $num)>{{ $name }}</option>
-                    @endforeach
-                </select>
-                <a href="{{ route('notifications.export', ['export_type' => 'ci_renewal'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-            </div>
-            <h5 class="mb-3">รายการต่ออายุเล่ม CI ({{ $groupedNotifications->get('ci_renewal', collect())->total() }})</h5>
-            <div id="notificationCi_renewListContainer" class="vstack gap-2">
-                @foreach($groupedNotifications->get('ci_renewal', collect()) as $notification)
-                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                @endforeach
-            </div>
             <div class="mt-4">
-                {{ $groupedNotifications->get('ci_renewal', collect())->links() }}
+                {{ $paginatedNotifications->links() }}
             </div>
         </div>
 
-        {{-- Resolution Renew Tab Pane --}}
-        <div class="tab-pane fade {{ $activeTab === 'resolution_renewal' ? 'show active' : '' }}" id="n-resolution-renew" role="tabpanel">
-            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-resolution_renewal">
-                <input type="hidden" name="tab" value="resolution_renewal">
-                <input type="text" class="form-control form-control-sm w-auto" name="search_resolution_renewal" placeholder="ค้นหา..." value="{{ request('search_resolution_renewal') }}">
-                <select class="form-select form-select-sm w-auto" name="nationality_resolution_renewal">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                     @foreach($nationalities as $nat)
-                    <option value="{{ $nat }}" @selected(request('nationality_resolution_renewal') == $nat)>{{ $nat }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="mou_resolution_renewal">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                     @foreach($mouTypes as $mou)
-                    <option value="{{ $mou }}" @selected(request('mou_resolution_renewal') == $mou)>{{ $mou }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="month_resolution_renewal">
-                    <option value="">-- ทุกเดือน --</option>
-                    @foreach($months as $num => $name)
-                    <option value="{{ $num }}" @selected(request('month_resolution_renewal') == $num)>{{ $name }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="step_resolution_renewal">
-                    <option value="">-- ทุกขั้นตอน --</option>
-                    @foreach($resolutionSteps as $key => $name)
-                    <option value="{{ $key }}" @selected(request('step_resolution_renewal') == $key)>{{ $name }}</option>
-                    @endforeach
-                </select>
-                <a href="{{ route('notifications.export', ['export_type' => 'resolution_renewal'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-            </div>
-            <h5 class="mb-3">รายการต่ออายุมติในประเทศ ({{ $groupedNotifications->get('resolution_renewal', collect())->total() }})</h5>
-            <div id="notificationResolution_renewalListContainer" class="vstack gap-2">
-                @foreach($groupedNotifications->get('resolution_renewal', collect()) as $notification)
-                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                @endforeach
-            </div>
-            <div class="mt-4">
-                {{ $groupedNotifications->get('resolution_renewal', collect())->links() }}
+        <div class="mt-5">
+            <h3 class="mb-4">รายการที่ถูกยกเลิก</h3>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>พนักงาน</th>
+                                    <th>นายจ้าง</th>
+                                    <th>ประเภทการแจ้งเตือน</th>
+                                    <th>วันที่ยกเลิก</th>
+                                    <th class="text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($cancelledNotifications as $notification)
+                                    <tr>
+                                        <td>
+                                            @if($notification->employee)
+                                                {{ $notification->employee->employeeNameTh ?? 'N/A' }}
+                                                <div class="small text-muted">{{ $notification->employee->employeeNameEn ?? '' }}</div>
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($notification->employee && $notification->employee->employer)
+                                                {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $notificationTypeNames[$notification->type] ?? ucfirst(str_replace('_', ' ', $notification->type)) }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($notification->cancelled_at ?? $notification->updated_at)->translatedFormat('d F Y H:i') }}</td>
+                                        <td class="text-center">
+                                            <form action="{{ route('notifications.restore', $notification) }}" method="POST" class="d-inline-block" onsubmit="return confirm('คุณต้องการนำรายการนี้กลับมาใช่หรือไม่?');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn btn-sm btn-success" title="นำกลับมา">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('notifications.forceDelete', $notification) }}" method="POST" class="d-inline-block" onsubmit="return confirm('คุณต้องการลบรายการนี้อย่างถาวรใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger" title="ลบถาวร">
+                                                    <i class="bi bi-trash-fill"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">ไม่มีรายการที่ถูกยกเลิก</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    @if ($cancelledNotifications->hasPages())
+                        <div class="mt-4">
+                            {{ $cancelledNotifications->links() }}
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
 
-        {{-- Cancelled Tab Pane --}}
-        <div class="tab-pane fade {{ $activeTab === 'cancelled' ? 'show active' : '' }}" id="n-cancelled-renew" role="tabpanel">
-            <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap" id="filter-controls-cancelled">
-                <input type="hidden" name="tab" value="cancelled">
-                <input type="text" class="form-control form-control-sm w-auto" name="search_cancelled" placeholder="ค้นหา..." value="{{ request('search_cancelled') }}">
-                <select class="form-select form-select-sm w-auto" name="nationality_cancelled">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                     @foreach($nationalities as $nat)
-                    <option value="{{ $nat }}" @selected(request('nationality_cancelled') == $nat)>{{ $nat }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="mou_cancelled">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                     @foreach($mouTypes as $mou)
-                    <option value="{{ $mou }}" @selected(request('mou_cancelled') == $mou)>{{ $mou }}</option>
-                    @endforeach
-                </select>
-                <select class="form-select form-select-sm w-auto" name="month_cancelled">
-                    <option value="">-- ทุกเดือน --</option>
-                    @foreach($months as $num => $name)
-                    <option value="{{ $num }}" @selected(request('month_cancelled') == $num)>{{ $name }}</option>
-                    @endforeach
-                </select>
-                <a href="{{ route('notifications.export', ['export_type' => 'cancelled'] + request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i> Export</a>
-            </div>
-            <h5 class="mb-3">รายการที่ยกเลิกการต่ออายุ ({{ $groupedNotifications->get('cancelled', collect())->total() }})</h5>
-            <div id="notificationCancelled_renewListContainer" class="vstack gap-2">
-                @foreach($groupedNotifications->get('cancelled', collect()) as $notification)
-                    <div class="alert alert-info notification-item">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="d-flex justify-content-between align-items-start w-100">
-                                <div class="flex-grow-1">
-                                    <h5 class="alert-heading mb-1">{{ $notification->employee->employeeNameEn ?? 'N/A' }}</h5>
-                                    <p class="mb-1"><strong>นายจ้าง:</strong> {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}</p>
-                                    <p class="mb-0 small"><strong>ประเภทที่ยกเลิก:</strong> {{ $notification->type }}</p>
-                                    <p class="mb-0 small text-danger"><strong>เหตุผล:</strong> {{ $notification->cancellation_reason }}</p>
-                                </div>
-                                <div class="text-end flex-shrink-0 ms-2">
-                                    <a href="{{ route('employers.edit', $notification->employee->employer_id) }}#employee-card-{{ $notification->employee_id }}" class="btn btn-info btn-sm"><i class="bi bi-search"></i> View Info</a>
-                                    <form action="{{ route('notifications.restore', $notification) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
-                                    </form>
-                                    <form action="{{ route('notifications.forceDelete', $notification) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this notification?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> Permanent Delete</button>
-                                    </form>
-                                </div>
-                            </div>
+    </div>
+
+    {{-- Renew Notification Modal --}}
+    <div class="modal fade" id="renewNotificationModal" tabindex="-1" aria-labelledby="renewNotificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renewNotificationModalLabel">ต่ออายุการแจ้งเตือน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="renewNotificationForm" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="new_due_date" class="form-label">วันที่ครบกำหนดใหม่</label>
+                            <input type="date" class="form-control" id="new_due_date" name="new_due_date" required>
                         </div>
                     </div>
-                @endforeach
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </div>
+                </form>
             </div>
-            <div class="mt-4">
-                {{ $groupedNotifications->get('cancelled', collect())->links() }}
+        </div>
+    </div>
+
+    {{-- Cancel Notification Modal --}}
+    <div class="modal fade" id="cancelNotificationModal" tabindex="-1" aria-labelledby="cancelNotificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelNotificationModalLabel">ยืนยันการยกเลิก</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="cancelNotificationForm" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <div class="modal-body">
+                        <p>คุณต้องการยกเลิกการแจ้งเตือนนี้ใช่หรือไม่?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ไม่</button>
+                        <button type="submit" class="btn btn-warning">ใช่, ยกเลิก</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 @endsection
-<div class="modal fade" id="renewNotificationModal" tabindex="-1" aria-labelledby="renewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="renew-form" method="POST">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="renewModalLabel">ต่ออายุการแจ้งเตือน</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="new_due_date" class="form-label">เลือกวันหมดอายุใหม่:</label>
-                        <input type="date" class="form-control" id="new_due_date" name="new_due_date" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="submit" class="btn btn-primary">บันทึก</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="cancelNotificationModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="cancel-form" method="POST">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="cancelModalLabel">ยืนยันการยกเลิกการต่ออายุ</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการแจ้งเตือนนี้? การกระทำนี้จะย้ายรายการไปที่แท็บ "รายการที่ยกเลิก" และคุณสามารถกู้คืนได้ในภายหลัง</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                    <button type="submit" class="btn btn-danger">ยืนยันการยกเลิก</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Handle Renew Modal
     const renewModal = document.getElementById('renewNotificationModal');
     if (renewModal) {
+        const renewForm = document.getElementById('renewNotificationForm');
+        const renewUrlTemplate = '{{ route("notifications.renew", ["notification" => "REPLACE_ID"]) }}';
+
         renewModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const notificationId = button.getAttribute('data-notification-id');
-            const form = document.getElementById('renew-form');
-            form.action = `/notifications/${notificationId}/renew`;
+            renewForm.action = renewUrlTemplate.replace('REPLACE_ID', notificationId);
         });
     }
 
+    // Handle Cancel Modal
     const cancelModal = document.getElementById('cancelNotificationModal');
     if (cancelModal) {
+        const cancelForm = document.getElementById('cancelNotificationForm');
+        const cancelUrlTemplate = '{{ route("notifications.cancel", ["notification" => "REPLACE_ID"]) }}';
+
         cancelModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const notificationId = button.getAttribute('data-notification-id');
-            const form = document.getElementById('cancel-form');
-            form.action = `/notifications/${notificationId}/cancel`;
+            cancelForm.action = cancelUrlTemplate.replace('REPLACE_ID', notificationId);
         });
     }
 });
