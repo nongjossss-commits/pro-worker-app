@@ -52,8 +52,13 @@ class EmployeeController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Employer $employer)
+    public function create(Request $request)
     {
+        $employer_id = $request->query('employer_id');
+
+        // Use findOrFail to automatically handle cases where the employer is not found
+        $employer = Employer::findOrFail($employer_id);
+
         return view('employees.create', compact('employer'));
     }
 
