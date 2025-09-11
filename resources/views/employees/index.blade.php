@@ -23,7 +23,7 @@
 <div class="p-4 p-md-5 content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">รายการข้อมูลลูกจ้างทั้งหมด</h2>
-        <a href="{{ route('employers.index') }}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+        <a href="{{ route('employees.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
     </div>
 
     <div class="card mb-4">
@@ -80,18 +80,28 @@
                     <tr>
                         <td>{{ $loop->iteration + $employees->firstItem() - 1 }}</td>
                         <td>
-                            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
-                                 class="employee-photo-thumb" style="width: 40px; height: 40px; margin-right: 0;" alt="Photo">
+                            {{-- ADDED .employee-photo-thumb class --}}
+                            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
+                                 class="employee-photo-thumb" alt="Photo">
                         </td>
                         <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn }}</td>
                         <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh }}</td>
-                        <td>{{ $employee->employeeNationality }}</td>
+                        <td>
+                            {{-- ADDED FLAG LOGIC --}}
+                            @php
+                                $flagCodes = ['เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn'];
+                                $nationality = $employee->employeeNationality ?? null;
+                                $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
+                            @endphp
+                            {{ $nationality }}
+                            @if($flagCode)
+                                <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
+                            @endif
+                        </td>
                         <td>{{ $employee->employeePassport }}</td>
                         <td>{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
                         <td class="text-center">
-                            <a href="{{ route('employees.locate', $employee->id) }}" class="btn btn-sm btn-outline-info" title="ดูข้อมูลนายจ้าง">
-                                <i class="bi bi-geo-alt-fill"></i>
-                            </a>
+                            <a href="{{ route('employees.locate', $employee->id) }}" class="btn btn-sm btn-outline-info" title="ดูข้อมูลนายจ้าง"><i class="bi bi-geo-alt-fill"></i></a>
                             <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
                             <button type="button" class="btn btn-sm btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
                         </td>
