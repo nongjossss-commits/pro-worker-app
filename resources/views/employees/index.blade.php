@@ -89,6 +89,9 @@
                         <td>{{ $employee->employeePassport }}</td>
                         <td>{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
                         <td class="text-center">
+                            <a href="{{ route('employees.locate', $employee->id) }}" class="btn btn-sm btn-outline-info" title="ดูข้อมูลนายจ้าง">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </a>
                             <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
                             <button type="button" class="btn btn-sm btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
                         </td>

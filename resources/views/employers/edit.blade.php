@@ -1067,15 +1067,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Highlight employee card from URL hash
     if (window.location.hash) {
-        try {
-            const elementId = window.location.hash.substring(1);
-            const element = document.getElementById(elementId);
-            if (element && element.classList.contains('employee-card')) {
-                element.classList.add('highlight');
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        } catch (e) {
-            console.error("Error handling URL hash for highlighting:", e);
+        const highlightId = window.location.hash.substring(1);
+        const elementToHighlight = document.getElementById(highlightId);
+
+        if (elementToHighlight) {
+            elementToHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            elementToHighlight.classList.add('highlight');
         }
     }
 });
@@ -1083,17 +1080,12 @@ document.addEventListener('DOMContentLoaded', function () {
 @endpush
 @push('styles')
 <style>
-    .highlight {
-        animation: highlight-bg 2s ease-out;
+    @keyframes highlight-fade {
+        from { background-color: #fffbeb; border-color: #fde68a; }
+        to { background-color: transparent; border-color: #e2e8f0; }
     }
-
-    @keyframes highlight-bg {
-        0% {
-            background-color: #fceb92;
-        }
-        100% {
-            background-color: transparent;
-        }
+    .highlight {
+        animation: highlight-fade 3s ease-out;
     }
 </style>
 @endpush
