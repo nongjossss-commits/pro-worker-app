@@ -334,7 +334,7 @@ $activeTab = request()->input('tab', 'ninety_day_report');
         </div>
     </div>
 </div>
-
+@endsection
 <div class="modal fade" id="renewNotificationModal" tabindex="-1" aria-labelledby="renewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -379,7 +379,7 @@ $activeTab = request()->input('tab', 'ninety_day_report');
         </div>
     </div>
 </div>
-@endsection
+
 
 @push('scripts')
 <script>
