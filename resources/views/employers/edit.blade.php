@@ -271,7 +271,7 @@
                 </thead>
                 <tbody>
                     @forelse($employees as $employee)
-                        <tr>
+                        <tr id="employee-row-{{ $employee->id }}">
                             <td>{{ $employees->firstItem() + $loop->index }}</td>
                             <td>
                                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">
@@ -1067,12 +1067,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Highlight employee card from URL hash
     if (window.location.hash) {
+        // The hash will be #employee-card-XX or #employee-row-XX
         const highlightId = window.location.hash.substring(1);
         const elementToHighlight = document.getElementById(highlightId);
 
         if (elementToHighlight) {
+            // Scroll to the element
             elementToHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Add highlight class and remove it after animation
             elementToHighlight.classList.add('highlight');
+            setTimeout(() => {
+                elementToHighlight.classList.remove('highlight');
+            }, 3000); // 3 seconds, matching the animation
         }
     }
 });
@@ -1081,11 +1088,12 @@ document.addEventListener('DOMContentLoaded', function () {
 @push('styles')
 <style>
     @keyframes highlight-fade {
-        from { background-color: #fffbeb; border-color: #fde68a; }
-        to { background-color: transparent; border-color: #e2e8f0; }
+        from { background-color: #fef9c3; } /* yellow-100 */
+        to { background-color: transparent; }
     }
     .highlight {
         animation: highlight-fade 3s ease-out;
+        border-color: #f97316 !important; /* orange-500 */
     }
 </style>
 @endpush
