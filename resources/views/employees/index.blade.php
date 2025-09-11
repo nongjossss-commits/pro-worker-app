@@ -82,7 +82,9 @@
                         <td>
                             {{-- ADDED .employee-photo-thumb class --}}
                             <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-                                 class="employee-photo-thumb" alt="Photo">
+                                 class="employee-photo-thumb"
+                                 style="width: 48px; height: 48px;"
+                                 alt="Photo">
                         </td>
                         <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn }}</td>
                         <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh }}</td>
