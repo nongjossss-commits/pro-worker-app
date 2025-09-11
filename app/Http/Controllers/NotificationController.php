@@ -73,63 +73,47 @@ class NotificationController extends Controller
         return back()->with('success', 'รายการถูกนำกลับมาเรียบร้อยแล้ว');
     }
 
-    /**
-     * Cancel a notification.
-     */
-    public function cancel(Request $request, Notification $notification)
-    {
-        $request->validate([
-            'cancellation_reason' => 'required|string|max:1000',
-        ]);
-
-        $notification->update([
-            'status' => 'cancelled',
-            'cancellation_reason' => $request->input('cancellation_reason'),
-            'cancelled_at' => now(),
-        ]);
-
-        return back()->with('success', 'การต่ออายุถูกยกเลิกสำเร็จ');
-    }
-
-    /**
-     * Renew a notification's due date.
-     */
-    public function renew(Request $request, Notification $notification)
+    // Add this new method to the controller
+    public function renew(Request $request, \App\Models\Notification $notification)
     {
         $request->validate(['new_due_date' => 'required|date']);
-        $newDate = $request->input('new_due_date');
 
-        // Update the notification itself
-        $notification->update(['due_date' => $newDate]);
-
-        // Update the corresponding field on the employee record
         $employee = $notification->employee;
-        if ($employee) {
-            $updateField = null;
-            switch ($notification->type) {
-                case 'passport_expiry':
-                case 'ci_renewal':
-                    $updateField = 'passportExpiryDate';
-                    break;
-                case 'visa_expiry':
-                    $updateField = 'visaExpiryDate';
-                    break;
-                case 'work_permit_expiry':
-                case 'resolution_renewal':
-                    $updateField = 'workPermitExpiryDate';
-                    break;
-                case 'ninety_day_report':
-                    $updateField = 'ninetyDayReportDate';
-                    break;
-            }
+        $fieldToUpdate = '';
 
-            if ($updateField) {
-                // Use the correct camelCase field name to update
-                $employee->update([$updateField => $newDate]);
-            }
+        switch ($notification->type) {
+            case 'passport_expiry':
+                $fieldToUpdate = 'passportExpiryDate';
+                break;
+            case 'work_permit_expiry':
+                $fieldToUpdate = 'workPermitExpiryDate';
+                break;
+            case 'visa_expiry':
+                $fieldToUpdate = 'visaExpiryDate';
+                break;
+            case 'ninety_day_report':
+                $fieldToUpdate = 'ninetyDayReportDate';
+                break;
         }
 
-        return back()->with('success', 'ต่ออายุสำเร็จ');
+        if ($fieldToUpdate && $employee) {
+            $employee->{$fieldToUpdate} = $request->new_due_date;
+            $employee->save();
+        }
+
+        $notification->delete(); // Remove the notification after handling
+
+        return redirect()->route('notifications.index')->with('success', 'ต่ออายุข้อมูลเรียบร้อยแล้ว');
+    }
+
+    // Add this new method to the controller
+    public function cancel(\App\Models\Notification $notification)
+    {
+        // Here you can add logic to flag the employee or notification
+        // For now, we will just delete it as a simple cancel action.
+        $notification->update(['status' => 'cancelled']);
+
+        return redirect()->route('notifications.index')->with('success', 'ยกเลิกการแจ้งเตือนเรียบร้อยแล้ว');
     }
 
     /**
