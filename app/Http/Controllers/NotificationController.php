@@ -17,46 +17,57 @@ class NotificationController extends Controller
      */
     public function index(Request $request)
     {
-        $notificationTypes = [
-            'ninety_day_report',
-            'passport_expiry',
-            'work_permit_expiry',
-            'work_permit_expired',
-            'visa_expiry',
-            'ci_renewal',
-            'resolution_renewal',
-            'cancelled'
+        // --- View & Pagination Logic ---
+        $currentView = $request->input('view', 'card');
+        $perPage = $request->input('per_page', 10); // A single per_page for all tabs for simplicity
+
+        // --- Define Tabs ---
+        $tabs = [
+            'ninety_day_report' => 'รายงานตัว 90 วัน',
+            'passport_expiry' => 'Passport',
+            'work_permit_expiry' => 'ใบอนุญาตทำงาน',
+            'visa_expiry' => 'วีซ่า',
+            'ci_renewal' => 'ต่ออายุ CI',
+            'resolution_renewal' => 'ต่ออายุมติ',
         ];
 
-        $groupedNotifications = collect();
+        $notificationsData = [];
+        $counts = [];
 
-        foreach ($notificationTypes as $type) {
-            $formPrefix = $type;
-            if (in_array($type, ['work_permit_expiry', 'work_permit_expired', 'visa_expiry'])) {
-                $formPrefix = 'permits';
+        foreach ($tabs as $type => $title) {
+            $query = \App\Models\Notification::with('employee.employer')
+                ->where('status', '!=', 'cancelled')
+                ->where('type', $type)
+                ->latest('due_date');
+
+            // Apply shared filters
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->whereHas('employee', function ($q) use ($search) {
+                    $q->where('employeeNameTh', 'like', "%{$search}%")
+                      ->orWhere('employeeNameEn', 'like', "%{$search}%");
+                });
+            }
+            if ($request->filled('nationality')) {
+                $query->whereHas('employee', function ($q) use ($request) {
+                    $q->where('employeeNationality', $request->input('nationality'));
+                });
             }
 
-            $query = $this->getFilteredNotificationsQuery($request, $type, $formPrefix);
-            $pageName = str_replace('_', '', $type) . '_page';
-            $notifications = $query->with('employee.employer')->paginate(10, ['*'], $pageName)->withQueryString();
+            // Get total count for the badge before pagination
+            $counts[$type] = $query->count();
 
-            $notifications->getCollection()->transform(function ($notification) {
-                $notification->title = match ($notification->type) {
-                    'ninety_day_report' => 'รายงานตัว 90 วัน',
-                    'passport_expiry' => 'Passport หมดอายุ',
-                    'work_permit_expiry' => 'ใบอนุญาตทำงานหมดอายุ',
-                    'visa_expiry' => 'วีซ่าหมดอายุ',
-                    'ci_renewal' => 'กำหนดต่ออายุ CI',
-                    'resolution_renewal' => 'กำหนดต่ออายุมติ',
-                    default => 'การแจ้งเตือน',
-                };
-                return $notification;
-            });
-
-            $groupedNotifications->put($type, $notifications);
+            // Paginate each tab's data with a unique page name
+            $notificationsData[$type] = $query->paginate($perPage, ['*'], $type . '_page')->withQueryString();
         }
 
-        return view('notifications.index', ['groupedNotifications' => $groupedNotifications]);
+        // Handle cancelled items separately
+        $cancelledQuery = \App\Models\Notification::with('employee.employer')->where('status', 'cancelled')->latest('updated_at');
+        $counts['cancelled'] = $cancelledQuery->count();
+        $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')->withQueryString();
+
+
+        return view('notifications.index', compact('notificationsData', 'counts', 'currentView'));
     }
 
     /**
