@@ -14,10 +14,9 @@ class CheckExpiries extends Command
 
 public function handle()
 {
-    $this->info('Checking for expiring documents...');
+    $this->info('Checking for expiring and overdue documents...');
     $today = now()->startOfDay();
 
-    // Define document types and their corresponding notification types
     $documentChecks = [
         'passportExpiryDate'   => 'passport_expiry',
         'workPermitExpiryDate' => 'work_permit_expiry',
@@ -26,15 +25,23 @@ public function handle()
     ];
 
     foreach ($documentChecks as $dateField => $baseNotificationType) {
-        $thresholdDate = $today->copy()->addDays(90);
+        // --- START: UPGRADED QUERY LOGIC ---
+        // Set the boundaries: from 30 days ago to 90 days in the future
+        $pastThreshold = $today->copy()->subDays(30);
+        $futureThreshold = $today->copy()->addDays(90);
 
+        // Find employees with documents expiring or expired within our window
         $employees = \App\Models\Employee::whereNotNull($dateField)
-            ->whereBetween($dateField, [$today, $thresholdDate])
+            ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
             ->get();
+        // --- END: UPGRADED QUERY LOGIC ---
 
         foreach ($employees as $employee) {
             $expiryDate = \Carbon\Carbon::parse($employee->{$dateField});
+
+            // This calculation will now correctly produce negative numbers for past dates
             $daysRemaining = $today->diffInDays($expiryDate, false);
+
             $notificationType = $baseNotificationType;
 
             if ($baseNotificationType === 'work_permit_expiry') {
@@ -51,7 +58,7 @@ public function handle()
                 [
                     'due_date' => $expiryDate,
                     'days_remaining' => $daysRemaining,
-                    'message' => 'Standard expiry check.', // <-- ADDED THIS LINE
+                    'message' => 'Standard expiry check.',
                     'danger_threshold' => 30,
                     'status' => 'unread',
                 ]
@@ -59,7 +66,7 @@ public function handle()
         }
     }
 
-    $this->info('Finished checking for expiring documents.');
+    $this->info('Finished checking for documents.');
     return 0;
 }
 }
