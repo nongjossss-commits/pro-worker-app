@@ -20,14 +20,12 @@ public function handle()
     // Define document types and their corresponding notification types
     $documentChecks = [
         'passportExpiryDate'   => 'passport_expiry',
-        'workPermitExpiryDate' => 'work_permit_expiry', // This will be handled specially
+        'workPermitExpiryDate' => 'work_permit_expiry',
         'visaExpiryDate'       => 'visa_expiry',
         'ninetyDayReportDate'  => 'ninety_day_report',
     ];
 
     foreach ($documentChecks as $dateField => $baseNotificationType) {
-        // Get all employees with documents expiring within the threshold
-        // Note: Threshold logic can be enhanced later from a settings table
         $thresholdDate = $today->copy()->addDays(90);
 
         $employees = \App\Models\Employee::whereNotNull($dateField)
@@ -36,21 +34,15 @@ public function handle()
 
         foreach ($employees as $employee) {
             $expiryDate = \Carbon\Carbon::parse($employee->{$dateField});
-
-            // CORRECTED DAY CALCULATION
             $daysRemaining = $today->diffInDays($expiryDate, false);
-
             $notificationType = $baseNotificationType;
 
-            // SPECIAL HANDLING FOR WORK PERMITS BASED ON MOU GROUP
             if ($baseNotificationType === 'work_permit_expiry') {
                 if ($employee->workPermitMOUGroup === 'มติขึ้นทะเบียน') {
-                    $notificationType = 'registration_renewal'; // Assign new type
+                    $notificationType = 'registration_renewal';
                 }
-                // Add more else if for other groups like 'มติต่ออายุในประเทศ' if needed
             }
 
-            // Create or update the notification
             \App\Models\Notification::updateOrCreate(
                 [
                     'employee_id' => $employee->id,
@@ -59,7 +51,8 @@ public function handle()
                 [
                     'due_date' => $expiryDate,
                     'days_remaining' => $daysRemaining,
-                    'danger_threshold' => 30, // Can be made dynamic later
+                    'message' => 'Standard expiry check.', // <-- ADDED THIS LINE
+                    'danger_threshold' => 30,
                     'status' => 'unread',
                 ]
             );
