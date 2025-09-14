@@ -19,6 +19,7 @@
         <div class="card-body">
             <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อลูกจ้าง..." value="{{ request('search') }}" style="width: 200px;">
+
                 <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
                     <option value="">-- ทุกสัญชาติ --</option>
                     <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
@@ -26,6 +27,16 @@
                     <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
                     <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
                 </select>
+
+                {{-- ADDED THIS MISSING DROPDOWN --}}
+                <select name="mou_type" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                    <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
+                    <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
+                    <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
+                    <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
+                </select>
+
                 <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
                 <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm">ล้างค่า</a>
             </form>
