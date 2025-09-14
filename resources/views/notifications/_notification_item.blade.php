@@ -55,7 +55,6 @@
                     @if($notification->status == 'cancelled')
                         <form action="{{ route('notifications.restore', $notification) }}" method="POST" class="d-inline">
                             @csrf
-                            @method('PATCH')
                             <button type="submit" class="btn btn-success" title="นำกลับ">
                                 <i class="bi bi-arrow-counterclockwise"></i>
                             </button>
