@@ -17,11 +17,10 @@ class NotificationController extends Controller
      */
 public function index(Request $request)
 {
-    // --- View & Pagination Logic ---
-    $currentView = $request->input('view', 'card');
-    $perPage = $request->input('per_page', 10);
+    // A single per_page for all tabs for simplicity. Can be enhanced later.
+    $perPage = 10;
 
-    // --- Define Tabs ---
+    // Define Tabs
     $tabs = [
         'ninety_day_report' => 'รายงานตัว 90 วัน',
         'passport_expiry' => 'Passport',
@@ -53,25 +52,26 @@ public function index(Request $request)
                 $q->where('employeeNationality', $request->input('nationality'));
             });
         }
-
-        // --- START: ADDED MISSING FILTER LOGIC ---
         if ($request->filled('mou_type')) {
             $query->whereHas('employee', function ($q) use ($request) {
                 $q->where('workPermitMOUGroup', $request->input('mou_type'));
             });
         }
-        // --- END: ADDED MISSING FILTER LOGIC ---
 
-        $counts[$type] = $query->count();
-        $notificationsData[$type] = $query->get();
+        $counts[$type] = (clone $query)->count();
+
+        // CORRECTED LINE: Use paginate() instead of get()
+        $notificationsData[$type] = $query->paginate($perPage, ['*'], $type . '_page')->withQueryString();
     }
 
     // Handle cancelled items separately
     $cancelledQuery = \App\Models\Notification::with('employee.employer')->where('status', 'cancelled')->latest('updated_at');
-    $counts['cancelled'] = $cancelledQuery->count();
-    $notificationsData['cancelled'] = $cancelledQuery->get();
+    $counts['cancelled'] = (clone $cancelledQuery)->count();
+    $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')->withQueryString();
 
-    return view('notifications.index', compact('notificationsData', 'counts', 'currentView'));
+    // Note: The $currentView variable is removed as it's not used in this corrected version.
+    // The view switcher logic will be added in a future task if needed.
+    return view('notifications.index', compact('notificationsData', 'counts'));
 }
 
     /**
