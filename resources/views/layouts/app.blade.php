@@ -151,6 +151,52 @@
 
             @yield('content')
         </main>
+
+        {{-- Notification Modals --}}
+        <div class="modal fade" id="renewNotificationModal" tabindex="-1" aria-labelledby="renewModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="renew-form" method="POST">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="renewModalLabel">ต่ออายุการแจ้งเตือน</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="new_due_date" class="form-label">เลือกวันหมดอายุใหม่:</label>
+                                <input type="date" class="form-control" id="new_due_date" name="new_due_date" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="cancelNotificationModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="cancel-form" method="POST">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="cancelModalLabel">ยืนยันการยกเลิกการต่ออายุ</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการแจ้งเตือนนี้? การกระทำนี้จะย้ายรายการไปที่แท็บ "รายการที่ยกเลิก" และคุณสามารถกู้คืนได้ในภายหลัง</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                            <button type="submit" class="btn btn-danger">ยืนยันการยกเลิก</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
@@ -186,7 +232,33 @@
     </div>
 
     @stack('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const renewModal = document.getElementById('renewNotificationModal');
+            if (renewModal) {
+                renewModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const notificationId = button.getAttribute('data-notification-id');
+                    const form = document.getElementById('renew-form');
+                    if(notificationId) {
+                        form.action = `/notifications/${notificationId}/renew`;
+                    }
+                });
+            }
 
+            const cancelModal = document.getElementById('cancelNotificationModal');
+            if (cancelModal) {
+                cancelModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const notificationId = button.getAttribute('data-notification-id');
+                    const form = document.getElementById('cancel-form');
+                    if(notificationId) {
+                        form.action = `/notifications/${notificationId}/cancel`;
+                    }
+                });
+            }
+        });
+    </script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const jobOwnerModalEl = document.getElementById('jobOwnerModal');
