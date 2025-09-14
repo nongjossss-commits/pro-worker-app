@@ -15,60 +15,64 @@ class NotificationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        // --- View & Pagination Logic ---
-        $currentView = $request->input('view', 'card');
-        $perPage = $request->input('per_page', 10); // A single per_page for all tabs for simplicity
+public function index(Request $request)
+{
+    // --- View & Pagination Logic ---
+    $currentView = $request->input('view', 'card');
+    $perPage = $request->input('per_page', 10);
 
-        // --- Define Tabs ---
-        $tabs = [
-            'ninety_day_report' => 'รายงานตัว 90 วัน',
-            'passport_expiry' => 'Passport',
-            'work_permit_expiry' => 'ใบอนุญาตทำงาน',
-            'visa_expiry' => 'วีซ่า',
-            'ci_renewal' => 'ต่ออายุ CI',
-            'resolution_renewal' => 'ต่ออายุมติ',
-        ];
+    // --- Define Tabs ---
+    $tabs = [
+        'ninety_day_report' => 'รายงานตัว 90 วัน',
+        'passport_expiry' => 'Passport',
+        'work_permit_expiry' => 'ใบอนุญาตทำงาน',
+        'visa_expiry' => 'วีซ่า',
+        'ci_renewal' => 'ต่ออายุ CI',
+        'resolution_renewal' => 'ต่ออายุมติ',
+    ];
 
-        $notificationsData = [];
-        $counts = [];
+    $notificationsData = [];
+    $counts = [];
 
-        foreach ($tabs as $type => $title) {
-            $query = \App\Models\Notification::with('employee.employer')
-                ->where('status', '!=', 'cancelled')
-                ->where('type', $type)
-                ->latest('due_date');
+    foreach ($tabs as $type => $title) {
+        $query = \App\Models\Notification::with('employee.employer')
+            ->where('status', '!=', 'cancelled')
+            ->where('type', $type)
+            ->latest('due_date');
 
-            // Apply shared filters
-            if ($request->filled('search')) {
-                $search = $request->input('search');
-                $query->whereHas('employee', function ($q) use ($search) {
-                    $q->where('employeeNameTh', 'like', "%{$search}%")
-                      ->orWhere('employeeNameEn', 'like', "%{$search}%");
-                });
-            }
-            if ($request->filled('nationality')) {
-                $query->whereHas('employee', function ($q) use ($request) {
-                    $q->where('employeeNationality', $request->input('nationality'));
-                });
-            }
-
-            // Get total count for the badge before pagination
-            $counts[$type] = $query->count();
-
-            // Paginate each tab's data with a unique page name
-            $notificationsData[$type] = $query->paginate($perPage, ['*'], $type . '_page')->withQueryString();
+        // Apply shared filters
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('nationality')) {
+            $query->whereHas('employee', function ($q) use ($request) {
+                $q->where('employeeNationality', $request->input('nationality'));
+            });
         }
 
-        // Handle cancelled items separately
-        $cancelledQuery = \App\Models\Notification::with('employee.employer')->where('status', 'cancelled')->latest('updated_at');
-        $counts['cancelled'] = $cancelledQuery->count();
-        $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')->withQueryString();
+        // --- START: ADDED MISSING FILTER LOGIC ---
+        if ($request->filled('mou_type')) {
+            $query->whereHas('employee', function ($q) use ($request) {
+                $q->where('workPermitMOUGroup', $request->input('mou_type'));
+            });
+        }
+        // --- END: ADDED MISSING FILTER LOGIC ---
 
-
-        return view('notifications.index', compact('notificationsData', 'counts', 'currentView'));
+        $counts[$type] = $query->count();
+        $notificationsData[$type] = $query->get();
     }
+
+    // Handle cancelled items separately
+    $cancelledQuery = \App\Models\Notification::with('employee.employer')->where('status', 'cancelled')->latest('updated_at');
+    $counts['cancelled'] = $cancelledQuery->count();
+    $notificationsData['cancelled'] = $cancelledQuery->get();
+
+    return view('notifications.index', compact('notificationsData', 'counts', 'currentView'));
+}
 
     /**
      * Restore a cancelled notification.
