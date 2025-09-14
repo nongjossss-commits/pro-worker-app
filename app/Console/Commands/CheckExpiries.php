@@ -12,65 +12,61 @@ class CheckExpiries extends Command
     protected $signature = 'app:check-expiries';
     protected $description = 'Check for expiring employee documents and create notifications.';
 
-    public function handle()
-    {
-        $this->info('Checking for expiring documents...');
-        $employees = Employee::whereNull('terminated_at')->get();
-        $today = Carbon::today();
+public function handle()
+{
+    $this->info('Checking for expiring documents...');
+    $today = now()->startOfDay();
 
-        // Clear only old, non-cancelled notifications to prevent stale data
-        Notification::where('status', '!=', 'cancelled')->delete();
+    // Define document types and their corresponding notification types
+    $documentChecks = [
+        'passportExpiryDate'   => 'passport_expiry',
+        'workPermitExpiryDate' => 'work_permit_expiry', // This will be handled specially
+        'visaExpiryDate'       => 'visa_expiry',
+        'ninetyDayReportDate'  => 'ninety_day_report',
+    ];
+
+    foreach ($documentChecks as $dateField => $baseNotificationType) {
+        // Get all employees with documents expiring within the threshold
+        // Note: Threshold logic can be enhanced later from a settings table
+        $thresholdDate = $today->copy()->addDays(90);
+
+        $employees = \App\Models\Employee::whereNotNull($dateField)
+            ->whereBetween($dateField, [$today, $thresholdDate])
+            ->get();
 
         foreach ($employees as $employee) {
-            // Standard 45-day checks
-            $standardChecks = [
-                'passport_expiry' => $employee->passportExpiryDate,
-                'visa_expiry' => $employee->visaExpiryDate,
-                'work_permit_expiry' => $employee->workPermitExpiryDate,
-                'ninety_day_report' => $employee->ninetyDayReportDate,
-            ];
+            $expiryDate = \Carbon\Carbon::parse($employee->{$dateField});
 
-            foreach ($standardChecks as $type => $expiryDateString) {
-                if ($type === 'passport_expiry' && $employee->passportType === 'CI') {
-                    continue; // Skip standard passport check for CI employees
+            // CORRECTED DAY CALCULATION
+            $daysRemaining = $today->diffInDays($expiryDate, false);
+
+            $notificationType = $baseNotificationType;
+
+            // SPECIAL HANDLING FOR WORK PERMITS BASED ON MOU GROUP
+            if ($baseNotificationType === 'work_permit_expiry') {
+                if ($employee->workPermitMOUGroup === 'มติขึ้นทะเบียน') {
+                    $notificationType = 'registration_renewal'; // Assign new type
                 }
-                if ($expiryDateString) {
-                    $expiryDate = Carbon::parse($expiryDateString)->startOfDay();
-                    $thresholdDate = $today->copy()->addDays(45);
-                    if ($expiryDate->gte($today) && $expiryDate->lte($thresholdDate)) {
-                        Notification::updateOrCreate(
-                            ['employee_id' => $employee->id, 'type' => $type],
-                            ['due_date' => $expiryDate, 'message' => 'Standard expiry check.']
-                        );
-                    }
-                }
+                // Add more else if for other groups like 'มติต่ออายุในประเทศ' if needed
             }
 
-            // Special check for CI Renewal (1.5 years / 548 days threshold)
-            if ($employee->passportType === 'CI' && $employee->passportExpiryDate) {
-                $expiryDate = Carbon::parse($employee->passportExpiryDate)->startOfDay();
-                $thresholdDate = $today->copy()->addDays(548);
-                if ($expiryDate->gte($today) && $expiryDate->lte($thresholdDate)) {
-                    Notification::updateOrCreate(
-                        ['employee_id' => $employee->id, 'type' => 'ci_renewal'],
-                        ['due_date' => $expiryDate, 'message' => 'CI Renewal check.']
-                    );
-                }
-            }
-
-            // Special check for Resolution Renewal (1.5 years / 548 days threshold)
-            $resolutionTypes = ['มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน'];
-            if (in_array($employee->workPermitMOUGroup, $resolutionTypes) && $employee->workPermitExpiryDate) {
-                $expiryDate = Carbon::parse($employee->workPermitExpiryDate)->startOfDay();
-                $thresholdDate = $today->copy()->addDays(548);
-                 if ($expiryDate->gte($today) && $expiryDate->lte($thresholdDate)) {
-                    Notification::updateOrCreate(
-                        ['employee_id' => $employee->id, 'type' => 'resolution_renewal'],
-                        ['due_date' => $expiryDate, 'message' => 'Resolution Renewal check.']
-                    );
-                }
-            }
+            // Create or update the notification
+            \App\Models\Notification::updateOrCreate(
+                [
+                    'employee_id' => $employee->id,
+                    'type' => $notificationType,
+                ],
+                [
+                    'due_date' => $expiryDate,
+                    'days_remaining' => $daysRemaining,
+                    'danger_threshold' => 30, // Can be made dynamic later
+                    'status' => 'unread',
+                ]
+            );
         }
-        $this->info('Notification check complete.');
     }
+
+    $this->info('Finished checking for expiring documents.');
+    return 0;
+}
 }
