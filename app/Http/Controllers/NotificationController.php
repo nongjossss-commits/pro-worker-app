@@ -12,66 +12,71 @@ use Carbon\Carbon;
 
 class NotificationController extends Controller
 {
-    public function index(Request $request)
-    {
-        $tabs = [
-            'ninety_day_report', 'passport_expiry', 'work_permit_expiry',
-            'visa_expiry', 'ci_renewal', 'resolution_renewal'
-        ];
+public function index(Request $request)
+{
+    // --- View & Pagination Logic ---
+    $currentView = $request->input('view', 'card');
+    $cardPerPageOptions = [10, 15, 20];
+    $tablePerPageOptions = [25, 50, 100];
+    $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
+    $perPage = $request->input('per_page', $perPageOptions[0]);
 
-        $notificationsData = [];
-        $counts = [];
+    // --- Define Tabs ---
+    $tabs = [
+        'ninety_day_report' => 'รายงานตัว 90 วัน',
+        'passport_expiry' => 'Passport',
+        'work_permit_expiry' => 'ใบอนุญาตทำงาน',
+        'visa_expiry' => 'วีซ่า',
+        'ci_renewal' => 'ต่ออายุ CI',
+        'resolution_renewal' => 'ต่ออายุมติ',
+    ];
 
-        // Calculate counts for all tabs first
-        foreach ($tabs as $type) {
-            $counts[$type] = $this->getFilteredQuery($request, $type)->count();
-        }
-        $counts['cancelled'] = $this->getFilteredQuery($request, 'cancelled')->count();
+    $notificationsData = [];
+    $counts = [];
 
-        // Paginate the data for each tab separately
-        foreach ($tabs as $type) {
-            $notificationsData[$type] = $this->getFilteredQuery($request, $type)
-                                             ->paginate(10, ['*'], $type . '_page')
-                                             ->withQueryString();
-        }
-        $notificationsData['cancelled'] = $this->getFilteredQuery($request, 'cancelled')
-                                                ->paginate(10, ['*'], 'cancelled_page')
-                                                ->withQueryString();
-
-        return view('notifications.index', compact('notificationsData', 'counts'));
+    foreach ($tabs as $type => $title) {
+        $query = $this->getFilteredQuery($request, $type);
+        $counts[$type] = (clone $query)->count();
+        $notificationsData[$type] = $query->paginate($perPage, ['*'], $type . '_page')->withQueryString();
     }
 
-    private function getFilteredQuery(Request $request, string $type)
-    {
-        $query = Notification::with('employee.employer');
+    // Handle cancelled items separately
+    $cancelledQuery = $this->getFilteredQuery($request, 'cancelled');
+    $counts['cancelled'] = (clone $cancelledQuery)->count();
+    $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')->withQueryString();
 
-        if ($type === 'cancelled') {
-            $query->where('status', 'cancelled')->latest('updated_at');
-        } else {
-            $query->where('status', '!=', 'cancelled')->where('type', $type)->latest('due_date');
-        }
+    return view('notifications.index', compact('notificationsData', 'counts', 'currentView', 'perPageOptions'));
+}
 
-        // Apply shared filters
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->whereHas('employee', function ($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%");
-            });
-        }
-        if ($request->filled('nationality')) {
-            $query->whereHas('employee', function ($q) use ($request) {
-                $q->where('employeeNationality', $request->input('nationality'));
-            });
-        }
-        if ($request->filled('mou_type')) {
-            $query->whereHas('employee', function ($q) use ($request) {
-                $q->where('workPermitMOUGroup', $request->input('mou_type'));
-            });
-        }
+private function getFilteredQuery(Request $request, string $type)
+{
+    $query = \App\Models\Notification::with('employee.employer');
 
-        return $query;
+    if ($type === 'cancelled') {
+        $query->where('status', 'cancelled')->latest('updated_at');
+    } else {
+        $query->where('status', '!=', 'cancelled')->where('type', $type)->latest('due_date');
     }
+
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->whereHas('employee', function ($q) use ($search) {
+            $q->where('employeeNameTh', 'like', "%{$search}%")
+              ->orWhere('employeeNameEn', 'like', "%{$search}%");
+        });
+    }
+    if ($request->filled('nationality')) {
+        $query->whereHas('employee', function ($q) use ($request) {
+            $q->where('employeeNationality', $request->input('nationality'));
+        });
+    }
+    if ($request->filled('mou_type')) {
+        $query->whereHas('employee', function ($q) use ($request) {
+            $q->where('workPermitMOUGroup', $request->input('mou_type'));
+        });
+    }
+    return $query;
+}
 
     /**
      * Restore a cancelled notification.
