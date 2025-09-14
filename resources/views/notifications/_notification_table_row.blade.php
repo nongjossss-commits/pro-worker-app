@@ -11,39 +11,21 @@
     } elseif ($daysRemaining <= $notification->danger_threshold) {
         $rowClass = 'table-danger';
     }
-
-    $flagCodes = [
-        'เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn',
-    ];
-    $nationality = $employee->employeeNationality ?? null;
-    $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
 @endphp
-
 <tr class="{{ $rowClass }}">
-    <td>{{ $loop->iteration }}</td>
+    <td>{{ $loop->iteration + $notifications->firstItem() - 1 }}</td>
     <td>
-        <div>{{ $employee->employeeNameEn ?? 'N/A' }}</div>
-        <div class="small text-muted">{{ $employee->employeeNameTh ?? '' }}</div>
-    </td>
-    <td>
-        @if($nationality)
-            {{ $nationality }}
-            @if($flagCode)
-                <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
-            @endif
-        @else
-            N/A
-        @endif
+        <div>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}</div>
+        <div class="small text-muted">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? '' }}</div>
     </td>
     <td>{{ $employer->employerNameTh ?? 'N/A' }}</td>
-    <td>{{ $notification->title }}</td>
     <td>{{ $dueDate->translatedFormat('d M Y') }}</td>
     <td>
         <span class="badge {{ $daysRemaining < 0 ? 'bg-dark' : 'bg-secondary' }}">
             {{ $daysRemaining < 0 ? 'เลยกำหนด ' . abs($daysRemaining) . ' วัน' : 'เหลือ ' . $daysRemaining . ' วัน' }}
         </span>
     </td>
-    <td>
+    <td class="text-center">
         <div class="btn-group btn-group-sm">
             @if($notification->status == 'cancelled')
                 <form action="{{ route('notifications.restore', $notification) }}" method="POST" class="d-inline">

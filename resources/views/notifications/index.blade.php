@@ -25,6 +25,20 @@
                 </select>
                 <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
                 <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm">ล้างค่า</a>
+
+                {{-- VIEW CONTROLS --}}
+                <div class="btn-group btn-group-sm ms-md-auto">
+                    <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
+                    <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i></label>
+
+                    <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked(request('view') === 'table')>
+                    <label class="btn btn-outline-primary" for="view-table"><i class="bi bi-table"></i></label>
+                </div>
+                <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    @foreach($perPageOptions as $option)
+                    <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>แสดง {{ $option }}</option>
+                    @endforeach
+                </select>
             </form>
         </div>
     </div>
@@ -68,15 +82,41 @@
     </ul>
 
     <div class="tab-content pt-4" id="notificationTabContent">
-        @foreach($notificationsData as $type => $paginatedNotifications)
+        @foreach($notificationsData as $type => $notifications)
             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $type }}-pane" role="tabpanel">
-                @forelse($paginatedNotifications as $notification)
-                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                @empty
-                    <p class="text-center text-muted">ไม่พบการแจ้งเตือนในหมวดนี้</p>
-                @endforelse
+
+                @if($currentView == 'table')
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ชื่อลูกจ้าง</th>
+                                    <th>นายจ้าง</th>
+                                    <th>วันที่ครบกำหนด</th>
+                                    <th>สถานะ</th>
+                                    <th class="text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($notifications as $notification)
+                                    @include('notifications._notification_table_row', ['notification' => $notification, 'loop' => $loop, 'notifications' => $notifications])
+                                @empty
+                                    <tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูล</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                @else {{-- Card View --}}
+                    @forelse($notifications as $notification)
+                        @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                    @empty
+                        <p class="text-center text-muted">ไม่พบข้อมูล</p>
+                    @endforelse
+                @endif
+
                 <div class="mt-4">
-                    {{ $paginatedNotifications->links() }}
+                    {{ $notifications->links() }}
                 </div>
             </div>
         @endforeach
