@@ -3,41 +3,53 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Database\Eloquent\Builder;
-use App\Models\Employee;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class NotificationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-public function index(Request $request)
-{
-    // A single per_page for all tabs for simplicity. Can be enhanced later.
-    $perPage = 10;
+    public function index(Request $request)
+    {
+        $tabs = [
+            'ninety_day_report', 'passport_expiry', 'work_permit_expiry',
+            'visa_expiry', 'ci_renewal', 'resolution_renewal'
+        ];
 
-    // Define Tabs
-    $tabs = [
-        'ninety_day_report' => 'รายงานตัว 90 วัน',
-        'passport_expiry' => 'Passport',
-        'work_permit_expiry' => 'ใบอนุญาตทำงาน',
-        'visa_expiry' => 'วีซ่า',
-        'ci_renewal' => 'ต่ออายุ CI',
-        'resolution_renewal' => 'ต่ออายุมติ',
-    ];
+        $notificationsData = [];
+        $counts = [];
 
-    $notificationsData = [];
-    $counts = [];
+        // Calculate counts for all tabs first
+        foreach ($tabs as $type) {
+            $counts[$type] = $this->getFilteredQuery($request, $type)->count();
+        }
+        $counts['cancelled'] = $this->getFilteredQuery($request, 'cancelled')->count();
 
-    foreach ($tabs as $type => $title) {
-        $query = \App\Models\Notification::with('employee.employer')
-            ->where('status', '!=', 'cancelled')
-            ->where('type', $type)
-            ->latest('due_date');
+        // Paginate the data for each tab separately
+        foreach ($tabs as $type) {
+            $notificationsData[$type] = $this->getFilteredQuery($request, $type)
+                                             ->paginate(10, ['*'], $type . '_page')
+                                             ->withQueryString();
+        }
+        $notificationsData['cancelled'] = $this->getFilteredQuery($request, 'cancelled')
+                                                ->paginate(10, ['*'], 'cancelled_page')
+                                                ->withQueryString();
+
+        return view('notifications.index', compact('notificationsData', 'counts'));
+    }
+
+    private function getFilteredQuery(Request $request, string $type)
+    {
+        $query = Notification::with('employee.employer');
+
+        if ($type === 'cancelled') {
+            $query->where('status', 'cancelled')->latest('updated_at');
+        } else {
+            $query->where('status', '!=', 'cancelled')->where('type', $type)->latest('due_date');
+        }
 
         // Apply shared filters
         if ($request->filled('search')) {
@@ -58,21 +70,8 @@ public function index(Request $request)
             });
         }
 
-        $counts[$type] = (clone $query)->count();
-
-        // CORRECTED LINE: Use paginate() instead of get()
-        $notificationsData[$type] = $query->paginate($perPage, ['*'], $type . '_page')->withQueryString();
+        return $query;
     }
-
-    // Handle cancelled items separately
-    $cancelledQuery = \App\Models\Notification::with('employee.employer')->where('status', 'cancelled')->latest('updated_at');
-    $counts['cancelled'] = (clone $cancelledQuery)->count();
-    $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')->withQueryString();
-
-    // Note: The $currentView variable is removed as it's not used in this corrected version.
-    // The view switcher logic will be added in a future task if needed.
-    return view('notifications.index', compact('notificationsData', 'counts'));
-}
 
     /**
      * Restore a cancelled notification.
@@ -307,18 +306,18 @@ public function index(Request $request)
      * Redirects to the employer's page and highlights the specific employee.
      * This simplified function fixes the SQL error.
      */
-public function viewEmployee($notificationId)
-{
-    $notification = \App\Models\Notification::findOrFail($notificationId);
-    $employee = $notification->employee;
-    $employer = $employee->employer;
+    public function viewEmployee($notificationId)
+    {
+        $notification = \App\Models\Notification::findOrFail($notificationId);
+        $employee = $notification->employee;
+        $employer = $employee->employer;
 
-    if (!$employer) {
-        return redirect()->back()->with('error', 'ไม่พบข้อมูลนายจ้าง');
+        if (!$employer) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลนายจ้าง');
+        }
+
+        // Add the URL hash to redirect and trigger the highlight
+        $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
+        return redirect($url);
     }
-
-    // Add the URL hash to redirect and trigger the highlight
-    $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
-    return redirect($url);
-}
 }

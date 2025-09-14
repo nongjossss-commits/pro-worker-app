@@ -3,23 +3,12 @@
 
 @section('content')
 <div class="p-4 p-md-5 content-section">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">รายการแจ้งเตือน</h2>
-        <div class="btn-group" role="group">
-            <a href="{{ request()->fullUrlWithQuery(['view' => 'card']) }}" class="btn btn-sm {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-primary' }}">
-                <i class="bi bi-grid"></i> Card View
-            </a>
-            <a href="{{ request()->fullUrlWithQuery(['view' => 'table']) }}" class="btn btn-sm {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-primary' }}">
-                <i class="bi bi-table"></i> Table View
-            </a>
-        </div>
-    </div>
+    <h2 class="mb-4">รายการแจ้งเตือน</h2>
 
     <div class="card mb-4">
         <div class="card-body">
             <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
-                <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อลูกจ้าง..." value="{{ request('search') }}" style="width: 200px;">
-
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}" style="width: 200px;">
                 <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
                     <option value="">-- ทุกสัญชาติ --</option>
                     <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
@@ -27,8 +16,6 @@
                     <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
                     <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
                 </select>
-
-                {{-- ADDED THIS MISSING DROPDOWN --}}
                 <select name="mou_type" class="form-select form-select-sm" style="width: 200px;">
                     <option value="">-- ทุกประเภท มติ. --</option>
                     <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
@@ -36,7 +23,6 @@
                     <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
                     <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
                 </select>
-
                 <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
                 <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm">ล้างค่า</a>
             </form>
@@ -55,12 +41,12 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="work-permit-tab" data-bs-toggle="tab" data-bs-target="#work_permit_expiry-pane" type="button">
+            <button class="nav-link" id="work-permit-expiry-tab" data-bs-toggle="tab" data-bs-target="#work_permit_expiry-pane" type="button">
                 ใบอนุญาตทำงาน <span class="badge bg-danger rounded-pill ms-1">{{ $counts['work_permit_expiry'] ?? 0 }}</span>
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="visa-tab" data-bs-toggle="tab" data-bs-target="#visa_expiry-pane" type="button">
+            <button class="nav-link" id="visa-expiry-tab" data-bs-toggle="tab" data-bs-target="#visa_expiry-pane" type="button">
                 วีซ่า <span class="badge bg-danger rounded-pill ms-1">{{ $counts['visa_expiry'] ?? 0 }}</span>
             </button>
         </li>
@@ -82,49 +68,18 @@
     </ul>
 
     <div class="tab-content pt-4" id="notificationTabContent">
-        @foreach($notificationsData as $type => $notifications)
+        @foreach($notificationsData as $type => $paginatedNotifications)
             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $type }}-pane" role="tabpanel">
-
-                @if($currentView == 'table')
-                    <div class="table-responsive">
-                        <table class="table table-hover table-bordered table-sm">
-                            <thead class="table-light">
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">ชื่อลูกจ้าง</th>
-                                    <th scope="col">สัญชาติ</th>
-                                    <th scope="col">นายจ้าง</th>
-                                    <th scope="col">ประเภท</th>
-                                    <th scope="col">วันที่ครบกำหนด</th>
-                                    <th scope="col">สถานะ</th>
-                                    <th scope="col">ดำเนินการ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($notifications as $notification)
-                                    @include('notifications._notification_table_row', ['notification' => $notification, 'loop' => $loop])
-                                @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center text-muted">ไม่พบการแจ้งเตือนในหมวดนี้</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    @forelse($notifications as $notification)
-                        @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                    @empty
-                        <p class="text-center text-muted">ไม่พบการแจ้งเตือนในหมวดนี้</p>
-                    @endforelse
-                @endif
-
+                @forelse($paginatedNotifications as $notification)
+                    @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                @empty
+                    <p class="text-center text-muted">ไม่พบการแจ้งเตือนในหมวดนี้</p>
+                @endforelse
                 <div class="mt-4">
-                    {{ $notifications->links() }}
+                    {{ $paginatedNotifications->links() }}
                 </div>
             </div>
         @endforeach
     </div>
-
 </div>
 @endsection
