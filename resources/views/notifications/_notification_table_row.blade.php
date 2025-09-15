@@ -1,58 +1,36 @@
 @php
-    $employee = $notification->employee;
-    $employer = $employee->employer;
-    $daysRemaining = $notification->days_remaining;
-    $dueDate = \Carbon\Carbon::parse($notification->due_date);
-    \Carbon\Carbon::setLocale('th');
-
-    $rowClass = '';
-    if ($daysRemaining < 0) {
-        $rowClass = 'table-dark';
-    } elseif ($daysRemaining <= $notification->danger_threshold) {
-        $rowClass = 'table-danger';
+    $days_remaining = $notification->days_remaining;
+    $is_overdue = $days_remaining < 0;
+    $text_class = 'text-dark';
+    if ($is_overdue) {
+        $text_class = 'text-danger fw-bold';
+    } elseif ($days_remaining <= 7) {
+        $text_class = 'text-danger';
+    } elseif ($days_remaining <= 30) {
+        $text_class = 'text-warning';
     }
 @endphp
-<tr class="{{ $rowClass }}">
-    <td>{{ $loop->iteration + $notifications->firstItem() - 1 }}</td>
+
+<tr>
+    <td>{{ $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1)) }}</td>
     <td>
-        <div>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}</div>
-        <div class="small text-muted">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? '' }}</div>
+        <div>{{ $notification->employee->employeeNameEn ?? 'N/A' }}</div>
+        <div class="small text-muted">{{ $notification->employee->employeeNameTh ?? 'N/A' }}</div>
     </td>
-    <td>{{ $employer->employerNameTh ?? 'N/A' }}</td>
-    <td>{{ $dueDate->translatedFormat('d M Y') }}</td>
-    <td>
-        <span class="badge {{ $daysRemaining < 0 ? 'bg-dark' : 'bg-secondary' }}">
-            {{ $daysRemaining < 0 ? 'เลยกำหนด ' . abs($daysRemaining) . ' วัน' : 'เหลือ ' . $daysRemaining . ' วัน' }}
-        </span>
+    <td>{{ $notification->employee->employer->employerNameTh ?? 'N/A' }}</td>
+    <td>{{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d M Y') }}</td>
+    <td class="{{ $text_class }}">
+        @if($is_overdue)
+            หมดอายุ {{ abs($days_remaining) }} วัน
+        @else
+            เหลือ {{ $days_remaining }} วัน
+        @endif
     </td>
     <td class="text-center">
-        <div class="btn-group btn-group-sm">
-            @if($notification->status == 'cancelled')
-                <form action="{{ route('notifications.restore', $notification) }}" method="POST" class="d-inline">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" class="btn btn-success" title="นำกลับ">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                </form>
-                <form action="{{ route('notifications.forceDelete', $notification) }}" method="POST" class="d-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger" title="ลบถาวร">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </form>
-            @else
-                <a href="{{ route('notifications.viewEmployee', ['notificationId' => $notification->id]) }}" class="btn btn-info" title="ดูข้อมูล">
-                    <i class="bi bi-search"></i>
-                </a>
-                <button type="button" class="btn btn-success renew-btn" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}">
-                    <i class="bi bi-calendar-check"></i>
-                </button>
-                <button type="button" class="btn btn-warning" title="ยกเลิกการต่ออายุ" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}">
-                    <i class="bi bi-x-circle"></i>
-                </button>
-            @endif
+         <div class="btn-group btn-group-sm">
+            <a href="#" class="btn btn-success renew-btn" title="ต่ออายุ"><i class="bi bi-calendar-check"></i></a>
+            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></a>
+            <a href="#" class="btn btn-warning cancel-btn" title="ยกเลิก"><i class="bi bi-x-circle"></i></a>
         </div>
     </td>
 </tr>

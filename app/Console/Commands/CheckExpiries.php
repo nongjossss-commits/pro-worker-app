@@ -10,63 +10,78 @@ use Carbon\Carbon;
 class CheckExpiries extends Command
 {
     protected $signature = 'app:check-expiries';
-    protected $description = 'Check for expiring employee documents and create notifications.';
+    protected $description = 'Check for expiring/expired employee documents and create/update notifications.';
 
-public function handle()
-{
-    $this->info('Checking for expiring and overdue documents...');
-    $today = now()->startOfDay();
+    public function handle()
+    {
+        $this->info('Starting expiry check process...');
+        $today = now()->startOfDay();
 
-    $documentChecks = [
-        'passportExpiryDate'   => 'passport_expiry',
-        'workPermitExpiryDate' => 'work_permit_expiry',
-        'visaExpiryDate'       => 'visa_expiry',
-        'ninetyDayReportDate'  => 'ninety_day_report',
-    ];
+        // EXPLANATION: Step 1 - Clean up very old notifications first.
+        // This removes notifications for documents that expired more than a year ago.
+        $this->info('Cleaning up old notifications...');
+        Notification::where('due_date', '<', $today->copy()->subYear())->delete();
 
-    foreach ($documentChecks as $dateField => $baseNotificationType) {
-        // --- START: UPGRADED QUERY LOGIC ---
-        // Set the boundaries: from 30 days ago to 90 days in the future
-        $pastThreshold = $today->copy()->subDays(30);
-        $futureThreshold = $today->copy()->addDays(90);
+        // Define document types and their corresponding notification types
+        $documentChecks = [
+            'passportExpiryDate'   => 'passport_expiry',
+            'workPermitExpiryDate' => 'work_permit_expiry',
+            'visaExpiryDate'       => 'visa_expiry',
+            'ninetyDayReportDate'  => 'ninety_day_report',
+            // We can add more special checks later here
+        ];
 
-        // Find employees with documents expiring or expired within our window
-        $employees = \App\Models\Employee::whereNotNull($dateField)
-            ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
-            ->get();
-        // --- END: UPGRADED QUERY LOGIC ---
+        foreach ($documentChecks as $dateField => $notificationType) {
+            $this->info("Checking: {$notificationType}...");
 
-        foreach ($employees as $employee) {
-            $expiryDate = \Carbon\Carbon::parse($employee->{$dateField});
+            // EXPLANATION: Step 2 - Expand the search range.
+            // We now look for documents that expired up to 30 days ago AND will expire in the next 90 days.
+            $pastThreshold = $today->copy()->subDays(30);
+            $futureThreshold = $today->copy()->addDays(90);
 
-            // This calculation will now correctly produce negative numbers for past dates
-            $daysRemaining = $today->diffInDays($expiryDate, false);
+            $employees = Employee::whereNotNull($dateField)
+                ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
+                ->get();
 
-            $notificationType = $baseNotificationType;
-
-            if ($baseNotificationType === 'work_permit_expiry') {
-                if ($employee->workPermitMOUGroup === 'มติขึ้นทะเบียน') {
-                    $notificationType = 'registration_renewal';
+            foreach ($employees as $employee) {
+                if ($employee->is_cancelled) {
+                    continue; // Skip cancelled employees
                 }
+
+                $expiryDate = Carbon::parse($employee->{$dateField});
+
+                // EXPLANATION: Step 3 - The calculation logic is now more robust.
+                // diffInDays will be positive for future dates, negative for past dates.
+                $daysRemaining = $today->diffInDays($expiryDate, false);
+
+                // For special MOU renewal types, we create separate notifications
+                $currentNotificationType = $notificationType;
+                if ($notificationType === 'work_permit_expiry') {
+                     if ($employee->workPermitMOUGroup === 'มติต่ออายุในประเทศ' || $employee->workPermitMOUGroup === 'มติขึ้นทะเบียน') {
+                        $currentNotificationType = 'resolution_renewal';
+                    }
+                }
+                 if ($notificationType === 'passport_expiry' && $employee->passportType === 'CI') {
+                    $currentNotificationType = 'ci_renewal';
+                }
+
+
+                Notification::updateOrCreate(
+                    [
+                        'employee_id' => $employee->id,
+                        'type' => $currentNotificationType,
+                    ],
+                    [
+                        'due_date' => $expiryDate,
+                        'days_remaining' => $daysRemaining,
+                        'status' => 'unread', // Reset status in case it was cancelled before
+                        'danger_threshold' => 15, // e.g., show as critical if less than 15 days
+                    ]
+                );
             }
-
-            \App\Models\Notification::updateOrCreate(
-                [
-                    'employee_id' => $employee->id,
-                    'type' => $notificationType,
-                ],
-                [
-                    'due_date' => $expiryDate,
-                    'days_remaining' => $daysRemaining,
-                    'message' => 'Standard expiry check.',
-                    'danger_threshold' => 30,
-                    'status' => 'unread',
-                ]
-            );
         }
-    }
 
-    $this->info('Finished checking for documents.');
-    return 0;
-}
+        $this->info('Finished checking for expiring documents.');
+        return 0;
+    }
 }
