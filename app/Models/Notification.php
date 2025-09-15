@@ -21,7 +21,6 @@ class Notification extends Model
         'due_date',
         'status',
         'days_remaining', // FIX: Added this field to allow mass assignment
-        'danger_threshold',
     ];
 
     /**

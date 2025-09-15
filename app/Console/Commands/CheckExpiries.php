@@ -69,7 +69,6 @@ class CheckExpiries extends Command
                         'due_date' => $expiryDate,
                         'days_remaining' => $daysRemaining, // This value will now be correct
                         'status' => 'unread',
-                        'danger_threshold' => 15,
                         'message' => 'Automated expiry check.',
                     ]
                 );
