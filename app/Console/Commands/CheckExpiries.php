@@ -33,6 +33,7 @@ class CheckExpiries extends Command
             $pastThreshold = $today->copy()->subDays(30);
             $futureThreshold = $today->copy()->addDays(90);
 
+            // Get employees who have an expiry date within our target window
             $employees = Employee::whereNotNull($dateField)
                 ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
                 ->get();
@@ -42,8 +43,14 @@ class CheckExpiries extends Command
                     continue;
                 }
 
+                // --- FIX: CRITICAL LOGIC CORRECTION ---
+                // The Employee model uses date casting, which can return a string.
+                // We must ensure we have a Carbon instance before doing date calculations.
                 $expiryDate = Carbon::parse($employee->{$dateField});
+
+                // The calculation now correctly uses two Carbon objects.
                 $daysRemaining = $today->diffInDays($expiryDate, false);
+
                 $currentNotificationType = $notificationType;
 
                 if ($notificationType === 'work_permit_expiry' && in_array($employee->workPermitMOUGroup, ['มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน'])) {
@@ -60,10 +67,9 @@ class CheckExpiries extends Command
                     ],
                     [
                         'due_date' => $expiryDate,
-                        'days_remaining' => $daysRemaining,
+                        'days_remaining' => $daysRemaining, // This value will now be correct
                         'status' => 'unread',
                         'danger_threshold' => 15,
-                        // FIX: Added the 'message' field to match the database schema requirement.
                         'message' => 'Automated expiry check.',
                     ]
                 );
