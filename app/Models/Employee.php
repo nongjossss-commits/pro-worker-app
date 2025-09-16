@@ -9,18 +9,18 @@ class Employee extends Model
 {
     use HasFactory;
 
-    // This is the cleaned up and correct fillable array.
+    // The $fillable array is correct as it matches the camelCase schema.
     protected $fillable = [
         'employer_id',
         'employeeNameTh',
         'employeeNameEn',
         'employeeNationality',
         'employeePassport',
-        'passportExpiryDate', // Correct camelCase
+        'passportExpiryDate',
         'employeeWorkPermit',
-        'workPermitExpiryDate', // Correct camelCase
-        'visaExpiryDate',       // Correct camelCase
-        'ninetyDayReportDate',  // Correct camelCase
+        'workPermitExpiryDate',
+        'visaExpiryDate',
+        'ninetyDayReportDate',
         'employeeTitleTh',
         'employeeTitleEn',
         'employeeDob',
@@ -60,12 +60,13 @@ class Employee extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'passport_expiry_date' => 'date:Y-m-d',
-        'work_permit_expiry_date' => 'date:Y-m-d',
-        'visa_expiry_date' => 'date:Y-m-d',
-        'ninety_day_report_date' => 'date:Y-m-d',
-        'employee_dob' => 'date:Y-m-d',
-        'start_date' => 'date:Y-m-d',
+        // --- FIX: The keys MUST be camelCase to match the database columns ---
+        'passportExpiryDate' => 'date:Y-m-d',
+        'workPermitExpiryDate' => 'date:Y-m-d',
+        'visaExpiryDate' => 'date:Y-m-d',
+        'ninetyDayReportDate' => 'date:Y-m-d',
+        'employeeDob' => 'date:Y-m-d',
+        'startDate' => 'date:Y-m-d',
         'terminated_at' => 'datetime',
     ];
 

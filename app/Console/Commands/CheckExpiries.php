@@ -30,26 +30,22 @@ class CheckExpiries extends Command
         foreach ($documentChecks as $dateField => $notificationType) {
             $this->info("Checking: {$notificationType}...");
 
-            $pastThreshold = $today->copy()->subDays(30);
-            $futureThreshold = $today->copy()->addDays(90);
+            $pastThreshold = $today->copy()->subDays(365); // Check for items expired up to a year ago
+            $futureThreshold = $today->copy()->addDays(90); // Check for items expiring in the next 90 days
 
+            // --- FIX: This query now uses the correct camelCase column name ---
             $employees = Employee::whereNotNull($dateField)
                 ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
                 ->get();
 
             foreach ($employees as $employee) {
-                if ($employee->is_cancelled) {
+                if ($employee->is_cancelled ?? false) { // Use null coalescing for safety
                     continue;
                 }
 
-                // --- FIX: CRITICAL LOGIC CORRECTION ---
-                // The Employee model uses date casting, which can return a string.
-                // We must ensure we have a Carbon instance before doing date calculations.
+                // Ensure we have a Carbon instance for calculation
                 $expiryDate = Carbon::parse($employee->{$dateField});
-
-                // The calculation now correctly uses two Carbon objects.
                 $daysRemaining = $today->diffInDays($expiryDate, false);
-
                 $currentNotificationType = $notificationType;
 
                 if ($notificationType === 'work_permit_expiry' && in_array($employee->workPermitMOUGroup, ['มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน'])) {
@@ -66,7 +62,7 @@ class CheckExpiries extends Command
                     ],
                     [
                         'due_date' => $expiryDate,
-                        'days_remaining' => $daysRemaining, // This value will now be correct
+                        'days_remaining' => $daysRemaining,
                         'status' => 'unread',
                         'message' => 'Automated expiry check.',
                     ]
