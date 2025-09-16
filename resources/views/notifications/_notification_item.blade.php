@@ -21,9 +21,9 @@
 
 <div class="alert alert-secondary notification-item">
     <div class="d-flex align-items-center gap-3">
-        {{-- FIX: The employee photo now uses the correct CSS class from app.css --}}
-        <img src="{{ $notification->employee->employeePhoto ? asset('storage/' . $notification->employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-             class="employee-photo-thumb" alt="Photo" style="margin-right: 0;">
+<img src="{{ $notification->employee->employeePhoto ? asset('storage/' . $notification->employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
+     alt="Photo"
+     class="w-12 h-12 object-cover rounded-full bg-gray-200 flex-shrink-0">
 
         <div class="d-flex justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
