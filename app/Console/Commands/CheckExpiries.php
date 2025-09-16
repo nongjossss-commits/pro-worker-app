@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\Employee;
 use App\Models\Notification;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class CheckExpiries extends Command
 {
@@ -33,9 +34,11 @@ class CheckExpiries extends Command
             $pastThreshold = $today->copy()->subDays(30);
             $futureThreshold = $today->copy()->addDays(90);
 
-            // Get employees who have an expiry date within our target window
-            $employees = Employee::whereNotNull($dateField)
-                ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
+            // FIX: Convert the camelCase property name to a snake_case column name for the DB query.
+            $columnName = Str::snake($dateField);
+
+            $employees = Employee::whereNotNull($columnName)
+                ->whereBetween($columnName, [$pastThreshold, $futureThreshold])
                 ->get();
 
             foreach ($employees as $employee) {
