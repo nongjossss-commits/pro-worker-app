@@ -17,7 +17,7 @@ class EmployeeController extends Controller
         $currentView = $request->input('view', 'card');
         $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
         $currentPerPage = $request->input('per_page', $defaultPerPage);
-        $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions[0];
+        $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
         $query = Employee::query();
 

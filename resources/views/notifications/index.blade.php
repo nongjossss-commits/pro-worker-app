@@ -8,6 +8,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+                <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'ninety_day_report') }}">
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}" style="width: 200px;">
                 <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
                     <option value="">-- ทุกสัญชาติ --</option>
@@ -117,3 +118,29 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabs = document.querySelectorAll('#notificationTab .nav-link');
+        const activeTabInput = document.getElementById('active_tab_input');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('show.bs.tab', function (event) {
+                // Get the pane ID from the tab's data-bs-target and remove '-pane'
+                const paneId = event.target.getAttribute('data-bs-target').replace('#', '').replace('-pane', '');
+                if (activeTabInput) {
+                    activeTabInput.value = paneId;
+                }
+            });
+        });
+
+        // On page load, if an active_tab is in the URL, click it.
+        const currentActiveTab = '{{ request('active_tab', 'ninety_day_report') }}';
+        const tabToActivate = document.getElementById(currentActiveTab + '-tab');
+        if (tabToActivate) {
+            new bootstrap.Tab(tabToActivate).show();
+        }
+    });
+</script>
+@endpush
