@@ -62,9 +62,12 @@
         @foreach($notificationsData as $type => $notifications)
             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $type }}-pane" role="tabpanel">
 
-                {{-- NEW LOGIC: Check if this is the special tab --}}
                 @if($type === 'work_permit_mou')
-                    @include('notifications._work_permit_mou_pane', ['notifications' => $notifications])
+                    @if($currentView == 'table')
+                        @include('notifications._work_permit_mou_table', ['notifications' => $notifications])
+                    @else
+                        @include('notifications._work_permit_mou_pane', ['notifications' => $notifications])
+                    @endif
                 @else
                     {{-- Standard rendering for all other tabs --}}
                     @if($currentView == 'table')
