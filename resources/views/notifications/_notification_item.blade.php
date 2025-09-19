@@ -48,10 +48,22 @@
                     @endif
                 </span>
                 <div class="btn-group btn-group-sm">
-                    <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
-                    <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ดูข้อมูล"><i class="bi bi-search"></i></a>
-                    <a href="#" class="btn btn-danger" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
-                </div>
+    @if($notification->status === 'cancelled')
+        <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-info" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
+        </form>
+        <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
+        </form>
+    @else
+        <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
+        <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ดูข้อมูล"><i class="bi bi-search"></i></a>
+        <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+    @endif
+</div>
             </div>
         </div>
     </div>
