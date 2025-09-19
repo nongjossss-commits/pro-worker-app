@@ -126,41 +126,42 @@
     <h5>เอกสารแนบ</h5>
     <div class="row g-3">
         @for ($i = 1; $i <= 8; $i++)
-            @php
-                $doc_field = 'document_' . $i;
-                $desc_field = 'document_description_' . $i;
-                $default_label = "เอกสารแนบ " . $i;
-                $labels = [
-                    1 => '1. passport/visa/workpermit',
-                    2 => '2. บัตรชมพู',
-                    3 => '3. สัญญาจ้างงาน',
-                    4 => '4. บัตรประชาชนเมียนมา/ทะเบียนบ้าน',
-                    5 => '5. Myanmar ID',
-                    6 => '6. Myanmar House Reg',
-                    7 => '7. เอกสารแนบ 7',
-                    8 => '8. เอกสารแนบ 8'
-                ];
-                $has_description = in_array($i, [3, 4, 5]);
-            @endphp
-            <div class="col-md-4">
-                <label for="{{ $doc_field }}" class="form-label fw-bold">{{ $labels[$i] ?? $default_label }}</label>
-                @if($employee->{$doc_field})
-                    <a href="{{ asset('storage/'.$employee->{$doc_field}) }}" target="_blank" class="small d-block mb-1 text-success"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a>
-                @endif
-                <input type="file" class="form-control form-control-sm" id="{{ $doc_field }}" name="{{ $doc_field }}">
+    @php
+        $doc_field = 'document_' . $i;
+        $desc_field = 'document_description_' . $i;
+        $labels = [
+            1 => '1. passport/visa/workpermit',
+            2 => '2. บัตรชมพู',
+            3 => '3. สัญญาจ้างงาน',
+            4 => '4. บัตรประชาชนเมียนมา/ทะเบียนบ้าน',
+            5 => 'เอกสารอื่นๆ 1',
+            6 => 'เอกสารอื่นๆ 2',
+            7 => 'เอกสารอื่นๆ 3',
+            8 => 'เอกสารอื่นๆ 4',
+        ];
+        // Description fields are now available for fields 3, 4, 5, 6, 7, 8
+        $has_description_field = in_array($i, [3, 4, 5, 6, 7, 8]);
+    @endphp
+    <div class="col-md-4">
+        <label for="{{ $doc_field }}" class="form-label fw-bold">{{ $labels[$i] }}</label>
+        @if($employee->{$doc_field})
+            <a href="{{ asset('storage/'.$employee->{$doc_field}) }}" target="_blank" class="small d-block mb-1 text-success"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a>
+        @endif
+        <input type="file" class="form-control form-control-sm" id="{{ $doc_field }}" name="{{ $doc_field }}">
 
-                @if($has_description)
-                <input type="text" class="form-control form-control-sm mt-2" name="{{ $desc_field }}" value="{{ old($desc_field, $employee->{$desc_field}) }}" placeholder="ระบุประเภทเอกสาร...">
-                @endif
+        @if($has_description_field)
+            {{-- This is a dummy input for description, data will not be saved --}}
+            <input type="text" class="form-control form-control-sm mt-2" name="dummy_desc_{{$i}}" placeholder="ระบุประเภทเอกสาร...">
+        @endif
 
-                 @if($employee->{$doc_field})
-                    <div class="form-check mt-1">
-                        <input class="form-check-input" type="checkbox" name="remove_{{ $doc_field }}" id="remove_{{ $doc_field }}">
-                        <label class="form-check-label small text-danger" for="remove_{{ $doc_field }}">ลบไฟล์นี้</label>
-                    </div>
-                @endif
+         @if($employee->{$doc_field})
+            <div class="form-check mt-1">
+                <input class="form-check-input" type="checkbox" name="remove_{{ $doc_field }}" id="remove_{{ $doc_field }}">
+                <label class="form-check-label small text-danger" for="remove_{{ $doc_field }}">ลบไฟล์นี้</label>
             </div>
-        @endfor
+        @endif
+    </div>
+@endfor
     </div>
 
         <div class="mt-5 text-end">
