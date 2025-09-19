@@ -53,11 +53,22 @@
         </div>
     </div>
 
+    {{-- NEW: Bulk Action Bar --}}
+    <div id="bulk-action-bar" class="alert alert-info d-flex justify-content-between align-items-center mb-4" style="display: none !important;">
+        <div>
+            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+            <label class="form-check-label ms-2" for="select-all-checkbox">
+                เลือกทั้งหมด (<span id="selected-count">0</span>)
+            </label>
+        </div>
+        <button class="btn btn-primary btn-sm" disabled>ดำเนินการกับรายการที่เลือก</button>
+    </div>
+
     @if($currentView === 'card')
         {{-- Card View --}}
         <div class="card-view">
             @forelse($employees as $employee)
-                @include('employees._card', ['employee' => $employee])
+                @include('employees._employee_card', ['employee' => $employee])
             @empty
                 <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</p>
             @endforelse
@@ -68,6 +79,7 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
+                        <th></th>
                         <th>#</th>
                         <th>รูป</th>
                         <th>ชื่อ (อังกฤษ)</th>
@@ -81,6 +93,7 @@
                 <tbody>
                     @forelse($employees as $employee)
                     <tr>
+                        <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="employee_table_checkbox_{{ $employee->id }}"></td>
                         <td>{{ $loop->iteration + $employees->firstItem() - 1 }}</td>
                         <td>
                             {{-- ADDED .employee-photo-thumb class --}}
@@ -126,4 +139,71 @@
     </div>
 
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.querySelector('.content-section');
+        const actionBar = document.getElementById('bulk-action-bar');
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const selectedCountSpan = document.getElementById('selected-count');
+        const actionButton = actionBar.querySelector('button');
+
+        function getItemCheckboxes() {
+            // Select checkboxes only from the currently visible view (card or table)
+            const activeView = container.querySelector('.card-view, .table-responsive');
+            return activeView ? activeView.querySelectorAll('.bulk-action-checkbox') : [];
+        }
+
+        function updateActionBar() {
+            const itemCheckboxes = getItemCheckboxes();
+            const selectedCheckboxes = document.querySelectorAll('.bulk-action-checkbox:checked');
+            const count = selectedCheckboxes.length;
+
+            if (count > 0) {
+                actionBar.style.display = 'flex';
+                selectedCountSpan.textContent = count;
+                actionButton.disabled = false;
+            } else {
+                actionBar.style.display = 'none';
+                selectedCountSpan.textContent = 0;
+                actionButton.disabled = true;
+            }
+
+            const totalCheckboxes = itemCheckboxes.length;
+            selectAllCheckbox.checked = totalCheckboxes > 0 && count === totalCheckboxes;
+        }
+
+        container.addEventListener('change', function(e) {
+            if (e.target.classList.contains('bulk-action-checkbox')) {
+                updateActionBar();
+            }
+        });
+
+        selectAllCheckbox.addEventListener('change', function() {
+            const itemCheckboxes = getItemCheckboxes();
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateActionBar();
+        });
+
+        // Also listen for form changes that switch views
+        const filterForm = document.getElementById('filter-form');
+        if(filterForm) {
+            const viewRadios = filterForm.querySelectorAll('input[name="view"]');
+            viewRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // Reset on view change
+                    if(selectAllCheckbox) selectAllCheckbox.checked = false;
+                    updateActionBar();
+                });
+            });
+        }
+
+        // Initial state setup
+        updateActionBar();
+    });
+</script>
+@endpush
 @endsection

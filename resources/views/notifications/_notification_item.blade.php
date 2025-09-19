@@ -22,6 +22,7 @@
 
 <div class="alert {{ $card_class }} notification-item">
     <div class="d-flex align-items-center gap-3">
+        <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $notification->employee->id }}" id="notification_checkbox_{{ $notification->id }}">
         {{-- FINAL FIX: Use Tailwind classes for robust styling --}}
         <img src="{{ $notification->employee->employeePhoto ? asset('storage/' . $notification->employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
              alt="Photo"
