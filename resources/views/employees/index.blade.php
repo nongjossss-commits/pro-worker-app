@@ -68,7 +68,7 @@
         {{-- Card View --}}
         <div class="card-view">
             @forelse($employees as $employee)
-                @include('employees._employee_card', ['employee' => $employee])
+                @include('partials._employee_card', ['employee' => $employee])
             @empty
                 <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</p>
             @endforelse
