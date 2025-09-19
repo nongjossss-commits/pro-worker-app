@@ -22,7 +22,7 @@ class CheckExpiries extends Command
 
         $documentChecks = [
             'passportExpiryDate'   => 'passport_expiry',
-            'workPermitExpiryDate' => 'work_permit_expiry',
+            'workPermitExpiryDate' => 'work_permit_expiry', // This will be our trigger
             'visaExpiryDate'       => 'visa_expiry',
             'ninetyDayReportDate'  => 'ninety_day_report',
         ];
@@ -30,14 +30,15 @@ class CheckExpiries extends Command
         foreach ($documentChecks as $dateField => $notificationType) {
             $this->info("Checking: {$notificationType}...");
 
+            // Widen the search range for work permits to handle both future and past dates
             $pastThreshold = $today->copy()->subDays(365);
-            $futureThreshold = $today->copy()->addDays(45);
+            $futureThreshold = $today->copy()->addDays(50); // Set to 50 for the new 'ขอต่อ' requirement
 
             $employees = Employee::whereNotNull($dateField)
                 ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
                 ->get();
 
-            $this->info("Found {$employees->count()} employees for notification type [{$notificationType}].");
+            $this->info("Found {$employees->count()} employees for field [{$dateField}].");
 
             foreach ($employees as $employee) {
                 if ($employee->is_cancelled ?? false) {
@@ -46,22 +47,32 @@ class CheckExpiries extends Command
 
                 $expiryDate = Carbon::parse($employee->{$dateField});
                 $daysRemaining = $today->diffInDays($expiryDate, false);
-
-                // --- SIMPLIFIED LOGIC: No longer re-routing notifications ---
-                // All passport expiries will create a 'passport_expiry' notification.
-                // All work permit expiries will create a 'work_permit_expiry' notification.
                 $currentNotificationType = $notificationType;
+
+                // --- NEW LOGIC: Determine notification type based on workPermitMOUGroup ---
+                if ($notificationType === 'work_permit_expiry') {
+                    if ($employee->workPermitMOUGroup === 'MOU') {
+                        $currentNotificationType = 'work_permit_mou'; // New specific type for MOU
+                    } elseif (in_array($employee->workPermitMOUGroup, ['มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน'])) {
+                        $currentNotificationType = 'resolution_renewal';
+                    }
+                    // If it's another type, it will just remain 'work_permit_expiry' and won't show in new tabs
+                }
+
+                if ($notificationType === 'passport_expiry' && $employee->passportType === 'CI') {
+                    $currentNotificationType = 'ci_renewal';
+                }
 
                 Notification::updateOrCreate(
                     [
                         'employee_id' => $employee->id,
-                        'type' => $currentNotificationType,
+                        'type'        => $currentNotificationType,
                     ],
                     [
-                        'due_date' => $expiryDate,
+                        'due_date'       => $expiryDate,
                         'days_remaining' => $daysRemaining,
-                        'status' => 'unread',
-                        'message' => 'Automated expiry check.',
+                        'status'         => 'unread',
+                        'message'        => 'Automated expiry check.',
                     ]
                 );
             }
