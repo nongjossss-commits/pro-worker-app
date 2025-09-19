@@ -44,36 +44,13 @@
     </div>
 
     <ul class="nav nav-tabs" id="notificationTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="90day-tab" data-bs-toggle="tab" data-bs-target="#ninety_day_report-pane" type="button">
-                รายงานตัว 90 วัน <span class="badge bg-danger rounded-pill ms-1">{{ $counts['ninety_day_report'] ?? 0 }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="passport-tab" data-bs-toggle="tab" data-bs-target="#passport_expiry-pane" type="button">
-                Passport <span class="badge bg-danger rounded-pill ms-1">{{ $counts['passport_expiry'] ?? 0 }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="work-permit-expiry-tab" data-bs-toggle="tab" data-bs-target="#work_permit_expiry-pane" type="button">
-                ใบอนุญาตทำงาน <span class="badge bg-danger rounded-pill ms-1">{{ $counts['work_permit_expiry'] ?? 0 }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="visa-expiry-tab" data-bs-toggle="tab" data-bs-target="#visa_expiry-pane" type="button">
-                วีซ่า <span class="badge bg-danger rounded-pill ms-1">{{ $counts['visa_expiry'] ?? 0 }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="ci-renewal-tab" data-bs-toggle="tab" data-bs-target="#ci_renewal-pane" type="button">
-                ต่ออายุ CI <span class="badge bg-danger rounded-pill ms-1">{{ $counts['ci_renewal'] ?? 0 }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="resolution-renewal-tab" data-bs-toggle="tab" data-bs-target="#resolution_renewal-pane" type="button">
-                ต่ออายุมติ <span class="badge bg-danger rounded-pill ms-1">{{ $counts['resolution_renewal'] ?? 0 }}</span>
-            </button>
-        </li>
+        @foreach($tabs as $type => $title)
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
+                    {{ $title }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type] ?? 0 }}</span>
+                </button>
+            </li>
+        @endforeach
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled-pane" type="button">
                 รายการที่ยกเลิก <span class="badge bg-secondary rounded-pill ms-1">{{ $counts['cancelled'] ?? 0 }}</span>
@@ -85,39 +62,44 @@
         @foreach($notificationsData as $type => $notifications)
             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $type }}-pane" role="tabpanel">
 
-                @if($currentView == 'table')
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>ชื่อลูกจ้าง</th>
-                                    <th>นายจ้าง</th>
-                                    <th>วันที่ครบกำหนด</th>
-                                    <th>สถานะ</th>
-                                    <th class="text-center">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($notifications as $notification)
-                                    @include('notifications._notification_table_row', ['notification' => $notification, 'loop' => $loop, 'notifications' => $notifications])
-                                @empty
-                                    <tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูล</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                {{-- NEW LOGIC: Check if this is the special tab --}}
+                @if($type === 'work_permit_mou')
+                    @include('notifications._work_permit_mou_pane', ['notifications' => $notifications])
+                @else
+                    {{-- Standard rendering for all other tabs --}}
+                    @if($currentView == 'table')
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>ชื่อลูกจ้าง</th>
+                                        <th>นายจ้าง</th>
+                                        <th>วันที่ครบกำหนด</th>
+                                        <th>สถานะ</th>
+                                        <th class="text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($notifications as $notification)
+                                        @include('notifications._notification_table_row', ['notification' => $notification, 'loop' => $loop, 'notifications' => $notifications])
+                                    @empty
+                                        <tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูล</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    @else {{-- Card View --}}
+                        @forelse($notifications as $notification)
+                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                        @empty
+                            <p class="text-center text-muted">ไม่พบข้อมูล</p>
+                        @endforelse
+                    @endif
+                    <div class="mt-4">
+                        {{ $notifications->links() }}
                     </div>
-                @else {{-- Card View --}}
-                    @forelse($notifications as $notification)
-                        @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
-                    @empty
-                        <p class="text-center text-muted">ไม่พบข้อมูล</p>
-                    @endforelse
                 @endif
-
-                <div class="mt-4">
-                    {{ $notifications->links() }}
-                </div>
             </div>
         @endforeach
     </div>
