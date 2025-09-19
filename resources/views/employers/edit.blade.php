@@ -805,7 +805,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <p class="mb-0 text-muted small">
                             Addr: ${address.addrNoEn || ''}, Moo: ${address.addrMooEn || ''}, Soi: ${address.addrSoiEn || ''}, Road: ${address.addrRoadEn || ''},
                             ${address.addrSubDistrictEn || ''}, ${address.addrDistrictEn || ''},
-                            ${address.addrProvinceEn || ''} ${address.addrZipCodeEn || ''}
+                            ${address.addrProvinceEn ?? ''} ${address.addrZipCodeEn ?? ''}
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
@@ -1130,9 +1130,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectAllCheckbox = document.getElementById('select-all-checkbox-employer');
         const selectedCountSpan = document.getElementById('selected-count-employer');
         const actionButton = actionBar.querySelector('button');
-        const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
 
         function updateActionBar() {
+            // Need to re-query checkboxes each time as content might be dynamic
+            const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
             const selectedCheckboxes = container.querySelectorAll('.bulk-action-checkbox:checked');
             const count = selectedCheckboxes.length;
 
@@ -1145,7 +1146,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 selectedCountSpan.textContent = 0;
                 actionButton.disabled = true;
             }
-            selectAllCheckbox.checked = count > 0 && count === itemCheckboxes.length;
+
+            if(selectAllCheckbox){
+                 selectAllCheckbox.checked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
+            }
         }
 
         container.addEventListener('change', function(e) {
@@ -1154,15 +1158,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        selectAllCheckbox.addEventListener('change', function() {
-            itemCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
+        if(selectAllCheckbox){
+            selectAllCheckbox.addEventListener('change', function() {
+                const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
+                itemCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateActionBar();
             });
-            updateActionBar();
-        });
+        }
 
-        // Initial check in case some items are pre-selected
-        updateActionBar();
+        updateActionBar(); // Initial check
     });
 </script>
 @endpush
+"""
+# I have manually replaced the script at the end of the file content with the correct one.
+# Now I will overwrite the file.
