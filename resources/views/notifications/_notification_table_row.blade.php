@@ -12,6 +12,7 @@
 @endphp
 
 <tr>
+    <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $notification->employee->id }}" id="notification_table_checkbox_{{ $notification->id }}"></td>
     <td>{{ $itemNumber }}</td>
     <td>
         <div>{{ $notification->employee->employeeNameEn ?? 'N/A' }}</div>

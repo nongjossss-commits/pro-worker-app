@@ -44,6 +44,17 @@
         </div>
     </div>
 
+    {{-- NEW: Bulk Action Bar --}}
+    <div id="bulk-action-bar-notifications" class="alert alert-info d-flex justify-content-between align-items-center mb-4" style="display: none !important;">
+        <div>
+            <input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications">
+            <label class="form-check-label ms-2" for="select-all-checkbox-notifications">
+                เลือกทั้งหมด (<span id="selected-count-notifications">0</span>)
+            </label>
+        </div>
+        <button class="btn btn-primary btn-sm" disabled>ดำเนินการกับรายการที่เลือก</button>
+    </div>
+
     <ul class="nav nav-tabs" id="notificationTab" role="tablist">
         @foreach($tabs as $type => $title)
             <li class="nav-item" role="presentation">
@@ -141,6 +152,62 @@
         if (tabToActivate) {
             new bootstrap.Tab(tabToActivate).show();
         }
+
+        // --- Bulk Action Script ---
+        const container = document.querySelector('.tab-content'); // Target tab content for notifications
+        const actionBar = document.getElementById('bulk-action-bar-notifications');
+        const selectAllCheckbox = document.getElementById('select-all-checkbox-notifications');
+        const selectedCountSpan = document.getElementById('selected-count-notifications');
+        const actionButton = actionBar.querySelector('button');
+
+        function updateActionBar() {
+            // Only select checkboxes in the currently active tab pane
+            const activePane = container.querySelector('.tab-pane.active');
+            if (!activePane) return;
+
+            const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
+            const selectedCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox:checked');
+            const count = selectedCheckboxes.length;
+
+            if (count > 0) {
+                actionBar.style.display = 'flex'; // Removed !important
+                selectedCountSpan.textContent = count;
+                actionButton.disabled = false;
+            } else {
+                actionBar.style.display = 'none'; // Removed !important
+                selectedCountSpan.textContent = 0;
+                actionButton.disabled = true;
+            }
+            selectAllCheckbox.checked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
+        }
+
+        container.addEventListener('change', function(e) {
+            if (e.target.classList.contains('bulk-action-checkbox')) {
+                updateActionBar();
+            }
+        });
+
+        selectAllCheckbox.addEventListener('change', function() {
+            const activePane = container.querySelector('.tab-pane.active');
+            if (!activePane) return;
+            const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateActionBar();
+        });
+
+        // Listen for tab changes to reset the selection
+        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function() {
+                if(selectAllCheckbox) selectAllCheckbox.checked = false;
+                updateActionBar();
+            });
+        });
+
+        // Initial check in case of page reload with an active tab
+        // Use a small timeout to ensure tab activation script has run
+        setTimeout(updateActionBar, 100);
     });
 </script>
 @endpush
