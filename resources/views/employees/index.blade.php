@@ -2,21 +2,7 @@
 @section('title', 'ข้อมูลลูกจ้าง')
 
 @push('styles')
-<style>
-    .employee-card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        transition: all 0.2s ease-in-out;
-    }
-    .employee-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.07);
-    }
-    .employee-photo-thumb {
-        width: 48px; height: 48px; object-fit: cover; border-radius: 50%;
-        margin-right: 1rem; background-color: #e2e8f0;
-    }
-</style>
+{{-- Styles are now handled in app.css or inline for guarantee --}}
 @endpush
 
 @section('content')
@@ -53,7 +39,6 @@
         </div>
     </div>
 
-    {{-- NEW: Bulk Action Bar --}}
     <div id="bulk-action-bar" class="alert alert-info d-flex justify-content-between align-items-center mb-4" style="display: none !important;">
         <div>
             <input class="form-check-input" type="checkbox" id="select-all-checkbox">
@@ -64,9 +49,9 @@
         <button class="btn btn-primary btn-sm" disabled>ดำเนินการกับรายการที่เลือก</button>
     </div>
 
+    <div id="employeeListContainer">
     @if($currentView === 'card')
-        {{-- Card View --}}
-        <div class="card-view">
+        <div class="list-group">
             @forelse($employees as $employee)
                 @include('partials._employee_card', ['employee' => $employee])
             @empty
@@ -79,131 +64,124 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th></th>
-                        <th>#</th>
-                        <th>รูป</th>
-                        <th>ชื่อ (อังกฤษ)</th>
-                        <th>ชื่อ (ไทย)</th>
-                        <th>สัญชาติ</th>
-                        <th>Passport</th>
-                        <th>นายจ้าง</th>
-                        <th class="text-center">จัดการ</th>
+                        <th scope="col" style="width: 1rem;"></th>
+                        <th scope="col">Employee</th>
+                        <th scope="col">Employer</th>
+                        <th scope="col">Passport</th>
+                        <th scope="col">Work Permit</th>
+                        <th scope="col">90-Day Report</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($employees as $employee)
                     <tr>
-                        <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="employee_table_checkbox_{{ $employee->id }}"></td>
-                        <td>{{ $loop->iteration + $employees->firstItem() - 1 }}</td>
+                        <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
                         <td>
-                            {{-- ADDED .employee-photo-thumb class --}}
-                            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-                                 class="employee-photo-thumb"
-                                 style="width: 48px; height: 48px; border-radius: 50%;"
-                                 alt="Photo">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">
+                                <div>
+                                    <div class="fw-bold">{{ $employee->employeeNameEn ?? 'N/A' }}</div>
+                                    <div class="text-muted">{{ $employee->employeeNameTh ?? 'N/A' }}</div>
+                                </div>
+                            </div>
                         </td>
-                        <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn }}</td>
-                        <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh }}</td>
+                        <td class="text-muted">{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
+                        <td>{{ $employee->employeePassport ?? '-' }}</td>
+                        <td>{{ $employee->employeeWorkPermit ?? '-' }}</td>
+                        <td>{{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}</td>
                         <td>
-                            {{-- ADDED FLAG LOGIC --}}
-                            @php
-                                $flagCodes = ['เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn'];
-                                $nationality = $employee->employeeNationality ?? null;
-                                $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
-                            @endphp
-                            {{ $nationality }}
-                            @if($flagCode)
-                                <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
-                            @endif
-                        </td>
-                        <td>{{ $employee->employeePassport }}</td>
-                        <td>{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
-                        <td class="text-center">
-                            <a href="{{ route('employees.locate', $employee->id) }}" class="btn btn-sm btn-outline-info" title="ดูข้อมูลนายจ้าง"><i class="bi bi-geo-alt-fill"></i></a>
-                            <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
+                                <button type="button" class="btn btn-outline-danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                            </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</td>
+                        <td colspan="7" class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     @endif
+    </div>
 
     <div class="mt-4">
         {{ $employees->links() }}
     </div>
-
 </div>
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const container = document.querySelector('.content-section');
-        const actionBar = document.getElementById('bulk-action-bar');
-        const selectAllCheckbox = document.getElementById('select-all-checkbox');
-        const selectedCountSpan = document.getElementById('selected-count');
-        const actionButton = actionBar.querySelector('button');
+document.addEventListener('DOMContentLoaded', function () {
+    const containerId = 'employeeListContainer';
+    const checkboxClass = 'bulk-action-checkbox';
+    const selectAllId = 'select-all-checkbox';
+    const countId = 'selected-count';
+    const barId = 'bulk-action-bar';
+    const actionButtonSelector = '.btn';
 
-        function getItemCheckboxes() {
-            // Select checkboxes only from the currently visible view (card or table)
-            const activeView = container.querySelector('.card-view, .table-responsive');
-            return activeView ? activeView.querySelectorAll('.bulk-action-checkbox') : [];
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const selectAllCheckbox = document.getElementById(selectAllId);
+    const selectedCountSpan = document.getElementById(countId);
+    const actionBar = document.getElementById(barId);
+    // Ensure actionBar and its children exist before proceeding
+    if (!actionBar || !selectAllCheckbox || !selectedCountSpan) {
+        console.error('Bulk action UI elements not found.');
+        return;
+    }
+    const actionButton = actionBar.querySelector(actionButtonSelector);
+    if (!actionButton) {
+        console.error('Bulk action button not found.');
+        return;
+    }
+
+    const getCheckboxes = () => container.querySelectorAll(`.${checkboxClass}`);
+
+    function updateSelection() {
+        const checkboxes = getCheckboxes();
+        const selectedCheckboxes = container.querySelectorAll(`.${checkboxClass}:checked`);
+        const selectedCount = selectedCheckboxes.length;
+
+        if (selectedCount > 0) {
+            actionBar.style.setProperty('display', 'flex', 'important');
+            selectedCountSpan.textContent = selectedCount;
+            actionButton.disabled = false;
+        } else {
+            actionBar.style.setProperty('display', 'none', 'important');
+            selectedCountSpan.textContent = 0;
+            actionButton.disabled = true;
         }
 
-        function updateActionBar() {
-            const itemCheckboxes = getItemCheckboxes();
-            const selectedCheckboxes = document.querySelectorAll('.bulk-action-checkbox:checked');
-            const count = selectedCheckboxes.length;
-
-            if (count > 0) {
-                actionBar.style.display = 'flex';
-                selectedCountSpan.textContent = count;
-                actionButton.disabled = false;
-            } else {
-                actionBar.style.display = 'none';
-                selectedCountSpan.textContent = 0;
-                actionButton.disabled = true;
-            }
-
-            const totalCheckboxes = itemCheckboxes.length;
-            selectAllCheckbox.checked = totalCheckboxes > 0 && count === totalCheckboxes;
+        if (checkboxes.length > 0) {
+            selectAllCheckbox.checked = selectedCount === checkboxes.length;
+        } else {
+            selectAllCheckbox.checked = false;
         }
+    }
 
-        container.addEventListener('change', function(e) {
-            if (e.target.classList.contains('bulk-action-checkbox')) {
-                updateActionBar();
-            }
-        });
-
-        selectAllCheckbox.addEventListener('change', function() {
-            const itemCheckboxes = getItemCheckboxes();
-            itemCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            updateActionBar();
-        });
-
-        // Also listen for form changes that switch views
-        const filterForm = document.getElementById('filter-form');
-        if(filterForm) {
-            const viewRadios = filterForm.querySelectorAll('input[name="view"]');
-            viewRadios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    // Reset on view change
-                    if(selectAllCheckbox) selectAllCheckbox.checked = false;
-                    updateActionBar();
-                });
-            });
+    // Use event delegation on the container
+    container.addEventListener('change', function(event) {
+        if (event.target.classList.contains(checkboxClass)) {
+            updateSelection();
         }
-
-        // Initial state setup
-        updateActionBar();
     });
+
+    selectAllCheckbox.addEventListener('change', () => {
+        const checkboxes = getCheckboxes();
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        updateSelection();
+    });
+
+    // Initial state check on page load
+    updateSelection();
+});
 </script>
 @endpush
 @endsection

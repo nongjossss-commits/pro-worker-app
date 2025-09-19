@@ -8,9 +8,9 @@
             <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="employee_checkbox_{{ $employee->id }}">
         </div>
 
-        {{-- Employee Photo --}}
+        {{-- Employee Photo (with inline style for guaranteed fix) --}}
         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-             alt="Photo" class="employee-photo-thumb">
+             alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
 
         {{-- Employee Details --}}
         <div class="flex-grow-1">
