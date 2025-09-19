@@ -51,6 +51,10 @@ class CheckExpiries extends Command
 
                 // --- NEW LOGIC: Determine notification type based on workPermitMOUGroup ---
                 if ($notificationType === 'work_permit_expiry') {
+                    $employeeGroup = $employee->workPermitMOUGroup;
+                    // --- ADD THIS LOGGING LINE ---
+                    $this->info("  -> Processing Employee ID: {$employee->id}, workPermitMOUGroup: '{$employeeGroup}'");
+
                     if ($employee->workPermitMOUGroup === 'MOU') {
                         $currentNotificationType = 'work_permit_mou';
                     } elseif ($employee->workPermitMOUGroup === 'มติต่ออายุในประเทศ') {

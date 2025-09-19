@@ -59,7 +59,7 @@
             <button type="submit" class="btn btn-danger" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
         </form>
     @else
-        <a href="#" class="btn btn-success" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
+        <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
         <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
         <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ดูข้อมูล"><i class="bi bi-search"></i></a>
         <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
