@@ -18,14 +18,14 @@ class NotificationController extends Controller
         $perPageOptions = ($currentView === 'card') ? [10, 15, 20] : [25, 50, 100];
         $perPage = $request->input('per_page', $perPageOptions[0]);
 
-        // --- UPDATED TABS ---
         $tabs = [
             'ninety_day_report' => 'รายงานตัว 90 วัน',
             'passport_expiry' => 'Passport',
-            'work_permit_mou' => 'ใบอนุญาตทำงาน (MOU)', // Changed name and key
+            'work_permit_mou' => 'ใบอนุญาตทำงาน (MOU)',
             'visa_expiry' => 'วีซ่า',
             'ci_renewal' => 'ต่ออายุ CI',
-            'resolution_renewal' => 'ต่ออายุมติ', // This now has its own dedicated logic
+            'resolution_renewal' => 'ต่ออายุมติ',
+            'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่', // New Tab
         ];
 
         $notificationsData = [];

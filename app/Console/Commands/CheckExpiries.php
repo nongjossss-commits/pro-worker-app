@@ -52,11 +52,12 @@ class CheckExpiries extends Command
                 // --- NEW LOGIC: Determine notification type based on workPermitMOUGroup ---
                 if ($notificationType === 'work_permit_expiry') {
                     if ($employee->workPermitMOUGroup === 'MOU') {
-                        $currentNotificationType = 'work_permit_mou'; // New specific type for MOU
-                    } elseif (in_array($employee->workPermitMOUGroup, ['มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน'])) {
+                        $currentNotificationType = 'work_permit_mou';
+                    } elseif ($employee->workPermitMOUGroup === 'มติต่ออายุในประเทศ') {
                         $currentNotificationType = 'resolution_renewal';
+                    } elseif ($employee->workPermitMOUGroup === 'มติขึ้นทะเบียน') {
+                        $currentNotificationType = 'new_registration_renewal'; // New, specific type
                     }
-                    // If it's another type, it will just remain 'work_permit_expiry' and won't show in new tabs
                 }
 
                 if ($notificationType === 'passport_expiry' && $employee->passportType === 'CI') {
