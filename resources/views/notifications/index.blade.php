@@ -59,7 +59,7 @@
         @foreach($tabs as $type => $title)
             <li class="nav-item" role="presentation">
                 <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
-                    {{ $title }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type] ?? 0 }}</span>
+                    {{ $title }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type]['total'] ?? 0 }}</span>
                 </button>
             </li>
         @endforeach
@@ -73,6 +73,15 @@
     <div class="tab-content pt-4" id="notificationTabContent">
         @foreach($notificationsData as $type => $notifications)
             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $type }}-pane" role="tabpanel">
+
+                {{-- NEW: Gender Count Display --}}
+                @if(isset($counts[$type]['total']))
+                <div class="mb-3 text-muted">
+                    <strong>ยอดรวม:</strong> {{ $counts[$type]['total'] }} คน
+                    (ชาย: {{ $counts[$type]['male'] }} คน, หญิง: {{ $counts[$type]['female'] }} คน)
+                </div>
+                @endif
+                {{-- END: Gender Count Display --}}
 
                 @if($type === 'work_permit_mou')
                     @if($currentView == 'table')

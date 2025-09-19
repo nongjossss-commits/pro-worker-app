@@ -25,7 +25,7 @@ class NotificationController extends Controller
             'visa_expiry' => 'วีซ่า',
             'ci_renewal' => 'ต่ออายุ CI',
             'resolution_renewal' => 'ต่ออายุมติ',
-            'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่', // New Tab
+            'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
         ];
 
         $notificationsData = [];
@@ -33,8 +33,20 @@ class NotificationController extends Controller
 
         foreach ($tabs as $type => $title) {
             $query = $this->getFilteredQuery($request, $type);
-            $counts[$type] = (clone $query)->count();
-            // For the special tab, we don't paginate here. We pass the whole collection.
+
+            // --- NEW: Gender Counting Logic ---
+            $employeeIds = (clone $query)->pluck('employee_id');
+            $male_count = Employee::whereIn('id', $employeeIds)->whereIn('employeeTitleTh', ['นาย'])->count();
+            $female_count = Employee::whereIn('id', $employeeIds)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+            $total_count = $employeeIds->count();
+
+            $counts[$type] = [
+                'total' => $total_count,
+                'male' => $male_count,
+                'female' => $female_count,
+            ];
+            // --- END: Gender Counting Logic ---
+
             if ($type === 'work_permit_mou') {
                 $notificationsData[$type] = $query->get();
             } else {
@@ -51,7 +63,7 @@ class NotificationController extends Controller
 
     private function getFilteredQuery(Request $request, string $type)
     {
-        $query = \App\Models\Notification::with('employee.employer');
+        $query = Notification::with('employee.employer');
 
         if ($type === 'cancelled') {
             $query->where('status', 'cancelled')->latest('updated_at');
@@ -59,13 +71,20 @@ class NotificationController extends Controller
             $query->where('status', '!=', 'cancelled')->where('type', $type)->latest('due_date');
         }
 
+        // --- NEW: Enhanced Search Logic ---
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('employee', function ($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%");
+            $query->whereHas('employee', function ($q_employee) use ($search) {
+                $q_employee->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function ($q_employer) use ($search) {
+                      $q_employer->where('employerNameTh', 'like', "%{$search}%");
+                  });
             });
         }
+        // --- END: Enhanced Search Logic ---
+
         if ($request->filled('nationality')) {
             $query->whereHas('employee', function ($q) use ($request) {
                 $q->where('employeeNationality', $request->input('nationality'));
