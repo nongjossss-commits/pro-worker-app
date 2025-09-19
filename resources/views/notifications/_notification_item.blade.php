@@ -31,7 +31,7 @@
         <div class="d-flex justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
                 <h5 class="alert-heading mb-1">
-                    {{ $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1)) }}. {{ $notification->employee->employeeNameEn ?? 'N/A' }}
+                    {{ $itemNumber }}. {{ $notification->employee->employeeNameEn ?? 'N/A' }}
                     @if($flagCode)
                         <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" title="{{ $nationality }}">
                     @endif
