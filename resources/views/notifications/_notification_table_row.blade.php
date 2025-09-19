@@ -12,7 +12,7 @@
 @endphp
 
 <tr>
-    <td>{{ $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1)) }}</td>
+    <td>{{ $itemNumber }}</td>
     <td>
         <div>{{ $notification->employee->employeeNameEn ?? 'N/A' }}</div>
         <div class="small text-muted">{{ $notification->employee->employeeNameTh ?? 'N/A' }}</div>

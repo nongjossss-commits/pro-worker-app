@@ -82,7 +82,10 @@
                                 </thead>
                                 <tbody>
                                     @forelse($notifications as $notification)
-                                        @include('notifications._notification_table_row', ['notification' => $notification, 'loop' => $loop, 'notifications' => $notifications])
+                                        @php
+                                            $itemNumber = $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1));
+                                        @endphp
+                                        @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $itemNumber])
                                     @empty
                                         <tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูล</td></tr>
                                     @endforelse
@@ -91,13 +94,19 @@
                         </div>
                     @else {{-- Card View --}}
                         @forelse($notifications as $notification)
-                            @include('notifications._notification_item', ['notification' => $notification, 'loop' => $loop])
+                            @php
+                                $itemNumber = $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1));
+                            @endphp
+                            @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $itemNumber])
                         @empty
                             <p class="text-center text-muted">ไม่พบข้อมูล</p>
                         @endforelse
                     @endif
+
                     <div class="mt-4">
-                        {{ $notifications->links() }}
+                        @if($notifications->hasPages())
+                            {{ $notifications->links() }}
+                        @endif
                     </div>
                 @endif
             </div>
