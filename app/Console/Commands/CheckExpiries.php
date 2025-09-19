@@ -30,30 +30,27 @@ class CheckExpiries extends Command
         foreach ($documentChecks as $dateField => $notificationType) {
             $this->info("Checking: {$notificationType}...");
 
-            $pastThreshold = $today->copy()->subDays(365); // Check for items expired up to a year ago
-            $futureThreshold = $today->copy()->addDays(45); // Check for items expiring in the next 45 days
+            $pastThreshold = $today->copy()->subDays(365);
+            $futureThreshold = $today->copy()->addDays(45);
 
-            // --- FIX: This query now uses the correct camelCase column name ---
             $employees = Employee::whereNotNull($dateField)
                 ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
                 ->get();
 
+            $this->info("Found {$employees->count()} employees for notification type [{$notificationType}].");
+
             foreach ($employees as $employee) {
-                if ($employee->is_cancelled ?? false) { // Use null coalescing for safety
+                if ($employee->is_cancelled ?? false) {
                     continue;
                 }
 
-                // Ensure we have a Carbon instance for calculation
                 $expiryDate = Carbon::parse($employee->{$dateField});
                 $daysRemaining = $today->diffInDays($expiryDate, false);
-                $currentNotificationType = $notificationType;
 
-                if ($notificationType === 'work_permit_expiry' && in_array($employee->workPermitMOUGroup, ['มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน'])) {
-                    $currentNotificationType = 'resolution_renewal';
-                }
-                if ($notificationType === 'passport_expiry' && $employee->passportType === 'CI') {
-                    $currentNotificationType = 'ci_renewal';
-                }
+                // --- SIMPLIFIED LOGIC: No longer re-routing notifications ---
+                // All passport expiries will create a 'passport_expiry' notification.
+                // All work permit expiries will create a 'work_permit_expiry' notification.
+                $currentNotificationType = $notificationType;
 
                 Notification::updateOrCreate(
                     [

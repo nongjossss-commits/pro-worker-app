@@ -85,7 +85,7 @@ class EmployeeController extends Controller
 
     public function update(Request $request, Employee $employee)
     {
-        $validated = $request->validate([
+        $request->validate([
             'employeeNameTh' => 'required|string|max:255',
             'employeeNameEn' => 'nullable|string|max:255',
             'employeePassport' => ['required', 'string', 'max:255', Rule::unique('employees')->ignore($employee->id)],
@@ -120,15 +120,27 @@ class EmployeeController extends Controller
             'document_4' => 'nullable|file|max:5120',
             'document_5' => 'nullable|file|max:5120',
             'document_6' => 'nullable|file|max:5120',
+            'document_7' => 'nullable|file|max:5120',
+            'document_8' => 'nullable|file|max:5120',
+            'document_description_3' => 'nullable|string|max:255',
+            'document_description_4' => 'nullable|string|max:255',
+            'document_description_5' => 'nullable|string|max:255',
         ]);
 
-        // --- DEFINITIVE FIX FOR SAVING DATA ---
-        // 1. Fill the model with all data from the request, excluding files.
-        $employee->fill($request->except(['employeePhoto', 'document_1', 'document_2', 'document_3', 'document_4', 'document_5', 'document_6']));
+        $employee->fill($request->except(['_token', '_method']));
 
-        // 2. Handle all file uploads.
-        $fileFields = ['employeePhoto', 'document_1', 'document_2', 'document_3', 'document_4', 'document_5', 'document_6'];
+        $fileFields = ['employeePhoto', 'document_1', 'document_2', 'document_3', 'document_4', 'document_5', 'document_6', 'document_7', 'document_8'];
         foreach ($fileFields as $field) {
+            $remove_field = 'remove_' . $field;
+            // --- FIX: Logic to handle file DELETION ---
+            if ($request->has($remove_field)) {
+                if ($employee->{$field}) {
+                    Storage::disk('public')->delete($employee->{$field});
+                }
+                $employee->{$field} = null;
+            }
+
+            // --- Logic to handle file UPLOAD ---
             if ($request->hasFile($field)) {
                 if ($employee->{$field}) {
                     Storage::disk('public')->delete($employee->{$field});
@@ -138,7 +150,6 @@ class EmployeeController extends Controller
             }
         }
 
-        // 3. Save all changes to the database.
         $employee->save();
 
         $employer = $employee->employer;
