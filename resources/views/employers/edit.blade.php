@@ -276,16 +276,20 @@
 
 <div id="employeeList">
     @if($currentView === 'card')
+        <div class="list-group">
         @forelse($employees as $employee)
-            @include('employers._employee_card', ['employee' => $employee])
+            {{-- DEFINITIVE FIX: Use the single, unified partial --}}
+            @include('partials._employee_card', ['employee' => $employee])
         @empty
             <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</p>
         @endforelse
+        </div>
     @else
         <div class="table-responsive">
             <table class="table table-hover table-sm align-middle">
                 <thead>
                     <tr>
+                        <th style="width: 1rem;"><!-- Checkbox --></th>
                         <th style="width: 5%;">#</th>
                         <th style="width: 10%;">Photo</th>
                         <th style="width: 25%;">Name (EN)</th>
@@ -298,6 +302,8 @@
                 <tbody>
                     @forelse($employees as $employee)
                         <tr id="employee-row-{{ $employee->id }}">
+                            {{-- DEFINITIVE FIX: Add checkbox for bulk actions --}}
+                            <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
                             <td>{{ $employees->firstItem() + $loop->index }}</td>
                             <td>
                                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" class="employee-photo-thumb" alt="Photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">
@@ -322,14 +328,15 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                                    <button type="button" class="btn btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                                     <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
+                                     <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง"><i class="bi bi-geo-alt-fill"></i></a>
+                                     <button type="button" class="btn btn-outline-danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-3">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</td>
+                            <td colspan="8" class="text-center text-muted py-3">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</td>
                         </tr>
                     @endforelse
                 </tbody>
