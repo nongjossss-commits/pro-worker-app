@@ -223,6 +223,17 @@
     <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
 </div>
 
+{{-- NEW: Bulk Action Bar for Employer's Employee List --}}
+<div id="bulk-action-bar-employer" class="alert alert-info d-flex justify-content-between align-items-center my-3" style="display: none !important;">
+    <div>
+        <input class="form-check-input" type="checkbox" id="select-all-checkbox-employer">
+        <label class="form-check-label ms-2" for="select-all-checkbox-employer">
+            เลือกทั้งหมด (<span id="selected-count-employer">0</span>)
+        </label>
+    </div>
+    <button class="btn btn-primary btn-sm" disabled>ดำเนินการกับรายการที่เลือก</button>
+</div>
+
 <div class="card mb-4">
     <div class="card-body">
         <form action="{{ route('employers.edit', $employer->id) }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
@@ -1109,5 +1120,49 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('employeeList'); // The container for employee cards
+        const actionBar = document.getElementById('bulk-action-bar-employer');
+        if (!container || !actionBar) return;
+
+        const selectAllCheckbox = document.getElementById('select-all-checkbox-employer');
+        const selectedCountSpan = document.getElementById('selected-count-employer');
+        const actionButton = actionBar.querySelector('button');
+        const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
+
+        function updateActionBar() {
+            const selectedCheckboxes = container.querySelectorAll('.bulk-action-checkbox:checked');
+            const count = selectedCheckboxes.length;
+
+            if (count > 0) {
+                actionBar.style.display = 'flex !important';
+                selectedCountSpan.textContent = count;
+                actionButton.disabled = false;
+            } else {
+                actionBar.style.display = 'none !important';
+                selectedCountSpan.textContent = 0;
+                actionButton.disabled = true;
+            }
+            selectAllCheckbox.checked = count > 0 && count === itemCheckboxes.length;
+        }
+
+        container.addEventListener('change', function(e) {
+            if (e.target.classList.contains('bulk-action-checkbox')) {
+                updateActionBar();
+            }
+        });
+
+        selectAllCheckbox.addEventListener('change', function() {
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateActionBar();
+        });
+
+        // Initial check in case some items are pre-selected
+        updateActionBar();
+    });
 </script>
 @endpush

@@ -1,20 +1,24 @@
-<div class="list-group-item list-group-item-action">
+<div id="employee-card-{{ $employee->id }}" class="list-group-item list-group-item-action">
     <div class="d-flex align-items-center">
-        {{-- Checkbox --}}
+        {{-- Checkbox for Bulk Actions --}}
         <div class="me-3">
             <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="employee_checkbox_{{ $employee->id }}">
         </div>
 
-        {{-- FIX: Correct structure for the employee info section --}}
+        {{-- FINAL FIX: Apply inline styles to guarantee the size --}}
         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-             class="employee-photo-thumb" alt="Photo">
+             alt="Photo"
+             style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
 
         <div class="flex-grow-1">
             <div class="d-flex w-100 justify-content-between">
                 <h5 class="mb-1">
                     {{ $employee->employeeNameEn ?? 'N/A' }}
                     @if($employee->employeeNationality)
-                        <img src="https://flagcdn.com/w20/{{ strtolower(substr($employee->employeeNationality, 0, 2)) }}.png" alt="">
+                        @php $flagCode = \App\Helpers\CountryHelper::getFlagCode($employee->employeeNationality); @endphp
+                        @if($flagCode)
+                            <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $employee->employeeNationality }}">
+                        @endif
                     @endif
                 </h5>
                 <small class="text-muted">{{ $employee->employer->employerNameTh ?? 'N/A' }}</small>
@@ -22,7 +26,6 @@
             <p class="mb-1">{{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->employeePosition ?? 'N/A' }})</p>
             <small class="text-muted">Passport: {{ $employee->employeePassport ?? '-' }} | Work Permit: {{ $employee->employeeWorkPermit ?? '-' }}</small>
         </div>
-        {{-- END OF FIX --}}
 
         <div class="ms-auto ps-3">
              <div class="btn-group-vertical btn-group-sm">
