@@ -143,63 +143,72 @@ public function index(Request $request)
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Employee $employee)
-    {
-        // Validation logic... (Ensure unique rule ignores the current employee)
-        $validated = $request->validate([
-            'employeeNameTh' => 'required|string|max:255',
-            'employeeNameEn' => 'nullable|string|max:255',
-            'employeeTitleTh' => 'nullable|string|max:255',
-            'employeeTitleEn' => 'nullable|string|max:255',
-            'employeeDob' => 'nullable|date',
-            'employeeNationality' => 'nullable|string|max:255',
-            'employeePassport' => 'required|string|max:255|unique:employees,employeePassport,' . $employee->id,
-            'passportType' => 'nullable|string|max:255',
-            'passportExpiryDate' => 'nullable|date',
-            'namelistNo' => 'nullable|string|max:255',
-            'requestNo' => 'nullable|string|max:255',
-            'workerRefNo' => 'nullable|string|max:255',
-            'personalId' => 'nullable|string|max:255',
-            'companyWorkerId' => 'nullable|string|max:255',
-            'pinkCardNo' => 'nullable|string|max:255',
-            'socialSecurityNo' => 'nullable|string|max:255',
-            'taxIdNo' => 'nullable|string|max:255',
-            'designatedHospital' => 'nullable|string|max:255',
-            'employeeWorkPermit' => 'nullable|string|max:255',
-            'workPermitExpiryDate' => 'nullable|date',
-            'workPermitMOUGroup' => 'nullable|string|max:255',
-            'workPermitMOUGroupOther' => 'nullable|string|max:255',
-            'visaExpiryDate' => 'nullable|date',
-            'ninetyDayReportDate' => 'nullable|date',
-            'startDate' => 'nullable|date',
-            'employeePhone' => 'nullable|string|max:255',
-            'employeePosition' => 'nullable|string|max:255',
-            'employeePhoto' => 'nullable|image|max:2048',
-            // Add validation for other document fields if necessary
-        ]);
+public function update(Request $request, Employee $employee)
+{
+    // Validation logic... (Ensure unique rule ignores the current employee)
+    $validated = $request->validate([
+        'employeeNameTh' => 'required|string|max:255',
+        'employeeNameEn' => 'nullable|string|max:255',
+        'employeeTitleTh' => 'nullable|string|max:255',
+        'employeeTitleEn' => 'nullable|string|max:255',
+        'employeeDob' => 'nullable|date',
+        'employeeNationality' => 'nullable|string|max:255',
+        'employeePassport' => 'required|string|max:255|unique:employees,employeePassport,' . $employee->id,
+        'passportType' => 'nullable|string|max:255',
+        'passportExpiryDate' => 'nullable|date', // Keep validation
+        'namelistNo' => 'nullable|string|max:255',
+        'requestNo' => 'nullable|string|max:255',
+        'workerRefNo' => 'nullable|string|max:255',
+        'personalId' => 'nullable|string|max:255',
+        'companyWorkerId' => 'nullable|string|max:255',
+        'pinkCardNo' => 'nullable|string|max:255',
+        'socialSecurityNo' => 'nullable|string|max:255',
+        'taxIdNo' => 'nullable|string|max:255',
+        'designatedHospital' => 'nullable|string|max:255',
+        'employeeWorkPermit' => 'nullable|string|max:255',
+        'workPermitExpiryDate' => 'nullable|date', // Keep validation
+        'workPermitMOUGroup' => 'nullable|string|max:255',
+        'workPermitMOUGroupOther' => 'nullable|string|max:255',
+        'visaExpiryDate' => 'nullable|date', // Keep validation
+        'ninetyDayReportDate' => 'nullable|date', // Keep validation
+        'startDate' => 'nullable|date',
+        'employeePhone' => 'nullable|string|max:255',
+        'employeePosition' => 'nullable|string|max:255',
+        'employeePhoto' => 'nullable|image|max:2048',
+    ]);
 
-        $data = $validated;
+    // --- FIX: Start of the correction ---
+    // We update the employee model with all validated data first.
+    $employee->fill($validated);
 
-        if ($request->hasFile('employeePhoto')) {
-            // Delete old photo if it exists
-            if ($employee->employeePhoto) {
-                Storage::disk('public')->delete($employee->employeePhoto);
-            }
-            // Store new photo
-            $path = $request->file('employeePhoto')->store('employee_photos', 'public');
-            $data['employeePhoto'] = $path;
+    // Explicitly set the date fields. This ensures that if the user clears a date,
+    // it will be saved as NULL in the database.
+    $employee->passportExpiryDate = $request->input('passportExpiryDate');
+    $employee->workPermitExpiryDate = $request->input('workPermitExpiryDate');
+    $employee->visaExpiryDate = $request->input('visaExpiryDate');
+    $employee->ninetyDayReportDate = $request->input('ninetyDayReportDate');
+    $employee->employeeDob = $request->input('employeeDob');
+    $employee->startDate = $request->input('startDate');
+    // --- End of the correction ---
+
+    if ($request->hasFile('employeePhoto')) {
+        if ($employee->employeePhoto) {
+            Storage::disk('public')->delete($employee->employeePhoto);
         }
-
-        // The update method is now simpler
-        $employee->update($data);
-
-        // Retrieve the employer FROM the employee relationship
-        $employer = $employee->employer;
-
-        // Redirect correctly
-        return redirect()->route('employers.edit', $employer)
-            ->with('success', 'อัปเดตข้อมูลพนักงานเรียบร้อยแล้ว');
+        $path = $request->file('employeePhoto')->store('employee_photos', 'public');
+        $employee->employeePhoto = $path;
     }
+
+    // Save all the changes to the database.
+    $employee->save();
+
+    // Retrieve the employer FROM the employee relationship
+    $employer = $employee->employer;
+
+    // Redirect correctly
+    return redirect()->route('employers.edit', $employer)
+        ->with('success', 'อัปเดตข้อมูลพนักงานเรียบร้อยแล้ว');
+}
 
     /**
      * Remove the specified resource from storage.

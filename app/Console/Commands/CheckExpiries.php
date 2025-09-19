@@ -31,7 +31,7 @@ class CheckExpiries extends Command
             $this->info("Checking: {$notificationType}...");
 
             $pastThreshold = $today->copy()->subDays(365); // Check for items expired up to a year ago
-            $futureThreshold = $today->copy()->addDays(90); // Check for items expiring in the next 90 days
+            $futureThreshold = $today->copy()->addDays(45); // Check for items expiring in the next 90 days
 
             // --- FIX: This query now uses the correct camelCase column name ---
             $employees = Employee::whereNotNull($dateField)
