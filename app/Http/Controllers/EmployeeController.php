@@ -10,56 +10,85 @@ use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
-        // ... (The index method remains unchanged)
+        $cardPerPageOptions = [10, 15, 20];
+        $tablePerPageOptions = [25, 50, 100];
+        $currentView = $request->input('view', 'card');
+        $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
+        $currentPerPage = $request->input('per_page', $defaultPerPage);
+        $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions[0];
+
+        $query = Employee::query();
+
+        $totalEmployees = $query->count();
+        $maleCount = (clone $query)->whereIn('employeeTitleTh', ['นาย'])->count();
+        $femaleCount = (clone $query)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+
+        $query->with('employer')->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function($q_employer) use ($search) {
+                      $q_employer->where('employerNameTh', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $employees = $query->paginate($currentPerPage)->withQueryString();
+
+        return view('employees.index', compact(
+            'employees', 'currentView', 'currentPerPage', 'perPageOptions',
+            'totalEmployees', 'maleCount', 'femaleCount'
+        ));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create(Request $request)
     {
-        // ... (The create method remains unchanged)
+        $employer_id = $request->query('employer_id');
+        $employer = Employer::findOrFail($employer_id);
+        return view('employees.create', compact('employer'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        // ... (The store method remains unchanged)
+        $validated = $request->validate([
+            'employer_id' => 'required|exists:employers,id',
+            'employeeNameTh' => 'required|string|max:255',
+            'employeePassport' => 'required|string|max:255|unique:employees,employeePassport',
+            'employeePhoto' => 'nullable|image|max:2048',
+            // Add other fields as needed
+        ]);
+
+        $employer = Employer::findOrFail($validated['employer_id']);
+        $data = $request->all();
+
+        if ($request->hasFile('employeePhoto')) {
+            $path = $request->file('employeePhoto')->store('employee_photos', 'public');
+            $data['employeePhoto'] = $path;
+        }
+
+        $employer->employees()->create($data);
+
+        return redirect()->route('employers.edit', $employer)
+            ->with('success', 'เพิ่มข้อมูลพนักงานเรียบร้อยแล้ว');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Employee $employee)
-    {
-        // Not used for now
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Employer $employer, Employee $employee)
     {
         return view('employees.edit', compact('employer', 'employee'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Employee $employee)
     {
         $validated = $request->validate([
             'employeeNameTh' => 'required|string|max:255',
             'employeeNameEn' => 'nullable|string|max:255',
             'employeePassport' => ['required', 'string', 'max:255', Rule::unique('employees')->ignore($employee->id)],
-            // Add all other fields to be validated
             'employeeTitleTh' => 'nullable|string',
             'employeeTitleEn' => 'nullable|string',
             'employeeDob' => 'nullable|date',
@@ -85,7 +114,6 @@ class EmployeeController extends Controller
             'employeePhone' => 'nullable|string',
             'employeePosition' => 'nullable|string',
             'employeePhoto' => 'nullable|image|max:2048',
-            // --- FIX: Added validation for document files ---
             'document_1' => 'nullable|file|max:5120',
             'document_2' => 'nullable|file|max:5120',
             'document_3' => 'nullable|file|max:5120',
@@ -94,23 +122,23 @@ class EmployeeController extends Controller
             'document_6' => 'nullable|file|max:5120',
         ]);
 
-        // --- FIX: Update the employee model with all validated data ---
-        $employee->update($validated);
+        // --- DEFINITIVE FIX FOR SAVING DATA ---
+        // 1. Fill the model with all data from the request, excluding files.
+        $employee->fill($request->except(['employeePhoto', 'document_1', 'document_2', 'document_3', 'document_4', 'document_5', 'document_6']));
 
-        // --- FIX: Handle file uploads for all documents ---
+        // 2. Handle all file uploads.
         $fileFields = ['employeePhoto', 'document_1', 'document_2', 'document_3', 'document_4', 'document_5', 'document_6'];
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
-                // Delete old file if it exists
                 if ($employee->{$field}) {
                     Storage::disk('public')->delete($employee->{$field});
                 }
-                // Store new file
                 $path = $request->file($field)->store($field . '_files', 'public');
                 $employee->{$field} = $path;
             }
         }
 
+        // 3. Save all changes to the database.
         $employee->save();
 
         $employer = $employee->employer;
@@ -119,16 +147,32 @@ class EmployeeController extends Controller
             ->with('success', 'อัปเดตข้อมูลพนักงานเรียบร้อยแล้ว');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Employer $employer, Employee $employee)
     {
-        // ... (The destroy method remains unchanged)
+        if ($employee->employeePhoto) {
+            Storage::disk('public')->delete($employee->employeePhoto);
+        }
+
+        for ($i = 1; $i <= 6; $i++) {
+            $field = 'document_' . $i;
+            if ($employee->{$field}) {
+                Storage::disk('public')->delete($employee->{$field});
+            }
+        }
+
+        $employee->delete();
+
+        return redirect()->route('employers.edit', $employer)
+            ->with('success', 'ลบข้อมูลพนักงานเรียบร้อยแล้ว');
     }
 
     public function locate(Employee $employee)
     {
-        // ... (The locate method remains unchanged)
+        $employer = $employee->employer;
+        if (!$employer) {
+            return redirect()->route('employees.index')->with('error', 'ไม่พบข้อมูลนายจ้างของลูกจ้างคนนี้');
+        }
+        $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
+        return redirect($url);
     }
 }
