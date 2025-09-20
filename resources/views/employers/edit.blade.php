@@ -43,7 +43,7 @@
 </div>
 
 {{-- Bulk Action Bar --}}
-<div id="bulk-action-bar-employer" class="alert alert-info d-flex justify-content-between align-items-center my-3" style="display: none !important;">
+<div id="bulk-action-bar-employer" class="alert alert-info d-flex justify-content-between align-items-center my-3" style="display: none;">
     <div>
         <input class="form-check-input" type="checkbox" id="select-all-checkbox-employer">
         <label class="form-check-label ms-2" for="select-all-checkbox-employer">
@@ -102,11 +102,11 @@
             const count = selectedCheckboxes.length;
 
             if (count > 0) {
-                actionBar.style.display = 'flex !important';
+                actionBar.style.display = 'flex';
                 selectedCountSpan.textContent = count;
                 actionButton.disabled = false;
             } else {
-                actionBar.style.display = 'none !important';
+                actionBar.style.display = 'none';
                 selectedCountSpan.textContent = 0;
                 actionButton.disabled = true;
             }

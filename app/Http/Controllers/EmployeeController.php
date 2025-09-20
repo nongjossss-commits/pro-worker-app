@@ -39,6 +39,14 @@ class EmployeeController extends Controller
             });
         }
 
+        if ($request->filled('nationality')) {
+            $query->where('employeeNationality', $request->input('nationality'));
+        }
+
+        if ($request->filled('mou_type')) {
+            $query->where('workPermitMOUGroup', $request->input('mou_type'));
+        }
+
         $employees = $query->paginate($currentPerPage)->withQueryString();
 
         return view('employees.index', compact(
