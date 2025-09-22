@@ -9,21 +9,19 @@
         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
              alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
         <div class="flex-grow-1">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">
-                    {{-- FIX: Added Name Prefix --}}
-                    {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
-                    @if($employee->employeeNationality)
-                        @php $flagCode = \App\Helpers\CountryHelper::getFlagCode($employee->employeeNationality); @endphp
-                        @if($flagCode)
-                            <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $employee->employeeNationality }}" title="{{ $employee->employeeNationality }}">
-                        @endif
+            <h5 class="mb-1">
+                {{-- FIX: Added Name Prefix --}}
+                {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
+                @if($employee->employeeNationality)
+                    @php $flagCode = \App\Helpers\CountryHelper::getFlagCode($employee->employeeNationality); @endphp
+                    @if($flagCode)
+                        <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $employee->employeeNationality }}" title="{{ $employee->employeeNationality }}">
                     @endif
-                </h5>
-                <small class="text-muted" title="นายจ้าง">{{ $employerName }}</small>
-            </div>
+                @endif
+            </h5>
             {{-- FIX: Added Name Prefix --}}
             <p class="mb-1">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->employeePosition ?? 'N/A' }})</p>
+            <small class="text-muted d-block" title="นายจ้าง">นายจ้าง: {{ $employerName }}</small>
             <small class="text-muted d-block">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : '-' }})</small>
             <small class="text-muted d-block">Work Permit: {{ $employee->employeeWorkPermit ?? '-' }} (หมดอายุ: {{ $employee->workPermitExpiryDate ? $employee->workPermitExpiryDate->format('d/m/Y') : '-' }})</small>
             <small class="text-muted d-block">Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}</small>
