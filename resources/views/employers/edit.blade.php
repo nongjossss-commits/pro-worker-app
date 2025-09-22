@@ -221,7 +221,7 @@
     @endphp
     <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
     <div class="d-flex gap-2">
-        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id, 'search_employee' => request('search_employee'), 'nationality' => request('nationality'), 'mou_type' => request('mou_type')]) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
+        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->only(['search_employee', 'nationality', 'mou_type', 'pink_card'])) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
         <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
     </div>
 </div>
@@ -258,7 +258,14 @@
                 <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
             </select>
 
+            <select name="pink_card" class="form-select form-select-sm" style="width: 150px;">
+                <option value="">-- บัตรชมพู --</option>
+                <option value="has_card" @selected(request('pink_card') == 'has_card')>มีบัตรชมพู</option>
+                <option value="no_card" @selected(request('pink_card') == 'no_card')>ไม่มีบัตรชมพู</option>
+            </select>
+
             <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
+            <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-secondary btn-sm">ล้างการกรอง</a>
 
             <div class="btn-group btn-group-sm ms-md-auto">
                 <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked($currentView === 'card')>

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Employer;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeController extends Controller
 {
@@ -27,6 +29,60 @@ class EmployeeController extends Controller
 
         $query->with('employer')->latest();
 
+        $this->applyFilters($request, $query);
+
+        $employees = $query->paginate($currentPerPage)->withQueryString();
+
+        return view('employees.index', compact(
+            'employees', 'currentView', 'currentPerPage', 'perPageOptions',
+            'totalEmployees', 'maleCount', 'femaleCount'
+        ));
+    }
+
+    public function export(Request $request)
+    {
+        $query = Employee::query()->with('employer')->latest();
+
+        $this->applyFilters($request, $query);
+
+        $employees = $query->get();
+        $fileName = "employees_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=\"$fileName\"",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['#', 'ชื่อ (TH)', 'ชื่อ (EN)', 'Passport', 'Work Permit', 'นายจ้าง', 'สัญชาติ', 'ประเภท MOU'];
+
+        $callback = function() use($employees, $columns) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, $columns);
+
+            foreach ($employees as $index => $employee) {
+                $row = [
+                    $index + 1,
+                    $employee->employeeNameTh,
+                    $employee->employeeNameEn,
+                    $employee->employeePassport,
+                    $employee->employeeWorkPermit,
+                    $employee->employer->employerNameTh ?? 'N/A',
+                    $employee->employeeNationality,
+                    $employee->workPermitMOUGroup,
+                ];
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    private function applyFilters(Request $request, Builder $query)
+    {
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
@@ -47,12 +103,11 @@ class EmployeeController extends Controller
             $query->where('workPermitMOUGroup', $request->input('mou_type'));
         }
 
-        $employees = $query->paginate($currentPerPage)->withQueryString();
-
-        return view('employees.index', compact(
-            'employees', 'currentView', 'currentPerPage', 'perPageOptions',
-            'totalEmployees', 'maleCount', 'femaleCount'
-        ));
+        $query->when($request->input('pink_card') === 'has_card', function ($q) {
+            return $q->whereNotNull('pinkCardNo');
+        })->when($request->input('pink_card') === 'no_card', function ($q) {
+            return $q->whereNull('pinkCardNo');
+        });
     }
 
     public function create(Request $request)

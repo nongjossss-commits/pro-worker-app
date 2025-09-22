@@ -157,42 +157,41 @@ class NotificationController extends Controller
         return redirect()->route('notifications.index')->with('success', 'ยกเลิกการแจ้งเตือนเรียบร้อยแล้ว');
     }
 
-    /**
-     * Handle the export of notifications to CSV.
-     */
     public function export(Request $request)
     {
-        $exportType = $request->input('export_type', '90day');
+        $activeTab = $request->input('active_tab', 'ninety_day_report');
+        $query = $this->getFilteredQuery($request, $activeTab);
+        $notifications = $query->get(); // Get all matching records, not paginated
 
-        $query = $this->getFilteredNotificationsQuery($request, $exportType, $request->input('tab'));
-
-        $notifications = $query->get();
-
-        $fileName = "notifications_{$exportType}_" . date('Y-m-d') . ".csv";
+        $fileName = "notifications_{$activeTab}_" . date('Y-m-d') . ".csv";
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
+            "Content-Disposition" => "attachment; filename=\"$fileName\"",
             "Pragma"              => "no-cache",
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
             "Expires"             => "0"
         ];
 
-        $columns = ['ID', 'รหัสพนักงาน', 'ชื่อพนักงาน', 'นายจ้าง', 'ประเภทการแจ้งเตือน', 'วันที่ครบกำหนด', 'สถานะ'];
+        $columns = ['#', 'ชื่อลูกจ้าง (TH)', 'ชื่อลูกจ้าง (EN)', 'Passport', 'สัญชาติ', 'นายจ้าง', 'วันที่ครบกำหนด', 'ประเภท'];
 
         $callback = function() use($notifications, $columns) {
             $file = fopen('php://output', 'w');
-            fputs($file, $bom =( chr(0xEF) . chr(0xBB) . chr(0xBF) ));
+            fputs($file, "\xEF\xBB\xBF"); // Add BOM for UTF-8
             fputcsv($file, $columns);
 
-            foreach ($notifications as $notification) {
+            foreach ($notifications as $index => $notification) {
+                $employee = $notification->employee;
+                if (!$employee) continue; // Skip if no employee data
+
                 $row = [
-                    $notification->id,
-                    $notification->employee->companyWorkerId ?? 'N/A',
-                    ($notification->employee->employeeNameTh ?? 'N/A') . ' / ' . ($notification->employee->employeeNameEn ?? 'N/A'),
-                    $notification->employee->employer->employerNameTh ?? 'N/A',
+                    $index + 1,
+                    $employee->employeeNameTh,
+                    $employee->employeeNameEn,
+                    $employee->employeePassport,
+                    $employee->employeeNationality,
+                    $employee->employer->employerNameTh ?? 'N/A',
+                    $notification->due_date ? Carbon::parse($notification->due_date)->format('d/m/Y') : '-',
                     $notification->type,
-                    $notification->due_date,
-                    $notification->status,
                 ];
                 fputcsv($file, $row);
             }
