@@ -36,8 +36,17 @@
                     <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
                 </select>
 
+                <select name="pink_card" class="form-select form-select-sm" style="width: 150px;">
+                    <option value="">-- บัตรชมพู --</option>
+                    <option value="has_card" @selected(request('pink_card') == 'has_card')>มีบัตรชมพู</option>
+                    <option value="no_card" @selected(request('pink_card') == 'no_card')>ไม่มีบัตรชมพู</option>
+                </select>
+
                 <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
                 <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary btn-sm">ล้างการกรอง</a>
+
+                {{-- Add this button --}}
+                <a href="{{ route('employees.export', request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Export</a>
 
                 <div class="btn-group btn-group-sm ms-md-auto">
                     <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
@@ -69,7 +78,7 @@
     @if($currentView === 'card')
         <div class="list-group">
             @forelse($employees as $employee)
-                @include('partials._employee_card', ['employee' => $employee])
+                @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
             @empty
                 <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</p>
             @endforelse
