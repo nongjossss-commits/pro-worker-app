@@ -141,6 +141,7 @@ class EmployerController extends Controller
         $currentPerPage = $request->input('per_page', $defaultPerPage);
         $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
+        // DEFINITIVE FIX: Use employees() with parentheses to get the Query Builder
         $employeesQuery = $employer->employees()->latest();
 
         $this->applyEmployeeFilters($request, $employeesQuery);

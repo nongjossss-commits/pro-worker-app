@@ -159,11 +159,12 @@ class NotificationController extends Controller
 
     public function export(Request $request)
     {
-        $activeTab = $request->input('active_tab', 'ninety_day_report');
-        $query = $this->getFilteredQuery($request, $activeTab);
+        // Prioritize 'export_type' from the new buttons, fallback to 'active_tab' for compatibility.
+        $exportType = $request->input('export_type', $request->input('active_tab', 'ninety_day_report'));
+        $query = $this->getFilteredQuery($request, $exportType);
         $notifications = $query->get(); // Get all matching records, not paginated
 
-        $fileName = "notifications_{$activeTab}_" . date('Y-m-d') . ".csv";
+        $fileName = "notifications_{$exportType}_" . date('Y-m-d') . ".csv";
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
             "Content-Disposition" => "attachment; filename=\"$fileName\"",
