@@ -1130,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const container = document.getElementById('employeeList'); // The container for employee cards
+        const container = document.getElementById('employeeList');
         const actionBar = document.getElementById('bulk-action-bar-employer');
         if (!container || !actionBar) return;
 
@@ -1139,7 +1139,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const actionButton = actionBar.querySelector('button');
 
         function updateActionBar() {
-            // Need to re-query checkboxes each time as content might be dynamic
             const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
             const selectedCheckboxes = container.querySelectorAll('.bulk-action-checkbox:checked');
             const count = selectedCheckboxes.length;
@@ -1153,7 +1152,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 selectedCountSpan.textContent = 0;
                 actionButton.disabled = true;
             }
-
             if(selectAllCheckbox){
                  selectAllCheckbox.checked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
             }
@@ -1174,11 +1172,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateActionBar();
             });
         }
-
-        updateActionBar(); // Initial check
+        updateActionBar();
     });
 </script>
 @endpush
-"""
-# I have manually replaced the script at the end of the file content with the correct one.
-# Now I will overwrite the file.
