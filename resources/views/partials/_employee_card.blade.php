@@ -9,16 +9,23 @@
         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
              alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
         <div class="flex-grow-1">
-            <h5 class="mb-1">
-                {{-- FIX: Added Name Prefix --}}
-                {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
+            <p class="mb-0">
+                <strong>
+                    {{-- Calculate the correct item number based on pagination --}}
+                    @if(isset($pagination) && $pagination instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                        {{ ($pagination->currentPage() - 1) * $pagination->perPage() + $loop->iteration }}.
+                    @else
+                        {{ $loop->iteration }}.
+                    @endif
+                    {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}
+                </strong>
                 @if($employee->employeeNationality)
                     @php $flagCode = \App\Helpers\CountryHelper::getFlagCode($employee->employeeNationality); @endphp
                     @if($flagCode)
                         <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $employee->employeeNationality }}" title="{{ $employee->employeeNationality }}">
                     @endif
                 @endif
-            </h5>
+            </p>
             {{-- FIX: Added Name Prefix --}}
             <p class="mb-1">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->employeePosition ?? 'N/A' }})</p>
             <small class="text-muted d-block" title="นายจ้าง">นายจ้าง: {{ $employerName }}</small>
