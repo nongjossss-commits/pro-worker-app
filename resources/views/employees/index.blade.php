@@ -20,11 +20,29 @@
             <form action="{{ route('employees.index') }}" method="GET" id="filter-form" class="d-flex flex-wrap gap-2 align-items-center">
                 <input type="text" name="search" class="form-control form-control-sm w-auto" placeholder="ค้นหา..." value="{{ request('search') }}">
 
-                <div class="btn-group btn-group-sm ms-md-auto">
-                    <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked($currentView === 'card')>
-                    <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i> การ์ด</label>
+                <select name="nationality" class="form-select form-select-sm w-auto">
+                    <option value="">-- ทุกสัญชาติ --</option>
+                    <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
+                    <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
+                    <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
+                    <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
+                </select>
 
-                    <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked($currentView === 'table')>
+                <select name="mou_type" class="form-select form-select-sm w-auto">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                    <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
+                    <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
+                    <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
+                    <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
+                <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary btn-sm">ล้างการกรอง</a>
+
+                <div class="btn-group btn-group-sm ms-md-auto">
+                    <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
+                    <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i> การ์ด</label>
+                    <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked(request('view') === 'table')>
                     <label class="btn btn-outline-primary" for="view-table"><i class="bi bi-table"></i> ตาราง</label>
                 </div>
 
@@ -33,8 +51,6 @@
                     <option value="{{ $option }}" @selected($currentPerPage == $option)>แสดง {{ $option }}</option>
                     @endforeach
                 </select>
-
-                <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
             </form>
         </div>
     </div>
