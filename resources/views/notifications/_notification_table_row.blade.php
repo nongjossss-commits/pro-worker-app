@@ -15,8 +15,8 @@
     <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $notification->employee->id }}" id="notification_table_checkbox_{{ $notification->id }}"></td>
     <td>{{ $itemNumber }}</td>
     <td>
-        <div>{{ $notification->employee->employeeNameEn ?? 'N/A' }}</div>
-        <div class="small text-muted">{{ $notification->employee->employeeNameTh ?? 'N/A' }}</div>
+        <div>{{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}</div>
+        <div class="small text-muted">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</div>
     </td>
     <td>{{ $notification->employee->employer->employerNameTh ?? 'N/A' }}</td>
     <td>{{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d M Y') }}</td>
