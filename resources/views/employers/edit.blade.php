@@ -220,7 +220,10 @@
         $femaleCount = $employer->employees()->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
     @endphp
     <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
-    <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id, 'search_employee' => request('search_employee'), 'nationality' => request('nationality'), 'mou_type' => request('mou_type')]) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
+        <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
+    </div>
 </div>
 
 {{-- NEW: Bulk Action Bar for Employer's Employee List --}}
@@ -279,7 +282,7 @@
         <div class="list-group">
         @forelse($employees as $employee)
             {{-- DEFINITIVE FIX: Use the single, unified partial --}}
-            @include('partials._employee_card', ['employee' => $employee])
+            @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
         @empty
             <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</p>
         @endforelse
