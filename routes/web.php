@@ -8,6 +8,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobOwnerController;
+use App\Http\Controllers\JobController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/employees/{employee}/restore', [EmployerController::class, 'restoreEmployee'])->name('employees.restore');
     Route::delete('/employees/{employee}/force-delete', [EmployerController::class, 'forceDeleteEmployee'])->name('employees.forceDelete');
     Route::get('/employees/{employee}/locate', [EmployeeController::class, 'locate'])->name('employees.locate');
+    Route::get('/employees/{employee}/create-job', [JobController::class, 'createFromEmployee'])->name('jobs.create_from_employee');
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
     Route::resource('employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
