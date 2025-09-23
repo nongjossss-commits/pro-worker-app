@@ -12,9 +12,37 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
 
 class EmployerController extends Controller
 {
+    private function applyEmployeeFilters(Request $request, Builder $query)
+    {
+        if ($request->filled('search_employee')) {
+            $search = $request->input('search_employee');
+            $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('nationality')) {
+            $query->where('employeeNationality', $request->input('nationality'));
+        }
+        if ($request->filled('mou_type')) {
+            $query->where('workPermitMOUGroup', $request->input('mou_type'));
+        }
+
+        // More robust pink card filtering logic
+        $query->when($request->input('pink_card') === 'has_card', function ($q) {
+            return $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+        })->when($request->input('pink_card') === 'no_card', function ($q) {
+            return $q->where(function($subQuery) {
+                $subQuery->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+            });
+        });
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -143,20 +171,7 @@ class EmployerController extends Controller
         $employeesQuery = $employer->employees()->latest(); // Query relationship
 
         // Apply filters from request
-        if ($request->filled('search_employee')) {
-            $search = $request->input('search_employee');
-            $employeesQuery->where(function($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%");
-            });
-        }
-        if ($request->filled('nationality')) {
-            $employeesQuery->where('employeeNationality', $request->input('nationality'));
-        }
-        if ($request->filled('mou_type')) {
-            $employeesQuery->where('workPermitMOUGroup', $request->input('mou_type'));
-        }
+        $this->applyEmployeeFilters($request, $employeesQuery);
 
         $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
 
@@ -350,45 +365,52 @@ class EmployerController extends Controller
         return $response;
     }
 
-    public function exportEmployees(Employer $employer)
-    {
-        $employees = $employer->employees()->whereNull('terminated_at')->get();
-        $csvHeader = [
-            'ID', 'English Name', 'Thai Name', 'Position', 'Nationality', 'Passport No', 'Passport Expiry',
-            'Work Permit No', 'Work Permit Expiry', 'MOU Group', 'Visa Expiry', '90-Day Report'
-        ];
-        $fileName = "{$employer->employerId}_employees.csv";
+public function exportEmployees(Request $request, Employer $employer)
+{
+    $employeesQuery = $employer->employees()->latest();
 
-        $response = new StreamedResponse(function() use ($employees, $csvHeader) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $csvHeader);
+    // Ensure filters from the request are applied before exporting
+    $this->applyEmployeeFilters($request, $employeesQuery);
 
-            foreach ($employees as $employee) {
-                $data = [
-                    $employee->id,
-                    $employee->employeeNameEn,
-                    $employee->employeeNameTh,
-                    $employee->employeePosition,
-                    $employee->employeeNationality,
-                    $employee->employeePassport,
-                    $employee->passportExpiryDate,
-                    $employee->employeeWorkPermit,
-                    $employee->workPermitExpiryDate,
-                    $employee->workPermitMOUGroup,
-                    $employee->visaExpiryDate,
-                    $employee->ninetyDayReportDate,
-                ];
-                fputcsv($handle, $data);
-            }
+    $employees = $employeesQuery->get();
 
-            fclose($handle);
-        }, 200, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
-        ]);
+    $csvHeader = [
+        '#', 'Thai Name', 'English Name', 'Position', 'Nationality', 'Passport No', 'Passport Expiry',
+        'Work Permit No', 'Work Permit Expiry', 'MOU Group', 'Visa Expiry', '90-Day Report'
+    ];
+    $fileName = "{$employer->employerId}_employees_" . date('Y-m-d') . ".csv";
 
-        return $response;
-    }
+    $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function() use ($employees, $csvHeader) {
+        $handle = fopen('php://output', 'w');
+        fputs($handle, "\xEF\xBB\xBF"); // BOM for UTF-8
+        fputcsv($handle, $csvHeader);
+
+        foreach ($employees as $index => $employee) {
+            $data = [
+                $index + 1,
+                $employee->employeeNameTh,
+                $employee->employeeNameEn,
+                $employee->employeePosition,
+                $employee->employeeNationality,
+                $employee->employeePassport,
+                $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
+                $employee->employeeWorkPermit,
+                $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
+                $employee->workPermitMOUGroup,
+                $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
+                $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
+            ];
+            fputcsv($handle, $data);
+        }
+
+        fclose($handle);
+    }, 200, [
+        'Content-Type' => 'text/csv; charset=UTF-8',
+        'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+    ]);
+
+    return $response;
+}
 
     public function exportHistory(Employer $employer)
     {
