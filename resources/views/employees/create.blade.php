@@ -72,7 +72,7 @@
                         <label for="employeePassport" class="form-label">เลขหนังสือเดินทาง (Passport No.)</label>
                         <input type="text" class="form-control" id="employeePassport" name="employeePassport" value="{{ old('employeePassport') }}" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6 d-none" id="passportTypeContainer">
                         <label for="passportType" class="form-label">ประเภทหนังสือเดินทาง</label>
                         <select class="form-select" id="passportType" name="passportType">
                             <option value="">-- เลือกประเภท --</option>
@@ -336,6 +336,22 @@ document.addEventListener('DOMContentLoaded', function () {
             titleTh.value = enToThMap[selectedEn];
         }
     });
+
+    // --- Conditional Passport Type Logic ---
+    const passportTypeContainer = document.getElementById('passportTypeContainer');
+
+    function togglePassportTypeVisibility() {
+        if (nationalitySelect.value === 'เมียนมา') {
+            passportTypeContainer.classList.remove('d-none');
+        } else {
+            passportTypeContainer.classList.add('d-none');
+        }
+    }
+
+    nationalitySelect.addEventListener('change', togglePassportTypeVisibility);
+
+    // Run on page load to set initial state
+    togglePassportTypeVisibility();
 });
 </script>
 @endpush
