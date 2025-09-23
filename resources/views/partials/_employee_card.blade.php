@@ -35,6 +35,9 @@
         </div>
         <div class="ms-auto ps-3">
             <div class="btn-group btn-group-sm">
+                <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-outline-success" title="สร้างงาน">
+                    <i class="bi bi-send-plus"></i>
+                </a>
                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข">
                     <i class="bi bi-pencil-fill"></i>
                 </a>
