@@ -41,9 +41,30 @@ class EmployeeController extends Controller
 
     public function export(Request $request)
     {
-        $query = Employee::query()->with('employer')->latest();
+        $query = Employee::with('employer')->latest();
 
-        $this->applyFilters($request, $query);
+        // Apply filters
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('nationality')) {
+            $query->where('employeeNationality', $request->input('nationality'));
+        }
+        if ($request->filled('mou_type')) {
+            $query->where('workPermitMOUGroup', $request->input('mou_type'));
+        }
+        $query->when($request->input('pink_card') === 'has_card', function ($q) {
+            return $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+        })->when($request->input('pink_card') === 'no_card', function ($q) {
+            return $q->where(function($subQuery) {
+                $subQuery->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+            });
+        });
 
         $employees = $query->get();
         $fileName = "employees_" . date('Y-m-d') . ".csv";
@@ -54,24 +75,20 @@ class EmployeeController extends Controller
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
             "Expires"             => "0"
         ];
-
-        $columns = ['#', 'ชื่อ (TH)', 'ชื่อ (EN)', 'Passport', 'Work Permit', 'นายจ้าง', 'สัญชาติ', 'ประเภท MOU'];
+        $columns = ['#', 'Thai Name', 'English Name', 'Employer', 'Passport No', 'Work Permit No'];
 
         $callback = function() use($employees, $columns) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
             fputcsv($file, $columns);
-
             foreach ($employees as $index => $employee) {
                 $row = [
                     $index + 1,
                     $employee->employeeNameTh,
                     $employee->employeeNameEn,
+                    $employee->employer->employerNameTh ?? 'N/A',
                     $employee->employeePassport,
                     $employee->employeeWorkPermit,
-                    $employee->employer->employerNameTh ?? 'N/A',
-                    $employee->employeeNationality,
-                    $employee->workPermitMOUGroup,
                 ];
                 fputcsv($file, $row);
             }
@@ -248,46 +265,5 @@ class EmployeeController extends Controller
         }
         $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
         return redirect($url);
-    }
-    public function export(Request $request)
-    {
-        $query = \App\Models\Employee::query()->with('employer')->latest();
-
-        $this->applyFilters($request, $query);
-
-        $employees = $query->get();
-        $fileName = "employees_" . date('Y-m-d') . ".csv";
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=\"$fileName\"",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
-
-        $columns = ['#', 'ชื่อ (TH)', 'ชื่อ (EN)', 'Passport', 'Work Permit', 'นายจ้าง', 'สัญชาติ', 'ประเภท MOU'];
-
-        $callback = function() use($employees, $columns) {
-            $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, $columns);
-
-            foreach ($employees as $index => $employee) {
-                $row = [
-                    $index + 1,
-                    $employee->employeeNameTh,
-                    $employee->employeeNameEn,
-                    $employee->employeePassport,
-                    $employee->employeeWorkPermit,
-                    $employee->employer->employerNameTh ?? 'N/A',
-                    $employee->employeeNationality,
-                    $employee->workPermitMOUGroup,
-                ];
-                fputcsv($file, $row);
-            }
-            fclose($file);
-        };
-
-        return new \Symfony\Component\HttpFoundation\StreamedResponse($callback, 200, $headers);
     }
 }
