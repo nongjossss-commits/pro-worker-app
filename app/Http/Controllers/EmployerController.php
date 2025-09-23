@@ -182,7 +182,7 @@ public function edit(Request $request, Employer $employer)
     $currentPerPage = $request->input('per_page', $defaultPerPage);
     $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
-    $employeesQuery = $employer->employees()->latest(); // Query relationship
+    $employeesQuery = $employer->employees()->whereNull('terminated_at')->latest(); // Query relationship
 
     // Apply filters from request
     if ($request->filled('search_employee')) {
