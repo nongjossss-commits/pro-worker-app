@@ -130,47 +130,98 @@ class EmployerController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Request $request, Employer $employer)
-    {
-        // --- Employee List Logic ---
-        $cardPerPageOptions = [10, 15, 20];
-        $tablePerPageOptions = [25, 50, 100];
-        $currentView = $request->input('view', 'card');
-        $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
-        $currentPerPage = $request->input('per_page', $defaultPerPage);
-        $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
+    // public function edit(Request $request, Employer $employer)
+    // {
+    //     // --- Employee List Logic ---
+    //     $cardPerPageOptions = [10, 15, 20];
+    //     $tablePerPageOptions = [25, 50, 100];
+    //     $currentView = $request->input('view', 'card');
+    //     $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
+    //     $currentPerPage = $request->input('per_page', $defaultPerPage);
+    //     $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
-        $employeesQuery = $employer->employees()->latest(); // Query relationship
+    //     $employeesQuery = $employer->employees()->latest(); // Query relationship
 
-        // Apply filters from request
-        if ($request->filled('search_employee')) {
-            $search = $request->input('search_employee');
-            $employeesQuery->where(function($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%");
-            });
-        }
-        if ($request->filled('nationality')) {
-            $employeesQuery->where('employeeNationality', $request->input('nationality'));
-        }
-        if ($request->filled('mou_type')) {
-            $employeesQuery->where('workPermitMOUGroup', $request->input('mou_type'));
-        }
+    //     // Apply filters from request
+    //     if ($request->filled('search_employee')) {
+    //         $search = $request->input('search_employee');
+    //         $employeesQuery->where(function($q) use ($search) {
+    //             $q->where('employeeNameTh', 'like', "%{$search}%")
+    //               ->orWhere('employeeNameEn', 'like', "%{$search}%")
+    //               ->orWhere('employeePassport', 'like', "%{$search}%");
+    //         });
+    //     }
+    //     if ($request->filled('nationality')) {
+    //         $employeesQuery->where('employeeNationality', $request->input('nationality'));
+    //     }
+    //     if ($request->filled('mou_type')) {
+    //         $employeesQuery->where('workPermitMOUGroup', $request->input('mou_type'));
+    //     }
 
-        $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
+    //     $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
 
-        // --- Job Owner Logic ---
-        $jobOwners = JobOwner::orderBy('name')->get();
+    //     // --- Job Owner Logic ---
+    //     $jobOwners = JobOwner::orderBy('name')->get();
 
-        return view('employers.edit', compact(
-            'employer',
-            'jobOwners',
-            'employees',
-            'currentView',
-            'perPageOptions'
-        ));
+    //     return view('employers.edit', compact(
+    //         'employer',
+    //         'jobOwners',
+    //         'employees',
+    //         'currentView',
+    //         'perPageOptions'
+    //     ));
+    // }
+
+public function edit(Request $request, Employer $employer)
+{
+    // --- Employee List Logic ---
+    $cardPerPageOptions = [10, 15, 20];
+    $tablePerPageOptions = [25, 50, 100];
+    $currentView = $request->input('view', 'card');
+    $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
+    $currentPerPage = $request->input('per_page', $defaultPerPage);
+    $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
+
+    $employeesQuery = $employer->employees()->latest(); // Query relationship
+
+    // Apply filters from request
+    if ($request->filled('search_employee')) {
+        $search = $request->input('search_employee');
+        $employeesQuery->where(function($q) use ($search) {
+            $q->where('employeeNameTh', 'like', "%{$search}%")
+              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+              ->orWhere('employeePassport', 'like', "%{$search}%");
+        });
     }
+    if ($request->filled('nationality')) {
+        $employeesQuery->where('employeeNationality', $request->input('nationality'));
+    }
+    if ($request->filled('mou_type')) {
+        $employeesQuery->where('workPermitMOUGroup', $request->input('mou_type'));
+    }
+
+    // Robust pink card filtering logic
+    $employeesQuery->when($request->input('pink_card') === 'has_card', function ($q) {
+        return $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+    })->when($request->input('pink_card') === 'no_card', function ($q) {
+        return $q->where(function($subQuery) {
+            $subQuery->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+        });
+    });
+
+    $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
+
+    // --- Job Owner Logic ---
+    $jobOwners = \App\Models\JobOwner::orderBy('name')->get();
+
+    return view('employers.edit', compact(
+        'employer',
+        'jobOwners',
+        'employees',
+        'currentView',
+        'perPageOptions'
+    ));
+}
 
     /**
      * Update the specified resource in storage.
@@ -297,6 +348,8 @@ class EmployerController extends Controller
         return response()->json($employees);
     }
 
+
+    
     public function filterHistory(Request $request, Employer $employer)
     {
         $query = $employer->employees()->whereNotNull('terminated_at');

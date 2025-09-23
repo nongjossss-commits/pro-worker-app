@@ -974,56 +974,56 @@ fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_p
     const mouGroupSelect = document.getElementById('searchEmployeeMOUGroup');
     const pinkCardSelect = document.getElementById('searchEmployeePinkCard');
 
-    function filterEmployees() {
-        const search = searchInput.value;
-        const nationality = nationalitySelect.value;
-        const mouGroup = mouGroupSelect.value;
-        const pinkCard = pinkCardSelect.value;
+    // function filterEmployees() {
+    //     const search = searchInput.value;
+    //     const nationality = nationalitySelect.value;
+    //     const mouGroup = mouGroupSelect.value;
+    //     const pinkCard = pinkCardSelect.value;
 
-        const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
-        url.searchParams.append('search', search);
-        url.searchParams.append('nationality', nationality);
-        url.searchParams.append('mouGroup', mouGroup);
-        url.searchParams.append('pinkCard', pinkCard);
+    //     const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
+    //     url.searchParams.append('search', search);
+    //     url.searchParams.append('nationality', nationality);
+    //     url.searchParams.append('mouGroup', mouGroup);
+    //     url.searchParams.append('pinkCard', pinkCard);
 
-        fetch(url)
-            .then(response => response.json())
-            .then(employees => {
-                const employeeList = document.getElementById('employeeList');
-                employeeList.innerHTML = '';
-                if (employees.length > 0) {
-                    employees.forEach(employee => {
-                        const card = `
-                        <div class="employee-card d-flex justify-content-between align-items-start gap-3">
-                            <div class="d-flex align-items-center flex-grow-1">
-                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-                                <div class="flex-grow-1">
-                                    <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
-                                    <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
-                                    <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-                                    <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-                                    <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
-                                </div>
-                            </div>
-                            <div class="btn-group btn-group-sm">
-                                <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                                <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
-                                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
-                            </div>
-                        </div>`;
-                        employeeList.innerHTML += card;
-                    });
-                } else {
-                    employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
-                }
-                 document.getElementById('employeeTotalCount').textContent = employees.length;
-            });
-    }
+    //     fetch(url)
+    //         .then(response => response.json())
+    //         .then(employees => {
+    //             const employeeList = document.getElementById('employeeList');
+    //             employeeList.innerHTML = '';
+    //             if (employees.length > 0) {
+    //                 employees.forEach(employee => {
+    //                     const card = `
+    //                     <div class="employee-card d-flex justify-content-between align-items-start gap-3">
+    //                         <div class="d-flex align-items-center flex-grow-1">
+    //                             <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
+    //                             <div class="flex-grow-1">
+    //                                 <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
+    //                                 <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
+    //                                 <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
+    //                                 <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
+    //                                 <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
+    //                             </div>
+    //                         </div>
+    //                         <div class="btn-group btn-group-sm">
+    //                             <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
+    //                             <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
+    //                             <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+    //                         </div>
+    //                     </div>`;
+    //                     employeeList.innerHTML += card;
+    //                 });
+    //             } else {
+    //                 employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
+    //             }
+    //              document.getElementById('employeeTotalCount').textContent = employees.length;
+    //         });
+    // }
 
-    searchInput.addEventListener('input', filterEmployees);
-    nationalitySelect.addEventListener('change', filterEmployees);
-    mouGroupSelect.addEventListener('change', filterEmployees);
-    pinkCardSelect.addEventListener('change', filterEmployees);
+    // searchInput.addEventListener('input', filterEmployees);
+    // nationalitySelect.addEventListener('change', filterEmployees);
+    // mouGroupSelect.addEventListener('change', filterEmployees);
+    // pinkCardSelect.addEventListener('change', filterEmployees);
 
     // Filter History
     const searchHistoryInput = document.getElementById('searchHistoryInput');
