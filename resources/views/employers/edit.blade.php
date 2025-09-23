@@ -921,52 +921,62 @@ fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_p
     });
 
 
-    // Terminate Employee
-    const terminateModal = new bootstrap.Modal(document.getElementById('terminateEmployeeModal'));
-    const terminateForm = document.getElementById('terminateEmployeeForm');
-    const terminateEmployeeIdInput = document.getElementById('terminateEmployeeId');
+    // --- Terminate Employee Logic ---
+    const terminateModalEl = document.getElementById('terminateEmployeeModal');
+    if (terminateModalEl) {
+        const terminateModal = new bootstrap.Modal(terminateModalEl);
+        const terminateForm = document.getElementById('terminateEmployeeForm');
+        const terminateEmployeeIdInput = document.getElementById('terminateEmployeeId');
+        const employeeListContainer = document.getElementById('employeeList');
 
-    document.getElementById('employeeList').addEventListener('click', function (e) {
-        if (e.target.closest('.terminate-employee-btn')) {
-            const button = e.target.closest('.terminate-employee-btn');
-            const employeeId = button.dataset.id;
-            terminateEmployeeIdInput.value = employeeId;
-            terminateModal.show();
-        }
-    });
-
-    document.getElementById('confirmTerminateEmployeeButton').addEventListener('click', function () {
-        const employeeId = terminateEmployeeIdInput.value;
-        const terminateDate = document.getElementById('terminateDate').value;
-        const terminationReason = document.getElementById('terminationReason').value;
-
-        fetch(`/employees/${employeeId}/terminate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                terminateDate: terminateDate,
-                terminationReason: terminationReason
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Move employee card to history
-                const employeeCard = document.querySelector(`.terminate-employee-btn[data-id='${employeeId}']`).closest('.employee-card');
-                employeeCard.remove();
-                // For simplicity, we just reload the page to see the history updated.
-                // A more advanced implementation would dynamically create and append the history card.
-                location.reload();
-            } else {
-                alert('Failed to terminate employee.');
+        employeeListContainer.addEventListener('click', function (e) {
+            const terminateButton = e.target.closest('.terminate-employee-btn');
+            if (terminateButton) {
+                const employeeId = terminateButton.dataset.id;
+                terminateEmployeeIdInput.value = employeeId;
+                terminateForm.reset();
+                terminateModal.show();
             }
-        })
-        .catch(error => console.error('Error:', error));
-    });
+        });
+
+        document.getElementById('confirmTerminateEmployeeButton').addEventListener('click', function () {
+            const employeeId = terminateEmployeeIdInput.value;
+            const terminateDate = document.getElementById('terminateDate').value;
+            const terminationReason = document.getElementById('terminationReason').value;
+
+            if (!terminateDate) {
+                alert('กรุณาเลือกวันที่แจ้งออก');
+                return;
+            }
+
+            fetch(`/employees/${employeeId}/terminate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    terminateDate: terminateDate,
+                    terminationReason: terminationReason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const employeeCard = document.getElementById(`employee-card-${employeeId}`);
+                    if(employeeCard) {
+                         employeeCard.remove();
+                    }
+                    // Simple refresh to update history list automatically
+                    location.reload();
+                } else {
+                    alert(data.message || 'เกิดข้อผิดพลาดในการแจ้งออก');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    }
 
     // Filter Employees
     const searchInput = document.getElementById('searchEmployeeInput');
