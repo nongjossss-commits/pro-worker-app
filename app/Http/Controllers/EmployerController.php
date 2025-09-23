@@ -242,6 +242,7 @@ public function edit(Request $request, Employer $employer)
     {
         $employeesQuery = $employer->employees()->latest();
 
+        // Reuse the same filter logic from the edit page
         $this->applyEmployeeFilters($request, $employeesQuery);
 
         $employees = $employeesQuery->get();
@@ -265,16 +266,15 @@ public function edit(Request $request, Employer $employer)
                     $employee->employeePosition,
                     $employee->employeeNationality,
                     $employee->employeePassport,
-                    $employee->passportExpiryDate ? Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
+                    $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
                     $employee->employeeWorkPermit,
-                    $employee->workPermitExpiryDate ? Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
+                    $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
                     $employee->workPermitMOUGroup,
-                    $employee->visaExpiryDate ? Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
-                    $employee->ninetyDayReportDate ? Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
+                    $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
+                    $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
                 ];
                 fputcsv($handle, $data);
             }
-
             fclose($handle);
         }, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -437,52 +437,6 @@ public function edit(Request $request, Employer $employer)
             fclose($handle);
         }, 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
-        ]);
-
-        return $response;
-    }
-
-    public function exportEmployees(Request $request, Employer $employer)
-    {
-        $employeesQuery = $employer->employees()->latest();
-
-        $this->applyEmployeeFilters($request, $employeesQuery);
-
-        $employees = $employeesQuery->get();
-
-        $csvHeader = [
-            '#', 'Thai Name', 'English Name', 'Position', 'Nationality', 'Passport No', 'Passport Expiry',
-            'Work Permit No', 'Work Permit Expiry', 'MOU Group', 'Visa Expiry', '90-Day Report'
-        ];
-        $fileName = "{$employer->employerId}_employees.csv";
-
-        $response = new StreamedResponse(function() use ($employees, $csvHeader) {
-            $handle = fopen('php://output', 'w');
-            fputs($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, $csvHeader);
-
-            foreach ($employees as $index => $employee) {
-                $data = [
-                    $index + 1,
-                    $employee->employeeNameTh,
-                    $employee->employeeNameEn,
-                    $employee->employeePosition,
-                    $employee->employeeNationality,
-                    $employee->employeePassport,
-                    $employee->passportExpiryDate ? Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
-                    $employee->employeeWorkPermit,
-                    $employee->workPermitExpiryDate ? Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
-                    $employee->workPermitMOUGroup,
-                    $employee->visaExpiryDate ? Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
-                    $employee->ninetyDayReportDate ? Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
-                ];
-                fputcsv($handle, $data);
-            }
-
-            fclose($handle);
-        }, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
         ]);
 
