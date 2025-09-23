@@ -131,34 +131,35 @@ class EmployerController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-public function edit(Request $request, Employer $employer)
-{
-    // --- Employee List Logic ---
-    $cardPerPageOptions = [10, 15, 20];
-    $tablePerPageOptions = [25, 50, 100];
-    $currentView = $request->input('view', 'card');
-    $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
-    $currentPerPage = $request->input('per_page', $defaultPerPage);
-    $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
+    public function edit(Request $request, Employer $employer)
+    {
+        // --- Employee List Logic ---
+        $cardPerPageOptions = [10, 15, 20];
+        $tablePerPageOptions = [25, 50, 100];
+        $currentView = $request->input('view', 'card');
+        $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
+        $currentPerPage = $request->input('per_page', $defaultPerPage);
+        $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
-    // THE DEFINITIVE FIX: Ensure employees() is called as a method
-    $employeesQuery = $employer->employees()->latest();
+        // THIS IS THE CRITICAL LINE THAT MUST BE CORRECT
+        $employeesQuery = $employer->employees()->latest();
 
-    $this->applyEmployeeFilters($request, $employeesQuery);
+        // This function will now receive the correct Query Builder object
+        $this->applyEmployeeFilters($request, $employeesQuery);
 
-    $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
+        $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
 
-    // --- Job Owner Logic ---
-    $jobOwners = \App\Models\JobOwner::orderBy('name')->get();
+        // --- Job Owner Logic ---
+        $jobOwners = \App\Models\JobOwner::orderBy('name')->get();
 
-    return view('employers.edit', compact(
-        'employer',
-        'jobOwners',
-        'employees',
-        'currentView',
-        'perPageOptions'
-    ));
-}
+        return view('employers.edit', compact(
+            'employer',
+            'jobOwners',
+            'employees',
+            'currentView',
+            'perPageOptions'
+        ));
+    }
 
     /**
      * Update the specified resource in storage.
