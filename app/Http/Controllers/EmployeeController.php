@@ -249,4 +249,45 @@ class EmployeeController extends Controller
         $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
         return redirect($url);
     }
+    public function export(Request $request)
+    {
+        $query = \App\Models\Employee::query()->with('employer')->latest();
+
+        $this->applyFilters($request, $query);
+
+        $employees = $query->get();
+        $fileName = "employees_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=\"$fileName\"",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['#', 'ชื่อ (TH)', 'ชื่อ (EN)', 'Passport', 'Work Permit', 'นายจ้าง', 'สัญชาติ', 'ประเภท MOU'];
+
+        $callback = function() use($employees, $columns) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, $columns);
+
+            foreach ($employees as $index => $employee) {
+                $row = [
+                    $index + 1,
+                    $employee->employeeNameTh,
+                    $employee->employeeNameEn,
+                    $employee->employeePassport,
+                    $employee->employeeWorkPermit,
+                    $employee->employer->employerNameTh ?? 'N/A',
+                    $employee->employeeNationality,
+                    $employee->workPermitMOUGroup,
+                ];
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return new \Symfony\Component\HttpFoundation\StreamedResponse($callback, 200, $headers);
+    }
 }

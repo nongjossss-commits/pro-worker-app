@@ -221,7 +221,7 @@
     @endphp
     <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
     <div class="d-flex gap-2">
-        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->only(['search_employee', 'nationality', 'mou_type', 'pink_card'])) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
+        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
         <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
     </div>
 </div>

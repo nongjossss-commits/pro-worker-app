@@ -36,6 +36,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('agents', AgentController::class);
     Route::resource('delegates', DelegateController::class);
 
+    Route::get('/notifications/export', [NotificationController::class, 'export'])->name('notifications.export');
+    Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
+    Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
+
     Route::resource('job-owners', JobOwnerController::class)->only(['index', 'store', 'destroy']);
 
     Route::post('/addresses', [App\Http\Controllers\AddressController::class, 'store'])->name('addresses.store');
@@ -49,6 +53,5 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/renew', [NotificationController::class, 'renew'])->name('notifications.renew');
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
     Route::delete('/notifications/{notification}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.forceDelete');
-    Route::get('/notifications/export', [NotificationController::class, 'export'])->name('notifications.export');
 });
 require __DIR__.'/auth.php';

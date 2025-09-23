@@ -199,7 +199,8 @@ class NotificationController extends Controller
             fclose($file);
         };
 
-        return new StreamedResponse($callback, 200, $headers);
+        return new StreamedResponse($callback, 200,.php
+headers);
     }
 
     /**
@@ -346,5 +347,49 @@ class NotificationController extends Controller
         // Add the URL hash to redirect and trigger the highlight
         $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
         return redirect($url);
+    }
+    public function export(Request $request)
+    {
+        // Prioritize 'export_type' from the new buttons, fallback to 'active_tab' for compatibility.
+        $exportType = $request->input('export_type', $request->input('active_tab', 'ninety_day_report'));
+        $query = $this->getFilteredQuery($request, $exportType);
+        $notifications = $query->get(); // Get all matching records, not paginated
+
+        $fileName = "notifications_{$exportType}_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=\"$fileName\"",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['#', 'ชื่อลูกจ้าง (TH)', 'ชื่อลูกจ้าง (EN)', 'Passport', 'สัญชาติ', 'นายจ้าง', 'วันที่ครบกำหนด', 'ประเภท'];
+
+        $callback = function() use($notifications, $columns) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF"); // Add BOM for UTF-8
+            fputcsv($file, $columns);
+
+            foreach ($notifications as $index => $notification) {
+                $employee = $notification->employee;
+                if (!$employee) continue; // Skip if no employee data
+
+                $row = [
+                    $index + 1,
+                    $employee->employeeNameTh,
+                    $employee->employeeNameEn,
+                    $employee->employeePassport,
+                    $employee->employeeNationality,
+                    $employee->employer->employerNameTh ?? 'N/A',
+                    $notification->due_date ? \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') : '-',
+                    $notification->type,
+                ];
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return new \Symfony\Component\HttpFoundation\StreamedResponse($callback, 200, $headers);
     }
 }
