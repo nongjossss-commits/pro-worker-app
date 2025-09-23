@@ -75,7 +75,7 @@
                         <label for="employeePassport" class="form-label">เลขหนังสือเดินทาง (Passport No.)</label>
                         <input type="text" class="form-control" id="employeePassport" name="employeePassport" value="{{ old('employeePassport', $employee->employeePassport) }}">
                     </div>
-                     <div class="col-md-6">
+                     <div class="col-md-6 {{ old('employeeNationality', $employee->employeeNationality) == 'เมียนมา' ? '' : 'd-none' }}" id="passportTypeContainer">
                         <label for="passportType" class="form-label">ประเภทหนังสือเดินทาง</label>
                         <select class="form-select" id="passportType" name="passportType">
                             <option value="">-- เลือกประเภท --</option>
@@ -174,6 +174,26 @@
 <script>
     document.getElementById('workPermitMOUGroup').addEventListener('change', function() {
         document.getElementById('workPermitMOUGroupOther').classList.toggle('d-none', this.value !== 'อื่นๆ');
+    });
+
+    // --- Conditional Passport Type Logic ---
+    const nationalitySelect = document.getElementById('employeeNationality');
+    const passportTypeContainer = document.getElementById('passportTypeContainer');
+
+    function togglePassportTypeVisibility() {
+        if (nationalitySelect.value === 'เมียนมา') {
+            passportTypeContainer.classList.remove('d-none');
+        } else {
+            passportTypeContainer.classList.add('d-none');
+        }
+    }
+
+    // Add event listener for changes
+    nationalitySelect.addEventListener('change', togglePassportTypeVisibility);
+
+    // Run on page load to set initial state
+    document.addEventListener('DOMContentLoaded', function() {
+        togglePassportTypeVisibility();
     });
 </script>
 @endpush
