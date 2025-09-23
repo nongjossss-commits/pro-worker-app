@@ -81,15 +81,11 @@
                     (ชาย: {{ $counts[$type]['male'] }} คน, หญิง: {{ $counts[$type]['female'] }} คน)
                 </div>
                 @endif
-
-    {{-- ADD THIS BLOCK --}}
-    <div class="d-flex justify-content-end mb-3">
-        <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-outline-success btn-sm">
-            <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
-        </a>
-    </div>
-    {{-- END ADD BLOCK --}}
-                {{-- END: Gender Count Display --}}
+<div class="d-flex justify-content-end mb-3">
+    <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
+    </a>
+</div>
 
                 @if($type === 'work_permit_mou')
                     @if($currentView == 'table')

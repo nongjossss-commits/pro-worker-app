@@ -44,10 +44,7 @@
 
                 <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
                 <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary btn-sm">ล้างการกรอง</a>
-
-                {{-- Add this button --}}
-                <a href="{{ route('employees.export', request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Export</a>
-
+<a href="{{ route('employees.export', request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Export</a>
                 <div class="btn-group btn-group-sm ms-md-auto">
                     <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
                     <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i> การ์ด</label>
