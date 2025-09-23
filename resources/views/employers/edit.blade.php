@@ -222,8 +222,8 @@
     <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
     <div class="d-flex gap-2">
         <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
-        <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
-    </div>
+    <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
+</div>
 </div>
 
 {{-- NEW: Bulk Action Bar for Employer's Employee List --}}
@@ -568,13 +568,28 @@ document.addEventListener('DOMContentLoaded', function () {
     let isAddressDataLoaded = false;
 
     // Fetch Thai address data
-    fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json')
-        .then(response => response.json())
-        .then(data => {
-            addressData = data;
-            isAddressDataLoaded = true;
-            populateProvinces();
+fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        addressData = data;
+        isAddressDataLoaded = true;
+        populateProvinces();
+    })
+    .catch(error => {
+        console.error('Failed to load Thai address data:', error);
+        // This catch block prevents the error from stopping other scripts.
+        // We can optionally disable the "Add Address" button here.
+        const addAddressButtons = document.querySelectorAll('.add-address-btn');
+        addAddressButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.title = 'ไม่สามารถเพิ่มที่อยู่ได้เนื่องจากข้อผิดพลาดในการโหลดข้อมูล';
         });
+    });
 
     function populateProvinces() {
         provinceSelect.innerHTML = '<option selected disabled>--- เลือกจังหวัด ---</option>';
@@ -822,7 +837,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <p class="mb-0 text-muted small">
                             Addr: ${address.addrNoEn || ''}, Moo: ${address.addrMooEn || ''}, Soi: ${address.addrSoiEn || ''}, Road: ${address.addrRoadEn || ''},
                             ${address.addrSubDistrictEn || ''}, ${address.addrDistrictEn || ''},
-                            ${address.addrProvinceEn ?? ''} ${address.addrZipCodeEn ?? ''}
+                            ${address.addrProvinceEn || ''} ${address.addrZipCodeEn || ''}
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
@@ -954,61 +969,61 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Filter Employees
-    // const searchInput = document.getElementById('searchEmployeeInput');
-    // const nationalitySelect = document.getElementById('searchEmployeeNationality');
-    // const mouGroupSelect = document.getElementById('searchEmployeeMOUGroup');
-    // const pinkCardSelect = document.getElementById('searchEmployeePinkCard');
+    const searchInput = document.getElementById('searchEmployeeInput');
+    const nationalitySelect = document.getElementById('searchEmployeeNationality');
+    const mouGroupSelect = document.getElementById('searchEmployeeMOUGroup');
+    const pinkCardSelect = document.getElementById('searchEmployeePinkCard');
 
-    // function filterEmployees() {
-    //     const search = searchInput.value;
-    //     const nationality = nationalitySelect.value;
-    //     const mouGroup = mouGroupSelect.value;
-    //     const pinkCard = pinkCardSelect.value;
+    function filterEmployees() {
+        const search = searchInput.value;
+        const nationality = nationalitySelect.value;
+        const mouGroup = mouGroupSelect.value;
+        const pinkCard = pinkCardSelect.value;
 
-    //     const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
-    //     url.searchParams.append('search', search);
-    //     url.searchParams.append('nationality', nationality);
-    //     url.searchParams.append('mouGroup', mouGroup);
-    //     url.searchParams.append('pinkCard', pinkCard);
+        const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
+        url.searchParams.append('search', search);
+        url.searchParams.append('nationality', nationality);
+        url.searchParams.append('mouGroup', mouGroup);
+        url.searchParams.append('pinkCard', pinkCard);
 
-    //     fetch(url)
-    //         .then(response => response.json())
-    //         .then(employees => {
-    //             const employeeList = document.getElementById('employeeList');
-    //             employeeList.innerHTML = '';
-    //             if (employees.length > 0) {
-    //                 employees.forEach(employee => {
-    //                     const card = `
-    //                     <div class="employee-card d-flex justify-content-between align-items-start gap-3">
-    //                         <div class="d-flex align-items-center flex-grow-1">
-    //                             <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-    //                             <div class="flex-grow-1">
-    //                                 <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
-    //                                 <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
-    //                                 <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-    //                                 <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-    //                                 <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
-    //                             </div>
-    //                         </div>
-    //                         <div class="btn-group btn-group-sm">
-    //                             <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-    //                             <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
-    //                             <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
-    //                         </div>
-    //                     </div>`;
-    //                     employeeList.innerHTML += card;
-    //                 });
-    //             } else {
-    //                 employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
-    //             }
-    //              document.getElementById('employeeTotalCount').textContent = employees.length;
-    //         });
-    // }
+        fetch(url)
+            .then(response => response.json())
+            .then(employees => {
+                const employeeList = document.getElementById('employeeList');
+                employeeList.innerHTML = '';
+                if (employees.length > 0) {
+                    employees.forEach(employee => {
+                        const card = `
+                        <div class="employee-card d-flex justify-content-between align-items-start gap-3">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
+                                    <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
+                                    <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
+                                    <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
+                                    <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
+                                </div>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
+                                <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
+                                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                            </div>
+                        </div>`;
+                        employeeList.innerHTML += card;
+                    });
+                } else {
+                    employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
+                }
+                 document.getElementById('employeeTotalCount').textContent = employees.length;
+            });
+    }
 
-    // searchInput.addEventListener('input', filterEmployees);
-    // nationalitySelect.addEventListener('change', filterEmployees);
-    // mouGroupSelect.addEventListener('change', filterEmployees);
-    // pinkCardSelect.addEventListener('change', filterEmployees);
+    searchInput.addEventListener('input', filterEmployees);
+    nationalitySelect.addEventListener('change', filterEmployees);
+    mouGroupSelect.addEventListener('change', filterEmployees);
+    pinkCardSelect.addEventListener('change', filterEmployees);
 
     // Filter History
     const searchHistoryInput = document.getElementById('searchHistoryInput');
@@ -1183,6 +1198,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
         updateActionBar();
-    });
+});
 </script>
 @endpush
