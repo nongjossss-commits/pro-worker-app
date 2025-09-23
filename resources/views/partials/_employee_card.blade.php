@@ -38,6 +38,13 @@
                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข">
                     <i class="bi bi-pencil-fill"></i>
                 </a>
+
+                @if($showLocateButton ?? false)
+                    <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </a>
+                @endif
+
                 <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                     <i class="bi bi-person-dash-fill"></i>
                 </button>

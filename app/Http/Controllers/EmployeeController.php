@@ -21,13 +21,11 @@ class EmployeeController extends Controller
         $currentPerPage = $request->input('per_page', $defaultPerPage);
         $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
 
-        $query = Employee::query();
+        $query = Employee::with('employer')->whereNull('terminated_at')->latest();
 
-        $totalEmployees = $query->count();
+        $totalEmployees = (clone $query)->count();
         $maleCount = (clone $query)->whereIn('employeeTitleTh', ['นาย'])->count();
         $femaleCount = (clone $query)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
-
-        $query->with('employer')->latest();
 
         $this->applyFilters($request, $query);
 

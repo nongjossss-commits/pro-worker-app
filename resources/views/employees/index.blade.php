@@ -75,7 +75,7 @@
     @if($currentView === 'card')
         <div class="list-group">
             @forelse($employees as $employee)
-                @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
+                @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => true])
             @empty
                 <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</p>
             @endforelse
