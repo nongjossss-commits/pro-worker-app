@@ -580,68 +580,52 @@ if (addressModalEl) {
     const provinceEnInput = document.getElementById('addrProvinceEn');
     const districtEnInput = document.getElementById('addrDistrictEn');
     const subDistrictEnInput = document.getElementById('addrSubDistrictEn');
+    const zipCodeEnInput = document.getElementById('addrZipCodeEn');
 
     async function fetchThaiAddressData() {
         try {
             const response = await fetch("{{ route('addresses.thai_data') }}");
             if (!response.ok) throw new Error('Network response was not ok');
             thaiAddressData = await response.json();
-            populateDropdown(provinceSelect, thaiAddressData, 'เลือกจังหวัด', 'name_th');
         } catch (error) {
             console.error("Fatal Error: Could not fetch address data from backend.", error);
-            // The annoying alert is now removed.
         }
     }
 
     function populateDropdown(selectElement, items, defaultOptionText, valueKey, textKey = null) {
         textKey = textKey || valueKey;
         selectElement.innerHTML = `<option value="">-- ${defaultOptionText} --</option>`;
-        items.forEach(item => {
-            const option = new Option(item[textKey], item[valueKey]);
-            selectElement.add(option);
-        });
-        selectElement.disabled = false;
+        if (items) {
+            items.forEach(item => {
+                const option = new Option(item[textKey], item[valueKey]);
+                selectElement.add(option);
+            });
+        }
+        selectElement.disabled = !items || items.length === 0;
     }
 
     provinceSelect.addEventListener('change', function() {
         const selectedProvince = thaiAddressData.find(p => p.name_th === this.value);
-        districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
-        subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
-        zipCodeInput.value = '';
-        districtSelect.disabled = true;
-        subDistrictSelect.disabled = true;
-        if (selectedProvince) {
-            populateDropdown(districtSelect, selectedProvince.amphure, 'เลือกอำเภอ/เขต', 'name_th');
-            const enOption = new Option(selectedProvince.name_en, selectedProvince.name_en, true, true);
-            provinceEnInput.innerHTML = '';
-            provinceEnInput.add(enOption);
-        }
+        populateDropdown(districtSelect, selectedProvince ? selectedProvince.amphure : [], 'เลือกอำเภอ/เขต', 'name_th');
+        populateDropdown(provinceEnInput, selectedProvince ? [selectedProvince] : [], 'Province', 'name_en');
+        districtSelect.dispatchEvent(new Event('change'));
     });
 
     districtSelect.addEventListener('change', function() {
         const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
         const selectedDistrict = selectedProvince?.amphure.find(d => d.name_th === this.value);
-        subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
-        zipCodeInput.value = '';
-        subDistrictSelect.disabled = true;
-        if (selectedDistrict) {
-            populateDropdown(subDistrictSelect, selectedDistrict.tambon, 'เลือกตำบล/แขวง', 'name_th');
-            const enOption = new Option(selectedDistrict.name_en, selectedDistrict.name_en, true, true);
-            districtEnInput.innerHTML = '';
-            districtEnInput.add(enOption);
-        }
+        populateDropdown(subDistrictSelect, selectedDistrict ? selectedDistrict.tambon : [], 'เลือกตำบล/แขวง', 'name_th');
+        populateDropdown(districtEnInput, selectedDistrict ? [selectedDistrict] : [], 'District', 'name_en');
+        subDistrictSelect.dispatchEvent(new Event('change'));
     });
 
     subDistrictSelect.addEventListener('change', function() {
         const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
         const selectedDistrict = selectedProvince?.amphure.find(d => d.name_th === districtSelect.value);
         const selectedSubDistrict = selectedDistrict?.tambon.find(sd => sd.name_th === this.value);
-        if (selectedSubDistrict) {
-            zipCodeInput.value = selectedSubDistrict.zip_code;
-            const enOption = new Option(selectedSubDistrict.name_en, selectedSubDistrict.name_en, true, true);
-            subDistrictEnInput.innerHTML = '';
-            subDistrictEnInput.add(enOption);
-        }
+        zipCodeInput.value = selectedSubDistrict ? selectedSubDistrict.zip_code : '';
+        zipCodeEnInput.value = selectedSubDistrict ? selectedSubDistrict.zip_code : '';
+        populateDropdown(subDistrictEnInput, selectedSubDistrict ? [selectedSubDistrict] : [], 'Sub-district', 'name_en');
     });
 
     addressModalEl.addEventListener('show.bs.modal', async function (event) {
@@ -653,29 +637,36 @@ if (addressModalEl) {
         addressIdInput.value = addressId || '';
         addressTypeInput.value = addressType || '';
 
+        if (thaiAddressData.length === 0) {
+            await fetchThaiAddressData();
+        }
+
+        populateDropdown(provinceSelect, thaiAddressData, 'เลือกจังหวัด', 'name_th', 'name_th');
+
         if (addressId) { // Edit Mode
             addressModalLabel.textContent = 'แก้ไขที่อยู่';
             const response = await fetch(`/addresses/${addressId}/edit`);
             const data = await response.json();
-            // Populate all fields...
             for (const key in data) {
                 if (document.getElementById(key)) {
                     document.getElementById(key).value = data[key];
                 }
             }
-            // Manually trigger population and selection
+
             provinceSelect.value = data.addrProvince;
-            await provinceSelect.dispatchEvent(new Event('change'));
-            await new Promise(r => setTimeout(r, 100)); // Short delay
+            provinceSelect.dispatchEvent(new Event('change'));
+
+            await new Promise(resolve => setTimeout(resolve, 250));
             districtSelect.value = data.addrDistrict;
-            await districtSelect.dispatchEvent(new Event('change'));
-            await new Promise(r => setTimeout(r, 100)); // Short delay
+            districtSelect.dispatchEvent(new Event('change'));
+
+            await new Promise(resolve => setTimeout(resolve, 250));
             subDistrictSelect.value = data.addrSubDistrict;
-            await subDistrictSelect.dispatchEvent(new Event('change'));
+            subDistrictSelect.dispatchEvent(new Event('change'));
 
         } else { // Add Mode
             addressModalLabel.textContent = 'เพิ่มที่อยู่ใหม่';
-            populateDropdown(provinceSelect, thaiAddressData, 'เลือกจังหวัด', 'name_th');
+            districtSelect.dispatchEvent(new Event('change'));
         }
     });
 
@@ -686,6 +677,11 @@ if (addressModalEl) {
 
         const formData = new FormData(addressForm);
         const data = Object.fromEntries(formData.entries());
+
+        data.addrProvinceEn = provinceEnInput.value;
+        data.addrDistrictEn = districtEnInput.value;
+        data.addrSubDistrictEn = subDistrictEnInput.value;
+        data.addrZipCodeEn = zipCodeEnInput.value;
 
         try {
             const response = await fetch(url, {
@@ -704,17 +700,19 @@ if (addressModalEl) {
             }
 
             addressModal.hide();
-            location.reload(); // Simple reload to see changes
+            location.reload();
         } catch (error) {
             addressErrors.style.display = 'block';
-            addressErrors.innerHTML = '';
-            if (error.errors) {
+            addressErrors.innerHTML = '<ul>';
+            if (error && error.errors) {
                 for (const key in error.errors) {
                     addressErrors.innerHTML += `<li>${error.errors[key][0]}</li>`;
                 }
             } else {
-                addressErrors.innerHTML = 'An unexpected error occurred.';
+                addressErrors.innerHTML += '<li>An unexpected error occurred.</li>';
+                console.error("Save error:", error);
             }
+            addressErrors.innerHTML += '</ul>';
         }
     });
 
