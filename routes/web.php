@@ -9,6 +9,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobOwnerController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\AddressController;
+
+Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
     return view('welcome');
 });

@@ -569,7 +569,7 @@ let thaiAddressData = [];
 
 async function fetchAddressData() {
     try {
-        const response = await fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json');
+        const response = await fetch("{{ route('addresses.thai_data') }}");
         if (!response.ok) throw new Error('Network response was not ok');
         thaiAddressData = await response.json();
         populateProvinces();

@@ -11,6 +11,18 @@
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
+## Project Setup
+
+### Address Data
+
+This project requires a data file containing Thai address information. To download this file, run the following Artisan command:
+
+```bash
+php artisan address:download-data
+```
+
+This command will download the necessary file and store it in `public/data/thai-address-data.json`. This file is required for the address selection functionality to work correctly.
+
 - [Simple, fast routing engine](https://laravel.com/docs/routing).
 - [Powerful dependency injection container](https://laravel.com/docs/container).
 - Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
