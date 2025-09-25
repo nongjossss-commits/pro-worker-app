@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
         elements.subDistrict.disabled = true;
 
         console.log('Searching for province in thaiAddressData...');
-        const selectedProvinceData = thaiAddressData.find(p => p.name_th === this.value);
+        const selectedProvinceData = thaiAddressData.find(p => p.name_th.trim() === this.value.trim());
 
         console.log('Found Province Object:', selectedProvinceData);
 
