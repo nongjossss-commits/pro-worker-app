@@ -269,9 +269,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- MODAL TRIGGER: THE CORE FIX ---
+    // Make the event listener function ASYNC to allow use of AWAIT
     addressModalEl.addEventListener('show.bs.modal', async function (event) {
         resetAddressForm();
+
+        // AWAIT the data fetching to ensure thaiAddressData is populated before continuing.
+        // This is the main fix for the empty dropdown issue.
         await fetchThaiAddressData();
+
+        // Now that we have the data, populate the province dropdown.
         populateDropdown(provinceSelect, thaiAddressData, '--- เลือกจังหวัด ---', 'name_th', 'name_th', 'name_en');
 
         const button = event.relatedTarget;
@@ -295,12 +301,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.addrProvince) {
                     provinceSelect.value = data.addrProvince;
                     provinceSelect.dispatchEvent(new Event('change'));
-                    await new Promise(r => setTimeout(r, 50));
+                    // Use Promise to wait for the next UI update tick
+                    await new Promise(resolve => setTimeout(resolve, 50));
                 }
                 if (data.addrDistrict) {
                     districtSelect.value = data.addrDistrict;
                     districtSelect.dispatchEvent(new Event('change'));
-                    await new Promise(r => setTimeout(r, 50));
+                    await new Promise(resolve => setTimeout(resolve, 50));
                 }
                 if (data.addrSubDistrict) {
                     subDistrictSelect.value = data.addrSubDistrict;
