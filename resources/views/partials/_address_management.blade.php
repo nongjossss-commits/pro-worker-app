@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isAddressDataFetched) return;
         try {
             // Use public_path helper to get the correct URL to the file in the public directory
-            const dataUrl = "{{ asset('data/thai-address-data.json') }}";
+            const dataUrl = "{{ asset('storage/data/thai-address-data.json') }}";
             const response = await fetch(dataUrl);
             if (!response.ok) throw new Error('Network response was not ok. Status: ' + response.status);
             thaiAddressData = await response.json();
