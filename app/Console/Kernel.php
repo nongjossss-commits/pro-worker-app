@@ -14,7 +14,6 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         \App\Console\Commands\CheckExpiries::class,
-        \App\Console\Commands\DownloadAddressData::class,
     ];
 
     /**
