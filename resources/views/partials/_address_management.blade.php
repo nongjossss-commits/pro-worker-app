@@ -114,137 +114,91 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('Address management script initialized.');
+
     const addressModalEl = document.getElementById('addressModal');
-    if (!addressModalEl) return;
+    if (!addressModalEl) {
+        console.error('Modal element #addressModal not found!');
+        return;
+    }
 
     // --- Element Cache ---
     const elements = {
-        modal: new bootstrap.Modal(addressModalEl),
-        form: document.getElementById('addressForm'),
-        modalLabel: document.getElementById('addressModalLabel'),
-        idInput: document.getElementById('addressId'),
-        typeInput: document.getElementById('addressType'),
-        errors: document.getElementById('address-errors'),
-        saveBtn: document.getElementById('saveAddress'),
         province: document.getElementById('addrProvince'),
         district: document.getElementById('addrDistrict'),
         subDistrict: document.getElementById('addrSubDistrict'),
-        zipCode: document.getElementById('addrZipCode'),
         provinceEn: document.getElementById('addrProvinceEn'),
-        districtEn: document.getElementById('addrDistrictEn'),
-        subDistrictEn: document.getElementById('addrSubDistrictEn'),
-        zipCodeEn: document.getElementById('addrZipCodeEn'),
     };
 
     let thaiAddressData = [];
     let isDataFetched = false;
 
-    // --- Data Fetching ---
     async function fetchThaiAddressData() {
-        if (isDataFetched) return;
+        if (isDataFetched) {
+            console.log('Data already fetched. Skipping.');
+            return;
+        }
         try {
             const dataUrl = `{{ asset('storage/data/thai-address-data.json') }}?v=${new Date().getTime()}`;
+            console.log('Fetching data from:', dataUrl);
             const response = await fetch(dataUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             thaiAddressData = await response.json();
             isDataFetched = true;
+            console.log('✅ Data fetched successfully!', thaiAddressData);
         } catch (error) {
-            console.error("Fatal Error: Could not fetch address data.", error);
-            elements.errors.innerHTML = 'ไม่สามารถโหลดข้อมูลที่อยู่ได้ กรุณาตรวจสอบไฟล์และลองอีกครั้ง';
-            elements.errors.style.display = 'block';
+            console.error("❌ Fatal Error: Could not fetch address data.", error);
         }
     }
 
-    // --- UI Helper Functions ---
-    function populateDropdown(selectEl, data, placeholder, valueField, textField) {
+    function populateDropdown(selectEl, data, placeholder) {
         selectEl.innerHTML = `<option selected disabled value="">--- ${placeholder} ---</option>`;
         data.forEach(item => {
-            const option = new Option(item[textField], item[valueField]);
-            // Store the entire object in a data attribute for easy access
-            option.dataset.object = JSON.stringify(item);
+            const option = new Option(item.name_th, item.name_th);
             selectEl.add(option);
         });
     }
 
-    function resetForm() {
-        elements.form.reset();
-        elements.errors.style.display = 'none';
-        elements.idInput.value = '';
-
-        // Reset and disable cascading dropdowns
-        ['district', 'subDistrict', 'provinceEn', 'districtEn', 'subDistrictEn'].forEach(key => {
-            elements[key].innerHTML = `<option selected disabled>--- ${elements[key].name.replace('addr', '').replace('En','')} ---</option>`;
-            elements[key].disabled = true;
-        });
-
-        elements.province.innerHTML = `<option selected disabled>--- เลือกจังหวัด ---</option>`;
-    }
-
     // --- Event Listeners ---
     elements.province.addEventListener('change', function () {
-        const selectedOption = this.options[this.selectedIndex];
-        const provinceData = JSON.parse(selectedOption.dataset.object);
+        console.log('--- Province Changed ---');
+        console.log('Selected Thai Province Value:', this.value);
 
         // Reset downstream selects
         elements.district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
         elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
+        elements.district.disabled = true;
         elements.subDistrict.disabled = true;
-        elements.zipCode.value = '';
 
-        if (provinceData && provinceData.amphure) {
-            populateDropdown(elements.district, provinceData.amphure, 'เลือกอำเภอ/เขต', 'name_th', 'name_th');
-            elements.provinceEn.value = provinceData.name_en; // Sync English province
-            elements.district.disabled = false; // Enable Thai district
+        console.log('Searching for province in thaiAddressData...');
+        const selectedProvinceData = thaiAddressData.find(p => p.name_th === this.value);
+
+        console.log('Found Province Object:', selectedProvinceData);
+
+        if (selectedProvinceData && selectedProvinceData.amphure) {
+            console.log('✅ Province found and has districts (amphure).');
+            populateDropdown(elements.district, selectedProvinceData.amphure, 'เลือกอำเภอ/เขต');
+
+            console.log('Attempting to sync English province to:', selectedProvinceData.name_en);
+            elements.provinceEn.value = selectedProvinceData.name_en;
+
+            console.log('Enabling district dropdown.');
+            elements.district.disabled = false;
+        } else {
+            console.error('❌ Province object not found or it has no districts.');
         }
+        console.log('--- Province Change End ---');
     });
 
-    elements.district.addEventListener('change', function () {
-        const selectedOption = this.options[this.selectedIndex];
-        const districtData = JSON.parse(selectedOption.dataset.object);
-
-        elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
-        elements.zipCode.value = '';
-
-        if (districtData && districtData.tambon) {
-            populateDropdown(elements.subDistrict, districtData.tambon, 'เลือกตำบล/แขวง', 'name_th', 'name_th');
-            elements.districtEn.value = districtData.name_en; // Sync English district
-            elements.subDistrict.disabled = false; // Enable Thai sub-district
-        }
-    });
-
-    elements.subDistrict.addEventListener('change', function () {
-        const selectedOption = this.options[this.selectedIndex];
-        const subDistrictData = JSON.parse(selectedOption.dataset.object);
-
-        if (subDistrictData) {
-            elements.zipCode.value = subDistrictData.zip_code || '';
-            elements.zipCodeEn.value = subDistrictData.zip_code || '';
-            elements.subDistrictEn.value = subDistrictData.name_en; // Sync English sub-district
-        }
-    });
-
-    // --- Modal Initialization ---
     addressModalEl.addEventListener('show.bs.modal', async function (event) {
-        resetForm();
+        console.log('Modal is showing. Initializing form...');
         await fetchThaiAddressData();
 
-        populateDropdown(elements.province, thaiAddressData, 'เลือกจังหวัด', 'name_th', 'name_th');
-        // Pre-populate all English dropdowns but keep them disabled
-        populateDropdown(elements.provinceEn, thaiAddressData, 'Province', 'name_en', 'name_en');
-        const allDistricts = thaiAddressData.flatMap(p => p.amphure || []);
-        populateDropdown(elements.districtEn, allDistricts, 'District', 'name_en', 'name_en');
-        const allSubDistricts = allDistricts.flatMap(d => d.tambon || []);
-        populateDropdown(elements.subDistrictEn, allSubDistricts, 'Sub-district', 'name_en', 'name_en');
-
-        const button = event.relatedTarget;
-        elements.idInput.value = button.getAttribute('data-id') || '';
-        elements.typeInput.value = button.getAttribute('data-address-type') || '';
-
-        if (elements.idInput.value) { // Edit Mode
-            elements.modalLabel.textContent = 'แก้ไขที่อยู่';
-            // Fetch and populate logic for edit mode can be added here if needed
-        } else { // Add Mode
-            elements.modalLabel.textContent = 'เพิ่มที่อยู่ใหม่';
+        if(isDataFetched) {
+            populateDropdown(elements.province, thaiAddressData, 'เลือกจังหวัด');
+            console.log('Initial province dropdown populated.');
+        } else {
+            console.error('Initialization failed because data could not be fetched.');
         }
     });
 });
