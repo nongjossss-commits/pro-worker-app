@@ -114,9 +114,8 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    //  --- START: Variable Definitions ---
     const isEditPage = @json(isset($employer));
-
-    // Modal and Form Elements
     const addressModalEl = document.getElementById('addressModal');
     if (!addressModalEl) return;
 
@@ -128,11 +127,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const addressErrors = document.getElementById('address-errors');
     const saveAddressBtn = document.getElementById('saveAddress');
 
-    // Form Field Elements
     const provinceSelect = document.getElementById('addrProvince');
     const districtSelect = document.getElementById('addrDistrict');
     const subDistrictSelect = document.getElementById('addrSubDistrict');
     const zipCodeInput = document.getElementById('addrZipCode');
+
     const provinceEnSelect = document.getElementById('addrProvinceEn');
     const districtEnSelect = document.getElementById('addrDistrictEn');
     const subDistrictEnSelect = document.getElementById('addrSubDistrictEn');
@@ -140,12 +139,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let thaiAddressData = [];
     let isAddressDataFetched = false;
+    // --- END: Variable Definitions ---
 
+    // --- START: Core Functions ---
     async function fetchThaiAddressData() {
         if (isAddressDataFetched) return;
         try {
-            // Use public_path helper to get the correct URL to the file in the public directory
-            const dataUrl = "{{ asset('storage/data/thai-address-data.json') }}";
+            const dataUrl = "{{ asset('storage/data/thai-address-data.json') }}?v=" + new Date().getTime();
             const response = await fetch(dataUrl);
             if (!response.ok) throw new Error('Network response was not ok. Status: ' + response.status);
             thaiAddressData = await response.json();
@@ -171,19 +171,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function populateEnglishSelect(selectElement, data, placeholder, valueField, textField) {
-         selectElement.innerHTML = `<option selected disabled value="">--- ${placeholder} ---</option>`;
-        data.forEach(item => {
-            const option = new Option(item[textField], item[valueField]);
-            selectElement.add(option);
-        });
-    }
-
     function resetAddressForm() {
         addressForm.reset();
         addressErrors.style.display = 'none';
         addressIdInput.value = '';
-
         districtSelect.innerHTML = '<option selected disabled>--- เลือกอำเภอ/เขต ---</option>';
         subDistrictSelect.innerHTML = '<option selected disabled>--- เลือกตำบล/แขวง ---</option>';
         provinceEnSelect.innerHTML = '<option selected disabled>--- Province ---</option>';
@@ -192,9 +183,9 @@ document.addEventListener('DOMContentLoaded', function () {
         districtSelect.disabled = true;
         subDistrictSelect.disabled = true;
     }
+    // --- END: Core Functions ---
 
-    // --- EVENT LISTENERS for Dropdowns ---
-
+    // --- START: Event Listeners for Dropdowns ---
     provinceSelect.addEventListener('change', function () {
         districtSelect.innerHTML = '<option selected disabled>--- เลือกอำเภอ/เขต ---</option>';
         subDistrictSelect.innerHTML = '<option selected disabled>--- เลือกตำบล/แขวง ---</option>';
@@ -205,9 +196,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (selectedProvinceData && selectedProvinceData.amphure) {
             populateDropdown(districtSelect, selectedProvinceData.amphure, 'เลือกอำเภอ/เขต', 'name_th', 'name_th', 'name_en');
-            populateEnglishSelect(provinceEnSelect, selectedProvinceData.amphure, 'Province', 'name_en', 'name_en');
 
-            // Sync English province dropdown
+            // Sync English province dropdown by setting its value
             provinceEnSelect.value = selectedProvinceData.name_en;
             districtSelect.disabled = false;
         } else {
@@ -226,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (selectedDistrictData && selectedDistrictData.tambon) {
                 populateDropdown(subDistrictSelect, selectedDistrictData.tambon, 'เลือกตำบล/แขวง', 'name_th', 'name_th', 'name_en');
 
-                // Sync English district dropdown
+                // Sync English district dropdown by setting its value
                 districtEnSelect.value = selectedDistrictData.name_en;
                 subDistrictSelect.disabled = false;
             } else {
@@ -241,15 +231,25 @@ document.addEventListener('DOMContentLoaded', function () {
         zipCodeInput.value = zipCode;
         if(zipCodeEnInput) zipCodeEnInput.value = zipCode;
 
-        // Sync English sub-district dropdown
+        // Sync English sub-district dropdown by setting its value
         subDistrictEnSelect.value = selectedOption.dataset.name_en || '';
     });
+    // --- END: Event Listeners for Dropdowns ---
 
+    // --- START: Modal Initialization ---
     addressModalEl.addEventListener('show.bs.modal', async function (event) {
         resetAddressForm();
         await fetchThaiAddressData();
+
+        // Populate ALL dropdowns with data first
         populateDropdown(provinceSelect, thaiAddressData, 'เลือกจังหวัด', 'name_th', 'name_th', 'name_en');
-        populateEnglishSelect(provinceEnSelect, thaiAddressData, 'Province', 'name_en', 'name_en');
+
+        // Populate English dropdowns (but keep them disabled)
+        populateDropdown(provinceEnSelect, thaiAddressData, 'Province', 'name_en', 'name_en');
+        const allDistricts = thaiAddressData.flatMap(p => p.amphure || []);
+        populateDropdown(districtEnSelect, allDistricts, 'District', 'name_en', 'name_en');
+        const allSubDistricts = allDistricts.flatMap(d => d.tambon || []);
+        populateDropdown(subDistrictEnSelect, allSubDistricts, 'Sub-district', 'name_en', 'name_en');
 
         const button = event.relatedTarget;
         const addressId = button.getAttribute('data-id');
@@ -272,12 +272,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.addrProvince) {
                     provinceSelect.value = data.addrProvince;
                     provinceSelect.dispatchEvent(new Event('change'));
-                    await new Promise(r => setTimeout(r, 100)); // Wait for UI to update
+                    await new Promise(r => setTimeout(r, 100));
                 }
                 if (data.addrDistrict) {
                     districtSelect.value = data.addrDistrict;
                     districtSelect.dispatchEvent(new Event('change'));
-                    await new Promise(r => setTimeout(r, 100)); // Wait
+                    await new Promise(r => setTimeout(r, 100));
                 }
                 if (data.addrSubDistrict) {
                     subDistrictSelect.value = data.addrSubDistrict;
@@ -293,9 +293,10 @@ document.addEventListener('DOMContentLoaded', function () {
             addressModalLabel.textContent = 'เพิ่มที่อยู่ใหม่';
         }
     });
+    // --- END: Modal Initialization ---
 
-    // Save Logic and other parts of the script remain the same
-    // ... (The rest of your existing script for saving/deleting addresses) ...
+    // Note: The save logic is handled by a separate function in the main view.
+    // This partial is only responsible for the UI logic of the modal form.
 });
 </script>
 @endpush
