@@ -113,104 +113,32 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    let addressData = [];
-    let isDataFetched = false;
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('--- SIMPLE TEST SCRIPT LOADED ---');
 
-    async function fetchAddressData() {
-        if (isDataFetched) return;
-        try {
-            const dataUrl = `{{ asset('storage/data/thai-address-data.json') }}?v=${Date.now()}`;
-            const response = await $.getJSON(dataUrl);
-            addressData = response;
-            isDataFetched = true;
-        } catch (error) {
-            console.error("jQuery AJAX Error: Could not fetch address data.", error);
-        }
-    }
+    const provinceSelect = document.getElementById('addrProvince');
+    const districtSelect = document.getElementById('addrDistrict');
 
-    function populateDropdown(selector, data, placeholder, valueKey, textKey) {
-        const dropdown = $(selector);
-        dropdown.empty().append($('<option>', {
-            text: `--- ${placeholder} ---`,
-            disabled: true,
-            selected: true
-        }));
-        $.each(data, function(index, item) {
-            dropdown.append($('<option>', {
-                value: item[valueKey],
-                text: item[textKey]
-            }));
+    if (provinceSelect) {
+        console.log('SUCCESS: Province dropdown element was found.');
+
+        provinceSelect.addEventListener('change', function() {
+            // If this event fires, it means the connection is working.
+            // A popup box should appear on the screen.
+            alert('SUCCESS! The Province Dropdown Event is working!');
+
+            // For the test, we will also try to manually enable the district.
+            if (districtSelect) {
+               districtSelect.disabled = false;
+               console.log('SUCCESS: District dropdown was manually enabled.');
+            } else {
+               console.log('ERROR: District dropdown element was NOT found.');
+            }
         });
+
+    } else {
+        console.error('CRITICAL FAILURE: Province dropdown element #addrProvince was NOT found!');
     }
-
-    // --- Main Logic using jQuery ---
-    $('#addrProvince').on('change', function() {
-        const selectedProvinceName = $(this).val();
-        const provinceData = addressData.find(p => p.name_th === selectedProvinceName);
-
-        // Reset and disable downstream
-        $('#addrDistrict').prop('disabled', true).html('<option selected disabled>--- เลือกอำเภอ/เขต ---</option>');
-        $('#addrSubDistrict').prop('disabled', true).html('<option selected disabled>--- เลือกตำบล/แขวง ---</option>');
-        $('#addrZipCode').val('');
-
-        if (provinceData && provinceData.amphoe) {
-            populateDropdown('#addrDistrict', provinceData.amphoe, 'เลือกอำเภอ/เขต', 'name_th', 'name_th');
-            $('#addrProvinceEn').val(provinceData.name_en);
-            $('#addrDistrict').prop('disabled', false); // Enable District
-        }
-    });
-
-    $('#addrDistrict').on('change', function() {
-        const selectedProvinceName = $('#addrProvince').val();
-        const provinceData = addressData.find(p => p.name_th === selectedProvinceName);
-        if (!provinceData) return;
-
-        const selectedDistrictName = $(this).val();
-        const districtData = provinceData.amphoe.find(d => d.name_th === selectedDistrictName);
-
-        // Reset sub-district
-        $('#addrSubDistrict').prop('disabled', true).html('<option selected disabled>--- เลือกตำบล/แขวง ---</option>');
-        $('#addrZipCode').val('');
-
-        if (districtData && districtData.tambon) {
-            populateDropdown('#addrSubDistrict', districtData.tambon, 'เลือกตำบล/แขวง', 'name_th', 'name_th');
-            $('#addrDistrictEn').val(districtData.name_en);
-            $('#addrSubDistrict').prop('disabled', false); // Enable Sub-district
-        }
-    });
-
-    $('#addrSubDistrict').on('change', function() {
-        const selectedProvinceName = $('#addrProvince').val();
-        const provinceData = addressData.find(p => p.name_th === selectedProvinceName);
-        if (!provinceData) return;
-
-        const selectedDistrictName = $('#addrDistrict').val();
-        const districtData = provinceData.amphoe.find(d => d.name_th === selectedDistrictName);
-        if (!districtData) return;
-
-        const selectedSubDistrictName = $(this).val();
-        const subDistrictData = districtData.tambon.find(s => s.name_th === selectedSubDistrictName);
-
-        if (subDistrictData) {
-            $('#addrZipCode').val(subDistrictData.zip_code || '');
-            $('#addrSubDistrictEn').val(subDistrictData.name_en);
-        }
-    });
-
-    $('#addressModal').on('show.bs.modal', async function() {
-        await fetchAddressData();
-        if (addressData.length > 0) {
-            populateDropdown('#addrProvince', addressData, 'เลือกจังหวัด', 'name_th', 'name_th');
-
-            // Pre-populate English dropdowns
-            populateDropdown('#addrProvinceEn', addressData, 'Province', 'name_en', 'name_en');
-            const allDistricts = addressData.flatMap(p => p.amphoe || []);
-            populateDropdown('#addrDistrictEn', allDistricts, 'District', 'name_en', 'name_en');
-            const allSubDistricts = allDistricts.flatMap(d => d.tambon || []);
-            populateDropdown('#addrSubDistrictEn', allSubDistricts, 'Sub-district', 'name_en', 'name_en');
-        }
-    });
 });
 </script>
 @endpush
