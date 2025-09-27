@@ -117,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const addressModalEl = document.getElementById('addressModal');
     if (!addressModalEl) return;
 
-    // --- 1. Get all elements ---
     const elements = {
         province: document.getElementById('addrProvince'),
         district: document.getElementById('addrDistrict'),
@@ -130,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let addressData = [];
 
-    // --- 2. Fetch data function ---
     async function fetchAddressData() {
         if (addressData.length > 0) return;
         try {
@@ -143,87 +141,85 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- 3. Populate dropdown function ---
-    function populateDropdown(selectEl, data, placeholder, nameKey) {
+    function populateDropdown(selectEl, data, placeholder, valueKey, textKey) {
         selectEl.innerHTML = `<option selected disabled value="">--- ${placeholder} ---</option>`;
         data.forEach(item => {
-            selectEl.add(new Option(item[nameKey], item[nameKey]));
+            selectEl.add(new Option(item[textKey], item[valueKey]));
         });
     }
 
-    // --- 4. THE CORRECT CORE LOGIC ---
-
-    // WHEN a Thai Province is selected...
-    elements.province.addEventListener('change', function () {
+    function resetCascadingDropdowns() {
         elements.district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
         elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
         elements.district.disabled = true;
         elements.subDistrict.disabled = true;
         elements.zipCode.value = '';
 
-        // CORRECT KEY: 'name'
-        const selectedProvinceData = addressData.find(p => p.name === this.value);
+        // Reset English dropdowns to their placeholder
+        if (elements.provinceEn.options.length > 0) elements.provinceEn.selectedIndex = 0;
+        if (elements.districtEn.options.length > 0) elements.districtEn.selectedIndex = 0;
+        if (elements.subDistrictEn.options.length > 0) elements.subDistrictEn.selectedIndex = 0;
+    }
 
-        // CORRECT KEY: 'districts'
-        if (selectedProvinceData && selectedProvinceData.districts) {
-            populateDropdown(elements.district, selectedProvinceData.districts, 'เลือกอำเภอ/เขต', 'name');
-            // CORRECT KEY: 'name_en'
+    elements.province.addEventListener('change', function () {
+        resetCascadingDropdowns();
+        const selectedProvinceData = addressData.find(p => p.name_th === this.value);
+
+        if (selectedProvinceData && selectedProvinceData.amphoe) {
+            populateDropdown(elements.district, selectedProvinceData.amphoe, 'เลือกอำเภอ/เขต', 'name_th', 'name_th');
             elements.provinceEn.value = selectedProvinceData.name_en;
             elements.district.disabled = false;
         }
     });
 
-    // WHEN a Thai District is selected...
     elements.district.addEventListener('change', function () {
-        const selectedProvinceData = addressData.find(p => p.name === elements.province.value);
+        const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
         if (!selectedProvinceData) return;
 
-        // CORRECT KEY: 'districts'
-        const selectedDistrictData = selectedProvinceData.districts.find(d => d.name === this.value);
+        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === this.value);
 
         elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
         elements.subDistrict.disabled = true;
         elements.zipCode.value = '';
 
-        // CORRECT KEY: 'subdistricts'
-        if (selectedDistrictData && selectedDistrictData.subdistricts) {
-            populateDropdown(elements.subDistrict, selectedDistrictData.subdistricts, 'เลือกตำบล/แขวง', 'name');
-            // CORRECT KEY: 'name_en'
+        if (selectedDistrictData && selectedDistrictData.tambon) {
+            populateDropdown(elements.subDistrict, selectedDistrictData.tambon, 'เลือกตำบล/แขวง', 'name_th', 'name_th');
             elements.districtEn.value = selectedDistrictData.name_en;
             elements.subDistrict.disabled = false;
         }
     });
 
-    // WHEN a Thai Sub-district is selected...
     elements.subDistrict.addEventListener('change', function () {
-        const selectedProvinceData = addressData.find(p => p.name === elements.province.value);
+        const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
         if (!selectedProvinceData) return;
-        const selectedDistrictData = selectedProvinceData.districts.find(d => d.name === elements.district.value);
+        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === elements.district.value);
         if (!selectedDistrictData) return;
 
-        // CORRECT KEY: 'subdistricts', 'zip_code'
-        const selectedSubDistrictData = selectedDistrictData.subdistricts.find(s => s.name === this.value);
+        const selectedSubDistrictData = selectedDistrictData.tambon.find(s => s.name_th === this.value);
+
         if (selectedSubDistrictData) {
             elements.zipCode.value = selectedSubDistrictData.zip_code || '';
-            // CORRECT KEY: 'name_en'
             elements.subDistrictEn.value = selectedSubDistrictData.name_en;
         }
     });
 
-    // --- 5. Modal Initialization ---
     addressModalEl.addEventListener('show.bs.modal', async function () {
         await fetchAddressData();
 
         if (addressData.length > 0) {
-            populateDropdown(elements.province, addressData, 'เลือกจังหวัด', 'name');
+            populateDropdown(elements.province, addressData, 'เลือกจังหวัด', 'name_th', 'name_th');
 
-            // Pre-populate English dropdowns
-            populateDropdown(elements.provinceEn, addressData, 'Province', 'name_en');
-            const allDistricts = addressData.flatMap(p => p.districts || []);
-            populateDropdown(elements.districtEn, allDistricts, 'District', 'name_en');
-            const allSubDistricts = allDistricts.flatMap(d => d.subdistricts || []);
-            populateDropdown(elements.subDistrictEn, allSubDistricts, 'Sub-district', 'name_en');
+            // Pre-populate all English dropdowns so their values can be set later
+            populateDropdown(elements.provinceEn, addressData, 'Province', 'name_en', 'name_en');
+            const allDistricts = addressData.flatMap(p => p.amphoe || []);
+            populateDropdown(elements.districtEn, allDistricts, 'District', 'name_en', 'name_en');
+            const allSubDistricts = allDistricts.flatMap(d => d.tambon || []);
+            populateDropdown(elements.subDistrictEn, allSubDistricts, 'Sub-district', 'name_en', 'name_en');
         }
+
+        // Reset form state for a clean slate
+        resetCascadingDropdowns();
+        document.getElementById('addressForm').reset();
     });
 });
 </script>
