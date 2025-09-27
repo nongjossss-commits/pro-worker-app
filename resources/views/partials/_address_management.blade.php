@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function fetchAddressData() {
         if (addressData.length > 0) return;
         try {
-            const dataUrl = `{{ asset('storage/data/thai-address-data.json') }}?v=${new Date().getTime()}`;
+            const dataUrl = `{{ asset('storage/data/thai-address-data.json') }}?v=${Date.now()}`;
             const response = await fetch(dataUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             addressData = await response.json();
