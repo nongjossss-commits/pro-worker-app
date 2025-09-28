@@ -161,17 +161,17 @@ document.addEventListener('DOMContentLoaded', function () {
         // Reset all dropdowns that come after it
         elements.district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
         elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
-        elements.district.disabled = true;
+        elements.district.disabled = false;
         elements.subDistrict.disabled = true;
         elements.zipCode.value = '';
 
         // Find the selected province's data from the master list
         const selectedProvinceData = addressData.find(p => p.name_th === this.value);
-
+        console.log(addressData);
         // If found...
-        if (selectedProvinceData && selectedProvinceData.amphoe) {
+        if (selectedProvinceData && selectedProvinceData.districts) {
             // Use its data to populate the next dropdown
-            populateDropdown(elements.district, selectedProvinceData.amphoe, 'เลือกอำเภอ/เขต', 'name_th');
+            populateDropdown(elements.district, selectedProvinceData.districts, 'เลือกอำเภอ/เขต', 'name_th');
             // Sync the English province value
             elements.provinceEn.value = selectedProvinceData.name_en;
             // **Unlock the district dropdown**
@@ -189,12 +189,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
         if (!selectedProvinceData) return;
 
-        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === this.value);
+        const selectedDistrictData = selectedProvinceData.districts.find(d => d.name_th === this.value);
 
         // If found...
-        if (selectedDistrictData && selectedDistrictData.tambon) {
+        if (selectedDistrictData && selectedDistrictData.sub_districts) {
             // Use its data to populate the next dropdown
-            populateDropdown(elements.subDistrict, selectedDistrictData.tambon, 'เลือกตำบล/แขวง', 'name_th');
+            populateDropdown(elements.subDistrict, selectedDistrictData.sub_districts, 'เลือกตำบล/แขวง', 'name_th');
             // Sync the English district value
             elements.districtEn.value = selectedDistrictData.name_en;
             // **Unlock the sub-district dropdown**
@@ -206,10 +206,10 @@ document.addEventListener('DOMContentLoaded', function () {
     elements.subDistrict.addEventListener('change', function () {
         const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
         if (!selectedProvinceData) return;
-        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === elements.district.value);
+        const selectedDistrictData = selectedProvinceData.districts.find(d => d.name_th === elements.district.value);
         if (!selectedDistrictData) return;
 
-        const selectedSubDistrictData = selectedDistrictData.tambon.find(s => s.name_th === this.value);
+        const selectedSubDistrictData = selectedDistrictData.sub_districts.find(s => s.name_th === this.value);
 
         // If found...
         if (selectedSubDistrictData) {
