@@ -232,7 +232,6 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    @stack('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const renewModal = document.getElementById('renewNotificationModal');
@@ -423,5 +422,6 @@
         }
     });
     </script>
+    @stack('scripts')
 </body>
 </html>
