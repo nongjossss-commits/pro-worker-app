@@ -61,9 +61,10 @@
                         </div>
                         <div class="col-md-6">
                             <label for="addrProvinceEn" class="form-label">Province (EN)</label>
-                            <select class="form-select" id="addrProvinceEn" name="addrProvinceEn" disabled>
+                            <input type="text" class="form-control" id="addrProvinceEn" name="addrProvinceEn" disabled>
+                            <!-- <select class="form-select" id="addrProvinceEn" name="addrProvinceEn" disabled>
                                 <option selected disabled>--- Province ---</option>
-                            </select>
+                            </select> -->
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -75,9 +76,10 @@
                         </div>
                          <div class="col-md-6">
                             <label for="addrDistrictEn" class="form-label">District (EN)</label>
-                            <select class="form-select" id="addrDistrictEn" name="addrDistrictEn" disabled>
+                            <input type="text" class="form-control" id="addrDistrictEn" name="addrDistrictEn" disabled>
+                            <!-- <select class="form-select" id="addrDistrictEn" name="addrDistrictEn" disabled>
                                 <option selected disabled>--- District ---</option>
-                            </select>
+                            </select> -->
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -89,9 +91,10 @@
                         </div>
                         <div class="col-md-6">
                             <label for="addrSubDistrictEn" class="form-label">Sub-district (EN)</label>
-                            <select class="form-select" id="addrSubDistrictEn" name="addrSubDistrictEn" disabled>
+                            <input type="text" class="form-control" id="addrSubDistrictEn" name="addrSubDistrictEn" disabled>
+                            <!-- <select class="form-select" id="addrSubDistrictEn" name="addrSubDistrictEn" disabled>
                                 <option selected disabled>--- Sub-district ---</option>
-                            </select>
+                            </select> -->
                         </div>
                     </div>
                      <div class="row mb-3">
@@ -113,32 +116,129 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('--- SIMPLE TEST SCRIPT LOADED ---');
+document.addEventListener('DOMContentLoaded', function () {
+    const addressModalEl = document.getElementById('addressModal');
+    if (!addressModalEl) return;
 
-    const provinceSelect = document.getElementById('addrProvince');
-    const districtSelect = document.getElementById('addrDistrict');
+    // --- 1. Get all elements we need to control ---
+    const elements = {
+        province: document.getElementById('addrProvince'),
+        district: document.getElementById('addrDistrict'),
+        subDistrict: document.getElementById('addrSubDistrict'),
+        zipCode: document.getElementById('addrZipCode'),
+        provinceEn: document.getElementById('addrProvinceEn'),
+        districtEn: document.getElementById('addrDistrictEn'),
+        subDistrictEn: document.getElementById('addrSubDistrictEn'),
+    };
 
-    if (provinceSelect) {
-        console.log('SUCCESS: Province dropdown element was found.');
+    let addressData = [];
 
-        provinceSelect.addEventListener('change', function() {
-            // If this event fires, it means the connection is working.
-            // A popup box should appear on the screen.
-            alert('SUCCESS! The Province Dropdown Event is working!');
-
-            // For the test, we will also try to manually enable the district.
-            if (districtSelect) {
-               districtSelect.disabled = false;
-               console.log('SUCCESS: District dropdown was manually enabled.');
-            } else {
-               console.log('ERROR: District dropdown element was NOT found.');
-            }
-        });
-
-    } else {
-        console.error('CRITICAL FAILURE: Province dropdown element #addrProvince was NOT found!');
+    // --- 2. Function to fetch data (This part is working perfectly) ---
+    async function fetchAddressData() {
+        if (addressData.length > 0) return;
+        try {
+            const dataUrl = `{{ asset('storage/data/thai-address-data.json') }}?v=${Date.now()}`;
+            const response = await fetch(dataUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            addressData = await response.json();
+        } catch (error) {
+            console.error("Fatal Error: Could not fetch address data.", error);
+        }
     }
+
+    // --- 3. Function to populate dropdowns ---
+    function populateDropdown(selectEl, data, placeholder, nameKey) {
+        selectEl.innerHTML = `<option selected disabled value="">--- ${placeholder} ---</option>`;
+        data.forEach(item => {
+            selectEl.add(new Option(item[nameKey], item[nameKey]));
+        });
+    }
+
+    // --- 4. The CORE LOGIC, based on your successful analysis ---
+
+    // WHEN a Thai Province is selected...
+    elements.province.addEventListener('change', function () {
+        // Reset all dropdowns that come after it
+        elements.district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
+        elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
+        elements.district.disabled = true;
+        elements.subDistrict.disabled = true;
+        elements.zipCode.value = '';
+
+        // Find the selected province's data from the master list
+        const selectedProvinceData = addressData.find(p => p.name_th === this.value);
+
+        // If found...
+        if (selectedProvinceData && selectedProvinceData.amphoe) {
+            // Use its data to populate the next dropdown
+            populateDropdown(elements.district, selectedProvinceData.amphoe, 'เลือกอำเภอ/เขต', 'name_th');
+            // Sync the English province value
+            elements.provinceEn.value = selectedProvinceData.name_en;
+            // **Unlock the district dropdown**
+            elements.district.disabled = false;
+        }
+    });
+
+    // WHEN a Thai District is selected...
+    elements.district.addEventListener('change', function () {
+        // Reset the sub-district dropdown
+        elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
+        elements.subDistrict.disabled = true;
+        elements.zipCode.value = '';
+
+        const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
+        if (!selectedProvinceData) return;
+
+        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === this.value);
+
+        // If found...
+        if (selectedDistrictData && selectedDistrictData.tambon) {
+            // Use its data to populate the next dropdown
+            populateDropdown(elements.subDistrict, selectedDistrictData.tambon, 'เลือกตำบล/แขวง', 'name_th');
+            // Sync the English district value
+            elements.districtEn.value = selectedDistrictData.name_en;
+            // **Unlock the sub-district dropdown**
+            elements.subDistrict.disabled = false;
+        }
+    });
+
+    // WHEN a Thai Sub-district is selected...
+    elements.subDistrict.addEventListener('change', function () {
+        const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
+        if (!selectedProvinceData) return;
+        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === elements.district.value);
+        if (!selectedDistrictData) return;
+
+        const selectedSubDistrictData = selectedDistrictData.tambon.find(s => s.name_th === this.value);
+
+        // If found...
+        if (selectedSubDistrictData) {
+            // Set the zip code and sync the English sub-district value
+            elements.zipCode.value = selectedSubDistrictData.zip_code || '';
+            elements.subDistrictEn.value = selectedSubDistrictData.name_en;
+        }
+    });
+
+    // --- 5. Modal Initialization ---
+    addressModalEl.addEventListener('show.bs.modal', async function () {
+        await fetchAddressData();
+
+        if (addressData.length > 0) {
+            // When modal opens, ONLY populate the first dropdown.
+            populateDropdown(elements.province, addressData, 'เลือกจังหวัด', 'name_th');
+
+            // Also populate the English dropdowns so their values can be set later
+            populateDropdown(elements.provinceEn, addressData, 'Province', 'name_en');
+            const allDistricts = addressData.flatMap(p => p.amphoe || []);
+            populateDropdown(elements.districtEn, allDistricts, 'District', 'name_en');
+            const allSubDistricts = allDistricts.flatMap(d => d.tambon || []);
+            populateDropdown(elements.subDistrictEn, allSubDistricts, 'Sub-district', 'name_en');
+        }
+        // ... rest of modal logic for add/edit ...
+    });
 });
+
+
+
 </script>
 @endpush
