@@ -236,6 +236,85 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         // ... rest of modal logic for add/edit ...
     });
+
+    // --- START: NEW CODE FOR SAVING ADDRESS ---
+    $('#saveAddress').on('click', function() {
+        const form = $('#addressForm');
+        const addressId = $('#addressId').val();
+
+        let url = '';
+        let method = '';
+
+        if (addressId) {
+            // This is an update
+            url = `/addresses/${addressId}`;
+            method = 'PUT';
+        } else {
+            // This is a new address
+            url = "{{ route('addresses.store') }}";
+            method = 'POST';
+        }
+
+        // Add employer_id to the form data
+        const employerId = '{{ $employer->id ?? null }}';
+        let formData = form.serialize();
+        if (employerId) {
+            formData += `&employer_id=${employerId}`;
+        }
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    $('#addressModal').modal('hide');
+
+                    // Create the HTML for the new address card
+                    const addressCardHtml = `
+                        <div class="address-card d-flex justify-content-between align-items-start" id="address-card-${response.address.id}">
+                            <div>
+                                <p class="mb-0">${response.full_address_th}</p>
+                                <p class="mb-0 text-muted small">${response.full_address_en}</p>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary edit-address-btn" data-id="${response.address.id}" data-bs-toggle="modal" data-bs-target="#addressModal"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="${response.address.id}"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>`;
+
+                    const addressType = $('#addressType').val();
+                    const listContainer = $(`#${addressType}AddressList`);
+
+                    if (addressId) {
+                        // Replace existing card
+                        $(`#address-card-${addressId}`).replaceWith(addressCardHtml);
+                    } else {
+                        // Add new card
+                        if (listContainer.find('.text-muted').length > 0) {
+                            listContainer.html(addressCardHtml); // Replace 'No address' text
+                        } else {
+                            listContainer.append(addressCardHtml);
+                        }
+                    }
+
+                    // Simple alert for now, can be replaced with a nicer notification
+                    alert(response.message);
+                }
+            },
+            error: function(xhr) {
+                // Handle validation errors
+                const errors = xhr.responseJSON.errors;
+                let errorHtml = '<ul>';
+                $.each(errors, function(key, value) {
+                    errorHtml += `<li>${value[0]}</li>`;
+                });
+                errorHtml += '</ul>';
+                $('#address-errors').html(errorHtml).show();
+            }
+        });
+    });
+    // --- END: NEW CODE FOR SAVING ADDRESS ---
 });
 
 
