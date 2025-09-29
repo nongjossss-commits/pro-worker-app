@@ -12,6 +12,8 @@
                     @csrf
                     <input type="hidden" id="addressId" name="id">
                     <input type="hidden" id="addressType" name="type">
+                    <input type="hidden" id="addressableId" name="addressable_id">
+                    <input type="hidden" id="addressableType" name="addressable_type">
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrNo" class="form-label">บ้านเลขที่ (ไทย)</label>
