@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const terminationReason = document.getElementById('terminationReason').value;
 
             if (!terminateDate) {
-                alert('กรุณาเลือกวันที่แจ้งออก');
+                showToast('กรุณาเลือกวันที่แจ้งออก', 'danger');
                 return;
             }
 
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Simple refresh to update history list automatically
                     location.reload();
                 } else {
-                    alert(data.message || 'เกิดข้อผิดพลาดในการแจ้งออก');
+                    showToast(data.message || 'เกิดข้อผิดพลาดในการแจ้งออก', 'danger');
                 }
             })
             .catch(error => console.error('Error:', error));
@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // For simplicity, reload the page to update both lists
                         location.reload();
                     } else {
-                        alert(data.message || 'Failed to restore employee.');
+                        showToast(data.message || 'Failed to restore employee.', 'danger');
                     }
                 })
                 .catch(error => console.error('Restore Error:', error));
@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (data.success) {
                         employeeCard.remove();
                     } else {
-                        alert(data.message || 'Failed to delete employee.');
+                        showToast(data.message || 'Failed to delete employee.', 'danger');
                     }
                 })
                 .catch(error => console.error('Delete Error:', error));
