@@ -232,6 +232,20 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    {{-- Toast Notification Container --}}
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi bi-check-circle-fill rounded me-2 text-success"></i>
+                <strong class="me-auto">การแจ้งเตือน</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-body-content">
+                </div>
+        </div>
+    </div>
+
     @stack('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -422,6 +436,29 @@
             newJobOwnerNameInput.classList.remove('is-invalid');
         }
     });
+    </script>
+    <script>
+    // Global Toast Function
+    function showToast(message, type = 'success') {
+        const toastLiveExample = document.getElementById('liveToast');
+        const toastBody = document.getElementById('toast-body-content');
+        const toastIcon = toastLiveExample.querySelector('.toast-header i');
+
+        toastBody.textContent = message;
+
+        // Customize icon based on type
+        toastIcon.className = 'rounded me-2'; // Reset classes
+        if (type === 'success') {
+            toastIcon.classList.add('bi', 'bi-check-circle-fill', 'text-success');
+        } else if (type === 'error') {
+            toastIcon.classList.add('bi', 'bi-x-circle-fill', 'text-danger');
+        } else {
+            toastIcon.classList.add('bi', 'bi-info-circle-fill', 'text-info');
+        }
+
+        const toast = new bootstrap.Toast(toastLiveExample);
+        toast.show();
+    }
     </script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 @section('content')
 <div class="content-section">
     <h2 class="mb-4">เพิ่มข้อมูลนายจ้าง</h2>
-    <form action="{{ route('employers.store') }}" method="POST" enctype="multipart/form-data">
+    <form id="saveEmployerForm" action="{{ route('employers.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
         @if ($errors->any())
@@ -184,3 +184,120 @@
 @endsection
 
 @include('partials._address_management')
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Temporary Address Storage ---
+    let tempRegisteredAddresses = [];
+    let tempWorkplaceAddresses = [];
+
+    const registeredAddressList = document.getElementById('registeredAddressList');
+    const workplaceAddressList = document.getElementById('workplaceAddressList');
+    const mainForm = document.getElementById('saveEmployerForm');
+    const addressModalEl = document.getElementById('addressModal');
+    const addressModal = new bootstrap.Modal(addressModalEl);
+    const addressForm = document.getElementById('addressForm');
+    const saveAddressButton = document.getElementById('saveAddress');
+    const originalSaveButtonText = saveAddressButton.innerHTML;
+
+    // This is the create page, so we override the default AJAX save behavior
+    const isCreatePage = true; // Simple flag to confirm context
+
+    function renderAddressList(container, addresses, type) {
+        if (addresses.length === 0) {
+            container.innerHTML = '<p class="text-muted">ยังไม่มีที่อยู่</p>';
+            return;
+        }
+
+        container.innerHTML = ''; // Clear existing
+        addresses.forEach((address, index) => {
+            const card = document.createElement('div');
+            card.className = 'address-card d-flex justify-content-between align-items-start';
+            card.innerHTML = `
+                <div>
+                    <p class="mb-0">
+                        เลขที่ ${address.addrNo ?? ''} หมู่ ${address.addrMoo ?? ''} ซอย${address.addrSoi ?? ''} ถนน${address.addrRoad ?? ''}
+                        แขวง/ตำบล ${address.addrSubDistrict ?? ''} เขต/อำเภอ ${address.addrDistrict ?? ''}
+                        ${address.addrProvince ?? ''} ${address.addrZipCode ?? ''}
+                    </p>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-danger remove-temp-address-btn" data-type="${type}" data-index="${index}"><i class="bi bi-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function handleSaveAddressTemporarily() {
+        const formData = new FormData(addressForm);
+        const addressData = Object.fromEntries(formData.entries());
+        const addressType = document.getElementById('addressType').value;
+
+        // Basic validation check
+        if (!addressData.addrNo || !addressData.addrProvince || !addressData.addrDistrict || !addressData.addrSubDistrict) {
+             alert('กรุณากรอกข้อมูลที่อยู่ให้ครบถ้วน');
+             return;
+        }
+
+        if (addressType === 'registered') {
+            tempRegisteredAddresses.push(addressData);
+            renderAddressList(registeredAddressList, tempRegisteredAddresses, 'registered');
+        } else if (addressType === 'workplace') {
+            tempWorkplaceAddresses.push(addressData);
+            renderAddressList(workplaceAddressList, tempWorkplaceAddresses, 'workplace');
+        }
+
+        addressModal.hide();
+    }
+
+    // Override the save button's click event ONLY on this page
+    if (isCreatePage) {
+        // Clone and replace the button to remove existing event listeners from the partial
+        const newSaveAddressButton = saveAddressButton.cloneNode(true);
+        saveAddressButton.parentNode.replaceChild(newSaveAddressButton, saveAddressButton);
+        newSaveAddressButton.addEventListener('click', handleSaveAddressTemporarily);
+    }
+
+    // Handle removal of a temporary address
+    document.addEventListener('click', function(e) {
+        const removeBtn = e.target.closest('.remove-temp-address-btn');
+        if (removeBtn) {
+            const type = removeBtn.dataset.type;
+            const index = parseInt(removeBtn.dataset.index, 10);
+
+            if (type === 'registered') {
+                tempRegisteredAddresses.splice(index, 1);
+                renderAddressList(registeredAddressList, tempRegisteredAddresses, 'registered');
+            } else if (type === 'workplace') {
+                tempWorkplaceAddresses.splice(index, 1);
+                renderAddressList(workplaceAddressList, tempWorkplaceAddresses, 'workplace');
+            }
+        }
+    });
+
+    // Before submitting the main form, serialize the temp addresses into the hidden fields
+    mainForm.addEventListener('submit', function (e) {
+        document.getElementById('registered_addresses_json').value = JSON.stringify(tempRegisteredAddresses);
+        document.getElementById('workplace_addresses_json').value = JSON.stringify(tempWorkplaceAddresses);
+    });
+
+    // Reset form on modal close
+    addressModalEl.addEventListener('hidden.bs.modal', function () {
+        addressForm.reset();
+        // Reset dropdowns to their initial disabled state
+        document.getElementById('addrDistrict').disabled = true;
+        document.getElementById('addrSubDistrict').disabled = true;
+    });
+
+     // Set address type when "Add Address" is clicked
+    document.querySelectorAll('.add-address-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const addressType = this.getAttribute('data-address-type');
+            document.getElementById('addressType').value = addressType;
+        });
+    });
+});
+</script>
+@endpush

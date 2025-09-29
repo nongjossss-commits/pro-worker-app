@@ -303,8 +303,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Fallback if the function doesn't exist yet
                     window.location.reload();
                 }
-                // You might want a nicer notification system later
-                alert('บันทึกที่อยู่เรียบร้อยแล้ว');
+                // Use the new, global toast notification system
+                showToast('บันทึกที่อยู่เรียบร้อยแล้ว');
             }
 
         } catch (error) {
