@@ -228,24 +228,25 @@ document.addEventListener('DOMContentLoaded', function () {
         elements.form.reset();
     });
 
-    // --- FINAL FIX: Event Listener for the Save Button ---
+    // --- START: NEW CODE FOR SAVING ADDRESS ---
     elements.saveBtn.addEventListener('click', async function() {
         const formData = new FormData(elements.form);
+
         if(employerId) {
              formData.append('employer_id', employerId);
         }
 
         const addressId = elements.idInput.value;
         let url = addressId ? `/addresses/${addressId}` : "{{ route('addresses.store') }}";
-        let method = addressId ? 'POST' : 'POST'; // Use POST for update with _method field
 
+        // For handling PUT method in Laravel with FormData
         if(addressId){
             formData.append('_method', 'PUT');
         }
 
         try {
             const response = await fetch(url, {
-                method: 'POST', // Always POST for forms
+                method: 'POST', // HTML forms with FormData only support GET/POST
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
                     'Accept': 'application/json',
@@ -256,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const result = await response.json();
 
             if (!response.ok) {
+                // Handle validation errors from Laravel
                 let errorHtml = '<ul>';
                 for (const key in result.errors) {
                     errorHtml += `<li>${result.errors[key][0]}</li>`;
@@ -265,8 +267,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 elements.errors.style.display = 'block';
             } else {
                 elements.modal.hide();
-                alert(result.message);
-                location.reload(); // Simple reload to show the new address
+                alert(result.message); // Show success message
+                location.reload(); // Reload the page to show the new address
             }
         } catch (error) {
             console.error('Save Error:', error);
@@ -274,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
             elements.errors.style.display = 'block';
         }
     });
+    // --- END: NEW CODE FOR SAVING ADDRESS ---
 });
 </script>
 @endpush
