@@ -167,7 +167,14 @@
                     </p>
                 </div>
                 <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-secondary edit-address-btn" data-id="{{ $address->id }}" data-bs-toggle="modal" data-bs-target="#addressModal"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-secondary edit-address-btn"
+                            data-id="{{ $address->id }}"
+                            data-addressable-id="{{ $employer->id }}"
+                            data-addressable-type="{{ get_class($employer) }}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addressModal">
+                        <i class="bi bi-pencil"></i>
+                    </button>
                     <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                 </div>
             </div>
@@ -201,7 +208,14 @@
                     </p>
                 </div>
                 <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-secondary edit-address-btn" data-id="{{ $address->id }}" data-bs-toggle="modal" data-bs-target="#addressModal"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-secondary edit-address-btn"
+                            data-id="{{ $address->id }}"
+                            data-addressable-id="{{ $employer->id }}"
+                            data-addressable-type="{{ get_class($employer) }}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addressModal">
+                        <i class="bi bi-pencil"></i>
+                    </button>
                     <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                 </div>
             </div>
