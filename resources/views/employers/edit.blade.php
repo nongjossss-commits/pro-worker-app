@@ -143,85 +143,87 @@
     </form>
 </div>
 
-{{-- Registered Address Section --}}
-<div class="content-section mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
-        <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="registered" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addressModal">
-            <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
-        </button>
-    </div>
-    <div id="registeredAddressList" class="vstack gap-3">
-        @forelse ($employer->addresses->where('type', 'registered') as $address)
-            <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
-                <div>
-                    <p class="mb-0">
-                        เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
-                        แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
-                        {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
-                    </p>
-                    <p class="mb-0 text-muted small">
-                        Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
-                        {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
-                        {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
-                    </p>
+<div id="addressListsContainer">
+    {{-- Registered Address Section --}}
+    <div class="content-section mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="registered" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addressModal">
+                <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+            </button>
+        </div>
+        <div id="registeredAddressList" class="vstack gap-3">
+            @forelse ($employer->addresses->where('type', 'registered') as $address)
+                <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
+                    <div>
+                        <p class="mb-0">
+                            เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
+                            แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
+                            {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
+                        </p>
+                        <p class="mb-0 text-muted small">
+                            Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
+                            {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
+                            {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
+                        </p>
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary edit-address-btn"
+                                data-id="{{ $address->id }}"
+                                data-addressable-id="{{ $employer->id }}"
+                                data-addressable-type="employer"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addressModal">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
+                    </div>
                 </div>
-                <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-secondary edit-address-btn"
-                            data-id="{{ $address->id }}"
-                            data-addressable-id="{{ $employer->id }}"
-                            data-addressable-type="{{ get_class($employer) }}"
-                            data-bs-toggle="modal"
-                            data-bs-target="#addressModal">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
-                </div>
-            </div>
-        @empty
-            <p class="text-muted">ยังไม่มีที่อยู่</p>
-        @endforelse
+            @empty
+                <p class="text-muted">ยังไม่มีที่อยู่</p>
+            @endforelse
+        </div>
     </div>
-</div>
 
-{{-- Workplace Address Section --}}
-<div class="content-section mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
-        <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="workplace" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addressModal">
-            <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
-        </button>
-    </div>
-    <div id="workplaceAddressList" class="vstack gap-3">
-        @forelse ($employer->addresses->where('type', 'workplace') as $address)
-            <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
-                <div>
-                    <p class="mb-0">
-                        เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
-                        แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
-                        {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
-                    </p>
-                    <p class="mb-0 text-muted small">
-                        Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
-                        {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
-                        {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
-                    </p>
+    {{-- Workplace Address Section --}}
+    <div class="content-section mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="workplace" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addressModal">
+                <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+            </button>
+        </div>
+        <div id="workplaceAddressList" class="vstack gap-3">
+            @forelse ($employer->addresses->where('type', 'workplace') as $address)
+                <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
+                    <div>
+                        <p class="mb-0">
+                            เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
+                            แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
+                            {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
+                        </p>
+                        <p class="mb-0 text-muted small">
+                            Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
+                            {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
+                            {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
+                        </p>
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary edit-address-btn"
+                                data-id="{{ $address->id }}"
+                                data-addressable-id="{{ $employer->id }}"
+                                data-addressable-type="employer"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addressModal">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
+                    </div>
                 </div>
-                <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-secondary edit-address-btn"
-                            data-id="{{ $address->id }}"
-                            data-addressable-id="{{ $employer->id }}"
-                            data-addressable-type="{{ get_class($employer) }}"
-                            data-bs-toggle="modal"
-                            data-bs-target="#addressModal">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
-                </div>
-            </div>
-        @empty
-            <p class="text-muted">ยังไม่มีที่อยู่</p>
-        @endforelse
+            @empty
+                <p class="text-muted">ยังไม่มีที่อยู่</p>
+            @endforelse
+        </div>
     </div>
 </div>
 
@@ -755,25 +757,122 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const addressModal = document.getElementById('addressModal');
-    addressModal.addEventListener('show.bs.modal', function (event) {
-        // Button that triggered the modal
-        const button = event.relatedTarget;
+function resetAddressForm() {
+    const form = document.getElementById('addressForm');
+    if (form) form.reset();
+    document.getElementById('addressId').value = '';
+    const district = document.getElementById('addrDistrict');
+    district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
+    district.disabled = true;
+    const subDistrict = document.getElementById('addrSubDistrict');
+    subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
+    subDistrict.disabled = true;
+    const errors = document.getElementById('address-errors');
+    if (errors) {
+        errors.style.display = 'none';
+        errors.innerHTML = '';
+    }
+}
 
-        // Extract info from data-* attributes
+async function fetchAddressForEdit(addressId) {
+    try {
+        const response = await fetch(`/addresses/${addressId}/edit`);
+        if (!response.ok) throw new Error('Failed to fetch address data');
+        const address = await response.json();
+
+        document.getElementById('addressId').value = address.id;
+        document.getElementById('addressType').value = address.type;
+        document.getElementById('addrNo').value = address.addrNo || '';
+        document.getElementById('addrNoEn').value = address.addrNoEn || '';
+        document.getElementById('addrMoo').value = address.addrMoo || '';
+        document.getElementById('addrMooEn').value = address.addrMooEn || '';
+        document.getElementById('addrSoi').value = address.addrSoi || '';
+        document.getElementById('addrSoiEn').value = address.addrSoiEn || '';
+        document.getElementById('addrRoad').value = address.addrRoad || '';
+        document.getElementById('addrRoadEn').value = address.addrRoadEn || '';
+
+        const provinceEl = document.getElementById('addrProvince');
+        provinceEl.value = address.addrProvince;
+        provinceEl.dispatchEvent(new Event('change'));
+
+        setTimeout(() => {
+            const districtEl = document.getElementById('addrDistrict');
+            districtEl.value = address.addrDistrict;
+            districtEl.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+                const subDistrictEl = document.getElementById('addrSubDistrict');
+                subDistrictEl.value = address.addrSubDistrict;
+                subDistrictEl.dispatchEvent(new Event('change'));
+            }, 250);
+        }, 250);
+
+    } catch (error) {
+        console.error('Error fetching address for edit:', error);
+        showToast('เกิดข้อผิดพลาดในการโหลดข้อมูลที่อยู่', 'danger');
+    }
+}
+
+async function deleteAddress(id) {
+    const url = `/addresses/${id}`;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            }
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'เกิดข้อผิดพลาดในการลบ');
+        }
+
+        const addressCard = document.getElementById(`address-card-${id}`);
+        if (addressCard) {
+            addressCard.remove();
+        }
+        showToast('ลบที่อยู่เรียบร้อยแล้ว');
+
+    } catch (error) {
+        console.error('Delete Address Error:', error);
+        showToast(`เกิดข้อผิดพลาด: ${error.message}`, 'danger');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addressModalEl = document.getElementById('addressModal');
+
+    addressModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const addressId = button.getAttribute('data-id');
         const addressableId = button.getAttribute('data-addressable-id');
         const addressableType = button.getAttribute('data-addressable-type');
-        const addressType = button.getAttribute('data-type');
 
-        // Update the modal's hidden fields
-        const modalAddressableId = addressModal.querySelector('#addressableId');
-        const modalAddressableType = addressModal.querySelector('#addressableType');
-        const modalAddressType = addressModal.querySelector('#addressType');
+        document.getElementById('addressableId').value = addressableId;
+        // Use the simple string 'employer' passed from the button
+        document.getElementById('addressableType').value = addressableType;
 
-        modalAddressableId.value = addressableId;
-        modalAddressableType.value = addressableType;
-        modalAddressType.value = addressType;
+        if (addressId) { // EDIT MODE
+            document.getElementById('addressModalLabel').innerText = 'แก้ไขที่อยู่';
+            fetchAddressForEdit(addressId);
+        } else { // ADD MODE
+            document.getElementById('addressModalLabel').innerText = 'เพิ่มที่อยู่';
+            resetAddressForm();
+            document.getElementById('addressType').value = button.getAttribute('data-type');
+        }
+    });
+
+    document.getElementById('addressListsContainer').addEventListener('click', function(e) {
+        const deleteBtn = e.target.closest('.delete-address-btn');
+        if (deleteBtn) {
+            const addressId = deleteBtn.getAttribute('data-id');
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?')) {
+                deleteAddress(addressId);
+            }
+        }
     });
 });
 </script>
