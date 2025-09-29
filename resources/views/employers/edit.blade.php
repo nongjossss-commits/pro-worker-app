@@ -147,7 +147,7 @@
 <div class="content-section mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
-        <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="registered" data-addressable-id="{{ $employer->id }}" data-addressable-type="{{ get_class($employer) }}" data-bs-toggle="modal" data-bs-target="#addressModal">
+        <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="registered" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addressModal">
             <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
         </button>
     </div>
@@ -181,7 +181,7 @@
 <div class="content-section mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
-        <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="workplace" data-addressable-id="{{ $employer->id }}" data-addressable-type="{{ get_class($employer) }}" data-bs-toggle="modal" data-bs-target="#addressModal">
+        <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="workplace" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addressModal">
             <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
         </button>
     </div>
