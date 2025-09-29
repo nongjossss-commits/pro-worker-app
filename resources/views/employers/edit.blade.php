@@ -168,14 +168,6 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary edit-address-btn"
-                                data-id="{{ $address->id }}"
-                                data-addressable-id="{{ $employer->id }}"
-                                data-addressable-type="employer"
-                                data-bs-toggle="modal"
-                                data-bs-target="#addressModal">
-                            <i class="bi bi-pencil"></i>
-                        </button>
                         <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
@@ -209,14 +201,6 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary edit-address-btn"
-                                data-id="{{ $address->id }}"
-                                data-addressable-id="{{ $employer->id }}"
-                                data-addressable-type="employer"
-                                data-bs-toggle="modal"
-                                data-bs-target="#addressModal">
-                            <i class="bi bi-pencil"></i>
-                        </button>
                         <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
@@ -869,9 +853,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const deleteBtn = e.target.closest('.delete-address-btn');
         if (deleteBtn) {
             const addressId = deleteBtn.getAttribute('data-id');
-            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?')) {
-                deleteAddress(addressId);
-            }
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: "คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'ใช่, ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteAddress(addressId);
+                }
+            });
         }
     });
 });
