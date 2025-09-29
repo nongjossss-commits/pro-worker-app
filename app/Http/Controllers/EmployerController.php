@@ -223,6 +223,12 @@ public function edit(Request $request, Employer $employer)
     ));
 }
 
+    public function listAddresses(Employer $employer)
+    {
+        $employer->load('addresses');
+        return view('employers._address_lists', compact('employer'));
+    }
+
     /**
      * Update the specified resource in storage.
      */

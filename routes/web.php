@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
     Route::get('/employers/{employer}/export-history', [EmployerController::class, 'exportHistory'])->name('employers.exportHistory');
     Route::resource('employers', EmployerController::class);
+    Route::get('/employers/{employer}/addresses', [EmployerController::class, 'listAddresses'])->name('employers.addresses.list');
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/filter-history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
     Route::post('employees/{employee}/terminate', [EmployerController::class, 'terminate'])->name('employees.terminate');
