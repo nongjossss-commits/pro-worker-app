@@ -168,14 +168,6 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary edit-address-btn"
-                                data-id="{{ $address->id }}"
-                                data-addressable-id="{{ $employer->id }}"
-                                data-addressable-type="employer"
-                                data-bs-toggle="modal"
-                                data-bs-target="#addressModal">
-                            <i class="bi bi-pencil"></i>
-                        </button>
                         <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
@@ -209,14 +201,6 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary edit-address-btn"
-                                data-id="{{ $address->id }}"
-                                data-addressable-id="{{ $employer->id }}"
-                                data-addressable-type="employer"
-                                data-bs-toggle="modal"
-                                data-bs-target="#addressModal">
-                            <i class="bi bi-pencil"></i>
-                        </button>
                         <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
@@ -851,6 +835,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const addressableId = button.getAttribute('data-addressable-id');
         const addressableType = button.getAttribute('data-addressable-type');
 
+        const addressForm = document.getElementById('addressForm');
+        // FIX: Ensure all text input fields are enabled
+        const textInputs = addressForm.querySelectorAll('input[type="text"]');
+        textInputs.forEach(input => {
+            input.disabled = false;
+            input.readOnly = false;
+        });
+
         document.getElementById('addressableId').value = addressableId;
         // Use the simple string 'employer' passed from the button
         document.getElementById('addressableType').value = addressableType;
@@ -869,9 +861,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const deleteBtn = e.target.closest('.delete-address-btn');
         if (deleteBtn) {
             const addressId = deleteBtn.getAttribute('data-id');
-            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?')) {
-                deleteAddress(addressId);
-            }
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: "คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'ใช่, ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteAddress(addressId);
+                }
+            });
         }
     });
 });
