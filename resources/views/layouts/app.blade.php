@@ -440,25 +440,22 @@
     });
     </script>
     <script>
-    // Global Toast Function
     function showToast(message, type = 'success') {
-        const toastLiveExample = document.getElementById('liveToast');
+        const toastEl = document.getElementById('liveToast');
         const toastBody = document.getElementById('toast-body-content');
-        const toastIcon = toastLiveExample.querySelector('.toast-header i');
+        const toastIcon = toastEl.querySelector('.toast-header i');
 
-        toastBody.textContent = message;
+        // Reset classes
+        toastIcon.className = 'rounded me-2';
 
-        // Customize icon based on type
-        toastIcon.className = 'rounded me-2'; // Reset classes
         if (type === 'success') {
             toastIcon.classList.add('bi', 'bi-check-circle-fill', 'text-success');
-        } else if (type === 'error') {
-            toastIcon.classList.add('bi', 'bi-x-circle-fill', 'text-danger');
-        } else {
-            toastIcon.classList.add('bi', 'bi-info-circle-fill', 'text-info');
+        } else if (type === 'danger') {
+            toastIcon.classList.add('bi', 'bi-exclamation-triangle-fill', 'text-danger');
         }
 
-        const toast = new bootstrap.Toast(toastLiveExample);
+        toastBody.textContent = message;
+        const toast = new bootstrap.Toast(toastEl);
         toast.show();
     }
     </script>

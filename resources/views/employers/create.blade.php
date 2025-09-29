@@ -146,29 +146,31 @@
             </div>
         </div>
         <hr>
-        {{-- Registered Address Section --}}
-        <div class="content-section mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
-                <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addressModal" data-address-type="registered">
-                    <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
-                </button>
+        <div id="addressListsContainer">
+            {{-- Registered Address Section --}}
+            <div class="content-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
+                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addressModal" data-address-type="registered">
+                        <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+                    </button>
+                </div>
+                <div id="registeredAddressList" class="vstack gap-3">
+                    <p class="text-muted">ยังไม่มีที่อยู่</p>
+                </div>
             </div>
-            <div id="registeredAddressList" class="vstack gap-3">
-                <p class="text-muted">ยังไม่มีที่อยู่</p>
-            </div>
-        </div>
 
-        {{-- Workplace Address Section --}}
-        <div class="content-section mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
-                <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addressModal" data-address-type="workplace">
-                    <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
-                </button>
-            </div>
-            <div id="workplaceAddressList" class="vstack gap-3">
-                <p class="text-muted">ยังไม่มีที่อยู่</p>
+            {{-- Workplace Address Section --}}
+            <div class="content-section mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
+                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addressModal" data-address-type="workplace">
+                        <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+                    </button>
+                </div>
+                <div id="workplaceAddressList" class="vstack gap-3">
+                    <p class="text-muted">ยังไม่มีที่อยู่</p>
+                </div>
             </div>
         </div>
 
@@ -202,33 +204,93 @@ document.addEventListener('DOMContentLoaded', function () {
     const originalSaveButtonText = saveAddressButton.innerHTML;
 
     // This is the create page, so we override the default AJAX save behavior
-    const isCreatePage = true; // Simple flag to confirm context
+    const isCreatePage = true;
 
-    function renderAddressList(container, addresses, type) {
+    // --- START: NEW/UPDATED CODE FOR CREATE PAGE ---
+    let currentlyEditing = null; // { type: 'registered', index: 0 }
+
+    function getFullAddressStringFromObject(addr) {
+        const th_parts = [
+            addr.addrNo,
+            addr.addrMoo ? `หมู่ ${addr.addrMoo}` : '',
+            addr.addrSoi ? `ซอย${addr.addrSoi}` : '',
+            addr.addrRoad ? `ถนน${addr.addrRoad}` : '',
+            addr.addrSubDistrict,
+            addr.addrDistrict,
+            addr.addrProvince,
+            addr.addrZipCode
+        ].filter(Boolean).join(' ');
+
+        const en_parts = [
+            addr.addrNoEn,
+            addr.addrMooEn ? `Moo ${addr.addrMooEn}` : '',
+            addr.addrSoiEn ? `Soi ${addr.addrSoiEn}` : '',
+            addr.addrRoadEn ? `Road ${addr.addrRoadEn}` : '',
+            addr.addrSubDistrictEn,
+            addr.addrDistrictEn,
+            addr.addrProvinceEn,
+            addr.addrZipCodeEn
+        ].filter(Boolean).join(', ');
+
+        return {
+            th: th_parts || 'N/A',
+            en: en_parts || 'N/A'
+        };
+    }
+
+
+    function renderTempAddressList(type) {
+        const listContainer = document.getElementById(type === 'registered' ? 'registeredAddressList' : 'workplaceAddressList');
+        const addresses = type === 'registered' ? tempRegisteredAddresses : tempWorkplaceAddresses;
+
+        listContainer.innerHTML = ''; // Clear previous list
         if (addresses.length === 0) {
-            container.innerHTML = '<p class="text-muted">ยังไม่มีที่อยู่</p>';
+            listContainer.innerHTML = '<p class="text-muted fst-italic">ยังไม่มีที่อยู่</p>';
             return;
         }
 
-        container.innerHTML = ''; // Clear existing
-        addresses.forEach((address, index) => {
+        addresses.forEach((addr, index) => {
+            const fullAddress = getFullAddressStringFromObject(addr); // Function to format address
             const card = document.createElement('div');
             card.className = 'address-card d-flex justify-content-between align-items-start';
             card.innerHTML = `
                 <div>
-                    <p class="mb-0">
-                        เลขที่ ${address.addrNo ?? ''} หมู่ ${address.addrMoo ?? ''} ซอย${address.addrSoi ?? ''} ถนน${address.addrRoad ?? ''}
-                        แขวง/ตำบล ${address.addrSubDistrict ?? ''} เขต/อำเภอ ${address.addrDistrict ?? ''}
-                        ${address.addrProvince ?? ''} ${address.addrZipCode ?? ''}
-                    </p>
+                    <p class="mb-0">${fullAddress.th}</p>
+                    <p class="mb-0 text-muted small">${fullAddress.en}</p>
                 </div>
                 <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-danger remove-temp-address-btn" data-type="${type}" data-index="${index}"><i class="bi bi-trash"></i></button>
+                    <button type="button" class="btn btn-outline-secondary temp-edit-address-btn" data-type="${type}" data-index="${index}" title="แก้ไข"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-danger temp-delete-address-btn" data-type="${type}" data-index="${index}" title="ลบ"><i class="bi bi-trash"></i></button>
                 </div>
             `;
-            container.appendChild(card);
+            listContainer.appendChild(card);
         });
     }
+
+    function openAddressModalForTemp(type, index, addressToEdit) {
+        addressForm.reset();
+        document.getElementById('addressType').value = type;
+
+        // Populate the form with the address data
+        for (const key in addressToEdit) {
+            if (addressForm.elements[key]) {
+                addressForm.elements[key].value = addressToEdit[key];
+            }
+        }
+        // Specific handling for selects might be needed if they are dynamically populated
+        // For now, assuming values are straightforward
+        document.getElementById('addrProvince').value = addressToEdit.addrProvince;
+        // You might need to re-enable and re-populate district/sub-district dropdowns here if they depend on the province
+        document.getElementById('addrDistrict').disabled = false;
+        document.getElementById('addrDistrict').value = addressToEdit.addrDistrict;
+        document.getElementById('addrSubDistrict').disabled = false;
+        document.getElementById('addrSubDistrict').value = addressToEdit.addrSubDistrict;
+
+
+        currentlyEditing = { type, index };
+        addressModal.show();
+    }
+
 
     function handleSaveAddressTemporarily() {
         const formData = new FormData(addressForm);
@@ -237,42 +299,63 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Basic validation check
         if (!addressData.addrNo || !addressData.addrProvince || !addressData.addrDistrict || !addressData.addrSubDistrict) {
-             alert('กรุณากรอกข้อมูลที่อยู่ให้ครบถ้วน');
+             showToast('กรุณากรอกข้อมูลที่อยู่ให้ครบถ้วน', 'danger');
              return;
         }
 
-        if (addressType === 'registered') {
-            tempRegisteredAddresses.push(addressData);
-            renderAddressList(registeredAddressList, tempRegisteredAddresses, 'registered');
-        } else if (addressType === 'workplace') {
-            tempWorkplaceAddresses.push(addressData);
-            renderAddressList(workplaceAddressList, tempWorkplaceAddresses, 'workplace');
+        if (currentlyEditing) {
+            // Update existing address
+            const { type, index } = currentlyEditing;
+            if (type === 'registered') {
+                tempRegisteredAddresses[index] = addressData;
+            } else {
+                tempWorkplaceAddresses[index] = addressData;
+            }
+        } else {
+            // Add new address
+            if (addressType === 'registered') {
+                tempRegisteredAddresses.push(addressData);
+            } else if (addressType === 'workplace') {
+                tempWorkplaceAddresses.push(addressData);
+            }
         }
 
+        renderTempAddressList(currentlyEditing ? currentlyEditing.type : addressType);
+        currentlyEditing = null; // Reset editing state
         addressModal.hide();
     }
 
     // Override the save button's click event ONLY on this page
     if (isCreatePage) {
-        // Clone and replace the button to remove existing event listeners from the partial
         const newSaveAddressButton = saveAddressButton.cloneNode(true);
         saveAddressButton.parentNode.replaceChild(newSaveAddressButton, saveAddressButton);
         newSaveAddressButton.addEventListener('click', handleSaveAddressTemporarily);
     }
 
-    // Handle removal of a temporary address
-    document.addEventListener('click', function(e) {
-        const removeBtn = e.target.closest('.remove-temp-address-btn');
-        if (removeBtn) {
-            const type = removeBtn.dataset.type;
-            const index = parseInt(removeBtn.dataset.index, 10);
+    // Add ONE event listener to handle all clicks on both address lists
+    document.getElementById('addressListsContainer').addEventListener('click', function(e) {
+        const editBtn = e.target.closest('.temp-edit-address-btn');
+        const deleteBtn = e.target.closest('.temp-delete-address-btn');
 
-            if (type === 'registered') {
-                tempRegisteredAddresses.splice(index, 1);
-                renderAddressList(registeredAddressList, tempRegisteredAddresses, 'registered');
-            } else if (type === 'workplace') {
-                tempWorkplaceAddresses.splice(index, 1);
-                renderAddressList(workplaceAddressList, tempWorkplaceAddresses, 'workplace');
+        if (editBtn) {
+            const type = editBtn.dataset.type;
+            const index = parseInt(editBtn.dataset.index, 10);
+            const addressToEdit = (type === 'registered' ? tempRegisteredAddresses : tempWorkplaceAddresses)[index];
+
+            openAddressModalForTemp(type, index, addressToEdit);
+        }
+
+        if (deleteBtn) {
+            const type = deleteBtn.dataset.type;
+            const index = parseInt(deleteBtn.dataset.index, 10);
+
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?')) {
+                if (type === 'registered') {
+                    tempRegisteredAddresses.splice(index, 1);
+                } else {
+                    tempWorkplaceAddresses.splice(index, 1);
+                }
+                renderTempAddressList(type);
             }
         }
     });
