@@ -385,97 +385,83 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // --- START: NEW & REFINED ADDRESS MANAGEMENT SCRIPT ---
+    // --- START: NEW & COMPLETE ADDRESS SCRIPT ---
 
-    // === 1. GLOBAL VARIABLES & ELEMENTS ===
-    const employerId = "{{ $employer->id }}";
+    // === 1. GLOBAL ELEMENTS & VARIABLES ===
     const addressModalEl = document.getElementById('addressModal');
     const addressModal = new bootstrap.Modal(addressModalEl);
     const addressForm = document.getElementById('addressForm');
-    const addressErrors = document.getElementById('address-errors');
     const saveAddressButton = document.getElementById('saveAddress');
+    const addressErrors = document.getElementById('address-errors');
     let thaiAddressData = []; // Cache for the address JSON data
 
-    // === 2. CORE EVENT LISTENERS (Delegation) ===
+    // === 2. EVENT LISTENERS (Using Event Delegation for robustness) ===
 
-    // Listener for ADD buttons
-    // Note: We need to re-bind this if the address list is ever dynamically refreshed
-    function bindAddAddressListeners() {
-        document.querySelectorAll('.add-address-btn').forEach(button => {
-            // Prevent multiple listeners by removing old one first
-            button.replaceWith(button.cloneNode(true));
-        });
-        document.querySelectorAll('.add-address-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                openModalForAdd(button);
-            });
-        });
-    }
-
-
-    // Listener for EDIT and DELETE buttons inside the list container
-    document.getElementById('addressListsContainer').addEventListener('click', function(e) {
+    // This single listener handles clicks for ADD, EDIT, and DELETE buttons anywhere on the page
+    document.body.addEventListener('click', function(e) {
+        const addBtn = e.target.closest('.add-address-btn');
         const editBtn = e.target.closest('.edit-address-btn');
+        const deleteBtn = e.target.closest('.delete-address-btn');
+
+        if (addBtn) {
+            e.preventDefault();
+            openModalFor('add', addBtn);
+        }
         if (editBtn) {
             e.preventDefault();
-            openModalForEdit(editBtn);
-            return;
+            openModalFor('edit', editBtn);
         }
-
-        const deleteBtn = e.target.closest('.delete-address-btn');
         if (deleteBtn) {
             e.preventDefault();
             handleDelete(deleteBtn);
         }
     });
 
-    // Listener for the main SAVE button in the modal
+    // The ONE listener for the Save button in the modal
     saveAddressButton.addEventListener('click', saveAddress);
 
-    // Listener for modal opening to fetch address data
-    addressModalEl.addEventListener('show.bs.modal', function (event) {
-        initializeThaiAddressDropdowns();
-    });
+    // === 3. CORE MODAL & FORM FUNCTIONS ===
 
-
-    // === 3. MODAL AND ACTION FUNCTIONS ===
-
-    function openModalForAdd(button) {
+    function openModalFor(mode, button) {
         resetAddressForm();
-        addressForm.querySelector('#addressModalLabel').textContent = 'เพิ่มที่อยู่';
-        document.getElementById('addressableId').value = button.getAttribute('data-addressable-id');
-        document.getElementById('addressableType').value = button.getAttribute('data-addressable-type');
-        document.getElementById('addressType').value = button.getAttribute('data-type');
-        // addressModal.show(); // show.bs.modal handles this
-    }
 
-    function openModalForEdit(button) {
-        resetAddressForm();
-        addressForm.querySelector('#addressModalLabel').textContent = 'แก้ไขที่อยู่';
-        const addressId = button.getAttribute('data-id');
-        document.getElementById('addressId').value = addressId;
-        document.getElementById('addressableId').value = button.getAttribute('data-addressable-id');
-        document.getElementById('addressableType').value = button.getAttribute('data-addressable-type');
+        // Set data from the button that was clicked
+        const addressableId = button.getAttribute('data-addressable-id');
+        const addressableType = button.getAttribute('data-addressable-type');
 
-        fetch(`/addresses/${addressId}/edit`)
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(data => {
-                populateAddressForm(data);
-                // addressModal.show(); // show.bs.modal handles this
-            })
-            .catch(error => {
-                console.error('Error fetching address for edit:', error);
-                showToast('ไม่สามารถโหลดข้อมูลที่อยู่ได้', 'danger');
-            });
+        // THIS IS THE CRITICAL FIX: Ensure these values are ALWAYS set in the form
+        document.getElementById('addressableId').value = addressableId;
+        document.getElementById('addressableType').value = addressableType;
+
+        if (mode === 'add') {
+            addressForm.querySelector('#addressModalLabel').textContent = 'เพิ่มที่อยู่';
+            document.getElementById('addressType').value = button.getAttribute('data-type');
+            addressModal.show();
+        }
+        else if (mode === 'edit') {
+            addressForm.querySelector('#addressModalLabel').textContent = 'แก้ไขที่อยู่';
+            const addressId = button.getAttribute('data-id'); // Corrected attribute name
+            document.getElementById('addressId').value = addressId;
+
+            // Fetch existing address data and populate the form
+            fetch(`/addresses/${addressId}/edit`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    populateAddressForm(data);
+                    addressModal.show();
+                })
+                .catch(error => {
+                    console.error('Error fetching address for edit:', error);
+                    showToast('ไม่สามารถโหลดข้อมูลที่อยู่ได้', 'danger');
+                });
+        }
     }
 
     function handleDelete(button) {
-        const addressId = button.getAttribute('data-id');
-
+        const addressId = button.getAttribute('data-id'); // Corrected attribute name
         Swal.fire({
             title: 'ยืนยันการลบ',
             text: "คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?",
@@ -487,12 +473,12 @@ document.addEventListener('DOMContentLoaded', function () {
             cancelButtonText: 'ยกเลิก'
         }).then((result) => {
             if (result.isConfirmed) {
-                deleteAddress(addressId);
+                deleteAddress(addressId); // Use preserved helper function
             }
         });
     }
 
-    // === 4. AJAX FUNCTIONS ===
+    // === 4. PRESERVED & INTEGRATED HELPER FUNCTIONS ===
 
     async function saveAddress() {
         const formData = new FormData(addressForm);
@@ -569,7 +555,6 @@ document.addEventListener('DOMContentLoaded', function () {
                  throw new Error(errorData.message || 'Server responded with an error.');
             }
 
-
             const result = await response.json();
             if (result.success) {
                 showToast('ลบที่อยู่เรียบร้อยแล้ว', 'success');
@@ -583,21 +568,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-
-    // === 5. UI & HELPER FUNCTIONS ===
-
     async function refreshAddressLists() {
         try {
-            // This assumes you have a route like 'employers.addresses.list'
             const response = await fetch("{{ route('employers.addresses.list', $employer->id) }}");
             if (!response.ok) throw new Error('Failed to fetch updated address list.');
             const html = await response.text();
             document.getElementById('addressListsContainer').innerHTML = html;
-            bindAddAddressListeners(); // Re-attach listeners to the new content
+            // No need to re-bind listeners thanks to event delegation on document.body
         } catch (error) {
             console.error('Refresh Error:', error);
-            // Fallback to reload if AJAX refresh fails
-            location.reload();
+            location.reload(); // Fallback to reload if AJAX refresh fails
         }
     }
 
@@ -612,9 +592,11 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('addrDistrict').disabled = true;
         document.getElementById('addrSubDistrict').innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
         document.getElementById('addrSubDistrict').disabled = true;
+        document.getElementById('addrZipCode').value = '';
     }
 
     function populateAddressForm(data) {
+        // This function populates all form fields from the data object
         document.getElementById('addressType').value = data.type;
         document.getElementById('addrNo').value = data.addrNo || '';
         document.getElementById('addrNoEn').value = data.addrNoEn || '';
@@ -625,10 +607,12 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('addrRoad').value = data.addrRoad || '';
         document.getElementById('addrRoadEn').value = data.addrRoadEn || '';
 
+        // Manually trigger change events to load dependent dropdowns
         const provinceEl = document.getElementById('addrProvince');
         provinceEl.value = data.addrProvince;
         provinceEl.dispatchEvent(new Event('change'));
 
+        // Use setTimeout to allow the district dropdown to populate before setting its value
         setTimeout(() => {
             const districtEl = document.getElementById('addrDistrict');
             districtEl.value = data.addrDistrict;
@@ -637,12 +621,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const subDistrictEl = document.getElementById('addrSubDistrict');
                 subDistrictEl.value = data.addrSubDistrict;
                 subDistrictEl.dispatchEvent(new Event('change'));
-            }, 300);
-        }, 300);
+            }, 250); // Delay may need adjustment
+        }, 250); // Delay may need adjustment
     }
 
 
-    // === 6. THAI ADDRESS DROPDOWN LOGIC ===
+    // === 5. THAI ADDRESS DROPDOWN LOGIC (Preserved) ===
     const thaiDropdowns = {
         province: document.getElementById('addrProvince'),
         district: document.getElementById('addrDistrict'),
@@ -678,6 +662,9 @@ document.addEventListener('DOMContentLoaded', function () {
             populateDropdown(thaiDropdowns.province, thaiAddressData, 'เลือกจังหวัด', 'name_th');
         }
     }
+
+    // Initialize on modal show to ensure it's ready
+    addressModalEl.addEventListener('show.bs.modal', initializeThaiAddressDropdowns);
 
     thaiDropdowns.province.addEventListener('change', function () {
         thaiDropdowns.district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
@@ -722,12 +709,10 @@ document.addEventListener('DOMContentLoaded', function () {
             thaiDropdowns.subDistrictEn.value = selectedSubDistrictData.name_en;
         }
     });
-
-    // --- Initializations ---
-    bindAddAddressListeners();
+    // --- END: NEW & COMPLETE ADDRESS SCRIPT ---
 
 
-    // --- Other scripts from original file ---
+    // --- OTHER SCRIPTS FROM ORIGINAL FILE (PRESERVED) ---
     const employerIdForOthers = '{{ $employer->id }}';
 
     // --- Terminate Employee Logic ---
