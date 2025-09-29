@@ -383,17 +383,5 @@
 </div>
 
 @section('scripts')
-<script>
-// Pass configuration data from Laravel to JavaScript
-window.employerEditConfig = {
-    employerId: {{ $employer->id }},
-    urls: {
-        addressesStore: "{{ route('addresses.store') }}",
-        addressesList: "{{ route('employers.addresses.list', $employer->id) }}",
-        addressDataJson: "{{ asset('storage/data/thai-address-data.json') }}",
-        historyFilter: "{{ route('employers.history.filter', $employer->id) }}"
-    }
-};
-</script>
-<script src="{{ asset('js/employer-form-edit.js') }}"></script>
+<script src="{{ asset('js/address-manager.js') }}"></script>
 @endsection

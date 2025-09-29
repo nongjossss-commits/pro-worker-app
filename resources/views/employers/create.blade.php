@@ -174,9 +174,6 @@
             </div>
         </div>
 
-        <input type="hidden" name="registered_addresses" id="registered_addresses_json">
-        <input type="hidden" name="workplace_addresses" id="workplace_addresses_json">
-
         <div class="mt-4">
             <button type="submit" class="btn btn-primary">บันทึก</button>
             <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
@@ -188,5 +185,5 @@
 @include('partials._address_management')
 
 @section('scripts')
-<script src="{{ asset('js/employer-form-create.js') }}"></script>
+<script src="{{ asset('js/address-manager.js') }}"></script>
 @endsection
