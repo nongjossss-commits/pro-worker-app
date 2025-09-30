@@ -5,9 +5,7 @@ namespace Tests\Feature\Admin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use App\Providers\RouteServiceProvider;
+use Database\Seeders\RoleAndPermissionSeeder;
 
 class RolesPermissionsPageTest extends TestCase
 {
@@ -20,39 +18,36 @@ class RolesPermissionsPageTest extends TestCase
     {
         parent::setUp();
 
-        // Manually register routes for this test to ensure they are discovered
-        $this->artisan('config:clear');
-        $this->artisan('route:clear');
+        // Seed the database with roles and permissions
+        $this->seed(RoleAndPermissionSeeder::class);
 
-        // Create roles and permissions
-        $adminRole = Role::create(['name' => 'admin']);
-        $staffRole = Role::create(['name' => 'staff']);
-
-        // Create a dummy user and assign roles
+        // Create users and assign roles
         $this->adminUser = User::factory()->create();
-        $this->adminUser->assignRole($adminRole);
+        $this->adminUser->assignRole('admin');
 
         $this->staffUser = User::factory()->create();
-        $this->staffUser->assignRole($staffRole);
+        $this->staffUser->assignRole('staff');
     }
 
     public function test_guests_cannot_access_admin_page()
     {
-        $response = $this->get('/admin/roles-permissions');
+        $response = $this->get(route('admin.roles_permissions.index'));
         $response->assertRedirect(route('login'));
     }
 
     public function test_non_admin_users_are_forbidden()
     {
-        $response = $this->actingAs($this->staffUser)->get('/admin/roles-permissions');
+        $response = $this->actingAs($this->staffUser)->get(route('admin.roles_permissions.index'));
         $response->assertStatus(403);
     }
 
     public function test_admin_user_can_access_admin_page()
     {
-        $response = $this->actingAs($this->adminUser)->get('/admin/roles-permissions');
+        $response = $this->actingAs($this->adminUser)->get(route('admin.roles_permissions.index'));
 
         $response->assertStatus(200);
         $response->assertSeeText('Manage Roles and Permissions');
+        $response->assertSee('admin');
+        $response->assertSee('staff');
     }
 }
