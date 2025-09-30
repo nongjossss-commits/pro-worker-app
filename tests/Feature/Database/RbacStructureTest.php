@@ -10,23 +10,18 @@ class RbacStructureTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Remove the deprecated "@test" annotation and use the "test" keyword in the method name
-     * or use the #[Test] attribute for PHPUnit 10+. For now, we'll rename the method.
-     */
-    public function test_it_has_the_correct_rbac_tables_and_columns()
+    public function test_it_has_the_correct_spatie_permission_tables()
     {
-        // Since we use RefreshDatabase, the migrations are already run before this test executes.
-        // We no longer need to check if the table doesn't exist, or run migrate manually.
-        // We just need to assert that the final state is correct.
-
+        // Assert that the tables from the Spatie package migrations exist.
         $this->assertTrue(Schema::hasTable('roles'), 'The "roles" table is missing.');
         $this->assertTrue(Schema::hasTable('permissions'), 'The "permissions" table is missing.');
-        $this->assertTrue(Schema::hasTable('role_user'), 'The "role_user" pivot table is missing.');
-        $this->assertTrue(Schema::hasTable('permission_role'), 'The "permission_role" pivot table is missing.');
+        $this->assertTrue(Schema::hasTable('model_has_permissions'), 'The "model_has_permissions" table is missing.');
+        $this->assertTrue(Schema::hasTable('model_has_roles'), 'The "model_has_roles" table is missing.');
+        $this->assertTrue(Schema::hasTable('role_has_permissions'), 'The "role_has_permissions" table is missing.');
 
+        // Assert that the 'roles' table has the columns defined by the Spatie package.
         $this->assertTrue(Schema::hasColumns('roles', [
-            'id', 'name', 'description', 'created_at', 'updated_at'
+            'id', 'name', 'guard_name', 'created_at', 'updated_at'
         ]), 'The "roles" table is missing required columns.');
     }
 }
