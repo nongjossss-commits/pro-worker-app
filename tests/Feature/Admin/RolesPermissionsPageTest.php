@@ -19,11 +19,12 @@ class RolesPermissionsPageTest extends TestCase
     {
         parent::setUp();
 
-        // Create roles and permissions
+        // 1. Manually create all necessary roles and permissions for this test file
         $adminRole = Role::create(['name' => 'admin']);
         $staffRole = Role::create(['name' => 'staff']);
+        Permission::create(['name' => 'view-dashboard']); // Example permission
 
-        // Create a dummy user and assign roles
+        // 2. Create specific users for testing and assign roles directly
         $this->adminUser = User::factory()->create();
         $this->adminUser->assignRole($adminRole);
 
@@ -43,11 +44,13 @@ class RolesPermissionsPageTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_admin_user_can_access_admin_page()
+    public function test_admin_user_can_access_admin_page_and_it_returns_the_correct_view()
     {
         $response = $this->actingAs($this->adminUser)->get('/admin/roles-permissions');
 
-        $response->assertStatus(200);
-        $response->assertSeeText('Manage Roles and Permissions');
+        // 3. Assert the most important things:
+        $response->assertStatus(200); // It was successful
+        $response->assertViewIs('admin.roles_permissions.index'); // It returned the correct view file
+        $response->assertSee('Manage Roles and Permissions'); // It contains the correct title text
     }
 }
