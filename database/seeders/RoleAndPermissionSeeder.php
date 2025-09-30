@@ -3,15 +3,12 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Role;
-use App\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use App\Models\User;
 
 class RoleAndPermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         // Reset cached roles and permissions
@@ -38,10 +35,10 @@ class RoleAndPermissionSeeder extends Seeder
         }
 
         // Create Roles and assign existing permissions
-        $adminRole = Role::create(['name' => 'admin', 'description' => 'Administrator with all permissions']);
+        $adminRole = Role::create(['name' => 'admin']);
         $adminRole->givePermissionTo(Permission::all());
 
-        $staffRole = Role::create(['name' => 'staff', 'description' => 'Staff member with limited permissions']);
+        $staffRole = Role::create(['name' => 'staff']);
         $staffRole->givePermissionTo(['view-employers', 'view-employees', 'edit-employees']);
 
         // Assign Admin role to the test user
