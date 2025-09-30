@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>@yield('title', 'Company Records')</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +16,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <style>
         :root {
@@ -232,6 +236,20 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    {{-- Toast Notification Container --}}
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi bi-check-circle-fill rounded me-2 text-success"></i>
+                <strong class="me-auto">การแจ้งเตือน</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-body-content">
+                </div>
+        </div>
+    </div>
+
     @stack('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -423,5 +441,26 @@
         }
     });
     </script>
+    <script>
+    function showToast(message, type = 'success') {
+        const toastEl = document.getElementById('liveToast');
+        const toastBody = document.getElementById('toast-body-content');
+        const toastIcon = toastEl.querySelector('.toast-header i');
+
+        // Reset classes
+        toastIcon.className = 'rounded me-2';
+
+        if (type === 'success') {
+            toastIcon.classList.add('bi', 'bi-check-circle-fill', 'text-success');
+        } else if (type === 'danger') {
+            toastIcon.classList.add('bi', 'bi-exclamation-triangle-fill', 'text-danger');
+        }
+
+        toastBody.textContent = message;
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 </body>
 </html>

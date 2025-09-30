@@ -12,6 +12,8 @@
                     @csrf
                     <input type="hidden" id="addressId" name="id">
                     <input type="hidden" id="addressType" name="type">
+                    <input type="hidden" id="addressableId" name="addressable_id">
+                    <input type="hidden" id="addressableType" name="addressable_type">
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrNo" class="form-label">บ้านเลขที่ (ไทย)</label>
@@ -272,6 +274,85 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Save Error:', error);
             elements.errors.innerHTML = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์';
             elements.errors.style.display = 'block';
+        }
+    });
+
+    // --- 6. Save Address Logic (NEW CODE) ---
+    const saveAddressButton = document.getElementById('saveAddress');
+    const addressForm = document.getElementById('addressForm');
+    const addressModal = new bootstrap.Modal(addressModalEl);
+    const addressErrors = document.getElementById('address-errors');
+
+    saveAddressButton.addEventListener('click', async function() {
+        // Prepare form data
+        const formData = new FormData(addressForm);
+        const addressId = document.getElementById('addressId').value;
+
+        // Determine URL and Method
+        let url = '{{ route('addresses.store') }}';
+        let method = 'POST';
+
+        if (addressId) {
+            url = `/addresses/${addressId}`;
+            // For Laravel, PUT method is simulated via a hidden field
+            formData.append('_method', 'PUT');
+        }
+
+        // Disable button to prevent double-click
+        saveAddressButton.disabled = true;
+        saveAddressButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...`;
+        addressErrors.style.display = 'none';
+        addressErrors.innerHTML = '';
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST', // Always POST for FormData, Laravel handles PUT/PATCH via _method field
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                // Handle validation errors from Laravel
+                if (response.status === 422 && result.errors) {
+                    let errorHtml = '<ul>';
+                    for (const key in result.errors) {
+                        result.errors[key].forEach(error => {
+                            errorHtml += `<li>${error}</li>`;
+                        });
+                    }
+                    errorHtml += '</ul>';
+                    addressErrors.innerHTML = errorHtml;
+                    addressErrors.style.display = 'block';
+                } else {
+                    throw new Error(result.message || 'An unknown error occurred.');
+                }
+            } else {
+                // Success
+                addressModal.hide();
+                // We need a function to refresh the address lists on the main page
+                if (typeof window.refreshAddressLists === 'function') {
+                    window.refreshAddressLists();
+                } else {
+                    // Fallback if the function doesn't exist yet
+                    window.location.reload();
+                }
+                // Use the new, global toast notification system
+                showToast('บันทึกที่อยู่เรียบร้อยแล้ว');
+            }
+
+        } catch (error) {
+            console.error('Save Address Error:', error);
+            addressErrors.innerHTML = `เกิดข้อผิดพลาดในการเชื่อมต่อ: ${error.message}`;
+            addressErrors.style.display = 'block';
+        } finally {
+            // Re-enable button
+            saveAddressButton.disabled = false;
+            saveAddressButton.innerHTML = 'บันทึก';
         }
     });
 });
