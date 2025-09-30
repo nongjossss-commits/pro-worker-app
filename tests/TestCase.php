@@ -2,10 +2,11 @@
 
 namespace Tests;
 
+use Illuminate\Foundation\Testing\CreatesApplication;
+use Illuminate\Foundation\Testing\RefreshDatabase; // เปลี่ยนจาก LazilyRefreshDatabase เป็น RefreshDatabase
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 abstract class TestCase extends BaseTestCase
 {
-    use LazilyRefreshDatabase;
+    use CreatesApplication, RefreshDatabase; // ใช้ RefreshDatabase แทน
 }
