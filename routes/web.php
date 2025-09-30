@@ -59,4 +59,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
     Route::delete('/notifications/{notification}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.forceDelete');
 });
+
+// === เพิ่มโค้ดส่วนนี้เข้าไป ===
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
+});
+// === สิ้นสุดส่วนที่ต้องเพิ่ม ===
+
 require __DIR__.'/auth.php';
