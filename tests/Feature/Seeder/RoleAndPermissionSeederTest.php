@@ -4,8 +4,8 @@ namespace Tests\Feature\Seeder;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\Role;
-use App\Models\Permission;
+use Spatie\Permission\Models\Role; // Use the Spatie Model
+use Spatie\Permission\Models\Permission; // Use the Spatie Model
 use App\Models\User;
 
 class RoleAndPermissionSeederTest extends TestCase
@@ -15,13 +15,13 @@ class RoleAndPermissionSeederTest extends TestCase
     public function test_role_and_permission_seeder_runs_correctly()
     {
         // 1. Create the initial user that the seeder expects to find
-        $user = User::factory()->create([
+        User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
 
-        // 2. Run the specific seeder
-        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        // 2. Run our main seeder which includes the RoleAndPermissionSeeder
+        $this->seed();
 
         // 3. Assert that roles were created
         $this->assertDatabaseHas('roles', ['name' => 'admin']);
@@ -37,6 +37,7 @@ class RoleAndPermissionSeederTest extends TestCase
         $this->assertCount($allPermissionsCount, $adminRole->permissions);
 
         // 6. Assert that the test user was assigned the admin role
+        $user = User::whereEmail('test@example.com')->first();
         $this->assertTrue($user->hasRole('admin'));
     }
 }
