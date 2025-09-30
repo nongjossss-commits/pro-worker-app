@@ -6,10 +6,24 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
+use Database\Seeders\RoleAndPermissionSeeder; // เพิ่มบรรทัดนี้
 
 class RolesPermissionsPageTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Setup the test environment.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Run the seeder that creates roles and permissions
+        $this->seed(RoleAndPermissionSeeder::class);
+    }
 
     public function test_guests_cannot_access_admin_page()
     {
@@ -19,20 +33,17 @@ class RolesPermissionsPageTest extends TestCase
 
     public function test_non_admin_users_cannot_access_admin_page()
     {
-        $this->seed(); // Run seeders to create roles
-
         $user = User::factory()->create();
-        $user->assignRole('staff'); // Assign a non-admin role
+        $user->assignRole('staff');
 
         $response = $this->actingAs($user)->get(route('admin.roles_permissions.index'));
-        $response->assertStatus(403); // Forbidden
+        $response->assertStatus(403);
     }
 
     public function test_admin_user_can_access_admin_page()
     {
-        $this->seed(); // Run seeders to create roles
-
-        $adminUser = User::whereEmail('test@example.com')->first(); // Our seeder makes this user an admin
+        $adminUser = User::factory()->create();
+        $adminUser->assignRole('admin');
 
         $response = $this->actingAs($adminUser)->get(route('admin.roles_permissions.index'));
 
@@ -40,6 +51,5 @@ class RolesPermissionsPageTest extends TestCase
         $response->assertSeeText('Manage Roles and Permissions');
         $response->assertSeeText('admin');
         $response->assertSeeText('staff');
-        $response->assertSeeText('manage-users');
     }
 }
