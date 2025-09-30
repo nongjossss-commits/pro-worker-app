@@ -3,10 +3,9 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 abstract class TestCase extends BaseTestCase
 {
-    // We are removing the custom getPackageProviders method
-    // to allow Laravel's default auto-discovery to handle all service providers,
-    // including the Spatie PermissionServiceProvider, correctly.
+    use LazilyRefreshDatabase;
 }
