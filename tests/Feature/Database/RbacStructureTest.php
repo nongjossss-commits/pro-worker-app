@@ -10,12 +10,15 @@ class RbacStructureTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function it_has_the_correct_rbac_tables_and_columns()
+    /**
+     * Remove the deprecated "@test" annotation and use the "test" keyword in the method name
+     * or use the #[Test] attribute for PHPUnit 10+. For now, we'll rename the method.
+     */
+    public function test_it_has_the_correct_rbac_tables_and_columns()
     {
-        $this->assertFalse(Schema::hasTable('roles'));
-
-        $this->artisan('migrate');
+        // Since we use RefreshDatabase, the migrations are already run before this test executes.
+        // We no longer need to check if the table doesn't exist, or run migrate manually.
+        // We just need to assert that the final state is correct.
 
         $this->assertTrue(Schema::hasTable('roles'), 'The "roles" table is missing.');
         $this->assertTrue(Schema::hasTable('permissions'), 'The "permissions" table is missing.');
