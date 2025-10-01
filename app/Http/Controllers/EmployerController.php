@@ -31,14 +31,12 @@ class EmployerController extends Controller
     {
         $jobOwners = JobOwner::orderBy('name')->get();
 
-        // --- เพิ่มโค้ดส่วนนี้เข้าไป ---
         // สร้างรหัสนายจ้างใหม่ที่ไม่ซ้ำใคร
         $lastEmployer = Employer::orderBy('id', 'desc')->first();
         $nextId = $lastEmployer ? $lastEmployer->id + 1 : 1;
         $newEmployerId = 'EMP-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
-        // --- สิ้นสุดส่วนที่ต้องเพิ่ม ---
 
-        return view('employers.create', compact('jobOwners', 'newEmployerId')); // เพิ่ม 'newEmployerId' เข้าไป
+    return view('employers.create', compact('jobOwners', 'newEmployerId'));
     }
 
     public function store(Request $request)
