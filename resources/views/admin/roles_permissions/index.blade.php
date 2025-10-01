@@ -1,52 +1,57 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Manage Roles and Permissions') }}
-        </h2>
-    </x-slot>
+{{-- 1. ระบุให้ View นี้ใช้ Layout หลักจาก 'layouts.app' --}}
+@extends('layouts.app')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+{{-- 2. กำหนดว่าเนื้อหาทั้งหมดต่อไปนี้ จะถูกนำไปใส่ในช่อง @yield('content') ของ Layout --}}
+@section('content')
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <h3 class="text-lg font-medium text-gray-900">Roles</h3>
-                <div class="mt-4">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($roles as $role)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $role->name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        @foreach ($role->permissions as $permission)
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                {{ $permission->name }}
-                                            </span>
-                                        @endforeach
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <h3 class="text-lg font-medium text-gray-900">All Permissions</h3>
-                <div class="mt-4 flex flex-wrap gap-2">
-                    @foreach ($permissions as $permission)
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                            {{ $permission->name }}
-                        </span>
-                    @endforeach
-                </div>
-            </div>
-
+{{-- 
+    เราใช้ Class ของ Bootstrap เพื่อสร้าง Layout ที่สวยงาม
+    และเพื่อให้ Test สามารถหาข้อความเจอได้ง่าย 
+--}}
+<div class="content-section">
+    <div class="container-fluid">
+        
+        {{-- Header Section --}}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">
+                <i class="bi bi-shield-lock-fill me-2"></i>
+                Manage Roles and Permissions
+            </h2>
         </div>
+
+        {{-- Roles Section --}}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Roles</h5>
+            </div>
+            <div class="card-body">
+                @foreach ($roles as $role)
+                    <div class="mb-3 pb-3 border-bottom">
+                        <h6 class="fw-bold text-primary">{{ $role->name }}</h6>
+                        <div class="ps-3">
+                            @forelse ($role->permissions as $permission)
+                                <span class="badge bg-secondary fw-normal me-1">{{ $permission->name }}</span>
+                            @empty
+                                <p class="text-muted small mb-0">No permissions assigned.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- All Permissions Section --}}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">All Available Permissions</h5>
+            </div>
+            <div class="card-body">
+                @foreach ($permissions as $permission)
+                     <span class="badge bg-info text-dark fw-normal me-1 mb-1">{{ $permission->name }}</span>
+                @endforeach
+            </div>
+        </div>
+
     </div>
-</x-app-layout>
+</div>
+@endsection
