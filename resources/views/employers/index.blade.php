@@ -22,7 +22,9 @@
                 <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
             </form>
             <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
+            @can('create-employers')
             <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+            @endcan
         </div>
     </div>
     <div class="table-responsive">
@@ -46,12 +48,16 @@
                         <td>{{ $employer->businessType }}</td>
                         <td>{{ $employer->jobOwner->name ?? 'N/A' }}</td>
                         <td class="text-center">
+                            @can('edit-employers')
                             <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            @endcan
+                            @can('delete-employers')
                             <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')">ลบ</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty
