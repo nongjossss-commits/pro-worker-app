@@ -12,15 +12,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeController extends Controller
 {
-    public function __construct()
-    {
-        // Staff can view and edit employees
-        $this->middleware('permission:view-employees', ['only' => ['index', 'show']]);
-        $this->middleware('permission:edit-employees', ['only' => ['edit', 'update']]);
-        // Only Admin can create and delete employees
-        $this->middleware('permission:create-employees', ['only' => ['create', 'store']]);
-        $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
-    }
+public function __construct()
+{
+    // Staff can view and edit employees
+    $this->middleware('permission:view-employees', ['only' => ['index', 'show']]);
+    $this->middleware('permission:edit-employees', ['only' => ['edit', 'update']]);
+    // Only Admin can create and delete employees
+    $this->middleware('permission:create-employees', ['only' => ['create', 'store']]);
+    $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
+}
 
     public function index(Request $request)
     {

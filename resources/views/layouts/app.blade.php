@@ -145,7 +145,14 @@
                     </div>
                     <div>
                         <h6 class="mb-0">{{ Auth::user()->name ?? 'User Name' }}</h6>
-                        <a href="#" class="text-muted small">Logout</a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <a href="{{ route('logout') }}"
+                               onclick="event.preventDefault(); this.closest('form').submit();"
+                               class="text-muted small">
+                                Logout
+                            </a>
+                        </form>
                     </div>
                 </div>
             </div>

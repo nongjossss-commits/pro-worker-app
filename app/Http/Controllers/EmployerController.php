@@ -15,15 +15,15 @@ use Illuminate\Support\Facades\DB;
 
 class EmployerController extends Controller
 {
-    public function __construct()
-    {
-        // Staff can only view employers
-        $this->middleware('permission:view-employers', ['only' => ['index', 'show']]);
-        // Only Admin can do other actions
-        $this->middleware('permission:create-employers', ['only' => ['create', 'store']]);
-        $this->middleware('permission:edit-employers', ['only' => ['edit', 'update']]);
-        $this->middleware('permission:delete-employers', ['only' => ['destroy']]);
-    }
+public function __construct()
+{
+    // Staff can only view employers
+    $this->middleware('permission:view-employers', ['only' => ['index', 'show']]);
+    // Only Admin can do other actions
+    $this->middleware('permission:create-employers', ['only' => ['create', 'store']]);
+    $this->middleware('permission:edit-employers', ['only' => ['edit', 'update']]);
+    $this->middleware('permission:delete-employers', ['only' => ['destroy']]);
+}
 
     /**
      * Display a listing of the resource.
