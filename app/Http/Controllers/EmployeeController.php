@@ -18,10 +18,30 @@ class EmployeeController extends Controller
         $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
     }
 
-    public function index()
+public function index(Request $request)
     {
-        $employees = Employee::with('employer')->latest()->paginate(10);
-        return view('employees.index', compact('employees'));
+    // Start building the query
+    $query = Employee::query();
+
+    // Handle filtering (assuming you have this logic)
+    // ... filtering logic based on $request ...
+
+    $totalEmployees = $query->count();
+    $maleCount = $query->clone()->where('gender', 'male')->count(); // Assuming you have a 'gender' column
+    $femaleCount = $totalEmployees - $maleCount;
+
+    $perPageOptions = [25, 50, 100];
+    $perPage = $request->input('per_page', 25);
+
+    $employees = $query->with('employer')->latest()->paginate($perPage);
+
+    return view('employees.index', compact(
+        'employees',
+        'totalEmployees',
+        'maleCount',
+        'femaleCount',
+        'perPageOptions',
+    ))->with('currentView', $request->input('view', 'card'));
     }
 
     public function create()
