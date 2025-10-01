@@ -38,9 +38,11 @@
                 <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-outline-success" title="สร้างงาน">
                     <i class="bi bi-send-plus"></i>
                 </a>
+                @can('edit-employees')
                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข">
                     <i class="bi bi-pencil-fill"></i>
                 </a>
+                @endcan
 
                 @if($showLocateButton ?? false)
                     <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
@@ -48,12 +50,14 @@
                     </a>
                 @endif
 
+                @can('delete-employees')
                 <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                     <i class="bi bi-person-dash-fill"></i>
                 </button>
                 <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
                     <i class="bi bi-trash-fill"></i>
                 </button>
+                @endcan
             </div>
         </div>
     </div>
