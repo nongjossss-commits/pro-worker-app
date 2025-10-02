@@ -19,30 +19,24 @@ class EmployeeController extends Controller
     }
 
 public function index(Request $request)
-    {
-    // Start building the query
+{
     $query = Employee::query();
 
-    // Handle filtering (assuming you have this logic)
-    // ... filtering logic based on $request ...
+    // ... (ส่วนของการกรองข้อมูล ถ้ามี) ...
 
     $totalEmployees = $query->count();
-    $maleCount = $query->clone()->where('gender', 'male')->count(); // Assuming you have a 'gender' column
-    $femaleCount = $totalEmployees - $maleCount;
 
     $perPageOptions = [25, 50, 100];
     $perPage = $request->input('per_page', 25);
-
     $employees = $query->with('employer')->latest()->paginate($perPage);
 
+    // ส่งข้อมูลที่จำเป็นไป แต่ไม่รวม male/female count แล้ว
     return view('employees.index', compact(
         'employees',
         'totalEmployees',
-        'maleCount',
-        'femaleCount',
-        'perPageOptions',
+        'perPageOptions'
     ))->with('currentView', $request->input('view', 'card'));
-    }
+}
 
     public function create()
     {
