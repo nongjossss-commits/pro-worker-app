@@ -73,14 +73,30 @@ class EmployerController extends Controller
         return redirect()->route('employers.index')->with('success', 'Employer created successfully.');
     }
 
-    public function edit(Employer $employer)
-    {
-        $jobOwners = JobOwner::orderBy('name')->get();
-        $activeEmployees = $employer->employees()->whereNull('terminated_at')->get();
-        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
+public function edit(Request $request, Employer $employer) // เพิ่ม Request $request
+{
+    $jobOwners = JobOwner::orderBy('name')->get();
 
-        return view('employers.edit', compact('employer', 'jobOwners', 'activeEmployees', 'terminatedEmployees'));
-    }
+    // --- เพิ่ม Logic ส่วนนี้เข้าไปทั้งหมด ---
+    $employeeQuery = $employer->employees()->whereNull('terminated_at');
+    // You can add filtering logic for employees here if needed based on $request
+
+    $perPageOptions = [10, 25, 50];
+    $currentPerPage = $request->input('per_page', 10);
+    $employees = $employeeQuery->paginate($currentPerPage); // เปลี่ยน $activeEmployees เป็น $employees และ paginate
+    $currentView = $request->input('view', 'card');
+
+    $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
+
+    return view('employers.edit', compact(
+        'employer',
+        'jobOwners',
+        'employees', // ส่งตัวแปรที่ถูกต้อง
+        'terminatedEmployees',
+        'perPageOptions', // ส่งตัวแปรที่ขาดไป
+        'currentView'     // ส่งตัวแปรที่ขาดไป
+    ));
+}
 
     public function update(Request $request, Employer $employer)
     {
