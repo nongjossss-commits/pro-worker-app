@@ -1,26 +1,6 @@
 {{-- DEFINITIVE MASTER FIX: This is the user's full original file with the final corrections. --}}
 @extends('layouts.app')
 
-{{-- ===== เพิ่มโค้ด DEBUG ชั่วคราวเข้าไปตรงนี้ ===== --}}
-@section('debug-tracker')
-<div class="alert alert-warning m-3">
-    <h4 class="alert-heading">-- DEBUG MODE --</h4>
-    @if (Auth::check())
-        <p><strong>User Logged In:</strong> {{ Auth::user()->name }} (ID: {{ Auth::user()->id }})</p>
-        <p><strong>Roles:</strong> {{ Auth::user()->getRoleNames()->implode(', ') }}</p>
-        <hr>
-        <p><strong>Checking for 'create-employees' permission...</strong></p>
-        @if (Auth::user()->hasPermissionTo('create-employees'))
-            <p class="text-success fw-bold">RESULT: PERMISSION FOUND! (User should see the button)</p>
-        @else
-            <p class="text-danger fw-bold">RESULT: PERMISSION NOT FOUND! (This is why the button is hidden)</p>
-        @endif
-    @else
-        <p class="text-danger fw-bold">ERROR: User is not logged in.</p>
-    @endif
-</div>
-@endsection
-{{-- ===== สิ้นสุดโค้ด DEBUG ชั่วคราว ===== --}}
 
 @push('styles')
 <style>
@@ -478,9 +458,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const employerId = '{{ $employer->id }}';
-
-    // --- Terminate Employee Logic ---
+    // --- Logic for Terminate Modal ---
     var terminateModal = document.getElementById('terminateEmployeeModal');
     if (terminateModal) {
         terminateModal.addEventListener('show.bs.modal', function (event) {
@@ -492,137 +470,61 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Filter Employees
-    const searchInput = document.getElementById('searchEmployeeInput');
-    const nationalitySelect = document.getElementById('searchEmployeeNationality');
-    const mouGroupSelect = document.getElementById('searchEmployeeMOUGroup');
-    const pinkCardSelect = document.getElementById('searchEmployeePinkCard');
+    // --- Logic for Employment History Modal ---
+    const historyModalEl = document.getElementById('employmentHistoryModal');
+    const historyBody = document.getElementById('history-body');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // function filterEmployees() {
-    //     const search = searchInput.value;
-    //     const nationality = nationalitySelect.value;
-    //     const mouGroup = mouGroupSelect.value;
-    //     const pinkCard = pinkCardSelect.value;
+    if (historyModalEl) {
+        historyModalEl.addEventListener('show.bs.modal', function () {
+            historyBody.innerHTML = '<tr><td colspan="4" class="text-center">กำลังโหลด...</td></tr>';
 
-    //     const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
-    //     url.searchParams.append('search', search);
-    //     url.searchParams.append('nationality', nationality);
-    //     url.searchParams.append('mouGroup', mouGroup);
-    //     url.searchParams.append('pinkCard', pinkCard);
+            fetch("{{ route('employers.history.filter', $employer) }}")
+                .then(response => response.json())
+                .then(data => {
+                    historyBody.innerHTML = '';
+                    if (data.length === 0) {
+                        historyBody.innerHTML = '<tr><td colspan="4" class="text-center">ไม่พบประวัติการจ้างงาน</td></tr>';
+                    } else {
+                        data.forEach(employee => {
+                            const restoreButton = employee.can_restore ? `<button class="btn btn-sm btn-success btn-restore" data-id="${employee.id}">กู้คืน</button>` : '';
+                            const deleteButton = employee.can_force_delete ? `<button class="btn btn-sm btn-danger btn-force-delete" data-id="${employee.id}">ลบถาวร</button>` : '';
 
-    //     fetch(url)
-    //         .then(response => response.json())
-    //         .then(employees => {
-    //             const employeeList = document.getElementById('employeeList');
-    //             employeeList.innerHTML = '';
-    //             if (employees.length > 0) {
-    //                 employees.forEach(employee => {
-    //                     const card = `
-    //                     <div class="employee-card d-flex justify-content-between align-items-start gap-3">
-    //                         <div class="d-flex align-items-center flex-grow-1">
-    //                             <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-    //                             <div class="flex-grow-1">
-    //                                 <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
-    //                                 <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
-    //                                 <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-    //                                 <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-    //                                 <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
-    //                             </div>
-    //                         </div>
-    //                         <div class="btn-group btn-group-sm">
-    //                             <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-    //                             <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
-    //                             <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
-    //                         </div>
-    //                     </div>`;
-    //                     employeeList.innerHTML += card;
-    //                 });
-    //             } else {
-    //                 employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
-    //             }
-    //              document.getElementById('employeeTotalCount').textContent = employees.length;
-    //         });
-    // }
+                            const row = `
+                                <tr id="history-row-${employee.id}">
+                                    <td>${employee.employeeNameTh}</td>
+                                    <td>${new Date(employee.terminated_at).toLocaleDateString('th-TH')}</td>
+                                    <td>${employee.termination_reason || '-'}</td>
+                                    <td>
+                                        ${restoreButton}
+                                        ${deleteButton}
+                                    </td>
+                                </tr>
+                            `;
+                            historyBody.insertAdjacentHTML('beforeend', row);
+                        });
+                    }
+                });
+        });
+    }
 
-    // searchInput.addEventListener('input', filterEmployees);
-    // nationalitySelect.addEventListener('change', filterEmployees);
-    // mouGroupSelect.addEventListener('change', filterEmployees);
-    // pinkCardSelect.addEventListener('change', filterEmployees);
-
-    const historyModal = document.getElementById('historyModal');
-    const historyBody = document.getElementById('employmentHistoryList');
-
-    historyModal.addEventListener('show.bs.modal', function () {
-        historyBody.innerHTML = '<div class="text-center p-5"><span class="spinner-border text-primary" role="status"></span><p class="mt-2">กำลังโหลด...</p></div>';
-
-        fetch("{{ route('employers.history.filter', $employer) }}")
-            .then(response => response.json())
-            .then(data => {
-                historyBody.innerHTML = '';
-                if (data.length === 0) {
-                    historyBody.innerHTML = '<p class="text-center text-muted p-5">ไม่พบประวัติการจ้างงาน</p>';
-                } else {
-                    const table = document.createElement('table');
-                    table.className = 'table table-sm table-hover align-middle';
-                    table.innerHTML = `
-                        <thead>
-                            <tr>
-                                <th>ชื่อพนักงาน</th>
-                                <th>วันที่เลิกจ้าง</th>
-                                <th>เหตุผล</th>
-                                <th class="text-end">ดำเนินการ</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    `;
-                    const tbody = table.querySelector('tbody');
-                    data.forEach(employee => {
-                        const row = `
-                            <tr>
-                                <td>${employee.employeeNameTh}</td>
-                                <td>${new Date(employee.terminated_at).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
-                                <td>${employee.termination_reason || '-'}</td>
-                                <td class="text-end">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-success btn-restore" data-id="${employee.id}">กู้คืน</button>
-                                        <button class="btn btn-danger btn-force-delete" data-id="${employee.id}">ลบถาวร</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                        tbody.insertAdjacentHTML('beforeend', row);
-                    });
-                    historyBody.appendChild(table);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                historyBody.innerHTML = '<p class="text-center text-danger p-5">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
-            });
-    });
-
-    // Event delegation for restore and delete buttons
+    // Event delegation for restore and force-delete buttons
     historyBody.addEventListener('click', function(e) {
         const target = e.target;
         const employeeId = target.dataset.id;
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         if (target.classList.contains('btn-restore')) {
             if (confirm('คุณต้องการกู้คืนพนักงานคนนี้ใช่หรือไม่?')) {
                 fetch(`/employees/${employeeId}/restore`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-                }).then(res => res.json()).then(data => {
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        // Hide modal and reload page for simplicity
-                        const modal = bootstrap.Modal.getInstance(historyModal);
-                        modal.hide();
+                }).then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        alert(data.message);
                         location.reload();
-                    } else {
-                        showToast(data.message || 'Restore failed', 'danger');
                     }
-                }).catch(err => showToast('An error occurred.', 'danger'));
+                });
             }
         }
 
@@ -631,230 +533,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 fetch(`/employees/${employeeId}/force-delete`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-                }).then(res => res.json()).then(data => {
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        target.closest('tr').remove();
-                    } else {
-                        showToast(data.message || 'Delete failed', 'danger');
+                }).then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        alert(data.message);
+                        document.getElementById(`history-row-${employeeId}`).remove();
                     }
-                }).catch(err => showToast('An error occurred.', 'danger'));
-            }
-        }
-    });
-
-    // Highlight employee card from URL hash
-    if (window.location.hash) {
-        // The hash will be #employee-card-XX or #employee-row-XX
-        const highlightId = window.location.hash.substring(1);
-        console.log("TEST " + highlightId)
-        const elementToHighlight = document.getElementById(highlightId);
-
-        if (elementToHighlight) {
-            // Scroll the element into the middle of the view
-            elementToHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // Add the highlight class
-            elementToHighlight.classList.add('highlight');
-            elementToHighlight.style.border = "2px solid #f97316";
-            elementToHighlight.style.borderRadius = "0.5rem";
-            elementToHighlight.style.boxShadow = "0 0 15px rgba(249, 115, 22, 0.5)";
-            // Optional: Remove the class after the animation to clean up styles
-            // setTimeout(() => {
-            //     elementToHighlight.classList.remove('highlight');
-            //     // Also clear the hash from the URL for a cleaner experience
-            //     if (history.pushState) {
-            //         history.pushState(null, null, window.location.pathname + window.location.search);
-            //     } else {
-            //         window.location.hash = '';
-            //     }
-            // }, 3100); // Slightly longer than the animation
-        }
-    }
-});
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const container = document.getElementById('employeeList');
-        const actionBar = document.getElementById('bulk-action-bar-employer');
-        if (!container || !actionBar) return;
-
-        const selectAllCheckbox = document.getElementById('select-all-checkbox-employer');
-        const selectedCountSpan = document.getElementById('selected-count-employer');
-        const actionButton = actionBar.querySelector('button');
-
-        function updateActionBar() {
-            const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
-            const selectedCheckboxes = container.querySelectorAll('.bulk-action-checkbox:checked');
-            const count = selectedCheckboxes.length;
-
-            if (count > 0) {
-                actionBar.style.display = 'flex';
-                selectedCountSpan.textContent = count;
-                actionButton.disabled = false;
-            } else {
-                actionBar.style.display = 'none';
-                selectedCountSpan.textContent = 0;
-                actionButton.disabled = true;
-            }
-            if(selectAllCheckbox){
-                 selectAllCheckbox.checked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
-            }
-        }
-
-        container.addEventListener('change', function(e) {
-            if (e.target.classList.contains('bulk-action-checkbox')) {
-                updateActionBar();
-            }
-        });
-
-        if(selectAllCheckbox){
-            selectAllCheckbox.addEventListener('change', function() {
-                const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
-                itemCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
                 });
-                updateActionBar();
-            });
-        }
-        updateActionBar();
-});
-</script>
-<script>
-function resetAddressForm() {
-    const form = document.getElementById('addressForm');
-    if (form) form.reset();
-    document.getElementById('addressId').value = '';
-    const district = document.getElementById('addrDistrict');
-    district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
-    district.disabled = true;
-    const subDistrict = document.getElementById('addrSubDistrict');
-    subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
-    subDistrict.disabled = true;
-    const errors = document.getElementById('address-errors');
-    if (errors) {
-        errors.style.display = 'none';
-        errors.innerHTML = '';
-    }
-}
-
-async function fetchAddressForEdit(addressId) {
-    try {
-        const response = await fetch(`/addresses/${addressId}/edit`);
-        if (!response.ok) throw new Error('Failed to fetch address data');
-        const address = await response.json();
-
-        document.getElementById('addressId').value = address.id;
-        document.getElementById('addressType').value = address.type;
-        document.getElementById('addrNo').value = address.addrNo || '';
-        document.getElementById('addrNoEn').value = address.addrNoEn || '';
-        document.getElementById('addrMoo').value = address.addrMoo || '';
-        document.getElementById('addrMooEn').value = address.addrMooEn || '';
-        document.getElementById('addrSoi').value = address.addrSoi || '';
-        document.getElementById('addrSoiEn').value = address.addrSoiEn || '';
-        document.getElementById('addrRoad').value = address.addrRoad || '';
-        document.getElementById('addrRoadEn').value = address.addrRoadEn || '';
-
-        const provinceEl = document.getElementById('addrProvince');
-        provinceEl.value = address.addrProvince;
-        provinceEl.dispatchEvent(new Event('change'));
-
-        setTimeout(() => {
-            const districtEl = document.getElementById('addrDistrict');
-            districtEl.value = address.addrDistrict;
-            districtEl.dispatchEvent(new Event('change'));
-            setTimeout(() => {
-                const subDistrictEl = document.getElementById('addrSubDistrict');
-                subDistrictEl.value = address.addrSubDistrict;
-                subDistrictEl.dispatchEvent(new Event('change'));
-            }, 250);
-        }, 250);
-
-    } catch (error) {
-        console.error('Error fetching address for edit:', error);
-        showToast('เกิดข้อผิดพลาดในการโหลดข้อมูลที่อยู่', 'danger');
-    }
-}
-
-async function deleteAddress(id) {
-    const url = `/addresses/${id}`;
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-    try {
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
             }
-        });
-
-        const result = await response.json();
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'เกิดข้อผิดพลาดในการลบ');
-        }
-
-        const addressCard = document.getElementById(`address-card-${id}`);
-        if (addressCard) {
-            addressCard.remove();
-        }
-        showToast('ลบที่อยู่เรียบร้อยแล้ว');
-
-    } catch (error) {
-        console.error('Delete Address Error:', error);
-        showToast(`เกิดข้อผิดพลาด: ${error.message}`, 'danger');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const addressModalEl = document.getElementById('addressModal');
-
-    addressModalEl.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const addressId = button.getAttribute('data-id');
-        const addressableId = button.getAttribute('data-addressable-id');
-        const addressableType = button.getAttribute('data-addressable-type');
-
-        const addressForm = document.getElementById('addressForm');
-        // FIX: Ensure all text input fields are enabled
-        const textInputs = addressForm.querySelectorAll('input[type="text"]');
-        textInputs.forEach(input => {
-            input.disabled = false;
-            input.readOnly = false;
-        });
-
-        document.getElementById('addressableId').value = addressableId;
-        // Use the simple string 'employer' passed from the button
-        document.getElementById('addressableType').value = addressableType;
-
-        if (addressId) { // EDIT MODE
-            document.getElementById('addressModalLabel').innerText = 'แก้ไขที่อยู่';
-            fetchAddressForEdit(addressId);
-        } else { // ADD MODE
-            document.getElementById('addressModalLabel').innerText = 'เพิ่มที่อยู่';
-            resetAddressForm();
-            document.getElementById('addressType').value = button.getAttribute('data-type');
-        }
-    });
-
-    document.getElementById('addressListsContainer').addEventListener('click', function(e) {
-        const deleteBtn = e.target.closest('.delete-address-btn');
-        if (deleteBtn) {
-            const addressId = deleteBtn.getAttribute('data-id');
-            Swal.fire({
-                title: 'ยืนยันการลบ',
-                text: "คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'ใช่, ลบเลย!',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    deleteAddress(addressId);
-                }
-            });
         }
     });
 });
