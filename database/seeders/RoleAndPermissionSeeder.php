@@ -14,8 +14,6 @@ class RoleAndPermissionSeeder extends Seeder
     {
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
-
-        // Inform the user that the seeder has started
         $this->command->info('Seeding Roles and Permissions...');
 
         // Create Permissions
@@ -23,9 +21,9 @@ class RoleAndPermissionSeeder extends Seeder
             'view-dashboard',
             'manage-users', 'manage-roles', 'manage-settings',
             'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
-            'view-employees', 'create-employees', 'edit-employees', 'delete-employees'
+            'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
+            'terminate-employees' // <-- เพิ่ม Permission ใหม่
         ];
-
         foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
         }
@@ -34,12 +32,9 @@ class RoleAndPermissionSeeder extends Seeder
         // Create Staff Role and assign permissions
         $staffRole = Role::create(['name' => 'staff']);
         $staffPermissions = [
-            'view-employers',
-            'create-employers',
-            'edit-employers',
-            'view-employees',
-            'edit-employees',
-            'create-employees' // Ensure it's explicitly here
+            'view-employers', 'create-employers', 'edit-employers',
+            'view-employees', 'edit-employees', 'create-employees',
+            'terminate-employees' // <-- มอบสิทธิ์ใหม่ให้ Staff
         ];
         $staffRole->givePermissionTo($staffPermissions);
         $this->command->info('Staff role created and assigned permissions.');
