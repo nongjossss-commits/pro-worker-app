@@ -131,6 +131,11 @@
                 <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>ข้อมูลบริษัทนำเข้า</a>
                 <a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>ข้อมูลเอเจนซี่</a>
                 <a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>ข้อมูลพนักงาน</a>
+
+                @canany(['manage-roles', 'manage-settings'])
+                <hr>
+                <a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>จัดการสิทธิ์</a>
+                @endcanany
             </div>
             <div class="mt-auto">
                 <hr>
@@ -140,13 +145,21 @@
                     </div>
                     <div>
                         <h6 class="mb-0">{{ Auth::user()->name ?? 'User Name' }}</h6>
-                        <a href="#" class="text-muted small">Logout</a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <a href="{{ route('logout') }}"
+                               onclick="event.preventDefault(); this.closest('form').submit();"
+                               class="text-muted small">
+                                Logout
+                            </a>
+                        </form>
                     </div>
                 </div>
             </div>
         </aside>
 
         <main id="main-content" style="position: relative; z-index: 1;">
+            @yield('debug-tracker')
             @if (session('success'))
                 <div class="alert alert-success">
                     {{ session('success') }}

@@ -10,9 +10,11 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">รายการข้อมูลลูกจ้างทั้งหมด</h2>
         <h2 class="h5 text-muted fw-normal">
-            (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
+            (รวม: {{ $totalEmployees }} คน)
         </h2>
-        <a href="{{ route('employers.index') }}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+        @can('create-employees')
+        <a href="{{ route('employers.index') }}" class="btn btn-primary" title="ไปที่หน้านายจ้างเพื่อเพิ่มลูกจ้างใหม่"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+        @endcan
     </div>
 
     <div class="card mb-4">
@@ -117,9 +119,11 @@
                                 <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-outline-success" title="สร้างงาน">
                                     <i class="bi bi-send-plus"></i>
                                 </a>
+                                @can('edit-employees')
                                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข">
                                     <i class="bi bi-pencil-fill"></i>
                                 </a>
+                                @endcan
 
                                 @if(isset($showLocateButton) && $showLocateButton)
                                     <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
@@ -127,12 +131,14 @@
                                     </a>
                                 @endif
 
+                                @can('delete-employees')
                                 <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                                     <i class="bi bi-person-dash-fill"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
                                     <i class="bi bi-trash-fill"></i>
                                 </button>
+                                @endcan
                             </div>
                         </td>
                     </tr>

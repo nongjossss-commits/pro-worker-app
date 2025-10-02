@@ -1,6 +1,27 @@
 {{-- DEFINITIVE MASTER FIX: This is the user's full original file with the final corrections. --}}
 @extends('layouts.app')
 
+{{-- ===== เพิ่มโค้ด DEBUG ชั่วคราวเข้าไปตรงนี้ ===== --}}
+@section('debug-tracker')
+<div class="alert alert-warning m-3">
+    <h4 class="alert-heading">-- DEBUG MODE --</h4>
+    @if (Auth::check())
+        <p><strong>User Logged In:</strong> {{ Auth::user()->name }} (ID: {{ Auth::user()->id }})</p>
+        <p><strong>Roles:</strong> {{ Auth::user()->getRoleNames()->implode(', ') }}</p>
+        <hr>
+        <p><strong>Checking for 'create-employees' permission...</strong></p>
+        @if (Auth::user()->hasPermissionTo('create-employees'))
+            <p class="text-success fw-bold">RESULT: PERMISSION FOUND! (User should see the button)</p>
+        @else
+            <p class="text-danger fw-bold">RESULT: PERMISSION NOT FOUND! (This is why the button is hidden)</p>
+        @endif
+    @else
+        <p class="text-danger fw-bold">ERROR: User is not logged in.</p>
+    @endif
+</div>
+@endsection
+{{-- ===== สิ้นสุดโค้ด DEBUG ชั่วคราว ===== --}}
+
 @push('styles')
 <style>
     .highlight {
@@ -137,7 +158,9 @@
             </div>
         </div>
         <div class="mt-4">
+            @can('edit-employers')
             <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึกข้อมูลนายจ้าง</button>
+            @endcan
             <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
         </div>
     </form>
@@ -222,7 +245,9 @@
     <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
     <div class="d-flex gap-2">
         <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
+    @can('create-employees')
     <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
+    @endcan
 </div>
 </div>
 
@@ -341,9 +366,11 @@
                                     <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-outline-success" title="สร้างงาน">
                                         <i class="bi bi-send-plus"></i>
                                     </a>
+                                    @can('edit-employees')
                                     <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข">
                                         <i class="bi bi-pencil-fill"></i>
                                     </a>
+                                    @endcan
 
                                     @if(isset($showLocateButton) && $showLocateButton)
                                         <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
@@ -351,12 +378,14 @@
                                         </a>
                                     @endif
 
+                                    @can('delete-employees')
                                     <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                                         <i class="bi bi-person-dash-fill"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
                                         <i class="bi bi-trash-fill"></i>
                                     </button>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>

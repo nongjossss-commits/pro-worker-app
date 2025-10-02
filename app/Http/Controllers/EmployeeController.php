@@ -3,265 +3,203 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
-use App\Models\Employer;
 use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Apply permission middleware to the controller.
+     */
+    public function __construct()
     {
-        $cardPerPageOptions = [10, 15, 20];
-        $tablePerPageOptions = [25, 50, 100];
-        $currentView = $request->input('view', 'card');
-        $defaultPerPage = ($currentView === 'card') ? $cardPerPageOptions[0] : $tablePerPageOptions[0];
-        $currentPerPage = $request->input('per_page', $defaultPerPage);
-        $perPageOptions = ($currentView === 'card') ? $cardPerPageOptions : $tablePerPageOptions;
-
-        $query = Employee::with('employer')->whereNull('terminated_at')->latest();
-
-        $totalEmployees = (clone $query)->count();
-        $maleCount = (clone $query)->whereIn('employeeTitleTh', ['นาย'])->count();
-        $femaleCount = (clone $query)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
-
-        $this->applyFilters($request, $query);
-
-        $employees = $query->paginate($currentPerPage)->withQueryString();
-
-        return view('employees.index', compact(
-            'employees', 'currentView', 'currentPerPage', 'perPageOptions',
-            'totalEmployees', 'maleCount', 'femaleCount'
-        ));
+        $this->middleware('permission:view-employees', ['only' => ['index', 'show']]);
+        $this->middleware('permission:edit-employees', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:create-employees', ['only' => ['create', 'store']]);
+        $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
     }
 
-    public function export(Request $request)
-    {
-        $query = Employee::with('employer')->latest();
+public function index(Request $request)
+{
+    $query = Employee::query();
+    // ... filtering logic ...
 
-        // Apply filters
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%");
-            });
-        }
-        if ($request->filled('nationality')) {
-            $query->where('employeeNationality', $request->input('nationality'));
-        }
-        if ($request->filled('mou_type')) {
-            $query->where('workPermitMOUGroup', $request->input('mou_type'));
-        }
-        $query->when($request->input('pink_card') === 'has_card', function ($q) {
-            return $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
-        })->when($request->input('pink_card') === 'no_card', function ($q) {
-            return $q->where(function($subQuery) {
-                $subQuery->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
-            });
-        });
+    $totalEmployees = $query->count();
 
-        $employees = $query->get();
-        $fileName = "employees_" . date('Y-m-d') . ".csv";
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=\"$fileName\"",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
-        $columns = ['#', 'Thai Name', 'English Name', 'Employer', 'Passport No', 'Work Permit No'];
+    $perPageOptions = [25, 50, 100];
+    $currentPerPage = $request->input('per_page', 25); // แก้ชื่อตัวแปรตรงนี้
 
-        $callback = function() use($employees, $columns) {
-            $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, $columns);
-            foreach ($employees as $index => $employee) {
-                $row = [
-                    $index + 1,
-                    $employee->employeeNameTh,
-                    $employee->employeeNameEn,
-                    $employee->employer->employerNameTh ?? 'N/A',
-                    $employee->employeePassport,
-                    $employee->employeeWorkPermit,
-                ];
-                fputcsv($file, $row);
-            }
-            fclose($file);
-        };
+    $employees = $query->with('employer')->latest()->paginate($currentPerPage);
 
-        return new StreamedResponse($callback, 200, $headers);
+    return view('employees.index', compact(
+        'employees',
+        'totalEmployees',
+        'perPageOptions',
+        'currentPerPage' // ส่งตัวแปรที่ถูกต้องไป
+    ))->with('currentView', $request->input('view', 'card'));
+}
+
+public function create(Request $request) // เพิ่ม Request $request เข้ามา
+{
+    $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
+    $selectedEmployer = null;
+
+    // ตรวจสอบว่ามี employer_id ส่งมากับ URL หรือไม่
+    if ($request->has('employer_id')) {
+        $selectedEmployer = \App\Models\Employer::find($request->employer_id);
     }
 
-    private function applyFilters(Request $request, Builder $query)
-    {
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%")
-                  ->orWhereHas('employer', function($q_employer) use ($search) {
-                      $q_employer->where('employerNameTh', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        if ($request->filled('nationality')) {
-            $query->where('employeeNationality', $request->input('nationality'));
-        }
-
-        if ($request->filled('mou_type')) {
-            $query->where('workPermitMOUGroup', $request->input('mou_type'));
-        }
-
-        $query->when($request->input('pink_card') === 'has_card', function ($q) {
-            return $q->whereNotNull('pinkCardNo');
-        })->when($request->input('pink_card') === 'no_card', function ($q) {
-            return $q->whereNull('pinkCardNo');
-        });
-    }
-
-    public function create(Request $request)
-    {
-        $employer_id = $request->query('employer_id');
-        $employer = Employer::findOrFail($employer_id);
-        return view('employees.create', compact('employer'));
-    }
+    // ส่ง $selectedEmployer ไปในชื่อ $employer เพื่อให้ View ใช้งานได้
+    return view('employees.create', [
+        'employers' => $employers,
+        'employer' => $selectedEmployer
+    ]);
+}
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'employeeNameTh' => 'required|string|max:255',
-            'employeePassport' => 'required|string|max:255|unique:employees,employeePassport',
-            'employeePhoto' => 'nullable|image|max:2048',
-            // Add other fields as needed
+            'employeeNameEn' => 'nullable|string|max:255',
+            'employeeNationality' => 'nullable|string|max:255',
+            'employeePassport' => 'nullable|string|max:255',
+            'passportExpiryDate' => 'nullable|date',
+            'employeeWorkPermit' => 'nullable|string|max:255',
+            'workPermitExpiryDate' => 'nullable|date',
+            'visaExpiryDate' => 'nullable|date',
+            'ninetyDayReportDate' => 'nullable|date',
+            'employeeTitleTh' => 'nullable|string|max:255',
+            'employeeTitleEn' => 'nullable|string|max:255',
+            'employeeDob' => 'nullable|date',
+            'passportType' => 'nullable|string|max:255',
+            'namelistNo' => 'nullable|string|max:255',
+            'requestNo' => 'nullable|string|max:255',
+            'workerRefNo' => 'nullable|string|max:255',
+            'personalId' => 'nullable|string|max:255',
+            'companyWorkerId' => 'nullable|string|max:255',
+            'pinkCardNo' => 'nullable|string|max:255',
+            'socialSecurityNo' => 'nullable|string|max:255',
+            'taxIdNo' => 'nullable|string|max:255',
+            'designatedHospital' => 'nullable|string|max:255',
+            'startDate' => 'nullable|date',
+            'employeePhone' => 'nullable|string|max:255',
+            'employeePosition' => 'nullable|string|max:255',
+            'workPermitMOUGroup' => 'nullable|string|max:255',
+            'workPermitMOUGroupOther' => 'nullable|string|max:255',
+            'employeePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'document_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_description_4' => 'nullable|string|max:255',
+            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_description_5' => 'nullable|string|max:255',
+            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_description_6' => 'nullable|string|max:255',
+            'nature_of_work' => 'nullable|string',
         ]);
 
-        $employer = Employer::findOrFail($validated['employer_id']);
-        $data = $request->all();
-
         if ($request->hasFile('employeePhoto')) {
-            $path = $request->file('employeePhoto')->store('employee_photos', 'public');
-            $data['employeePhoto'] = $path;
+            $validated['employeePhoto'] = $request->file('employeePhoto')->store('employee_photos', 'public');
+        }
+        // Add other file uploads here...
+        for ($i = 1; $i <= 6; $i++) {
+            if ($request->hasFile("document_$i")) {
+                $validated["document_$i"] = $request->file("document_$i")->store("employee_documents", 'public');
+            }
         }
 
-        $employer->employees()->create($data);
-
-        return redirect()->route('employers.edit', $employer)
-            ->with('success', 'เพิ่มข้อมูลพนักงานเรียบร้อยแล้ว');
+        Employee::create($validated);
+        return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
     }
 
-    public function edit(Employer $employer, Employee $employee)
+    public function show(Employee $employee)
     {
-        return view('employees.edit', compact('employer', 'employee'));
+        return view('employees.show', compact('employee'));
+    }
+
+    public function edit(Employee $employee)
+    {
+        $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
+        return view('employees.edit', compact('employee', 'employers'));
     }
 
     public function update(Request $request, Employee $employee)
     {
-        $request->validate([
+        $validated = $request->validate([
+            'employer_id' => 'required|exists:employers,id',
             'employeeNameTh' => 'required|string|max:255',
             'employeeNameEn' => 'nullable|string|max:255',
-            'employeePassport' => ['required', 'string', 'max:255', Rule::unique('employees')->ignore($employee->id)],
-            'employeeTitleTh' => 'nullable|string',
-            'employeeTitleEn' => 'nullable|string',
-            'employeeDob' => 'nullable|date',
-            'employeeNationality' => 'nullable|string',
-            'passportType' => 'nullable|string',
+            'employeeNationality' => 'nullable|string|max:255',
+            'employeePassport' => 'nullable|string|max:255',
             'passportExpiryDate' => 'nullable|date',
-            'namelistNo' => 'nullable|string',
-            'requestNo' => 'nullable|string',
-            'workerRefNo' => 'nullable|string',
-            'personalId' => 'nullable|string',
-            'companyWorkerId' => 'nullable|string',
-            'pinkCardNo' => 'nullable|string',
-            'socialSecurityNo' => 'nullable|string',
-            'taxIdNo' => 'nullable|string',
-            'designatedHospital' => 'nullable|string',
-            'employeeWorkPermit' => 'nullable|string',
+            'employeeWorkPermit' => 'nullable|string|max:255',
             'workPermitExpiryDate' => 'nullable|date',
-            'workPermitMOUGroup' => 'nullable|string',
-            'workPermitMOUGroupOther' => 'nullable|string',
             'visaExpiryDate' => 'nullable|date',
             'ninetyDayReportDate' => 'nullable|date',
+            'employeeTitleTh' => 'nullable|string|max:255',
+            'employeeTitleEn' => 'nullable|string|max:255',
+            'employeeDob' => 'nullable|date',
+            'passportType' => 'nullable|string|max:255',
+            'namelistNo' => 'nullable|string|max:255',
+            'requestNo' => 'nullable|string|max:255',
+            'workerRefNo' => 'nullable|string|max:255',
+            'personalId' => 'nullable|string|max:255',
+            'companyWorkerId' => 'nullable|string|max:255',
+            'pinkCardNo' => 'nullable|string|max:255',
+            'socialSecurityNo' => 'nullable|string|max:255',
+            'taxIdNo' => 'nullable|string|max:255',
+            'designatedHospital' => 'nullable|string|max:255',
             'startDate' => 'nullable|date',
-            'employeePhone' => 'nullable|string',
-            'employeePosition' => 'nullable|string',
-            'employeePhoto' => 'nullable|image|max:2048',
-            'document_1' => 'nullable|file|max:5120',
-            'document_2' => 'nullable|file|max:5120',
-            'document_3' => 'nullable|file|max:5120',
-            'document_4' => 'nullable|file|max:5120',
-            'document_5' => 'nullable|file|max:5120',
-            'document_6' => 'nullable|file|max:5120',
-            'document_7' => 'nullable|file|max:5120',
-            'document_8' => 'nullable|file|max:5120',
-            'document_description_3' => 'nullable|string|max:255',
+            'employeePhone' => 'nullable|string|max:255',
+            'employeePosition' => 'nullable|string|max:255',
+            'workPermitMOUGroup' => 'nullable|string|max:255',
+            'workPermitMOUGroupOther' => 'nullable|string|max:255',
+            'employeePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'document_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'document_description_4' => 'nullable|string|max:255',
+            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'document_description_5' => 'nullable|string|max:255',
+            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'document_description_6' => 'nullable|string|max:255',
+            'nature_of_work' => 'nullable|string',
         ]);
 
-        $employee->fill($request->except(['_token', '_method']));
-
-        $fileFields = ['employeePhoto', 'document_1', 'document_2', 'document_3', 'document_4', 'document_5', 'document_6', 'document_7', 'document_8'];
-        foreach ($fileFields as $field) {
-            $remove_field = 'remove_' . $field;
-            // --- FIX: Logic to handle file DELETION ---
-            if ($request->has($remove_field)) {
-                if ($employee->{$field}) {
-                    Storage::disk('public')->delete($employee->{$field});
-                }
-                $employee->{$field} = null;
+        if ($request->hasFile('employeePhoto')) {
+            if ($employee->employeePhoto) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->employeePhoto);
             }
-
-            // --- Logic to handle file UPLOAD ---
-            if ($request->hasFile($field)) {
-                if ($employee->{$field}) {
-                    Storage::disk('public')->delete($employee->{$field});
+            $validated['employeePhoto'] = $request->file('employeePhoto')->store('employee_photos', 'public');
+        }
+        // Add other file updates here...
+        for ($i = 1; $i <= 6; $i++) {
+            if ($request->hasFile("document_$i")) {
+                if ($employee->{"document_$i"}) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->{"document_$i"});
                 }
-                $path = $request->file($field)->store($field . '_files', 'public');
-                $employee->{$field} = $path;
+                $validated["document_$i"] = $request->file("document_$i")->store("employee_documents", 'public');
             }
         }
 
-        $employee->save();
-
-        $employer = $employee->employer;
-
-        return redirect()->route('employers.edit', $employer)
-            ->with('success', 'อัปเดตข้อมูลพนักงานเรียบร้อยแล้ว');
+        $employee->update($validated);
+        return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
     }
 
-    public function destroy(Employer $employer, Employee $employee)
+    public function destroy(Employee $employee)
     {
         if ($employee->employeePhoto) {
-            Storage::disk('public')->delete($employee->employeePhoto);
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->employeePhoto);
         }
-
+        // Add other file deletions here...
         for ($i = 1; $i <= 6; $i++) {
-            $field = 'document_' . $i;
-            if ($employee->{$field}) {
-                Storage::disk('public')->delete($employee->{$field});
+            if ($employee->{"document_$i"}) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->{"document_$i"});
             }
         }
-
         $employee->delete();
-
-        return redirect()->route('employers.edit', $employer)
-            ->with('success', 'ลบข้อมูลพนักงานเรียบร้อยแล้ว');
-    }
-
-    public function locate(Employee $employee)
-    {
-        $employer = $employee->employer;
-        if (!$employer) {
-            return redirect()->route('employees.index')->with('error', 'ไม่พบข้อมูลนายจ้างของลูกจ้างคนนี้');
-        }
-        $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
-        return redirect($url);
+        return redirect()->route('employees.index')->with('success', 'Employee deleted successfully.');
     }
 }
