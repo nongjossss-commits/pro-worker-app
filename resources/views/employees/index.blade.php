@@ -131,11 +131,13 @@
                                     </a>
                                 @endif
 
-                                @can('delete-employees')
-                                <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
+                                @can('terminate-employees')
+                                <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#terminateEmployeeModal" data-employee-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                                     <i class="bi bi-person-dash-fill"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
+                                @endcan
+                                @can('force-delete-employees')
+                                <button type="button" class="btn btn-outline-danger btn-force-delete" data-employee-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
                                     <i class="bi bi-trash-fill"></i>
                                 </button>
                                 @endcan
@@ -157,6 +159,8 @@
         {{ $employees->links() }}
     </div>
 </div>
+
+@include('partials._employee_action_modals')
 
 @push('scripts')
 <script>

@@ -358,11 +358,13 @@
                                         </a>
                                     @endif
 
-                                    @can('delete-employees')
-                                    <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
+                                    @can('terminate-employees')
+                                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#terminateEmployeeModal" data-employee-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                                         <i class="bi bi-person-dash-fill"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
+                                    @endcan
+                                    @can('force-delete-employees')
+                                    <button type="button" class="btn btn-outline-danger btn-force-delete" data-employee-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
                                         <i class="bi bi-trash-fill"></i>
                                     </button>
                                     @endcan
@@ -398,106 +400,34 @@
 @endsection
 
 @include('partials._address_management')
-
-{{-- Employment History Modal --}}
-<div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="employmentHistoryModalLabel">ประวัติการจ้างงาน</h5>
-                <a href="{{ route('employers.exportHistory', $employer) }}" class="btn btn-sm btn-outline-success ms-auto">
-                    <i class="bi bi-file-earmark-excel"></i> ส่งออก
-                </a>
-                <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>ชื่อพนักงาน</th>
-                            <th>วันที่แจ้งออก</th>
-                            <th>เหตุผล</th>
-                            <th>จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-body">
-                        {{-- Terminated employees will be loaded here via JavaScript --}}
-                        <tr>
-                            <td colspan="4" class="text-center">กำลังโหลด...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- Terminate Employee Modal --}}
-<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="terminate-form" method="POST" action=""> {{-- Action will be set by JS --}}
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="terminateModalLabel">แจ้งออก / เลิกจ้าง</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="terminated_at" class="form-label">วันที่แจ้งออก / เลิกจ้าง</label>
-                        <input type="date" class="form-control" id="terminated_at" name="terminated_at" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="termination_reason" class="form-label">เหตุผล (ถ้ามี)</label>
-                        <textarea class="form-control" id="termination_reason" name="termination_reason" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="submit" class="btn btn-danger">ยืนยัน</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+@include('partials._employee_action_modals')
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // --- Logic for Terminate Modal (โค้ดเดิม) ---
-    var terminateModal = document.getElementById('terminateEmployeeModal');
-    if (terminateModal) {
-        terminateModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var employeeId = button.getAttribute('data-employee-id');
-            var url = "{{ url('employees') }}/" + employeeId + "/terminate";
-            var form = document.getElementById('terminate-form');
-            form.setAttribute('action', url);
-        });
-    }
-
-    // --- เพิ่ม Logic for Employment History Modal ---
     const historyModalEl = document.getElementById('employmentHistoryModal');
     const historyBody = document.getElementById('history-body');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     if (historyModalEl) {
         historyModalEl.addEventListener('show.bs.modal', function () {
             historyBody.innerHTML = '<tr><td colspan="4" class="text-center">กำลังโหลด...</td></tr>';
 
             fetch("{{ route('employers.history.filter', $employer) }}")
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     historyBody.innerHTML = '';
                     if (data.length === 0) {
                         historyBody.innerHTML = '<tr><td colspan="4" class="text-center">ไม่พบประวัติการจ้างงาน</td></tr>';
                     } else {
                         data.forEach(employee => {
-                            const restoreButton = employee.can_restore ? `<button class="btn btn-sm btn-success btn-restore" data-id="${employee.id}">กู้คืน</button>` : '';
-                            const deleteButton = employee.can_force_delete ? `<button class="btn btn-sm btn-danger btn-force-delete" data-id="${employee.id}">ลบถาวร</button>` : '';
+                            // Use data-employee-id to work with the centralized SweetAlert script
+                            const restoreButton = employee.can_restore ? `<button class="btn btn-sm btn-success btn-restore" data-employee-id="${employee.id}">กู้คืน</button>` : '';
+                            const deleteButton = employee.can_force_delete ? `<button class="btn btn-sm btn-danger btn-force-delete" data-employee-id="${employee.id}">ลบถาวร</button>` : '';
 
                             const row = `
                                 <tr id="history-row-${employee.id}">
@@ -505,57 +435,21 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <td>${new Date(employee.terminated_at).toLocaleDateString('th-TH')}</td>
                                     <td>${employee.termination_reason || '-'}</td>
                                     <td>
-                                        ${restoreButton}
-                                        ${deleteButton}
+                                        <div class="btn-group btn-group-sm">
+                                            ${restoreButton}
+                                            ${deleteButton}
+                                        </div>
                                     </td>
                                 </tr>
                             `;
                             historyBody.insertAdjacentHTML('beforeend', row);
                         });
                     }
+                })
+                .catch(error => {
+                    console.error('Error fetching employment history:', error);
+                    historyBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
                 });
-        });
-    }
-
-    // Event delegation for restore and force-delete buttons
-    if(historyBody) {
-        historyBody.addEventListener('click', function(e) {
-            const target = e.target;
-            const employeeId = target.dataset.id;
-
-            if (target.classList.contains('btn-restore')) {
-                if (confirm('คุณต้องการกู้คืนพนักงานคนนี้ใช่หรือไม่?')) {
-                    fetch(`/employees/${employeeId}/restore`, {
-                        method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-                    }).then(response => response.json())
-                    .then(data => {
-                        if(data.success) {
-                            alert(data.message);
-                            location.reload();
-                        } else {
-                            alert('กู้คืนข้อมูลไม่สำเร็จ');
-                        }
-                    });
-                }
-            }
-
-            if (target.classList.contains('btn-force-delete')) {
-                if (confirm('คุณแน่ใจหรือไม่ว่าจะลบพนักงานคนนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-                    fetch(`/employees/${employeeId}/force-delete`, {
-                        method: 'DELETE',
-                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-                    }).then(response => response.json())
-                    .then(data => {
-                        if(data.success) {
-                            alert(data.message);
-                            document.getElementById(`history-row-${employeeId}`).remove();
-                        } else {
-                            alert('ลบข้อมูลไม่สำเร็จ');
-                        }
-                    });
-                }
-            }
         });
     }
 });
