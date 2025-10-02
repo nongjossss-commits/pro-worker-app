@@ -36,7 +36,8 @@ class RoleAndPermissionSeeder extends Seeder
         $staffPermissions = [
             'view-employers', 'create-employers', 'edit-employers',
             'view-employees', 'edit-employees', 'create-employees',
-            'terminate-employees' // <-- มอบสิทธิ์ใหม่ให้ Staff
+            'terminate-employees',
+            'restore-employees'
         ];
         $staffRole->givePermissionTo($staffPermissions);
         $this->command->info('Staff role created and assigned permissions.');
