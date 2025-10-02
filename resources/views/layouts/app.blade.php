@@ -159,6 +159,7 @@
         </aside>
 
         <main id="main-content" style="position: relative; z-index: 1;">
+            @yield('debug-tracker')
             @if (session('success'))
                 <div class="alert alert-success">
                     {{ session('success') }}

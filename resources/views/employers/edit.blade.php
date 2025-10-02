@@ -1,6 +1,27 @@
 {{-- DEFINITIVE MASTER FIX: This is the user's full original file with the final corrections. --}}
 @extends('layouts.app')
 
+{{-- ===== เพิ่มโค้ด DEBUG ชั่วคราวเข้าไปตรงนี้ ===== --}}
+@section('debug-tracker')
+<div class="alert alert-warning m-3">
+    <h4 class="alert-heading">-- DEBUG MODE --</h4>
+    @if (Auth::check())
+        <p><strong>User Logged In:</strong> {{ Auth::user()->name }} (ID: {{ Auth::user()->id }})</p>
+        <p><strong>Roles:</strong> {{ Auth::user()->getRoleNames()->implode(', ') }}</p>
+        <hr>
+        <p><strong>Checking for 'create-employees' permission...</strong></p>
+        @if (Auth::user()->hasPermissionTo('create-employees'))
+            <p class="text-success fw-bold">RESULT: PERMISSION FOUND! (User should see the button)</p>
+        @else
+            <p class="text-danger fw-bold">RESULT: PERMISSION NOT FOUND! (This is why the button is hidden)</p>
+        @endif
+    @else
+        <p class="text-danger fw-bold">ERROR: User is not logged in.</p>
+    @endif
+</div>
+@endsection
+{{-- ===== สิ้นสุดโค้ด DEBUG ชั่วคราว ===== --}}
+
 @push('styles')
 <style>
     .highlight {
