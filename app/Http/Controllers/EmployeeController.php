@@ -21,20 +21,20 @@ class EmployeeController extends Controller
 public function index(Request $request)
 {
     $query = Employee::query();
-
-    // ... (ส่วนของการกรองข้อมูล ถ้ามี) ...
+    // ... filtering logic ...
 
     $totalEmployees = $query->count();
 
     $perPageOptions = [25, 50, 100];
-    $perPage = $request->input('per_page', 25);
-    $employees = $query->with('employer')->latest()->paginate($perPage);
+    $currentPerPage = $request->input('per_page', 25); // แก้ชื่อตัวแปรตรงนี้
 
-    // ส่งข้อมูลที่จำเป็นไป แต่ไม่รวม male/female count แล้ว
+    $employees = $query->with('employer')->latest()->paginate($currentPerPage);
+
     return view('employees.index', compact(
         'employees',
         'totalEmployees',
-        'perPageOptions'
+        'perPageOptions',
+        'currentPerPage' // ส่งตัวแปรที่ถูกต้องไป
     ))->with('currentView', $request->input('view', 'card'));
 }
 
