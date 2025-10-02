@@ -30,7 +30,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('employers', EmployerController::class);
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/filter-history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
-    Route::post('employees/{employee}/terminate', [EmployerController::class, 'terminate'])->name('employees.terminate');
     Route::post('/employees/{employee}/restore', [EmployerController::class, 'restoreEmployee'])->name('employees.restore');
     Route::delete('/employees/{employee}/force-delete', [EmployerController::class, 'forceDeleteEmployee'])->name('employees.forceDelete');
     Route::get('/employees/{employee}/locate', [EmployeeController::class, 'locate'])->name('employees.locate');

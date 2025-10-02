@@ -549,100 +549,96 @@ document.addEventListener('DOMContentLoaded', function () {
     // mouGroupSelect.addEventListener('change', filterEmployees);
     // pinkCardSelect.addEventListener('change', filterEmployees);
 
-    // Filter History
-    const searchHistoryInput = document.getElementById('searchHistoryInput');
+    const historyModal = document.getElementById('historyModal');
+    const historyBody = document.getElementById('employmentHistoryList');
 
-    function filterHistory() {
-        const search = searchHistoryInput.value;
-        const url = new URL(`{{ route('employers.history.filter', $employer->id) }}`);
-        url.searchParams.append('search', search);
+    historyModal.addEventListener('show.bs.modal', function () {
+        historyBody.innerHTML = '<div class="text-center p-5"><span class="spinner-border text-primary" role="status"></span><p class="mt-2">กำลังโหลด...</p></div>';
 
-        fetch(url)
+        fetch("{{ route('employers.history.filter', $employer) }}")
             .then(response => response.json())
-            .then(employees => {
-                const historyList = document.getElementById('employmentHistoryList');
-                historyList.innerHTML = '';
-                if (employees.length > 0) {
-                    employees.forEach(employee => {
-                        const card = `
-                        <div class="employee-card bg-light d-flex justify-content-between align-items-start gap-3">
-                             <div class="d-flex align-items-center flex-grow-1">
-                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-                                <div class="flex-grow-1">
-                                    <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
-                                    <p class="mb-1 text-muted small">${employee.employeeNameTh ?? ''} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
-                                    <p class="mb-0 text-danger small"><strong>เลิกจ้างวันที่:</strong> ${new Date(employee.terminated_at).toLocaleDateString('en-GB')} - ${employee.termination_reason || 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-success restore-employee-btn" data-id="${employee.id}" title="นำกลับ"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                <button type="button" class="btn btn-outline-danger permanent-delete-btn" data-id="${employee.id}" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
-                            </div>
-                        </div>`;
-                        historyList.innerHTML += card;
-                    });
+            .then(data => {
+                historyBody.innerHTML = '';
+                if (data.length === 0) {
+                    historyBody.innerHTML = '<p class="text-center text-muted p-5">ไม่พบประวัติการจ้างงาน</p>';
                 } else {
-                    historyList.innerHTML = '<p class="text-muted">ไม่มีประวัติการจ้างงาน</p>';
+                    const table = document.createElement('table');
+                    table.className = 'table table-sm table-hover align-middle';
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>ชื่อพนักงาน</th>
+                                <th>วันที่เลิกจ้าง</th>
+                                <th>เหตุผล</th>
+                                <th class="text-end">ดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+                    data.forEach(employee => {
+                        const row = `
+                            <tr>
+                                <td>${employee.employeeNameTh}</td>
+                                <td>${new Date(employee.terminated_at).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+                                <td>${employee.termination_reason || '-'}</td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-success btn-restore" data-id="${employee.id}">กู้คืน</button>
+                                        <button class="btn btn-danger btn-force-delete" data-id="${employee.id}">ลบถาวร</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.insertAdjacentHTML('beforeend', row);
+                    });
+                    historyBody.appendChild(table);
                 }
+            })
+            .catch(err => {
+                console.error(err);
+                historyBody.innerHTML = '<p class="text-center text-danger p-5">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
             });
-    }
+    });
 
-    searchHistoryInput.addEventListener('input', filterHistory);
-    // Initial load of history
-    filterHistory();
+    // Event delegation for restore and delete buttons
+    historyBody.addEventListener('click', function(e) {
+        const target = e.target;
+        const employeeId = target.dataset.id;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // --- History Action Buttons ---
-    const historyList = document.getElementById('employmentHistoryList');
-
-    historyList.addEventListener('click', function(e) {
-        const restoreBtn = e.target.closest('.restore-employee-btn');
-        const deleteBtn = e.target.closest('.permanent-delete-btn');
-
-        if (restoreBtn) {
-            const employeeId = restoreBtn.dataset.id;
-            const employeeCard = restoreBtn.closest('.employee-card');
-            if (confirm('Are you sure you want to restore this employee?')) {
+        if (target.classList.contains('btn-restore')) {
+            if (confirm('คุณต้องการกู้คืนพนักงานคนนี้ใช่หรือไม่?')) {
                 fetch(`/employees/${employeeId}/restore`, {
                     method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+                }).then(res => res.json()).then(data => {
                     if (data.success) {
-                        employeeCard.remove();
-                        // For simplicity, reload the page to update both lists
+                        showToast(data.message, 'success');
+                        // Hide modal and reload page for simplicity
+                        const modal = bootstrap.Modal.getInstance(historyModal);
+                        modal.hide();
                         location.reload();
                     } else {
-                        showToast(data.message || 'Failed to restore employee.', 'danger');
+                        showToast(data.message || 'Restore failed', 'danger');
                     }
-                })
-                .catch(error => console.error('Restore Error:', error));
+                }).catch(err => showToast('An error occurred.', 'danger'));
             }
         }
 
-        if (deleteBtn) {
-            const employeeId = deleteBtn.dataset.id;
-            const employeeCard = deleteBtn.closest('.employee-card');
-            if (confirm('This action is irreversible. Are you sure you want to permanently delete this employee?')) {
+        if (target.classList.contains('btn-force-delete')) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าจะลบพนักงานคนนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
                 fetch(`/employees/${employeeId}/force-delete`, {
                     method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+                }).then(res => res.json()).then(data => {
                     if (data.success) {
-                        employeeCard.remove();
+                        showToast(data.message, 'success');
+                        target.closest('tr').remove();
                     } else {
-                        showToast(data.message || 'Failed to delete employee.', 'danger');
+                        showToast(data.message || 'Delete failed', 'danger');
                     }
-                })
-                .catch(error => console.error('Delete Error:', error));
+                }).catch(err => showToast('An error occurred.', 'danger'));
             }
         }
     });

@@ -20,7 +20,8 @@ class EmployeeController extends Controller
 
 public function index(Request $request)
 {
-    $query = Employee::query();
+    // เปลี่ยนบรรทัดแรกให้มีการกรองข้อมูล
+    $query = Employee::query()->whereNull('terminated_at');
     // ... filtering logic ...
 
     $totalEmployees = $query->count();
