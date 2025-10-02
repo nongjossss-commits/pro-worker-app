@@ -4,7 +4,11 @@
 
 @section('content')
 <div class="content-section">
-    <h2 class="mb-4">เพิ่มพนักงานสำหรับ {{ $employer->employerNameTh }}</h2>
+    @if(isset($employer) && $employer)
+        <h2 class="mb-4">เพิ่มพนักงานสำหรับ {{ $employer->employerNameTh }}</h2>
+    @else
+        <h2 class="mb-4">เพิ่มพนักงานใหม่</h2>
+    @endif
 
     @if ($errors->any())
         <div class="alert alert-danger">
@@ -18,7 +22,23 @@
 
     <form action="{{ route('employees.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
-        <input type="hidden" name="employer_id" value="{{ $employer->id }}">
+        @if(isset($employer) && $employer)
+            <input type="hidden" name="employer_id" value="{{ $employer->id }}">
+        @else
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="employer_id" class="form-label">เลือกนายจ้าง</label>
+                    <select class="form-select" id="employer_id" name="employer_id" required>
+                        <option value="">-- กรุณาเลือกนายจ้าง --</option>
+                        @foreach($employers as $emp)
+                            <option value="{{ $emp->id }}" {{ old('employer_id') == $emp->id ? 'selected' : '' }}>
+                                {{ $emp->employerNameTh }} ({{ $emp->employerNameEn }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+        @endif
         <h5>ข้อมูลส่วนตัว</h5>
         <hr>
         <div class="row">
@@ -239,7 +259,11 @@
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน</button>
-            <a href="{{ route('employers.edit', $employer) }}" class="btn btn-secondary">ยกเลิก</a>
+            @if(isset($employer) && $employer)
+                <a href="{{ route('employers.edit', $employer) }}" class="btn btn-secondary">ยกเลิก</a>
+            @else
+                <a href="{{ route('employees.index') }}" class="btn btn-secondary">ยกเลิก</a>
+            @endif
         </div>
     </form>
 </div>
