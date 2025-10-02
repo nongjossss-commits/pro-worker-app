@@ -159,26 +159,28 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
         return redirect()->route('employers.index')->with('success', 'Employer deleted successfully.');
     }
 
-    // --- เพิ่ม Method ใหม่นี้เข้าไปก่อนบรรทัดสุดท้ายของคลาส ---
-    public function terminate(Request $request, Employee $employee)
+    // Other methods like export, filter etc.
+
+    // --- เพิ่ม 3 Methods ใหม่นี้เข้าไป ---
+    public function filterHistory(Employer $employer)
     {
-        $validated = $request->validate([
-            'terminated_at' => 'required|date',
-            'termination_reason' => 'nullable|string',
-        ]);
+        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
+        return response()->json($terminatedEmployees);
+    }
 
-        $isSuccess = $employee->update([
-            'terminated_at' => $validated['terminated_at'],
-            'termination_reason' => $validated['termination_reason'],
-        ]);
+    public function restoreEmployee(Employee $employee)
+    {
+        $this->authorize('restore-employees'); // ป้องกันด้วย Permission
+        $employee->update(['terminated_at' => null, 'termination_reason' => null]);
+        return response()->json(['success' => true, 'message' => 'Employee restored successfully.']);
+    }
 
-        if ($isSuccess) {
-            return redirect()->back()->with('success', 'Employee has been terminated successfully.');
-        } else {
-            return redirect()->back()->with('error', 'Failed to terminate employee. Please try again.');
-        }
+    public function forceDeleteEmployee(Employee $employee)
+    {
+        $this->authorize('force-delete-employees'); // ป้องกันด้วย Permission
+        // Optional: Delete files from storage before deleting the record
+        $employee->delete(); // This is a hard delete
+        return response()->json(['success' => true, 'message' => 'Employee permanently deleted.']);
     }
     // --- สิ้นสุดส่วนที่ต้องเพิ่ม ---
-
-    // Other methods like export, filter etc.
 }
