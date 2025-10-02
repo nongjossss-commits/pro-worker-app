@@ -7,6 +7,7 @@ use App\Models\JobOwner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Models\Employee; // <-- เพิ่มบรรทัดนี้
 
 class EmployerController extends Controller
 {
@@ -158,5 +159,22 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
         return redirect()->route('employers.index')->with('success', 'Employer deleted successfully.');
     }
 
-    // Other methods like export, filter, terminate etc.
+    // --- เพิ่ม Method ใหม่นี้เข้าไปก่อนบรรทัดสุดท้ายของคลาส ---
+    public function terminate(Request $request, Employee $employee)
+    {
+        $validated = $request->validate([
+            'terminated_at' => 'required|date',
+            'termination_reason' => 'nullable|string',
+        ]);
+
+        $employee->update([
+            'terminated_at' => $validated['terminated_at'],
+            'termination_reason' => $validated['termination_reason'],
+        ]);
+
+        return redirect()->back()->with('success', 'Employee has been terminated.');
+    }
+    // --- สิ้นสุดส่วนที่ต้องเพิ่ม ---
+
+    // Other methods like export, filter etc.
 }

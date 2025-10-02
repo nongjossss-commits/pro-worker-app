@@ -50,7 +50,7 @@
                     </a>
                 @endif
 
-                @can('delete-employees')
+                @can('terminate-employees')
                 <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                     <i class="bi bi-person-dash-fill"></i>
                 </button>
