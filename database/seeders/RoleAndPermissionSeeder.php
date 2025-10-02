@@ -30,7 +30,8 @@ class RoleAndPermissionSeeder extends Seeder
         $staffRole = Role::create(['name' => 'staff']);
         $staffRole->givePermissionTo([
             'view-employers',
-            'create-employers', // <-- เพิ่มสิทธิ์นี้เข้าไป
+            'create-employers',
+            'edit-employers', // <-- เพิ่มสิทธิ์นี้เข้าไป
             'view-employees',
             'edit-employees'
         ]);

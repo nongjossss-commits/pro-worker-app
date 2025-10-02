@@ -10,7 +10,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">รายการข้อมูลลูกจ้างทั้งหมด</h2>
         <h2 class="h5 text-muted fw-normal">
-            (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
+            (รวม: {{ $totalEmployees }})
         </h2>
         @can('create-employees')
         <a href="{{ route('employers.index') }}" class="btn btn-primary" title="ไปที่หน้านายจ้างเพื่อเพิ่มลูกจ้างใหม่"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
