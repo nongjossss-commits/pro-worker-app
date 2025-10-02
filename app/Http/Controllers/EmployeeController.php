@@ -38,12 +38,22 @@ public function index(Request $request)
     ))->with('currentView', $request->input('view', 'card'));
 }
 
-    public function create()
-    {
-        // Assuming you have a way to select an employer for the new employee
-        $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
-        return view('employees.create', compact('employers'));
+public function create(Request $request) // เพิ่ม Request $request เข้ามา
+{
+    $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
+    $selectedEmployer = null;
+
+    // ตรวจสอบว่ามี employer_id ส่งมากับ URL หรือไม่
+    if ($request->has('employer_id')) {
+        $selectedEmployer = \App\Models\Employer::find($request->employer_id);
     }
+
+    // ส่ง $selectedEmployer ไปในชื่อ $employer เพื่อให้ View ใช้งานได้
+    return view('employees.create', [
+        'employers' => $employers,
+        'employer' => $selectedEmployer
+    ]);
+}
 
     public function store(Request $request)
     {
