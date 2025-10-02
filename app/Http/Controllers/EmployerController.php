@@ -161,26 +161,51 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
 
     // Other methods like export, filter etc.
 
-    // --- เพิ่ม 3 Methods ใหม่นี้เข้าไป ---
-    public function filterHistory(Employer $employer)
+    // --- เพิ่ม Method ที่ขาดหายไป ---
+    public function terminate(Request $request, Employee $employee)
     {
-        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
-        return response()->json($terminatedEmployees);
+        $this->authorize('terminate-employees'); // ป้องกันด้วย Permission โดยตรง
+
+        $validated = $request->validate([
+            'terminated_at' => 'required|date',
+            'termination_reason' => 'nullable|string',
+        ]);
+
+        $isSuccess = $employee->update([
+            'terminated_at' => $validated['terminated_at'],
+            'termination_reason' => $validated['termination_reason'],
+        ]);
+
+        if ($isSuccess) {
+            return redirect()->back()->with('success', 'Employee has been terminated successfully.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to terminate employee. Please try again.');
+        }
     }
 
     public function restoreEmployee(Employee $employee)
     {
-        $this->authorize('restore-employees'); // ป้องกันด้วย Permission
+        $this->authorize('restore-employees');
         $employee->update(['terminated_at' => null, 'termination_reason' => null]);
         return response()->json(['success' => true, 'message' => 'Employee restored successfully.']);
     }
 
     public function forceDeleteEmployee(Employee $employee)
     {
-        $this->authorize('force-delete-employees'); // ป้องกันด้วย Permission
-        // Optional: Delete files from storage before deleting the record
-        $employee->delete(); // This is a hard delete
+        $this->authorize('force-delete-employees');
+        $employee->delete();
         return response()->json(['success' => true, 'message' => 'Employee permanently deleted.']);
     }
-    // --- สิ้นสุดส่วนที่ต้องเพิ่ม ---
+
+    public function filterHistory(Employer $employer)
+    {
+        // This logic will be more complex later, for now just fetch all
+        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get()->map(function($employee) {
+            // Add authorization checks to each employee object for the frontend
+            $employee->can_restore = auth()->user()->can('restore-employees');
+            $employee->can_force_delete = auth()->user()->can('force-delete-employees');
+            return $employee;
+        });
+        return response()->json($terminatedEmployees);
+    }
 }
