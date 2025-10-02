@@ -167,12 +167,16 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
             'termination_reason' => 'nullable|string',
         ]);
 
-        $employee->update([
+        $isSuccess = $employee->update([
             'terminated_at' => $validated['terminated_at'],
             'termination_reason' => $validated['termination_reason'],
         ]);
 
-        return redirect()->back()->with('success', 'Employee has been terminated.');
+        if ($isSuccess) {
+            return redirect()->back()->with('success', 'Employee has been terminated successfully.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to terminate employee. Please try again.');
+        }
     }
     // --- สิ้นสุดส่วนที่ต้องเพิ่ม ---
 

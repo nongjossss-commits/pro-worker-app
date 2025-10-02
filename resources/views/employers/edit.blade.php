@@ -447,30 +447,30 @@
 </div>
 
 {{-- Terminate Employee Modal --}}
-<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateEmployeeModalLabel" aria-hidden="true">
+<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="terminateEmployeeModalLabel">แจ้งออก / เลิกจ้าง</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="terminateEmployeeForm">
-                    <input type="hidden" id="terminateEmployeeId">
+            <form id="terminate-form" method="POST" action=""> {{-- Action will be set by JS --}}
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="terminateModalLabel">แจ้งออก / เลิกจ้าง</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
                     <div class="mb-3">
-                        <label for="terminateDate" class="form-label">วันที่แจ้งออก / เลิกจ้าง</label>
-                        <input type="date" class="form-control" id="terminateDate" required>
+                        <label for="terminated_at" class="form-label">วันที่แจ้งออก / เลิกจ้าง</label>
+                        <input type="date" class="form-control" id="terminated_at" name="terminated_at" required>
                     </div>
-                     <div class="mb-3">
-                        <label for="terminationReason" class="form-label">เหตุผล</label>
-                        <textarea class="form-control" id="terminationReason" rows="3"></textarea>
+                    <div class="mb-3">
+                        <label for="termination_reason" class="form-label">เหตุผล (ถ้ามี)</label>
+                        <textarea class="form-control" id="termination_reason" name="termination_reason" rows="3"></textarea>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" id="confirmTerminateEmployeeButton">ยืนยัน</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-danger">ยืนยัน</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -481,59 +481,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const employerId = '{{ $employer->id }}';
 
     // --- Terminate Employee Logic ---
-    const terminateModalEl = document.getElementById('terminateEmployeeModal');
-    if (terminateModalEl) {
-        const terminateModal = new bootstrap.Modal(terminateModalEl);
-        const terminateForm = document.getElementById('terminateEmployeeForm');
-        const terminateEmployeeIdInput = document.getElementById('terminateEmployeeId');
-        const employeeListContainer = document.getElementById('employeeList');
-
-        employeeListContainer.addEventListener('click', function (e) {
-            const terminateButton = e.target.closest('.terminate-employee-btn');
-            if (terminateButton) {
-                const employeeId = terminateButton.dataset.id;
-                terminateEmployeeIdInput.value = employeeId;
-                terminateForm.reset();
-                terminateModal.show();
-            }
-        });
-
-        document.getElementById('confirmTerminateEmployeeButton').addEventListener('click', function () {
-            const employeeId = terminateEmployeeIdInput.value;
-            const terminateDate = document.getElementById('terminateDate').value;
-            const terminationReason = document.getElementById('terminationReason').value;
-
-            if (!terminateDate) {
-                showToast('กรุณาเลือกวันที่แจ้งออก', 'danger');
-                return;
-            }
-
-            fetch(`/employees/${employeeId}/terminate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    terminateDate: terminateDate,
-                    terminationReason: terminationReason
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const employeeCard = document.getElementById(`employee-card-${employeeId}`);
-                    if(employeeCard) {
-                         employeeCard.remove();
-                    }
-                    // Simple refresh to update history list automatically
-                    location.reload();
-                } else {
-                    showToast(data.message || 'เกิดข้อผิดพลาดในการแจ้งออก', 'danger');
-                }
-            })
-            .catch(error => console.error('Error:', error));
+    var terminateModal = document.getElementById('terminateEmployeeModal');
+    if (terminateModal) {
+        terminateModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var employeeId = button.getAttribute('data-employee-id');
+            var url = "{{ url('employees') }}/" + employeeId + "/terminate";
+            var form = document.getElementById('terminate-form');
+            form.setAttribute('action', url);
         });
     }
 
