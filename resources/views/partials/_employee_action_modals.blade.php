@@ -1,7 +1,7 @@
 {{-- ============== EMPLOYEE ACTION MODALS & SCRIPTS ============== --}}
 
 {{-- Terminate Employee Modal --}}
-<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
+<div class="modal fade z-3" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="terminate-form" method="POST" action="">
@@ -30,7 +30,7 @@
 </div>
 
 {{-- Employment History Modal --}}
-<div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
+<div class="modal fade z-3" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
