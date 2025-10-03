@@ -51,9 +51,7 @@
                 @endif
 
                 @can('terminate-employees')
-                <button type="button" class="btn btn-sm btn-outline-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#terminateEmployeeModal"
+                <button type="button" class="btn btn-sm btn-outline-danger js-terminate-btn" title="Terminate"
                         data-employee-id="{{ $employee->id }}">
                     <i class="bi bi-person-x-fill"></i> แจ้งออก
                 </button>
