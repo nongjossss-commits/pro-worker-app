@@ -159,22 +159,53 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
         return redirect()->route('employers.index')->with('success', 'Employer deleted successfully.');
     }
 
-    // --- เพิ่ม Method ใหม่นี้เข้าไปก่อนบรรทัดสุดท้ายของคลาส ---
+    // Other methods like export, filter etc.
+
+    // --- เพิ่ม Method ที่ขาดหายไป ---
     public function terminate(Request $request, Employee $employee)
     {
+        $this->authorize('terminate-employees'); // ป้องกันด้วย Permission โดยตรง
+
         $validated = $request->validate([
             'terminated_at' => 'required|date',
             'termination_reason' => 'nullable|string',
         ]);
 
-        $employee->update([
+        $isSuccess = $employee->update([
             'terminated_at' => $validated['terminated_at'],
             'termination_reason' => $validated['termination_reason'],
         ]);
 
-        return redirect()->back()->with('success', 'Employee has been terminated.');
+        if ($isSuccess) {
+            return redirect()->back()->with('success', 'Employee has been terminated successfully.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to terminate employee. Please try again.');
+        }
     }
-    // --- สิ้นสุดส่วนที่ต้องเพิ่ม ---
 
-    // Other methods like export, filter etc.
+    public function restoreEmployee(Employee $employee)
+    {
+        $this->authorize('restore-employees');
+        $employee->update(['terminated_at' => null, 'termination_reason' => null]);
+        return response()->json(['success' => true, 'message' => 'Employee restored successfully.']);
+    }
+
+    public function forceDeleteEmployee(Employee $employee)
+    {
+        $this->authorize('force-delete-employees');
+        $employee->delete();
+        return response()->json(['success' => true, 'message' => 'Employee permanently deleted.']);
+    }
+
+    public function filterHistory(Employer $employer)
+    {
+        // This logic will be more complex later, for now just fetch all
+        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get()->map(function($employee) {
+            // Add authorization checks to each employee object for the frontend
+            $employee->can_restore = auth()->user()->can('restore-employees');
+            $employee->can_force_delete = auth()->user()->can('force-delete-employees');
+            return $employee;
+        });
+        return response()->json($terminatedEmployees);
+    }
 }

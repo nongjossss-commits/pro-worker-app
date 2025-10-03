@@ -114,33 +114,26 @@
                         <td>{{ $employee->employeePassport ?? '-' }}</td>
                         <td>{{ $employee->employeeWorkPermit ?? '-' }}</td>
                         <td>{{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-outline-success" title="สร้างงาน">
-                                    <i class="bi bi-send-plus"></i>
-                                </a>
-                                @can('edit-employees')
-                                <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </a>
-                                @endcan
+            <td class="text-nowrap">
+                <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-sm btn-outline-secondary" title="Create Job"><i class="bi bi-briefcase-fill"></i></a>
 
-                                @if(isset($showLocateButton) && $showLocateButton)
-                                    <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
-                                        <i class="bi bi-geo-alt-fill"></i>
-                                    </a>
-                                @endif
+                @can('edit-employees')
+                    <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-fill"></i></a>
+                @endcan
 
-                                @can('delete-employees')
-                                <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
-                                    <i class="bi bi-person-dash-fill"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
-                                @endcan
-                            </div>
-                        </td>
+                @if(isset($showLocateButton) && $showLocateButton)
+                    <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-info" title="Locate"><i class="bi bi-geo-alt-fill"></i></a>
+                @endif
+
+                @can('terminate-employees')
+                    <button type="button" class="btn btn-sm btn-outline-danger" title="Terminate"
+                            data-bs-toggle="modal"
+                            data-bs-target="#terminateEmployeeModal"
+                            data-employee-id="{{ $employee->id }}">
+                        <i class="bi bi-person-x-fill"></i>
+                    </button>
+                @endcan
+            </td>
                     </tr>
                     @empty
                     <tr>
@@ -157,6 +150,8 @@
         {{ $employees->links() }}
     </div>
 </div>
+
+@include('partials._employee_action_modals')
 
 @push('scripts')
 <script>

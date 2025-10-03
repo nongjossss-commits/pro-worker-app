@@ -51,8 +51,9 @@
                 @endif
 
                 @can('terminate-employees')
-                <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
-                    <i class="bi bi-person-dash-fill"></i>
+                <button type="button" class="btn btn-sm btn-outline-danger js-terminate-btn" title="Terminate"
+                        data-employee-id="{{ $employee->id }}">
+                    <i class="bi bi-person-x-fill"></i> แจ้งออก
                 </button>
                 <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
                     <i class="bi bi-trash-fill"></i>

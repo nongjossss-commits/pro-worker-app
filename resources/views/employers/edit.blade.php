@@ -1,26 +1,6 @@
 {{-- DEFINITIVE MASTER FIX: This is the user's full original file with the final corrections. --}}
 @extends('layouts.app')
 
-{{-- ===== เพิ่มโค้ด DEBUG ชั่วคราวเข้าไปตรงนี้ ===== --}}
-@section('debug-tracker')
-<div class="alert alert-warning m-3">
-    <h4 class="alert-heading">-- DEBUG MODE --</h4>
-    @if (Auth::check())
-        <p><strong>User Logged In:</strong> {{ Auth::user()->name }} (ID: {{ Auth::user()->id }})</p>
-        <p><strong>Roles:</strong> {{ Auth::user()->getRoleNames()->implode(', ') }}</p>
-        <hr>
-        <p><strong>Checking for 'create-employees' permission...</strong></p>
-        @if (Auth::user()->hasPermissionTo('create-employees'))
-            <p class="text-success fw-bold">RESULT: PERMISSION FOUND! (User should see the button)</p>
-        @else
-            <p class="text-danger fw-bold">RESULT: PERMISSION NOT FOUND! (This is why the button is hidden)</p>
-        @endif
-    @else
-        <p class="text-danger fw-bold">ERROR: User is not logged in.</p>
-    @endif
-</div>
-@endsection
-{{-- ===== สิ้นสุดโค้ด DEBUG ชั่วคราว ===== --}}
 
 @push('styles')
 <style>
@@ -378,11 +358,13 @@
                                         </a>
                                     @endif
 
-                                    @can('delete-employees')
-                                    <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
+                                    @can('terminate-employees')
+                                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#terminateEmployeeModal" data-employee-id="{{ $employee->id }}" title="แจ้งออก/เลิกจ้าง">
                                         <i class="bi bi-person-dash-fill"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
+                                    @endcan
+                                    @can('force-delete-employees')
+                                    <button type="button" class="btn btn-outline-danger btn-force-delete" data-employee-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
                                         <i class="bi bi-trash-fill"></i>
                                     </button>
                                     @endcan
@@ -405,507 +387,71 @@
 </div>
 
 {{-- Employment History Section --}}
-<div class="content-section mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">ประวัติการจ้างงาน</h5>
-        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#historyModal">
-            <i class="bi bi-clock-history"></i> ดูประวัติการจ้างงาน
-        </button>
+<div class="d-flex justify-content-between align-items-center mt-5">
+    <div>
+        <h4 class="mb-0">ประวัติการจ้างงาน</h4>
+        <p class="text-muted small">ดูประวัติพนักงานที่เคยจ้างงานทั้งหมดได้ที่นี่</p>
     </div>
-    <p>ดูประวัติพนักงานที่เคยจ้างงานทั้งหมดได้ที่นี่</p>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#employmentHistoryModal">
+        <i class="bi bi-clock-history me-2"></i>ดูประวัติการจ้างงาน
+    </button>
 </div>
 
 @endsection
 
 @include('partials._address_management')
-
-{{-- Employment History Modal --}}
-<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="historyModalLabel">ประวัติการจ้างงาน</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
-                    <div class="d-flex gap-2">
-                        <input type="text" class="form-control form-control-sm" id="searchHistoryInput" placeholder="ค้นหาในประวัติ..." style="width: 200px;">
-                    </div>
-                    <a href="{{ route('employers.exportHistory', $employer) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> ส่งออก</a>
-                </div>
-                <div id="employmentHistoryList" class="vstack gap-3">
-                    {{-- Terminated employees will be loaded here via JavaScript --}}
-                     <p class="text-muted">กำลังโหลด...</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- Terminate Employee Modal --}}
-<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateEmployeeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="terminateEmployeeModalLabel">แจ้งออก / เลิกจ้าง</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="terminateEmployeeForm">
-                    <input type="hidden" id="terminateEmployeeId">
-                    <div class="mb-3">
-                        <label for="terminateDate" class="form-label">วันที่แจ้งออก / เลิกจ้าง</label>
-                        <input type="date" class="form-control" id="terminateDate" required>
-                    </div>
-                     <div class="mb-3">
-                        <label for="terminationReason" class="form-label">เหตุผล</label>
-                        <textarea class="form-control" id="terminationReason" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" id="confirmTerminateEmployeeButton">ยืนยัน</button>
-            </div>
-        </div>
-    </div>
-</div>
+@include('partials._employee_action_modals')
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const employerId = '{{ $employer->id }}';
+    const historyModalEl = document.getElementById('employmentHistoryModal');
+    const historyBody = document.getElementById('history-body');
 
-    // --- Terminate Employee Logic ---
-    const terminateModalEl = document.getElementById('terminateEmployeeModal');
-    if (terminateModalEl) {
-        const terminateModal = new bootstrap.Modal(terminateModalEl);
-        const terminateForm = document.getElementById('terminateEmployeeForm');
-        const terminateEmployeeIdInput = document.getElementById('terminateEmployeeId');
-        const employeeListContainer = document.getElementById('employeeList');
+    if (historyModalEl) {
+        historyModalEl.addEventListener('show.bs.modal', function () {
+            historyBody.innerHTML = '<tr><td colspan="4" class="text-center">กำลังโหลด...</td></tr>';
 
-        employeeListContainer.addEventListener('click', function (e) {
-            const terminateButton = e.target.closest('.terminate-employee-btn');
-            if (terminateButton) {
-                const employeeId = terminateButton.dataset.id;
-                terminateEmployeeIdInput.value = employeeId;
-                terminateForm.reset();
-                terminateModal.show();
-            }
-        });
-
-        document.getElementById('confirmTerminateEmployeeButton').addEventListener('click', function () {
-            const employeeId = terminateEmployeeIdInput.value;
-            const terminateDate = document.getElementById('terminateDate').value;
-            const terminationReason = document.getElementById('terminationReason').value;
-
-            if (!terminateDate) {
-                showToast('กรุณาเลือกวันที่แจ้งออก', 'danger');
-                return;
-            }
-
-            fetch(`/employees/${employeeId}/terminate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    terminateDate: terminateDate,
-                    terminationReason: terminationReason
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const employeeCard = document.getElementById(`employee-card-${employeeId}`);
-                    if(employeeCard) {
-                         employeeCard.remove();
+            fetch("{{ route('employers.history.filter', $employer) }}")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
                     }
-                    // Simple refresh to update history list automatically
-                    location.reload();
-                } else {
-                    showToast(data.message || 'เกิดข้อผิดพลาดในการแจ้งออก', 'danger');
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-    }
-
-    // Filter Employees
-    const searchInput = document.getElementById('searchEmployeeInput');
-    const nationalitySelect = document.getElementById('searchEmployeeNationality');
-    const mouGroupSelect = document.getElementById('searchEmployeeMOUGroup');
-    const pinkCardSelect = document.getElementById('searchEmployeePinkCard');
-
-    // function filterEmployees() {
-    //     const search = searchInput.value;
-    //     const nationality = nationalitySelect.value;
-    //     const mouGroup = mouGroupSelect.value;
-    //     const pinkCard = pinkCardSelect.value;
-
-    //     const url = new URL(`{{ route('employers.employees.filter', $employer->id) }}`);
-    //     url.searchParams.append('search', search);
-    //     url.searchParams.append('nationality', nationality);
-    //     url.searchParams.append('mouGroup', mouGroup);
-    //     url.searchParams.append('pinkCard', pinkCard);
-
-    //     fetch(url)
-    //         .then(response => response.json())
-    //         .then(employees => {
-    //             const employeeList = document.getElementById('employeeList');
-    //             employeeList.innerHTML = '';
-    //             if (employees.length > 0) {
-    //                 employees.forEach(employee => {
-    //                     const card = `
-    //                     <div class="employee-card d-flex justify-content-between align-items-start gap-3">
-    //                         <div class="d-flex align-items-center flex-grow-1">
-    //                             <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-    //                             <div class="flex-grow-1">
-    //                                 <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
-    //                                 <p class="mb-1 text-muted small">${employee.employeeNameTh ?? 'ไม่มีชื่อภาษาไทย'} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
-    //                                 <p class="mb-1 text-muted small">Passport: ${employee.employeePassport ?? '-'} (หมดอายุ: ${employee.passportExpiryDate ? new Date(employee.passportExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-    //                                 <p class="mb-1 text-muted small">Work Permit: ${employee.employeeWorkPermit ?? '-'} (หมดอายุ: ${employee.workPermitExpiryDate ? new Date(employee.workPermitExpiryDate).toLocaleDateString('en-GB') : '-'})</p>
-    //                                 <p class="mb-0 text-muted small">Visa (${employee.workPermitMOUGroup ?? '-'}) หมดอายุ: ${employee.visaExpiryDate ? new Date(employee.visaExpiryDate).toLocaleDateString('en-GB') : '-'} | 90-Day: ${employee.ninetyDayReportDate ? new Date(employee.ninetyDayReportDate).toLocaleDateString('en-GB') : '-'}</p>
-    //                             </div>
-    //                         </div>
-    //                         <div class="btn-group btn-group-sm">
-    //                             <a href="/employees/${employee.id}/edit" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-    //                             <button type="button" class="btn btn-outline-warning terminate-employee-btn" data-id="${employee.id}" title="แจ้งออก/เลิกจ้าง"><i class="bi bi-person-dash-fill"></i></button>
-    //                             <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="${employee.id}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
-    //                         </div>
-    //                     </div>`;
-    //                     employeeList.innerHTML += card;
-    //                 });
-    //             } else {
-    //                 employeeList.innerHTML = '<p class="text-muted">ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไข</p>';
-    //             }
-    //              document.getElementById('employeeTotalCount').textContent = employees.length;
-    //         });
-    // }
-
-    // searchInput.addEventListener('input', filterEmployees);
-    // nationalitySelect.addEventListener('change', filterEmployees);
-    // mouGroupSelect.addEventListener('change', filterEmployees);
-    // pinkCardSelect.addEventListener('change', filterEmployees);
-
-    // Filter History
-    const searchHistoryInput = document.getElementById('searchHistoryInput');
-
-    function filterHistory() {
-        const search = searchHistoryInput.value;
-        const url = new URL(`{{ route('employers.history.filter', $employer->id) }}`);
-        url.searchParams.append('search', search);
-
-        fetch(url)
-            .then(response => response.json())
-            .then(employees => {
-                const historyList = document.getElementById('employmentHistoryList');
-                historyList.innerHTML = '';
-                if (employees.length > 0) {
-                    employees.forEach(employee => {
-                        const card = `
-                        <div class="employee-card bg-light d-flex justify-content-between align-items-start gap-3">
-                             <div class="d-flex align-items-center flex-grow-1">
-                                <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC'}" class="employee-photo-thumb" alt="Employee Photo" style="width: 48px; height: 48px; object-fit: cover;">
-                                <div class="flex-grow-1">
-                                    <p class="mb-0"><strong>${employee.employeeNameEn ?? 'No English Name'}</strong></p>
-                                    <p class="mb-1 text-muted small">${employee.employeeNameTh ?? ''} (${employee.employeePosition ?? 'ไม่ระบุตำแหน่ง'})</p>
-                                    <p class="mb-0 text-danger small"><strong>เลิกจ้างวันที่:</strong> ${new Date(employee.terminated_at).toLocaleDateString('en-GB')} - ${employee.termination_reason || 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-success restore-employee-btn" data-id="${employee.id}" title="นำกลับ"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                <button type="button" class="btn btn-outline-danger permanent-delete-btn" data-id="${employee.id}" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
-                            </div>
-                        </div>`;
-                        historyList.innerHTML += card;
-                    });
-                } else {
-                    historyList.innerHTML = '<p class="text-muted">ไม่มีประวัติการจ้างงาน</p>';
-                }
-            });
-    }
-
-    searchHistoryInput.addEventListener('input', filterHistory);
-    // Initial load of history
-    filterHistory();
-
-    // --- History Action Buttons ---
-    const historyList = document.getElementById('employmentHistoryList');
-
-    historyList.addEventListener('click', function(e) {
-        const restoreBtn = e.target.closest('.restore-employee-btn');
-        const deleteBtn = e.target.closest('.permanent-delete-btn');
-
-        if (restoreBtn) {
-            const employeeId = restoreBtn.dataset.id;
-            const employeeCard = restoreBtn.closest('.employee-card');
-            if (confirm('Are you sure you want to restore this employee?')) {
-                fetch(`/employees/${employeeId}/restore`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
+                    return response.json();
                 })
-                .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        employeeCard.remove();
-                        // For simplicity, reload the page to update both lists
-                        location.reload();
+                    historyBody.innerHTML = '';
+                    if (data.length === 0) {
+                        historyBody.innerHTML = '<tr><td colspan="4" class="text-center">ไม่พบประวัติการจ้างงาน</td></tr>';
                     } else {
-                        showToast(data.message || 'Failed to restore employee.', 'danger');
+                        data.forEach(employee => {
+                            // Use data-employee-id to work with the centralized SweetAlert script
+                            const restoreButton = employee.can_restore ? `<button class="btn btn-sm btn-success btn-restore" data-employee-id="${employee.id}">กู้คืน</button>` : '';
+                            const deleteButton = employee.can_force_delete ? `<button class="btn btn-sm btn-danger btn-force-delete" data-employee-id="${employee.id}">ลบถาวร</button>` : '';
+
+                            const row = `
+                                <tr id="history-row-${employee.id}">
+                                    <td>${employee.employeeNameTh || 'N/A'}</td>
+                                    <td>${new Date(employee.terminated_at).toLocaleDateString('th-TH')}</td>
+                                    <td>${employee.termination_reason || '-'}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            ${restoreButton}
+                                            ${deleteButton}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                            historyBody.insertAdjacentHTML('beforeend', row);
+                        });
                     }
                 })
-                .catch(error => console.error('Restore Error:', error));
-            }
-        }
-
-        if (deleteBtn) {
-            const employeeId = deleteBtn.dataset.id;
-            const employeeCard = deleteBtn.closest('.employee-card');
-            if (confirm('This action is irreversible. Are you sure you want to permanently delete this employee?')) {
-                fetch(`/employees/${employeeId}/force-delete`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        employeeCard.remove();
-                    } else {
-                        showToast(data.message || 'Failed to delete employee.', 'danger');
-                    }
-                })
-                .catch(error => console.error('Delete Error:', error));
-            }
-        }
-    });
-
-    // Highlight employee card from URL hash
-    if (window.location.hash) {
-        // The hash will be #employee-card-XX or #employee-row-XX
-        const highlightId = window.location.hash.substring(1);
-        console.log("TEST " + highlightId)
-        const elementToHighlight = document.getElementById(highlightId);
-
-        if (elementToHighlight) {
-            // Scroll the element into the middle of the view
-            elementToHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // Add the highlight class
-            elementToHighlight.classList.add('highlight');
-            elementToHighlight.style.border = "2px solid #f97316";
-            elementToHighlight.style.borderRadius = "0.5rem";
-            elementToHighlight.style.boxShadow = "0 0 15px rgba(249, 115, 22, 0.5)";
-            // Optional: Remove the class after the animation to clean up styles
-            // setTimeout(() => {
-            //     elementToHighlight.classList.remove('highlight');
-            //     // Also clear the hash from the URL for a cleaner experience
-            //     if (history.pushState) {
-            //         history.pushState(null, null, window.location.pathname + window.location.search);
-            //     } else {
-            //         window.location.hash = '';
-            //     }
-            // }, 3100); // Slightly longer than the animation
-        }
-    }
-});
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const container = document.getElementById('employeeList');
-        const actionBar = document.getElementById('bulk-action-bar-employer');
-        if (!container || !actionBar) return;
-
-        const selectAllCheckbox = document.getElementById('select-all-checkbox-employer');
-        const selectedCountSpan = document.getElementById('selected-count-employer');
-        const actionButton = actionBar.querySelector('button');
-
-        function updateActionBar() {
-            const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
-            const selectedCheckboxes = container.querySelectorAll('.bulk-action-checkbox:checked');
-            const count = selectedCheckboxes.length;
-
-            if (count > 0) {
-                actionBar.style.display = 'flex';
-                selectedCountSpan.textContent = count;
-                actionButton.disabled = false;
-            } else {
-                actionBar.style.display = 'none';
-                selectedCountSpan.textContent = 0;
-                actionButton.disabled = true;
-            }
-            if(selectAllCheckbox){
-                 selectAllCheckbox.checked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
-            }
-        }
-
-        container.addEventListener('change', function(e) {
-            if (e.target.classList.contains('bulk-action-checkbox')) {
-                updateActionBar();
-            }
-        });
-
-        if(selectAllCheckbox){
-            selectAllCheckbox.addEventListener('change', function() {
-                const itemCheckboxes = container.querySelectorAll('.bulk-action-checkbox');
-                itemCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
+                .catch(error => {
+                    console.error('Error fetching employment history:', error);
+                    historyBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
                 });
-                updateActionBar();
-            });
-        }
-        updateActionBar();
-});
-</script>
-<script>
-function resetAddressForm() {
-    const form = document.getElementById('addressForm');
-    if (form) form.reset();
-    document.getElementById('addressId').value = '';
-    const district = document.getElementById('addrDistrict');
-    district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
-    district.disabled = true;
-    const subDistrict = document.getElementById('addrSubDistrict');
-    subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
-    subDistrict.disabled = true;
-    const errors = document.getElementById('address-errors');
-    if (errors) {
-        errors.style.display = 'none';
-        errors.innerHTML = '';
-    }
-}
-
-async function fetchAddressForEdit(addressId) {
-    try {
-        const response = await fetch(`/addresses/${addressId}/edit`);
-        if (!response.ok) throw new Error('Failed to fetch address data');
-        const address = await response.json();
-
-        document.getElementById('addressId').value = address.id;
-        document.getElementById('addressType').value = address.type;
-        document.getElementById('addrNo').value = address.addrNo || '';
-        document.getElementById('addrNoEn').value = address.addrNoEn || '';
-        document.getElementById('addrMoo').value = address.addrMoo || '';
-        document.getElementById('addrMooEn').value = address.addrMooEn || '';
-        document.getElementById('addrSoi').value = address.addrSoi || '';
-        document.getElementById('addrSoiEn').value = address.addrSoiEn || '';
-        document.getElementById('addrRoad').value = address.addrRoad || '';
-        document.getElementById('addrRoadEn').value = address.addrRoadEn || '';
-
-        const provinceEl = document.getElementById('addrProvince');
-        provinceEl.value = address.addrProvince;
-        provinceEl.dispatchEvent(new Event('change'));
-
-        setTimeout(() => {
-            const districtEl = document.getElementById('addrDistrict');
-            districtEl.value = address.addrDistrict;
-            districtEl.dispatchEvent(new Event('change'));
-            setTimeout(() => {
-                const subDistrictEl = document.getElementById('addrSubDistrict');
-                subDistrictEl.value = address.addrSubDistrict;
-                subDistrictEl.dispatchEvent(new Event('change'));
-            }, 250);
-        }, 250);
-
-    } catch (error) {
-        console.error('Error fetching address for edit:', error);
-        showToast('เกิดข้อผิดพลาดในการโหลดข้อมูลที่อยู่', 'danger');
-    }
-}
-
-async function deleteAddress(id) {
-    const url = `/addresses/${id}`;
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-    try {
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-            }
         });
-
-        const result = await response.json();
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'เกิดข้อผิดพลาดในการลบ');
-        }
-
-        const addressCard = document.getElementById(`address-card-${id}`);
-        if (addressCard) {
-            addressCard.remove();
-        }
-        showToast('ลบที่อยู่เรียบร้อยแล้ว');
-
-    } catch (error) {
-        console.error('Delete Address Error:', error);
-        showToast(`เกิดข้อผิดพลาด: ${error.message}`, 'danger');
     }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const addressModalEl = document.getElementById('addressModal');
-
-    addressModalEl.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const addressId = button.getAttribute('data-id');
-        const addressableId = button.getAttribute('data-addressable-id');
-        const addressableType = button.getAttribute('data-addressable-type');
-
-        const addressForm = document.getElementById('addressForm');
-        // FIX: Ensure all text input fields are enabled
-        const textInputs = addressForm.querySelectorAll('input[type="text"]');
-        textInputs.forEach(input => {
-            input.disabled = false;
-            input.readOnly = false;
-        });
-
-        document.getElementById('addressableId').value = addressableId;
-        // Use the simple string 'employer' passed from the button
-        document.getElementById('addressableType').value = addressableType;
-
-        if (addressId) { // EDIT MODE
-            document.getElementById('addressModalLabel').innerText = 'แก้ไขที่อยู่';
-            fetchAddressForEdit(addressId);
-        } else { // ADD MODE
-            document.getElementById('addressModalLabel').innerText = 'เพิ่มที่อยู่';
-            resetAddressForm();
-            document.getElementById('addressType').value = button.getAttribute('data-type');
-        }
-    });
-
-    document.getElementById('addressListsContainer').addEventListener('click', function(e) {
-        const deleteBtn = e.target.closest('.delete-address-btn');
-        if (deleteBtn) {
-            const addressId = deleteBtn.getAttribute('data-id');
-            Swal.fire({
-                title: 'ยืนยันการลบ',
-                text: "คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'ใช่, ลบเลย!',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    deleteAddress(addressId);
-                }
-            });
-        }
-    });
 });
 </script>
 @endpush

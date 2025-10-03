@@ -22,7 +22,9 @@ class RoleAndPermissionSeeder extends Seeder
             'manage-users', 'manage-roles', 'manage-settings',
             'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
             'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
-            'terminate-employees' // <-- เพิ่ม Permission ใหม่
+            'terminate-employees',
+            'restore-employees', // <-- เพิ่ม Permission ใหม่
+            'force-delete-employees' // <-- เพิ่ม Permission ใหม่
         ];
         foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
@@ -34,7 +36,8 @@ class RoleAndPermissionSeeder extends Seeder
         $staffPermissions = [
             'view-employers', 'create-employers', 'edit-employers',
             'view-employees', 'edit-employees', 'create-employees',
-            'terminate-employees' // <-- มอบสิทธิ์ใหม่ให้ Staff
+            'terminate-employees',
+            'restore-employees'
         ];
         $staffRole->givePermissionTo($staffPermissions);
         $this->command->info('Staff role created and assigned permissions.');
