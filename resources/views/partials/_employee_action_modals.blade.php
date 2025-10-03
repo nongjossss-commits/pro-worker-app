@@ -76,26 +76,32 @@ document.addEventListener('DOMContentLoaded', function () {
     const showSuccess = (message) => Swal.fire('สำเร็จ!', message, 'success');
     const showError = (message) => Swal.fire('ผิดพลาด!', message, 'error');
 
-    // --- Terminate Modal Logic ---
-    const terminateModal = document.getElementById('terminateEmployeeModal');
-    if (terminateModal) {
-        terminateModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const employeeId = button.getAttribute('data-employee-id');
-            const url = `{{ url('employees') }}/${employeeId}/terminate`;
-            const form = document.getElementById('terminate-form');
-            form.setAttribute('action', url);
-        });
-    }
+    // --- MANUAL MODAL CONTROL ---
+    const terminateModalEl = document.getElementById('terminateEmployeeModal');
+    const terminateModal = terminateModalEl ? new bootstrap.Modal(terminateModalEl) : null;
+    const terminateForm = document.getElementById('terminate-form');
+    
+    // ... (โค้ดสำหรับ History Modal สามารถเพิ่มตรงนี้ได้ในอนาคต) ...
 
     // --- Event Delegation for ALL Action Buttons ---
     document.body.addEventListener('click', function(e) {
+        // Find the closest button or link that was clicked
         const target = e.target.closest('button, a');
         if (!target) return;
 
         const employeeId = target.dataset.employeeId;
 
-        // Restore Employee
+        // --- Handle Terminate Button Click ---
+        if (target.matches('.js-terminate-btn')) {
+            e.preventDefault();
+            if (terminateModal && terminateForm) {
+                const url = `{{ url('employees') }}/${employeeId}/terminate`;
+                terminateForm.setAttribute('action', url);
+                terminateModal.show();
+            }
+        }
+
+        // --- Handle Restore Button Click ---
         if (target.matches('.btn-restore')) {
             e.preventDefault();
             Swal.fire({
@@ -121,8 +127,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
-
-        // Force Delete Employee
+        
+        // --- Handle Force Delete Button Click ---
         if (target.matches('.btn-force-delete')) {
             e.preventDefault();
              Swal.fire({
