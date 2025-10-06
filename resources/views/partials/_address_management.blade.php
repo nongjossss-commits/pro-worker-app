@@ -120,7 +120,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Configuration for the address modal
-        const addressModal = document.getElementById('addAddressModal'); // Assuming your modal has this ID
+        const addressModal = document.getElementById('addAddressModal');
         if (!addressModal) return;
 
         const provinceSelect = document.getElementById('addrProvince');
