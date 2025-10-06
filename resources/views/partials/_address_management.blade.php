@@ -1,5 +1,5 @@
 {{-- Add/Edit Address Modal HTML --}}
-<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+<div x-ignore class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
