@@ -87,6 +87,8 @@ class AddressController extends Controller
             return response()->json(['error' => 'Address data file not found.'], 404);
         }
 
-        return response()->file($path);
+        $json = json_decode(file_get_contents($path), true);
+
+        return response()->json($json);
     }
 }
