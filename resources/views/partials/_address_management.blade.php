@@ -119,93 +119,125 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Configuration for the address modal
-        const addressModal = document.getElementById('addAddressModal');
-        if (!addressModal) return;
+        const addressModalEl = document.getElementById('addAddressModal');
+        if (!addressModalEl) return;
 
         const provinceSelect = document.getElementById('addrProvince');
         const districtSelect = document.getElementById('addrDistrict');
         const subDistrictSelect = document.getElementById('addrSubDistrict');
         const zipCodeInput = document.getElementById('addrZipCode');
-        const form = addressModal.querySelector('form');
 
-        let thaiAddressData = {};
+        const provinceEnInput = document.getElementById('addrProvinceEn');
+        const districtEnInput = document.getElementById('addrDistrictEn');
+        const subDistrictEnInput = document.getElementById('addrSubDistrictEn');
 
-        // Fetch data only once when the modal is first shown
-        addressModal.addEventListener('show.bs.modal', function() {
-            if (Object.keys(thaiAddressData).length === 0) {
+        const form = addressModalEl.querySelector('form');
+        let thaiAddressData = []; // Use an array to store data
+
+        // --- Event Listeners ---
+
+        // 1. Force z-index on modal show to fix backdrop issue
+        addressModalEl.addEventListener('shown.bs.modal', function () {
+            addressModalEl.style.zIndex = '1071';
+        });
+
+        // 2. Fetch data only once when the modal is first shown
+        addressModalEl.addEventListener('show.bs.modal', function() {
+            if (thaiAddressData.length === 0) {
                 fetchAddressData();
             }
         }, { once: true });
 
+        // 3. Handle dropdown changes
+        provinceSelect.addEventListener('change', handleProvinceChange);
+        districtSelect.addEventListener('change', handleDistrictChange);
+        subDistrictSelect.addEventListener('change', handleSubDistrictChange);
+
+        // --- Main Functions ---
 
         async function fetchAddressData() {
-            const dataUrl = form.dataset.url; // We'll add this data-url to the form
-            if (!dataUrl) {
-                 console.error('Data URL is not set on the form.');
-                 return;
-            }
+            const dataUrl = form.dataset.url;
             try {
                 const response = await fetch(dataUrl);
                 if (!response.ok) throw new Error('Network response was not ok');
                 thaiAddressData = await response.json();
-                populateProvinces(provinceSelect);
+                populateProvinces();
             } catch (error) {
                 console.error('Failed to fetch address data:', error);
             }
         }
 
-        provinceSelect.addEventListener('change', () => {
-            populateDistricts(districtSelect, subDistrictSelect, zipCodeInput, provinceSelect.value);
-        });
+        function handleProvinceChange() {
+            const selectedProvinceData = thaiAddressData.find(p => p.name_th === provinceSelect.value);
+            resetDistricts();
+            resetSubDistricts();
+            if (selectedProvinceData) {
+                provinceEnInput.value = selectedProvinceData.name_en;
+                populateDistricts(selectedProvinceData.amphure);
+                districtSelect.disabled = false;
+            }
+        }
 
-        districtSelect.addEventListener('change', () => {
-            populateSubDistricts(subDistrictSelect, zipCodeInput, provinceSelect.value, districtSelect.value);
-        });
+        function handleDistrictChange() {
+            const selectedProvinceData = thaiAddressData.find(p => p.name_th === provinceSelect.value);
+            const selectedDistrictData = selectedProvinceData?.amphure.find(d => d.name_th === districtSelect.value);
+            resetSubDistricts();
+            if (selectedDistrictData) {
+                districtEnInput.value = selectedDistrictData.name_en;
+                populateSubDistricts(selectedDistrictData.tambon);
+                subDistrictSelect.disabled = false;
+            }
+        }
 
-        subDistrictSelect.addEventListener('change', () => {
-            autofillZipCode(zipCodeInput, provinceSelect.value, districtSelect.value, subDistrictSelect.value);
-        });
+        function handleSubDistrictChange() {
+            const selectedProvinceData = thaiAddressData.find(p => p.name_th === provinceSelect.value);
+            const selectedDistrictData = selectedProvinceData?.amphure.find(d => d.name_th === districtSelect.value);
+            const selectedSubDistrictData = selectedDistrictData?.tambon.find(s => s.name_th === subDistrictSelect.value);
 
-        function populateProvinces(selectElement) {
-            selectElement.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
-            Object.keys(thaiAddressData).sort().forEach(province => {
-                const option = new Option(province, province);
-                selectElement.add(option);
+            zipCodeInput.value = '';
+            subDistrictEnInput.value = '';
+
+            if (selectedSubDistrictData) {
+                subDistrictEnInput.value = selectedSubDistrictData.name_en;
+                zipCodeInput.value = selectedSubDistrictData.zip_code;
+            }
+        }
+
+        // --- Helper Functions ---
+
+        function populateProvinces() {
+            provinceSelect.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
+            thaiAddressData.forEach(province => {
+                const option = new Option(province.name_th, province.name_th);
+                provinceSelect.add(option);
             });
         }
 
-        function populateDistricts(districtSelect, subDistrictSelect, zipCodeInput, provinceName) {
+        function populateDistricts(districts) {
+            districts.forEach(district => {
+                const option = new Option(district.name_th, district.name_th);
+                districtSelect.add(option);
+            });
+        }
+
+        function populateSubDistricts(subDistricts) {
+            subDistricts.forEach(subDistrict => {
+                const option = new Option(subDistrict.name_th, subDistrict.name_th);
+                subDistrictSelect.add(option);
+            });
+        }
+
+        function resetDistricts() {
             districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
-            subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
-            zipCodeInput.value = '';
-            if (provinceName && thaiAddressData[provinceName]) {
-                districtSelect.disabled = false;
-                Object.keys(thaiAddressData[provinceName].districts).sort().forEach(district => {
-                    const option = new Option(district, district);
-                    districtSelect.add(option);
-                });
-            }
+            districtSelect.disabled = true;
+            districtEnInput.value = '';
         }
 
-        function populateSubDistricts(subDistrictSelect, zipCodeInput, provinceName, districtName) {
+        function resetSubDistricts() {
             subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
+            subDistrictSelect.disabled = true;
+            subDistrictEnInput.value = '';
             zipCodeInput.value = '';
-            if (provinceName && districtName && thaiAddressData[provinceName]?.districts[districtName]) {
-                subDistrictSelect.disabled = false;
-                const subDistricts = thaiAddressData[provinceName].districts[districtName].sub_districts;
-                Object.keys(subDistricts).sort().forEach(subDistrict => {
-                    const option = new Option(subDistrict, subDistrict);
-                    subDistrictSelect.add(option);
-                });
-            }
-        }
-
-        function autofillZipCode(zipCodeInput, provinceName, districtName, subDistrictName) {
-            zipCodeInput.value = '';
-            if (provinceName && districtName && subDistrictName && thaiAddressData[provinceName]?.districts[districtName]?.sub_districts[subDistrictName]) {
-                zipCodeInput.value = thaiAddressData[provinceName].districts[districtName].sub_districts[subDistrictName].zip_code;
-            }
         }
     });
 </script>
