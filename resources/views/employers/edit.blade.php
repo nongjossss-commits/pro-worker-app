@@ -371,10 +371,9 @@
     </button>
 </div>
 
+    @include('partials._address_management')
+    @include('partials._employee_action_modals')
 @endsection
-
-@include('partials._address_management')
-@include('partials._employee_action_modals')
 
 @push('scripts')
 <script>

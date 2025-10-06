@@ -183,9 +183,9 @@
         </div>
     </form>
 </div>
-@endsection
 
 @include('partials._address_management')
+@endsection
 
 @push('scripts')
 <script>
