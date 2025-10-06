@@ -34,38 +34,35 @@
             <small class="text-muted d-block">Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}</small>
         </div>
         <div class="ms-auto ps-3">
-            <div class="btn-group btn-group-sm">
-                <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-outline-success" title="สร้างงาน">
-                    <i class="bi bi-send-plus"></i>
+            {{-- ===== STANDARD ACTION BUTTONS START ===== --}}
+            <div class="d-flex align-items-center">
+                <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-sm btn-outline-info me-1" title="Create Job">
+                    <i class="bi bi-briefcase-fill"></i>
                 </a>
+
                 @can('edit-employees')
-                <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข">
-                    <i class="bi bi-pencil-fill"></i>
-                </a>
+                    <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning me-1" title="Edit Employee">
+                        <i class="bi bi-pencil-fill"></i>
+                    </a>
                 @endcan
 
+                {{-- "Locate" button will only show if the variable is passed --}}
                 @if($showLocateButton ?? false)
-                    <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
+                    <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-outline-primary me-1" title="Locate in Employer List">
                         <i class="bi bi-geo-alt-fill"></i>
                     </a>
                 @endif
-                {{-- This button locates the employee within their employer's edit page --}}
-                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
-                    <i class="bi bi-geo-alt-fill"></i>
-                </a>
 
                 @can('terminate-employees')
-                <button type="button" class="btn btn-sm btn-outline-danger"
-                        x-data="{ employeeId: {{ $employee->id }}, employeeName: '{{ $employee->employeeNameTh }}' }"
-                        x-on:click.prevent="$dispatch('open-modal', { name: 'terminate-employee', employeeId: employeeId, employeeName: employeeName })"
-                        title="แจ้งออก">
-                    <i class="bi bi-person-x-fill"></i> แจ้งออก
-                </button>
-                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Terminate"
+                            data-bs-toggle="modal"
+                            data-bs-target="#terminateEmployeeModal"
+                            data-employee-id="{{ $employee->id }}">
+                        <i class="bi bi-person-x-fill"></i>
+                    </button>
                 @endcan
             </div>
+            {{-- ===== STANDARD ACTION BUTTONS END ===== --}}
         </div>
     </div>
 </div>

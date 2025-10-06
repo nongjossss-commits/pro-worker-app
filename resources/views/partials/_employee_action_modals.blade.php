@@ -1,7 +1,7 @@
 {{-- ============== EMPLOYEE ACTION MODALS & SCRIPTS ============== --}}
 
 {{-- Terminate Employee Modal --}}
-<div class="modal fade z-3" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
+<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="terminate-form" method="POST" action="">
@@ -30,7 +30,7 @@
 </div>
 
 {{-- Employment History Modal --}}
-<div class="modal fade z-3" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
+<div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -76,10 +76,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const showSuccess = (message) => Swal.fire('สำเร็จ!', message, 'success');
     const showError = (message) => Swal.fire('ผิดพลาด!', message, 'error');
 
-    // --- Terminate Modal Logic ---
-    const terminateModal = document.getElementById('terminateEmployeeModal');
-    if (terminateModal) {
-        terminateModal.addEventListener('show.bs.modal', function (event) {
+    // --- Terminate Modal Logic (Handles new standard buttons) ---
+    const terminateModalEl = document.getElementById('terminateEmployeeModal');
+    if (terminateModalEl) {
+        terminateModalEl.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const employeeId = button.getAttribute('data-employee-id');
             const url = `{{ url('employees') }}/${employeeId}/terminate`;
@@ -88,27 +88,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- Event Delegation for ALL Action Buttons ---
+    // --- Delegated Event Listeners for Dynamic Buttons (Restore, Force Delete) ---
     document.body.addEventListener('click', function(e) {
-        // Find the closest button or link that was clicked
-        const target = e.target.closest('button, a');
-        if (!target) return;
+        const button = e.target.closest('.btn-restore, .btn-force-delete');
+        if (!button) return;
 
-        const employeeId = target.dataset.employeeId;
-
-        // --- Handle Terminate Button Click ---
-        if (target.matches('.js-terminate-btn')) {
-            e.preventDefault();
-            if (terminateModal && terminateForm) {
-                const url = `{{ url('employees') }}/${employeeId}/terminate`;
-                terminateForm.setAttribute('action', url);
-                terminateModal.show();
-            }
-        }
+        e.preventDefault();
+        const employeeId = button.dataset.employeeId;
 
         // --- Handle Restore Button Click ---
-        if (target.matches('.btn-restore')) {
-            e.preventDefault();
+        if (button.matches('.btn-restore')) {
             Swal.fire({
                 title: 'คุณต้องการกู้คืนพนักงานคนนี้ใช่หรือไม่?',
                 icon: 'question',
@@ -126,16 +115,15 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (data.success) {
                             showSuccess(data.message).then(() => location.reload());
                         } else {
-                            showError('กู้คืนข้อมูลไม่สำเร็จ');
+                            showError(data.message || 'กู้คืนข้อมูลไม่สำเร็จ');
                         }
-                    });
+                    }).catch(() => showError('เกิดข้อผิดพลาดในการสื่อสารกับเซิร์ฟเวอร์'));
                 }
             });
         }
 
-        // Force Delete Employee
-        if (target.matches('.btn-force-delete')) {
-            e.preventDefault();
+        // --- Handle Force Delete Button Click ---
+        if (button.matches('.btn-force-delete')) {
              Swal.fire({
                 title: 'คุณแน่ใจหรือไม่?',
                 text: "การกระทำนี้จะลบข้อมูลพนักงานอย่างถาวรและไม่สามารถย้อนกลับได้!",
@@ -153,11 +141,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     }).then(res => res.json()).then(data => {
                         if (data.success) {
                             showSuccess(data.message);
-                            document.getElementById(`history-row-${employeeId}`).remove();
+                            const row = document.getElementById(`history-row-${employeeId}`);
+                            if(row) row.remove();
                         } else {
-                            showError('ลบข้อมูลไม่สำเร็จ');
+                            showError(data.message || 'ลบข้อมูลไม่สำเร็จ');
                         }
-                    });
+                    }).catch(() => showError('เกิดข้อผิดพลาดในการสื่อสารกับเซิร์ฟเวอร์'));
                 }
             });
         }
