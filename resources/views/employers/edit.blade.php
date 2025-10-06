@@ -146,7 +146,7 @@
     </form>
 </div>
 
-<div id="addressListsContainer">
+<div id="addressListsContainer" data-url="{{ route('addresses.thai_data') }}">
     {{-- Registered Address Section --}}
     <div class="content-section mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">

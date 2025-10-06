@@ -126,8 +126,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function fetchDropdownData() {
         if (isDataFetched) return;
+        const container = document.getElementById('addressListsContainer');
+        if (!container) return; // Exit if the main container isn't on the page
+
+        const dataUrl = container.dataset.url;
+        if (!dataUrl) {
+            console.error('Address data URL is missing.');
+            return;
+        }
+
         try {
-            const response = await fetch('{{ route('addresses.thai_data') }}');
+            const response = await fetch(dataUrl);
             if (!response.ok) throw new Error('Network response was not ok');
             thaiAddressData = await response.json();
             isDataFetched = true;
