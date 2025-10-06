@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('รหัสผ่านสำหรับ Admin ที่คุณ Wing ต้องการ'),
+    'password' => Hash::make('admin_password_1234'),
         ]);
 
         // Call the other seeders
