@@ -100,22 +100,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const showSuccess = (message) => showToast(message, 'success');
     const showError = (message) => showToast(message, 'error');
 
-    // --- Terminate Modal Logic ---
+    // --- Modal and Form Element References ---
     const terminateModalEl = document.getElementById('terminateEmployeeModal');
-    if (terminateModalEl) {
-        const terminateForm = document.getElementById('terminate-form');
+    const terminateModal = terminateModalEl ? new bootstrap.Modal(terminateModalEl) : null;
+    const terminateForm = document.getElementById('terminate-form');
 
-        // 1. Set form action when modal is shown
-        terminateModalEl.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const employeeId = button.getAttribute('data-employee-id');
-            if (employeeId) {
-                const url = `{{ url('employees') }}/${employeeId}/terminate`;
-                terminateForm.setAttribute('action', url);
-            }
-        });
-
-        // 2. Handle form submission with Fetch API for a smoother experience
+    // --- AJAX form submission for Terminate Modal ---
+    // This listener is separate because it handles a form 'submit' event, not a button 'click'.
+    // It will be triggered after the terminate modal is shown and the user confirms.
+    if (terminateForm) {
         terminateForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -131,8 +124,10 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(response => response.json())
             .then(data => {
-                const modalInstance = bootstrap.Modal.getInstance(terminateModalEl);
-                modalInstance.hide();
+                if (terminateModal) {
+                    const modalInstance = bootstrap.Modal.getInstance(terminateModalEl);
+                    modalInstance.hide();
+                }
                 if (data.success) {
                     Swal.fire('สำเร็จ!', data.message, 'success').then(() => location.reload());
                 } else {
@@ -146,16 +141,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- Delegated Event Listeners for Dynamic Buttons (Restore, Force Delete) ---
+    // --- CENTRALIZED EVENT DELEGATION FOR ALL ACTION BUTTONS ---
     document.body.addEventListener('click', function(e) {
-        const button = e.target.closest('.btn-restore, .btn-force-delete');
+        // Find the closest button with an action class
+        const button = e.target.closest('.js-terminate-btn, .js-restore-btn, .js-force-delete-btn');
         if (!button) return;
 
         e.preventDefault();
         const employeeId = button.dataset.employeeId;
+        if (!employeeId) return;
+
+        // --- Handle Terminate Button Click (Show Modal) ---
+        if (button.matches('.js-terminate-btn')) {
+            if (terminateModal && terminateForm) {
+                const url = `{{ url('employees') }}/${employeeId}/terminate`;
+                terminateForm.setAttribute('action', url);
+                terminateModal.show();
+            }
+        }
 
         // --- Handle Restore Button Click ---
-        if (button.matches('.btn-restore')) {
+        if (button.matches('.js-restore-btn')) {
             Swal.fire({
                 title: 'คุณต้องการกู้คืนพนักงานคนนี้ใช่หรือไม่?',
                 text: 'พนักงานจะกลับสู่สถานะ "กำลังจ้างงาน"',
@@ -175,7 +181,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     .then(data => {
                         if (data.success) {
                             showSuccess(data.message);
-                            // Remove row from history modal and reload the page for full update
                             document.getElementById(`history-row-${employeeId}`)?.remove();
                             setTimeout(() => location.reload(), 1500);
                         } else {
@@ -187,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // --- Handle Force Delete Button Click ---
-        if (button.matches('.btn-force-delete')) {
+        if (button.matches('.js-force-delete-btn')) {
              Swal.fire({
                 title: 'คุณแน่ใจหรือไม่?',
                 html: "การกระทำนี้จะลบข้อมูลพนักงานและเอกสารที่เกี่ยวข้องทั้งหมดอย่าง<b>ถาวร</b><br>และไม่สามารถย้อนกลับได้!",
@@ -207,7 +212,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     .then(data => {
                         if (data.success) {
                             showSuccess(data.message);
-                            // Just remove the row from the UI, no need to reload
                             document.getElementById(`history-row-${employeeId}`)?.remove();
                             document.getElementById(`employee-card-${employeeId}`)?.remove();
                             document.getElementById(`employee-row-${employeeId}`)?.remove();

@@ -399,9 +399,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         historyBody.innerHTML = '<tr><td colspan="4" class="text-center">ไม่พบประวัติการจ้างงาน</td></tr>';
                     } else {
                         data.forEach(employee => {
-                            // Use data-employee-id to work with the centralized SweetAlert script
-                            const restoreButton = employee.can_restore ? `<button class="btn btn-sm btn-success btn-restore" data-employee-id="${employee.id}">กู้คืน</button>` : '';
-                            const deleteButton = employee.can_force_delete ? `<button class="btn btn-sm btn-danger btn-force-delete" data-employee-id="${employee.id}">ลบถาวร</button>` : '';
+                            // Use data-employee-id and js-* classes to work with the centralized SweetAlert script
+                            const restoreButton = employee.can_restore ? `<button class="btn btn-sm btn-success js-restore-btn" data-employee-id="${employee.id}">กู้คืน</button>` : '';
+                            const deleteButton = employee.can_force_delete ? `<button class="btn btn-sm btn-danger js-force-delete-btn" data-employee-id="${employee.id}">ลบถาวร</button>` : '';
 
                             const row = `
                                 <tr id="history-row-${employee.id}">
