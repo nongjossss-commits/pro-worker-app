@@ -189,6 +189,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
         return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
     }
 
+    public function locate(Employee $employee)
+    {
+        return redirect()->route('employers.edit', $employee->employer_id)
+                         ->with('highlight_employee', $employee->id);
+    }
+
     public function destroy(Employee $employee)
     {
         if ($employee->employeePhoto) {

@@ -342,35 +342,7 @@
                                 @endif
                             </td>
                             <td>
-                                {{-- ===== STANDARD ACTION BUTTONS START ===== --}}
-                                <div class="d-flex align-items-center">
-                                    <a href="{{ route('jobs.create_from_employee', $employee) }}" class="btn btn-sm btn-outline-info me-1" title="Create Job">
-                                        <i class="bi bi-briefcase-fill"></i>
-                                    </a>
-
-                                    @can('edit-employees')
-                                        <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning me-1" title="Edit Employee">
-                                            <i class="bi bi-pencil-fill"></i>
-                                        </a>
-                                    @endcan
-
-                                    {{-- "Locate" button will only show if the variable is passed --}}
-                                    @if($showLocateButton ?? false)
-                                        <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-outline-primary me-1" title="Locate in Employer List">
-                                            <i class="bi bi-geo-alt-fill"></i>
-                                        </a>
-                                    @endif
-
-                                    @can('terminate-employees')
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Terminate"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#terminateEmployeeModal"
-                                                data-employee-id="{{ $employee->id }}">
-                                            <i class="bi bi-person-x-fill"></i>
-                                        </button>
-                                    @endcan
-                                </div>
-                                {{-- ===== STANDARD ACTION BUTTONS END ===== --}}
+                                <x-employee-action-buttons :employee="$employee" :show-locate-button="false" />
                             </td>
                         </tr>
                     @empty
