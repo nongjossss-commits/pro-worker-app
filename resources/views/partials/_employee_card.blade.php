@@ -49,10 +49,16 @@
                         <i class="bi bi-geo-alt-fill"></i>
                     </a>
                 @endif
+                {{-- This button locates the employee within their employer's edit page --}}
+                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </a>
 
                 @can('terminate-employees')
-                <button type="button" class="btn btn-sm btn-outline-danger js-terminate-btn" title="Terminate"
-                        data-employee-id="{{ $employee->id }}">
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        x-data="{ employeeId: {{ $employee->id }}, employeeName: '{{ $employee->employeeNameTh }}' }"
+                        x-on:click.prevent="$dispatch('open-modal', { name: 'terminate-employee', employeeId: employeeId, employeeName: employeeName })"
+                        title="แจ้งออก">
                     <i class="bi bi-person-x-fill"></i> แจ้งออก
                 </button>
                 <button type="button" class="btn btn-outline-danger delete-employee-btn" data-id="{{ $employee->id }}" title="ลบข้อมูล (ถาวร)">
