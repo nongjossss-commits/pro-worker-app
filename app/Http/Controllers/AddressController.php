@@ -81,7 +81,7 @@ class AddressController extends Controller
 
     public function getThaiAddressData()
     {
-        $path = public_path('data/thai-address-data.json');
+        $path = storage_path('app/public/data/thai-address-data.json');
 
         if (!file_exists($path)) {
             return response()->json(['error' => 'Address data file not found.'], 404);

@@ -18,6 +18,7 @@
 .modal-backdrop {
     z-index: 1050;
 }
+
 .modal {
-    z-index: 1060;
+    z-index: 1060 !important;
 }
