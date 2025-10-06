@@ -52,7 +52,7 @@ class RoleAndPermissionSeeder extends Seeder
         $staffUser = User::factory()->create([
             'name' => 'Staff User',
             'email' => 'staff@example.com',
-            'password' => Hash::make('รหัสผ่านสำหรับ Staff ที่คุณ Wing ต้องการ'),
+    'password' => Hash::make('staff_password_1234'),
         ]);
         $staffUser->assignRole($staffRole);
         $this->command->info('Staff User (staff@example.com) created and assigned to staff role.');
