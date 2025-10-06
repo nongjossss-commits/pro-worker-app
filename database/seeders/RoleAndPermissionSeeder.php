@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 
 class RoleAndPermissionSeeder extends Seeder
@@ -51,6 +52,7 @@ class RoleAndPermissionSeeder extends Seeder
         $staffUser = User::factory()->create([
             'name' => 'Staff User',
             'email' => 'staff@example.com',
+            'password' => Hash::make('รหัสผ่านสำหรับ Staff ที่คุณ Wing ต้องการ'),
         ]);
         $staffUser->assignRole($staffRole);
         $this->command->info('Staff User (staff@example.com) created and assigned to staff role.');
