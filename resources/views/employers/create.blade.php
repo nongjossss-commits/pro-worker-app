@@ -151,7 +151,7 @@
             <div class="content-section mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
-                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addressModal" data-address-type="registered">
+                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addAddressModal" data-address-type="registered">
                         <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
                     </button>
                 </div>
@@ -164,7 +164,7 @@
             <div class="content-section mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
-                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addressModal" data-address-type="workplace">
+                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addAddressModal" data-address-type="workplace">
                         <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
                     </button>
                 </div>
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const registeredAddressList = document.getElementById('registeredAddressList');
     const workplaceAddressList = document.getElementById('workplaceAddressList');
     const mainForm = document.getElementById('saveEmployerForm');
-    const addressModalEl = document.getElementById('addressModal');
+    const addressModalEl = document.getElementById('addAddressModal');
     const addressModal = new bootstrap.Modal(addressModalEl);
     const addressForm = document.getElementById('addressForm');
     const saveAddressButton = document.getElementById('saveAddress');
