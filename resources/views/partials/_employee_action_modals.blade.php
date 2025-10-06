@@ -76,12 +76,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const showSuccess = (message) => Swal.fire('สำเร็จ!', message, 'success');
     const showError = (message) => Swal.fire('ผิดพลาด!', message, 'error');
 
-    // --- MANUAL MODAL CONTROL ---
-    const terminateModalEl = document.getElementById('terminateEmployeeModal');
-    const terminateModal = terminateModalEl ? new bootstrap.Modal(terminateModalEl) : null;
-    const terminateForm = document.getElementById('terminate-form');
-    
-    // ... (โค้ดสำหรับ History Modal สามารถเพิ่มตรงนี้ได้ในอนาคต) ...
+    // --- Terminate Modal Logic ---
+    const terminateModal = document.getElementById('terminateEmployeeModal');
+    if (terminateModal) {
+        terminateModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const employeeId = button.getAttribute('data-employee-id');
+            const url = `{{ url('employees') }}/${employeeId}/terminate`;
+            const form = document.getElementById('terminate-form');
+            form.setAttribute('action', url);
+        });
+    }
 
     // --- Event Delegation for ALL Action Buttons ---
     document.body.addEventListener('click', function(e) {
@@ -127,8 +132,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
-        
-        // --- Handle Force Delete Button Click ---
+
+        // Force Delete Employee
         if (target.matches('.btn-force-delete')) {
             e.preventDefault();
              Swal.fire({
