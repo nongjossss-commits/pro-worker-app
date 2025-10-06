@@ -122,8 +122,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const addressModalEl = document.getElementById('addressModal');
     if (!addressModalEl) return;
 
-    // --- 1. Get all elements we need to control ---
+    const employerId = '{{ $employer->id ?? null }}';
+
+    // --- Element Cache ---
     const elements = {
+        modal: new bootstrap.Modal(addressModalEl),
+        form: document.getElementById('addressForm'),
+        modalLabel: document.getElementById('addressModalLabel'),
+        idInput: document.getElementById('addressId'),
+        typeInput: document.getElementById('addressType'),
+        errors: document.getElementById('address-errors'),
+        saveBtn: document.getElementById('saveAddress'),
         province: document.getElementById('addrProvince'),
         district: document.getElementById('addrDistrict'),
         subDistrict: document.getElementById('addrSubDistrict'),
@@ -134,109 +143,138 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     let addressData = [];
+    let isDataFetched = false;
 
-    // --- 2. Function to fetch data (This part is working perfectly) ---
+    // --- Data Fetching ---
     async function fetchAddressData() {
-        if (addressData.length > 0) return;
+        if (isDataFetched) return;
         try {
             const dataUrl = `{{ asset('storage/data/thai-address-data.json') }}?v=${Date.now()}`;
             const response = await fetch(dataUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             addressData = await response.json();
+            isDataFetched = true;
         } catch (error) {
             console.error("Fatal Error: Could not fetch address data.", error);
         }
     }
 
-    // --- 3. Function to populate dropdowns ---
-    function populateDropdown(selectEl, data, placeholder, nameKey) {
+    // --- UI Helpers ---
+    function populateDropdown(selectEl, data, placeholder, valueKey, textKey) {
         selectEl.innerHTML = `<option selected disabled value="">--- ${placeholder} ---</option>`;
         data.forEach(item => {
-            selectEl.add(new Option(item[nameKey], item[nameKey]));
+            selectEl.add(new Option(item[textKey], item[valueKey]));
         });
     }
 
-    // --- 4. The CORE LOGIC, based on your successful analysis ---
-
-    // WHEN a Thai Province is selected...
-    elements.province.addEventListener('change', function () {
-        // Reset all dropdowns that come after it
-        elements.district.innerHTML = `<option selected disabled>--- เลือกอำเภอ/เขต ---</option>`;
-        elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
-        elements.district.disabled = false;
+    function resetCascadingDropdowns() {
+        elements.district.innerHTML = `<option selected disabled value="">--- เลือกอำเภอ/เขต ---</option>`;
+        elements.subDistrict.innerHTML = `<option selected disabled value="">--- เลือกตำบล/แขวง ---</option>`;
+        elements.district.disabled = true;
         elements.subDistrict.disabled = true;
         elements.zipCode.value = '';
+        if (elements.provinceEn.options.length > 0) elements.provinceEn.selectedIndex = 0;
+        if (elements.districtEn.options.length > 0) elements.districtEn.selectedIndex = 0;
+        if (elements.subDistrictEn.options.length > 0) elements.subDistrictEn.selectedIndex = 0;
+    }
 
-        // Find the selected province's data from the master list
+    // --- Event Listeners for Dropdowns ---
+    elements.province.addEventListener('change', function () {
+        resetCascadingDropdowns();
         const selectedProvinceData = addressData.find(p => p.name_th === this.value);
-        console.log(addressData);
-        // If found...
-        if (selectedProvinceData && selectedProvinceData.districts) {
-            // Use its data to populate the next dropdown
-            populateDropdown(elements.district, selectedProvinceData.districts, 'เลือกอำเภอ/เขต', 'name_th');
-            // Sync the English province value
+        if (selectedProvinceData && selectedProvinceData.amphoe) {
+            populateDropdown(elements.district, selectedProvinceData.amphoe, 'เลือกอำเภอ/เขต', 'name_th', 'name_th');
             elements.provinceEn.value = selectedProvinceData.name_en;
-            // **Unlock the district dropdown**
             elements.district.disabled = false;
         }
     });
 
-    // WHEN a Thai District is selected...
     elements.district.addEventListener('change', function () {
-        // Reset the sub-district dropdown
-        elements.subDistrict.innerHTML = `<option selected disabled>--- เลือกตำบล/แขวง ---</option>`;
-        elements.subDistrict.disabled = true;
-        elements.zipCode.value = '';
-
         const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
         if (!selectedProvinceData) return;
-
-        const selectedDistrictData = selectedProvinceData.districts.find(d => d.name_th === this.value);
-
-        // If found...
-        if (selectedDistrictData && selectedDistrictData.sub_districts) {
-            // Use its data to populate the next dropdown
-            populateDropdown(elements.subDistrict, selectedDistrictData.sub_districts, 'เลือกตำบล/แขวง', 'name_th');
-            // Sync the English district value
+        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === this.value);
+        elements.subDistrict.innerHTML = `<option selected disabled value="">--- เลือกตำบล/แขวง ---</option>`;
+        elements.subDistrict.disabled = true;
+        elements.zipCode.value = '';
+        if (selectedDistrictData && selectedDistrictData.tambon) {
+            populateDropdown(elements.subDistrict, selectedDistrictData.tambon, 'เลือกตำบล/แขวง', 'name_th', 'name_th');
             elements.districtEn.value = selectedDistrictData.name_en;
-            // **Unlock the sub-district dropdown**
             elements.subDistrict.disabled = false;
         }
     });
 
-    // WHEN a Thai Sub-district is selected...
     elements.subDistrict.addEventListener('change', function () {
         const selectedProvinceData = addressData.find(p => p.name_th === elements.province.value);
         if (!selectedProvinceData) return;
-        const selectedDistrictData = selectedProvinceData.districts.find(d => d.name_th === elements.district.value);
+        const selectedDistrictData = selectedProvinceData.amphoe.find(d => d.name_th === elements.district.value);
         if (!selectedDistrictData) return;
-
-        const selectedSubDistrictData = selectedDistrictData.sub_districts.find(s => s.name_th === this.value);
-
-        // If found...
+        const selectedSubDistrictData = selectedDistrictData.tambon.find(s => s.name_th === this.value);
         if (selectedSubDistrictData) {
-            // Set the zip code and sync the English sub-district value
             elements.zipCode.value = selectedSubDistrictData.zip_code || '';
             elements.subDistrictEn.value = selectedSubDistrictData.name_en;
         }
     });
 
-    // --- 5. Modal Initialization ---
+    // --- Event Listener for Modal Opening ---
     addressModalEl.addEventListener('show.bs.modal', async function () {
         await fetchAddressData();
-
         if (addressData.length > 0) {
-            // When modal opens, ONLY populate the first dropdown.
-            populateDropdown(elements.province, addressData, 'เลือกจังหวัด', 'name_th');
-
-            // Also populate the English dropdowns so their values can be set later
-            populateDropdown(elements.provinceEn, addressData, 'Province', 'name_en');
+            populateDropdown(elements.province, addressData, 'เลือกจังหวัด', 'name_th', 'name_th');
+            populateDropdown(elements.provinceEn, addressData, 'Province', 'name_en', 'name_en');
             const allDistricts = addressData.flatMap(p => p.amphoe || []);
-            populateDropdown(elements.districtEn, allDistricts, 'District', 'name_en');
+            populateDropdown(elements.districtEn, allDistricts, 'District', 'name_en', 'name_en');
             const allSubDistricts = allDistricts.flatMap(d => d.tambon || []);
-            populateDropdown(elements.subDistrictEn, allSubDistricts, 'Sub-district', 'name_en');
+            populateDropdown(elements.subDistrictEn, allSubDistricts, 'Sub-district', 'name_en', 'name_en');
         }
-        // ... rest of modal logic for add/edit ...
+        resetCascadingDropdowns();
+        elements.form.reset();
+    });
+
+    // --- FINAL FIX: Event Listener for the Save Button ---
+    elements.saveBtn.addEventListener('click', async function() {
+        const formData = new FormData(elements.form);
+        if(employerId) {
+             formData.append('employer_id', employerId);
+        }
+
+        const addressId = elements.idInput.value;
+        let url = addressId ? `/addresses/${addressId}` : "{{ route('addresses.store') }}";
+        let method = addressId ? 'POST' : 'POST'; // Use POST for update with _method field
+
+        if(addressId){
+            formData.append('_method', 'PUT');
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST', // Always POST for forms
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Accept': 'application/json',
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                let errorHtml = '<ul>';
+                for (const key in result.errors) {
+                    errorHtml += `<li>${result.errors[key][0]}</li>`;
+                }
+                errorHtml += '</ul>';
+                elements.errors.innerHTML = errorHtml;
+                elements.errors.style.display = 'block';
+            } else {
+                elements.modal.hide();
+                alert(result.message);
+                location.reload(); // Simple reload to show the new address
+            }
+        } catch (error) {
+            console.error('Save Error:', error);
+            elements.errors.innerHTML = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์';
+            elements.errors.style.display = 'block';
+        }
     });
 
     // --- 6. Save Address Logic (NEW CODE) ---
@@ -318,8 +356,5 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
-
-
-
 </script>
 @endpush
