@@ -1,11 +1,11 @@
 @props(['employee', 'showLocateButton' => false])
 
-<div class="d-flex align-items-center justify-content-end">
-    {{-- Create Job Button (Green) --}}
+<div class="d-flex align-items-center justify-content-start">
+    {{-- Create Job Button (Green) - Placeholder --}}
     <a href="#" class="btn btn-sm btn-outline-success me-1" title="Create Job (Coming Soon)">
         <i class="bi bi-briefcase-fill"></i>
     </a>
-
+    
     {{-- Edit Button (Yellow) --}}
     @can('edit-employees')
         <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning me-1" title="Edit Employee">
@@ -27,7 +27,7 @@
             <i class="bi bi-person-x-fill"></i>
         </button>
     @endcan
-
+    
     {{-- Force Delete Button (Red) - Admin Only --}}
     @can('force-delete-employees')
          <button type="button" class="btn btn-sm btn-danger js-force-delete-btn" title="Force Delete"
