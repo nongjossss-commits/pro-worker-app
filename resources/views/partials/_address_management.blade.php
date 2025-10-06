@@ -180,6 +180,7 @@
             subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
             zipCodeInput.value = '';
             if (provinceName && thaiAddressData[provinceName]) {
+                districtSelect.disabled = false;
                 Object.keys(thaiAddressData[provinceName].districts).sort().forEach(district => {
                     const option = new Option(district, district);
                     districtSelect.add(option);
@@ -191,6 +192,7 @@
             subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
             zipCodeInput.value = '';
             if (provinceName && districtName && thaiAddressData[provinceName]?.districts[districtName]) {
+                subDistrictSelect.disabled = false;
                 const subDistricts = thaiAddressData[provinceName].districts[districtName].sub_districts;
                 Object.keys(subDistricts).sort().forEach(subDistrict => {
                     const option = new Option(subDistrict, subDistrict);

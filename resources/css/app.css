@@ -19,6 +19,6 @@
     z-index: 1050;
 }
 
-.modal {
-    z-index: 1060 !important;
+.modal.show {
+    z-index: 1070 !important;
 }
