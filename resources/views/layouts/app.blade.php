@@ -111,6 +111,12 @@
             box-shadow: 0 0 12px rgba(var(--bs-primary-rgb), 0.4);
             background-color: #fffbeb;
         }
+        .modal-backdrop.fade.show{
+            display: none;
+        }
+        .modal.fade.show{
+            background: rgba(0, 0, 0, 0.6);
+        }
     </style>
 </head>
 <body>

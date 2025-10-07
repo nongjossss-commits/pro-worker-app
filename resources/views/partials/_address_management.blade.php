@@ -176,26 +176,26 @@
             resetSubDistricts();
             if (selectedProvinceData) {
                 provinceEnInput.value = selectedProvinceData.name_en;
-                populateDistricts(selectedProvinceData.amphure);
+                populateDistricts(selectedProvinceData.districts);
                 districtSelect.disabled = false; // <-- RE-ADDED THIS FIX
             }
         }
 
         function handleDistrictChange() {
             const selectedProvinceData = thaiAddressData.find(p => p.name_th === provinceSelect.value);
-            const selectedDistrictData = selectedProvinceData?.amphure.find(d => d.name_th === districtSelect.value);
+            const selectedDistrictData = selectedProvinceData?.districts.find(d => d.name_th === districtSelect.value);
             resetSubDistricts();
             if (selectedDistrictData) {
                 districtEnInput.value = selectedDistrictData.name_en;
-                populateSubDistricts(selectedDistrictData.tambon);
+                populateSubDistricts(selectedDistrictData.sub_districts);
                 subDistrictSelect.disabled = false; // <-- RE-ADDED THIS FIX
             }
         }
 
         function handleSubDistrictChange() {
             const selectedProvinceData = thaiAddressData.find(p => p.name_th === provinceSelect.value);
-            const selectedDistrictData = selectedProvinceData?.amphure.find(d => d.name_th === districtSelect.value);
-            const selectedSubDistrictData = selectedDistrictData?.tambon.find(s => s.name_th === subDistrictSelect.value);
+            const selectedDistrictData = selectedProvinceData?.districts.find(d => d.name_th === districtSelect.value);
+            const selectedSubDistrictData = selectedDistrictData?.sub_districts.find(s => s.name_th === subDistrictSelect.value);
             zipCodeInput.value = '';
             subDistrictEnInput.value = '';
             if (selectedSubDistrictData) {
@@ -230,7 +230,7 @@
 
         function resetDistricts() {
             districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
-            districtSelect.disabled = true;
+            districtSelect.disabled = false;
             districtEnInput.value = '';
         }
 
