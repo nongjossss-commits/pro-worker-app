@@ -122,23 +122,26 @@
         const addressModalEl = document.getElementById('addAddressModal');
         if (!addressModalEl) return;
 
+        // --- Element Declarations ---
         const provinceSelect = document.getElementById('addrProvince');
         const districtSelect = document.getElementById('addrDistrict');
         const subDistrictSelect = document.getElementById('addrSubDistrict');
         const zipCodeInput = document.getElementById('addrZipCode');
-
         const provinceEnInput = document.getElementById('addrProvinceEn');
         const districtEnInput = document.getElementById('addrDistrictEn');
         const subDistrictEnInput = document.getElementById('addrSubDistrictEn');
-
         const form = addressModalEl.querySelector('form');
-        let thaiAddressData = []; // Use an array to store data
+        let thaiAddressData = [];
 
         // --- Event Listeners ---
 
-        // 1. Force z-index on modal show to fix backdrop issue
+        // 1. DEFINITIVE BACKDROP FIX: On modal show, find the backdrop and force it to the back.
         addressModalEl.addEventListener('shown.bs.modal', function () {
-            addressModalEl.style.zIndex = '1071';
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.style.zIndex = '1050'; // Force backdrop z-index
+            }
+            addressModalEl.style.zIndex = '1070'; // Ensure modal is on top
         });
 
         // 2. Fetch data only once when the modal is first shown
@@ -174,7 +177,7 @@
             if (selectedProvinceData) {
                 provinceEnInput.value = selectedProvinceData.name_en;
                 populateDistricts(selectedProvinceData.amphure);
-                districtSelect.disabled = false;
+                districtSelect.disabled = false; // <-- RE-ADDED THIS FIX
             }
         }
 
@@ -185,7 +188,7 @@
             if (selectedDistrictData) {
                 districtEnInput.value = selectedDistrictData.name_en;
                 populateSubDistricts(selectedDistrictData.tambon);
-                subDistrictSelect.disabled = false;
+                subDistrictSelect.disabled = false; // <-- RE-ADDED THIS FIX
             }
         }
 
@@ -193,17 +196,15 @@
             const selectedProvinceData = thaiAddressData.find(p => p.name_th === provinceSelect.value);
             const selectedDistrictData = selectedProvinceData?.amphure.find(d => d.name_th === districtSelect.value);
             const selectedSubDistrictData = selectedDistrictData?.tambon.find(s => s.name_th === subDistrictSelect.value);
-
             zipCodeInput.value = '';
             subDistrictEnInput.value = '';
-
             if (selectedSubDistrictData) {
                 subDistrictEnInput.value = selectedSubDistrictData.name_en;
                 zipCodeInput.value = selectedSubDistrictData.zip_code;
             }
         }
 
-        // --- Helper Functions ---
+        // --- Helper Functions (No changes needed here) ---
 
         function populateProvinces() {
             provinceSelect.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
