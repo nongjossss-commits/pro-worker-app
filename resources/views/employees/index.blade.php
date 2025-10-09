@@ -8,7 +8,12 @@
 @section('content')
 <div class="p-4 p-md-5 content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-0">รายการข้อมูลลูกจ้างทั้งหมด (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h2>
+    <div>
+        <h2 class="mb-0">รายการข้อมูลลูกจ้าง</h2>
+        <p class="text-muted mb-0">
+            แสดงผลตามเงื่อนไข: {{ $totalEmployees }} คน (ชาย: {{ $maleCount }}, หญิง: {{ $femaleCount }})
+        </p>
+    </div>
         @can('create-employees')
         <a href="{{ route('employers.index') }}" class="btn btn-primary" title="ไปที่หน้านายจ้างเพื่อเพิ่มลูกจ้างใหม่"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
         @endcan
