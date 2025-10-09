@@ -111,6 +111,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         Employee::create($validated);
+        if ($request->has('source_employer_id')) {
+            return redirect()->route('employers.edit', $request->source_employer_id)->with('success', 'Employee created successfully.');
+        }
         return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
     }
 
@@ -186,6 +189,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         $employee->update($validated);
+        if ($request->has('source_employer_id')) {
+            return redirect()->route('employers.edit', $request->source_employer_id)->with('success', 'Employee updated successfully.');
+        }
         return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
     }
 

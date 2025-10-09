@@ -22,6 +22,9 @@
 
     <form action="{{ route('employees.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
+    @if(request()->has('employer_id'))
+        <input type="hidden" name="source_employer_id" value="{{ request('employer_id') }}">
+    @endif
         @if(isset($employer) && $employer)
             <input type="hidden" name="employer_id" value="{{ $employer->id }}">
         @else
