@@ -111,32 +111,49 @@ document.addEventListener('DOMContentLoaded', function () {
     if (terminateForm) {
         terminateForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            const actionUrl = this.getAttribute('action');
+            const form = this; // Use 'form' for clarity, as in the user's request
+            const modal = terminateModalEl; // Use the correct modal element reference
 
-            fetch(actionUrl, {
+            fetch(form.action, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken,
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'Accept': 'application/json'
                 },
-                body: formData
+                body: new FormData(form) // Send the form data
             })
             .then(response => response.json())
             .then(data => {
-                if (terminateModal) {
-                    const modalInstance = bootstrap.Modal.getInstance(terminateModalEl);
-                    modalInstance.hide();
-                }
                 if (data.success) {
-                    Swal.fire('สำเร็จ!', data.message, 'success').then(() => location.reload());
+                    const employeeId = form.getAttribute('data-employee-id');
+                    const employeeCard = document.getElementById('employee-card-' + employeeId);
+                    const employeeRow = document.getElementById('employee-row-' + employeeId);
+
+                    if (employeeCard) employeeCard.remove();
+                    if (employeeRow) employeeRow.remove();
+
+                    bootstrap.Modal.getInstance(modal).hide();
+
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: 'แจ้งออกลูกจ้างเรียบร้อยแล้ว',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                 } else {
-                    Swal.fire('ผิดพลาด!', data.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ', 'error');
+                    // Use the error message from the server's JSON response
+                    throw new Error(data.message || 'An unknown error occurred.');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                Swal.fire('ผิดพลาด!', 'ไม่สามารถส่งข้อมูลได้', 'error');
+                console.error('Termination Error:', error);
+                bootstrap.Modal.getInstance(modal).hide();
+                Swal.fire({
+                    title: 'ผิดพลาด!',
+                    text: 'ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+                    icon: 'error'
+                });
             });
         });
     }
@@ -156,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (terminateModal && terminateForm) {
                 const url = `{{ url('employees') }}/${employeeId}/terminate`;
                 terminateForm.setAttribute('action', url);
+                terminateForm.setAttribute('data-employee-id', employeeId);
                 terminateModal.show();
             }
         }

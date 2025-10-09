@@ -24,6 +24,8 @@
         @csrf
         @method('PUT')
 
+        <input type="hidden" name="employer_id" value="{{ $employee->employer_id }}">
+
         {{-- Personal Information --}}
         <h5>ข้อมูลส่วนตัว</h5>
         <hr>

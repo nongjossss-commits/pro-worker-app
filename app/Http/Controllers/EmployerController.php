@@ -177,9 +177,9 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
         ]);
 
         if ($isSuccess) {
-            return redirect()->back()->with('success', 'Employee has been terminated successfully.');
+            return response()->json(['success' => true, 'message' => 'Employee terminated successfully.']);
         } else {
-            return redirect()->back()->with('error', 'Failed to terminate employee. Please try again.');
+            return response()->json(['success' => false, 'message' => 'Failed to terminate employee. Please try again.'], 422);
         }
     }
 
