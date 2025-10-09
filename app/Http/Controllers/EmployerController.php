@@ -78,24 +78,42 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
 {
     $jobOwners = JobOwner::orderBy('name')->get();
 
-    // --- เพิ่ม Logic ส่วนนี้เข้าไปทั้งหมด ---
-    $employeeQuery = $employer->employees()->whereNull('terminated_at');
-    // You can add filtering logic for employees here if needed based on $request
+    $jobOwners = JobOwner::orderBy('name')->get();
 
-    $perPageOptions = [10, 25, 50];
-    $currentPerPage = $request->input('per_page', 10);
-    $employees = $employeeQuery->paginate($currentPerPage); // เปลี่ยน $activeEmployees เป็น $employees และ paginate
-    $currentView = $request->input('view', 'card');
+    // Find the line that starts with "$employeesQuery = ..." and replace the entire filtering block
 
-    $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
+$employeesQuery = $employer->employees()->whereNull('termination_date');
+
+// Search functionality
+$employeesQuery->when($request->filled('search'), function ($q) use ($request) {
+    $searchTerm = $request->search;
+    $q->where(function ($subQuery) use ($searchTerm) {
+        $subQuery->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                 ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                 ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+    });
+});
+
+// Filter functionality
+$employeesQuery->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
+$employeesQuery->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
+$employeesQuery->when($request->filled('pink_card_status'), function ($q) use ($request) {
+    if ($request->pink_card_status === 'yes') {
+        $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+    } elseif ($request->pink_card_status === 'no') {
+        $q->where(fn($sub) => $sub->whereNull('pinkCardNo')->orWhere('pinkCardNo', ''));
+    }
+});
+
+$employees = $employeesQuery->paginate(10, ['*'], 'employees_page')->withQueryString();
+
+    $terminatedEmployees = $employer->employees()->whereNotNull('termination_date')->get(); // Assuming you still need this for a modal or separate list
 
     return view('employers.edit', compact(
         'employer',
         'jobOwners',
-        'employees', // ส่งตัวแปรที่ถูกต้อง
-        'terminatedEmployees',
-        'perPageOptions', // ส่งตัวแปรที่ขาดไป
-        'currentView'     // ส่งตัวแปรที่ขาดไป
+        'employees',
+        'terminatedEmployees'
     ));
 }
 
