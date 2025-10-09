@@ -83,14 +83,31 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
     $currentPerPage = $request->input('per_page', 10);
     $currentView = $request->input('view', 'card');
 
-    $employeeQuery = $employer->employees()->whereNull('terminated_at');
+    $employeesQuery = $employer->employees()->whereNull('termination_date');
 
-    // Apply filters from the request
-    $employeeQuery->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
-    $employeeQuery->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
-    // Add other filters as needed...
+    if ($request->has('nationality') && $request->nationality != '') {
+        $employeesQuery->where('employeeNationality', $request->nationality);
+    }
+    if ($request->has('mou_type') && $request->mou_type != '') {
+        $employeesQuery->where('workPermitMOUGroup', $request->mou_type);
+    }
+    if ($request->has('pink_card_status') && $request->pink_card_status != '') {
+        if ($request->pink_card_status == 'yes') {
+            $employeesQuery->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+        } else {
+            $employeesQuery->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', ''));
+        }
+    }
+    if ($request->has('search') && $request->search != '') {
+        $searchTerm = $request->search;
+        $employeesQuery->where(function ($q) use ($searchTerm) {
+            $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+              ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+              ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+        });
+    }
 
-    $employees = $employeeQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
+    $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
 
     $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
 
