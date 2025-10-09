@@ -1,7 +1,5 @@
 @extends('layouts.app')
-
 @section('title', 'ประวัติการจ้างงาน')
-
 @section('content')
 <div class="content-section">
     <h2 class="mb-4">ประวัติการจ้างงาน</h2>
@@ -36,7 +34,7 @@
                         <td class="align-middle">{{ $employee->employeePassport ?? '-' }}</td>
                         <td class="align-middle">{{ $employee->employeeNationality ?? '-' }}</td>
                         <td class="align-middle">{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
-                        <td class="align-middle">{{ $employee->terminated_at ? \Carbon\Carbon::parse($employee->terminated_at)->format('d/m/Y') : 'N/A' }}</td>
+                        <td class="align-middle">{{ $employee->termination_date ? \Carbon\Carbon::parse($employee->termination_date)->format('d/m/Y') : 'N/A' }}</td>
                     </tr>
                 @empty
                     <tr>

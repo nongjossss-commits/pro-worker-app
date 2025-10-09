@@ -83,16 +83,33 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
     $currentPerPage = $request->input('per_page', 10);
     $currentView = $request->input('view', 'card');
 
-    $employeeQuery = $employer->employees()->whereNull('terminated_at');
+    $employeesQuery = $employer->employees()->whereNull('termination_date');
 
-    // Apply filters from the request
-    $employeeQuery->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
-    $employeeQuery->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
-    // Add other filters as needed...
+    if ($request->has('nationality') && $request->nationality != '') {
+        $employeesQuery->where('employeeNationality', $request->nationality);
+    }
+    if ($request->has('mou_type') && $request->mou_type != '') {
+        $employeesQuery->where('workPermitMOUGroup', $request->mou_type);
+    }
+    if ($request->has('pink_card_status') && $request->pink_card_status != '') {
+        if ($request->pink_card_status == 'yes') {
+            $employeesQuery->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+        } else {
+            $employeesQuery->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', ''));
+        }
+    }
+    if ($request->has('search') && $request->search != '') {
+        $searchTerm = $request->search;
+        $employeesQuery->where(function ($q) use ($searchTerm) {
+            $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+              ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+              ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+        });
+    }
 
-    $employees = $employeeQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
+    $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
 
-    $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
+    $terminatedEmployees = $employer->employees()->whereNotNull('termination_date')->get();
 
     return view('employers.edit', compact(
         'employer',
@@ -172,12 +189,12 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
         $this->authorize('terminate-employees'); // ป้องกันด้วย Permission โดยตรง
 
         $validated = $request->validate([
-            'terminated_at' => 'required|date',
+            'termination_date' => 'required|date',
             'termination_reason' => 'nullable|string',
         ]);
 
         $isSuccess = $employee->update([
-            'terminated_at' => $validated['terminated_at'],
+            'termination_date' => $validated['termination_date'],
             'termination_reason' => $validated['termination_reason'],
         ]);
 
@@ -191,7 +208,7 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
     public function restoreEmployee(Employee $employee)
     {
         $this->authorize('restore-employees');
-        $employee->update(['terminated_at' => null, 'termination_reason' => null]);
+        $employee->update(['termination_date' => null, 'termination_reason' => null]);
         return response()->json(['success' => true, 'message' => 'Employee restored successfully.']);
     }
 
@@ -205,7 +222,7 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
     public function filterHistory(Employer $employer)
     {
         // This logic will be more complex later, for now just fetch all
-        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get()->map(function($employee) {
+        $terminatedEmployees = $employer->employees()->whereNotNull('termination_date')->get()->map(function($employee) {
             // Add authorization checks to each employee object for the frontend
             $employee->can_restore = auth()->user()->can('restore-employees');
             $employee->can_force_delete = auth()->user()->can('force-delete-employees');

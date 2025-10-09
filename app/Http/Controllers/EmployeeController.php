@@ -20,11 +20,8 @@ class EmployeeController extends Controller
 
 public function index(Request $request)
 {
-    $query = Employee::where('terminated_at', null)
-        ->with('employer')
-        ->latest();
+    $query = Employee::where('termination_date', null)->with('employer')->latest();
 
-    // Search functionality
     $query->when($request->filled('search'), function ($q) use ($request) {
         $searchTerm = $request->search;
         $q->where(function ($subQuery) use ($searchTerm) {
@@ -34,16 +31,14 @@ public function index(Request $request)
         });
     });
 
-    // Filter functionality
     $query->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
     $query->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
 
     $employees = $query->paginate(10)->withQueryString();
 
-    // Gender Counts
-    $totalEmployees = Employee::where('terminated_at', null)->count();
-    $maleCount = Employee::where('terminated_at', null)->whereIn('employeeTitleTh', ['นาย'])->count();
-    $femaleCount = Employee::where('terminated_at', null)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+    $totalEmployees = Employee::where('termination_date', null)->count();
+    $maleCount = Employee::where('termination_date', null)->whereIn('employeeTitleTh', ['นาย'])->count();
+    $femaleCount = Employee::where('termination_date', null)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
 
     return view('employees.index', compact('employees', 'totalEmployees', 'maleCount', 'femaleCount'));
 }
