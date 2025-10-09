@@ -17,14 +17,14 @@
                     <th scope="col">Name (EN / TH)</th>
                     <th scope="col">Passport</th>
                     <th scope="col">Nationality</th>
-                    <th scope="col">Employer</th>
+                    <th scope="col">Last Employer</th>
                     <th scope="col">Termination Date</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($terminatedEmployees as $employee)
                     <tr>
-                        <th scope="row">{{ $loop->iteration }}</th>
+                        <th scope="row">{{ $terminatedEmployees->firstItem() + $loop->index }}</th>
                         <td class="align-middle text-center" style="width: 60px;">
                             @if($employee->employeePhoto)
                                 <img src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Photo" class="img-fluid rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">

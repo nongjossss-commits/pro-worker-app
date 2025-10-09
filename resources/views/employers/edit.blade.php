@@ -433,4 +433,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        @if (session('highlight_employee'))
+            const employeeId = '{{ session('highlight_employee') }}';
+            const employeeCard = document.getElementById('employee-card-' + employeeId);
+
+            if (employeeCard) {
+                // Add a highlight class
+                employeeCard.classList.add('highlight');
+
+                // Scroll to the element
+                employeeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Optional: Remove the highlight after a few seconds
+                setTimeout(() => {
+                    employeeCard.classList.remove('highlight');
+                }, 5000); // Highlight for 5 seconds
+            }
+        @endif
+    });
+</script>
 @endpush
