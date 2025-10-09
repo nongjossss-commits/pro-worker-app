@@ -74,31 +74,31 @@ class EmployerController extends Controller
         return redirect()->route('employers.index')->with('success', 'Employer created successfully.');
     }
 
-public function edit(Request $request, Employer $employer) // เพิ่ม Request $request
+public function edit(Request $request, Employer $employer)
 {
     $jobOwners = JobOwner::orderBy('name')->get();
-
-    // --- เพิ่ม Logic ส่วนนี้เข้าไปทั้งหมด ---
     $perPageOptions = [10, 25, 50];
     $currentPerPage = $request->input('per_page', 10);
     $currentView = $request->input('view', 'card');
 
+    // Base query for active employees of this employer
     $employeesQuery = $employer->employees()->whereNull('termination_date');
 
-    if ($request->has('nationality') && $request->nationality != '') {
+    // Apply filters
+    if ($request->filled('nationality')) {
         $employeesQuery->where('employeeNationality', $request->nationality);
     }
-    if ($request->has('mou_type') && $request->mou_type != '') {
+    if ($request->filled('mou_type')) {
         $employeesQuery->where('workPermitMOUGroup', $request->mou_type);
     }
-    if ($request->has('pink_card_status') && $request->pink_card_status != '') {
+    if ($request->filled('pink_card_status')) {
         if ($request->pink_card_status == 'yes') {
             $employeesQuery->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
         } else {
             $employeesQuery->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', ''));
         }
     }
-    if ($request->has('search') && $request->search != '') {
+    if ($request->filled('search')) {
         $searchTerm = $request->search;
         $employeesQuery->where(function ($q) use ($searchTerm) {
             $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
@@ -109,15 +109,17 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
 
     $employees = $employeesQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
 
-    $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
+    // This is for the history modal, so we fetch all terminated employees for this employer
+    $terminatedEmployees = $employer->employees()->whereNotNull('termination_date')->get();
 
     return view('employers.edit', compact(
         'employer',
         'jobOwners',
-        'employees', // ส่งตัวแปรที่ถูกต้อง
+        'employees',
         'terminatedEmployees',
-        'perPageOptions', // ส่งตัวแปรที่ขาดไป
-        'currentView'     // ส่งตัวแปรที่ขาดไป
+        'perPageOptions',
+        'currentView',
+        'currentPerPage'
     ));
 }
 

@@ -20,8 +20,13 @@ class EmployeeController extends Controller
 
 public function index(Request $request)
 {
-    $query = Employee::where('termination_date', null)->with('employer')->latest();
+    // Start building the query for non-terminated employees
+    $baseQuery = Employee::where('termination_date', null);
 
+    // Clone the base query for filtering
+    $query = $baseQuery->clone()->with('employer')->latest();
+
+    // Apply search filter if a search term is provided
     $query->when($request->filled('search'), function ($q) use ($request) {
         $searchTerm = $request->search;
         $q->where(function ($subQuery) use ($searchTerm) {
@@ -31,16 +36,30 @@ public function index(Request $request)
         });
     });
 
-    $query->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
-    $query->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
+    // Apply nationality filter
+    $query->when($request->filled('nationality'), function ($q) use ($request) {
+        $q->where('employeeNationality', $request->nationality);
+    });
 
+    // Apply MOU type filter
+    $query->when($request->filled('mou_type'), function ($q) use ($request) {
+        $q->where('workPermitMOUGroup', $request->mou_type);
+    });
+
+    // It's important to get the counts *after* applying the filters.
+    // We clone the query *before* pagination to get the correct total counts.
+    $filteredQuery = $query->clone();
+
+    $totalEmployees = $filteredQuery->count();
+    $maleCount = $filteredQuery->clone()->where('employeeTitleTh', 'นาย')->count();
+    $femaleCount = $filteredQuery->clone()->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+
+    // Now, paginate the results.
     $employees = $query->paginate(10)->withQueryString();
+    $currentPerPage = $employees->perPage();
 
-    $totalEmployees = Employee::where('termination_date', null)->count();
-    $maleCount = Employee::where('termination_date', null)->whereIn('employeeTitleTh', ['นาย'])->count();
-    $femaleCount = Employee::where('termination_date', null)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
-
-    return view('employees.index', compact('employees', 'totalEmployees', 'maleCount', 'femaleCount'));
+    // Pass the data to the view
+    return view('employees.index', compact('employees', 'totalEmployees', 'maleCount', 'femaleCount', 'currentPerPage'));
 }
 
 public function create(Request $request) // เพิ่ม Request $request เข้ามา
