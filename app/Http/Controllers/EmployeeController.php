@@ -20,38 +20,31 @@ class EmployeeController extends Controller
 
 public function index(Request $request)
 {
+    // 1. Start with the base query
     $query = Employee::where('termination_date', null)->with('employer')->latest();
 
-    // Search functionality
+    // 2. Apply filters and search IF they exist
     $query->when($request->filled('search'), function ($q) use ($request) {
         $searchTerm = $request->search;
         $q->where(function ($subQuery) use ($searchTerm) {
             $subQuery->where('employeeNameTh', 'like', "%{$searchTerm}%")
                      ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                     ->orWhere('employeePassport', 'like', "%{$searchTerm}%")
-                     ->orWhere('personalId', 'like', "%{$searchTerm}%")
-                     ->orWhere('companyWorkerId', 'like', "%{$searchTerm}%");
+                     ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
         });
     });
 
-    // Filter functionality
     $query->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
     $query->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
-    $query->when($request->filled('pink_card_status'), function ($q) use ($request) {
-        if ($request->pink_card_status === 'yes') {
-            $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
-        } elseif ($request->pink_card_status === 'no') {
-            $q->where(fn($sub) => $sub->whereNull('pinkCardNo')->orWhere('pinkCardNo', ''));
-        }
-    });
 
+    // 3. Paginate ONLY at the very end
     $employees = $query->paginate(10)->withQueryString();
 
-    // Gender Counts
+    // 4. Perform counts for display
     $totalEmployees = Employee::where('termination_date', null)->count();
     $maleCount = Employee::where('termination_date', null)->whereIn('employeeTitleTh', ['นาย'])->count();
     $femaleCount = Employee::where('termination_date', null)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
 
+    // 5. Return the view with all necessary data
     return view('employees.index', compact('employees', 'totalEmployees', 'maleCount', 'femaleCount'));
 }
 

@@ -1,42 +1,35 @@
 @extends('layouts.app')
-
 @section('title', 'ประวัติการจ้างงาน')
-
 @section('content')
 <div class="content-section">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">ประวัติการจ้างงาน</h2>
-    </div>
-
+    <h2 class="mb-4">ประวัติการจ้างงาน</h2>
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Photo</th>
-                    <th scope="col">Name (EN / TH)</th>
-                    <th scope="col">Passport</th>
-                    <th scope="col">Nationality</th>
-                    <th scope="col">Last Employer</th>
-                    <th scope="col">Termination Date</th>
+                    <th>#</th>
+                    <th>Photo</th>
+                    <th>Name (EN / TH)</th>
+                    <th>Passport</th>
+                    <th>Nationality</th>
+                    <th>Last Employer</th>
+                    <th>Termination Date</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($terminatedEmployees as $employee)
                     <tr>
-                        <th scope="row">{{ $terminatedEmployees->firstItem() + $loop->index }}</th>
+                        <th>{{ $terminatedEmployees->firstItem() + $loop->index }}</th>
                         <td class="align-middle text-center" style="width: 60px;">
                             @if($employee->employeePhoto)
                                 <img src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Photo" class="img-fluid rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                             @else
-                                <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center text-white" style="width: 40px; height: 40px;">
-                                    <i class="bi bi-person-fill"></i>
-                                </div>
+                                <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center text-white" style="width: 40px; height: 40px;"><i class="bi bi-person-fill"></i></div>
                             @endif
                         </td>
                         <td class="align-middle">
-                            <div class="fw-bold">{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}</div>
-                            <div class="text-muted small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}</div>
+                            <div class="fw-bold">{{ $employee->employeeNameEn ?? 'N/A' }}</div>
+                            <div class="text-muted small">{{ $employee->employeeNameTh }}</div>
                         </td>
                         <td class="align-middle">{{ $employee->employeePassport ?? '-' }}</td>
                         <td class="align-middle">{{ $employee->employeeNationality ?? '-' }}</td>
@@ -51,8 +44,6 @@
             </tbody>
         </table>
     </div>
-     <div class="mt-4">
-        {{ $terminatedEmployees->links() }}
-    </div>
+    <div class="mt-4">{{ $terminatedEmployees->links() }}</div>
 </div>
 @endsection

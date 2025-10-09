@@ -78,43 +78,39 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
 {
     $jobOwners = JobOwner::orderBy('name')->get();
 
-    $jobOwners = JobOwner::orderBy('name')->get();
+    // Find the line "$perPage = ..." and replace everything from there until the return statement
 
-    // Find the line that starts with "$employeesQuery = ..." and replace the entire filtering block
+    $perPage = $request->input('per_page', 10);
+    $currentView = $request->input('view', 'card');
+    $perPageOptions = [10, 25, 50, 100];
 
-$employeesQuery = $employer->employees()->whereNull('termination_date');
+    // 1. Start with the base query for this employer's employees
+    $employeesQuery = $employer->employees()->whereNull('termination_date');
 
-// Search functionality
-$employeesQuery->when($request->filled('search'), function ($q) use ($request) {
-    $searchTerm = $request->search;
-    $q->where(function ($subQuery) use ($searchTerm) {
-        $subQuery->where('employeeNameTh', 'like', "%{$searchTerm}%")
-                 ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                 ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+    // 2. Apply filters and search IF they exist
+    $employeesQuery->when($request->filled('search'), function ($q) use ($request) {
+        $searchTerm = $request->search;
+        $q->where(function ($subQuery) use ($searchTerm) {
+            $subQuery->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                    ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                    ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+        });
     });
-});
 
-// Filter functionality
-$employeesQuery->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
-$employeesQuery->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
-$employeesQuery->when($request->filled('pink_card_status'), function ($q) use ($request) {
-    if ($request->pink_card_status === 'yes') {
-        $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
-    } elseif ($request->pink_card_status === 'no') {
-        $q->where(fn($sub) => $sub->whereNull('pinkCardNo')->orWhere('pinkCardNo', ''));
-    }
-});
+    $employeesQuery->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
+    $employeesQuery->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
+    $employeesQuery->when($request->filled('pink_card_status'), function ($q) use ($request) {
+        if ($request->pink_card_status === 'yes') {
+            $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+        } elseif ($request->pink_card_status === 'no') {
+            $q->where(fn($sub) => $sub->whereNull('pinkCardNo')->orWhere('pinkCardNo', ''));
+        }
+    });
 
-$employees = $employeesQuery->paginate(10, ['*'], 'employees_page')->withQueryString();
+    // 3. Paginate ONLY at the very end
+    $employees = $employeesQuery->paginate($perPage, ['*'], 'employees_page')->withQueryString();
 
-    $terminatedEmployees = $employer->employees()->whereNotNull('termination_date')->get(); // Assuming you still need this for a modal or separate list
-
-    return view('employers.edit', compact(
-        'employer',
-        'jobOwners',
-        'employees',
-        'terminatedEmployees'
-    ));
+    return view('employers.edit', compact('employer', 'employees', 'jobOwners', 'perPageOptions', 'currentView'));
 }
 
     public function update(Request $request, Employer $employer)
