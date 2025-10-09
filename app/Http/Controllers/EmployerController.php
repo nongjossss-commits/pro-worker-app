@@ -79,13 +79,18 @@ public function edit(Request $request, Employer $employer) // เพิ่ม Re
     $jobOwners = JobOwner::orderBy('name')->get();
 
     // --- เพิ่ม Logic ส่วนนี้เข้าไปทั้งหมด ---
-    $employeeQuery = $employer->employees()->whereNull('terminated_at');
-    // You can add filtering logic for employees here if needed based on $request
-
     $perPageOptions = [10, 25, 50];
     $currentPerPage = $request->input('per_page', 10);
-    $employees = $employeeQuery->paginate($currentPerPage); // เปลี่ยน $activeEmployees เป็น $employees และ paginate
     $currentView = $request->input('view', 'card');
+
+    $employeeQuery = $employer->employees()->whereNull('terminated_at');
+
+    // Apply filters from the request
+    $employeeQuery->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
+    $employeeQuery->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
+    // Add other filters as needed...
+
+    $employees = $employeeQuery->paginate($currentPerPage, ['*'], 'employees_page')->withQueryString();
 
     $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
 

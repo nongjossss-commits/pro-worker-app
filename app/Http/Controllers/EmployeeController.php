@@ -20,23 +20,32 @@ class EmployeeController extends Controller
 
 public function index(Request $request)
 {
-    // เปลี่ยนบรรทัดแรกให้มีการกรองข้อมูล
-    $query = Employee::query()->whereNull('terminated_at');
-    // ... filtering logic ...
+    $query = Employee::where('terminated_at', null)
+        ->with('employer')
+        ->latest();
 
-    $totalEmployees = $query->count();
+    // Search functionality
+    $query->when($request->filled('search'), function ($q) use ($request) {
+        $searchTerm = $request->search;
+        $q->where(function ($subQuery) use ($searchTerm) {
+            $subQuery->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                     ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                     ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+        });
+    });
 
-    $perPageOptions = [25, 50, 100];
-    $currentPerPage = $request->input('per_page', 25); // แก้ชื่อตัวแปรตรงนี้
+    // Filter functionality
+    $query->when($request->filled('nationality'), fn($q) => $q->where('employeeNationality', $request->nationality));
+    $query->when($request->filled('mou_type'), fn($q) => $q->where('workPermitMOUGroup', $request->mou_type));
 
-    $employees = $query->with('employer')->latest()->paginate($currentPerPage);
+    $employees = $query->paginate(10)->withQueryString();
 
-    return view('employees.index', compact(
-        'employees',
-        'totalEmployees',
-        'perPageOptions',
-        'currentPerPage' // ส่งตัวแปรที่ถูกต้องไป
-    ))->with('currentView', $request->input('view', 'card'));
+    // Gender Counts
+    $totalEmployees = Employee::where('terminated_at', null)->count();
+    $maleCount = Employee::where('terminated_at', null)->whereIn('employeeTitleTh', ['นาย'])->count();
+    $femaleCount = Employee::where('terminated_at', null)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+
+    return view('employees.index', compact('employees', 'totalEmployees', 'maleCount', 'femaleCount'));
 }
 
 public function create(Request $request) // เพิ่ม Request $request เข้ามา
