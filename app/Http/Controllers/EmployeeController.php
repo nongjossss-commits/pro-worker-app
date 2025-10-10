@@ -20,22 +20,52 @@ class EmployeeController extends Controller
 
 public function index(Request $request)
 {
-    // เปลี่ยนบรรทัดแรกให้มีการกรองข้อมูล
     $query = Employee::query()->whereNull('terminated_at');
-    // ... filtering logic ...
 
-    $totalEmployees = $query->count();
+    // --- START: ADDED FILTERING LOGIC ---
+    if ($request->filled('search')) {
+        $searchTerm = '%' . $request->input('search') . '%';
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('employeeNameTh', 'like', $searchTerm)
+              ->orWhere('employeeNameEn', 'like', $searchTerm)
+              ->orWhere('employeePassport', 'like', $searchTerm)
+              ->orWhere('pinkCardNo', 'like', $searchTerm);
+        });
+    }
 
-    $perPageOptions = [25, 50, 100];
-    $currentPerPage = $request->input('per_page', 25); // แก้ชื่อตัวแปรตรงนี้
+    if ($request->filled('nationality')) {
+        $query->where('employeeNationality', $request->input('nationality'));
+    }
 
-    $employees = $query->with('employer')->latest()->paginate($currentPerPage);
+    if ($request->filled('mou_group')) {
+        $query->where('workPermitMOUGroup', $request->input('mou_group'));
+    }
+
+    if ($request->filled('pink_card')) {
+        if ($request->input('pink_card') === 'yes') {
+            $query->where(function ($q) {
+                $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+            });
+        } elseif ($request->input('pink_card') === 'no') {
+            $query->where(function ($q) {
+                $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+            });
+        }
+    }
+    // --- END: ADDED FILTERING LOGIC ---
+
+    $totalEmployees = (clone $query)->count();
+
+    $perPageOptions = [25, 50, 100]; // Defined options here
+    $currentPerPage = $request->input('per_page', 25);
+
+    $employees = $query->with('employer')->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
 
     return view('employees.index', compact(
         'employees',
         'totalEmployees',
         'perPageOptions',
-        'currentPerPage' // ส่งตัวแปรที่ถูกต้องไป
+        'currentPerPage'
     ))->with('currentView', $request->input('view', 'card'));
 }
 
