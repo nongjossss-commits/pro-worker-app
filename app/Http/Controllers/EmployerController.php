@@ -74,28 +74,60 @@ class EmployerController extends Controller
         return redirect()->route('employers.index')->with('success', 'Employer created successfully.');
     }
 
-public function edit(Request $request, Employer $employer) // เพิ่ม Request $request
+public function edit(Request $request, Employer $employer)
 {
     $jobOwners = JobOwner::orderBy('name')->get();
 
-    // --- เพิ่ม Logic ส่วนนี้เข้าไปทั้งหมด ---
     $employeeQuery = $employer->employees()->whereNull('terminated_at');
-    // You can add filtering logic for employees here if needed based on $request
+
+    // --- START: ADDED FILTERING LOGIC ---
+    if ($request->filled('search')) {
+        $searchTerm = '%' . $request->input('search') . '%';
+        $employeeQuery->where(function ($q) use ($searchTerm) {
+            $q->where('employeeNameTh', 'like', $searchTerm)
+              ->orWhere('employeeNameEn', 'like', $searchTerm)
+              ->orWhere('employeePassport', 'like', $searchTerm)
+              ->orWhere('pinkCardNo', 'like', $searchTerm);
+        });
+    }
+
+    if ($request->filled('nationality')) {
+        $employeeQuery->where('employeeNationality', $request->input('nationality'));
+    }
+
+    if ($request->filled('mou_group')) {
+        $employeeQuery->where('workPermitMOUGroup', $request->input('mou_group'));
+    }
+
+    if ($request->filled('pink_card')) {
+        if ($request->input('pink_card') === 'yes') {
+            $employeeQuery->where(function ($q) {
+                $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+            });
+        } elseif ($request->input('pink_card') === 'no') {
+            $employeeQuery->where(function ($q) {
+                $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+            });
+        }
+    }
+    // --- END: ADDED FILTERING LOGIC ---
 
     $perPageOptions = [10, 25, 50];
     $currentPerPage = $request->input('per_page', 10);
-    $employees = $employeeQuery->paginate($currentPerPage); // เปลี่ยน $activeEmployees เป็น $employees และ paginate
-    $currentView = $request->input('view', 'card');
 
+    // Added withQueryString() to preserve filters on pagination
+    $employees = $employeeQuery->paginate($currentPerPage)->withQueryString();
+
+    $currentView = $request->input('view', 'card');
     $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
 
     return view('employers.edit', compact(
         'employer',
         'jobOwners',
-        'employees', // ส่งตัวแปรที่ถูกต้อง
+        'employees',
         'terminatedEmployees',
-        'perPageOptions', // ส่งตัวแปรที่ขาดไป
-        'currentView'     // ส่งตัวแปรที่ขาดไป
+        'perPageOptions',
+        'currentView'
     ));
 }
 
