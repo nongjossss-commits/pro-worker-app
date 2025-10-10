@@ -232,62 +232,41 @@
 </div>
 
 {{-- NEW: Bulk Action Bar for Employer's Employee List --}}
-<div id="bulk-action-bar-employer" class="alert alert-info d-flex justify-content-between align-items-center my-3" style="display: none;">
-    <div>
-        <input class="form-check-input" type="checkbox" id="select-all-checkbox-employer">
-        <label class="form-check-label ms-2" for="select-all-checkbox-employer">
-            เลือกทั้งหมด (<span id="selected-count-employer">0</span>)
-        </label>
-    </div>
-    <button class="btn btn-primary btn-sm" disabled>ดำเนินการกับรายการที่เลือก</button>
+<div class="bulk-action-bar">
+    <span>เลือกทั้งหมด (0)</span>
+    <button disabled>ดำเนินการกับรายการที่เลือก</button>
 </div>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <form action="{{ route('employers.edit', $employer->id) }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
-            <input type="text" name="search_employee" class="form-control form-control-sm" placeholder="ค้นหาลูกจ้าง..." value="{{ request('search_employee') }}" style="width: 150px;">
+<form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="filter-form my-3">
+    <div class="filter-controls">
+        <select name="nationality" class="form-select">
+            <option value="">-- ทุกสัญชาติ --</option>
+            <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
+            <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
+            <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
+            <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
+        </select>
 
-            <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
-                <option value="">-- ทุกสัญชาติ --</option>
-                <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
-                <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
-                <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
-                <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
-            </select>
+        <select name="mou_group" class="form-select">
+            <option value="">-- ทุกประเภท มติ. --</option>
+            <option value="MOU" {{ request('mou_group') == 'MOU' ? 'selected' : '' }}>MOU</option>
+            <option value="มติต่ออายุในประเทศ" {{ request('mou_group') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
+            <option value="มติขึ้นทะเบียน" {{ request('mou_group') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
+            <option value="อื่นๆ" {{ request('mou_group') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
+        </select>
 
-            <select name="mou_type" class="form-select form-select-sm" style="width: 200px;">
-                <option value="">-- ทุกประเภท มติ. --</option>
-                <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
-                <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
-                <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
-                <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
-            </select>
+        <select name="pink_card" class="form-select">
+            <option value="">-- บัตรชมพู --</option>
+            <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
+            <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
+        </select>
 
-            <select name="pink_card" class="form-select form-select-sm" style="width: 150px;">
-                <option value="">-- บัตรชมพู --</option>
-                <option value="has_card" @selected(request('pink_card') == 'has_card')>มีบัตรชมพู</option>
-                <option value="no_card" @selected(request('pink_card') == 'no_card')>ไม่มีบัตรชมพู</option>
-            </select>
+        <input type="text" name="search" class="form-control" placeholder="ค้นหา..." value="{{ request('search') }}">
 
-            <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
-            <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-secondary btn-sm">ล้างการกรอง</a>
-
-            <div class="btn-group btn-group-sm ms-md-auto">
-                <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked($currentView === 'card')>
-                <label class="btn btn-outline-secondary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i></label>
-
-                <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked($currentView === 'table')>
-                <label class="btn btn-outline-secondary" for="view-table"><i class="bi bi-table"></i></label>
-            </div>
-
-            <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                @foreach($perPageOptions as $option)
-                <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>แสดง {{ $option }}</option>
-                @endforeach
-            </select>
-        </form>
+        <button type="submit" class="btn btn-primary">กรอง</button>
+        <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-secondary">ล้างการกรอง</a>
     </div>
-</div>
+</form>
 
 <div id="employeeList">
     @if($currentView === 'card')
