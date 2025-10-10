@@ -216,58 +216,70 @@
 
 
 <hr class="my-4">
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+<div class="d-flex justify-content-between align-items-center mb-3">
     @php
         $totalEmployees = $employees->total();
-        $maleCount = $employer->employees()->whereIn('employeeTitleTh', ['นาย'])->count();
-        $femaleCount = $employer->employees()->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+        $maleCount = $employer->employees()->where('gender', 'ชาย')->count();
+        $femaleCount = $employer->employees()->where('gender', 'หญิง')->count();
     @endphp
-    <h5>ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})</h5>
+    <h5 class="mb-0">
+        ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
+    </h5>
     <div class="d-flex gap-2">
-        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
-    @can('create-employees')
-    <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i> เพิ่มพนักงาน</a>
-    @endcan
-</div>
-</div>
-
-{{-- NEW: Bulk Action Bar for Employer's Employee List --}}
-<div class="bulk-action-bar">
-    <span>เลือกทั้งหมด (0)</span>
-    <button disabled>ดำเนินการกับรายการที่เลือก</button>
-</div>
-
-<form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="filter-form my-3">
-    <div class="filter-controls">
-        <select name="nationality" class="form-select">
-            <option value="">-- ทุกสัญชาติ --</option>
-            <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
-            <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
-            <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
-            <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
-        </select>
-
-        <select name="mou_group" class="form-select">
-            <option value="">-- ทุกประเภท มติ. --</option>
-            <option value="MOU" {{ request('mou_group') == 'MOU' ? 'selected' : '' }}>MOU</option>
-            <option value="มติต่ออายุในประเทศ" {{ request('mou_group') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
-            <option value="มติขึ้นทะเบียน" {{ request('mou_group') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
-            <option value="อื่นๆ" {{ request('mou_group') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
-        </select>
-
-        <select name="pink_card" class="form-select">
-            <option value="">-- บัตรชมพู --</option>
-            <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
-            <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
-        </select>
-
-        <input type="text" name="search" class="form-control" placeholder="ค้นหา..." value="{{ request('search') }}">
-
-        <button type="submit" class="btn btn-primary">กรอง</button>
-        <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-secondary">ล้างการกรอง</a>
+        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-success">Export</a>
+        @can('create-employees')
+            <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-success">
+                <i class="bi bi-plus-circle"></i> เพิ่มพนักงาน
+            </a>
+        @endcan
     </div>
-</form>
+</div>
 
+<div class="card p-3 mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+         <form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="d-flex flex-wrap gap-2">
+            <input type="hidden" name="view" value="{{ $currentView }}">
+            <input type="hidden" name="per_page" value="{{ $currentPerPage }}">
+
+            <select name="nationality" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">-- ทุกสัญชาติ --</option>
+                <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
+                <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
+                <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
+                <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
+            </select>
+
+            <select name="pink_card" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">-- บัตรชมพู --</option>
+                <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
+                <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
+            </select>
+
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}">
+
+            <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
+            <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
+        </form>
+
+        <div class="d-flex align-items-center gap-2">
+            <div class="btn-group btn-group-sm">
+                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
+                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
+            </div>
+            <div class="btn-group btn-group-sm">
+                @foreach($perPageOptions as $option)
+                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Bulk Action Bar --}}
+<div class="bulk-action-bar mb-3">
+    <span>เลือกทั้งหมด (0)</span>
+    <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
+</div>
 <div id="employeeList">
     @if($currentView === 'card')
         <div class="list-group">
