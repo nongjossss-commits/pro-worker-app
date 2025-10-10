@@ -19,47 +19,41 @@
 
     <div class="card mb-4">
         <div class="card-body">
-            <form action="{{ route('employees.index') }}" method="GET" id="filter-form" class="d-flex flex-wrap gap-2 align-items-center">
-                <input type="text" name="search" class="form-control form-control-sm w-auto" placeholder="ค้นหา..." value="{{ request('search') }}">
+<form method="GET" action="{{ route('employees.index') }}">
+    <div class="filter-controls">
+        {{-- Nationality Filter --}}
+        <select name="nationality">
+            <option value="">-- ทุกสัญชาติ --</option>
+            <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
+            <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
+            <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
+            <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
+        </select>
 
-                <select name="nationality" class="form-select form-select-sm w-auto">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                    <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
-                    <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
-                    <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
-                    <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
-                </select>
+        {{-- MOU Group Filter --}}
+        <select name="mou_group">
+            <option value="">-- ทุกประเภท มติ. --</option>
+            <option value="MOU" {{ request('mou_group') == 'MOU' ? 'selected' : '' }}>MOU</option>
+            <option value="มติต่ออายุในประเทศ" {{ request('mou_group') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
+            <option value="มติขึ้นทะเบียน" {{ request('mou_group') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
+            <option value="อื่นๆ" {{ request('mou_group') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
+        </select>
 
-                <select name="mou_type" class="form-select form-select-sm w-auto">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                    <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
-                    <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
-                    <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
-                    <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
-                </select>
+        {{-- Pink Card Filter --}}
+        <select name="pink_card">
+            <option value="">-- บัตรชมพู --</option>
+            <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
+            <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
+        </select>
 
-                <select name="pink_card" class="form-select form-select-sm" style="width: 150px;">
-                    <option value="">-- บัตรชมพู --</option>
-                    <option value="has_card" @selected(request('pink_card') == 'has_card')>มีบัตรชมพู</option>
-                    <option value="no_card" @selected(request('pink_card') == 'no_card')>ไม่มีบัตรชมพู</option>
-                </select>
+        {{-- Search Input --}}
+        <input type="text" name="search" placeholder="ค้นหา..." value="{{ request('search') }}">
 
-                <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary btn-sm">ล้างการกรอง</a>
-<a href="{{ route('employees.export', request()->query()) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Export</a>
-                <div class="btn-group btn-group-sm ms-md-auto">
-                    <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
-                    <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i> การ์ด</label>
-                    <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked(request('view') === 'table')>
-                    <label class="btn btn-outline-primary" for="view-table"><i class="bi bi-table"></i> ตาราง</label>
-                </div>
+        <button type="submit">กรอง</button>
 
-                <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                    @foreach($perPageOptions as $option)
-                    <option value="{{ $option }}" @selected($currentPerPage == $option)>แสดง {{ $option }}</option>
-                    @endforeach
-                </select>
-            </form>
+        <a href="{{ route('employees.index') }}">ล้างการกรอง</a>
+    </div>
+</form>
         </div>
     </div>
 
