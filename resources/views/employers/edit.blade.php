@@ -216,21 +216,18 @@
 
 
 <hr class="my-4">
-<div class="d-flex justify-content-between align-items-center mb-3">
-    @php
-        $totalEmployees = $employees->total();
-        $maleCount = $employer->employees()->whereIn('employeeTitleTh', ['นาย'])->count();
+{{-- START: REPLACE FROM HERE --}}
+@php
+    $totalEmployees = $employees->total();
+    // CORRECTED FATAL ERROR: Use 'employeeTitleTh' for both counts.
+    $maleCount = $employer->employees()->whereIn('employeeTitleTh', ['นาย'])->count();
     $femaleCount = $employer->employees()->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
-    @endphp
+@endphp
+
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0">
         ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
     </h5>
-    <div class="d-flex gap-2">
-        <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-success">Export</a>
-        @can('create-employees')
-            <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-sm btn-success"><i class="bi bi-plus-circle"></i> เพิ่มพนักงาน</a>
-        @endcan
-    </div>
 </div>
 
 <div class="card p-3 mb-3">
@@ -238,38 +235,35 @@
         <form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="d-flex flex-wrap align-items-center gap-2">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
             <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- ทุกสัญชาติ --</option>
-                <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
-                <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
-                <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
-                <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
+                 <option value="">-- ทุกสัญชาติ --</option>
+                <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>เมียนมา</option>
+                <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>ลาว</option>
+                <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>กัมพูชา</option>
+                <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>เวียดนาม</option>
+            </select>
+            <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- ทุกประเภท มติ. --</option>
+                <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
+                <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
+                <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
+                <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
             </select>
             <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- บัตรชมพู --</option>
-                <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
-                <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
+                <option value="yes" @if(request('pink_card') == 'yes') selected @endif>มีบัตรชมพู</option>
+                <option value="no" @if(request('pink_card') == 'no') selected @endif>ไม่มีบัตรชมพู</option>
             </select>
             <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
             <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
         </form>
-        <div class="d-flex align-items-center gap-2">
-            <div class="btn-group btn-group-sm">
-                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
-                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
-            </div>
-            <div class="btn-group btn-group-sm">
-                @foreach($perPageOptions as $option)
-                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
-                @endforeach
-            </div>
-        </div>
     </div>
 </div>
 
-<div class="bulk-action-bar mb-3">
-    <span>เลือกทั้งหมด (0)</span>
-    <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
+<div class="bulk-action-bar" style="display: none;">
+    <span id="selected-count">เลือกทั้งหมด (0)</span>
+    <button class="btn btn-sm btn-outline-danger">ดำเนินการกับรายการที่เลือก</button>
 </div>
+{{-- END: REPLACE UNTIL HERE --}}
 <div id="employeeList">
     @if($currentView === 'card')
         <div class="list-group">
@@ -435,5 +429,28 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         @endif
     });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    const bulkActionBar = document.querySelector('.bulk-action-bar');
+    const selectedCountSpan = document.getElementById('selected-count');
+
+    function updateBulkActionBar() {
+        const selectedCheckboxes = document.querySelectorAll('.employee-checkbox:checked');
+        const count = selectedCheckboxes.length;
+
+        if (count > 0) {
+            bulkActionBar.style.display = 'flex';
+            selectedCountSpan.textContent = 'เลือกทั้งหมด (' + count + ')';
+        } else {
+            bulkActionBar.style.display = 'none';
+        }
+    }
+
+    checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', updateBulkActionBar);
+    });
+});
 </script>
 @endpush
