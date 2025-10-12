@@ -111,3 +111,131 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    let thaiAddressData = [];
+    const addressModal = document.getElementById('addressModal');
+    const form = document.getElementById('addressForm');
+    // Get all form elements by ID
+    const provinceSelect = document.getElementById('addrProvince');
+    const districtSelect = document.getElementById('addrDistrict');
+    const subDistrictSelect = document.getElementById('addrSubDistrict');
+    const provinceEnInput = document.getElementById('addrProvinceEn');
+    const districtEnInput = document.getElementById('addrDistrictEn');
+    const subDistrictEnInput = document.getElementById('addrSubDistrictEn');
+    const zipCodeInput = document.getElementById('addrZipCode');
+
+    // 1. Fetch address data on page load
+    fetch("{{ route('addresses.thai_data') }}")
+        .then(response => response.json())
+        .then(data => {
+            thaiAddressData = data;
+            populateProvinces();
+        });
+
+    function populateProvinces() {
+        thaiAddressData.forEach(province => {
+            const option = new Option(province.name_th, province.name_th);
+            provinceSelect.add(option);
+        });
+    }
+
+    // 2. Cascading Dropdown Logic
+    provinceSelect.addEventListener('change', function () {
+        // Clear subsequent fields
+        districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
+        subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
+        [districtSelect, subDistrictSelect].forEach(el => el.disabled = true);
+        [provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput].forEach(el => el.value = '');
+
+        const selectedProvinceName = this.value;
+        if (!selectedProvinceName) return;
+
+        const selectedProvince = thaiAddressData.find(p => p.name_th === selectedProvinceName);
+        if (selectedProvince) {
+            provinceEnInput.value = selectedProvince.name_en;
+            selectedProvince.amphoe.forEach(district => {
+                const option = new Option(district.name_th, district.name_th);
+                districtSelect.add(option);
+            });
+            districtSelect.disabled = false;
+        }
+    });
+
+    districtSelect.addEventListener('change', function () {
+        // Similar logic for district -> sub-district
+        subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
+        [subDistrictEnInput, zipCodeInput].forEach(el => el.value = '');
+
+        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
+        const selectedDistrictName = this.value;
+         if (!selectedDistrictName || !selectedProvince) return;
+
+        const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === selectedDistrictName);
+        if(selectedDistrict) {
+            districtEnInput.value = selectedDistrict.name_en;
+            selectedDistrict.tambon.forEach(sub => {
+                const option = new Option(sub.name_th, sub.name_th);
+                subDistrictSelect.add(option);
+            });
+            subDistrictSelect.disabled = false;
+        }
+    });
+
+    subDistrictSelect.addEventListener('change', function () {
+        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
+        const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === districtSelect.value);
+        const selectedSubDistrictName = this.value;
+        if(!selectedSubDistrictName || !selectedDistrict) return;
+
+        const selectedSubDistrict = selectedDistrict.tambon.find(s => s.name_th === selectedSubDistrictName);
+        if(selectedSubDistrict){
+            subDistrictEnInput.value = selectedSubDistrict.name_en;
+            zipCodeInput.value = selectedSubDistrict.zip_code;
+        }
+    });
+
+    // 3. Modal Opening and Data Handling Logic
+    addressModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const modalType = button.classList.contains('add-address-btn') ? 'add' : 'edit';
+
+        form.reset(); // Reset form on open
+
+        if (modalType === 'add') {
+            document.getElementById('addressModalLabel').textContent = 'เพิ่มที่อยู่';
+            document.getElementById('addressable_id').value = button.dataset.addressableId;
+            document.getElementById('address_type').value = button.dataset.type;
+        } else {
+            // Logic for edit will be added later if needed
+        }
+    });
+
+    // 4. Save Logic
+    document.getElementById('saveAddressBtn').addEventListener('click', function() {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        fetch("{{ route('addresses.store') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': data._token },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.address) {
+                // Close modal and refresh address list without full page reload
+                const modal = bootstrap.Modal.getInstance(addressModal);
+                modal.hide();
+                // You can add a function here to dynamically refresh the address list on the page
+                location.reload(); // Simple reload for now
+            } else {
+                // Handle errors
+            }
+        });
+    });
+});
+</script>
+@endpush
