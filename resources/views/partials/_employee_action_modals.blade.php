@@ -28,7 +28,7 @@
 </div>
 
 {{-- Employment History Modal --}}
-<div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
+<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -53,7 +53,7 @@
                                 <th>จัดการ</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="historyTableBody">
                             {{-- Data will be loaded here by JavaScript --}}
                             <tr>
                                 <td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td>
@@ -110,13 +110,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const terminateForm = document.getElementById('terminate-form');
 
     // --- AJAX form submission for Terminate Modal ---
-    // This listener is separate because it handles a form 'submit' event, not a button 'click'.
-    // It will be triggered after the terminate modal is shown and the user confirms.
     if (terminateForm) {
         terminateForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const form = this; // Use 'form' for clarity, as in the user's request
-            const modal = terminateModalEl; // Use the correct modal element reference
+            const form = this;
+            const modal = terminateModalEl;
 
             fetch(form.action, {
                 method: 'POST',
@@ -124,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'Accept': 'application/json'
                 },
-                body: new FormData(form) // Send the form data
+                body: new FormData(form)
             })
             .then(response => response.json())
             .then(data => {
@@ -146,7 +144,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         showConfirmButton: false
                     });
                 } else {
-                    // Use the error message from the server's JSON response
                     throw new Error(data.message || 'An unknown error occurred.');
                 }
             })
@@ -164,7 +161,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- CENTRALIZED EVENT DELEGATION FOR ALL ACTION BUTTONS ---
     document.body.addEventListener('click', function(e) {
-        // Find the closest button with an action class
         const button = e.target.closest('.js-terminate-btn, .js-restore-btn, .js-force-delete-btn');
         if (!button) return;
 
@@ -172,7 +168,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const employeeId = button.dataset.employeeId;
         if (!employeeId) return;
 
-        // --- Handle Terminate Button Click (Show Modal) ---
         if (button.matches('.js-terminate-btn')) {
             if (terminateModal && terminateForm) {
                 const url = `{{ url('employees') }}/${employeeId}/terminate`;
@@ -182,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // --- Handle Restore Button Click ---
         if (button.matches('.js-restore-btn')) {
             Swal.fire({
                 title: 'คุณต้องการกู้คืนพนักงานคนนี้ใช่หรือไม่?',
@@ -213,7 +207,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // --- Handle Force Delete Button Click ---
         if (button.matches('.js-force-delete-btn')) {
              Swal.fire({
                 title: 'คุณแน่ใจหรือไม่?',
@@ -245,6 +238,43 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     });
+
+    // --- Employment History Modal Logic ---
+    const historyModal = document.getElementById('historyModal');
+    if (historyModal) {
+        historyModal.addEventListener('show.bs.modal', function (event) {
+            const tableBody = document.getElementById('historyTableBody');
+            const employerId = {{ $employer->id ?? 'null' }};
+
+            if (!employerId) return;
+
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
+
+            fetch(`/employers/${employerId}/history`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = ''; // Clear loading message
+                    if (data.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">ไม่พบข้อมูลพนักงานที่ถูกเลิกจ้าง</td></tr>';
+                        return;
+                    }
+                    data.forEach((employee, index) => {
+                        const terminatedDate = new Date(employee.terminated_at).toLocaleDateString('th-TH');
+                        const row = `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${employee.employeeNameTh || '-'}</td>
+                                <td>${employee.employeePosition || '-'}</td>
+                                <td>${terminatedDate}</td>
+                                <td>${employee.termination_reason || '-'}</td>
+                                <td>{{-- Action buttons can be added here --}}</td>
+                            </tr>
+                        `;
+                        tableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                });
+        });
+    }
 });
 </script>
 @endpush
