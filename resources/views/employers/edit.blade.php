@@ -256,12 +256,28 @@
             <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
             <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
         </form>
+        <div class="d-flex align-items-center gap-2">
+            <div class="btn-group btn-group-sm">
+                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
+                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
+            </div>
+            <div class="btn-group btn-group-sm">
+                @foreach($perPageOptions as $option)
+                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
+                @endforeach
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="bulk-action-bar" style="display: none;">
-    <span id="selected-count">เลือกทั้งหมด (0)</span>
-    <button class="btn btn-sm btn-outline-danger">ดำเนินการกับรายการที่เลือก</button>
+<div class="bulk-action-bar mb-3" style="display: none;">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+        <label class="form-check-label" for="select-all-checkbox">
+            เลือกทั้งหมด (<span id="selected-count">0</span>)
+        </label>
+    </div>
+    <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
 </div>
 {{-- END: REPLACE UNTIL HERE --}}
 <div id="employeeList">

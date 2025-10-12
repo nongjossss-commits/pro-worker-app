@@ -51,8 +51,13 @@
     </div>
 </div>
 
-<div class="bulk-action-bar mb-3">
-    <span>เลือกทั้งหมด (0)</span>
+<div class="bulk-action-bar mb-3" style="display: none;">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+        <label class="form-check-label" for="select-all-checkbox">
+            เลือกทั้งหมด (<span id="selected-count">0</span>)
+        </label>
+    </div>
     <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
 </div>
 

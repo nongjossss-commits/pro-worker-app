@@ -479,5 +479,44 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @stack('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
+    const bulkActionBar = document.querySelector('.bulk-action-bar');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const bulkActionButton = bulkActionBar ? bulkActionBar.querySelector('button') : null;
+
+    if (!selectAllCheckbox) return; // Exit if controls are not on this page
+
+    function updateBulkActionBar() {
+        const selectedCheckboxes = document.querySelectorAll('.employee-checkbox:checked');
+        const count = selectedCheckboxes.length;
+
+        if (count > 0) {
+            bulkActionBar.style.display = 'flex';
+            selectedCountSpan.textContent = count;
+            bulkActionButton.disabled = false;
+            // Sync select-all checkbox
+            selectAllCheckbox.checked = (count === employeeCheckboxes.length);
+        } else {
+            bulkActionBar.style.display = 'none';
+            bulkActionButton.disabled = true;
+            selectAllCheckbox.checked = false;
+        }
+    }
+
+    selectAllCheckbox.addEventListener('change', function () {
+        employeeCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActionBar();
+    });
+
+    employeeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActionBar);
+    });
+});
+</script>
 </body>
 </html>
