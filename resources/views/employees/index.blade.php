@@ -29,6 +29,13 @@
                 <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
                 <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
             </select>
+            <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- ทุกประเภท มติ. --</option>
+                <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
+                <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
+                <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
+                <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
+            </select>
             <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- บัตรชมพู --</option>
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
