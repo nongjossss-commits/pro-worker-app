@@ -20,30 +20,23 @@
 
 <div class="card p-3 mb-3">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <form method="GET" action="{{ route('employees.index') }}" class="d-flex flex-wrap gap-2">
-            <input type="hidden" name="view" value="{{ $currentView }}">
-            <input type="hidden" name="per_page" value="{{ $currentPerPage }}">
-
-            <select name="nationality" class="form-select form-select-sm" onchange="this.form.submit()">
+        <form method="GET" action="{{ route('employees.index') }}" class="d-flex flex-wrap align-items-center gap-2">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
+            <select name="nationality" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- ทุกสัญชาติ --</option>
                 <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
                 <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
                 <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
                 <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
             </select>
-
-            <select name="pink_card" class="form-select form-select-sm" onchange="this.form.submit()">
+            <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- บัตรชมพู --</option>
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
                 <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
             </select>
-
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}">
-
             <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
             <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
         </form>
-
         <div class="d-flex align-items-center gap-2">
             <div class="btn-group btn-group-sm">
                 <a href="{{ route('employees.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
@@ -58,7 +51,6 @@
     </div>
 </div>
 
-{{-- Bulk Action Bar --}}
 <div class="bulk-action-bar mb-3">
     <span>เลือกทั้งหมด (0)</span>
     <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
