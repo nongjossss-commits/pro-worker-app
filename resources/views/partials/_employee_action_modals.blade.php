@@ -240,18 +240,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // --- Employment History Modal Logic ---
-    const historyModal = document.getElementById('historyModal');
-    if (historyModal) {
-        historyModal.addEventListener('show.bs.modal', function (event) {
+    const historyModalEl = document.getElementById('historyModal');
+    if (historyModalEl) {
+        historyModalEl.addEventListener('show.bs.modal', function (event) {
             const tableBody = document.getElementById('historyTableBody');
             const employerId = {{ $employer->id ?? 'null' }};
 
-            if (!employerId) return;
+            if (!employerId || !tableBody) return;
 
             tableBody.innerHTML = '<tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
 
             fetch(`/employers/${employerId}/history`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
                 .then(data => {
                     tableBody.innerHTML = ''; // Clear loading message
                     if (data.length === 0) {
@@ -259,19 +262,36 @@ document.addEventListener('DOMContentLoaded', function () {
                         return;
                     }
                     data.forEach((employee, index) => {
-                        const terminatedDate = new Date(employee.terminated_at).toLocaleDateString('th-TH');
+                        const terminatedDate = new Date(employee.terminated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                        // Build action buttons based on permissions
+                        let actionButtons = '';
+                        if (employee.can_restore) {
+                            actionButtons += `<button class="btn btn-sm btn-outline-success js-restore-btn me-1" data-employee-id="${employee.id}" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                        }
+                        if (employee.can_force_delete) {
+                            actionButtons += `<button class="btn btn-sm btn-outline-danger js-force-delete-btn" data-employee-id="${employee.id}" title="ลบถาวร"><i class="bi bi-trash-fill"></i></button>`;
+                        }
+                         if (actionButtons === '') {
+                            actionButtons = '<span class="text-muted">-</span>';
+                        }
+
                         const row = `
-                            <tr>
+                            <tr id="history-row-${employee.id}">
                                 <td>${index + 1}</td>
                                 <td>${employee.employeeNameTh || '-'}</td>
                                 <td>${employee.employeePosition || '-'}</td>
                                 <td>${terminatedDate}</td>
                                 <td>${employee.termination_reason || '-'}</td>
-                                <td>{{-- Action buttons can be added here --}}</td>
+                                <td class="text-center">${actionButtons}</td>
                             </tr>
                         `;
                         tableBody.insertAdjacentHTML('beforeend', row);
                     });
+                })
+                .catch(error => {
+                    console.error('Error fetching history:', error);
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
                 });
         });
     }
