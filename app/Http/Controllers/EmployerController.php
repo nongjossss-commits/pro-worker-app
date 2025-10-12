@@ -127,7 +127,8 @@ public function edit(Request $request, Employer $employer)
         'employees',
         'terminatedEmployees',
         'perPageOptions',
-        'currentView'
+        'currentView',
+        'currentPerPage'
     ));
 }
 
