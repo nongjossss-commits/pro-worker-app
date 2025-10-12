@@ -295,7 +295,7 @@
             <table class="table table-hover table-sm align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 1rem;"><!-- Checkbox --></th>
+                        <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
                         <th style="width: 5%;">#</th>
                         <th style="width: 10%;">Photo</th>
                         <th style="width: 25%;">Name (EN)</th>
@@ -309,7 +309,7 @@
                     @forelse($employees as $employee)
                         <tr id="employee-row-{{ $employee->id }}">
                             {{-- DEFINITIVE FIX: Add checkbox for bulk actions --}}
-                            <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
+                            <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
                             <td>{{ $employees->firstItem() + $loop->index }}</td>
                             <td class="align-middle text-center" style="width: 60px;">
                                 @if($employee->employeePhoto)
