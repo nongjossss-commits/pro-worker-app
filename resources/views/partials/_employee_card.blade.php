@@ -1,3 +1,4 @@
+<input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
 @php
     $employerName = $employee->employer->employerNameTh ?? 'N/A';
 @endphp
