@@ -151,8 +151,11 @@
             <div class="content-section mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
-                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addAddressModal" data-address-type="registered">
-                        <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+                    <button type="button" class="btn btn-sm btn-primary add-address-btn"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addressModal"
+                            data-type="registered">
+                        + เพิ่มที่อยู่
                     </button>
                 </div>
                 <div id="registeredAddressList" class="vstack gap-3">
@@ -164,8 +167,11 @@
             <div class="content-section mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
-                    <button type="button" class="btn btn-sm btn-outline-success add-address-btn" data-bs-toggle="modal" data-bs-target="#addAddressModal" data-address-type="workplace">
-                        <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+                    <button type="button" class="btn btn-sm btn-primary add-address-btn"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addressModal"
+                            data-type="workplace">
+                        + เพิ่มที่อยู่
                     </button>
                 </div>
                 <div id="workplaceAddressList" class="vstack gap-3">
@@ -197,10 +203,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const registeredAddressList = document.getElementById('registeredAddressList');
     const workplaceAddressList = document.getElementById('workplaceAddressList');
     const mainForm = document.getElementById('saveEmployerForm');
-    const addressModalEl = document.getElementById('addAddressModal');
+    const addressModalEl = document.getElementById('addressModal');
     const addressModal = new bootstrap.Modal(addressModalEl);
     const addressForm = document.getElementById('addressForm');
-    const saveAddressButton = document.getElementById('saveAddress');
+    const saveAddressButton = document.getElementById('saveAddressBtn');
     const originalSaveButtonText = saveAddressButton.innerHTML;
 
     // This is the create page, so we override the default AJAX save behavior
@@ -377,8 +383,8 @@ document.addEventListener('DOMContentLoaded', function () {
      // Set address type when "Add Address" is clicked
     document.querySelectorAll('.add-address-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const addressType = this.getAttribute('data-address-type');
-            document.getElementById('addressType').value = addressType;
+            const addressType = this.getAttribute('data-type');
+            document.getElementById('address_type').value = addressType;
         });
     });
 });

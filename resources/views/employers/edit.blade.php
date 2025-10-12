@@ -151,8 +151,12 @@
     <div class="content-section mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
-            <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="registered" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-                <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+            <button type="button" class="btn btn-sm btn-primary add-address-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addressModal"
+                    data-type="registered"
+                    data-addressable-id="{{ $employer->id }}">
+                + เพิ่มที่อยู่
             </button>
         </div>
         <div id="registeredAddressList" class="vstack gap-3">
@@ -171,7 +175,13 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-sm btn-warning edit-address-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addressModal"
+                                data-address-id="{{ $address->id }}">
+                            แก้ไข
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
             @empty
@@ -184,8 +194,12 @@
     <div class="content-section mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
-            <button type="button" class="btn btn-sm btn-outline-primary add-address-btn" data-type="workplace" data-addressable-id="{{ $employer->id }}" data-addressable-type="employer" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-                <i class="bi bi-plus-lg"></i> เพิ่มที่อยู่
+            <button type="button" class="btn btn-sm btn-primary add-address-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addressModal"
+                    data-type="workplace"
+                    data-addressable-id="{{ $employer->id }}">
+                + เพิ่มที่อยู่
             </button>
         </div>
         <div id="workplaceAddressList" class="vstack gap-3">
@@ -204,7 +218,13 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-sm btn-warning edit-address-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addressModal"
+                                data-address-id="{{ $address->id }}">
+                            แก้ไข
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
             @empty

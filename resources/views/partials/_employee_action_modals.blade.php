@@ -41,22 +41,26 @@
                 <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>ชื่อพนักงาน</th>
-                            <th>วันที่แจ้งออก</th>
-                            <th>เหตุผล</th>
-                            <th>จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-body">
-                        {{-- Terminated employees will be loaded here via JavaScript --}}
-                        <tr>
-                            <td colspan="4" class="text-center">กำลังโหลด...</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div id="terminated-employees-list" class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>พนักงาน</th>
+                                <th>ตำแหน่ง</th>
+                                <th>วันที่แจ้งออก</th>
+                                <th>เหตุผล</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- Data will be loaded here by JavaScript --}}
+                            <tr>
+                                <td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>

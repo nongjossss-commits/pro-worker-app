@@ -479,6 +479,224 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @stack('scripts')
+
+<script>
+// Full-Featured Address Management Script
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Configuration & Global State ---
+    const thaiDataUrl = "/thai-addresses"; // Hardcoded URL
+    let thaiAddressData = [];
+    let dataLoaded = false;
+    const addressModalEl = document.getElementById('addressModal');
+    if (!addressModalEl) return; // Exit if the modal isn't on the page
+
+    const addressModal = new bootstrap.Modal(addressModalEl);
+    const addressForm = document.getElementById('addressForm');
+    const saveBtn = document.getElementById('saveAddressBtn');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // --- Form Fields ---
+    const fields = {
+        id: document.getElementById('address_id'),
+        addressable_id: document.getElementById('addressable_id'),
+        addressable_type: document.getElementById('addressable_type'),
+        type: document.getElementById('address_type'),
+        addrNo: document.getElementById('addrNo'),
+        addrNoEn: document.getElementById('addrNoEn'),
+        addrMoo: document.getElementById('addrMoo'),
+        addrMooEn: document.getElementById('addrMooEn'),
+        addrSoi: document.getElementById('addrSoi'),
+        addrSoiEn: document.getElementById('addrSoiEn'),
+        addrRoad: document.getElementById('addrRoad'),
+        addrRoadEn: document.getElementById('addrRoadEn'),
+        addrProvince: document.getElementById('addrProvince'),
+        addrProvinceEn: document.getElementById('addrProvinceEn'),
+        addrDistrict: document.getElementById('addrDistrict'),
+        addrDistrictEn: document.getElementById('addrDistrictEn'),
+        addrSubDistrict: document.getElementById('addrSubDistrict'),
+        addrSubDistrictEn: document.getElementById('addrSubDistrictEn'),
+        addrZipCode: document.getElementById('addrZipCode')
+    };
+
+    // --- Data Loading ---
+    async function fetchThaiAddressData() {
+        if (dataLoaded) return;
+        try {
+            const response = await fetch(thaiDataUrl);
+            if (!response.ok) throw new Error('Network response was not ok.');
+            thaiAddressData = await response.json();
+            dataLoaded = true;
+            populateProvinces();
+        } catch (error) {
+            console.error('Failed to fetch Thai address data:', error);
+            showToast('ไม่สามารถโหลดข้อมูลที่อยู่ได้', 'danger');
+        }
+    }
+
+    // --- Dropdown Population ---
+    function populateProvinces() {
+        fields.addrProvince.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
+        const uniqueProvinces = [...new Map(thaiAddressData.map(item => [item['province_th'], item])).values()];
+        uniqueProvinces.sort((a, b) => a.province_th.localeCompare(b.province_th, 'th'));
+        uniqueProvinces.forEach(item => {
+            const option = new Option(item.province_th, item.province_th);
+            fields.addrProvince.add(option);
+        });
+    }
+
+    function populateDistricts(province) {
+        fields.addrDistrict.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
+        fields.addrSubDistrict.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>'; // Reset sub-districts
+        if (!province) return;
+
+        const districts = [...new Set(thaiAddressData.filter(d => d.province_th === province).map(d => d.district_th))];
+        districts.sort((a, b) => a.localeCompare(b, 'th'));
+        districts.forEach(district => {
+            const option = new Option(district, district);
+            fields.addrDistrict.add(option);
+        });
+    }
+
+    function populateSubDistricts(province, district) {
+        fields.addrSubDistrict.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
+        if (!province || !district) return;
+
+        const subDistricts = thaiAddressData.filter(d => d.province_th === province && d.district_th === district);
+        subDistricts.sort((a, b) => a.subdistrict_th.localeCompare(b.subdistrict_th, 'th'));
+        subDistricts.forEach(sub => {
+            const option = new Option(sub.subdistrict_th, sub.subdistrict_th);
+            fields.addrSubDistrict.add(option);
+        });
+    }
+
+    // --- Event Listeners for Dropdowns ---
+    fields.addrProvince.addEventListener('change', function() {
+        populateDistricts(this.value);
+        const selectedData = thaiAddressData.find(d => d.province_th === this.value);
+        fields.addrProvinceEn.value = selectedData ? selectedData.province_en : '';
+        fields.addrDistrictEn.value = '';
+        fields.addrSubDistrictEn.value = '';
+        fields.addrZipCode.value = '';
+    });
+
+    fields.addrDistrict.addEventListener('change', function() {
+        populateSubDistricts(fields.addrProvince.value, this.value);
+        const selectedData = thaiAddressData.find(d => d.province_th === fields.addrProvince.value && d.district_th === this.value);
+        fields.addrDistrictEn.value = selectedData ? selectedData.district_en : '';
+        fields.addrSubDistrictEn.value = '';
+        fields.addrZipCode.value = '';
+    });
+
+    fields.addrSubDistrict.addEventListener('change', function() {
+        const selectedData = thaiAddressData.find(d =>
+            d.province_th === fields.addrProvince.value &&
+            d.district_th === fields.addrDistrict.value &&
+            d.subdistrict_th === this.value
+        );
+        if (selectedData) {
+            fields.addrSubDistrictEn.value = selectedData.subdistrict_en;
+            fields.addrZipCode.value = selectedData.zip_code;
+        }
+    });
+
+    // --- Modal Opening Logic ---
+    addressModalEl.addEventListener('show.bs.modal', async function(e) {
+        await fetchThaiAddressData();
+        const button = e.relatedTarget;
+        if (!button) return;
+
+        const isAddButton = button.matches('.add-address-btn');
+        const isEditButton = button.matches('.edit-address-btn');
+
+        if (isAddButton) {
+            addressForm.reset();
+            fields.id.value = '';
+            fields.addressable_id.value = button.dataset.addressableId;
+            fields.addressable_type.value = 'App\\Models\\Employer';
+            fields.type.value = button.dataset.type;
+            document.getElementById('addressModalLabel').textContent = 'เพิ่มที่อยู่ใหม่';
+        } else if (isEditButton) {
+            const addressId = button.dataset.addressId;
+            document.getElementById('addressModalLabel').textContent = 'กำลังโหลด...';
+            try {
+                const response = await fetch(`/addresses/${addressId}`);
+                if (!response.ok) throw new Error('Failed to fetch address data.');
+                const data = await response.json();
+
+                addressForm.reset();
+                for (const key in data) {
+                    if (fields[key]) {
+                       fields[key].value = data[key];
+                    }
+                }
+
+                populateDistricts(data.addrProvince);
+                fields.addrDistrict.value = data.addrDistrict;
+                populateSubDistricts(data.addrProvince, data.addrDistrict);
+                fields.addrSubDistrict.value = data.addrSubDistrict;
+
+                document.getElementById('addressModalLabel').textContent = 'แก้ไขที่อยู่';
+            } catch (error) {
+                console.error('Error fetching address for edit:', error);
+                showToast('ไม่สามารถโหลดข้อมูลที่อยู่เพื่อแก้ไขได้', 'danger');
+                addressModal.hide();
+            }
+        }
+    });
+
+    // --- Save Logic ---
+    saveBtn.addEventListener('click', async function() {
+        const formData = new FormData(addressForm);
+        const addressId = fields.id.value;
+        const url = addressId ? `/addresses/${addressId}` : '/addresses';
+        const method = 'POST';
+
+        if (addressId) {
+            formData.append('_method', 'PUT');
+        }
+
+        try {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...`;
+
+            const response = await fetch(url, {
+                method: method,
+                body: formData,
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 422 && result.errors) {
+                     let errorMsg = Object.values(result.errors).flat().join('\\n');
+                     throw new Error(errorMsg);
+                }
+                throw new Error(result.message || 'An unknown error occurred.');
+            }
+
+            showToast(result.message || 'บันทึกที่อยู่เรียบร้อยแล้ว', 'success');
+            addressModal.hide();
+
+            setTimeout(() => location.reload(), 1500);
+
+        } catch (error) {
+            console.error('Save address error:', error);
+            showToast(error.message || 'เกิดข้อผิดพลาดในการบันทึก', 'danger');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = 'บันทึก';
+        }
+    });
+
+    addressModalEl.addEventListener('hidden.bs.modal', function () {
+        addressForm.reset();
+        populateDistricts('');
+        document.getElementById('addressModalLabel').textContent = 'เพิ่ม/แก้ไขที่อยู่';
+    });
+});
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
