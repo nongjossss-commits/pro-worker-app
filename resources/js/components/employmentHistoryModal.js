@@ -1,5 +1,5 @@
 export function initializeHistoryModal() {
-    const historyModal = document.getElementById('historyModal');
+    const historyModal = document.getElementById('employmentHistoryModal');
     if (!historyModal) {
         return;
     }
