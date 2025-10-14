@@ -22,9 +22,15 @@
             </span>
 
             @if($employee->employeeNationality)
-                @php $flagCode = \App\Helpers\CountryHelper::getFlagCode($employee->employeeNationality); @endphp
-                @if($flagCode)
-                    @endif
+                @php
+                    $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                @endphp
+                @if($countryCode)
+                    <span class="badge bg-light text-dark ms-2">
+                        <span class="flag-icon flag-icon-{{ $countryCode }}"></span>
+                        {{ $employee->employeeNationality }}
+                    </span>
+                @endif
             @endif
 
             <span class="employee-name-th d-block">

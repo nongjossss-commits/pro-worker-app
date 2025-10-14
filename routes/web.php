@@ -30,9 +30,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('employers', EmployerController::class);
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
-    Route::post('employees/{employee}/terminate', [EmployerController::class, 'terminate'])->name('employees.terminate');
-    Route::post('/employees/{employee}/restore', [EmployerController::class, 'restoreEmployee'])->name('employees.restore');
-    Route::delete('/employees/{employee}/force-delete', [EmployerController::class, 'forceDeleteEmployee'])->name('employees.forceDelete');
+    Route::post('employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
+    Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
+    Route::delete('/employees/{employee}/force-delete', [EmployeeController::class, 'forceDelete'])->name('employees.forceDelete');
     Route::get('/employees/{employee}/locate', [EmployeeController::class, 'locate'])->name('employees.locate');
     Route::get('/employees/{employee}/create-job', [JobController::class, 'createFromEmployee'])->name('jobs.create_from_employee');
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');

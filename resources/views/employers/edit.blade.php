@@ -347,15 +347,15 @@
                             <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}<br><small class="text-muted">{{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }}</small></td>
                             <td>{{ $employee->employeePassport ?? '-' }}</td>
                             <td>
-                                @php
-                                    $flagCodes = ['เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn'];
-                                    $nationality = $employee->employeeNationality ?? null;
-                                    $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
-                                @endphp
-                                @if($nationality)
-                                    {{ $nationality }}
-                                    @if($flagCode)
-                                        <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
+                                @if($employee->employeeNationality)
+                                    @php
+                                        $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                                    @endphp
+                                    @if($countryCode)
+                                        <span class="flag-icon flag-icon-{{ $countryCode }}"></span>
+                                        {{ $employee->employeeNationality }}
+                                    @else
+                                        {{ $employee->employeeNationality }}
                                     @endif
                                 @else
                                     -

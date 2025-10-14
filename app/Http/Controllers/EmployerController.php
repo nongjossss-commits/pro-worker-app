@@ -194,42 +194,6 @@ public function edit(Request $request, Employer $employer)
 
     // Other methods like export, filter etc.
 
-    // --- เพิ่ม Method ที่ขาดหายไป ---
-    public function terminate(Request $request, Employee $employee)
-    {
-        $this->authorize('terminate-employees'); // ป้องกันด้วย Permission โดยตรง
-
-        $validated = $request->validate([
-            'terminated_at' => 'required|date',
-            'termination_reason' => 'nullable|string',
-        ]);
-
-        $isSuccess = $employee->update([
-            'terminated_at' => $validated['terminated_at'],
-            'termination_reason' => $validated['termination_reason'],
-        ]);
-
-        if ($isSuccess) {
-            return response()->json(['success' => true, 'message' => 'Employee terminated successfully.']);
-        } else {
-            return response()->json(['success' => false, 'message' => 'Failed to terminate employee. Please try again.'], 422);
-        }
-    }
-
-    public function restoreEmployee(Employee $employee)
-    {
-        $this->authorize('restore-employees');
-        $employee->update(['terminated_at' => null, 'termination_reason' => null]);
-        return response()->json(['success' => true, 'message' => 'Employee restored successfully.']);
-    }
-
-    public function forceDeleteEmployee(Employee $employee)
-    {
-        $this->authorize('force-delete-employees');
-        $employee->delete();
-        return response()->json(['success' => true, 'message' => 'Employee permanently deleted.']);
-    }
-
     public function filterHistory(Request $request, Employer $employer)
     {
         $query = $employer->employees()->whereNotNull('terminated_at');
@@ -255,6 +219,13 @@ public function edit(Request $request, Employer $employer)
         });
 
         return response()->json($terminatedEmployees);
+    }
+
+    public function exportHistory(Request $request, Employer $employer)
+    {
+        // Add a 'history' flag to the request and call the main export method.
+        $request->merge(['history' => true]);
+        return $this->exportEmployees($request, $employer);
     }
 
     public function exportEmployees(Request $request, Employer $employer)

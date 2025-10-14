@@ -16,9 +16,39 @@ class EmployeeController extends Controller
         $this->middleware('permission:edit-employees', ['only' => ['edit', 'update']]);
         $this->middleware('permission:create-employees', ['only' => ['create', 'store']]);
         $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
+        $this->middleware('permission:terminate-employees', ['only' => ['terminate']]);
+        $this->middleware('permission:restore-employees', ['only' => ['restore']]);
+        $this->middleware('permission:force-delete-employees', ['only' => ['forceDelete']]);
     }
 
-public function index(Request $request)
+    /**
+     * Soft delete the specified employee.
+     */
+    public function terminate(Employee $employee)
+    {
+        $employee->delete();
+        return back()->with('success', 'Employee terminated successfully.');
+    }
+
+    /**
+     * Restore the specified soft-deleted employee.
+     */
+    public function restore(Employee $employee)
+    {
+        $employee->restore();
+        return response()->json(['success' => 'Employee restored successfully.']);
+    }
+
+    /**
+     * Permanently delete the specified employee.
+     */
+    public function forceDelete(Employee $employee)
+    {
+        $employee->forceDelete();
+        return response()->json(['success' => 'Employee permanently deleted successfully.']);
+    }
+
+    public function index(Request $request)
 {
     $query = Employee::query()->whereNull('terminated_at');
 

@@ -5,21 +5,26 @@ namespace App\Helpers;
 class CountryHelper
 {
     /**
-     * Get the two-letter country code for a given Thai nationality name.
+     * Map Thai nationality names to ISO 3166-1 alpha-2 country codes.
      *
-     * @param string|null $nationality
-     * @return string|null
+     * @param string|null $nationality The Thai name of the nationality.
+     * @return string|null The two-letter country code or null if not found.
      */
-    public static function getFlagCode(?string $nationality): ?string
+    public static function getCountryCode(?string $nationality): ?string
     {
-        $flagMap = [
+        if ($nationality === null) {
+            return null;
+        }
+
+        $map = [
+            'ไทย' => 'th',
             'เมียนมา' => 'mm',
             'ลาว' => 'la',
             'กัมพูชา' => 'kh',
             'เวียดนาม' => 'vn',
-            // Add other nationalities here if needed
+            // Add other nationalities as needed
         ];
 
-        return $flagMap[$nationality] ?? null;
+        return $map[trim($nationality)] ?? null;
     }
 }
