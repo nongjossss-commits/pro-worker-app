@@ -73,6 +73,66 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Centralized delegated event listener for action buttons
+    document.body.addEventListener('click', function(event) {
+        const terminateBtn = event.target.closest('.js-terminate-btn');
+        const restoreBtn = event.target.closest('.js-restore-btn');
+        const forceDeleteBtn = event.target.closest('.js-force-delete-btn');
+        const employeeId = terminateBtn?.dataset.employeeId || restoreBtn?.dataset.employeeId || forceDeleteBtn?.dataset.employeeId;
+
+        if (terminateBtn) {
+            const terminateModal = new bootstrap.Modal(document.getElementById('terminateEmployeeModal'));
+            const form = document.getElementById('terminate-form');
+            form.action = `/employees/${employeeId}/terminate`;
+            terminateModal.show();
+        }
+
+        if (restoreBtn) {
+            handleAction(restoreBtn, `/employees/${employeeId}/restore`, 'POST', 'คืนสถานะพนักงานเรียบร้อยแล้ว');
+        }
+
+        if (forceDeleteBtn) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบพนักงานคนนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+                handleAction(forceDeleteBtn, `/employees/${employeeId}/force-delete`, 'DELETE', 'ลบพนักงานอย่างถาวรเรียบร้อยแล้ว');
+            }
+        }
+    });
+
+    function handleAction(button, url, method, successMessage) {
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        button.disabled = true;
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (ok) {
+                showToast(successMessage, 'success');
+                // Remove the table row from the UI
+                const row = button.closest('tr');
+                if (row) {
+                    row.remove();
+                }
+            } else {
+                showToast(data.message || 'เกิดข้อผิดพลาด', 'danger');
+                button.innerHTML = originalHtml;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Action Error:', error);
+            showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+            button.innerHTML = originalHtml;
+            button.disabled = false;
+        });
+    }
+
     const historyModalEl = document.getElementById('employmentHistoryModal');
     if (!historyModalEl) return;
 
@@ -85,13 +145,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentSearchTerm = '';
 
-    // --- Main function to fetch and render history data ---
     function fetchHistory(page = 1, searchTerm = '') {
         if (!employerId) return;
-
         currentSearchTerm = searchTerm;
         const url = `/employers/${employerId}/history?page=${page}&search=${encodeURIComponent(searchTerm)}`;
-
         tableBody.innerHTML = `<tr><td colspan="4" class="text-center">กำลังโหลดข้อมูล...</td></tr>`;
 
         fetch(url)
@@ -100,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 tableBody.innerHTML = '';
                 if (!data.data || data.data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="4" class="text-center">ไม่พบข้อมูล</td></tr>`;
-                    renderPagination(null, null); // Clear pagination
+                    renderPagination(null, null);
                     return;
                 }
 
@@ -123,7 +180,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         </tr>`;
                     tableBody.insertAdjacentHTML('beforeend', row);
                 });
-
                 renderPagination(data.links, data.meta);
             })
             .catch(error => {
@@ -132,43 +188,34 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // --- Function to render pagination controls ---
     function renderPagination(links, meta) {
         paginationContainer.innerHTML = '';
-        if (!links || !meta || meta.total <= meta.per_page) {
-            return;
-        }
+        if (!links || !meta || meta.total <= meta.per_page) return;
 
         const prevButton = document.createElement('button');
         prevButton.innerText = 'ก่อนหน้า';
         prevButton.className = 'btn btn-outline-secondary me-2';
         prevButton.disabled = !links.prev;
-        if (links.prev) {
-            prevButton.onclick = () => fetchHistory(meta.current_page - 1, currentSearchTerm);
-        }
+        if (links.prev) prevButton.onclick = () => fetchHistory(meta.current_page - 1, currentSearchTerm);
 
         const nextButton = document.createElement('button');
         nextButton.innerText = 'ถัดไป';
         nextButton.className = 'btn btn-outline-secondary';
         nextButton.disabled = !links.next;
-        if (links.next) {
-            nextButton.onclick = () => fetchHistory(meta.current_page + 1, currentSearchTerm);
-        }
+        if (links.next) nextButton.onclick = () => fetchHistory(meta.current_page + 1, currentSearchTerm);
 
         const pageInfo = document.createElement('span');
         pageInfo.className = 'me-3';
         pageInfo.innerText = `หน้า ${meta.current_page} / ${meta.last_page}`;
-
 
         paginationContainer.appendChild(prevButton);
         paginationContainer.appendChild(pageInfo);
         paginationContainer.appendChild(nextButton);
     }
 
-    // --- Event Listeners ---
     historyModalEl.addEventListener('show.bs.modal', () => {
         searchInput.value = '';
-        fetchHistory(); // Fetch initial data when modal opens
+        fetchHistory();
     });
 
     searchForm.addEventListener('submit', (e) => {
@@ -177,8 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     exportBtn.addEventListener('click', () => {
-        // Note: This export will respect the current search term.
-        const exportUrl = `/employers/${employerId}/export-employees?search=${encodeURIComponent(currentSearchTerm)}`;
+        const exportUrl = `/employers/${employerId}/export-history?search=${encodeURIComponent(currentSearchTerm)}`;
         window.open(exportUrl, '_blank');
     });
 });
