@@ -245,4 +245,85 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $employee->delete();
         return redirect()->route('employees.index')->with('success', 'Employee deleted successfully.');
     }
+
+    public function export(Request $request)
+    {
+        $this->authorize('view-employees');
+
+        $query = Employee::query()->whereNull('terminated_at');
+
+        // Reuse the same filtering logic from the index method
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('employeeNameTh', 'like', $searchTerm)
+                  ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('pinkCardNo', 'like', $searchTerm);
+            });
+        }
+
+        if ($request->filled('nationality')) {
+            $query->where('employeeNationality', $request->input('nationality'));
+        }
+
+        if ($request->filled('mou_group')) {
+            $query->where('workPermitMOUGroup', $request->input('mou_group'));
+        }
+
+        if ($request->filled('pink_card')) {
+            if ($request->input('pink_card') === 'yes') {
+                $query->where(fn($q) => $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', ''));
+            } elseif ($request->input('pink_card') === 'no') {
+                $query->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', ''));
+            }
+        }
+
+        $employees = $query->with('employer')->get();
+
+        $fileName = 'employees_export_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Encoding"    => "UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = [
+            'Employer Name', 'Employee Name (TH)', 'Employee Name (EN)',
+            'Nationality', 'Passport No', 'Passport Expiry',
+            'Work Permit No', 'Work Permit Expiry', 'Visa Expiry',
+            '90 Day Report', 'Pink Card No'
+        ];
+
+        $callback = function() use($employees, $columns) {
+            $file = fopen('php://output', 'w');
+            // Add BOM to support UTF-8 in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $columns);
+
+            foreach ($employees as $employee) {
+                $row['Employer Name']        = $employee->employer->employerNameTh ?? 'N/A';
+                $row['Employee Name (TH)']   = $employee->employeeNameTh;
+                $row['Employee Name (EN)']   = $employee->employeeNameEn;
+                $row['Nationality']          = $employee->employeeNationality;
+                $row['Passport No']          = $employee->employeePassport;
+                $row['Passport Expiry']      = $employee->passportExpiryDate;
+                $row['Work Permit No']       = $employee->employeeWorkPermit;
+                $row['Work Permit Expiry']   = $employee->workPermitExpiryDate;
+                $row['Visa Expiry']          = $employee->visaExpiryDate;
+                $row['90 Day Report']        = $employee->ninetyDayReportDate;
+                $row['Pink Card No']         = $employee->pinkCardNo;
+
+                fputcsv($file, array_values($row));
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

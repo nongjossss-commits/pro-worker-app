@@ -230,15 +230,129 @@ public function edit(Request $request, Employer $employer)
         return response()->json(['success' => true, 'message' => 'Employee permanently deleted.']);
     }
 
-    public function filterHistory(Employer $employer)
+    public function filterHistory(Request $request, Employer $employer)
     {
-        // This logic will be more complex later, for now just fetch all
-        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get()->map(function($employee) {
-            // Add authorization checks to each employee object for the frontend
+        $query = $employer->employees()->whereNotNull('terminated_at');
+
+        // Implement search
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('employeeNameTh', 'like', $searchTerm)
+                  ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('employeePassport', 'like', $searchTerm);
+            });
+        }
+
+        // Paginate results and preserve query string
+        $terminatedEmployees = $query->paginate(10)->withQueryString();
+
+        // Add authorization data to each employee object within the paginated result
+        $terminatedEmployees->through(function($employee) {
             $employee->can_restore = auth()->user()->can('restore-employees');
             $employee->can_force_delete = auth()->user()->can('force-delete-employees');
             return $employee;
         });
+
         return response()->json($terminatedEmployees);
+    }
+
+    public function exportEmployees(Request $request, Employer $employer)
+    {
+        $this->authorize('view-employees'); // Or a more specific permission if available
+
+        // Determine the scope: active or terminated (history) employees
+        $isHistoryExport = $request->has('history');
+
+        if ($isHistoryExport) {
+            $query = $employer->employees()->whereNotNull('terminated_at');
+        } else {
+            $query = $employer->employees()->whereNull('terminated_at');
+        }
+
+        // Reuse the same filtering logic from the edit/history methods
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('employeeNameTh', 'like', $searchTerm)
+                  ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('pinkCardNo', 'like', $searchTerm);
+            });
+        }
+
+        if (!$isHistoryExport) {
+            if ($request->filled('nationality')) {
+                $query->where('employeeNationality', $request->input('nationality'));
+            }
+            if ($request->filled('mou_group')) {
+                $query->where('workPermitMOUGroup', $request->input('mou_group'));
+            }
+            if ($request->filled('pink_card')) {
+                if ($request->input('pink_card') === 'yes') {
+                    $query->where(fn($q) => $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', ''));
+                } elseif ($request->input('pink_card') === 'no') {
+                    $query->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', ''));
+                }
+            }
+        }
+
+        $employees = $query->get();
+
+        $safeEmployerName = preg_replace('/[^A-Za-z0-9\-]/', '_', $employer->employerNameTh);
+        $exportType = $isHistoryExport ? 'history' : 'active';
+        $fileName = "{$safeEmployerName}_{$exportType}_employees_" . date('Y-m-d') . '.csv';
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Encoding"    => "UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = [
+            'Employee Name (TH)', 'Employee Name (EN)', 'Nationality',
+            'Passport No', 'Passport Expiry', 'Work Permit No',
+            'Work Permit Expiry', 'Visa Expiry', '90 Day Report', 'Pink Card No'
+        ];
+
+        if ($isHistoryExport) {
+            $columns[] = 'Terminated At';
+            $columns[] = 'Termination Reason';
+        }
+
+        $callback = function() use($employees, $columns, $isHistoryExport) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // Add BOM for UTF-8
+            fputcsv($file, $columns);
+
+            foreach ($employees as $employee) {
+                $row = [
+                    'Employee Name (TH)'   => $employee->employeeNameTh,
+                    'Employee Name (EN)'   => $employee->employeeNameEn,
+                    'Nationality'          => $employee->employeeNationality,
+                    'Passport No'          => $employee->employeePassport,
+                    'Passport Expiry'      => $employee->passportExpiryDate,
+                    'Work Permit No'       => $employee->employeeWorkPermit,
+                    'Work Permit Expiry'   => $employee->workPermitExpiryDate,
+                    'Visa Expiry'          => $employee->visaExpiryDate,
+                    '90 Day Report'        => $employee->ninetyDayReportDate,
+                    'Pink Card No'         => $employee->pinkCardNo,
+                ];
+
+                if ($isHistoryExport) {
+                    $row['Terminated At'] = $employee->terminated_at;
+                    $row['Termination Reason'] = $employee->termination_reason;
+                }
+
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }
