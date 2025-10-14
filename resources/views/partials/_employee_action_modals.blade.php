@@ -28,7 +28,7 @@
 </div>
 
 {{-- Employment History Modal --}}
-<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
+<div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -68,3 +68,67 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const historyModalEl = document.getElementById('employmentHistoryModal');
+
+        if (historyModalEl) {
+            historyModalEl.addEventListener('show.bs.modal', function (event) {
+                const historyTableBody = document.getElementById('historyTableBody');
+                const modal = this;
+                const button = event.relatedTarget;
+                const employerId = button ? button.dataset.employerId : modal.dataset.employerId;
+
+                historyTableBody.innerHTML = '<tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
+
+                if (!employerId) {
+                     historyTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาด: ไม่พบรหัสผู้ประกอบการ</td></tr>';
+                     return;
+                }
+
+                fetch(`/employers/${employerId}/history`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        historyTableBody.innerHTML = '';
+
+                        if (data.length === 0) {
+                            historyTableBody.innerHTML = '<tr><td colspan="6" class="text-center">ไม่พบประวัติการจ้างงาน</td></tr>';
+                        } else {
+                            data.forEach((employee, index) => {
+                                const canRestore = employee.can_restore ? `<button class="btn btn-sm btn-outline-success js-restore-btn" data-employee-id="${employee.id}" data-employer-id="${employerId}">คืนสภาพ</button>` : '';
+                                const canForceDelete = employee.can_force_delete ? `<button class="btn btn-sm btn-danger js-force-delete-btn" data-employee-id="${employee.id}">ลบถาวร</button>` : '';
+
+                                const row = `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${employee.full_name_th} (${employee.full_name_en})</td>
+                                        <td>${employee.employee_title || '-'}</td>
+                                        <td>${employee.formatted_terminated_at}</td>
+                                        <td>${employee.termination_reason || '-'}</td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                ${canRestore}
+                                                ${canForceDelete}
+                                            </div>
+                                        </td>
+                                    </tr>`;
+                                historyTableBody.insertAdjacentHTML('beforeend', row);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching employment history:', error);
+                        historyTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}</td></tr>`;
+                    });
+            });
+        }
+    });
+</script>
+@endpush
