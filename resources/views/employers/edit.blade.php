@@ -324,7 +324,7 @@
                         <th style="width: 25%;">Name (EN)</th>
                         <th style="width: 25%;">Name (TH)</th>
                         <th style="width: 15%;">Passport</th>
-                        <th style="width: 10%;">Nationality</th>
+                        <th style="width: 10%;">สัญชาติ</th>
                         <th style="width: 10%;">Actions</th>
                     </tr>
                 </thead>
@@ -347,18 +347,14 @@
                             <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}<br><small class="text-muted">{{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }}</small></td>
                             <td>{{ $employee->employeePassport ?? '-' }}</td>
                             <td>
-                                @if($employee->employeeNationality)
-                                    @php
-                                        $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
-                                    @endphp
-                                    @if($countryCode)
-                                        <span class="flag-icon flag-icon-{{ $countryCode }}"></span>
-                                        {{ $employee->employeeNationality }}
-                                    @else
-                                        {{ $employee->employeeNationality }}
-                                    @endif
+                                @php
+                                    $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                                @endphp
+                                @if($countryCode)
+                                    <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px; vertical-align: middle;">
+                                    {{ $employee->employeeNationality }}
                                 @else
-                                    -
+                                    {{ $employee->employeeNationality ?? '-' }}
                                 @endif
                             </td>
                             <td>

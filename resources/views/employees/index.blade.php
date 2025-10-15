@@ -88,6 +88,7 @@
                     <tr>
                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
                         <th scope="col">Employee</th>
+                        <th scope="col">สัญชาติ</th>
                         <th scope="col">Employer</th>
                         <th scope="col">Passport</th>
                         <th scope="col">Work Permit</th>
@@ -108,17 +109,28 @@
                                 </div>
                             </div>
                         </td>
+                        <td>
+                            @php
+                                $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                            @endphp
+                            @if($countryCode)
+                                <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px; vertical-align: middle;">
+                                {{ $employee->employeeNationality }}
+                            @else
+                                {{ $employee->employeeNationality ?? '-' }}
+                            @endif
+                        </td>
                         <td class="text-muted">{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
                         <td>{{ $employee->employeePassport ?? '-' }}</td>
                         <td>{{ $employee->employeeWorkPermit ?? '-' }}</td>
                         <td>{{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}</td>
-            <td class="text-nowrap">
-                <x-employee-action-buttons :employee="$employee" :show-locate-button="true" />
-            </td>
+                        <td class="text-nowrap">
+                            <x-employee-action-buttons :employee="$employee" :show-locate-button="true" />
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</td>
+                        <td colspan="8" class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</td>
                     </tr>
                     @endforelse
                 </tbody>
