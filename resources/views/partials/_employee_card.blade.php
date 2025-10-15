@@ -27,7 +27,7 @@
                 @endphp
                 @if($countryCode)
                     <span class="badge bg-light text-dark ms-2">
-                        <span class="flag-icon flag-icon-{{ $countryCode }}"></span>
+                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px; vertical-align: middle;">
                         {{ $employee->employeeNationality }}
                     </span>
                 @endif
