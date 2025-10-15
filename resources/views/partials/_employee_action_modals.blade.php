@@ -27,44 +27,36 @@
     </div>
 </div>
 
-{{-- Employment History Modal --}}
+{{-- CORRECTED AND FINAL EMPLOYMENT HISTORY MODAL --}}
 <div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="employmentHistoryModalLabel">ประวัติการจ้างงาน</h5>
-                {{-- Search Form --}}
-                <form id="historySearchForm" class="ms-auto d-flex">
-                    <input type="text" id="historySearchInput" class="form-control me-2" placeholder="ค้นหาพนักงาน...">
-                    <button type="submit" class="btn btn-primary">ค้นหา</button>
-                </form>
-                <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                {{-- All other content for search, etc. will go here later --}}
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>รูป</th>
-                                <th>ชื่อ-สกุล (ไทย)</th>
-                                <th>ชื่อ-สกุล (อังกฤษ)</th>
+                                <th>#</th>
+                                <th>พนักงาน</th>
+                                <th>ตำแหน่ง</th>
+                                <th>วันที่แจ้งออก</th>
+                                <th>เหตุผล</th>
                                 <th>จัดการ</th>
                             </tr>
                         </thead>
-                        <tbody id="historyTableBody">
-                            {{-- Dynamic content will be loaded here --}}
+                        <tbody id="historyTableBody"> {{-- <-- The ID is confirmed here --}}
+                            {{-- Data will be loaded here by the script below --}}
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div class="modal-footer justify-content-between">
-                <div>
-                    <button id="exportHistoryBtn" class="btn btn-success">Export to Excel</button>
-                </div>
-                <div id="historyPagination" class="d-flex align-items-center">
-                    {{-- Pagination controls will be rendered here --}}
-                </div>
-                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
             </div>
         </div>
     </div>
@@ -73,160 +65,47 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Centralized delegated event listener for action buttons
-    document.body.addEventListener('click', function(event) {
-        const terminateBtn = event.target.closest('.js-terminate-btn');
-        const restoreBtn = event.target.closest('.js-restore-btn');
-        const forceDeleteBtn = event.target.closest('.js-force-delete-btn');
-        const employeeId = terminateBtn?.dataset.employeeId || restoreBtn?.dataset.employeeId || forceDeleteBtn?.dataset.employeeId;
+    const historyModalEl = document.getElementById('employmentHistoryModal');
 
-        if (terminateBtn) {
-            const terminateModal = new bootstrap.Modal(document.getElementById('terminateEmployeeModal'));
-            const form = document.getElementById('terminate-form');
-            form.action = `/employees/${employeeId}/terminate`;
-            terminateModal.show();
-        }
+    if (historyModalEl) {
+        historyModalEl.addEventListener('show.bs.modal', function (event) {
+            const tableBody = document.getElementById('historyTableBody'); // <-- Script now targets the correct ID
+            const employerId = {{ $employer->id ?? 'null' }};
 
-        if (restoreBtn) {
-            handleAction(restoreBtn, `/employees/${employeeId}/restore`, 'POST', 'คืนสถานะพนักงานเรียบร้อยแล้ว');
-        }
-
-        if (forceDeleteBtn) {
-            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบพนักงานคนนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-                handleAction(forceDeleteBtn, `/employees/${employeeId}/force-delete`, 'DELETE', 'ลบพนักงานอย่างถาวรเรียบร้อยแล้ว');
+            if (!employerId || !tableBody) {
+                console.error('Employer ID or Table Body not found!');
+                return;
             }
-        }
-    });
 
-    function handleAction(button, url, method, successMessage) {
-        const originalHtml = button.innerHTML;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-        button.disabled = true;
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
 
-        fetch(url, {
-            method: method,
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json().then(data => ({ ok: response.ok, data })))
-        .then(({ ok, data }) => {
-            if (ok) {
-                showToast(successMessage, 'success');
-                // Remove the table row from the UI
-                const row = button.closest('tr');
-                if (row) {
-                    row.remove();
-                }
-            } else {
-                showToast(data.message || 'เกิดข้อผิดพลาด', 'danger');
-                button.innerHTML = originalHtml;
-                button.disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error('Action Error:', error);
-            showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
-            button.innerHTML = originalHtml;
-            button.disabled = false;
+            fetch(`/employers/${employerId}/history`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = '';
+                    if (data.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">ไม่พบข้อมูลประวัติการจ้างงาน</td></tr>';
+                        return;
+                    }
+                    data.forEach((employee, index) => {
+                        const terminatedDate = new Date(employee.terminated_at).toLocaleDateString('th-TH');
+                        const row = `<tr>
+                                        <td>${index + 1}</td>
+                                        <td>${employee.employeeNameTh || '-'}</td>
+                                        <td>${employee.employeePosition || '-'}</td>
+                                        <td>${terminatedDate}</td>
+                                        <td>${employee.termination_reason || '-'}</td>
+                                        <td>{{-- Actions will be added later --}}</td>
+                                    </tr>`;
+                        tableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching history:', error);
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                });
         });
     }
-
-    const historyModalEl = document.getElementById('employmentHistoryModal');
-    if (!historyModalEl) return;
-
-    const employerId = {{ $employer->id ?? 'null' }};
-    const tableBody = document.getElementById('historyTableBody');
-    const searchForm = document.getElementById('historySearchForm');
-    const searchInput = document.getElementById('historySearchInput');
-    const paginationContainer = document.getElementById('historyPagination');
-    const exportBtn = document.getElementById('exportHistoryBtn');
-
-    let currentSearchTerm = '';
-
-    function fetchHistory(page = 1, searchTerm = '') {
-        if (!employerId) return;
-        currentSearchTerm = searchTerm;
-        const url = `/employers/${employerId}/history?page=${page}&search=${encodeURIComponent(searchTerm)}`;
-        tableBody.innerHTML = `<tr><td colspan="4" class="text-center">กำลังโหลดข้อมูล...</td></tr>`;
-
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                tableBody.innerHTML = '';
-                if (!data.data || data.data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center">ไม่พบข้อมูล</td></tr>`;
-                    renderPagination(null, null);
-                    return;
-                }
-
-                data.data.forEach(employee => {
-                    const photoUrl = employee.employeePhoto ? `/storage/${employee.employeePhoto}` : '/img/placeholder.png';
-                    let actions = '';
-                    if (employee.can_restore) {
-                        actions += `<button class="btn btn-sm btn-info js-restore-btn" data-employee-id="${employee.id}">คืนสถานะ</button> `;
-                    }
-                    if (employee.can_force_delete) {
-                        actions += `<button class="btn btn-sm btn-danger js-force-delete-btn" data-employee-id="${employee.id}">ลบถาวร</button>`;
-                    }
-
-                    const row = `
-                        <tr>
-                            <td><img src="${photoUrl}" alt="Photo" class="img-thumbnail" width="50"></td>
-                            <td>${employee.employeeNameTh || '-'}</td>
-                            <td>${employee.employeeNameEn || '-'}</td>
-                            <td>${actions || 'ไม่มี'}</td>
-                        </tr>`;
-                    tableBody.insertAdjacentHTML('beforeend', row);
-                });
-                renderPagination(data.links, data.meta);
-            })
-            .catch(error => {
-                console.error('Error fetching history:', error);
-                tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
-            });
-    }
-
-    function renderPagination(links, meta) {
-        paginationContainer.innerHTML = '';
-        if (!links || !meta || meta.total <= meta.per_page) return;
-
-        const prevButton = document.createElement('button');
-        prevButton.innerText = 'ก่อนหน้า';
-        prevButton.className = 'btn btn-outline-secondary me-2';
-        prevButton.disabled = !links.prev;
-        if (links.prev) prevButton.onclick = () => fetchHistory(meta.current_page - 1, currentSearchTerm);
-
-        const nextButton = document.createElement('button');
-        nextButton.innerText = 'ถัดไป';
-        nextButton.className = 'btn btn-outline-secondary';
-        nextButton.disabled = !links.next;
-        if (links.next) nextButton.onclick = () => fetchHistory(meta.current_page + 1, currentSearchTerm);
-
-        const pageInfo = document.createElement('span');
-        pageInfo.className = 'me-3';
-        pageInfo.innerText = `หน้า ${meta.current_page} / ${meta.last_page}`;
-
-        paginationContainer.appendChild(prevButton);
-        paginationContainer.appendChild(pageInfo);
-        paginationContainer.appendChild(nextButton);
-    }
-
-    historyModalEl.addEventListener('show.bs.modal', () => {
-        searchInput.value = '';
-        fetchHistory();
-    });
-
-    searchForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        fetchHistory(1, searchInput.value);
-    });
-
-    exportBtn.addEventListener('click', () => {
-        const exportUrl = `/employers/${employerId}/export-history?search=${encodeURIComponent(currentSearchTerm)}`;
-        window.open(exportUrl, '_blank');
-    });
 });
 </script>
 @endpush
