@@ -124,20 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     showToast(data.message, 'success');
                     if (isRestoreAction) {
-                        const historyModal = bootstrap.Modal.getInstance(historyModalEl);
-                        if (historyModal) historyModal.hide();
-                        // Asynchronously refresh the main employee list container
-                        fetch(window.location.href)
-                            .then(res => res.text())
-                            .then(html => {
-                                const newDoc = new DOMParser().parseFromString(html, 'text/html');
-                                const newContainer = newDoc.getElementById('employee-list-container');
-                                const currentContainer = document.getElementById('employee-list-container');
-                                if (newContainer && currentContainer) {
-                                    currentContainer.innerHTML = newContainer.innerHTML;
-                                } else { window.location.reload(); } // Fallback
-                            })
-                            .catch(() => window.location.reload()); // Fallback
+                        // On successful restore, simply reload the page.
+                        // This is the most reliable way to ensure all data is refreshed correctly.
+                        window.location.reload();
                     } else {
                         // For delete, just refresh the history modal list
                         fetchAndRenderHistory(currentEmployerId, searchInput.value.trim());
