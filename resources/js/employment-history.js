@@ -137,66 +137,86 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const forceDeleteModalEl = document.getElementById('forceDeleteConfirmationModal');
+    const confirmDeleteBtn = document.getElementById('confirm-force-delete-btn');
+    let formToSubmit = null;
+
+    if (!forceDeleteModalEl || !confirmDeleteBtn) {
+        console.error('Force delete modal elements not found on this page.');
+        return;
+    }
+    const forceDeleteBootstrapModal = new bootstrap.Modal(forceDeleteModalEl);
+
+    /**
+     * Handles the AJAX submission for a given form (Restore or Force Delete).
+     * @param {HTMLFormElement} form - The form to submit.
+     */
+    const submitFormAndRefresh = (form) => {
+        const actionUrl = form.action;
+        const formData = new FormData(form);
+        const fetchOptions = {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        };
+
+        fetch(actionUrl, fetchOptions)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (typeof showToast === 'function') {
+                        showToast(data.message, 'success');
+                    } else {
+                        alert(data.message);
+                    }
+                    // Refresh the history list to show the change
+                    fetchAndRenderHistory(currentEmployerId, searchInput.value.trim());
+                } else {
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'An unknown error occurred.', 'danger');
+                    } else {
+                        alert(data.message || 'An unknown error occurred.');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                if (typeof showToast === 'function') {
+                    showToast('An error occurred while communicating with the server.', 'danger');
+                } else {
+                    alert('An error occurred while communicating with the server.');
+                }
+            });
+    };
+
+    // Listener for the final confirmation button in the delete modal
+    confirmDeleteBtn.addEventListener('click', () => {
+        if (formToSubmit) {
+            submitFormAndRefresh(formToSubmit);
+            formToSubmit = null; // Clear the stored form
+            forceDeleteBootstrapModal.hide();
+        }
+    });
+
     // Delegated event listener for form submissions (Restore, Force Delete)
     if (tableBody) {
         tableBody.addEventListener('submit', function(event) {
-            // We are only interested in form submissions
             if (event.target.tagName !== 'FORM') {
                 return;
             }
-
             event.preventDefault();
             const form = event.target;
 
-            // Add a confirmation step for deletion
             if (form.classList.contains('js-delete-form')) {
-                if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-                    return; // Stop if user cancels
-                }
+                // For delete, store the form and show the confirmation modal
+                formToSubmit = form;
+                forceDeleteBootstrapModal.show();
+            } else {
+                // For other actions (like restore), submit directly
+                submitFormAndRefresh(form);
             }
-
-            const actionUrl = form.action;
-            const formData = new FormData(form);
-            // The method is always POST from the form's perspective,
-            // but Laravel will correctly interpret it as DELETE if _method=DELETE is present.
-            const fetchOptions = {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    // The CSRF token is in the form data, but we also need X-Requested-With for Laravel to know it's an AJAX call
-                    'X-Requested-With': 'XMLHttpRequest',
-                }
-            };
-
-            fetch(actionUrl, fetchOptions)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Use the global toast function if it exists
-                        if (typeof showToast === 'function') {
-                            showToast(data.message, 'success');
-                        } else {
-                            alert(data.message); // Fallback
-                        }
-                        // Refresh the history list to show the change
-                        fetchAndRenderHistory(currentEmployerId, searchInput.value.trim());
-                    } else {
-                        // Handle errors, show a toast
-                        if (typeof showToast === 'function') {
-                            showToast(data.message || 'An unknown error occurred.', 'danger');
-                        } else {
-                            alert(data.message || 'An unknown error occurred.');
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error submitting form:', error);
-                    if (typeof showToast === 'function') {
-                        showToast('An error occurred while communicating with the server.', 'danger');
-                    } else {
-                        alert('An error occurred while communicating with the server.');
-                    }
-                });
         });
     }
 });
