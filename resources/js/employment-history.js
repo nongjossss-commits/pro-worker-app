@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="d-flex align-items-center">
                             <img src="${employee.employeePhoto ? `/storage/${employee.employeePhoto}` : '/images/default-avatar.png'}" alt="Photo" class="employee-photo-thumb">
                             <div>
-                                <strong>${employee.employeeNameEn || 'No English Name'}</strong>
+                                <strong>${employee.employeeTitleEn || ''} ${employee.employeeNameEn || 'No English Name'}</strong>
                                 <div class="text-muted small">${employee.employeeTitleTh || ''} ${employee.employeeNameTh || 'N/A'} (${employee.employeePosition || 'N/A'})</div>
                                 <div class="text-muted small">Passport: ${employee.employeePassport || 'N/A'}</div>
                                 <div class="text-muted small d-flex align-items-center">${flagHTML} ${employee.employeeNationality || ''}</div>

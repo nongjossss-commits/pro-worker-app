@@ -24,9 +24,20 @@ class EmployeeController extends Controller
     /**
      * Soft delete the specified employee.
      */
-    public function terminate(Employee $employee)
+    public function terminate(Request $request, Employee $employee)
     {
-        $employee->delete();
+        $validated = $request->validate([
+            'terminated_at' => 'required|date',
+            'termination_reason' => 'nullable|string|max:255',
+        ]);
+        // Update employee with termination details
+        $employee->termination_reason = $validated['termination_reason'];
+        $employee->save();
+        // Perform the soft delete which sets the terminated_at timestamp
+        $employee->delete(); // This will use the default timestamp
+        // To use the user-defined date, we update it *after* the delete
+        $employee->terminated_at = $validated['terminated_at'];
+        $employee->save();
         return back()->with('success', 'Employee terminated successfully.');
     }
 
