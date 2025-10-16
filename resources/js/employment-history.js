@@ -54,12 +54,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.data.forEach((employee, index) => {
                     const terminatedDate = employee.terminated_at ? new Date(employee.terminated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
 
-                    // Conditionally create action buttons
-                    const restoreButton = employee.can_restore
-                        ? `<button class="btn btn-sm btn-success js-restore-btn" data-employee-id="${employee.id}" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i></button>`
+                    // Get CSRF token once
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    // Conditionally create action forms
+                    const restoreForm = employee.can_restore
+                        ? `
+                        <form action="/employees/${employee.id}/restore" method="POST" class="d-inline">
+                            <input type="hidden" name="_token" value="${csrfToken}">
+                            <button type="submit" class="btn btn-sm btn-success" title="กู้คืน">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </form>`
                         : '';
-                    const forceDeleteButton = employee.can_force_delete
-                        ? `<button class="btn btn-sm btn-danger js-force-delete-btn" data-employee-id="${employee.id}" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>`
+
+                    const forceDeleteForm = employee.can_force_delete
+                        ? `
+                        <form action="/employees/${employee.id}/force-delete" method="POST" class="d-inline js-delete-form">
+                             <input type="hidden" name="_method" value="DELETE">
+                             <input type="hidden" name="_token" value="${csrfToken}">
+                             <button type="submit" class="btn btn-sm btn-danger" title="ลบถาวร">
+                                <i class="bi bi-trash3-fill"></i>
+                             </button>
+                        </form>`
                         : '';
 
                     // Rich HTML for the employee cell
@@ -81,9 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td>${terminatedDate}</td>
                             <td>${employee.termination_reason || '-'}</td>
                             <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    ${restoreButton}
-                                    ${forceDeleteButton}
+                                <div class="d-flex gap-1" role="group">
+                                    ${restoreForm}
+                                    ${forceDeleteForm}
                                 </div>
                             </td>
                         </tr>`;
@@ -117,6 +134,69 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchTerm = searchInput.value.trim();
             // A simple debounce could be added here if needed, but for now, direct call is fine.
             fetchAndRenderHistory(currentEmployerId, searchTerm);
+        });
+    }
+
+    // Delegated event listener for form submissions (Restore, Force Delete)
+    if (tableBody) {
+        tableBody.addEventListener('submit', function(event) {
+            // We are only interested in form submissions
+            if (event.target.tagName !== 'FORM') {
+                return;
+            }
+
+            event.preventDefault();
+            const form = event.target;
+
+            // Add a confirmation step for deletion
+            if (form.classList.contains('js-delete-form')) {
+                if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+                    return; // Stop if user cancels
+                }
+            }
+
+            const actionUrl = form.action;
+            const formData = new FormData(form);
+            // The method is always POST from the form's perspective,
+            // but Laravel will correctly interpret it as DELETE if _method=DELETE is present.
+            const fetchOptions = {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // The CSRF token is in the form data, but we also need X-Requested-With for Laravel to know it's an AJAX call
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            };
+
+            fetch(actionUrl, fetchOptions)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Use the global toast function if it exists
+                        if (typeof showToast === 'function') {
+                            showToast(data.message, 'success');
+                        } else {
+                            alert(data.message); // Fallback
+                        }
+                        // Refresh the history list to show the change
+                        fetchAndRenderHistory(currentEmployerId, searchInput.value.trim());
+                    } else {
+                        // Handle errors, show a toast
+                        if (typeof showToast === 'function') {
+                            showToast(data.message || 'An unknown error occurred.', 'danger');
+                        } else {
+                            alert(data.message || 'An unknown error occurred.');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error submitting form:', error);
+                    if (typeof showToast === 'function') {
+                        showToast('An error occurred while communicating with the server.', 'danger');
+                    } else {
+                        alert('An error occurred while communicating with the server.');
+                    }
+                });
         });
     }
 });
