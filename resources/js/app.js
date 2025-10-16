@@ -1,4 +1,5 @@
 import './bootstrap';
+import './employment-history.js';
 
 import Alpine from 'alpinejs';
 

@@ -23,7 +23,9 @@
     {{-- Terminate Button (Orange) --}}
     @can('terminate-employees')
         <button type="button" class="btn btn-sm btn-outline-warning me-1 js-terminate-btn" title="Terminate"
-                data-employee-id="{{ $employee->id }}">
+                data-employee-id="{{ $employee->id }}"
+                data-bs-toggle="modal"
+                data-bs-target="#terminateEmployeeModal">
             <i class="bi bi-person-x-fill"></i>
         </button>
     @endcan
