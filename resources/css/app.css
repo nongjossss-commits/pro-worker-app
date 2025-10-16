@@ -19,6 +19,14 @@
     z-index: 1050;
 }
 
+/*
+ * Definitive Modal Stacking Fix Helper
+ * Temporarily sends a modal behind the backdrop to allow another to appear on top.
+ */
+.modal-behind {
+    z-index: 1040;
+}
+
 .modal.show {
     z-index: 1070 !important;
 }
