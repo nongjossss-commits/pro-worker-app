@@ -26,9 +26,9 @@
                     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
                 @endphp
                 @if($countryCode)
-                    <span class="badge bg-light text-dark ms-2">
-                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px; vertical-align: middle;">
-                        {{ $employee->employeeNationality }}
+                    <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
+                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px;">
+                        <span>{{ $employee->employeeNationality }}</span>
                     </span>
                 @endif
             @endif

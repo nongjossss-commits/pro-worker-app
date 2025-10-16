@@ -248,6 +248,11 @@
     <h5 class="mb-0">
         ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
     </h5>
+    @can('create-employees')
+    <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> เพิ่มลูกจ้าง
+    </a>
+    @endcan
 </div>
 
 <div class="card p-3 mb-3">
@@ -351,8 +356,10 @@
                                     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
                                 @endphp
                                 @if($countryCode)
-                                    <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px; vertical-align: middle;">
-                                    {{ $employee->employeeNationality }}
+                                    <div class="d-flex align-items-center">
+                                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" class="me-2" style="width: 20px;">
+                                        <span>{{ $employee->employeeNationality }}</span>
+                                    </div>
                                 @else
                                     {{ $employee->employeeNationality ?? '-' }}
                                 @endif
