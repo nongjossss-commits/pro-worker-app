@@ -403,58 +403,6 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const historyModalEl = document.getElementById('employmentHistoryModal');
-    const historyBody = document.getElementById('history-body');
-
-    if (historyModalEl) {
-        historyModalEl.addEventListener('show.bs.modal', function () {
-            historyBody.innerHTML = '<tr><td colspan="4" class="text-center">กำลังโหลด...</td></tr>';
-
-            fetch("{{ route('employers.history.filter', $employer) }}")
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    historyBody.innerHTML = '';
-                    if (data.length === 0) {
-                        historyBody.innerHTML = '<tr><td colspan="4" class="text-center">ไม่พบประวัติการจ้างงาน</td></tr>';
-                    } else {
-                        data.forEach(employee => {
-                            // Use data-employee-id and js-* classes to work with the centralized SweetAlert script
-                            const restoreButton = employee.can_restore ? `<button class="btn btn-sm btn-success js-restore-btn" data-employee-id="${employee.id}">กู้คืน</button>` : '';
-                            const deleteButton = employee.can_force_delete ? `<button class="btn btn-sm btn-danger js-force-delete-btn" data-employee-id="${employee.id}">ลบถาวร</button>` : '';
-
-                            const row = `
-                                <tr id="history-row-${employee.id}">
-                                    <td>${employee.employeeNameTh || 'N/A'}</td>
-                                    <td>${new Date(employee.terminated_at).toLocaleDateString('th-TH')}</td>
-                                    <td>${employee.termination_reason || '-'}</td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            ${restoreButton}
-                                            ${deleteButton}
-                                        </div>
-                                    </td>
-                                </tr>
-                            `;
-                            historyBody.insertAdjacentHTML('beforeend', row);
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching employment history:', error);
-                    historyBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
-                });
-        });
-    }
-});
-</script>
-
-<script>
     document.addEventListener('DOMContentLoaded', function () {
         @if (session('highlight_employee'))
             const employeeId = '{{ session('highlight_employee') }}';
