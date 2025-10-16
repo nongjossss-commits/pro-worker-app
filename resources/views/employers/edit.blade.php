@@ -236,151 +236,153 @@
 
 
 <hr class="my-4">
-{{-- START: REPLACE FROM HERE --}}
-@php
-    $totalEmployees = $employees->total();
-    // CORRECTED FATAL ERROR: Use 'employeeTitleTh' for both counts.
-    $maleCount = $employer->employees()->whereIn('employeeTitleTh', ['นาย'])->count();
-    $femaleCount = $employer->employees()->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
-@endphp
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">
-        ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
-    </h5>
-    @can('create-employees')
-    <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-1"></i> เพิ่มลูกจ้าง
-    </a>
-    @endcan
-</div>
+<div id="employee-list-container">
+    @php
+        $totalEmployees = $employees->total();
+        // CORRECTED FATAL ERROR: Use 'employeeTitleTh' for both counts.
+        $maleCount = $employer->employees()->whereIn('employeeTitleTh', ['นาย'])->count();
+        $femaleCount = $employer->employees()->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+    @endphp
 
-<div class="card p-3 mb-3">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="d-flex flex-wrap align-items-center gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
-            <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                 <option value="">-- ทุกสัญชาติ --</option>
-                <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>เมียนมา</option>
-                <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>ลาว</option>
-                <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>กัมพูชา</option>
-                <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>เวียดนาม</option>
-            </select>
-            <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- ทุกประเภท มติ. --</option>
-                <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
-                <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
-                <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
-                <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
-            </select>
-            <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- บัตรชมพู --</option>
-                <option value="yes" @if(request('pink_card') == 'yes') selected @endif>มีบัตรชมพู</option>
-                <option value="no" @if(request('pink_card') == 'no') selected @endif>ไม่มีบัตรชมพู</option>
-            </select>
-            <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
-            <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
-        </form>
-        <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-success">
-                 <i class="bi bi-file-earmark-excel me-1"></i> Export
-            </a>
-            <div class="btn-group btn-group-sm">
-                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
-                <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
-            </div>
-            <div class="btn-group btn-group-sm">
-                @foreach($perPageOptions as $option)
-                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
-                @endforeach
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">
+            ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
+        </h5>
+        @can('create-employees')
+        <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> เพิ่มลูกจ้าง
+        </a>
+        @endcan
+    </div>
+
+    <div class="card p-3 mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="d-flex flex-wrap align-items-center gap-2">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
+                <select name="nationality" class="form-select form-select-sm" style="width: auto;">
+                     <option value="">-- ทุกสัญชาติ --</option>
+                    <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>เมียนมา</option>
+                    <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>ลาว</option>
+                    <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>กัมพูชา</option>
+                    <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>เวียดนาม</option>
+                </select>
+                <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">-- ทุกประเภท มติ. --</option>
+                    <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
+                    <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
+                    <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
+                    <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
+                </select>
+                <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">-- บัตรชมพู --</option>
+                    <option value="yes" @if(request('pink_card') == 'yes') selected @endif>มีบัตรชมพู</option>
+                    <option value="no" @if(request('pink_card') == 'no') selected @endif>ไม่มีบัตรชมพู</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
+                <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
+            </form>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-success">
+                     <i class="bi bi-file-earmark-excel me-1"></i> Export
+                </a>
+                <div class="btn-group btn-group-sm">
+                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
+                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    @foreach($perPageOptions as $option)
+                        <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
+                    @endforeach
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="bulk-action-bar mb-3" style="display: none;">
-    <div class="form-check">
-        <input class="form-check-input" type="checkbox" id="select-all-checkbox">
-        <label class="form-check-label" for="select-all-checkbox">
-            เลือกทั้งหมด (<span id="selected-count">0</span>)
-        </label>
-    </div>
-    <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
-</div>
-{{-- END: REPLACE UNTIL HERE --}}
-<div id="employeeList">
-    @if($currentView === 'card')
-        <div class="list-group">
-        @forelse($employees as $employee)
-            {{-- DEFINITIVE FIX: Use the single, unified partial --}}
-            @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
-        @empty
-            <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</p>
-        @endforelse
+    <div class="bulk-action-bar mb-3" style="display: none;">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+            <label class="form-check-label" for="select-all-checkbox">
+                เลือกทั้งหมด (<span id="selected-count">0</span>)
+            </label>
         </div>
-    @else
-        <div class="table-responsive">
-            <table class="table table-hover table-sm align-middle">
-                <thead>
-                    <tr>
-                        <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
-                        <th style="width: 5%;">#</th>
-                        <th style="width: 10%;">Photo</th>
-                        <th style="width: 25%;">Name (EN)</th>
-                        <th style="width: 25%;">Name (TH)</th>
-                        <th style="width: 15%;">Passport</th>
-                        <th style="width: 10%;">สัญชาติ</th>
-                        <th style="width: 10%;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($employees as $employee)
-                        <tr id="employee-row-{{ $employee->id }}">
-                            {{-- DEFINITIVE FIX: Add checkbox for bulk actions --}}
-                            <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
-                            <td>{{ $employees->firstItem() + $loop->index }}</td>
-                            <td class="align-middle text-center" style="width: 60px;">
-                                @if($employee->employeePhoto)
-                                    <img src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Photo" class="img-fluid rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
-                                @else
-                                    <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center text-white" style="width: 40px; height: 40px;">
-                                        <i class="bi bi-person-fill"></i>
-                                    </div>
-                                @endif
-                            </td>
-                            <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}</td>
-                            <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}<br><small class="text-muted">{{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }}</small></td>
-                            <td>{{ $employee->employeePassport ?? '-' }}</td>
-                            <td>
-                                @php
-                                    $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
-                                @endphp
-                                @if($countryCode)
-                                    <div class="d-flex align-items-center">
-                                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" class="me-2" style="width: 20px;">
-                                        <span>{{ $employee->employeeNationality }}</span>
-                                    </div>
-                                @else
-                                    {{ $employee->employeeNationality ?? '-' }}
-                                @endif
-                            </td>
-                            <td>
-                                <x-employee-action-buttons :employee="$employee" :show-locate-button="false" />
-                            </td>
-                        </tr>
-                    @empty
+        <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
+    </div>
+
+    <div id="employeeList">
+        @if($currentView === 'card')
+            <div class="list-group">
+            @forelse($employees as $employee)
+                {{-- DEFINITIVE FIX: Use the single, unified partial --}}
+                @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
+            @empty
+                <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</p>
+            @endforelse
+            </div>
+        @else
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-3">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</td>
+                            <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 10%;">Photo</th>
+                            <th style="width: 25%;">Name (EN)</th>
+                            <th style="width: 25%;">Name (TH)</th>
+                            <th style="width: 15%;">Passport</th>
+                            <th style="width: 10%;">สัญชาติ</th>
+                            <th style="width: 10%;">Actions</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    @endif
-</div>
+                    </thead>
+                    <tbody>
+                        @forelse($employees as $employee)
+                            <tr id="employee-row-{{ $employee->id }}">
+                                {{-- DEFINITIVE FIX: Add checkbox for bulk actions --}}
+                                <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
+                                <td>{{ $employees->firstItem() + $loop->index }}</td>
+                                <td class="align-middle text-center" style="width: 60px;">
+                                    @if($employee->employeePhoto)
+                                        <img src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Photo" class="img-fluid rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                    @else
+                                        <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center text-white" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person-fill"></i>
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}</td>
+                                <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}<br><small class="text-muted">{{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }}</small></td>
+                                <td>{{ $employee->employeePassport ?? '-' }}</td>
+                                <td>
+                                    @php
+                                        $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                                    @endphp
+                                    @if($countryCode)
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" class="me-2" style="width: 20px;">
+                                            <span>{{ $employee->employeeNationality }}</span>
+                                        </div>
+                                    @else
+                                        {{ $employee->employeeNationality ?? '-' }}
+                                    @endif
+                                </td>
+                                <td>
+                                    <x-employee-action-buttons :employee="$employee" :show-locate-button="false" />
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-3">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
 
-<div class="mt-3">
-    {{ $employees->links() }}
+    <div class="mt-3">
+        {{ $employees->links() }}
+    </div>
 </div>
 
 {{-- Employment History Section --}}
