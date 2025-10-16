@@ -1,3 +1,40 @@
+{{-- Force Delete Confirmation Modal --}}
+<div class="modal fade" id="forceDeleteConfirmationModal" tabindex="-1" aria-labelledby="forceDeleteConfirmationModalLabel" aria-hidden="true" style="z-index: 9999 !important;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="forceDeleteConfirmationModalLabel">ยืนยันการลบถาวร</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        คุณแน่ใจหรือไม่ที่จะลบข้อมูลพนักงานนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-danger" id="confirm-force-delete-btn">ยืนยันการลบ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- Restore Confirmation Modal --}}
+<div class="modal fade" id="restoreConfirmationModal" tabindex="-1" aria-labelledby="restoreConfirmationModalLabel" aria-hidden="true" style="z-index: 9999 !important;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="restoreConfirmationModalLabel">ยืนยันการกู้คืนข้อมูล</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        คุณแน่ใจหรือไม่ที่จะกู้คืนข้อมูลพนักงานคนนี้กลับสู่ระบบ?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-success" id="confirm-restore-btn">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+</div>
 {{-- Terminate Employee Modal --}}
 <div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -27,43 +64,6 @@
     </div>
 </div>
 
-{{-- Force Delete Confirmation Modal --}}
-<div class="modal fade" id="forceDeleteConfirmationModal" tabindex="-1" aria-labelledby="forceDeleteConfirmationModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="forceDeleteConfirmationModalLabel">ยืนยันการลบถาวร</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        คุณแน่ใจหรือไม่ที่จะลบข้อมูลพนักงานนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-        <button type="button" class="btn btn-danger" id="confirm-force-delete-btn">ยืนยันการลบ</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-{{-- Restore Confirmation Modal --}}
-<div class="modal fade" id="restoreConfirmationModal" tabindex="-1" aria-labelledby="restoreConfirmationModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="restoreConfirmationModalLabel">ยืนยันการกู้คืนข้อมูล</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        คุณแน่ใจหรือไม่ที่จะกู้คืนข้อมูลพนักงานคนนี้กลับสู่ระบบ?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-        <button type="button" class="btn btn-success" id="confirm-restore-btn">ยืนยัน</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 {{-- CORRECTED AND FINAL EMPLOYMENT HISTORY MODAL --}}
 <div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
