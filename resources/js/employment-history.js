@@ -78,13 +78,18 @@ document.addEventListener('DOMContentLoaded', () => {
                              </button>
                         </form>` : '';
 
+                    const flagMap = { 'เมียนมา': 'mm', 'ลาว': 'la', 'กัมพูชา': 'kh', 'เวียดนาม': 'vn', 'ไทย': 'th' };
+                    const countryCode = flagMap[employee.employeeNationality];
+                    const flagHTML = countryCode ? `<img src="/images/flags/${countryCode}.png" alt="${employee.employeeNationality}" style="width: 16px; height: 11px; margin-right: 4px; border-radius: 2px;">` : '';
+
                     const employeeCellHTML = `
                         <div class="d-flex align-items-center">
-                            <img src="${employee.employeePhoto ? '/storage/' + employee.employeePhoto : '/images/default-avatar.png'}" alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
+                            <img src="${employee.employeePhoto ? `/storage/${employee.employeePhoto}` : '/images/default-avatar.png'}" alt="Photo" class="employee-photo-thumb">
                             <div>
-                                <div class="fw-bold">${employee.employeeNameEn || 'No English Name'}</div>
-                                <div class="text-muted small">${employee.employeeNameTh || 'N/A'} (${employee.employeePosition || 'N/A'})</div>
+                                <strong>${employee.employeeNameEn || 'No English Name'}</strong>
+                                <div class="text-muted small">${employee.employeeTitleTh || ''} ${employee.employeeNameTh || 'N/A'} (${employee.employeePosition || 'N/A'})</div>
                                 <div class="text-muted small">Passport: ${employee.employeePassport || 'N/A'}</div>
+                                <div class="text-muted small d-flex align-items-center">${flagHTML} ${employee.employeeNationality || ''}</div>
                             </div>
                         </div>`;
 
