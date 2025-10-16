@@ -191,25 +191,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // --- MODAL STACKING FIX ---
-    // When a confirmation modal is shown, prevent the main history modal from enforcing focus.
-    const onSubModalShow = () => {
-        const historyModalInstance = bootstrap.Modal.getInstance(historyModalEl);
-        if (historyModalInstance) {
-            historyModalInstance._config.focus = false;
-        }
-    };
+    // --- DEFINITIVE MODAL STACKING FIX ---
+    // When a confirmation modal is shown, add 'modal-behind' to the main history modal
+    // to lower its z-index, allowing the new modal to appear on top.
+    restoreModalEl.addEventListener('show.bs.modal', function () {
+        historyModalEl.classList.add('modal-behind');
+    });
+    forceDeleteModalEl.addEventListener('show.bs.modal', function () {
+        historyModalEl.classList.add('modal-behind');
+    });
 
-    // When a confirmation modal is hidden, restore focus enforcement on the main history modal.
-    const onSubModalHide = () => {
-        const historyModalInstance = bootstrap.Modal.getInstance(historyModalEl);
-        if (historyModalInstance) {
-            historyModalInstance._config.focus = true;
-        }
-    };
-
-    restoreModalEl.addEventListener('show.bs.modal', onSubModalShow);
-    restoreModalEl.addEventListener('hidden.bs.modal', onSubModalHide);
-    forceDeleteModalEl.addEventListener('show.bs.modal', onSubModalShow);
-    forceDeleteModalEl.addEventListener('hidden.bs.modal', onSubModalHide);
+    // When a confirmation modal is hidden, remove the 'modal-behind' class to restore
+    // the main history modal's original z-index.
+    restoreModalEl.addEventListener('hidden.bs.modal', function () {
+        historyModalEl.classList.remove('modal-behind');
+    });
+    forceDeleteModalEl.addEventListener('hidden.bs.modal', function () {
+        historyModalEl.classList.remove('modal-behind');
+    });
 });
