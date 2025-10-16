@@ -154,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitFormAndRefresh = (form) => {
         const actionUrl = form.action;
         const formData = new FormData(form);
+        const isRestoreAction = actionUrl.includes('/restore');
         const fetchOptions = {
             method: 'POST',
             body: formData,
@@ -161,6 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 'X-Requested-With': 'XMLHttpRequest',
             }
         };
+
+        // Get the Bootstrap modal instance.
+        const historyModal = bootstrap.Modal.getInstance(historyModalEl);
 
         fetch(actionUrl, fetchOptions)
             .then(response => response.json())
@@ -171,8 +175,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         alert(data.message);
                     }
-                    // Refresh the history list to show the change
-                    fetchAndRenderHistory(currentEmployerId, searchInput.value.trim());
+
+                    // If it's a restore action, close the modal and refresh the main list.
+                    if (isRestoreAction) {
+                        if (historyModal) {
+                            historyModal.hide();
+                        }
+
+                        // Fetch the current page content to refresh the employee list.
+                        fetch(window.location.href)
+                            .then(response => response.text())
+                            .then(html => {
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                const newContainer = doc.getElementById('employee-list-container');
+                                const currentContainer = document.getElementById('employee-list-container');
+                                if (newContainer && currentContainer) {
+                                    currentContainer.innerHTML = newContainer.innerHTML;
+                                } else {
+                                    // Fallback to a full reload if the container isn't found.
+                                    window.location.reload();
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Failed to refresh employee list:', err);
+                                window.location.reload(); // Fallback
+                            });
+
+                    } else {
+                        // For other actions (like delete), just refresh the history modal list.
+                        fetchAndRenderHistory(currentEmployerId, searchInput.value.trim());
+                    }
+
                 } else {
                     if (typeof showToast === 'function') {
                         showToast(data.message || 'An unknown error occurred.', 'danger');

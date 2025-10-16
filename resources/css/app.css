@@ -22,3 +22,11 @@
 .modal.show {
     z-index: 1070 !important;
 }
+
+/*
+ * Force Delete Confirmation Modal Stacking Fix
+ * Ensures the second modal appears above the first modal's backdrop.
+ */
+#forceDeleteConfirmationModal {
+    z-index: 1080;
+}
