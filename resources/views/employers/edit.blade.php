@@ -382,7 +382,10 @@
         <h4 class="mb-0">ประวัติการจ้างงาน</h4>
         <p class="text-muted small">ดูประวัติพนักงานที่เคยจ้างงานทั้งหมดได้ที่นี่</p>
     </div>
-    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#employmentHistoryModal">
+    <button type="button" class="btn btn-outline-secondary"
+            data-bs-toggle="modal"
+            data-bs-target="#employmentHistoryModal"
+            data-employer-id="{{ $employer->id }}">
         <i class="bi bi-clock-history me-2"></i>ดูประวัติการจ้างงาน
     </button>
 </div>
