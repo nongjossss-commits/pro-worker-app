@@ -114,8 +114,10 @@
                                 $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
                             @endphp
                             @if($countryCode)
-                                <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px; vertical-align: middle;">
-                                {{ $employee->employeeNationality }}
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" class="me-2" style="width: 20px;">
+                                    <span>{{ $employee->employeeNationality }}</span>
+                                </div>
                             @else
                                 {{ $employee->employeeNationality ?? '-' }}
                             @endif
