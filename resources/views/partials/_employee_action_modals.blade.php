@@ -36,21 +36,22 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                {{-- All other content for search, etc. will go here later --}}
+                <div class="mb-3">
+                    <input type="text" id="history-search-input" class="form-control" placeholder="ค้นหาตามชื่อ หรือ เลขพาสปอร์ต...">
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>พนักงาน</th>
-                                <th>ตำแหน่ง</th>
+                                <th style="width: 40%;">พนักงาน</th>
                                 <th>วันที่แจ้งออก</th>
                                 <th>เหตุผล</th>
                                 <th>จัดการ</th>
                             </tr>
                         </thead>
-                        <tbody id="historyTableBody"> {{-- <-- The ID is confirmed here --}}
-                            {{-- Data will be loaded here by the script below --}}
+                        <tbody id="historyTableBody">
+                            {{-- Data will be loaded here by the script --}}
                         </tbody>
                     </table>
                 </div>
