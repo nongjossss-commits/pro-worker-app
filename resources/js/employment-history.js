@@ -47,12 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 tableBody.innerHTML = ''; // Clear loading state
 
-                if (!data || data.length === 0) {
+                if (!data.data || data.data.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="6" class="text-center">ไม่พบข้อมูลประวัติการจ้างงาน</td></tr>';
                     return;
                 }
 
-                data.forEach((employee, index) => {
+                data.data.forEach((employee, index) => {
                     const terminatedDate = employee.terminated_at ? new Date(employee.terminated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
 
                     // Conditionally create buttons based on permissions from the API response
