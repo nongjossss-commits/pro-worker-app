@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // Fetch data on initial load
-    fetch('/api/thai-address-data')
+    fetch('/thai-addresses')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
