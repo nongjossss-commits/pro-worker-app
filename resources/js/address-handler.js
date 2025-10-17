@@ -59,55 +59,57 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     provinceSelect.addEventListener('change', function () {
-        // First, reset the downstream dropdowns and clear related inputs.
+        // Always start by resetting downstream dependencies. This disables them.
         resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
         resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
         clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
 
         const selectedProvinceName = this.value;
         if (!selectedProvinceName) {
-            return; // Exit if the user selected the placeholder option.
+            return; // A province is not selected, so leave dropdowns disabled as they are.
         }
 
         const selectedProvince = thaiAddressData.find(p => p.name_th === selectedProvinceName);
         if (selectedProvince) {
             provinceEnInput.value = selectedProvince.name_en;
 
-            // Populate the district dropdown with a placeholder first.
-            districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
+            // Populate districts
+            districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>'; // Add placeholder
             selectedProvince.amphoe.forEach(district => {
-                const option = new Option(district.name_th, district.name_th);
-                districtSelect.add(option);
+                districtSelect.add(new Option(district.name_th, district.name_th));
             });
 
-            // After populating, enable the district dropdown.
+            // As the final step, enable the dropdown now that it's populated.
             districtSelect.disabled = false;
         }
     });
 
     districtSelect.addEventListener('change', function () {
-        // Reset the sub-district dropdown and clear related inputs.
+        // Always start by resetting downstream dependencies.
         resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
         clearInputs(districtEnInput, subDistrictEnInput, zipCodeInput);
 
-        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
         const selectedDistrictName = this.value;
-        if (!selectedDistrictName || !selectedProvince) {
-            return; // Exit if no district is selected or province data is missing.
+        if (!selectedDistrictName) {
+            return; // A district is not selected, leave sub-district disabled.
+        }
+
+        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
+        if (!selectedProvince) {
+            return; // Should not happen if UI is working correctly
         }
 
         const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === selectedDistrictName);
         if (selectedDistrict) {
             districtEnInput.value = selectedDistrict.name_en;
 
-            // Populate the sub-district dropdown with a placeholder.
-            subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
+            // Populate sub-districts
+            subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>'; // Add placeholder
             selectedDistrict.tambon.forEach(sub => {
-                const option = new Option(sub.name_th, sub.name_th);
-                subDistrictSelect.add(option);
+                subDistrictSelect.add(new Option(sub.name_th, sub.name_th));
             });
 
-            // After populating, enable the sub-district dropdown.
+            // As the final step, enable the dropdown.
             subDistrictSelect.disabled = false;
         }
     });
