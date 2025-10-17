@@ -10,6 +10,8 @@ class Employee extends Model
 {
     use HasFactory, SoftDeletes;
 
+    const DELETED_AT = 'terminated_at';
+
     // The $fillable array is correct as it matches the camelCase schema.
     protected $fillable = [
         'employer_id',
