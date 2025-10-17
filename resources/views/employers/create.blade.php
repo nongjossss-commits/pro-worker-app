@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const formData = new FormData(addressForm);
         const addressData = Object.fromEntries(formData.entries());
         const addressType = document.getElementById('addressType').value;
-
+        console.log('Saving address temporarily:', addressType);
         // Basic validation check
         if (!addressData.addrNo || !addressData.addrProvince || !addressData.addrDistrict || !addressData.addrSubDistrict) {
              showToast('กรุณากรอกข้อมูลที่อยู่ให้ครบถ้วน', 'danger');

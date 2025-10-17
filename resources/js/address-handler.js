@@ -63,19 +63,20 @@ document.addEventListener('DOMContentLoaded', function () {
         resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
         resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
         clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
-
+        // districtSelect.disabled = false;
         const selectedProvinceName = this.value;
         if (!selectedProvinceName) {
             return; // A province is not selected, so leave dropdowns disabled as they are.
         }
 
         const selectedProvince = thaiAddressData.find(p => p.name_th === selectedProvinceName);
+        // console.log('Selected Province:', selectedProvince);
         if (selectedProvince) {
             provinceEnInput.value = selectedProvince.name_en;
 
             // Populate districts
             districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>'; // Add placeholder
-            selectedProvince.amphoe.forEach(district => {
+            selectedProvince.districts.forEach(district => {
                 districtSelect.add(new Option(district.name_th, district.name_th));
             });
 
@@ -99,13 +100,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return; // Should not happen if UI is working correctly
         }
 
-        const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === selectedDistrictName);
+        const selectedDistrict = selectedProvince.districts.find(d => d.name_th === selectedDistrictName);
         if (selectedDistrict) {
             districtEnInput.value = selectedDistrict.name_en;
 
             // Populate sub-districts
             subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>'; // Add placeholder
-            selectedDistrict.tambon.forEach(sub => {
+            selectedDistrict.sub_districts.forEach(sub => {
                 subDistrictSelect.add(new Option(sub.name_th, sub.name_th));
             });
 
@@ -119,12 +120,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
         if (!selectedProvince) return;
-        const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === districtSelect.value);
+        const selectedDistrict = selectedProvince.districts.find(d => d.name_th === districtSelect.value);
         if (!selectedDistrict) return;
         const selectedSubDistrictName = this.value;
         if (!selectedSubDistrictName) return;
 
-        const selectedSubDistrict = selectedDistrict.tambon.find(s => s.name_th === selectedSubDistrictName);
+        const selectedSubDistrict = selectedDistrict.sub_districts.find(s => s.name_th === selectedSubDistrictName);
         if (selectedSubDistrict) {
             subDistrictEnInput.value = selectedSubDistrict.name_en;
             zipCodeInput.value = selectedSubDistrict.zip_code;
