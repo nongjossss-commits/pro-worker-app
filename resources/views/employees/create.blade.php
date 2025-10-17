@@ -135,7 +135,7 @@
             </div>
             <div class="col-md-6">
                 <label for="password" class="form-label">รหัสผ่าน (ถ้าต้องการตั้ง)</label>
-                <input type="password" class="form-control" id="password" name="password">
+                <input type="text" class="form-control" id="password" name="password">
             </div>
         </div>
         <div class="row mb-3">
