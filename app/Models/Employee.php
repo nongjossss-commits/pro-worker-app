@@ -40,6 +40,8 @@ class Employee extends Model
         'designatedHospital',
         'startDate',
         'employeePhone',
+        'email',
+        'password',
         'employeePosition',
         'workPermitMOUGroup',
         'workPermitMOUGroupOther',

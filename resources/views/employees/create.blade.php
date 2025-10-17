@@ -206,6 +206,16 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
+                <label for="email" class="form-label">อีเมล (Email)</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}">
+            </div>
+            <div class="col-md-6">
+                <label for="password" class="form-label">รหัสผ่าน (Password)</label>
+                <input type="password" class="form-control" id="password" name="password">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
                 <label for="employeePosition" class="form-label">ตำแหน่ง</label>
                 <input type="text" class="form-control" id="employeePosition" name="employeePosition" value="{{ old('employeePosition') }}">
             </div>
