@@ -74,7 +74,6 @@ class Employee extends Model
         'employeeDob' => 'date:Y-m-d',
         'startDate' => 'date:Y-m-d',
         'terminated_at' => 'datetime',
-        'password' => 'hashed',
     ];
 
     public function employer()
