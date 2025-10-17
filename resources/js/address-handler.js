@@ -131,4 +131,101 @@ document.addEventListener('DOMContentLoaded', function () {
             zipCodeInput.value = selectedSubDistrict.zip_code;
         }
     });
+
+    const addressForm = document.getElementById('addressForm');
+    addressForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const addressId = document.getElementById('address_id').value;
+        const method = addressId ? 'PUT' : 'POST';
+        const url = addressId ? `/addresses/${addressId}` : '/addresses';
+
+        // Update the hidden method input for Laravel
+        document.getElementById('addressFormMethod').value = method;
+
+        const formData = new FormData(addressForm);
+        const saveButton = document.getElementById('saveAddressBtn');
+
+        // Disable button to prevent multiple submissions
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+        fetch(url, {
+            method: 'POST', // Always POST, Laravel handles PUT/PATCH via _method field
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+            },
+            body: formData,
+        })
+        .then(response => {
+            if (response.status === 422) {
+                return response.json().then(data => {
+                    // Handle validation errors
+                    handleValidationErrors(data.errors);
+                    // Re-enable the button
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = 'บันทึก';
+                });
+            }
+            if (!response.ok) {
+                 return response.json().then(data => {
+                    throw new Error(data.message || 'An unexpected error occurred.');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data) {
+                // It was a success
+                const addressModal = bootstrap.Modal.getInstance(addressModalEl);
+                addressModal.hide();
+                // Show a success toast
+                if (window.showToast) {
+                    window.showToast(data.message || 'Address saved successfully!', 'success');
+                }
+                // Optionally, refresh the part of the page that lists addresses
+                // For now, we will just reload the page
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+             if (window.showToast) {
+                window.showToast(error.message, 'danger');
+            }
+            // Re-enable the button
+            saveButton.disabled = false;
+            saveButton.innerHTML = 'บันทึก';
+        });
+    });
+
+    function handleValidationErrors(errors) {
+        // Clear previous errors
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+
+        for (const field in errors) {
+            const input = document.getElementById(field);
+            const errorContainer = document.getElementById(`${field}Error`);
+            if (input) {
+                input.classList.add('is-invalid');
+            }
+            if (errorContainer) {
+                errorContainer.textContent = errors[field][0];
+            }
+        }
+    }
+
+     addressModalEl.addEventListener('hidden.bs.modal', function (event) {
+        // Clear form and errors when modal is closed
+        addressForm.reset();
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+        document.getElementById('address_id').value = '';
+        document.getElementById('addressFormMethod').value = '';
+        const saveButton = document.getElementById('saveAddressBtn');
+        saveButton.disabled = false;
+        saveButton.innerHTML = 'บันทึก';
+    });
 });
