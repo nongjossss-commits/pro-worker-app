@@ -13,6 +13,7 @@ class Employee extends Model
     // The $fillable array is correct as it matches the camelCase schema.
     protected $fillable = [
         'employer_id',
+        'english_prefix',
         'employeeNameTh',
         'employeeNameEn',
         'employeeNationality',
