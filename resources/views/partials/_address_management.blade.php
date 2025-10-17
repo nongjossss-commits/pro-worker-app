@@ -61,7 +61,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrProvinceTh" class="form-label">จังหวัด (Thai)</label>
-                            <select class="form-select" id="addrProvinceTh" name="addrProvince">
+                            <select class="form-select" name="addrProvinceTh" id="addrProvinceTh">
                                 <option selected disabled>-- เลือกจังหวัด --</option>
                             </select>
                         </div>
@@ -74,7 +74,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrDistrictTh" class="form-label">อำเภอ/เขต (Thai)</label>
-                            <select class="form-select" id="addrDistrictTh" name="addrDistrict">
+                            <select class="form-select" name="addrDistrictTh" id="addrDistrictTh">
                                 <option selected disabled>-- เลือกอำเภอ/เขต --</option>
                             </select>
                         </div>
@@ -87,7 +87,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrSubDistrictTh" class="form-label">ตำบล/แขวง (Thai)</label>
-                            <select class="form-select" id="addrSubDistrictTh" name="addrSubDistrict">
+                            <select class="form-select" name="addrSubDistrictTh" id="addrSubDistrictTh">
                                 <option selected disabled>-- เลือกตำบล/แขวง --</option>
                             </select>
                         </div>
