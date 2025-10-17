@@ -121,6 +121,8 @@
             <div class="col-md-4"><label for="ninetyDayReportDate" class="form-label">วันหมดอายุรายงานตัว 90 วัน</label><input type="date" class="form-control" id="ninetyDayReportDate" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate', optional($employee->ninetyDayReportDate)->format('Y-m-d')) }}"></div>
             <div class="col-md-4"><label for="startDate" class="form-label">วันเริ่มงาน</label><input type="date" class="form-control" id="startDate" name="startDate" value="{{ old('startDate', optional($employee->startDate)->format('Y-m-d')) }}"></div>
             <div class="col-md-4"><label for="employeePhone" class="form-label">เบอร์โทรศัพท์</label><input type="tel" class="form-control" id="employeePhone" name="employeePhone" value="{{ old('employeePhone', $employee->employeePhone) }}"></div>
+            <div class="col-md-4"><label for="email" class="form-label">อีเมล</label><input type="email" class="form-control" id="email" name="email" value="{{ old('email', $employee->email) }}"></div>
+            <div class="col-md-4"><label for="password" class="form-label">รหัสผ่านใหม่ (ปล่อยว่างถ้าไม่เปลี่ยน)</label><input type="password" class="form-control" id="password" name="password"></div>
             <div class="col-md-4"><label for="employeePosition" class="form-label">ตำแหน่ง</label><input type="text" class="form-control" id="employeePosition" name="employeePosition" value="{{ old('employeePosition', $employee->employeePosition) }}"></div>
             <div class="col-md-4"><label for="nature_of_work" class="form-label">ลักษณะงาน (Nature of Work)</label><input type="text" class="form-control" id="nature_of_work" name="nature_of_work" value="{{ old('nature_of_work', $employee->nature_of_work) }}"></div>
         </div>

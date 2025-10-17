@@ -60,8 +60,8 @@
                     {{-- Row 5: Province --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrProvince" class="form-label">จังหวัด (Thai)</label>
-                            <select class="form-select" id="addrProvince" name="addrProvince">
+                            <label for="addrProvinceTh" class="form-label">จังหวัด (Thai)</label>
+                            <select class="form-select" id="addrProvinceTh" name="addrProvince">
                                 <option selected disabled>-- เลือกจังหวัด --</option>
                             </select>
                         </div>
@@ -73,8 +73,8 @@
                     {{-- Row 6: District --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrDistrict" class="form-label">อำเภอ/เขต (Thai)</label>
-                            <select class="form-select" id="addrDistrict" name="addrDistrict">
+                            <label for="addrDistrictTh" class="form-label">อำเภอ/เขต (Thai)</label>
+                            <select class="form-select" id="addrDistrictTh" name="addrDistrict">
                                 <option selected disabled>-- เลือกอำเภอ/เขต --</option>
                             </select>
                         </div>
@@ -86,8 +86,8 @@
                     {{-- Row 7: SubDistrict --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง (Thai)</label>
-                            <select class="form-select" id="addrSubDistrict" name="addrSubDistrict">
+                            <label for="addrSubDistrictTh" class="form-label">ตำบล/แขวง (Thai)</label>
+                            <select class="form-select" id="addrSubDistrictTh" name="addrSubDistrict">
                                 <option selected disabled>-- เลือกตำบล/แขวง --</option>
                             </select>
                         </div>
@@ -111,187 +111,3 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    let thaiAddressData = [];
-    const addressModalEl = document.getElementById('addressModal');
-    const form = document.getElementById('addressForm');
-    if (!form) return; // Exit if no address form on the page
-
-    // --- Form Input References ---
-    const provinceSelect = document.getElementById('addrProvince');
-    const districtSelect = document.getElementById('addrDistrict');
-    const subDistrictSelect = document.getElementById('addrSubDistrict');
-    const provinceEnInput = document.getElementById('addrProvinceEn');
-    const districtEnInput = document.getElementById('addrDistrictEn');
-    const subDistrictEnInput = document.getElementById('addrSubDistrictEn');
-    const zipCodeInput = document.getElementById('addrZipCode');
-    const saveBtn = document.getElementById('saveAddressBtn');
-
-    // --- Helper Functions ---
-    const resetSelect = (select, placeholder) => {
-        select.innerHTML = `<option value="">${placeholder}</option>`;
-        select.disabled = true;
-    };
-
-    const clearInputs = (...inputs) => {
-        inputs.forEach(input => input.value = '');
-    };
-
-    // 1. FETCH THAI ADDRESS DATA
-    const fetchAddressData = () => {
-        // Check if data is already fetched
-        if (thaiAddressData.length > 0) {
-            populateProvinces();
-            return;
-        }
-        fetch("{{ route('addresses.thai_data') }}")
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(data => {
-                thaiAddressData = data;
-                populateProvinces();
-            }).catch(error => {
-                console.error('Error fetching address data:', error);
-                // Optionally disable the form or show an error message to the user
-            });
-    };
-
-    // 2. POPULATE DROPDOWNS
-    const populateProvinces = () => {
-        resetSelect(provinceSelect, '-- เลือกจังหวัด --');
-        thaiAddressData.forEach(province => {
-            const option = new Option(province.name_th, province.name_th);
-            provinceSelect.add(option);
-        });
-        provinceSelect.disabled = false;
-    };
-
-    provinceSelect.addEventListener('change', function () {
-        resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
-        resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
-        clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
-
-        const selectedProvinceName = this.value;
-        if (!selectedProvinceName) return;
-
-        const selectedProvince = thaiAddressData.find(p => p.name_th === selectedProvinceName);
-        if (selectedProvince) {
-            provinceEnInput.value = selectedProvince.name_en;
-            districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>'; // Reset
-            selectedProvince.amphoe.forEach(district => {
-                const option = new Option(district.name_th, district.name_th);
-                districtSelect.add(option);
-            });
-            districtSelect.disabled = false;
-        }
-    });
-
-    districtSelect.addEventListener('change', function () {
-        resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
-        clearInputs(districtEnInput, subDistrictEnInput, zipCodeInput);
-
-        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
-        const selectedDistrictName = this.value;
-        if (!selectedDistrictName || !selectedProvince) return;
-
-        const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === selectedDistrictName);
-        if (selectedDistrict) {
-            districtEnInput.value = selectedDistrict.name_en;
-            subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>'; // Reset
-            selectedDistrict.tambon.forEach(sub => {
-                const option = new Option(sub.name_th, sub.name_th);
-                subDistrictSelect.add(option);
-            });
-            subDistrictSelect.disabled = false;
-        }
-    });
-
-    subDistrictSelect.addEventListener('change', function () {
-        clearInputs(subDistrictEnInput, zipCodeInput);
-
-        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
-        if (!selectedProvince) return;
-        const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === districtSelect.value);
-        if (!selectedDistrict) return;
-        const selectedSubDistrictName = this.value;
-        if (!selectedSubDistrictName) return;
-
-        const selectedSubDistrict = selectedDistrict.tambon.find(s => s.name_th === selectedSubDistrictName);
-        if (selectedSubDistrict) {
-            subDistrictEnInput.value = selectedSubDistrict.name_en;
-            zipCodeInput.value = selectedSubDistrict.zip_code;
-        }
-    });
-
-    // 3. MODAL EVENT HANDLING
-    if (addressModalEl) {
-        addressModalEl.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            if (!button) return; // Modal opened via JS, not a button click
-
-            form.reset();
-            clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
-            resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
-            resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
-            fetchAddressData(); // Fetch data and populate provinces
-
-            const modalType = button.classList.contains('add-address-btn') ? 'add' : 'edit';
-            const addressableId = button.dataset.addressableId;
-            const addressType = button.dataset.type;
-
-            document.getElementById('addressModalLabel').textContent = 'เพิ่มที่อยู่ใหม่';
-            document.getElementById('addressable_id').value = addressableId;
-            document.getElementById('address_type').value = addressType;
-            document.getElementById('address_id').value = ''; // Clear ID for 'add' mode
-        });
-    }
-
-    // 4. SAVE ADDRESS LOGIC
-    if (saveBtn) {
-        saveBtn.addEventListener('click', function() {
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-            fetch("{{ route('addresses.store') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                const modalInstance = bootstrap.Modal.getInstance(addressModalEl);
-                if (result.success) {
-                    modalInstance.hide();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'สำเร็จ',
-                        text: result.message || 'บันทึกที่อยู่เรียบร้อยแล้ว',
-                        timer: 2000,
-                        showConfirmButton: false,
-                    }).then(() => location.reload()); // Reload to see changes
-                } else {
-                    let errorText = result.message || 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล';
-                    if (result.errors) {
-                        errorText = Object.values(result.errors).map(e => `<div>${e}</div>`).join('');
-                    }
-                    Swal.fire({ icon: 'error', title: 'ผิดพลาด!', html: errorText });
-                }
-            }).catch(error => {
-                console.error('Save Address Error:', error);
-                Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: 'ไม่สามารถส่งข้อมูลไปยังเซิร์ฟเวอร์ได้' });
-            });
-        });
-    }
-});
-</script>
-@endpush

@@ -129,6 +129,16 @@
             </div>
         </div>
         <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="email" class="form-label">อีเมล</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}">
+            </div>
+            <div class="col-md-6">
+                <label for="password" class="form-label">รหัสผ่าน (ถ้าต้องการตั้ง)</label>
+                <input type="password" class="form-control" id="password" name="password">
+            </div>
+        </div>
+        <div class="row mb-3">
             <div class="col-md-4">
                 <label for="personalId" class="form-label">เลขประจำตัว</label>
                 <input type="text" class="form-control" id="personalId" name="personalId" value="{{ old('personalId') }}">
