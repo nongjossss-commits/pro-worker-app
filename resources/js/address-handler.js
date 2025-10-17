@@ -59,41 +59,55 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     provinceSelect.addEventListener('change', function () {
+        // First, reset the downstream dropdowns and clear related inputs.
         resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
         resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
         clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
 
         const selectedProvinceName = this.value;
-        if (!selectedProvinceName) return;
+        if (!selectedProvinceName) {
+            return; // Exit if the user selected the placeholder option.
+        }
 
         const selectedProvince = thaiAddressData.find(p => p.name_th === selectedProvinceName);
         if (selectedProvince) {
             provinceEnInput.value = selectedProvince.name_en;
+
+            // Populate the district dropdown with a placeholder first.
             districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
             selectedProvince.amphoe.forEach(district => {
                 const option = new Option(district.name_th, district.name_th);
                 districtSelect.add(option);
             });
+
+            // After populating, enable the district dropdown.
             districtSelect.disabled = false;
         }
     });
 
     districtSelect.addEventListener('change', function () {
+        // Reset the sub-district dropdown and clear related inputs.
         resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
         clearInputs(districtEnInput, subDistrictEnInput, zipCodeInput);
 
         const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
         const selectedDistrictName = this.value;
-        if (!selectedDistrictName || !selectedProvince) return;
+        if (!selectedDistrictName || !selectedProvince) {
+            return; // Exit if no district is selected or province data is missing.
+        }
 
         const selectedDistrict = selectedProvince.amphoe.find(d => d.name_th === selectedDistrictName);
         if (selectedDistrict) {
             districtEnInput.value = selectedDistrict.name_en;
+
+            // Populate the sub-district dropdown with a placeholder.
             subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
             selectedDistrict.tambon.forEach(sub => {
                 const option = new Option(sub.name_th, sub.name_th);
                 subDistrictSelect.add(option);
             });
+
+            // After populating, enable the sub-district dropdown.
             subDistrictSelect.disabled = false;
         }
     });
