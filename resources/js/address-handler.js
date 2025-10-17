@@ -50,6 +50,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     addressModalEl.addEventListener('show.bs.modal', function (event) {
+        // Button that triggered the modal
+        const button = event.relatedTarget;
+        if (button) {
+            // Extract info from data-* attributes
+            const addressableId = button.dataset.addressableId;
+            const addressType = button.dataset.type;
+
+            // Update the modal's hidden fields
+            document.getElementById('addressable_id').value = addressableId;
+            document.getElementById('address_type').value = addressType;
+        }
+
         if (thaiAddressData.length > 0) {
             populateProvinces();
         }
