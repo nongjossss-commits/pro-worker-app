@@ -6,8 +6,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="addressForm">
+                {{-- Add novalidate to prevent browser's default validation --}}
+                <form id="addressForm" novalidate>
+                    {{-- The form's action and method will be set dynamically via JS --}}
                     @csrf
+                    {{-- Hidden input for method spoofing (for PUT requests) --}}
+                    <input type="hidden" name="_method" id="addressFormMethod">
                     <input type="hidden" id="address_id" name="id">
                     <input type="hidden" id="addressable_id" name="addressable_id">
                     <input type="hidden" id="addressable_type" name="addressable_type" value="App\Models\Employer">
@@ -18,10 +22,12 @@
                         <div class="col-md-6">
                             <label for="addrNo" class="form-label">บ้านเลขที่ (ไทย)</label>
                             <input type="text" class="form-control" id="addrNo" name="addrNo">
+                            <div class="invalid-feedback" id="addrNoError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrNoEn" class="form-label">Address No. (EN)</label>
                             <input type="text" class="form-control" id="addrNoEn" name="addrNoEn">
+                             <div class="invalid-feedback" id="addrNoEnError"></div>
                         </div>
                     </div>
                     {{-- Row 2: Moo --}}
@@ -29,10 +35,12 @@
                         <div class="col-md-6">
                             <label for="addrMoo" class="form-label">หมู่ (ไทย)</label>
                             <input type="text" class="form-control" id="addrMoo" name="addrMoo">
+                             <div class="invalid-feedback" id="addrMooError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrMooEn" class="form-label">Moo (EN)</label>
                             <input type="text" class="form-control" id="addrMooEn" name="addrMooEn">
+                             <div class="invalid-feedback" id="addrMooEnError"></div>
                         </div>
                     </div>
                     {{-- Row 3: Soi --}}
@@ -40,10 +48,12 @@
                         <div class="col-md-6">
                             <label for="addrSoi" class="form-label">ซอย (ไทย)</label>
                             <input type="text" class="form-control" id="addrSoi" name="addrSoi">
+                             <div class="invalid-feedback" id="addrSoiError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrSoiEn" class="form-label">Soi (EN)</label>
                             <input type="text" class="form-control" id="addrSoiEn" name="addrSoiEn">
+                             <div class="invalid-feedback" id="addrSoiEnError"></div>
                         </div>
                     </div>
                     {{-- Row 4: Road --}}
@@ -51,10 +61,12 @@
                         <div class="col-md-6">
                             <label for="addrRoad" class="form-label">ถนน (ไทย)</label>
                             <input type="text" class="form-control" id="addrRoad" name="addrRoad">
+                             <div class="invalid-feedback" id="addrRoadError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrRoadEn" class="form-label">Road (EN)</label>
                             <input type="text" class="form-control" id="addrRoadEn" name="addrRoadEn">
+                             <div class="invalid-feedback" id="addrRoadEnError"></div>
                         </div>
                     </div>
                     {{-- Row 5: Province --}}
@@ -62,8 +74,9 @@
                         <div class="col-md-6">
                             <label for="addrProvinceTh" class="form-label">จังหวัด (Thai)</label>
                             <select class="form-select" name="addrProvinceTh" id="addrProvinceTh">
-                                <option selected disabled>-- เลือกจังหวัด --</option>
+                                <option selected disabled value="">-- เลือกจังหวัด --</option>
                             </select>
+                            <div class="invalid-feedback" id="addrProvinceThError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrProvinceEn" class="form-label">Province (EN)</label>
@@ -74,9 +87,10 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrDistrictTh" class="form-label">อำเภอ/เขต (Thai)</label>
-                            <select class="form-select" name="addrDistrictTh" id="addrDistrictTh">
-                                <option selected disabled>-- เลือกอำเภอ/เขต --</option>
+                            <select class="form-select" name="addrDistrictTh" id="addrDistrictTh" disabled>
+                                <option selected disabled value="">-- เลือกอำเภอ/เขต --</option>
                             </select>
+                             <div class="invalid-feedback" id="addrDistrictThError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrDistrictEn" class="form-label">District (EN)</label>
@@ -87,9 +101,10 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="addrSubDistrictTh" class="form-label">ตำบล/แขวง (Thai)</label>
-                            <select class="form-select" name="addrSubDistrictTh" id="addrSubDistrictTh">
-                                <option selected disabled>-- เลือกตำบล/แขวง --</option>
+                            <select class="form-select" name="addrSubDistrictTh" id="addrSubDistrictTh" disabled>
+                                <option selected disabled value="">-- เลือกตำบล/แขวง --</option>
                             </select>
+                             <div class="invalid-feedback" id="addrSubDistrictThError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrSubDistrictEn" class="form-label">Sub-district (EN)</label>
@@ -100,13 +115,15 @@
                         <div class="col-md-6">
                             <label for="addrZipCode" class="form-label">รหัสไปรษณีย์</label>
                             <input type="text" class="form-control" id="addrZipCode" name="addrZipCode" readonly>
+                             <div class="invalid-feedback" id="addrZipCodeError"></div>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                <button type="button" class="btn btn-primary" id="saveAddressBtn">บันทึก</button>
+                {{-- Changed to type="submit" and linked to the form --}}
+                <button type="submit" class="btn btn-primary" id="saveAddressBtn" form="addressForm">บันทึก</button>
             </div>
         </div>
     </div>
