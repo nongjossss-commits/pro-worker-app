@@ -144,6 +144,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'designatedHospital' => 'nullable|string|max:255',
             'startDate' => 'nullable|date',
             'employeePhone' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255|unique:employees,email',
+            'password' => 'nullable|string|min:8',
             'employeePosition' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
             'workPermitMOUGroupOther' => 'nullable|string|max:255',
@@ -168,6 +170,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
             if ($request->hasFile("document_$i")) {
                 $validated["document_$i"] = $request->file("document_$i")->store("employee_documents", 'public');
             }
+        }
+
+        if (empty($validated['password'])) {
+            unset($validated['password']);
         }
 
         Employee::create($validated);
@@ -216,6 +222,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'designatedHospital' => 'nullable|string|max:255',
             'startDate' => 'nullable|date',
             'employeePhone' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
+            'password' => 'nullable|string|min:8',
             'employeePosition' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
             'workPermitMOUGroupOther' => 'nullable|string|max:255',
@@ -246,6 +254,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 }
                 $validated["document_$i"] = $request->file("document_$i")->store("employee_documents", 'public');
             }
+        }
+
+        if (empty($validated['password'])) {
+            unset($validated['password']);
         }
 
         $employee->update($validated);
