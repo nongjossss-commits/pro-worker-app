@@ -12,8 +12,14 @@ class Kernel extends ConsoleKernel
      *
      * @var array
      */
+    /**
+     * The Artisan commands provided by your application.
+     *
+     * @var array
+     */
     protected $commands = [
         \App\Console\Commands\CheckExpiries::class,
+        \App\Console\Commands\PruneSoftDeletes::class,
     ];
 
     /**
@@ -25,6 +31,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('app:check-expiries')->daily();
+        $schedule->command('app:prune-soft-deletes')->daily();
     }
 
     /**

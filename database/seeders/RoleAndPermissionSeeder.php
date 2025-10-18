@@ -21,11 +21,12 @@ class RoleAndPermissionSeeder extends Seeder
         $permissions = [
             'view-dashboard',
             'manage-users', 'manage-roles', 'manage-settings',
-            'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
-            'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
-            'terminate-employees',
-            'restore-employees', // <-- เพิ่ม Permission ใหม่
-            'force-delete-employees' // <-- เพิ่ม Permission ใหม่
+            'view-employers', 'create-employers', 'edit-employers', 'delete-employers', 'restore-employers', 'force-delete-employers',
+            'view-employees', 'create-employees', 'edit-employees', 'delete-employees', 'terminate-employees', 'restore-employees', 'force-delete-employees',
+            'view-agents', 'create-agents', 'edit-agents', 'delete-agents', 'restore-agents', 'force-delete-agents',
+            'view-importers', 'create-importers', 'edit-importers', 'delete-importers', 'restore-importers', 'force-delete-importers',
+            'view-delegates', 'create-delegates', 'edit-delegates', 'delete-delegates', 'restore-delegates', 'force-delete-delegates',
+            'view-addresses', 'create-addresses', 'edit-addresses', 'delete-addresses', 'restore-addresses', 'force-delete-addresses',
         ];
         foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
