@@ -7,93 +7,78 @@ use Illuminate\Http\Request;
 
 class ImporterController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        $importers = Importer::all();
+        $this->middleware('permission:view-importers', ['only' => ['index', 'show']]);
+        $this->middleware('permission:create-importers', ['only' => ['create', 'store']]);
+        $this->middleware('permission:edit-importers', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-importers', ['only' => ['destroy']]);
+    }
+
+    public function index(Request $request)
+    {
+        $query = Importer::query();
+
+        if ($request->has('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('importerNameTh', 'like', "%{$searchTerm}%")
+                  ->orWhere('importerNameEn', 'like', "%{$searchTerm}%")
+                  ->orWhere('importerId', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        $importers = $query->latest()->paginate(10);
         return view('importers.index', compact('importers'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        return view('importers.create');
+        $lastImporter = Importer::orderBy('id', 'desc')->first();
+        $nextId = $lastImporter ? (int)substr($lastImporter->importerId, 4) + 1 : 1;
+        $newImporterId = 'IMP-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
+
+        return view('importers.create', compact('newImporterId'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'importerNameTh' => 'nullable',
-            'importerNameEn' => 'nullable',
-            'importerId' => 'nullable',
-            'importerLicenseNo' => 'nullable',
-            'importerLicenseIssueDate' => 'nullable|date',
-            'importerLicenseExpiryDate' => 'nullable|date',
-            'importerSignerTh' => 'nullable',
-            'importerSignerEn' => 'nullable',
+        $validatedData = $request->validate([
+            'importerId' => 'required|unique:importers,importerId',
+            'importerNameTh' => 'required|string|max:255',
+            'importerNameEn' => 'nullable|string|max:255',
         ]);
 
-        Importer::create($request->all());
+        Importer::create($validatedData);
 
-        return redirect()->route('importers.index')
-            ->with('success', 'เพิ่มข้อมูลบริษัทนำเข้าเรียบร้อยแล้ว');
+        return redirect()->route('importers.index')->with('success', 'Importer created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Importer $importer)
     {
-        //
+        return view('importers.show', compact('importer'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Importer $importer)
     {
         return view('importers.edit', compact('importer'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Importer $importer)
     {
-        // Validate and update the importer
-        $request->validate([
-            'importerNameTh' => 'nullable',
-            'importerNameEn' => 'nullable',
-            'importerId' => 'nullable',
-            'importerLicenseNo' => 'nullable',
-            'importerLicenseIssueDate' => 'nullable|date',
-            'importerLicenseExpiryDate' => 'nullable|date',
-            'importerSignerTh' => 'nullable',
-            'importerSignerEn' => 'nullable',
+        $validatedData = $request->validate([
+            'importerNameTh' => 'required|string|max:255',
+            'importerNameEn' => 'nullable|string|max:255',
         ]);
 
-        $importer->update($request->all());
+        $importer->update($validatedData);
 
-        return redirect()->route('importers.index')
-            ->with('success', 'อัปเดตข้อมูลบริษัทนำเข้าเรียบร้อยแล้ว');
+        return redirect()->route('importers.index')->with('success', 'Importer updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Importer $importer)
     {
-        // Delete the importer
         $importer->delete();
-
-        return redirect()->route('importers.index')
-            ->with('success', 'ลบข้อมูลบริษัทนำเข้าเรียบร้อยแล้ว');
+        return redirect()->route('importers.index')->with('success', 'Importer moved to trash.');
     }
 }

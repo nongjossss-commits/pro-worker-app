@@ -7,85 +7,78 @@ use Illuminate\Http\Request;
 
 class AgentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        $agents = Agent::all();
+        $this->middleware('permission:view-agents', ['only' => ['index', 'show']]);
+        $this->middleware('permission:create-agents', ['only' => ['create', 'store']]);
+        $this->middleware('permission:edit-agents', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-agents', ['only' => ['destroy']]);
+    }
+
+    public function index(Request $request)
+    {
+        $query = Agent::query();
+
+        if ($request->has('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('agentNameTh', 'like', "%{$searchTerm}%")
+                  ->orWhere('agentNameEn', 'like', "%{$searchTerm}%")
+                  ->orWhere('agentId', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        $agents = $query->latest()->paginate(10);
         return view('agents.index', compact('agents'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        return view('agents.create');
+        $lastAgent = Agent::orderBy('id', 'desc')->first();
+        $nextId = $lastAgent ? (int)substr($lastAgent->agentId, 4) + 1 : 1;
+        $newAgentId = 'AGT-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
+
+        return view('agents.create', compact('newAgentId'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'agentNameEn' => 'required|string|max:255',
-            'agentLicense' => 'nullable|string|max:255',
-            'agentPhone' => 'nullable|string|max:255',
-            'agentEmail' => 'nullable|email|max:255',
-            'agentAddress' => 'nullable|string',
+        $validatedData = $request->validate([
+            'agentId' => 'required|unique:agents,agentId',
+            'agentNameTh' => 'required|string|max:255',
+            'agentNameEn' => 'nullable|string|max:255',
         ]);
 
-        Agent::create($request->all());
+        Agent::create($validatedData);
 
-        return redirect()->route('agents.index')
-            ->with('success', 'เพิ่มข้อมูลเอเจนซี่เรียบร้อยแล้ว');
+        return redirect()->route('agents.index')->with('success', 'Agent created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Agent $agent)
     {
-        // Not implemented as per requirements
+        return view('agents.show', compact('agent'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Agent $agent)
     {
         return view('agents.edit', compact('agent'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Agent $agent)
     {
-        $request->validate([
-            'agentNameEn' => 'required|string|max:255',
-            'agentLicense' => 'nullable|string|max:255',
-            'agentPhone' => 'nullable|string|max:255',
-            'agentEmail' => 'nullable|email|max:255',
-            'agentAddress' => 'nullable|string',
+        $validatedData = $request->validate([
+            'agentNameTh' => 'required|string|max:255',
+            'agentNameEn' => 'nullable|string|max:255',
         ]);
 
-        $agent->update($request->all());
+        $agent->update($validatedData);
 
-        return redirect()->route('agents.index')
-            ->with('success', 'อัปเดตข้อมูลเอเจนซี่เรียบร้อยแล้ว');
+        return redirect()->route('agents.index')->with('success', 'Agent updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Agent $agent)
     {
         $agent->delete();
-
-        return redirect()->route('agents.index')
-            ->with('success', 'ลบข้อมูลเอเจนซี่เรียบร้อยแล้ว');
+        return redirect()->route('agents.index')->with('success', 'Agent moved to trash.');
     }
 }

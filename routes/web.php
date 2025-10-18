@@ -10,6 +10,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobOwnerController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\TrashController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
@@ -63,6 +64,10 @@ Route::middleware('auth')->group(function () {
 // === เพิ่มโค้ดส่วนนี้เข้าไป ===
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
+    // Trash Can Routes
+    Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
+    Route::post('/trash/restore/{model}/{id}', [TrashController::class, 'restore'])->name('trash.restore');
+    Route::delete('/trash/force-delete/{model}/{id}', [TrashController::class, 'forceDelete'])->name('trash.forceDelete');
 });
 // === สิ้นสุดส่วนที่ต้องเพิ่ม ===
 

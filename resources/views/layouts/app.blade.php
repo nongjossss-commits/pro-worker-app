@@ -138,9 +138,14 @@
                 <a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>ข้อมูลเอเจนซี่</a>
                 <a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>ข้อมูลพนักงาน</a>
 
-                @canany(['manage-roles', 'manage-settings'])
+                @canany(['manage-roles', 'manage-settings', 'view-trash'])
                 <hr>
+                @can('manage-roles')
                 <a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>จัดการสิทธิ์</a>
+                @endcan
+                @can('view-trash')
+                <a href="{{ route('admin.trash.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.trash.*') ? 'active' : '' }}"><i class="bi bi-trash-fill me-2"></i>หน้าถังขยะ</a>
+                @endcan
                 @endcanany
             </div>
             <div class="mt-auto">
