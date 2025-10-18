@@ -17,6 +17,7 @@ class EmployeeController extends Controller
         $this->middleware('permission:create-employees', ['only' => ['create', 'store']]);
         $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
         $this->middleware('permission:terminate-employees', ['only' => ['terminate']]);
+        $this->middleware('permission:terminate-employees', ['only' => ['reinstate']]);
         $this->middleware('permission:restore-employees', ['only' => ['restore']]);
         $this->middleware('permission:force-delete-employees', ['only' => ['forceDelete']]);
     }
@@ -26,7 +27,7 @@ class EmployeeController extends Controller
      */
     public function terminate(Employee $employee)
     {
-        $employee->delete();
+        $employee->update(['terminated_at' => now()]);
         return back()->with('success', 'Employee terminated successfully.');
     }
 
@@ -47,6 +48,17 @@ class EmployeeController extends Controller
         $employee->forceDelete();
         return response()->json(['success' => 'Employee permanently deleted successfully.']);
     }
+
+/**
+ * Restore a terminated employee from "History" menu.
+ */
+public function reinstate(Employee $employee)
+{
+    $this->authorize('terminate-employees'); // Re-using permission, or create a new 'reinstate-employees' if needed
+    $employee->update(['terminated_at' => null]);
+
+    return back()->with('success', 'Employee reinstated successfully.');
+}
 
     public function index(Request $request)
 {
