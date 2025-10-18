@@ -1,53 +1,38 @@
 @php
-    $employerName = $employee->employer->employerNameTh ?? 'N/A';
+
+$employerName = $employee->employer->employerNameTh ?? 'N/A';
 @endphp
 
-<div id="employee-card-{{ $employee->id }}" class="employee-card card mb-3">
-    <div class="card-body d-flex align-items-center">
-        <div class="me-3">
-            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}">
-        </div>
-
-        <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}"
-            alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
-
-        <div class="employee-info flex-grow-1">
-            <span class="employee-name-en">
-                @if(isset($pagination) && $pagination instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                    {{ ($pagination->currentPage() - 1) * $pagination->perPage() + $loop->iteration }}.
-                @else
-                    {{ $loop->iteration }}.
-                @endif
-                {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}
-            </span>
-
-            @if($employee->employeeNationality)
-                @php
-                    $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
-                @endphp
-                @if($countryCode)
-                    <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
-                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px;">
-                        <span>{{ $employee->employeeNationality }}</span>
-                    </span>
-                @endif
+<div class="card employee-card" id="employee-card-{{ $employee->id }}">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+            @if($employee->employeePhoto)
+            <img src="{{ asset('storage/' . $employee->employeePhoto) }}"
+                alt="Photo" class="employee-photo-thumb" style="width: 48px;
+ height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
+            @else
+            [image: Photo]
             @endif
 
-            <span class="employee-name-th d-block">
-                {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->employeePosition ?? 'N/A' }})
-            </span>
+            <h5 class="card-title mb-0">
+                {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }}
 
-            <span class="employer-name d-block text-muted">นายจ้าง: {{ $employerName }}</span>
+           </h5>
 
-            <div class="document-details small mt-2">
-                Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : '-' }})
-                <br>
-                Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}
-            </div>
         </div>
+        {{-- Employee Details (Partial) --}}
+        <p class="card-text small mb-1">
+            นายจ้าง: {{ $employerName }}
+        </p>
+        <p class="card-text small mb-3">
+            Passport: {{ $employee->employeePassport ??
+ '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : '-' }})
+            <br>
+            Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}
+        </p>
 
-        <div class="employee-actions">
-             @include('components.employee-action-buttons', ['employee' => $employee, 'showLocateButton' => ($showLocateButton ?? false)])
-        </div>
+        {{-- Action Buttons --}}
+        @include('components.employee-action-buttons', ['employee' => $employee, 'showLocateButton' => ($showLocateButton ??
+ false)])
     </div>
 </div>
