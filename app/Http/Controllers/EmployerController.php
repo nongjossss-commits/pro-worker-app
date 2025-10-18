@@ -119,13 +119,16 @@ class EmployerController extends Controller
         }
         $terminatedEmployees = $historyQuery->paginate($perPage, ['*'], 'history_page')->appends($request->except('history_page'));
 
+        $jobOwners = \App\Models\JobOwner::orderBy('name')->get();
+
         return view('employers.edit', compact(
             'employer',
             'employees',
             'terminatedEmployees',
             'nationalities',
             'male_count',
-            'female_count'
+            'female_count',
+            'jobOwners'
         ));
     }
 
