@@ -57,7 +57,7 @@ public function reinstate(Employee $employee)
     $this->authorize('terminate-employees'); // Re-using permission, or create a new 'reinstate-employees' if needed
     $employee->update(['terminated_at' => null]);
 
-    return back()->with('success', 'Employee reinstated successfully.');
+    return response()->json(['success' => 'Employee reinstated successfully.']);
 }
 
     public function index(Request $request)
