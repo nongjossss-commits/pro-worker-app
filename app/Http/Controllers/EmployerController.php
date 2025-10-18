@@ -196,7 +196,7 @@ public function edit(Request $request, Employer $employer)
 
     public function filterHistory(Request $request, Employer $employer)
     {
-        $query = $employer->employees()->onlyTrashed();
+        $query = $employer->employees()->whereNotNull('terminated_at');
 
         // Implement search
         if ($request->filled('search')) {
