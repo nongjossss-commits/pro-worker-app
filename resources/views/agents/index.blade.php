@@ -30,12 +30,18 @@
                         <td>{{ $agent->agentLicense }}</td>
                         <td>{{ $agent->agentPhone }}</td>
                         <td class="text-center">
+                            @can('edit-agents')
                             <a href="{{ route('agents.edit', $agent) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
-                            <form action="{{ route('agents.destroy', $agent) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')">ลบ</button>
-                            </form>
+                            @endcan
+                            @can('delete-agents')
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-trigger-delete-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#centralDeleteConfirmationModal"
+                                    data-action="{{ route('agents.destroy', $agent) }}"
+                                    data-message="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลเอเจนซี่ '{{ $agent->agentNameEn }}'?">
+                                ลบ
+                            </button>
+                            @endcan
                         </td>
                     </tr>
                 @empty

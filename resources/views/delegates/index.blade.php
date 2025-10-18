@@ -39,12 +39,18 @@
                         <td>{{ $delegate->delegateNameTh }}</td>
                         <td>{{ $delegate->delegateId }}</td>
                         <td>
+                            @can('edit-delegates')
                             <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">Edit</a>
-                            <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to delete this delegate?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                            </form>
+                            @endcan
+                            @can('delete-delegates')
+                            <button type="button" class="btn btn-sm btn-danger btn-trigger-delete-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#centralDeleteConfirmationModal"
+                                    data-action="{{ route('delegates.destroy', $delegate->id) }}"
+                                    data-message="Are you sure you want to delete delegate '{{ $delegate->delegateNameTh }}'?">
+                                Delete
+                            </button>
+                            @endcan
                         </td>
                     </tr>
                     @endforeach

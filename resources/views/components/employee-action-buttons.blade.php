@@ -32,8 +32,12 @@
     
     {{-- Force Delete Button (Red) - Admin Only --}}
     @can('force-delete-employees')
-         <button type="button" class="btn btn-sm btn-danger js-force-delete-btn" title="Force Delete"
-                data-employee-id="{{ $employee->id }}">
+        <button type="button" class="btn btn-sm btn-danger btn-trigger-delete-modal" title="Force Delete"
+                data-bs-toggle="modal"
+                data-bs-target="#centralDeleteConfirmationModal"
+                data-action="{{ route('employees.forceDelete', $employee->id) }}"
+                data-message="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลพนักงาน '{{ $employee->employeeNameTh }}' อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้"
+                data-is-force-delete="true">
             <i class="bi bi-trash3-fill"></i>
         </button>
     @endcan
