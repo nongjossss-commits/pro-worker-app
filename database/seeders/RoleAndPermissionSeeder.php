@@ -15,6 +15,7 @@ class RoleAndPermissionSeeder extends Seeder
     {
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
         $this->command->info('Seeding Roles and Permissions...');
 
         // Create Permissions
@@ -43,32 +44,38 @@ class RoleAndPermissionSeeder extends Seeder
             'delete-addresses', 'restore-addresses', 'force-delete-addresses'
             // END: Add new permissions
         ];
-        foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
-        }
-        $this->command->info('All base permissions created successfully.');
 
+        // --- THIS IS THE FIX (Permission) ---
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
+
+        $this->command->info('All base permissions created or verified successfully.');
+
+        // --- THIS IS THE FIX (Role) ---
         // Create Staff Role and assign permissions
-        $staffRole = Role::create(['name' => 'staff']);
+        $staffRole = Role::firstOrCreate(['name' => 'staff']);
+
         $staffPermissions = [
             'view-employers', 'create-employers', 'edit-employers',
             'view-employees', 'edit-employees', 'create-employees',
             'terminate-employees',
             'restore-employees'
         ];
-        $staffRole->givePermissionTo($staffPermissions);
-        $this->command->info('Staff role created and assigned permissions.');
+
+        $staffRole->syncPermissions($staffPermissions); // Use syncPermissions to be safe
+        $this->command->info('Staff role created/verified and permissions synced.');
 
         // Create Admin Role and assign all permissions
-        $adminRole = Role::create(['name' => 'admin']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $adminRole->givePermissionTo(Permission::all());
-        $this->command->info('Admin role created and assigned all permissions.');
+        $this->command->info('Admin role created/verified and assigned all permissions.');
 
         // Create a demo staff user
         $staffUser = User::factory()->create([
             'name' => 'Staff User',
             'email' => 'staff@example.com',
-    'password' => Hash::make('staff_password_1234'),
+            'password' => Hash::make('staff_password_1234'),
         ]);
         $staffUser->assignRole($staffRole);
         $this->command->info('Staff User (staff@example.com) created and assigned to staff role.');
