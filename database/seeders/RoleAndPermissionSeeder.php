@@ -16,6 +16,7 @@ class RoleAndPermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // FIX: Corrected all $this.command typos to $this->command
         $this->command->info('Seeding Roles and Permissions...');
 
         // Create Permissions
@@ -49,7 +50,8 @@ class RoleAndPermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        $this.command->info('All base permissions created or verified successfully.');
+        // FIX: Corrected all $this.command typos to $this->command
+        $this->command->info('All base permissions created or verified successfully.');
 
         // Create Staff Role and assign permissions
         $staffRole = Role::firstOrCreate(['name' => 'staff']);
@@ -62,14 +64,17 @@ class RoleAndPermissionSeeder extends Seeder
         ];
 
         $staffRole->syncPermissions($staffPermissions);
-        $this.command->info('Staff role created/verified and permissions synced.');
+
+        // FIX: Corrected all $this.command typos to $this->command
+        $this->command->info('Staff role created/verified and permissions synced.');
 
         // Create Admin Role and assign all permissions
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $adminRole->givePermissionTo(Permission::all());
-        $this.command->info('Admin role created/verified and assigned all permissions.');
 
-        // --- THIS IS THE FIX (User) ---
+        // FIX: Corrected all $this.command typos to $this->command
+        $this->command->info('Admin role created/verified and assigned all permissions.');
+
         // Create a demo staff user *only if* they don't exist
         $staffUser = User::firstOrCreate(
             ['email' => 'staff@example.com'], // Find by email
@@ -79,16 +84,20 @@ class RoleAndPermissionSeeder extends Seeder
             ]
         );
         $staffUser->assignRole($staffRole);
-        $this.command->info('Staff User (staff@example.com) created/verified and assigned to staff role.');
-        // --- END OF FIX (User) ---
+
+        // FIX: Corrected all $this.command typos to $this->command
+        $this->command->info('Staff User (staff@example.com) created/verified and assigned to staff role.');
 
         // Assign admin role to the existing test user
         $adminUser = User::where('email', 'test@example.com')->first();
         if ($adminUser) {
             $adminUser->assignRole($adminRole);
-            $this.command->info('Admin role assigned to existing Test User (test@example.com).');
+
+            // FIX: Corrected all $this.command typos to $this->command
+            $this->command->info('Admin role assigned to existing Test User (test@example.com).');
         }
 
-        $this.command->info('Role and Permission Seeding COMPLETED.');
+        // FIX: Corrected all $this.command typos to $this->command
+        $this->command->info('Role and Permission Seeding COMPLETED.');
     }
 }
