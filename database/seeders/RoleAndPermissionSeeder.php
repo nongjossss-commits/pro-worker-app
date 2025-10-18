@@ -7,97 +7,81 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Support\Facades\DB;
 
 class RoleAndPermissionSeeder extends Seeder
 {
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // FIX: Corrected all $this.command typos to $this->command
-        $this->command->info('Seeding Roles and Permissions...');
+        // Using a transaction to ensure atomicity
+        DB::transaction(function () {
+            // Define permissions
+            $permissions = [
+                // Trash
+                'view-trash',
 
-        // Create Permissions
-        $permissions = [
-            'view-dashboard',
-            'manage-users', 'manage-roles', 'manage-settings',
-            'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
-            'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
-            'terminate-employees',
-            'restore-employees',
-            'force-delete-employees',
+                // Employers
+                'view-employers', 'create-employers', 'edit-employers', 'delete-employers', 'restore-employers', 'force-delete-employers',
+                // Employees
+                'view-employees', 'create-employees', 'edit-employees', 'terminate-employees', 'restore-employees', 'force-delete-employees',
+                // Agents
+                'view-agents', 'create-agents', 'edit-agents', 'delete-agents', 'restore-agents', 'force-delete-agents',
+                // Importers
+                'view-importers', 'create-importers', 'edit-importers', 'delete-importers', 'restore-importers', 'force-delete-importers',
+                // Delegates
+                'view-delegates', 'create-delegates', 'edit-delegates', 'delete-delegates', 'restore-delegates', 'force-delete-delegates',
+                // Addresses
+                'view-addresses', 'create-addresses', 'edit-addresses', 'delete-addresses', 'restore-addresses', 'force-delete-addresses',
+                // Notifications
+                'view-notifications', 'cancel-notifications', 'renew-notifications', 'restore-notifications', 'force-delete-notifications',
+                // Roles & Settings
+                'manage-roles', 'manage-settings',
+            ];
 
-            // START: Add new permissions for other models
-            'restore-employers',
-            'force-delete-employers',
+            // Create permissions
+            foreach ($permissions as $permission) {
+                Permission::firstOrCreate(['name' => $permission]);
+            }
 
-            'view-agents', 'create-agents', 'edit-agents', 'delete-agents',
-            'restore-agents', 'force-delete-agents',
+            // Create Admin Role and assign all permissions
+            $adminRole = Role::firstOrCreate(['name' => 'admin']);
+            $adminRole->givePermissionTo(Permission::all());
 
-            'view-importers', 'create-importers', 'edit-importers', 'delete-importers',
-            'restore-importers', 'force-delete-importers',
+            // Create Staff Role and assign specific permissions
+            $staffRole = Role::firstOrCreate(['name' => 'staff']);
+            $staffPermissions = [
+                'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
+                'view-employees', 'create-employees', 'edit-employees', 'terminate-employees',
+                'view-agents', 'create-agents', 'edit-agents', 'delete-agents',
+                'view-importers', 'create-importers', 'edit-importers', 'delete-importers',
+                'view-delegates', 'create-delegates', 'edit-delegates', 'delete-delegates',
+                'view-addresses', 'create-addresses', 'edit-addresses', 'delete-addresses',
+                'view-notifications', 'cancel-notifications', 'renew-notifications', 'restore-notifications',
+            ];
+            $staffRole->givePermissionTo($staffPermissions);
 
-            'view-delegates', 'create-delegates', 'edit-delegates', 'delete-delegates',
-            'restore-delegates', 'force-delete-delegates',
-
-            'delete-addresses', 'restore-addresses', 'force-delete-addresses'
-            // END: Add new permissions
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-        }
-
-        // FIX: Corrected all $this.command typos to $this->command
-        $this->command->info('All base permissions created or verified successfully.');
-
-        // Create Staff Role and assign permissions
-        $staffRole = Role::firstOrCreate(['name' => 'staff']);
-
-        $staffPermissions = [
-            'view-employers', 'create-employers', 'edit-employers',
-            'view-employees', 'edit-employees', 'create-employees',
-            'terminate-employees',
-            'restore-employees'
-        ];
-
-        $staffRole->syncPermissions($staffPermissions);
-
-        // FIX: Corrected all $this.command typos to $this->command
-        $this->command->info('Staff role created/verified and permissions synced.');
-
-        // Create Admin Role and assign all permissions
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        $adminRole->givePermissionTo(Permission::all());
-
-        // FIX: Corrected all $this.command typos to $this->command
-        $this->command->info('Admin role created/verified and assigned all permissions.');
-
-        // Create a demo staff user *only if* they don't exist
-        $staffUser = User::firstOrCreate(
-            ['email' => 'staff@example.com'], // Find by email
-            [ // Data to use if creating
-                'name' => 'Staff User',
-                'password' => Hash::make('staff_password_1234'),
-            ]
-        );
-        $staffUser->assignRole($staffRole);
-
-        // FIX: Corrected all $this.command typos to $this->command
-        $this->command->info('Staff User (staff@example.com) created/verified and assigned to staff role.');
-
-        // Assign admin role to the existing test user
-        $adminUser = User::where('email', 'test@example.com')->first();
-        if ($adminUser) {
+            // Create or find Admin User
+            $adminUser = User::firstOrCreate(
+                ['email' => 'admin@example.com'],
+                [
+                    'name' => 'Admin User',
+                    'password' => Hash::make('admin_password_1234'),
+                ]
+            );
             $adminUser->assignRole($adminRole);
 
-            // FIX: Corrected all $this.command typos to $this->command
-            $this->command->info('Admin role assigned to existing Test User (test@example.com).');
-        }
-
-        // FIX: Corrected all $this.command typos to $this->command
-        $this->command->info('Role and Permission Seeding COMPLETED.');
+            // Create or find Staff User
+            $staffUser = User::firstOrCreate(
+                ['email' => 'staff@example.com'],
+                [
+                    'name' => 'Staff User',
+                    'password' => Hash::make('staff_password_1234'),
+                ]
+            );
+            $staffUser->assignRole($staffRole);
+        });
     }
 }
