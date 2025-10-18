@@ -8,6 +8,7 @@ use App\Models\Agent;
 use App\Models\Importer;
 use App\Models\Delegate;
 use App\Models\Address;
+use App\Models\Employee;
 
 class PruneSoftDeletes extends Command
 {
@@ -53,6 +54,10 @@ class PruneSoftDeletes extends Command
         // Prune Addresses
         $addressCount = Address::onlyTrashed()->where('deleted_at', '<=', $cutoffDate)->forceDelete();
         $this->info("Pruned $addressCount Addresses.");
+
+        // Prune Trashed Employees (using default 'deleted_at' column)
+        $employeeCount = Employee::onlyTrashed()->where('deleted_at', '<=', $cutoffDate)->forceDelete();
+        $this->info("Pruned $employeeCount Trashed Employees.");
 
         $this->info('Soft delete pruning complete.');
         return 0;
