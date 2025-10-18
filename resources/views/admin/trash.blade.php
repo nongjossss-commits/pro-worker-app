@@ -34,11 +34,14 @@
                                 </form>
                             @endcan
                             @can('force-delete-employers')
-                                <form action="{{ route('admin.trash.forceDelete', ['model' => 'employer', 'id' => $item->id]) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE? This cannot be undone.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">Force Delete</button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger btn-trigger-delete-modal"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#centralDeleteConfirmationModal"
+                                        data-action="{{ route('admin.trash.forceDelete', ['model' => 'employer', 'id' => $item->id]) }}"
+                                        data-message="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนายจ้าง '{{ $item->employerNameTh }}' อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้"
+                                        data-is-force-delete="true">
+                                    Force Delete
+                                </button>
                             @endcan
                         </td>
                     </tr>
@@ -70,11 +73,14 @@
                                 </form>
                             @endcan
                             @can('force-delete-agents')
-                                <form action="{{ route('admin.trash.forceDelete', ['model' => 'agent', 'id' => $item->id]) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE? This cannot be undone.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">Force Delete</button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger btn-trigger-delete-modal"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#centralDeleteConfirmationModal"
+                                        data-action="{{ route('admin.trash.forceDelete', ['model' => 'agent', 'id' => $item->id]) }}"
+                                        data-message="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลเอเจนซี่ '{{ $item->agentNameEn }}' อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้"
+                                        data-is-force-delete="true">
+                                    Force Delete
+                                </button>
                             @endcan
                         </td>
                     </tr>

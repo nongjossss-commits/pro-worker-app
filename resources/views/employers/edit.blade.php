@@ -175,7 +175,15 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
+                        @can('delete-addresses')
+                        <button type="button" class="btn btn-sm btn-danger btn-trigger-delete-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#centralDeleteConfirmationModal"
+                                data-action="{{ route('addresses.destroy', $address->id) }}"
+                                data-message="คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?">
+                            Delete
+                        </button>
+                        @endcan
                     </div>
                 </div>
             @empty
@@ -212,7 +220,15 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
+                        @can('delete-addresses')
+                        <button type="button" class="btn btn-sm btn-danger btn-trigger-delete-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#centralDeleteConfirmationModal"
+                                data-action="{{ route('addresses.destroy', $address->id) }}"
+                                data-message="คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?">
+                            Delete
+                        </button>
+                        @endcan
                     </div>
                 </div>
             @empty

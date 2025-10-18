@@ -53,15 +53,15 @@ class RoleAndPermissionSeeder extends Seeder
             // Create Staff Role and assign specific permissions
             $staffRole = Role::firstOrCreate(['name' => 'staff']);
             $staffPermissions = [
-                'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
+                'view-employers', 'create-employers', 'edit-employers',
                 'view-employees', 'create-employees', 'edit-employees', 'terminate-employees',
-                'view-agents', 'create-agents', 'edit-agents', 'delete-agents',
-                'view-importers', 'create-importers', 'edit-importers', 'delete-importers',
-                'view-delegates', 'create-delegates', 'edit-delegates', 'delete-delegates',
-                'view-addresses', 'create-addresses', 'edit-addresses', 'delete-addresses',
-                'view-notifications', 'cancel-notifications', 'renew-notifications', 'restore-notifications',
+                'view-agents', 'create-agents', 'edit-agents',
+                'view-importers', 'create-importers', 'edit-importers',
+                'view-delegates', 'create-delegates', 'edit-delegates',
+                'view-addresses', 'create-addresses', 'edit-addresses',
+                'view-notifications', 'cancel-notifications', 'renew-notifications',
             ];
-            $staffRole->givePermissionTo($staffPermissions);
+            $staffRole->syncPermissions($staffPermissions);
 
             // Create or find Admin User
             $adminUser = User::firstOrCreate(

@@ -52,11 +52,13 @@
                             <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
                             @endcan
                             @can('delete-employers')
-                            <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')">ลบ</button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-trigger-delete-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#centralDeleteConfirmationModal"
+                                    data-action="{{ route('employers.destroy', $employer) }}"
+                                    data-message="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนายจ้าง '{{ $employer->employerNameTh }}'?">
+                                ลบ
+                            </button>
                             @endcan
                         </td>
                     </tr>
