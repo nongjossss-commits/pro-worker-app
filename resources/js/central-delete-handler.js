@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const message = button.getAttribute('data-message');
         const isForceDelete = button.getAttribute('data-is-force-delete') === 'true';
 
+        // Always clear previous method spoofing input on modal open
+        const existingMethodInput = deleteForm.querySelector('input[name="_method"]');
+        if (existingMethodInput) {
+            existingMethodInput.remove();
+        }
+
         // Set the form action
         if (action) {
             deleteForm.setAttribute('action', action);
@@ -27,11 +33,18 @@ document.addEventListener('DOMContentLoaded', function () {
             deleteModalMessage.innerHTML = 'คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?';
         }
 
-        // Adjust button for force delete
+        // Adjust button and form method for force delete
         if (isForceDelete) {
             confirmBtn.classList.remove('btn-danger');
             confirmBtn.classList.add('btn-warning');
             confirmBtn.textContent = 'ยืนยันการลบถาวร';
+
+            // Add method spoofing for DELETE request
+            const methodInput = document.createElement('input');
+            methodInput.setAttribute('type', 'hidden');
+            methodInput.setAttribute('name', '_method');
+            methodInput.setAttribute('value', 'DELETE');
+            deleteForm.appendChild(methodInput);
         } else {
             confirmBtn.classList.remove('btn-warning');
             confirmBtn.classList.add('btn-danger');
