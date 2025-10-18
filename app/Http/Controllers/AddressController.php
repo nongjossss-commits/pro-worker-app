@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 
 class AddressController extends Controller
 {
+
     public function store(Request $request)
     {
         $request->validate([
@@ -32,7 +33,13 @@ class AddressController extends Controller
             'addrZipCodeEn' => 'nullable|string|max:255',
         ]);
 
-        $modelClass = 'App\\Models\\' . ucfirst($request->addressable_type);
+        // ***** THIS IS THE FIX *****
+        // We use class_basename() to get the short name (e.g., "Employer")
+        // regardless of whether the input is "Employer" or "App\Models\Employer".
+        $baseName = class_basename($request->addressable_type);
+        $modelClass = 'App\\Models\\' . ucfirst($baseName);
+        // ***** END OF FIX *****
+
         $parent = $modelClass::findOrFail($request->addressable_id);
 
         $address = $parent->addresses()->create($request->except(['addressable_id', 'addressable_type']));
@@ -82,7 +89,6 @@ class AddressController extends Controller
     public function getThaiAddressData()
     {
         $path = storage_path('app/public/data/thai-address-data.json');
-
         if (!file_exists($path)) {
             return response()->json(['error' => 'Address data file not found.'], 404);
         }
@@ -90,4 +96,5 @@ class AddressController extends Controller
         // Send the raw file with the correct JSON content type header
         return response()->file($path, ['Content-Type' => 'application/json']);
     }
+
 }
