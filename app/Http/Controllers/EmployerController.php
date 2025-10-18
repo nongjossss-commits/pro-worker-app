@@ -78,7 +78,7 @@ class EmployerController extends Controller
 
     public function edit(Request $request, Employer $employer)
     {
-        $nationalities = \App\Models\Employee::select('nationality')->distinct()->pluck('nationality');
+        $nationalities = \App\Models\Employee::select('employeeNationality')->distinct()->pluck('employeeNationality');
         $perPage = $request->input('per_page', 10);
 
         // Employee Filtering
@@ -88,7 +88,7 @@ class EmployerController extends Controller
         });
 
         if ($request->has('nationality') && $request->nationality != '') {
-            $employeesQuery->where('nationality', $request->nationality);
+            $employeesQuery->where('employeeNationality', $request->nationality);
         }
         if ($request->has('pink_card_status') && $request->pink_card_status != '') {
             $status = $request->pink_card_status == 'มี' ? 1 : 0;
@@ -177,7 +177,7 @@ class EmployerController extends Controller
         $currentPerPage = $request->input('per_page', 10);
 
         if ($request->filled('nationality')) {
-            $query->where('nationality', $request->nationality);
+            $query->where('employeeNationality', $request->nationality);
         }
         if ($request->filled('pink_card_status')) {
             $status = $request->pink_card_status == 'มี' ? 1 : 0;
