@@ -25,7 +25,23 @@ class RoleAndPermissionSeeder extends Seeder
             'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
             'terminate-employees',
             'restore-employees', // <-- เพิ่ม Permission ใหม่
-            'force-delete-employees' // <-- เพิ่ม Permission ใหม่
+            'force-delete-employees', // <-- เพิ่ม Permission ใหม่
+
+            // START: Add new permissions for other models
+            'restore-employers',
+            'force-delete-employers',
+
+            'view-agents', 'create-agents', 'edit-agents', 'delete-agents',
+            'restore-agents', 'force-delete-agents',
+
+            'view-importers', 'create-importers', 'edit-importers', 'delete-importers',
+            'restore-importers', 'force-delete-importers',
+
+            'view-delegates', 'create-delegates', 'edit-delegates', 'delete-delegates',
+            'restore-delegates', 'force-delete-delegates',
+
+            'delete-addresses', 'restore-addresses', 'force-delete-addresses'
+            // END: Add new permissions
         ];
         foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
