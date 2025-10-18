@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyModalEl = document.getElementById('employmentHistoryModal');
     if (!historyModalEl) return;
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const tableBody = document.getElementById('historyTableBody');
     const searchInput = document.getElementById('history-search-input');
     let currentEmployerId = null;
@@ -55,8 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     tableBody.innerHTML = `<tr><td colspan="5" class="text-center">No employment history found ${searchTerm ? 'matching search' : ''}.</td></tr>`;
                     return;
                 }
-
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 data.data.forEach((employee, index) => {
                     const terminatedDate = employee.terminated_at ? new Date(employee.terminated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
