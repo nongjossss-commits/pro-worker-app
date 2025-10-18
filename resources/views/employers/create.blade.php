@@ -154,7 +154,9 @@
                     <button type="button" class="btn btn-sm btn-primary add-address-btn"
                             data-bs-toggle="modal"
                             data-bs-target="#addressModal"
-                            data-type="registered">
+                            data-type="registered"
+                            disabled
+                            title="You must save the employer first before adding an address.">
                         + เพิ่มที่อยู่
                     </button>
                 </div>
@@ -170,7 +172,9 @@
                     <button type="button" class="btn btn-sm btn-primary add-address-btn"
                             data-bs-toggle="modal"
                             data-bs-target="#addressModal"
-                            data-type="workplace">
+                            data-type="workplace"
+                            disabled
+                            title="You must save the employer first before adding an address.">
                         + เพิ่มที่อยู่
                     </button>
                 </div>

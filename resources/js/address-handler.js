@@ -240,4 +240,58 @@ document.addEventListener('DOMContentLoaded', function () {
         saveButton.disabled = false;
         saveButton.innerHTML = 'บันทึก';
     });
+
+    // START: Add Delete Functionality
+    document.addEventListener('click', function(e) {
+        // Check if the clicked element is a delete button
+        if (e.target && (e.target.classList.contains('btn-delete-address') || e.target.closest('.btn-delete-address'))) {
+
+            e.preventDefault();
+
+            const button = e.target.closest('.btn-delete-address');
+            const addressId = button.dataset.addressId;
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            if (!addressId || !token) {
+                console.error('Delete button is missing address ID or CSRF token is not found.');
+                alert('An error occurred. Please refresh the page.');
+                return;
+            }
+
+            // Show confirmation dialog
+            if (!confirm('Are you sure you want to delete this address? This action cannot be undone.')) {
+                return; // User cancelled
+            }
+
+            // Perform the fetch request to the delete endpoint
+            fetch(`/addresses/${addressId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok. Status: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert('Address deleted successfully.');
+                    // Reload the page to show the updated address list
+                    window.location.reload();
+                } else {
+                    throw new Error('Server reported an error: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting address:', error);
+                alert('Failed to delete address. Please check the console for details.');
+            });
+        }
+    });
+    // END: Add Delete Functionality
 });
