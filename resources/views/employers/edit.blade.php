@@ -175,13 +175,7 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-warning edit-address-btn"
-                                data-bs-toggle="modal"
-                                data-bs-target="#addressModal"
-                                data-address-id="{{ $address->id }}">
-                            แก้ไข
-                        </button>
-                        <button type="button" class="btn btn-sm btn-danger ms-2 btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
+                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
                     </div>
                 </div>
             @empty
@@ -218,13 +212,7 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-warning edit-address-btn"
-                                data-bs-toggle="modal"
-                                data-bs-target="#addressModal"
-                                data-address-id="{{ $address->id }}">
-                            แก้ไข
-                        </button>
-                        <button type="button" class="btn btn-sm btn-danger ms-2 btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
+                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
                     </div>
                 </div>
             @empty
