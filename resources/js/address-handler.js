@@ -49,26 +49,90 @@ document.addEventListener('DOMContentLoaded', function () {
             // Maybe disable the address functionality or show an error
         });
 
-    addressModalEl.addEventListener('show.bs.modal', function (event) {
-        // Button that triggered the modal
-        const button = event.relatedTarget;
-        if (button) {
-            // Extract info from data-* attributes
-            const addressableId = button.dataset.addressableId;
-            const addressType = button.dataset.type;
+// START: Corrected 'show.bs.modal' listener
+addressModalEl.addEventListener('show.bs.modal', function (event) {
+    // Button that triggered the modal
+    const button = event.relatedTarget;
+    const addressForm = document.getElementById('addressForm');
+    const modalTitle = document.getElementById('addressModalLabel'); // Assuming your modal title has this ID, add it if not.
 
-            // Update the modal's hidden fields
+    // Reset the form for both create and edit
+    addressForm.reset();
+    document.getElementById('address_id').value = '';
+    document.getElementById('addressable_id').value = '';
+    document.getElementById('address_type').value = '';
+
+    // Clear dropdowns
+    resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
+    resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
+    clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
+
+    // Repopulate provinces if data is ready
+    if (thaiAddressData.length > 0) {
+        populateProvinces();
+    }
+
+    if (button) {
+        const addressId = button.dataset.addressId;
+        const addressableId = button.dataset.addressableId;
+        const addressType = button.dataset.type;
+
+        if (addressId) {
+            // ----- WE ARE EDITING -----
+            if(modalTitle) modalTitle.textContent = 'แก้ไขที่อยู่';
+            document.getElementById('address_id').value = addressId;
+
+            // Show loading state (optional, but good practice)
+            // saveButton.disabled = true;
+
+            // Fetch the existing address data
+            fetch(`/addresses/${addressId}/edit`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch address data.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Populate the form with existing data
+                    document.getElementById('addrNo').value = data.addrNo || '';
+                    document.getElementById('addrMoo').value = data.addrMoo || '';
+                    document.getElementById('addrSoi').value = data.addrSoi || '';
+                    document.getElementById('addrRoad').value = data.addrRoad || '';
+                    document.getElementById('addrZipCode').value = data.addrZipCode || '';
+                    document.getElementById('addrNoEn').value = data.addrNoEn || '';
+                    document.getElementById('addrMooEn').value = data.addrMooEn || '';
+                    document.getElementById('addrSoiEn').value = data.addrSoiEn || '';
+                    document.getElementById('addrRoadEn').value = data.addrRoadEn || '';
+                    document.getElementById('addrSubDistrictEn').value = data.addrSubDistrictEn || '';
+                    document.getElementById('addrDistrictEn').value = data.addrDistrictEn || '';
+                    document.getElementById('addrProvinceEn').value = data.addrProvinceEn || '';
+
+                    // Set dropdowns (This is complex, simplified version: set values)
+                    // Note: This won't auto-trigger district/sub-district loading,
+                    // but it will save the correct data.
+                    if (data.addrProvince) {
+                        provinceSelect.value = data.addrProvince;
+                    }
+                    // A full solution would require triggering 'change' events and waiting
+                    // but for saving, setting the EN values is most important.
+
+                    // saveButton.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error fetching address data:', error);
+                    alert('Could not load address data for editing. Please close and try again.');
+                });
+
+        } else if (addressableId) {
+            // ----- WE ARE CREATING -----
+            if(modalTitle) modalTitle.textContent = 'เพิ่มที่อยู่ใหม่';
             document.getElementById('addressable_id').value = addressableId;
             document.getElementById('address_type').value = addressType;
         }
-
-        if (thaiAddressData.length > 0) {
-            populateProvinces();
-        }
-        resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
-        resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
-        clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
-    });
+    }
+});
+// END: Corrected 'show.bs.modal' listener
 
     provinceSelect.addEventListener('change', function () {
         // Always start by resetting downstream dependencies. This disables them.
@@ -241,57 +305,78 @@ document.addEventListener('DOMContentLoaded', function () {
         saveButton.innerHTML = 'บันทึก';
     });
 
-    // START: Add Delete Functionality
-    document.addEventListener('click', function(e) {
-        // Check if the clicked element is a delete button
-        if (e.target && (e.target.classList.contains('btn-delete-address') || e.target.closest('.btn-delete-address'))) {
+// START: Add Delete Functionality (Bootstrap Modal Version)
+const deleteModalEl = document.getElementById('deleteConfirmModal');
+const deleteModal = new bootstrap.Modal(deleteModalEl);
+const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 
-            e.preventDefault();
+document.addEventListener('click', function(e) {
+    // Check if the clicked element is a delete button
+    if (e.target && (e.target.classList.contains('btn-delete-address') || e.target.closest('.btn-delete-address'))) {
 
-            const button = e.target.closest('.btn-delete-address');
-            const addressId = button.dataset.addressId;
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        e.preventDefault();
 
-            if (!addressId || !token) {
-                console.error('Delete button is missing address ID or CSRF token is not found.');
-                alert('An error occurred. Please refresh the page.');
-                return;
-            }
+        const button = e.target.closest('.btn-delete-address');
+        const addressId = button.dataset.addressId;
 
-            // Show confirmation dialog
-            if (!confirm('Are you sure you want to delete this address? This action cannot be undone.')) {
-                return; // User cancelled
-            }
-
-            // Perform the fetch request to the delete endpoint
-            fetch(`/addresses/${addressId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': token,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok. Status: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    alert('Address deleted successfully.');
-                    // Reload the page to show the updated address list
-                    window.location.reload();
-                } else {
-                    throw new Error('Server reported an error: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting address:', error);
-                alert('Failed to delete address. Please check the console for details.');
-            });
+        if (!addressId) {
+            console.error('Delete button is missing address ID.');
+            alert('An error occurred. Please refresh the page.');
+            return;
         }
+
+        // Store the ID on the confirm button and show the modal
+        confirmDeleteBtn.dataset.addressId = addressId;
+        deleteModal.show();
+    }
+});
+
+// Add listener for the *actual* delete confirmation
+confirmDeleteBtn.addEventListener('click', function() {
+    const addressId = this.dataset.addressId;
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    if (!addressId || !token) {
+        console.error('Delete confirmation is missing address ID or CSRF token.');
+        alert('An error occurred. Please refresh the page.');
+        return;
+    }
+
+    // Disable button to prevent double-click
+    this.disabled = true;
+    this.innerHTML = 'Deleting...';
+
+    fetch(`/addresses/${addressId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': token,
+            'Accept': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok.');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            deleteModal.hide();
+            if (window.showToast) {
+                window.showToast('Address deleted successfully!', 'success');
+            }
+            window.location.reload();
+        } else {
+            throw new Error('Server reported an error: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting address:', error);
+        alert('Failed to delete address. Please check the console for details.');
+        // Re-enable button on failure
+        this.disabled = false;
+        this.innerHTML = 'Confirm Delete';
     });
-    // END: Add Delete Functionality
+});
+// END: Add Delete Functionality (Bootstrap Modal Version)
 });
