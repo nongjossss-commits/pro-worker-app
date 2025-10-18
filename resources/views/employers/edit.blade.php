@@ -181,7 +181,7 @@
                                 data-address-id="{{ $address->id }}">
                             แก้ไข
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-sm btn-danger ms-2 btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
                     </div>
                 </div>
             @empty
@@ -224,7 +224,7 @@
                                 data-address-id="{{ $address->id }}">
                             แก้ไข
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger delete-address-btn" data-id="{{ $address->id }}"><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-sm btn-danger ms-2 btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
                     </div>
                 </div>
             @empty
