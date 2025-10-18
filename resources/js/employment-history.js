@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const terminatedDate = employee.terminated_at ? new Date(employee.terminated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
 
                     const restoreForm = employee.can_restore ? `
-                        <form action="/employees/${employee.id}/restore" method="POST" class="d-inline js-restore-form">
+                        <form action="/employees/${employee.id}/reinstate" method="POST" class="d-inline js-restore-form">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn btn-sm btn-success" title="Restore">
                                 <i class="bi bi-arrow-counterclockwise"></i>
