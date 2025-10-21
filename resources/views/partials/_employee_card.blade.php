@@ -47,7 +47,11 @@
         </div>
 
         <div class="employee-actions">
-             @include('components.employee-action-buttons', ['employee' => $employee, 'showLocateButton' => ($showLocateButton ?? false)])
+            @if(isset($isTrashView) && $isTrashView)
+                @include('admin.trash._action_buttons', ['modelName' => 'employees', 'item' => $employee])
+            @else
+                @include('components.employee-action-buttons', ['employee' => $employee, 'showLocateButton' => ($showLocateButton ?? false)])
+            @endif
         </div>
     </div>
 </div>

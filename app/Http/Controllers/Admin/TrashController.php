@@ -26,18 +26,47 @@ class TrashController extends Controller
     /**
      * Display a list of all soft-deleted items.
      */
-    public function index()
+    public function index(Request $request)
     {
         $trashedData = [];
         $models = $this->getPrunableModels();
+        $searchTerm = $request->input('search');
 
         foreach ($models as $modelName => $modelClass) {
-            // Use the correct model class variable
-            $trashedData[$modelName] = $modelClass::onlyTrashed()->get();
+            $query = $modelClass::onlyTrashed();
+
+            // --- Add Eager Loading ---
+            if ($modelName === 'employees') {
+                $query->with('employer');
+            }
+
+            // --- Add Search Logic ---
+            if ($searchTerm) {
+                // This requires a bit of model-specific logic.
+                // We'll create a simple search for common fields.
+                $query->where(function ($q) use ($searchTerm, $modelName) {
+                    if ($modelName === 'employees') {
+                        $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                          ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                          ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+                    } elseif ($modelName === 'employers') {
+                        $q->where('employerNameTh', 'like', "%{$searchTerm}%")
+                          ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
+                    } else {
+                        // A generic fallback for other models
+                        $q->where('name', 'like', "%{$searchTerm}%");
+                    }
+                });
+            }
+
+            $trashedData[$modelName] = $query->get();
         }
 
-        // This view does not exist yet. We will create it in Brief 10.
-        return view('admin.trash.index', compact('trashedData'));
+        return view('admin.trash.index', [
+            'trashedData' => $trashedData,
+            'search' => $searchTerm,
+            'currentView' => $request->input('view', 'table') // Default to table view
+        ]);
     }
 
     /**

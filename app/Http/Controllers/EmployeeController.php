@@ -45,6 +45,16 @@ class EmployeeController extends Controller
      */
     public function forceDelete(Employee $employee)
     {
+        // Permanently delete the employee's photo and documents first.
+        if ($employee->employeePhoto) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->employeePhoto);
+        }
+        for ($i = 1; $i <= 6; $i++) {
+            if ($employee->{"document_$i"}) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->{"document_$i"});
+            }
+        }
+
         $employee->forceDelete();
         return response()->json(['success' => 'Employee permanently deleted successfully.']);
     }
@@ -287,17 +297,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function destroy(Employee $employee)
     {
-        if ($employee->employeePhoto) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->employeePhoto);
-        }
-        // Add other file deletions here...
-        for ($i = 1; $i <= 6; $i++) {
-            if ($employee->{"document_$i"}) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->{"document_$i"});
-            }
-        }
         $employee->delete();
-        return redirect()->route('employees.index')->with('success', 'Employee deleted successfully.');
+        return response()->json(['success' => 'Employee moved to trash successfully.']);
     }
 
     public function export(Request $request)
