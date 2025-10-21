@@ -1,75 +1,73 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Central Trash') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 bg-white border-b border-gray-200">
 
+                    <!-- Tab Navigation -->
                     <ul class="nav nav-tabs" id="trashTabs" role="tablist">
-                        @foreach($trashedData as $modelName => $items)
+                        @foreach ($trashedData as $modelName => $items)
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $modelName }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $modelName }}-pane" type="button" role="tab" aria-controls="{{ $modelName }}-pane" aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                                <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $modelName }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $modelName }}-tab-pane" type="button" role="tab" aria-controls="{{ $modelName }}-tab-pane" aria-selected="{{ $loop->first ? 'true' : 'false' }}">
                                     {{ ucfirst($modelName) }} ({{ $items->count() }})
                                 </button>
                             </li>
                         @endforeach
                     </ul>
 
-                    <div class="tab-content pt-3" id="trashTabsContent">
-                        @foreach($trashedData as $modelName => $items)
-                            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $modelName }}-pane" role="tabpanel" aria-labelledby="{{ $modelName }}-tab" tabindex="0">
-                                @if($items->isEmpty())
-                                    <p>No trashed items found for {{ $modelName }}.</p>
-                                @else
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Name / Identifier</th>
-                                                <th>Deleted At</th>
-                                                <th class="text-end">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($items as $item)
-                                                <tr>
-                                                    <td>
-                                                        {{-- Display a relevant name field --}}
-                                                        {{ $item->employeeNameTh ?? $item->employerNameTh ?? $item->name ?? $item->importerNameTh ?? $item->delegateNameTh ?? $item->address_line_1 ?? 'N/A' }}
-                                                        <small class="d-block text-muted">ID: {{ $item->id }}</small>
-                                                    </td>
-                                                    <td>{{ $item->deleted_at ? $item->deleted_at->format('Y-m-d H:i') : ($item->terminated_at ? $item->terminated_at->format('Y-m-d H:i') : 'N/A') }}</td>
-                                                    <td class="text-end">
-
-                                                        {{-- RESTORE BUTTON (Permission-Protected) --}}
-                                                        @can('restore-' . $modelName)
-                                                            <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline restore-form">
-                                                                @csrf
-                                                                <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
-                                                            </form>
-                                                        @endcan
-
-                                                        {{-- FORCE DELETE BUTTON (Permission-Protected) --}}
-                                                        @can('force-delete-' . $modelName)
-                                                            <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline delete-form">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-danger" onsubmit="return confirm('Are you sure you want to PERMANENTLY delete this item? This action cannot be undone.');">
-                                                                    Force Delete
-                                                                </button>
-                                                            </form>
-                                                        @endcan
-
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                @endif
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="trashTabsContent">
+                        @foreach ($trashedData as $modelName => $items)
+                            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $modelName }}-tab-pane" role="tabpanel" aria-labelledby="{{ $modelName }}-tab" tabindex="0">
+                                <div class="p-4">
+                                    @if ($items->isEmpty())
+                                        <p class="text-center text-gray-500">No trashed items found for {{ ucfirst($modelName) }}.</p>
+                                    @else
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>Identifier</th>
+                                                        <th>Deleted At</th>
+                                                        <th class="text-end">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($items as $item)
+                                                        <tr id="trash-row-{{ $modelName }}-{{ $item->id }}">
+                                                            <td>
+                                                                {{ $item->employeeNameTh ?? $item->employerNameTh ?? $item->name ?? $item->id }}
+                                                            </td>
+                                                            <td>{{ $item->deleted_at->format('d/m/Y H:i:s') }}</td>
+                                                            <td class="text-end">
+                                                                @can('restore-' . Str::plural($modelName))
+                                                                    <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline trash-action-form">
+                                                                        @csrf
+                                                                        @method('POST')
+                                                                        <button type="submit" class="btn btn-success btn-sm">Restore</button>
+                                                                    </form>
+                                                                @endcan
+                                                                @can('force-delete-' . Str::plural($modelName))
+                                                                    <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline trash-action-form">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-danger btn-sm">Force Delete</button>
+                                                                    </form>
+                                                                @endcan
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -79,51 +77,45 @@
         </div>
     </div>
 
-    {{-- Add simple AJAX handling for the forms to prevent full page reloads --}}
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const handleFormSubmit = async (form, event) => {
-                event.preventDefault();
+            document.body.addEventListener('submit', function(e) {
+                if (e.target.matches('.trash-action-form')) {
+                    e.preventDefault();
+                    const form = e.target;
+                    const url = form.action;
+                    const methodInput = form.querySelector('input[name="_method"]');
+                    const method = methodInput ? methodInput.value : form.method;
+                    const token = form.querySelector('input[name="_token"]').value;
+                    const row = form.closest('tr');
 
-                const isDelete = form.classList.contains('delete-form');
-                if (isDelete && !confirm('Are you sure you want to PERMANENTLY delete this item? This action cannot be undone.')) {
-                    return;
-                }
-
-                try {
-                    const response = await fetch(form.action, {
-                        method: 'POST', // Form method spoofing handles DELETE
-                        body: new FormData(form),
+                    fetch(url, {
+                        method: method,
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token,
                             'Accept': 'application/json'
+                        },
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                    .then(({ status, body }) => {
+                        if (status === 200) {
+                            showToast(body.success, 'success');
+                            if(row) {
+                                row.remove();
+                                // Note: Tab count is not updated for simplicity.
+                            }
+                        } else {
+                            const errorMessage = body.error || 'An unexpected error occurred.';
+                            showToast(errorMessage, 'danger');
                         }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('A network error occurred. Please try again.', 'danger');
                     });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        // On success, remove the table row from the UI
-                        form.closest('tr').remove();
-                        // You can add a success toast message here
-                        alert(data.success);
-                    } else {
-                        // On failure (e.g., 403 Forbidden)
-                        alert('Error: ' + (data.error || 'An unknown error occurred.'));
-                    }
-                } catch (error) {
-                    console.error('Submission error:', error);
-                    alert('An error occurred while submitting the form.');
                 }
-            };
-
-            document.querySelectorAll('.restore-form').forEach(form => {
-                form.addEventListener('submit', (e) => handleFormSubmit(form, e));
-            });
-
-            document.querySelectorAll('.delete-form').forEach(form => {
-                form.addEventListener('submit', (e) => handleFormSubmit(form, e));
             });
         });
     </script>
