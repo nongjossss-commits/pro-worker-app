@@ -5,24 +5,6 @@
 @section('header')
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
     <h1 class="mb-3 mb-md-0">Central Trash</h1>
-    <div class="d-flex gap-2">
-        {{-- Search Form --}}
-        <form action="{{ route('admin.trash.index') }}" method="GET" class="d-flex gap-2">
-            <input type="hidden" name="view" value="{{ $currentView }}">
-            <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
-            <button type="submit" class="btn btn-primary">Search</button>
-        </form>
-
-        {{-- View Toggle --}}
-        <div class="btn-group">
-            <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn btn-outline-secondary @if($currentView === 'table') active @endif" title="Table View">
-                <i class="bi bi-list-ul"></i>
-            </a>
-            <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn btn-outline-secondary @if($currentView === 'card') active @endif" title="Card View">
-                <i class="bi bi-grid-3x3-gap-fill"></i>
-            </a>
-        </div>
-    </div>
 </div>
 @endsection
 
@@ -30,6 +12,25 @@
 <div class="container-fluid content-section">
     <div class="card">
         <div class="card-body">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                {{-- Search Form --}}
+                <form action="{{ route('admin.trash.index') }}" method="GET" class="d-flex gap-2">
+                    <input type="hidden" name="view" value="{{ $currentView ?? 'table' }}">
+                    <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+
+                {{-- View Toggle --}}
+                <div class="btn-group">
+                    <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn btn-outline-secondary @if(($currentView ?? 'table') === 'table') active @endif" title="Table View">
+                        <i class="bi bi-list-ul"></i>
+                    </a>
+                    <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn btn-outline-secondary @if(($currentView ?? 'table') === 'card') active @endif" title="Card View">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                    </a>
+                </div>
+            </div>
+
             @if(collect($trashedData)->every(fn($items) => $items->isEmpty()))
                 <div class="alert alert-info text-center">
                     <i class="bi bi-trash3 me-2"></i> The trash is currently empty{{ $search ? ' for your search query' : '' }}.
