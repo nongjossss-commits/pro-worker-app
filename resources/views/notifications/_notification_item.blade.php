@@ -36,6 +36,7 @@
                         {{ $itemNumber }}. {{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}
                         @if($flagCode)
                             <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" title="{{ $nationality }}">
+                            <span class="ms-2">{{ $nationality }}</span>
                         @endif
                     </h5>
                     <p class="mb-1 small">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</p>
@@ -64,7 +65,7 @@
         @else
             <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
             <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
-            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ดูข้อมูล"><i class="bi bi-search"></i></a>
+            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
             <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
         @endif
     </div>
