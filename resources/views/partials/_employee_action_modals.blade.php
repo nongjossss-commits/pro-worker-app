@@ -26,6 +26,45 @@
     </div>
 </div>
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const terminateModal = document.getElementById('terminateEmployeeModal');
+    if (terminateModal) {
+        const terminateForm = document.getElementById('terminateEmployeeForm');
+        const employeeNameEl = document.getElementById('terminateEmployeeName');
+
+        terminateModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const employeeId = button.getAttribute('data-employee-id');
+            const employeeName = button.getAttribute('data-employee-name');
+
+            const actionUrl = `/employees/${employeeId}/terminate`;
+            terminateForm.action = actionUrl;
+            employeeNameEl.textContent = employeeName;
+        });
+
+        terminateForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you really want to terminate this employee?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, terminate them!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    e.target.submit();
+                }
+            });
+        });
+    }
+});
+</script>
+@endpush
+
 {{-- All-purpose Employment History Modal --}}
 <div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -58,6 +97,38 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Terminate Employee Modal --}}
+<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="terminateEmployeeForm" method="POST" action="">
+                @csrf
+                @method('PUT')
+                <div class="modal-header">
+                    <h5 class="modal-title" id="terminateEmployeeModalLabel">Terminate Employee</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to terminate <strong id="terminateEmployeeName"></strong>?</p>
+                    <input type="hidden" id="terminate_employee_id" name="employee_id">
+                    <div class="mb-3">
+                        <label for="termination_date" class="form-label">Termination Date</label>
+                        <input type="date" class="form-control" id="termination_date" name="termination_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="termination_reason" class="form-label">Reason for Termination</label>
+                        <textarea class="form-control" id="termination_reason" name="termination_reason" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Terminate</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

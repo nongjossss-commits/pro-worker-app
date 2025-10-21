@@ -96,11 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showToast(data.message, 'success');
-                        const row = document.querySelector(config.rowSelector);
-                        if (row) {
-                            row.remove();
-                        }
+                        window.location.reload();
                     } else {
                         showToast(data.message || 'An error occurred.', 'danger');
                     }
