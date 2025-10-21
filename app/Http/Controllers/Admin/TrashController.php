@@ -48,19 +48,27 @@ class TrashController extends Controller
                     switch ($modelName) {
                         case 'employees':
                             $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
-                              ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                              ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+                                ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                                ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
                             break;
                         case 'employers':
                             $q->where('employerNameTh', 'like', "%{$searchTerm}%")
-                              ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
+                                ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
                             break;
                         case 'agents':
-                        case 'importers':
-                        case 'delegates':
-                            // Generic fallback for models with a 'name' column
-                            $q->where('name', 'like', "%{$searchTerm}%");
+                            $q->where('agentNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('agentNameEn', 'like', "%{$searchTerm}%");
                             break;
+                        case 'importers':
+                            $q->where('importerNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('importerNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'delegates':
+                            $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                        // No default case: if a model has no specific search, we don't apply a search filter.
+                        // This prevents errors on models like 'Address' that don't have a standard searchable name field.
                     }
                 });
             }
@@ -75,6 +83,108 @@ class TrashController extends Controller
         ]);
     }
 
+
+    /**
+     * Exports the filtered soft-deleted items to a CSV file.
+     */
+    public function exportTrash(Request $request)
+    {
+        $allTrashedData = [];
+        $models = $this->getPrunableModels();
+        $searchTerm = $request->input('search');
+
+        // 1. Fetch all data, applying the same filters as the index page
+        foreach ($models as $modelName => $modelClass) {
+            $query = $modelClass::onlyTrashed();
+
+            if ($searchTerm) {
+                $query->where(function ($q) use ($searchTerm, $modelName) {
+                    // This switch MUST be kept in sync with the index method's search logic
+                    switch ($modelName) {
+                        case 'employees':
+                            $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                                ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'employers':
+                            $q->where('employerNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'agents':
+                            $q->where('agentNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('agentNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'importers':
+                            $q->where('importerNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('importerNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'delegates':
+                            $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
+                                ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                    }
+                });
+            }
+            // Fetch all matching records, not paginated
+            $allTrashedData[$modelName] = $query->get();
+        }
+
+        // 2. Generate and stream a CSV file
+        return response()->streamDownload(function () use ($allTrashedData) {
+            $handle = fopen('php://output', 'w');
+            // Add UTF-8 BOM to ensure Excel opens the file with correct encoding
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // Add header row
+            fputcsv($handle, ['Type', 'Identifier (TH)', 'Identifier (EN)', 'Date Deleted']);
+
+            foreach ($allTrashedData as $modelName => $collection) {
+                foreach ($collection as $item) {
+                    $identifierTh = '';
+                    $identifierEn = '';
+
+                    // Determine the identifier based on model type
+                    switch ($modelName) {
+                        case 'employees':
+                            $identifierTh = $item->employeeNameTh;
+                            $identifierEn = $item->employeeNameEn;
+                            break;
+                        case 'employers':
+                            $identifierTh = $item->employerNameTh;
+                            $identifierEn = $item->employerNameEn;
+                            break;
+                        case 'agents':
+                            $identifierTh = $item->agentNameTh;
+                            $identifierEn = $item->agentNameEn;
+                            break;
+                        case 'importers':
+                            $identifierTh = $item->importerNameTh;
+                            $identifierEn = $item->importerNameEn;
+                            break;
+                        case 'delegates':
+                            $identifierTh = $item->delegateNameTh;
+                            $identifierEn = $item->delegateNameEn;
+                            break;
+                        case 'addresses':
+                            $identifierTh = "Address ID: " . $item->id;
+                            $identifierEn = $item->addressLine1;
+                            break;
+                    }
+
+                    fputcsv($handle, [
+                        Str::ucfirst($modelName),
+                        $identifierTh,
+                        $identifierEn,
+                        $item->deleted_at->toDateTimeString(),
+                    ]);
+                }
+            }
+
+            fclose($handle);
+        }, 'trash_export_' . date('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
 
     /**
      * Restore a specific soft-deleted item.

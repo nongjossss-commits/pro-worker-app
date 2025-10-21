@@ -83,9 +83,11 @@ class AgentController extends Controller
      */
     public function destroy(Agent $agent)
     {
-        $agent->delete();
-
-        return redirect()->route('agents.index')
-            ->with('success', 'ลบข้อมูลเอเจนซี่เรียบร้อยแล้ว');
+        try {
+            $agent->delete();
+            return response()->json(['success' => 'ลบข้อมูลเอเจนซี่เรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Could not delete agent.'], 500);
+        }
     }
 }

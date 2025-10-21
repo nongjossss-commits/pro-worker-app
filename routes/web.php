@@ -73,6 +73,8 @@ Route::middleware(['auth', 'permission:view-trash'])->prefix('admin')->name('adm
     Route::get('/trash', [\App\Http\Controllers\Admin\TrashController::class, 'index'])
          ->name('trash.index');
 
+    Route::get('/trash/export', [\App\Http\Controllers\Admin\TrashController::class, 'exportTrash'])->name('trash.export');
+
     Route::post('/trash/{model}/{id}/restore', [\App\Http\Controllers\Admin\TrashController::class, 'restore'])
          ->name('trash.restore')
          ->withTrashed(); // Important for finding soft-deleted models

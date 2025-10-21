@@ -40,7 +40,7 @@
                         <td>{{ $delegate->delegateId }}</td>
                         <td>
                             <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">Edit</a>
-                            <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to delete this delegate?');">
+                            <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;" class="delete-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
@@ -67,6 +67,57 @@
         for (let row of tableRows_delegate) {
             row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
         }
+    });
+
+    document.querySelectorAll('.delete-form').forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: new FormData(form)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                'Deleted!',
+                                'The record has been deleted.',
+                                'success'
+                            ).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire(
+                                'Error!',
+                                data.error || 'Could not delete the record.',
+                                'error'
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire(
+                            'Error!',
+                            'An error occurred while submitting the data.',
+                            'error'
+                        );
+                    });
+                }
+            });
+        });
     });
 </script>
 @endpush

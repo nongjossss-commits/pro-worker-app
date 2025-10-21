@@ -36,10 +36,10 @@
                         <td>{{ $importer->importerLicenseNo }}</td>
                         <td class="text-center">
                             <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
-                            <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-inline">
+                            <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-inline delete-form">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')">ลบ</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
                             </form>
                         </td>
                     </tr>
@@ -66,6 +66,58 @@
         for (let row of tableRows_importer) {
             row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
         }
+    });
+
+    document.querySelectorAll('.delete-form').forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            Swal.fire({
+                title: 'คุณแน่ใจหรือไม่?',
+                text: "คุณจะไม่สามารถย้อนกลับสิ่งนี้ได้!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'ใช่, ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: new FormData(form)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                'ลบแล้ว!',
+                                'ข้อมูลของคุณถูกลบแล้ว',
+                                'success'
+                            ).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire(
+                                'เกิดข้อผิดพลาด!',
+                                data.error || 'ไม่สามารถลบข้อมูลได้',
+                                'error'
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire(
+                            'เกิดข้อผิดพลาด!',
+                            'เกิดข้อผิดพลาดในการส่งข้อมูล',
+                            'error'
+                        );
+                    });
+                }
+            });
+        });
     });
 </script>
 @endpush

@@ -18,6 +18,7 @@
                     <input type="hidden" name="view" value="{{ $currentView ?? 'table' }}">
                     <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
                     <button type="submit" class="btn btn-primary">Search</button>
+                    <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">Export</a>
                 </form>
 
                 {{-- View Toggle --}}
