@@ -35,8 +35,10 @@
                     <h5 class="alert-heading mb-1">
                         {{ $itemNumber }}. {{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}
                         @if($flagCode)
-                            <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" title="{{ $nationality }}">
-                            <span class="ms-2">{{ $nationality }}</span>
+                            <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
+                                <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" title="{{ $nationality }}" style="width: 16px; height: 12px; margin-right: 5px;">
+                                <span>{{ $nationality }}</span>
+                            </span>
                         @endif
                     </h5>
                     <p class="mb-1 small">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</p>

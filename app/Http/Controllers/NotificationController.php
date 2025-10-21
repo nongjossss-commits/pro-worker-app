@@ -345,8 +345,8 @@ class NotificationController extends Controller
             return redirect()->back()->with('error', 'ไม่พบข้อมูลนายจ้าง');
         }
 
-        // Add the URL hash to redirect and trigger the highlight
-        $url = route('employers.edit', $employer) . '#employee-card-' . $employee->id;
-        return redirect($url);
+        // This method is proven to trigger the highlight on the employers.edit page
+        return redirect()->route('employers.edit', $employer)
+                     ->with('highlight_employee', $employee->id);
     }
 }
