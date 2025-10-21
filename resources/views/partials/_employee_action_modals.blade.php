@@ -107,7 +107,6 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="modal-content">
             <form id="terminateEmployeeForm" method="POST" action="">
                 @csrf
-                @method('PUT')
                 <div class="modal-header">
                     <h5 class="modal-title" id="terminateEmployeeModalLabel">Terminate Employee</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

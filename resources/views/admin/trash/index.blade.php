@@ -4,16 +4,35 @@
 
 @section('content')
 <div class="container-fluid content-section">
-    <h1 class="mb-4">Central Trash</h1>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <h1 class="mb-3 mb-md-0">Central Trash</h1>
+        <div class="d-flex gap-2">
+            {{-- Search Form --}}
+            <form action="{{ route('admin.trash.index') }}" method="GET" class="d-flex gap-2">
+                <input type="hidden" name="view" value="{{ $currentView }}">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Search in trash..." value="{{ $search ?? '' }}">
+                <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            </form>
+
+            {{-- View Toggle --}}
+            <div class="btn-group">
+                <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn btn-sm btn-outline-secondary @if($currentView === 'table') active @endif" title="Table View">
+                    <i class="bi bi-list-ul"></i>
+                </a>
+                <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn btn-sm btn-outline-secondary @if($currentView === 'card') active @endif" title="Card View">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                </a>
+            </div>
+        </div>
+    </div>
 
     <div class="card">
         <div class="card-body">
-            @if(empty($trashedData) || collect($trashedData)->every(fn($items) => $items->isEmpty()))
+            @if(collect($trashedData)->every(fn($items) => $items->isEmpty()))
                 <div class="alert alert-info text-center">
-                    The trash is currently empty.
+                    <i class="bi bi-trash3 me-2"></i> The trash is currently empty{{ $search ? ' for your search query' : '' }}.
                 </div>
             @else
-                {{-- NAV TABS --}}
                 <ul class="nav nav-tabs" id="trashTabs" role="tablist">
                     @foreach($trashedData as $modelName => $items)
                         @if($items->isNotEmpty())
@@ -26,16 +45,47 @@
                     @endforeach
                 </ul>
 
-                {{-- TAB CONTENT --}}
                 <div class="tab-content pt-3" id="trashTabsContent">
                     @foreach($trashedData as $modelName => $items)
                         @if($items->isNotEmpty())
                             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $modelName }}-pane" role="tabpanel" aria-labelledby="{{ $modelName }}-tab" tabindex="0">
+
+                                {{-- CARD VIEW --}}
+                                @if($currentView === 'card')
+                                    <div class="row">
+                                        @foreach($items as $item)
+                                            <div class="col-md-6 col-lg-4 mb-3">
+                                                @if($modelName === 'employees')
+                                                    {{-- Reuse the employee card, but adapt it for trash --}}
+                                                    @include('partials._employee_card', ['employee' => $item, 'isTrashView' => true])
+                                                @else
+                                                    {{-- A generic card for other models --}}
+                                                    <div class="card h-100">
+                                                        <div class="card-body">
+                                                            <h5 class="card-title">{{ $item->employerNameTh ?? $item->name ?? 'Item' }}</h5>
+                                                            <p class="card-text text-muted">ID: {{ $item->id }}</p>
+                                                            <p class="card-text"><small>Deleted: {{ $item->deleted_at->format('d M Y') }}</small></p>
+                                                        </div>
+                                                        <div class="card-footer bg-transparent border-0 text-end pb-3">
+                                                            @include('admin.trash._action_buttons', ['modelName' => $modelName, 'item' => $item])
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                {{-- TABLE VIEW --}}
                                 <div class="table-responsive">
-                                    <table class="table table-striped table-hover">
+                                    <table class="table table-striped table-hover align-middle">
                                         <thead>
                                             <tr>
-                                                <th>Identifier</th>
+                                                @if($modelName === 'employees')
+                                                    <th style="width: 40%;">Employee</th>
+                                                    <th>Employer</th>
+                                                @else
+                                                    <th>Identifier</th>
+                                                @endif
                                                 <th>Deleted At</th>
                                                 <th class="text-end">Actions</th>
                                             </tr>
@@ -44,29 +94,32 @@
                                             @foreach($items as $item)
                                                 <tr id="trash-item-{{ $modelName }}-{{ $item->id }}">
                                                     <td>
-                                                        {{ $item->employeeNameTh ?? $item->employerNameTh ?? $item->name ?? $item->importerNameTh ?? $item->delegateNameTh ?? $item->address_line_1 ?? 'N/A' }}
-                                                        <small class="d-block text-muted">ID: {{ $item->id }}</small>
+                                                        @if($modelName === 'employees')
+                                                            <div class="d-flex align-items-center">
+                                                                <img src="{{ $item->employeePhoto ? asset('storage/' . $item->employeePhoto) : asset('images/default-profile.png') }}" alt="Photo" class="rounded-circle me-3" style="width: 48px; height: 48px; object-fit: cover;">
+                                                                <div>
+                                                                    {{ $item->employeeNameTh ?? 'N/A' }}
+                                                                    <small class="d-block text-muted">{{ $item->employeePassport ?? 'No Passport' }}</small>
+                                                                </div>
+                                                            </div>
+                                                        @else
+                                                            {{ $item->employerNameTh ?? $item->name ?? $item->address_line_1 ?? 'N/A' }}
+                                                            <small class="d-block text-muted">ID: {{ $item->id }}</small>
+                                                        @endif
                                                     </td>
+                                                    @if($modelName === 'employees')
+                                                        <td>{{ $item->employer->employerNameTh ?? 'N/A' }}</td>
+                                                    @endif
                                                     <td>{{ $item->deleted_at->format('d M Y, H:i') }}</td>
                                                     <td class="text-end">
-                                                        @can('restore-' . strtolower($modelName))
-                                                            <button type="button" class="btn btn-sm btn-outline-success btn-restore"
-                                                                    data-action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}">
-                                                                <i class="bi bi-arrow-counterclockwise"></i> Restore
-                                                            </button>
-                                                        @endcan
-                                                        @can('force-delete-' . strtolower($modelName))
-                                                            <button type="button" class="btn btn-sm btn-danger btn-force-delete"
-                                                                    data-action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}">
-                                                                <i class="bi bi-trash3-fill"></i> Force Delete
-                                                            </button>
-                                                        @endcan
+                                                       @include('admin.trash._action_buttons', ['modelName' => $modelName, 'item' => $item])
                                                     </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
                                 </div>
+                                @endif
                             </div>
                         @endif
                     @endforeach
@@ -78,6 +131,7 @@
 @endsection
 
 @push('scripts')
+{{-- The action handler script remains the same as it's already robust --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -85,67 +139,58 @@ document.addEventListener('DOMContentLoaded', function () {
     const handleAction = (actionUrl, config) => {
         Swal.fire(config.confirm).then((result) => {
             if (result.isConfirmed) {
-                fetch(actionUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
-                    body: new FormData(config.form) // Use FormData from a dummy form
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        showToast(data.message || 'An error occurred.', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('A network error occurred.', 'danger');
-                });
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = actionUrl;
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                if (config.method) {
+                    const methodInput = document.createElement('input');
+                    methodInput.type = 'hidden';
+                    methodInput.name = '_method';
+                    methodInput.value = config.method;
+                    form.appendChild(methodInput);
+                }
+
+                document.body.appendChild(form);
+                form.submit();
             }
         });
     };
 
     document.getElementById('trashTabsContent').addEventListener('click', function(event) {
-        const target = event.target.closest('button');
-        if (!target) return;
+        const target = event.target.closest('button, a.btn');
+        if (!target || (!target.classList.contains('btn-restore') && !target.classList.contains('btn-force-delete'))) {
+            return;
+        }
+        event.preventDefault();
 
-        const actionUrl = target.dataset.action;
-        const model = actionUrl.split('/')[3];
-        const id = actionUrl.split('/')[4];
-
-        // Create a dummy form for submission
-        const form = document.createElement('form');
-        const methodInput = document.createElement('input');
-        methodInput.name = '_method';
-        form.appendChild(methodInput);
+        const actionUrl = target.dataset.action || target.href;
 
         if (target.classList.contains('btn-restore')) {
-            methodInput.value = 'POST';
             handleAction(actionUrl, {
-                form: form,
-                rowSelector: `#trash-item-${model}-${id}`,
+                method: 'POST', // Restore is a POST
                 confirm: {
                     title: 'Are you sure?',
                     text: "This item will be restored.",
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
+                    cancelButtonColor: '#secondary',
                     confirmButtonText: 'Yes, restore it!'
                 }
             });
         } else if (target.classList.contains('btn-force-delete')) {
-            methodInput.value = 'DELETE';
             handleAction(actionUrl, {
-                form: form,
-                rowSelector: `#trash-item-${model}-${id}`,
+                method: 'DELETE', // Force delete is a DELETE
                 confirm: {
                     title: 'Are you absolutely sure?',
-                    text: "This action is permanent and cannot be undone.",
+                    text: "This action is permanent and cannot be undone. All related data and files will be deleted forever.",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
