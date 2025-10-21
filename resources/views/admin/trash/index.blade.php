@@ -106,8 +106,17 @@
                                                                     <small class="d-block text-muted">{{ $item->employeeTitleEn }} {{ $item->employeeNameEn }}</small>
                                                                 </div>
                                                             </div>
+                                                        @elseif($modelName === 'agents')
+                                                            {{ $item->agentNameEn }}
+                                                            <small class="d-block text-muted">ID: {{ $item->id }}</small>
+                                                        @elseif($modelName === 'importers')
+                                                            {{ $item->importerNameTh }}
+                                                            <small class="d-block text-muted">{{ $item->importerNameEn }}</small>
+                                                        @elseif($modelName === 'delegates')
+                                                            {{ $item->delegateNameTh }}
+                                                            <small class="d-block text-muted">{{ $item->delegateNameEn }}</small>
                                                         @else
-                                                            {{ $item->employerNameTh ?? $item->name ?? $item->address_line_1 ?? 'N/A' }}
+                                                            {{ $item->employerNameTh ?? $item->name ?? $item->address_line_1 ?? 'Item ID: ' . $item->id }}
                                                             <small class="d-block text-muted">ID: {{ $item->id }}</small>
                                                         @endif
                                                     </td>
@@ -165,6 +174,38 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const exportButton = document.querySelector('a.btn-info[href*="export"]');
+    const trashTabs = document.querySelectorAll('#trashTabs .nav-link');
+    const searchInput = document.querySelector('input[name="search"]');
+
+    const updateExportLink = () => {
+        const activeTab = document.querySelector('#trashTabs .nav-link.active');
+        if (!activeTab || !exportButton) {
+            return;
+        }
+
+        const modelName = activeTab.id.replace('-tab', '');
+        const currentSearch = searchInput ? searchInput.value : '';
+
+        // Build a fresh URL to avoid stacking query parameters
+        const url = new URL(exportButton.href.split('?')[0]);
+        url.searchParams.set('model', modelName);
+
+        // Only add the search parameter if it's not empty
+        if (currentSearch) {
+            url.searchParams.set('search', currentSearch);
+        }
+
+        exportButton.href = url.toString();
+    };
+
+    trashTabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', updateExportLink);
+    });
+
+    // Initial setup on page load
+    updateExportLink();
+
     const attachSweetAlert = (selector, options) => {
         document.body.addEventListener('submit', function (event) {
             if (!event.target.matches(selector)) {
