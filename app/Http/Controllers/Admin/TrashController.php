@@ -1,4 +1,4 @@
-<?php //
+<?php
 
 namespace App\Http\Controllers\Admin;
 
@@ -24,7 +24,7 @@ class TrashController extends Controller
     }
 
     /**
-     * Display a list of all soft-deleted items.
+     * Display a list of all soft-deleted items, with search and view state.
      */
     public function index(Request $request)
     {
@@ -35,39 +35,46 @@ class TrashController extends Controller
         foreach ($models as $modelName => $modelClass) {
             $query = $modelClass::onlyTrashed();
 
-            // --- Add Eager Loading ---
+            // --- Eager Loading ---
+            // Eager load relationships to prevent N+1 query problems in the view.
             if ($modelName === 'employees') {
-                $query->with('employer');
+                $query->with('employer'); // For displaying employer name
             }
 
-            // --- Add Search Logic ---
+            // --- Search Logic ---
             if ($searchTerm) {
-                // This requires a bit of model-specific logic.
-                // We'll create a simple search for common fields.
+                // We apply model-specific search logic based on common fields.
                 $query->where(function ($q) use ($searchTerm, $modelName) {
-                    if ($modelName === 'employees') {
-                        $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
-                          ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                          ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
-                    } elseif ($modelName === 'employers') {
-                        $q->where('employerNameTh', 'like', "%{$searchTerm}%")
-                          ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
-                    } else {
-                        // A generic fallback for other models
-                        $q->where('name', 'like', "%{$searchTerm}%");
+                    switch ($modelName) {
+                        case 'employees':
+                            $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                              ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                              ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'employers':
+                            $q->where('employerNameTh', 'like', "%{$searchTerm}%")
+                              ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'agents':
+                        case 'importers':
+                        case 'delegates':
+                            // Generic fallback for models with a 'name' column
+                            $q->where('name', 'like', "%{$searchTerm}%");
+                            break;
                     }
                 });
             }
 
-            $trashedData[$modelName] = $query->get();
+            $trashedData[$modelName] = $query->paginate(10, ['*'], $modelName . '_page')->withQueryString();
         }
 
         return view('admin.trash.index', [
             'trashedData' => $trashedData,
             'search' => $searchTerm,
-            'currentView' => $request->input('view', 'table') // Default to table view
+            'currentView' => $request->input('view', 'table') // Pass the view state
         ]);
     }
+
 
     /**
      * Restore a specific soft-deleted item.
@@ -75,7 +82,8 @@ class TrashController extends Controller
     public function restore(Request $request, $model, $id)
     {
         $modelClass = $this->getModelClass($model);
-        $permission = 'restore-' . Str::plural(strtolower($model)); // e.g., 'restore-employers'
+        // Correctly generate permission name, e.g., 'restore-employees'
+        $permission = 'restore-' . Str::plural(strtolower(class_basename($modelClass)));
 
         if (Gate::denies($permission)) {
             return response()->json(['error' => 'You do not have permission to restore this item.'], 403);
@@ -84,7 +92,7 @@ class TrashController extends Controller
         $item = $modelClass::onlyTrashed()->findOrFail($id);
         $item->restore();
 
-        return response()->json(['success' => ucfirst($model) . ' restored successfully.']);
+        return response()->json(['success' => class_basename($modelClass) . ' restored successfully.']);
     }
 
     /**
@@ -93,20 +101,22 @@ class TrashController extends Controller
     public function forceDelete(Request $request, $model, $id)
     {
         $modelClass = $this->getModelClass($model);
-        $permission = 'force-delete-' . Str::plural(strtolower($model)); // e.g., 'force-delete-employers'
+        // Correctly generate permission name, e.g., 'force-delete-employees'
+        $permission = 'force-delete-' . Str::plural(strtolower(class_basename($modelClass)));
 
         if (Gate::denies($permission)) {
             return response()->json(['error' => 'You do not have permission to permanently delete this item.'], 403);
         }
 
         $item = $modelClass::onlyTrashed()->findOrFail($id);
+        // Note: Logic for deleting associated files (like photos) should be in an observer or the model's forceDeleting event.
         $item->forceDelete();
 
-        return response()->json(['success' => ucfirst($model) . ' permanently deleted successfully.']);
+        return response()->json(['success' => class_basename($modelClass) . ' permanently deleted successfully.']);
     }
 
     /**
-     * Helper function to get all models that use SoftDeletes (based on Seeder).
+     * Helper function to get all models that use SoftDeletes.
      */
     private function getPrunableModels(): array
     {
@@ -121,17 +131,18 @@ class TrashController extends Controller
     }
 
     /**
-     * Helper function to safely get a model class from a string.
+     * Helper function to safely get a model class from its kebab-case string name.
      */
     private function getModelClass($modelName): string
     {
         $map = $this->getPrunableModels();
-        $modelNameLower = strtolower($modelName); // Use the plural form from the URL
+        // The key in the map is the plural kebab-case name from the route
+        $modelKey = strtolower($modelName);
 
-        if (!array_key_exists($modelNameLower, $map)) {
-            abort(404, 'Model not found.');
+        if (!array_key_exists($modelKey, $map)) {
+            abort(404, 'Model type not found.');
         }
 
-        return $map[$modelNameLower];
+        return $map[$modelKey];
     }
 }
