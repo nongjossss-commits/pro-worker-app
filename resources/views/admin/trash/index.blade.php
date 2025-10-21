@@ -131,75 +131,84 @@
 @endsection
 
 @push('scripts')
-{{-- The action handler script remains the same as it's already robust --}}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
 
-    const handleAction = (actionUrl, config) => {
-        Swal.fire(config.confirm).then((result) => {
-            if (result.isConfirmed) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = actionUrl;
+            // Function to handle ALL SweetAlert confirmations
+            const attachSweetAlert = (forms, options) => {
+                forms.forEach(form => {
+                    form.addEventListener('submit', function (event) {
+                        // 1. Intercept the form submission
+                        event.preventDefault();
 
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = csrfToken;
-                form.appendChild(csrfInput);
+                        // 2. Show SweetAlert (with Cancel button)
+                        Swal.fire({
+                            title: options.title,
+                            text: options.text,
+                            icon: options.icon,
+                            showCancelButton: true, // <-- FIXES BUG A
+                            confirmButtonColor: options.confirmButtonColor || '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: options.confirmButtonText
+                        }).then((result) => {
+                            // 3. If confirmed, submit the form via AJAX
+                            if (result.isConfirmed) {
+                                submitFormAjax(form);
+                            }
+                        });
+                    });
+                });
+            };
 
-                if (config.method) {
-                    const methodInput = document.createElement('input');
-                    methodInput.type = 'hidden';
-                    methodInput.name = '_method';
-                    methodInput.value = config.method;
-                    form.appendChild(methodInput);
+            // Function to handle the AJAX (Fetch) submission
+            const submitFormAjax = async (form) => {
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST', // Form method spoofing handles DELETE
+                        body: new FormData(form),
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // 4. On success, show success alert AND reload page
+                        Swal.fire(
+                            'Success!',
+                            data.success || 'Action completed.',
+                            'success'
+                        ).then(() => {
+                            window.location.reload(); // <-- FIXES BUG B/C
+                        });
+                    } else {
+                        Swal.fire('Error!', data.error || 'An unknown error occurred.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    Swal.fire('Error!', 'A critical error occurred.', 'error');
                 }
+            };
 
-                document.body.appendChild(form);
-                form.submit();
-            }
+            // Attach to Restore forms
+            attachSweetAlert(document.querySelectorAll('.restore-form'), {
+                title: 'Are you sure?',
+                text: "This item will be restored.",
+                icon: 'warning',
+                confirmButtonText: 'Yes, restore it!'
+            });
+
+            // Attach to Force Delete forms
+            attachSweetAlert(document.querySelectorAll('.delete-form'), {
+                title: 'Are you sure?',
+                text: "This action cannot be undone!",
+                icon: 'warning',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            });
+
         });
-    };
-
-    document.getElementById('trashTabsContent').addEventListener('click', function(event) {
-        const target = event.target.closest('button, a.btn');
-        if (!target || (!target.classList.contains('btn-restore') && !target.classList.contains('btn-force-delete'))) {
-            return;
-        }
-        event.preventDefault();
-
-        const actionUrl = target.dataset.action || target.href;
-
-        if (target.classList.contains('btn-restore')) {
-            handleAction(actionUrl, {
-                method: 'POST', // Restore is a POST
-                confirm: {
-                    title: 'Are you sure?',
-                    text: "This item will be restored.",
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#secondary',
-                    confirmButtonText: 'Yes, restore it!'
-                }
-            });
-        } else if (target.classList.contains('btn-force-delete')) {
-            handleAction(actionUrl, {
-                method: 'DELETE', // Force delete is a DELETE
-                confirm: {
-                    title: 'Are you absolutely sure?',
-                    text: "This action is permanent and cannot be undone. All related data and files will be deleted forever.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Yes, force delete it!'
-                }
-            });
-        }
-    });
-});
-</script>
-@endpush
+    </script>
+    @endpush
