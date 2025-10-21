@@ -4,8 +4,7 @@
  * This script manages:
  * 1. Fetching and rendering terminated employees.
  * 2. Live search functionality.
- * 3. Handling "Restore" and "Force Delete" actions via confirmation modals.
- * 4. Fixing the Bootstrap modal stacking issue when a modal opens another.
+ * 3. Handling "Restore" and "Move to Trash" actions with SweetAlert2 confirmations.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const historyModalEl = document.getElementById('employmentHistoryModal');
@@ -15,22 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableBody = document.getElementById('historyTableBody');
     const searchInput = document.getElementById('history-search-input');
     let currentEmployerId = null;
-    let formToSubmit = null; // Stores the form that triggered a confirmation modal
-
-    // --- Confirmation Modal Elements & Instances ---
-    const forceDeleteModalEl = document.getElementById('forceDeleteConfirmationModal');
-    const restoreModalEl = document.getElementById('restoreConfirmationModal');
-    const confirmDeleteBtn = document.getElementById('confirm-force-delete-btn');
-    const confirmRestoreBtn = document.getElementById('confirm-restore-btn');
-
-    // Ensure all required modal elements exist before proceeding
-    if (!forceDeleteModalEl || !restoreModalEl || !confirmDeleteBtn || !confirmRestoreBtn) {
-        console.error('One or more confirmation modal elements are missing from the DOM.');
-        return;
-    }
-
-    const forceDeleteBootstrapModal = new bootstrap.Modal(forceDeleteModalEl);
-    const restoreBootstrapModal = new bootstrap.Modal(restoreModalEl);
 
     /**
      * Fetches and renders the employment history for a given employer.
@@ -68,11 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </button>
                         </form>` : '';
 
-                    const forceDeleteForm = employee.can_force_delete ? `
-                        <form action="/employees/${employee.id}/force-delete" method="POST" class="d-inline js-delete-form">
+                    // Requirement: Change action to soft delete, update button text.
+                    const moveToTrashForm = employee.can_force_delete ? `
+                        <form action="/employees/${employee.id}" method="POST" class="d-inline js-delete-form">
                              <input type="hidden" name="_method" value="DELETE">
                              <input type="hidden" name="_token" value="${csrfToken}">
-                             <button type="submit" class="btn btn-sm btn-danger" title="Delete Permanently">
+                             <button type="submit" class="btn btn-sm btn-danger" title="Move to Trash">
                                 <i class="bi bi-trash3-fill"></i>
                              </button>
                         </form>` : '';
@@ -100,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td>${employeeCellHTML}</td>
                             <td>${terminatedDate}</td>
                             <td>${employee.termination_reason || '-'}</td>
-                            <td><div class="d-flex gap-1">${restoreForm} ${forceDeleteForm}</div></td>
+                            <td><div class="d-flex gap-1">${restoreForm} ${moveToTrashForm}</div></td>
                         </tr>`;
                     tableBody.insertAdjacentHTML('beforeend', row);
                 });
@@ -112,28 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * Handles the AJAX submission for a given form (Restore or Force Delete).
+     * Handles the AJAX submission for a given form (Restore or Delete).
      * @param {HTMLFormElement} form - The form to submit.
      */
     const submitFormAndRefresh = (form) => {
         const actionUrl = form.action;
-        // The restore action uses the 'reinstate' route.
-        const isRestoreAction = actionUrl.includes('/reinstate');
-
         fetch(actionUrl, { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     showToast(data.message, 'success');
-
-                    if (isRestoreAction) {
-                        // Force a full page reload. This is the most reliable way
-                        // to refresh both the main list and the modal's state.
-                        window.location.reload();
-                    } else {
-                        // For delete, just refresh the history modal list
-                        fetchAndRenderHistory(currentEmployerId, searchInput.value.trim());
-                    }
+                    // A full page reload is the most reliable way to refresh all states
+                    // for both main list and history modal after an action.
+                    window.location.reload();
                 } else {
                     showToast(data.message || 'An unknown error occurred.', 'danger');
                 }
@@ -157,53 +132,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Live search
     searchInput?.addEventListener('keyup', () => fetchAndRenderHistory(currentEmployerId, searchInput.value.trim()));
 
-    // Delegated listener for Restore/Delete form submissions
+    // Delegated listener for Restore/Delete form submissions to trigger SweetAlert
     tableBody?.addEventListener('submit', function(event) {
         event.preventDefault();
         const form = event.target;
-        formToSubmit = form; // Store the form
+
+        let confirmConfig;
 
         if (form.classList.contains('js-delete-form')) {
-            forceDeleteBootstrapModal.show();
+            confirmConfig = {
+                title: 'Are you sure?',
+                text: "This employee will be moved to the Central Trash.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, move to trash!'
+            };
         } else if (form.classList.contains('js-restore-form')) {
-            restoreBootstrapModal.show();
+             confirmConfig = {
+                title: 'Are you sure?',
+                text: "This employee will be restored to the active list.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, restore it!'
+            };
+        } else {
+            return; // Not a form we're interested in
         }
-    });
 
-    // Final confirmation button listeners
-    confirmDeleteBtn.addEventListener('click', () => {
-        if (formToSubmit) {
-            submitFormAndRefresh(formToSubmit);
-            formToSubmit = null;
-            forceDeleteBootstrapModal.hide();
-        }
-    });
-
-    confirmRestoreBtn.addEventListener('click', () => {
-        if (formToSubmit) {
-            submitFormAndRefresh(formToSubmit);
-            formToSubmit = null;
-            restoreBootstrapModal.hide();
-        }
-    });
-
-
-    // --- DEFINITIVE MODAL STACKING FIX ---
-    // When a confirmation modal is shown, add 'modal-behind' to the main history modal
-    // to lower its z-index, allowing the new modal to appear on top.
-    restoreModalEl.addEventListener('show.bs.modal', function () {
-        historyModalEl.classList.add('modal-behind');
-    });
-    forceDeleteModalEl.addEventListener('show.bs.modal', function () {
-        historyModalEl.classList.add('modal-behind');
-    });
-
-    // When a confirmation modal is hidden, remove the 'modal-behind' class to restore
-    // the main history modal's original z-index.
-    restoreModalEl.addEventListener('hidden.bs.modal', function () {
-        historyModalEl.classList.remove('modal-behind');
-    });
-    forceDeleteModalEl.addEventListener('hidden.bs.modal', function () {
-        historyModalEl.classList.remove('modal-behind');
+        Swal.fire(confirmConfig).then((result) => {
+            if (result.isConfirmed) {
+                submitFormAndRefresh(form);
+            }
+        });
     });
 });
