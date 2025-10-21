@@ -56,61 +56,25 @@
                                 @if($currentView === 'card')
                                     <div class="row">
                                         @foreach($items as $item)
-                                            <div class="col-md-6 col-lg-4 mb-3">
-                                                <div class="card h-100">
-                                                    @if($modelName === 'employees')
-                                                        <div class="card-body d-flex flex-column">
-                                                            <div class="d-flex align-items-center mb-3">
-                                                                <img src="{{ $item->employeePhoto ? asset('storage/' . $item->employeePhoto) : asset('images/default-profile.png') }}" alt="Photo" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
-                                                                <div>
-                                                                    <h5 class="card-title mb-0">{{ $item->employeeTitleTh }} {{ $item->employeeNameTh }}</h5>
-                                                                    <p class="card-text text-muted mb-0">{{ $item->employeeTitleEn }} {{ $item->employeeNameEn }}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mt-auto">
-                                                                <p class="card-text mb-1">
-                                                                    <strong>Nationality:</strong>
-                                                                    <span class="d-flex align-items-center">
-                                                                        @php $countryCode = App\Helpers\CountryHelper::getCountryCode($item->employeeNationality); @endphp
-                                                                        @if($countryCode)
-                                                                            <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $item->employeeNationality }}" class="me-2" style="width: 20px;">
-                                                                        @endif
-                                                                        {{ $item->employeeNationality }}
-                                                                    </span>
-                                                                </p>
-                                                                <p class="card-text"><small>Deleted: {{ $item->deleted_at->format('d M Y') }}</small></p>
-                                                            </div>
-                                                        </div>
-                                                    @else
+                                            @if($modelName === 'employees')
+                                                <div class="col-12 mb-1">
+                                                     @include('partials._employee_card', ['employee' => $item, 'isTrashView' => true, 'showLocateButton' => false])
+                                                </div>
+                                            @else
+                                                {{-- Fallback for other models --}}
+                                                <div class="col-md-6 col-lg-4 mb-3">
+                                                    <div class="card h-100">
                                                         <div class="card-body">
                                                             <h5 class="card-title">{{ $item->employerNameTh ?? $item->name ?? 'Item' }}</h5>
                                                             <p class="card-text text-muted">ID: {{ $item->id }}</p>
                                                             <p class="card-text"><small>Deleted: {{ $item->deleted_at->format('d M Y') }}</small></p>
                                                         </div>
-                                                    @endif
-                                                    <div class="card-footer bg-transparent border-0 text-end pb-3">
-                                                        {{-- RESTORE BUTTON (Permission-Protected) --}}
-                                                        @can('restore-' . $modelName)
-                                                            {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
-                                                            <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline restore-form">
-                                                                @csrf
-                                                                <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
-                                                            </form>
-                                                        @endcan
-
-                                                        {{-- FORCE DELETE BUTTON (Permission-Protected) --}}
-                                                        @can('force-delete-' . $modelName)
-                                                            <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline delete-form">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-danger">
-                                                                    Force Delete
-                                                                </button>
-                                                            </form>
-                                                        @endcan
+                                                        <div class="card-footer bg-transparent border-0 text-end pb-3">
+                                                            @include('admin.trash._action_buttons', ['modelName' => $modelName, 'item' => $item])
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            @endif
                                         @endforeach
                                     </div>
                                 @else
