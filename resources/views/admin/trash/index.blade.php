@@ -89,7 +89,25 @@
                                                         </div>
                                                     @endif
                                                     <div class="card-footer bg-transparent border-0 text-end pb-3">
-                                                        @include('admin.trash._action_buttons_inline', ['modelName' => $modelName, 'item' => $item])
+                                                        {{-- RESTORE BUTTON (Permission-Protected) --}}
+                                                        @can('restore-' . $modelName)
+                                                            {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
+                                                            <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline restore-form">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
+                                                            </form>
+                                                        @endcan
+
+                                                        {{-- FORCE DELETE BUTTON (Permission-Protected) --}}
+                                                        @can('force-delete-' . $modelName)
+                                                            <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline delete-form">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                                    Force Delete
+                                                                </button>
+                                                            </form>
+                                                        @endcan
                                                     </div>
                                                 </div>
                                             </div>
@@ -141,7 +159,25 @@
                                                     @endif
                                                     <td>{{ $item->deleted_at->format('d M Y, H:i') }}</td>
                                                     <td class="text-end">
-                                                       @include('admin.trash._action_buttons_inline', ['modelName' => $modelName, 'item' => $item])
+                                                        {{-- RESTORE BUTTON (Permission-Protected) --}}
+                                                        @can('restore-' . $modelName)
+                                                            {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
+                                                            <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline restore-form">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
+                                                            </form>
+                                                        @endcan
+
+                                                        {{-- FORCE DELETE BUTTON (Permission-Protected) --}}
+                                                        @can('force-delete-' . $modelName)
+                                                            <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline delete-form">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                                    Force Delete
+                                                                </button>
+                                                            </form>
+                                                        @endcan
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -158,14 +194,6 @@
     </div>
 </div>
 
-{{-- This is a view composer-like approach within the view itself to avoid creating another file --}}
-@php
-if (!isset($__env->getSections()['action_buttons_inline'])) {
-    $__env->startComponent('admin.trash._action_buttons_inline', ['modelName' => $modelName ?? '', 'item' => $item ?? null]);
-    $__env->slot('is_template', true);
-    $__env->endComponent();
-}
-@endphp
 @endsection
 
 @push('scripts')
