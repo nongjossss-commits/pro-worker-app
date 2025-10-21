@@ -90,10 +90,11 @@ class ImporterController extends Controller
      */
     public function destroy(Importer $importer)
     {
-        // Delete the importer
-        $importer->delete();
-
-        return redirect()->route('importers.index')
-            ->with('success', 'ลบข้อมูลบริษัทนำเข้าเรียบร้อยแล้ว');
+        try {
+            $importer->delete();
+            return response()->json(['success' => 'ลบข้อมูลบริษัทนำเข้าเรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Could not delete importer.'], 500);
+        }
     }
 }

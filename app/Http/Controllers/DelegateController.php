@@ -110,12 +110,14 @@ class DelegateController extends Controller
      */
     public function destroy(Delegate $delegate)
     {
-        if ($delegate->delegatePhoto) {
-            Storage::delete(str_replace('/storage', 'public', $delegate->delegatePhoto));
+        try {
+            if ($delegate->delegatePhoto) {
+                Storage::disk('public')->delete($delegate->delegatePhoto);
+            }
+            $delegate->delete();
+            return response()->json(['success' => 'Delegate deleted successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Could not delete delegate.'], 500);
         }
-        $delegate->delete();
-
-        return redirect()->route('delegates.index')
-                        ->with('success','Delegate deleted successfully');
     }
 }
