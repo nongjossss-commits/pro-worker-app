@@ -20,21 +20,15 @@
         </a>
     @endif
 
-    {{-- Terminate Button (Orange) --}}
-    @can('terminate-employees')
-        <button type="button" class="btn btn-sm btn-outline-warning me-1 js-terminate-btn" title="Terminate"
-                data-employee-id="{{ $employee->id }}"
-                data-bs-toggle="modal"
-                data-bs-target="#terminateEmployeeModal">
-            <i class="bi bi-person-x-fill"></i>
-        </button>
-    @endcan
-    
-    {{-- Force Delete Button (Red) - Admin Only --}}
-    @can('force-delete-employees')
-         <button type="button" class="btn btn-sm btn-danger js-force-delete-btn" title="Force Delete"
-                data-employee-id="{{ $employee->id }}">
-            <i class="bi bi-trash3-fill"></i>
+    {{-- Standard Delete (Soft Delete) Button --}}
+    @can('delete-employees')
+        <button type="button"
+                class="btn btn-sm btn-danger btn-trigger-delete-modal"
+                title="Delete Employee"
+                data-action="{{ route('employees.destroy', $employee->id) }}"
+                data-message="Are you sure you want to move this employee to the Central Trash?"
+                data-is-force-delete="false">
+            <i class="bi bi-trash-fill"></i>
         </button>
     @endcan
 </div>

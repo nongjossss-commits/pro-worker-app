@@ -1,71 +1,32 @@
-{{-- Force Delete Confirmation Modal --}}
-<div class="modal fade" id="forceDeleteConfirmationModal" tabindex="-1" aria-labelledby="forceDeleteConfirmationModalLabel" aria-hidden="true" style="z-index: 9999 !important;">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="forceDeleteConfirmationModalLabel">ยืนยันการลบถาวร</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        คุณแน่ใจหรือไม่ที่จะลบข้อมูลพนักงานนี้อย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-        <button type="button" class="btn btn-danger" id="confirm-force-delete-btn">ยืนยันการลบ</button>
-      </div>
-    </div>
-  </div>
-</div>
+{{-- This file now contains a standardized, central delete confirmation modal --}}
+{{-- All other modals were either removed or are managed by specific JS files (like employment-history) --}}
 
-{{-- Restore Confirmation Modal --}}
-<div class="modal fade" id="restoreConfirmationModal" tabindex="-1" aria-labelledby="restoreConfirmationModalLabel" aria-hidden="true" style="z-index: 9999 !important;">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="restoreConfirmationModalLabel">ยืนยันการกู้คืนข้อมูล</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        คุณแน่ใจหรือไม่ที่จะกู้คืนข้อมูลพนักงานคนนี้กลับสู่ระบบ?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-        <button type="button" class="btn btn-success" id="confirm-restore-btn">ยืนยัน</button>
-      </div>
-    </div>
-  </div>
-</div>
-{{-- Terminate Employee Modal --}}
-<div class="modal fade" id="terminateEmployeeModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
+<div class="modal fade" id="centralDeleteConfirmationModal" tabindex="-1" aria-labelledby="centralDeleteConfirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form id="terminate-form" method="POST" action="">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="terminateModalLabel">แจ้งออก / เลิกจ้าง</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="terminated_at" class="form-label">วันที่แจ้งออก / เลิกจ้าง</label>
-                        <input type="date" class="form-control" id="terminated_at" name="terminated_at" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="termination_reason" class="form-label">เหตุผล (ถ้ามี)</label>
-                        <textarea class="form-control" id="termination_reason" name="termination_reason" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
+            <div class="modal-header">
+                <h5 class="modal-title" id="centralDeleteConfirmationModalLabel">ยืนยันการดำเนินการ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="central-delete-modal-message">คุณแน่ใจหรือไม่ที่จะดำเนินการนี้?</p>
+            </div>
+            <div class="modal-footer">
+                <form id="central-delete-form" method="POST" action="">
+                    @csrf
+                    {{-- The method will be dynamically set, defaulting to DELETE for soft deletes --}}
+                    <input type="hidden" name="_method" value="DELETE" id="central-delete-form-method">
+
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="submit" class="btn btn-danger">ยืนยัน</button>
-                </div>
-            </form>
+                    {{-- The button's text and class will be set dynamically --}}
+                    <button type="submit" class="btn" id="central-delete-confirm-btn">ยืนยัน</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
-
-{{-- CORRECTED AND FINAL EMPLOYMENT HISTORY MODAL --}}
+{{-- All-purpose Employment History Modal --}}
 <div class="modal fade" id="employmentHistoryModal" tabindex="-1" aria-labelledby="employmentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -89,7 +50,7 @@
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
-                            {{-- Data will be loaded here by the script --}}
+                            {{-- Data will be loaded here by script --}}
                         </tbody>
                     </table>
                 </div>
