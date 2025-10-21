@@ -56,8 +56,7 @@ class TrashController extends Controller
                                 ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
                             break;
                         case 'agents':
-                            $q->where('agentNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('agentNameEn', 'like', "%{$searchTerm}%");
+                            $q->where('agentNameEn', 'like', "%{$searchTerm}%");
                             break;
                         case 'importers':
                             $q->where('importerNameTh', 'like', "%{$searchTerm}%")
@@ -89,48 +88,55 @@ class TrashController extends Controller
      */
     public function exportTrash(Request $request)
     {
-        $allTrashedData = [];
-        $models = $this->getPrunableModels();
-        $searchTerm = $request->input('search');
-
-        // 1. Fetch all data, applying the same filters as the index page
-        foreach ($models as $modelName => $modelClass) {
-            $query = $modelClass::onlyTrashed();
-
-            if ($searchTerm) {
-                $query->where(function ($q) use ($searchTerm, $modelName) {
-                    // This switch MUST be kept in sync with the index method's search logic
-                    switch ($modelName) {
-                        case 'employees':
-                            $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                                ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'employers':
-                            $q->where('employerNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'agents':
-                            $q->where('agentNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('agentNameEn', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'importers':
-                            $q->where('importerNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('importerNameEn', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'delegates':
-                            $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
-                            break;
-                    }
-                });
-            }
-            // Fetch all matching records, not paginated
-            $allTrashedData[$modelName] = $query->get();
+        $modelName = $request->input('model');
+        if (!$modelName) {
+            abort(400, 'A model type must be specified for export.');
         }
 
+        $models = $this->getPrunableModels();
+        if (!isset($models[$modelName])) {
+            abort(404, 'The specified model type is not valid for export.');
+        }
+
+        $modelClass = $models[$modelName];
+        $searchTerm = $request->input('search');
+
+        // 1. Fetch the specific model's data, applying the same filters as the index page
+        $query = $modelClass::onlyTrashed();
+
+        if ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm, $modelName) {
+                // This switch MUST be kept in sync with the index method's search logic
+                switch ($modelName) {
+                    case 'employees':
+                        $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                            ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                            ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+                        break;
+                    case 'employers':
+                        $q->where('employerNameTh', 'like', "%{$searchTerm}%")
+                            ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
+                        break;
+                    case 'agents':
+                        // This is the corrected logic from the index method
+                        $q->where('agentNameEn', 'like', "%{$searchTerm}%");
+                        break;
+                    case 'importers':
+                        $q->where('importerNameTh', 'like', "%{$searchTerm}%")
+                            ->orWhere('importerNameEn', 'like', "%{$searchTerm}%");
+                        break;
+                    case 'delegates':
+                        $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
+                            ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
+                        break;
+                }
+            });
+        }
+
+        $recordsToExport = $query->get();
+
         // 2. Generate and stream a CSV file
-        return response()->streamDownload(function () use ($allTrashedData) {
+        return response()->streamDownload(function () use ($recordsToExport, $modelName) {
             $handle = fopen('php://output', 'w');
             // Add UTF-8 BOM to ensure Excel opens the file with correct encoding
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
@@ -138,50 +144,48 @@ class TrashController extends Controller
             // Add header row
             fputcsv($handle, ['Type', 'Identifier (TH)', 'Identifier (EN)', 'Date Deleted']);
 
-            foreach ($allTrashedData as $modelName => $collection) {
-                foreach ($collection as $item) {
-                    $identifierTh = '';
-                    $identifierEn = '';
+            foreach ($recordsToExport as $item) {
+                $identifierTh = '';
+                $identifierEn = '';
 
-                    // Determine the identifier based on model type
-                    switch ($modelName) {
-                        case 'employees':
-                            $identifierTh = $item->employeeNameTh;
-                            $identifierEn = $item->employeeNameEn;
-                            break;
-                        case 'employers':
-                            $identifierTh = $item->employerNameTh;
-                            $identifierEn = $item->employerNameEn;
-                            break;
-                        case 'agents':
-                            $identifierTh = $item->agentNameTh;
-                            $identifierEn = $item->agentNameEn;
-                            break;
-                        case 'importers':
-                            $identifierTh = $item->importerNameTh;
-                            $identifierEn = $item->importerNameEn;
-                            break;
-                        case 'delegates':
-                            $identifierTh = $item->delegateNameTh;
-                            $identifierEn = $item->delegateNameEn;
-                            break;
-                        case 'addresses':
-                            $identifierTh = "Address ID: " . $item->id;
-                            $identifierEn = $item->addressLine1;
-                            break;
-                    }
-
-                    fputcsv($handle, [
-                        Str::ucfirst($modelName),
-                        $identifierTh,
-                        $identifierEn,
-                        $item->deleted_at->toDateTimeString(),
-                    ]);
+                // Determine the identifier based on model type
+                switch ($modelName) {
+                    case 'employees':
+                        $identifierTh = $item->employeeNameTh;
+                        $identifierEn = $item->employeeNameEn;
+                        break;
+                    case 'employers':
+                        $identifierTh = $item->employerNameTh;
+                        $identifierEn = $item->employerNameEn;
+                        break;
+                    case 'agents':
+                        $identifierTh = 'N/A'; // agentNameTh does not exist
+                        $identifierEn = $item->agentNameEn;
+                        break;
+                    case 'importers':
+                        $identifierTh = $item->importerNameTh;
+                        $identifierEn = $item->importerNameEn;
+                        break;
+                    case 'delegates':
+                        $identifierTh = $item->delegateNameTh;
+                        $identifierEn = $item->delegateNameEn;
+                        break;
+                    case 'addresses':
+                        $identifierTh = "Address ID: " . $item->id;
+                        $identifierEn = $item->addressLine1;
+                        break;
                 }
+
+                fputcsv($handle, [
+                    Str::ucfirst($modelName),
+                    $identifierTh,
+                    $identifierEn,
+                    $item->deleted_at->toDateTimeString(),
+                ]);
             }
 
             fclose($handle);
-        }, 'trash_export_' . date('Y-m-d') . '.csv', [
+        }, 'trash_export_' . $modelName . '_' . date('Y-m-d') . '.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
