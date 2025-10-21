@@ -1,3 +1,5 @@
+<?php //
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -5,9 +7,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
+// We must import all the models we plan to use
+use App\Models\Employee;
+use App\Models\Employer;
+use App\Models\Agent;
+use App\Models\Importer;
+use App\Models\Delegate;
+use App\Models\Address;
+
 class TrashController extends Controller
 {
-    // Protect the entire controller with the permission we just added
+    // Protect the entire controller with the permission we added
     public function __construct()
     {
         $this->middleware('permission:view-trash');
@@ -19,10 +29,10 @@ class TrashController extends Controller
     public function index()
     {
         $trashedData = [];
-
         $models = $this->getPrunableModels();
 
         foreach ($models as $modelName => $modelClass) {
+            // Use the correct model class variable
             $trashedData[$modelName] = $modelClass::onlyTrashed()->get();
         }
 
@@ -72,12 +82,12 @@ class TrashController extends Controller
     private function getPrunableModels(): array
     {
         return [
-            'employees' => \App\Models\Employee::class,
-            'employers' => \App\Models\Employer::class,
-            'agents' => \App\Models\Agent::class,
-            'importers' => \App\Models\Importer::class,
-            'delegates' => \App\Models\Delegate::class,
-            'addresses' => \App\Models\Address::class,
+            'employees' => Employee::class,
+            'employers' => Employer::class,
+            'agents' => Agent::class,
+            'importers' => Importer::class,
+            'delegates' => Delegate::class,
+            'addresses' => Address::class,
         ];
     }
 
