@@ -20,15 +20,27 @@
         </a>
     @endif
 
-    {{-- Standard Delete (Soft Delete) Button --}}
-    @can('delete-employees')
+    {{-- Terminate Button (Dark Grey) --}}
+    @can('terminate-employees')
         <button type="button"
-                class="btn btn-sm btn-danger btn-trigger-delete-modal"
-                title="Delete Employee"
-                data-action="{{ route('employees.destroy', $employee->id) }}"
-                data-message="Are you sure you want to move this employee to the Central Trash?"
-                data-is-force-delete="false">
-            <i class="bi bi-trash-fill"></i>
+                class="btn btn-sm btn-secondary me-1 btn-terminate"
+                title="Terminate Employment"
+                data-bs-toggle="modal"
+                data-bs-target="#terminateEmployeeModal"
+                data-employee-id="{{ $employee->id }}"
+                data-employee-name="{{ $employee->employeeNameTh }}">
+            <i class="bi bi-person-x-fill"></i>
         </button>
+    @endcan
+
+    {{-- Standard Delete (Soft Delete to Trash) Button --}}
+    @can('delete-employees')
+        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" class="d-inline delete-employee-form">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-sm btn-danger" title="Delete Employee (to Trash)">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+        </form>
     @endcan
 </div>

@@ -762,5 +762,52 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.body.addEventListener('submit', function(e) {
+        if (e.target.matches('.delete-employee-form')) {
+            e.preventDefault();
+            const form = e.target;
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This will move the employee to the Central Trash. You can recover them later.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, move to Trash!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const action = form.getAttribute('action');
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    fetch(action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        body: new FormData(form)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                             window.location.reload();
+                        } else {
+                            showToast(data.message || 'An error occurred while trying to delete the employee.', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Delete Error:', error);
+                        showToast('A network error occurred. Please try again.', 'danger');
+                    });
+                }
+            });
+        }
+    });
+});
+</script>
 </body>
 </html>
