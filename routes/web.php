@@ -67,4 +67,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 });
 // === สิ้นสุดส่วนที่ต้องเพิ่ม ===
 
+// --- Central Trash System ---
+Route::middleware(['auth', 'permission:view-trash'])->prefix('admin')->name('admin.')->group(function () {
+
+    Route::get('/trash', [\App\Http\Controllers\Admin\TrashController::class, 'index'])
+         ->name('trash.index');
+
+    Route::post('/trash/{model}/{id}/restore', [\App\Http\Controllers\Admin\TrashController::class, 'restore'])
+         ->name('trash.restore')
+         ->withTrashed(); // Important for finding soft-deleted models
+
+    Route::delete('/trash/{model}/{id}/force-delete', [\App\Http\Controllers\Admin\TrashController::class, 'forceDelete'])
+         ->name('trash.forceDelete')
+         ->withTrashed(); // Important for finding soft-deleted models
+});
+
 require __DIR__.'/auth.php';

@@ -23,6 +23,7 @@ class RoleAndPermissionSeeder extends Seeder
         $permissions = [
             'view-dashboard',
             'manage-users', 'manage-roles', 'manage-settings',
+            'view-trash', //
             'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
             'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
             'terminate-employees',
