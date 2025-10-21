@@ -142,6 +142,12 @@
                 <hr>
                 <a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>จัดการสิทธิ์</a>
                 @endcanany
+                @can('view-trash')
+                    <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.trash.index') ? 'active' : '' }}" href="{{ route('admin.trash.index') }}">
+                        <i class="bi bi-trash-fill me-2"></i>
+                        {{ __('Central Trash') }}
+                    </a>
+                @endcan
             </div>
             <div class="mt-auto">
                 <hr>
