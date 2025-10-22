@@ -27,7 +27,7 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt([...$credentials, 'status' => 'active'])) {
             $request->session()->regenerate();
 
             // เปลี่ยนจาก RouteServiceProvider::HOME เป็น '/dashboard' โดยตรง
