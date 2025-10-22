@@ -76,6 +76,18 @@ class RoleAndPermissionSeeder extends Seeder
         // FIX: Corrected all $this.command typos to $this->command
         $this->command->info('Admin role created/verified and assigned all permissions.');
 
+        // --- START: Create Employer Role (NEW) ---
+        $this->command->info('Creating Employer role...');
+        $employerRole = Role::firstOrCreate(['name' => 'employer']);
+        $employerPermissions = [
+            'view-dashboard',
+            'view-employers',
+            'view-employees'
+        ];
+        $employerRole->syncPermissions($employerPermissions);
+        $this->command->info('Employer role created/verified and permissions synced.');
+        // --- END: Create Employer Role (NEW) ---
+
         // Create a demo staff user *only if* they don't exist
         $staffUser = User::firstOrCreate(
             ['email' => 'staff@example.com'], // Find by email
