@@ -27,6 +27,7 @@ class Employer extends Model
         'document_vat_registration',
         'document_map',
         'job_owner_id',
+        'user_id',
     ];
 
     public function employees()
@@ -42,5 +43,10 @@ class Employer extends Model
     public function jobOwner()
     {
         return $this->belongsTo(JobOwner::class, 'job_owner_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
