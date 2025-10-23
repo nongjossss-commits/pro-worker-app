@@ -5,10 +5,31 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 
 class Employee extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('employerTenancy', function (Builder $builder) {
+            if (Auth::check() && Auth::user()->hasRole('employer')) {
+                // Find the employer record linked to this user
+                $employer = Auth::user()->employer;
+                if ($employer) {
+                    // This user is an 'employer'. Filter their view to *only*
+                    // Employees who belong to their linked Employer ID.
+                    $builder->where('employer_id', $employer->id);
+                } else {
+                    // This employer user is not linked to any employer record.
+                    // Show them nothing.
+                    $builder->whereRaw('1 = 0'); // Forces query to return empty
+                }
+            }
+        });
+    }
 
     // The $fillable array is correct as it matches the camelCase schema.
     protected $fillable = [
