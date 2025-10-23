@@ -13,7 +13,8 @@ class UserController extends Controller
      */
     public function index()
     {
-        return view('admin.users.index');
+        $users = User::with('roles')->latest()->get(); // Eager load roles (Source 84)
+        return view('admin.users.index', compact('users'));
     }
 
     /**
@@ -53,7 +54,11 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        //
+        // Logic for status toggle
+        $newStatus = $user->status === 'active' ? 'inactive' : 'active';
+        $user->update(['status' => $newStatus]); // Uses 'status' from $fillable (Source 83)
+
+        return redirect()->route('admin.users.index')->with('success', 'User status updated successfully.');
     }
 
     /**
