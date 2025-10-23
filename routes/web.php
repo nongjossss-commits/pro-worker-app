@@ -10,6 +10,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobOwnerController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\UserController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
@@ -63,6 +64,7 @@ Route::middleware('auth')->group(function () {
 
 // === เพิ่มโค้ดส่วนนี้เข้าไป ===
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', UserController::class);
     Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
 });
 // === สิ้นสุดส่วนที่ต้องเพิ่ม ===
