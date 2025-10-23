@@ -79,11 +79,11 @@ class RoleAndPermissionSeeder extends Seeder
         // --- START: Create Employer Role (NEW) ---
         $this->command->info('Creating Employer role...');
         $employerRole = Role::firstOrCreate(['name' => 'employer']);
-        // [PATCH] Explicitly define the correct permissions
+        // [PATCH 3.2] Force Ground Truth Permissions (IDs 1, 5, 9)
         $employerPermissions = [
-            'view-dashboard', // ID 1 (Source 7)
-            'view-employers', // ID 6 (Source 9)
-            'view-employees' // ID 10 (Source 10)
+            'view-dashboard', // ID 1 (Confirmed)
+            'view-employers', // ID 5 (Confirmed)
+            'view-employees' // ID 9 (Confirmed)
         ];
         // The syncPermissions function will handle overwriting the incorrect permissions
         $employerRole->syncPermissions($employerPermissions);
