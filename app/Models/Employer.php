@@ -6,10 +6,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\JobOwner;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 
 class Employer extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('employerTenancy', function (Builder $builder) {
+            if (Auth::check() && Auth::user()->hasRole('employer')) {
+                // This user is an 'employer'. Filter their view to *only*
+                // the Employer record linked to their user_id.
+                $builder->where('user_id', Auth::id());
+            }
+        });
+    }
 
     protected $fillable = [
         'employerNameTh',
