@@ -39,7 +39,9 @@
                         <td>{{ $delegate->delegateNameTh }}</td>
                         <td>{{ $delegate->delegateId }}</td>
                         <td>
+                            @can('edit-delegates')
                             <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                            @endcan
                             @can('delete-delegates')
                             <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;" class="delete-form">
                                 @csrf
