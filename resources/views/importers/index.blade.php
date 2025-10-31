@@ -36,11 +36,13 @@
                         <td>{{ $importer->importerLicenseNo }}</td>
                         <td class="text-center">
                             <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            @can('delete-importers')
                             <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-inline delete-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty
