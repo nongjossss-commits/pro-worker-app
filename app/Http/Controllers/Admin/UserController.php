@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -79,7 +80,10 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        //
+        $roles = Role::all();
+        $allPermissions = Permission::all(); // Get the Master List (Source 211)
+        $userPermissions = $user->permissions->pluck('name')->toArray(); // Get only direct permissions
+        return view('admin.users.edit', compact('user', 'roles', 'allPermissions', 'userPermissions'));
     }
 
     /**
@@ -87,11 +91,35 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        // Logic for status toggle
-        $newStatus = $user->status === 'active' ? 'inactive' : 'active';
-        $user->update(['status' => $newStatus]); // Uses 'status' from $fillable (Source 83)
+        // Check if this is a request from the full "Edit Form" (Feature D)
+        if ($request->has('name')) {
+            $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+                'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
+                'permissions' => ['nullable', 'array'] // 'permissions' is the name of our checkbox array
+            ]);
 
-        return redirect()->route('admin.users.index')->with('success', 'User status updated successfully.');
+            // Update User Details
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+            ]);
+
+            // Sync Role (Note: We only sync the *first* role for simplicity)
+            $user->syncRoles([$request->role_name]);
+
+            // Sync Permissions (The core of Feature D) (Source 79)
+            // This uses the HasRoles trait (Source 102, 103)
+            $user->syncPermissions($request->input('permissions', []));
+
+            return redirect()->route('admin.users.index')->with('success', 'User permissions and details updated.');
+        } else {
+            // This is a request from the "Status Toggle" (Feature C)
+            $newStatus = $user->status === 'active' ? 'inactive' : 'active';
+            $user->update(['status' => $newStatus]); // Uses 'status' from $fillable (Source 105)
+            return redirect()->route('admin.users.index')->with('success', 'User status updated successfully.');
+        }
     }
 
     /**
