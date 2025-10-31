@@ -22,6 +22,7 @@ class RoleAndPermissionSeeder extends Seeder
         // Create Permissions
         $permissions = [
             'view-dashboard',
+            'view-notifications',
             'manage-users', 'manage-roles', 'manage-settings',
             'view-trash', //
             'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
@@ -61,7 +62,12 @@ class RoleAndPermissionSeeder extends Seeder
             'view-employers', 'create-employers', 'edit-employers',
             'view-employees', 'edit-employees', 'create-employees',
             'terminate-employees',
-            'restore-employees'
+            'restore-employees',
+            'view-dashboard',
+            'view-notifications',
+            'view-importers', 'edit-importers',
+            'view-agents', 'edit-agents',
+            'view-delegates', 'edit-delegates'
         ];
 
         $staffRole->syncPermissions($staffPermissions);
@@ -81,7 +87,6 @@ class RoleAndPermissionSeeder extends Seeder
         $employerRole = Role::firstOrCreate(['name' => 'employer']);
         // [PATCH 3.2] Force Ground Truth Permissions (IDs 1, 5, 9)
         $employerPermissions = [
-            'view-dashboard', // ID 1 (Confirmed)
             'view-employers', // ID 5 (Confirmed)
             'view-employees' // ID 9 (Confirmed)
         ];
