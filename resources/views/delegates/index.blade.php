@@ -40,11 +40,13 @@
                         <td>{{ $delegate->delegateId }}</td>
                         <td>
                             <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                            @can('delete-delegates')
                             <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;" class="delete-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @endforeach

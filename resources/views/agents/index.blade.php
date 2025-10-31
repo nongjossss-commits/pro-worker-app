@@ -31,11 +31,13 @@
                         <td>{{ $agent->agentPhone }}</td>
                         <td class="text-center">
                             <a href="{{ route('agents.edit', $agent) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            @can('delete-agents')
                             <form action="{{ route('agents.destroy', $agent) }}" method="POST" class="d-inline delete-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty
