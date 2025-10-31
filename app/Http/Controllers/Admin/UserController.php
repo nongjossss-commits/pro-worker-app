@@ -18,7 +18,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('roles')->latest()->get(); // Eager load roles (Source 84)
+        $users = User::with('roles')->latest()->get();
         return view('admin.users.index', compact('users'));
     }
 
@@ -28,7 +28,7 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
-        $employers = Employer::whereNull('user_id')->get(); // Only show unlinked employers (Source 18)
+        $employers = Employer::whereNull('user_id')->get();
         return view('admin.users.create', compact('roles', 'employers'));
     }
 
@@ -40,9 +40,9 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role_name' => ['required', 'string', Rule::exists('roles', 'name')], // Use Spatie Role name (Source 9-15)
-            'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')], // Required only for employer role (Source 1)
+            'password' => ['required', 'string', 'min:8', 'confirmed'], // <-- Password required on create
+            'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
+            'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')],
         ]);
 
         // Create User
@@ -50,17 +50,17 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'status' => 'active', // Default to active
+            'status' => 'active',
         ]);
 
         // Assign Role
         $user->assignRole($request->role_name);
 
-        // Link Employer (Feature A requirement) (Source 1)
+        // Link Employer
         if ($request->role_name === 'employer' && $request->employer_id) {
             $employer = Employer::find($request->employer_id);
             if ($employer) {
-                $employer->update(['user_id' => $user->id]); // Link user_id in employers table (Source 18)
+                $employer->update(['user_id' => $user->id]);
             }
         }
 
@@ -81,9 +81,16 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $roles = Role::all();
-        $allPermissions = Permission::all(); // Get the Master List (Source 211)
-        $userPermissions = $user->permissions->pluck('name')->toArray(); // Get only direct permissions
-        return view('admin.users.edit', compact('user', 'roles', 'allPermissions', 'userPermissions'));
+        $allPermissions = Permission::all();
+        $userPermissions = $user->permissions->pluck('name')->toArray();
+
+        // V1.1 PATCH: Get available employers (unlinked OR this user's current linked one)
+        $currentEmployerId = $user->employer->id ?? null;
+        $employers = Employer::whereNull('user_id')
+            ->orWhere('id', $currentEmployerId)
+            ->get();
+
+        return view('admin.users.edit', compact('user', 'roles', 'allPermissions', 'userPermissions', 'employers'));
     }
 
     /**
@@ -96,28 +103,53 @@ class UserController extends Controller
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+                'password' => ['nullable', 'string', 'min:8', 'confirmed'], // <-- MUST BE NULLABLE on edit
                 'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
-                'permissions' => ['nullable', 'array'] // 'permissions' is the name of our checkbox array
+                'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')], // <-- ADDED (Bug Fix)
+                'permissions' => ['nullable', 'array']
             ]);
 
             // Update User Details
-            $user->update([
+            $updateData = [
                 'name' => $request->name,
                 'email' => $request->email,
-            ]);
+            ];
 
-            // Sync Role (Note: We only sync the *first* role for simplicity)
+            // V1.1 PATCH: Conditionally update password
+            if ($request->filled('password')) {
+                $updateData['password'] = Hash::make($request->password);
+            }
+            $user->update($updateData);
+
+            // Sync Role
             $user->syncRoles([$request->role_name]);
 
-            // Sync Permissions (The core of Feature D) (Source 79)
-            // This uses the HasRoles trait (Source 102, 103)
+            // V1.1 PATCH: Handle Employer Linkage (Bug Fix)
+            $currentEmployer = Employer::where('user_id', $user->id)->first();
+
+            if ($request->role_name === 'employer' && $request->employer_id) {
+                // Link new employer
+                if ($currentEmployer && $currentEmployer->id != $request->employer_id) {
+                    $currentEmployer->update(['user_id' => null]); // Unlink old
+                }
+                $newEmployer = Employer::find($request->employer_id);
+                if ($newEmployer) {
+                    $newEmployer->update(['user_id' => $user->id]); // Link new
+                }
+            } elseif ($currentEmployer) {
+                // Role changed *away* from employer, unlink them
+                $currentEmployer->update(['user_id' => null]);
+            }
+
+
+            // Sync Permissions
             $user->syncPermissions($request->input('permissions', []));
 
             return redirect()->route('admin.users.index')->with('success', 'User permissions and details updated.');
         } else {
             // This is a request from the "Status Toggle" (Feature C)
             $newStatus = $user->status === 'active' ? 'inactive' : 'active';
-            $user->update(['status' => $newStatus]); // Uses 'status' from $fillable (Source 105)
+            $user->update(['status' => $newStatus]);
             return redirect()->route('admin.users.index')->with('success', 'User status updated successfully.');
         }
     }
