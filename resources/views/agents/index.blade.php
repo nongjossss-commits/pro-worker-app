@@ -30,7 +30,9 @@
                         <td>{{ $agent->agentLicense }}</td>
                         <td>{{ $agent->agentPhone }}</td>
                         <td class="text-center">
+                            @can('edit-agents')
                             <a href="{{ route('agents.edit', $agent) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            @endcan
                             @can('delete-agents')
                             <form action="{{ route('agents.destroy', $agent) }}" method="POST" class="d-inline delete-form">
                                 @csrf

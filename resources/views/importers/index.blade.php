@@ -35,7 +35,9 @@
                         <td>{{ $importer->importerId }}</td>
                         <td>{{ $importer->importerLicenseNo }}</td>
                         <td class="text-center">
+                            @can('edit-importers')
                             <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            @endcan
                             @can('delete-importers')
                             <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-inline delete-form">
                                 @csrf
