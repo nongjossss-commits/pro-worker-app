@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\Rule;
 
 class TicketController extends Controller
 {
@@ -65,9 +66,15 @@ class TicketController extends Controller
         // V2.4-S4: Validate the hybrid form data
         $validatedData = $request->validate([
             'subject' => 'required|string|max:255',
-            'message' => 'required|string',
+            'body' => 'required|string', // V2.4-S4-Patch2: Corrected field name from 'message'
             'employee_ids' => 'nullable|array',
-            'employee_ids.*' => 'exists:employees,id',
+            'employee_ids.*' => [
+                'required',
+                // V2.4-S4-Patch2: Tenancy Check - ensure employee belongs to the user's employer
+                Rule::exists('employees', 'id')->where(function ($query) {
+                    $query->where('employer_id', Auth::user()->employer->id);
+                }),
+            ],
         ]);
 
         // V2.4-S4: Create the JobTicket and its initial message within a database transaction
@@ -90,7 +97,7 @@ class TicketController extends Controller
             TicketMessage::create([
                 'job_ticket_id' => $ticket->id,
                 'user_id' => Auth::id(),
-                'body' => $validatedData['message'],
+                'body' => $validatedData['body'], // V2.4-S4-Patch2: Corrected field name
                 'message_type' => 'text', // Default message type
             ]);
 
