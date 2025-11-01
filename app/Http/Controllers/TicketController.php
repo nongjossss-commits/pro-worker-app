@@ -4,7 +4,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobTicket;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -21,10 +20,13 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.index');
         }
 
-        // Enforce Tenancy: Filter tickets by the currently authenticated user.
+        // V2.4-S3: Handle Per Page selection using request() helper, default to 25
+        $perPage = request('per_page', 25);
+
+        // Enforce Tenancy
         $tickets = JobTicket::where('employer_user_id', Auth::id())
             ->latest()
-            ->paginate(20);
+            ->paginate($perPage);
 
         return view('tickets.index', compact('tickets'));
     }
