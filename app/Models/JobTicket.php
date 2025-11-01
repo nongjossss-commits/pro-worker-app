@@ -57,7 +57,8 @@ class JobTicket extends Model
             get: fn () => match ($this->status) {
                 'pending_staff' => 'warning', // Yellow/Orange
                 'pending_employer' => 'info', // Light Blue
-                'in_progress' => 'primary', // Blue
+                // CRITICAL CORRECTION: Ensure 'in_progress' maps to 'primary' (Blue)
+                'in_progress' => 'primary',
                 'resolved' => 'success', // Green
                 'rejected' => 'danger', // Red
                 default => 'secondary',// Gray
