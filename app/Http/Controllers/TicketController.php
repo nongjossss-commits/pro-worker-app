@@ -55,51 +55,53 @@ class TicketController extends Controller
 
     /**
      * Store a newly created ticket.
+     * V2.4-S4-Patch3: Hard Reset of store() method.
      */
     public function store(Request $request): RedirectResponse
     {
-        // Security Check: Ensure the user has the 'employer' role.
+        // Security Check: Enforce 'employer' role.
         if (!Auth::user()->hasRole('employer')) {
             abort(403, 'Unauthorized action.');
         }
 
-        // V2.4-S4: Validate the hybrid form data
+        // V2.4 Blueprint Validation: Aligned with create.blade.php name attributes.
         $validatedData = $request->validate([
-            'subject' => 'required|string|max:255',
-            'body' => 'required|string', // V2.4-S4-Patch2: Corrected field name from 'message'
-            'employee_ids' => 'nullable|array',
-            'employee_ids.*' => [
+            'ticket_subject' => 'required|string|max:255',
+            'message_body' => 'required|string',
+            'attached_employees' => 'nullable|array',
+            'attached_employees.*' => [
                 'required',
-                // V2.4-S4-Patch2: Tenancy Check - ensure employee belongs to the user's employer
+                // Tenancy Check: Ensures the submitted employee IDs belong to the user's own company.
                 Rule::exists('employees', 'id')->where(function ($query) {
                     $query->where('employer_id', Auth::user()->employer->id);
                 }),
             ],
         ]);
 
-        // V2.4-S4: Create the JobTicket and its initial message within a database transaction
         try {
             DB::beginTransaction();
 
+            // 1. Create the JobTicket
             $ticket = JobTicket::create([
                 'employer_user_id' => Auth::id(),
-                'subject' => $validatedData['subject'],
-                'status' => 'Pending', // Default status
-                'priority' => 'Normal', // Default priority
+                'subject' => $validatedData['ticket_subject'],
+                'status' => 'pending_staff', // Bug A Fix: Status is now V2.4 compliant.
+                'priority' => 'Normal',
             ]);
 
-            // Attach employees if any are selected
-            if (!empty($validatedData['employee_ids'])) {
-                $ticket->employees()->attach($validatedData['employee_ids']);
-            }
-
-            // Create the initial message
-            TicketMessage::create([
+            // 2. Create the initial TicketMessage (the employer's request)
+            $message = TicketMessage::create([
                 'job_ticket_id' => $ticket->id,
                 'user_id' => Auth::id(),
-                'body' => $validatedData['body'], // V2.4-S4-Patch2: Corrected field name
-                'message_type' => 'text', // Default message type
+                'body' => $validatedData['message_body'],
+                'message_type' => 'text',
             ]);
+
+            // 3. (Optional) Attach Employees via the TicketMessage (V2.4 Blueprint)
+            // Bug B Fix: Logic moved from a direct pivot table to the message itself.
+            if (!empty($validatedData['attached_employees'])) {
+                $message->employees()->attach($validatedData['attached_employees']);
+            }
 
             DB::commit();
 
@@ -107,9 +109,9 @@ class TicketController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log the exception message for debugging
-            logger()->error('Ticket creation failed: ' . $e->getMessage());
-            return back()->with('danger', 'An unexpected error occurred. Please try again.')->withInput();
+            logger()->error('Ticket Creation Failed: '. $e->getMessage());
+            // Bug C Fix: Return the specific error message to the user via the session.
+            return back()->with('danger', 'An unexpected error occurred while creating the ticket. Please try again.')->withInput();
         }
     }
 
