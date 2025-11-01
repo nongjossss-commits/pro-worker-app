@@ -133,6 +133,23 @@
                     <span><i class="bi bi-bell-fill me-2"></i>แจ้งเตือน</span>
                 </a>
                 @endcan
+                {{-- START V2.4: Smart Ticket Links --}}
+                {{-- V2.4: Admin/Staff Ticket Inbox --}}
+                {{-- Visible if the user has 'manage-tickets' permission. This takes precedence. --}}
+                @can('manage-tickets')
+                <a href="{{ route('admin.tickets.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">
+                <i class="bi bi-inbox-fill me-2"></i>กล่องตั๋วงาน
+                </a>
+                @else
+                {{-- V2.4: Employer Ticket Menu --}}
+                {{-- Visible ONLY if the user CANNOT 'manage-tickets' AND is an 'employer'. --}}
+                @role('employer')
+                <a href="{{ route('tickets.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
+                <i class="bi bi-ticket-detailed-fill me-2"></i>ส่งคำขอ/ติดตามงาน
+                </a>
+                @endrole
+                @endcan
+                {{-- END V2.4: Smart Ticket Links --}}
                 <hr>
                 @can('view-employers')
                 <a href="{{ route('employers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employers.*') ? 'active' : '' }}"><i class="bi bi-person-vcard-fill me-2"></i>ข้อมูลนายจ้าง</a>

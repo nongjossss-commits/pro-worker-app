@@ -11,6 +11,10 @@ use App\Http\Controllers\JobOwnerController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\UserController;
+// Add these new imports:
+use App\Http\Controllers\TicketController;
+// Use an alias for the Admin controller to avoid naming conflicts
+use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
@@ -60,14 +64,28 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/renew', [NotificationController::class, 'renew'])->name('notifications.renew');
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
     Route::delete('/notifications/{notification}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.forceDelete');
+
+    // --- V2.4: Employer Ticket Routes ---
+    // Accessible by authenticated users (but controller logic redirects Admins/Staff).
+    Route::resource('tickets', TicketController::class)->only([
+        'index', 'create', 'store', 'show'
+    ]);
 });
 
-// === เพิ่มโค้ดส่วนนี้เข้าไป ===
+// === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
+// Accessible only by users with 'manage-tickets' permission (Admin and Staff).
+Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name('admin.')->group(function () {
+    // We define routes explicitly for the Admin side.
+    Route::get('tickets', [AdminTicketController::class, 'index'])->name('tickets.index');
+    Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
+    // Future routes (update/assign) will go here.
+});
+
+// === Existing Admin Routes (role:admin) ===
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('users', UserController::class);
     Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
 });
-// === สิ้นสุดส่วนที่ต้องเพิ่ม ===
 
 // --- Central Trash System ---
 Route::middleware(['auth', 'permission:view-trash'])->prefix('admin')->name('admin.')->group(function () {
