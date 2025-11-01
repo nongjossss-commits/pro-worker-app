@@ -25,18 +25,20 @@
                     <h4 class="mt-0 header-title">New Ticket Details</h4>
                     <p class="text-muted m-b-30">Please provide as much detail as possible.</p>
 
-                    {{-- Display Validation Errors --}}
+                    {{-- V2.4-S4-Patch2: Generic Error Block --}}
                     @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <strong>Whoops!</strong> There were some problems with your input.<br><br>
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <h4 class="alert-heading">Whoops! There were some problems with your input.</h4>
+                        <p>Please review the form and correct the following errors:</p>
+                        <hr>
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                     @endif
-
 
                     <form action="{{ route('tickets.store') }}" method="POST" id="createTicketForm" enctype="multipart/form-data">
                         @csrf
@@ -67,10 +69,10 @@
                         <div class="form-group mt-4">
                             <label class="form-label">Attachments</label>
                             <div class="btn-group" role="group" aria-label="Attachment options">
-                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#attachEmployeeModal">
+                                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#attachEmployeeModal">
                                     <i class="bi bi-paperclip"></i> Attach Existing Employee (<span id="selected-count">0</span>)
                                 </button>
-                                <a href="{{ route('employees.create', ['source_ticket' => 'new']) }}" class="btn btn-info">
+                                <a href="{{ route('employees.create', ['source_ticket' => 'new']) }}" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Attach New Employee
                                 </a>
                                 <label class="btn btn-warning">
