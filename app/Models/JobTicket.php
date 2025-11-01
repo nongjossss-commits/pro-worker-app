@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\TicketPriority;
-use App\Enums\TicketStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,25 +11,35 @@ class JobTicket extends Model
 {
     use HasFactory;
 
+    // Corrected $fillable
     protected $fillable = [
-        'user_id',
+        'employer_user_id',
         'subject',
         'status',
-        'priority',
+        'assigned_staff_id',
     ];
 
-    protected $casts = [
-        'status' => TicketStatus::class,
-        'priority' => TicketPriority::class,
-    ];
-
-    public function user(): BelongsTo
+    // Ensure $casts array is either absent or empty if it was added. We don't need it for DB Enums.
+    // If using modern Laravel structure, ensure the casts() method is clean:
+    protected function casts(): array
     {
-        return $this->belongsTo(User::class);
+        return [];
     }
 
     public function messages(): HasMany
     {
         return $this->hasMany(TicketMessage::class);
+    }
+
+    // Corrected Relationship (using employer_user_id)
+    public function employerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'employer_user_id');
+    }
+
+    // Corrected Relationship (using assigned_staff_id)
+    public function assignedStaff(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_staff_id');
     }
 }
