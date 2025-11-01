@@ -25,36 +25,69 @@
                     <h4 class="mt-0 header-title">New Ticket Details</h4>
                     <p class="text-muted m-b-30">Please provide as much detail as possible.</p>
 
-                    <form action="{{ route('tickets.store') }}" method="POST" id="createTicketForm">
+                    {{-- Display Validation Errors --}}
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <strong>Whoops!</strong> There were some problems with your input.<br><br>
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+
+                    <form action="{{ route('tickets.store') }}" method="POST" id="createTicketForm" enctype="multipart/form-data">
                         @csrf
+
+                        {{-- Subject Field --}}
                         <div class="form-group">
                             <label for="subject">Subject</label>
-                            <input type="text" class="form-control" id="subject" name="subject" value="{{ old('subject') }}" required>
+                            <input type="text" class="form-control @error('subject') is-invalid @enderror" id="subject" name="subject" value="{{ old('subject') }}" required>
                             @error('subject')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
                             @enderror
                         </div>
 
+                        {{-- Message Body Field --}}
                         <div class="form-group mt-3">
-                            <label for="message">Message</label>
-                            <textarea class="form-control" id="message" name="message" rows="8" required>{{ old('message') }}</textarea>
-                            @error('message')
-                                <div class="text-danger">{{ $message }}</div>
+                            <label for="body">Message</label>
+                            <textarea class="form-control @error('body') is-invalid @enderror" id="body" name="body" rows="8" required>{{ old('body') }}</textarea>
+                             @error('body')
+                                <div class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
                             @enderror
                         </div>
+
+                        {{-- Attachment Controls --}}
+                        <div class="form-group mt-4">
+                            <label class="form-label">Attachments</label>
+                            <div class="btn-group" role="group" aria-label="Attachment options">
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#attachEmployeeModal">
+                                    <i class="bi bi-paperclip"></i> Attach Existing Employee (<span id="selected-count">0</span>)
+                                </button>
+                                <a href="{{ route('employees.create', ['source_ticket' => 'new']) }}" class="btn btn-info">
+                                    <i class="bi bi-plus-circle"></i> Attach New Employee
+                                </a>
+                                <label class="btn btn-warning">
+                                    <i class="bi bi-upload"></i> Attach File <input type="file" name="attachments[]" multiple hidden>
+                                </label>
+                            </div>
+                        </div>
+
 
                         <!-- Hidden input for selected employee IDs -->
-                        <input type="hidden" name="employee_ids_input_v2" id="employee_ids_input_v2">
                         <input type="hidden" name="employee_ids[]" id="employee_ids_input">
 
 
+                        {{-- Action Buttons --}}
                         <div class="form-group mt-4">
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#attachEmployeeModal">
-                                <i class="bi bi-paperclip"></i> Attach Existing Employees (<span id="selected-count">0</span>)
-                            </button>
                             <button type="submit" class="btn btn-success waves-effect waves-light">Submit Ticket</button>
                             <a href="{{ route('tickets.index') }}" class="btn btn-secondary waves-effect">Cancel</a>
-
                         </div>
                     </form>
                 </div>
@@ -100,9 +133,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
     const selectedCountSpan = document.getElementById('selected-count');
-    const employeeIdsInput = document.getElementById('employee_ids_input');
     const employeeSearchInput = document.getElementById('employeeSearchInput');
     const employeeItems = document.querySelectorAll('.employee-item');
+    const createTicketForm = document.getElementById('createTicketForm');
 
     let selectedEmployeeIds = [];
 
@@ -111,9 +144,8 @@ document.addEventListener('DOMContentLoaded', function () {
         selectedEmployeeIds = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
         selectedCountSpan.textContent = selectedEmployeeIds.length;
 
-        // Clear existing hidden inputs
-        const form = document.getElementById('createTicketForm');
-        const existingInputs = form.querySelectorAll('input[name="employee_ids[]"]');
+        // Clear existing hidden inputs for employees
+        const existingInputs = createTicketForm.querySelectorAll('input[name="employee_ids[]"]');
         existingInputs.forEach(input => input.remove());
 
         // Add new hidden inputs for each selected ID
@@ -122,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
             input.type = 'hidden';
             input.name = 'employee_ids[]';
             input.value = id;
-            form.appendChild(input);
+            createTicketForm.appendChild(input);
         });
     }
 
@@ -143,6 +175,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Handle the "Attach Selected" button click
+    document.getElementById('attach-selected-btn').addEventListener('click', function() {
+        updateSelection();
+    });
+
 
     // Initial update in case of old input
     updateSelection();
