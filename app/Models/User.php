@@ -51,4 +51,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(Employer::class);
     }
+
+    public function jobTickets(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(JobTicket::class);
+    }
+
+    public function ticketMessages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TicketMessage::class);
+    }
 }
