@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\JobTicket;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class TicketController extends Controller
@@ -21,10 +20,16 @@ class TicketController extends Controller
      */
     public function index(): View
     {
-        // Placeholder: Fetch all tickets.
-        $tickets = JobTicket::with(['employerUser', 'assignedStaff'])
+        // V2.4-S3: Handle Per Page selection using request() helper, default to 25
+        $perPage = request('per_page', 25);
+
+        // V2.4-S3: Optimization - Eager Load nested relationships
+        $tickets = JobTicket::with([
+            'employerUser.employer', // Load User AND their linked Employer record (for Company Name)
+            'assignedStaff'
+        ])
             ->latest()
-            ->paginate(20);
+            ->paginate($perPage);
 
         return view('admin.tickets.index', compact('tickets'));
     }

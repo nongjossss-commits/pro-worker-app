@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+// ... (Existing imports)
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles; // เพิ่มบรรทัดนี้
+use Spatie\Permission\Traits\HasRoles;
+// Ensure these relationship imports exist or add them
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles; // เพิ่ม HasRoles เข้าไปตรงนี้
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -47,18 +50,39 @@ class User extends Authenticatable
         ];
     }
 
-    public function employer()
+
+    // Ensure return type hinting is applied
+    public function employer(): HasOne
     {
         return $this->hasOne(Employer::class);
     }
 
-    public function jobTickets(): \Illuminate\Database\Eloquent\Relations\HasMany
+    // --- START: V2.4 Corrected Relationships ---
+    // CRITICAL: Remove the incorrect `jobTickets()` method if it exists in the file.
+    /**
+     * Get the tickets submitted by this user (if they are an Employer).
+     */
+    public function submittedTickets(): HasMany
     {
-        return $this->hasMany(JobTicket::class);
+        // MUST use 'employer_user_id'
+        return $this->hasMany(JobTicket::class, 'employer_user_id');
     }
 
-    public function ticketMessages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    /**
+     * Get the tickets assigned to this user (if they are Staff/Admin).
+     */
+    public function assignedTickets(): HasMany
+    {
+        // MUST use 'assigned_staff_id'
+        return $this->hasMany(JobTicket::class, 'assigned_staff_id');
+    }
+
+    /**
+     * Get the messages sent by this user in the ticket system.
+     */
+    public function ticketMessages(): HasMany
     {
         return $this->hasMany(TicketMessage::class);
     }
+    // --- END: V2.4 Corrected Relationships ---
 }
