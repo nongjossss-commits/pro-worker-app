@@ -13,6 +13,7 @@ use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\UserController;
 // Add these new imports:
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\Api\EmployerEmployeeController;
 // Use an alias for the Admin controller to avoid naming conflicts
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 
@@ -70,6 +71,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('tickets', TicketController::class)->only([
         'index', 'create', 'store', 'show'
     ]);
+
+    // --- V2.4-S5: Internal API Routes for Web Interface (NEW GROUP) ---
+    Route::prefix('api-web')->name('api-web.')->group(function () {
+        Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
+    });
 });
 
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
