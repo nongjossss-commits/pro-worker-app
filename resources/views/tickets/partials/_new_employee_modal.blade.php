@@ -5,7 +5,7 @@
         <form @submit.prevent="submitNewEmployeeForm" id="newEmployeeActualForm" class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="newEmployeeModalLabel">กรอกข้อมูลลูกจ้างใหม่ (แจ้งเข้า)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="showNewEmployeeModal = false"></button>
             </div>
             <div class="modal-body">
                 {{-- Form Content (Simplified and adapted from employees/create.blade.php) --}}
@@ -97,7 +97,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="showNewEmployeeModal = false">ยกเลิก</button>
                 {{-- Submit Button (Triggers the @submit.prevent on the form tag) --}}
                 <button type="submit" class="btn btn-success">
                     <i class="bi bi-person-plus me-1"></i> เพิ่มเข้าตะกร้า
