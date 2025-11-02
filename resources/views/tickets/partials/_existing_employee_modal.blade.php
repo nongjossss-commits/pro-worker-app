@@ -15,7 +15,6 @@
                     </div>
                     <p class="mt-2">กำลังโหลดข้อมูลลูกจ้าง...</p>
                 </div>
-
                 {{-- Content State --}}
                 <div x-show="!isLoading">
                     <div class="mb-3">
@@ -28,7 +27,6 @@
                                 <span x-text="availableEmployees.length === 0 ? 'ไม่มีลูกจ้างในระบบ' : 'ไม่พบลูกจ้างที่ตรงกับคำค้นหา'"></span>
                             </div>
                         </template>
-
                         {{-- Employee List Iteration --}}
                         <template x-for="employee in filteredEmployees()" :key="employee.id">
                             <label class="list-group-item d-flex align-items-center gap-3">

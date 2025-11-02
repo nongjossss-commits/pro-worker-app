@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Controllers/Api/EmployerEmployeeController.php
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -26,7 +25,8 @@ class EmployerEmployeeController extends Controller
         // Fetch active employees. The Global Scope automatically filters this list
         // based on the logged-in user's role and linked employer ID.
         $employees = Employee::whereNull('terminated_at')
-            ->orderBy('employeeNameTh') // Select only necessary fields for the picker modal
+            ->orderBy('employeeNameTh')
+            // Select only necessary fields for the picker modal
             ->get(['id', 'employeeNameTh', 'employeePassport', 'companyWorkerId']);
 
         return response()->json($employees);

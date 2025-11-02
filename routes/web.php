@@ -13,9 +13,9 @@ use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\UserController;
 // Add these new imports:
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\Api\EmployerEmployeeController;
 // Use an alias for the Admin controller to avoid naming conflicts
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
+use App\Http\Controllers\Api\EmployerEmployeeController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
