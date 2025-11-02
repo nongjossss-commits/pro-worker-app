@@ -5,7 +5,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="existingEmployeeModalLabel">เลือกลูกจ้างที่มีอยู่</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="showExistingEmployeeModal = false"></button>
             </div>
             <div class="modal-body">
                 {{-- Loading State --}}
@@ -40,7 +40,14 @@
                                     <strong x-text="employee.employeeNameTh"></strong>
                                     <span class="text-muted" x-text="employee.employeeNameEn ? '(' + employee.employeeNameEn + ')' : ''"></span>
                                     <small class="text-muted d-block" x-text="'Passport: ' + (employee.employeePassport || 'N/A')"></small>
-                                    <p class="mb-0 text-muted" style="font-size: 0.85rem;">Nationality: <strong x-text="employee.nationality"></strong></p>
+                                    {{-- V2.5-S2: Nationality with Flag --}}
+                                    <div class="d-flex align-items-center" style="font-size: 0.85rem;">
+                                        <span class="text-muted me-1">Nationality:</span>
+                                        <template x-if="employee.flag_url">
+                                            <img :src="employee.flag_url" class="me-1" style="width: 16px; height: 12px; object-fit: cover;" alt="Flag">
+                                        </template>
+                                        <strong x-text="employee.nationality || 'N/A'"></strong>
+                                    </div>
                                 </span>
                             </label>
                         </template>
@@ -49,7 +56,7 @@
             </div>
             <div class="modal-footer">
                 <span class="me-auto">เลือกแล้ว <strong x-text="selectedEmployeeIds.length"></strong> รายการ</span>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="showExistingEmployeeModal = false">ยกเลิก</button>
                 {{-- Confirm Selection Button --}}
                 <button type="button" class="btn btn-primary" @click="confirmSelection()">
                     <i class="bi bi-check-circle me-1"></i> ยืนยันการเลือก

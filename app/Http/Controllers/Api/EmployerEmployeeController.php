@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\CountryHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
@@ -21,15 +22,32 @@ class EmployerEmployeeController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // V2.4-S6 Update: Fetch richer data
+        // V2.4-S6 Update: Fetch richer data, V2.5-S2 adds nationality
         $employees = Employee::whereNull('terminated_at')
             ->orderBy('employeeNameTh')
-            // Select necessary fields including NameEn and Photo (for the accessor to work)
-            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto']);
+            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
 
         // CRITICAL: Append the accessor so it's included in the JSON response.
         $employees->append('photo_url');
 
-        return response()->json($employees);
+        // V2.5-S2: Add nationality and flag URL
+        $employeesData = $employees->map(function ($employee) {
+            $nationality = $employee->employeeNationality;
+            $countryCode = CountryHelper::getCountryCode($nationality);
+            $flagUrl = $countryCode ? asset('images/flags/' . strtolower($countryCode) . '.png') : null;
+
+            return [
+                'id' => $employee->id,
+                'employeeNameTh' => $employee->employeeNameTh,
+                'employeeNameEn' => $employee->employeeNameEn,
+                'employeePassport' => $employee->employeePassport,
+                'companyWorkerId' => $employee->companyWorkerId,
+                'photo_url' => $employee->photo_url, // Accessor field
+                'nationality' => $nationality,
+                'flag_url' => $flagUrl,
+            ];
+        });
+
+        return response()->json($employeesData);
     }
 }
