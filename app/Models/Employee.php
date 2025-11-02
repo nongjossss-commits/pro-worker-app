@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+// ... (Existing imports)
+// Add Attribute and Storage imports
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -94,6 +98,27 @@ class Employee extends Model
         'startDate' => 'date:Y-m-d',
         'terminated_at' => 'datetime',
     ];
+
+    // --- V2.4-S6: Accessor for Photo URL ---
+    /**
+     * Get the full URL for the employee's photo, with a fallback avatar.
+     * Usage in Blade/API: $employee->photo_url
+     */
+    protected function photoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                // Robust check: Ensure property is set AND file exists on disk
+                if ($this->employeePhoto && Storage::disk('public')->exists($this->employeePhoto)) {
+                    return Storage::disk('public')->url($this->employeePhoto);
+                }
+                // Fallback using ui-avatars.com based on the name
+                $name = urlencode($this->employeeNameTh ?? $this->employeeNameEn ?? 'User');
+                // Use primary color defined in app.blade.php (F97316 - Orange)
+                return "https://ui-avatars.com/api/?name={$name}&color=FFFFFF&background=F97316&size=128";
+            }
+        );
+    }
 
     public function employer()
     {
