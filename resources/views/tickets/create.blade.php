@@ -57,10 +57,11 @@
                 <div class="card mb-4 sticky-top" style="top: 20px;">
                     <div class="card-header">สิ่งที่แนบมา (Attachment Basket)</div>
                     <div class="card-body">
-                        {{-- Attachment Buttons (Placeholders - Disabled for now) --}}
+                        {{-- Attachment Buttons (V2.4-S5: Enable the first button) --}}
                         <div class="d-grid gap-2 mb-3">
-                            <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" disabled>
-                                <i class="bi bi-person-check me-2"></i> แนบลูกจ้างที่มีอยู่ (V2.4-S5)
+                            {{-- ENABLE THIS BUTTON and link to Alpine function --}}
+                            <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal">
+                                <i class="bi bi-person-check me-2"></i> แนบลูกจ้างที่มีอยู่
                             </button>
                             <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" disabled>
                                 <i class="bi bi-person-plus me-2"></i> แนบลูกจ้างใหม่/แจ้งเข้า (V2.4-S6)
@@ -79,11 +80,12 @@
                                 <div class="text-muted fst-italic text-center py-3">ยังไม่มีรายการที่แนบ</div>
                             </template>
 
-                            {{-- Dynamic Display & Hidden Inputs Generation (Crucial for Hybrid Form) --}}
+                            {{-- Dynamic Display & Hidden Inputs Generation --}}
                             {{-- Display Existing Employees --}}
                             <template x-for="(item, index) in basket.existing_employees" :key="'e-' + item.id">
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="bi bi-person-check me-2 text-primary"></i> <span x-text="item.name"></span></span>
+                                    {{-- CRITICAL UPDATE: Use item.employeeNameTh (as fetched from API) --}}
+                                    <span><i class="bi bi-person-check me-2 text-primary"></i> <span x-text="item.employeeNameTh"></span></span>
                                     <button type="button" class="btn btn-sm btn-danger" @click="removeFromBasket('existing_employees', index)">ลบ</button>
                                     {{-- Hidden input for backend processing (Array of IDs) --}}
                                     <input type="hidden" :name="'attachments[existing_employees][' + index + ']'" :value="item.id">
@@ -114,45 +116,127 @@
             </div>
         </div>
     </form>
+
+    {{-- V2.4-S5: Include the Modal Partial --}}
+    @include('tickets.partials._existing_employee_modal')
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    // Define the Alpine.js component for the Attachment Basket
-    function attachmentBasket() {
-        return {
-            // Initialize basket state.
-            basket: {
-                // Structure for storing attached items
-                existing_employees: [], // Format: {id: 1, name: 'John Doe'}
-                new_employees: [],    // Format: Full form data object {employeeNameTh: '...', ...}
-                files: [],            // File objects
-            },
+// V2.4-S5: Enhanced Alpine.js component for the Attachment Basket
+function attachmentBasket() {
+    return {
+        // --- Core Basket State (Persistent) ---
+        basket: {
+            // Format: {id: 1, employeeNameTh: '...', ...} - Stores full objects from API
+            existing_employees: [],
+            new_employees: [],
+            files: [],
+        },
 
-            totalItemsCount() {
-                return this.basket.existing_employees.length + this.basket.new_employees.length + this.basket.files.length;
-            },
+        // --- V2.4-S5: Existing Employee Modal State (Transient) ---
+        availableEmployees: [], // Stores the list fetched from API
+        // Stores IDs currently checked in the modal. (Transient State)
+        selectedEmployeeIds: [],
+        isLoading: false,
+        searchQuery: '',
+        modalInstance: null, // To hold the Bootstrap Modal instance
 
-            // Placeholder functions (To be implemented in V2.4-S5/S6/S7)
-            openExistingEmployeeModal() {
-                console.log('Placeholder: Open Existing Employee Modal');
-                // Example Add (for testing UI):
-                // this.basket.existing_employees.push({id: Date.now(), name: 'Test Employee ' + Date.now()});
-            },
-            openNewEmployeeModal() {
-                console.log('Placeholder: Open New Employee Modal');
-            },
-            triggerFileInput() {
-                console.log('Placeholder: Trigger File Input');
-            },
-
-            removeFromBasket(type, index) {
-                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้ออกจากตะกร้า?')) {
-                    this.basket[type].splice(index, 1);
+        // Initialize the component
+        init() {
+            // Get the Bootstrap Modal instance safely after DOM is ready
+            this.$nextTick(() => {
+                // Ensure Bootstrap's JS is loaded globally
+                if (typeof bootstrap !== 'undefined') {
+                    this.modalInstance = new bootstrap.Modal(document.getElementById('existingEmployeeModal'));
+                } else {
+                    console.error("Bootstrap JS not loaded.");
                 }
-            },
-        }
+            });
+        },
+
+        // --- Core Basket Functions ---
+        totalItemsCount() {
+            return this.basket.existing_employees.length + this.basket.new_employees.length + this.basket.files.length;
+        },
+        removeFromBasket(type, index) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้ออกจากตะกร้า?')) {
+                this.basket[type].splice(index, 1);
+            }
+        },
+
+        // --- V2.4-S5: Existing Employee Functions (Transient State + Confirm Pattern) ---
+        // 1. Fetch data from API
+        async fetchEmployees() {
+            if (this.availableEmployees.length > 0) return; // Data already loaded (Caching)
+
+            this.isLoading = true;
+            try {
+                // Use the named route generated by Laravel
+                const response = await fetch('{{ route('api-web.employer.employees.index') }}');
+                if (!response.ok) throw new Error('Failed to fetch employees');
+                this.availableEmployees = await response.json();
+            } catch (error) {
+                console.error(error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูลลูกจ้าง กรุณาลองใหม่อีกครั้ง');
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        // 2. Open the Modal
+        async openExistingEmployeeModal() {
+            // A. Fetch data (if needed)
+            await this.fetchEmployees();
+
+            // B. STATE SYNCHRONIZATION (Basket -> Modal):
+            // Initialize transient state based on persistent state.
+            // We map IDs to strings here to ensure reliable binding with x-model on checkboxes.
+            this.selectedEmployeeIds = this.basket.existing_employees.map(e => e.id.toString());
+
+            // C. Show the modal
+            if (this.modalInstance) {
+                this.modalInstance.show();
+            }
+        },
+
+        // 3. Filter employees in the modal (Client-side search)
+        filteredEmployees() {
+            if (!this.searchQuery) return this.availableEmployees;
+            const query = this.searchQuery.toLowerCase();
+            return this.availableEmployees.filter(employee => {
+                return (employee.employeeNameTh && employee.employeeNameTh.toLowerCase().includes(query)) ||
+                       (employee.employeePassport && employee.employeePassport.toLowerCase().includes(query));
+            });
+        },
+
+        // 4. Confirm Selection (Save changes from Modal to Basket)
+        confirmSelection() {
+            // STATE SYNCHRONIZATION (Modal -> Basket):
+            // Reconstruct the basket list based on the final selected IDs in the modal.
+            // CRITICAL: Ensure selected IDs are parsed back to integers for robust comparison,
+            // as x-model binds them as strings from the checkboxes.
+            const transientIds = new Set(this.selectedEmployeeIds.map(id => parseInt(id)));
+            this.basket.existing_employees = this.availableEmployees.filter(employee => {
+                return transientIds.has(employee.id);
+            });
+
+            // Close the modal
+            if (this.modalInstance) {
+                this.modalInstance.hide();
+            }
+            this.searchQuery = ''; // Reset search
+        },
+
+        // --- Placeholders for Future Steps (S6/S7) ---
+        openNewEmployeeModal() {
+            console.log('Placeholder: Open New Employee Modal');
+        },
+        triggerFileInput() {
+            console.log('Placeholder: Trigger File Input');
+        },
     }
+}
 </script>
 @endpush
