@@ -16,6 +16,8 @@ use App\Http\Controllers\TicketController;
 // Use an alias for the Admin controller to avoid naming conflicts
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Api\EmployerEmployeeController;
+// Add this new import:
+use App\Http\Controllers\Api\TemporaryUploadController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
@@ -72,9 +74,11 @@ Route::middleware('auth')->group(function () {
         'index', 'create', 'store', 'show'
     ]);
 
-    // --- V2.4-S5: Internal API Routes for Web Interface (NEW GROUP) ---
+    // --- V2.4-S5/S6: Internal API Routes for Web Interface ---
     Route::prefix('api-web')->name('api-web.')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
+        // V2.4-S6: New Route for Temporary Uploads (POST)
+        Route::post('temp-upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
     });
 });
 

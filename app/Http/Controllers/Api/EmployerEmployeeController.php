@@ -15,19 +15,20 @@ class EmployerEmployeeController extends Controller
      */
     public function index(): JsonResponse
     {
+        // ... (Authorization logic remains the same)
         $user = Auth::user();
-
-        // Defense-in-depth: Ensure the user is an employer (or staff/admin).
         if (!$user->hasRole('employer') && !$user->can('manage-tickets')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fetch active employees. The Global Scope automatically filters this list
-        // based on the logged-in user's role and linked employer ID.
+        // V2.4-S6 Update: Fetch richer data
         $employees = Employee::whereNull('terminated_at')
             ->orderBy('employeeNameTh')
-            // Select only necessary fields for the picker modal
-            ->get(['id', 'employeeNameTh', 'employeePassport', 'companyWorkerId']);
+            // Select necessary fields including NameEn and Photo (for the accessor to work)
+            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto']);
+
+        // CRITICAL: Append the accessor so it's included in the JSON response.
+        $employees->append('photo_url');
 
         return response()->json($employees);
     }
