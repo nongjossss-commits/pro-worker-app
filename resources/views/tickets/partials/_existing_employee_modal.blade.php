@@ -40,6 +40,7 @@
                                     <strong x-text="employee.employeeNameTh"></strong>
                                     <span class="text-muted" x-text="employee.employeeNameEn ? '(' + employee.employeeNameEn + ')' : ''"></span>
                                     <small class="text-muted d-block" x-text="'Passport: ' + (employee.employeePassport || 'N/A')"></small>
+                                    <p class="mb-0 text-muted" style="font-size: 0.85rem;">Nationality: <strong x-text="employee.nationality"></strong></p>
                                 </span>
                             </label>
                         </template>
