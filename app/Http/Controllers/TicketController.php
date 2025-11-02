@@ -4,9 +4,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobTicket;
+// Import the new Form Request
+use App\Http\Requests\StoreTicketRequest;
 use Illuminate\Support\Facades\Auth;
+// Import DB facade for Transactions
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+// Ensure Illuminate\Http\Request is NOT imported if it conflicts or is unused.
 
 class TicketController extends Controller
 {
@@ -46,11 +51,50 @@ class TicketController extends Controller
 
     /**
      * Store a newly created ticket.
+     * CRITICAL: Use StoreTicketRequest for validation.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreTicketRequest $request): RedirectResponse
     {
-        // Placeholder: Complex storage logic (Hybrid Form) will be implemented later.
-        return redirect()->route('tickets.index')->with('success', 'Ticket creation logic pending.');
+        $validated = $request->validated();
+        $user = Auth::user();
+
+        try {
+            // Use Transaction to ensure data integrity (Ticket + Messages must succeed together)
+            DB::beginTransaction();
+
+            // 1. Create the Job Ticket
+            $ticket = JobTicket::create([
+                'employer_user_id' => $user->id,
+                'subject' => $validated['subject'],
+                'status' => 'pending_staff', // Explicitly set status
+            ]);
+
+            // 2. Create the Initial Message (Conditional: only if provided)
+            if (!empty($validated['message'])) {
+                $ticket->messages()->create([
+                    'user_id' => $user->id,
+                    'message_type' => 'comment',
+                    'body' => $validated['message'],
+                ]);
+            }
+
+            // 3. Handle Attachments (Future Logic Placeholder)
+            // In future steps (S5+), we will process the $validated['attachments'] array here.
+            // For 'new_employees', we will need to json_decode each element in the array.
+
+            DB::commit();
+
+            // Redirect to the newly created ticket's detail page (Better UX).
+            return redirect()->route('tickets.show', $ticket)->with('success', 'สร้างคำขอเรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Log the error for debugging
+            \Log::error('Ticket creation failed: ' . $e->getMessage(), ['user_id' => $user->id]);
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาดในการสร้างคำขอ กรุณาลองใหม่อีกครั้ง');
+        }
     }
 
     /**
