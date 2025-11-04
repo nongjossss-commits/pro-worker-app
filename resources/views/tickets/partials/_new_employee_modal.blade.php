@@ -24,17 +24,6 @@
                             <input type="text" class="form-control" x-model="newEmployeeForm.employeeNameTh" required>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">ชื่อพนักงาน (อังกฤษ)</label>
-                        <div class="input-group">
-                            <select class="form-select" x-model="newEmployeeForm.employeeTitleEn" style="max-width: 100px;">
-                                <option value="Mr.">Mr.</option>
-                                <option value="Miss">Miss</option>
-                                <option value="Mrs.">Mrs.</option>
-                            </select>
-                            <input type="text" class="form-control" x-model="newEmployeeForm.employeeNameEn">
-                        </div>
-                    </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-4">
@@ -51,11 +40,17 @@
                         <label class="form-label">เลขหนังสือเดินทาง (Passport No.) <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" x-model="newEmployeeForm.employeePassport" required>
                     </div>
+{{-- V2.4-S11 The Fix: Add DOB input field --}}
                     <div class="col-md-4">
-                        <label class="form-label">ลักษณะงาน</label>
-                        <input type="text" class="form-control" x-model="newEmployeeForm.nature_of_work" placeholder="เช่น ก่อสร้าง, แม่บ้าน">
+    <label class="form-label">วันเกิด <span class="text-danger">*</span></label>
+    <input type="date" class="form-control" x-model="newEmployeeForm.employeeDob" required>
                     </div>
                 </div>
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label">ลักษณะงาน</label>
+        <input type="text" class="form-control" x-model="newEmployeeForm.nature_of_work" placeholder="เช่น ก่อสร้าง, แม่บ้าน">
+    </div>
 
                 <h5 class="mt-4">ไฟล์แนบ (V2.4-S6: Temp Upload Integration)</h5>
                 <hr>
