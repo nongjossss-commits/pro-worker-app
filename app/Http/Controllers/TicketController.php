@@ -4,13 +4,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobTicket;
-// Import the new Form Request
+// Import TicketMessage for bulk insert
+use App\Models\TicketMessage;
 use App\Http\Requests\StoreTicketRequest;
 use Illuminate\Support\Facades\Auth;
-// Import DB facade for Transactions
 use Illuminate\Support\Facades\DB;
+// Import Storage and Log facades
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+// Import Exception for robust error handling
+use Exception;
 // Ensure Illuminate\Http\Request is NOT imported if it conflicts or is unused.
 
 class TicketController extends Controller
@@ -51,25 +56,33 @@ class TicketController extends Controller
 
     /**
      * Store a newly created ticket.
-     * CRITICAL: Use StoreTicketRequest for validation.
+     * V2.4-S8: Comprehensive Backend Logic Implementation.
      */
     public function store(StoreTicketRequest $request): RedirectResponse
     {
         $validated = $request->validated();
         $user = Auth::user();
+        $attachments = $validated['attachments'] ?? [];
+
+        // V2.4-S8: Track successfully moved files for cleanup on failure
+        $movedFiles = [];
+        $storageDisk = 'public'; // We are using the public disk
 
         try {
-            // Use Transaction to ensure data integrity (Ticket + Messages must succeed together)
+            // Use Transaction to ensure data integrity (DB + File operations)
             DB::beginTransaction();
 
             // 1. Create the Job Ticket
             $ticket = JobTicket::create([
                 'employer_user_id' => $user->id,
                 'subject' => $validated['subject'],
-                'status' => 'pending_staff', // Explicitly set status
+                'status' => 'pending_staff',
             ]);
 
-            // 2. Create the Initial Message (Conditional: only if provided)
+            // Define the permanent storage directory for this ticket
+            $permanentBasePath = "ticket_attachments/{$ticket->id}";
+
+            // 2. Create the Initial Message (Conditional)
             if (!empty($validated['message'])) {
                 $ticket->messages()->create([
                     'user_id' => $user->id,
@@ -78,22 +91,122 @@ class TicketController extends Controller
                 ]);
             }
 
-            // 3. Handle Attachments (Future Logic Placeholder)
-            // In future steps (S5+), we will process the $validated['attachments'] array here.
-            // For 'new_employees', we will need to json_decode each element in the array.
+            // --- V2.4-S8: Attachment Processing Logic ---
+
+            // 3. Process General Files (attachment_file)
+            if (!empty($attachments['files'])) {
+                foreach ($attachments['files'] as $fileData) {
+                    $tempPath = $fileData['path'];
+                    // Generate permanent path (e.g., ticket_attachments/1/files/uuid.ext)
+                    $permanentPath = $permanentBasePath . '/files/' . basename($tempPath);
+
+                    // CRITICAL: Move the file. StoreTicketRequest already validated existence.
+                    if (Storage::disk($storageDisk)->move($tempPath, $permanentPath)) {
+                        $movedFiles[] = $permanentPath; // Track success
+
+                        // Create the message record
+                        $ticket->messages()->create([
+                            'user_id' => $user->id,
+                            'message_type' => 'attachment_file',
+                            // Store metadata as JSON in the body
+                            'body' => json_encode([
+                                'path' => $permanentPath,
+                                'name' => $fileData['name'],
+                                'size' => $fileData['size'],
+                            ]),
+                        ]);
+                    } else {
+                        // If move fails (e.g., permissions issue), throw exception to trigger rollback/cleanup
+                        throw new Exception("Failed to move file from {$tempPath} to {$permanentPath}");
+                    }
+                }
+            }
+
+            // 4. Process Existing Employees (attachment_employee)
+            if (!empty($attachments['existing_employees'])) {
+                $messagesToInsert = [];
+                foreach ($attachments['existing_employees'] as $employeeId) {
+                    $messagesToInsert[] = [
+                        'job_ticket_id' => $ticket->id,
+                        'user_id' => $user->id,
+                        'message_type' => 'attachment_employee',
+                        'body' => $employeeId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                // Use Eloquent insert() for efficient bulk creation
+                TicketMessage::insert($messagesToInsert);
+            }
+
+            // 5. Process New Employees (attachment_new_employee)
+            if (!empty($attachments['new_employees'])) {
+                // Define fields within the JSON that might contain file paths
+                $fileFields = ['employeePhoto', 'document_1']; // Add other file fields here if needed
+
+                foreach ($attachments['new_employees'] as $newEmployeeJson) {
+                    $data = json_decode($newEmployeeJson, true);
+                    if (is_null($data)) {
+                        throw new Exception("Invalid JSON data detected during processing.");
+                    }
+
+                    // Iterate over potential file fields and move them
+                    foreach ($fileFields as $field) {
+                        // Check if the field exists, has a value, and looks like a temp path
+                        if (isset($data[$field]) && $data[$field] && str_starts_with($data[$field], 'temp_uploads/')) {
+                            $tempPath = $data[$field];
+                            $permanentPath = $permanentBasePath . '/new_employees/' . basename($tempPath);
+
+                            // Defense-in-depth: Check existence right before moving
+                            if (Storage::disk($storageDisk)->exists($tempPath)) {
+                                if (Storage::disk($storageDisk)->move($tempPath, $permanentPath)) {
+                                    $movedFiles[] = $permanentPath;
+                                    // CRITICAL: Update the path in the data array to the permanent location
+                                    $data[$field] = $permanentPath;
+                                } else {
+                                    throw new Exception("Failed to move new employee file from {$tempPath} to {$permanentPath}");
+                                }
+                            } else {
+                                // If temp file is missing (e.g., expired, although validation should prevent this), treat as null
+                                $data[$field] = null;
+                            }
+                        }
+                    }
+
+                    // Create the message record with the updated JSON
+                    $ticket->messages()->create([
+                        'user_id' => $user->id,
+                        'message_type' => 'attachment_new_employee',
+                        'body' => json_encode($data),
+                    ]);
+                }
+            }
+
+            // --- End of Attachment Processing ---
 
             DB::commit();
 
-            // Redirect to the newly created ticket's detail page (Better UX).
-            return redirect()->route('tickets.show', $ticket)->with('success', 'สร้างคำขอเรียบร้อยแล้ว');
+            // Redirect to the newly created ticket's detail page
+            return redirect()->route('tickets.show', $ticket)->with('success', 'สร้างคำขอและประมวลผลสิ่งที่แนบมาเรียบร้อยแล้ว');
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
-            // Log the error for debugging
-            \Log::error('Ticket creation failed: ' . $e->getMessage(), ['user_id' => $user->id]);
+            // V2.4-S8: CRITICAL CLEANUP - Delete moved files if transaction fails
+            if (count($movedFiles) > 0) {
+                Log::warning('Ticket creation transaction failed. Cleaning up moved files.', ['files' => $movedFiles]);
+                // Attempt to delete files that were successfully moved before the failure occurred
+                Storage::disk($storageDisk)->delete($movedFiles);
+            }
 
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาดในการสร้างคำขอ กรุณาลองใหม่อีกครั้ง');
+            // Log the error for debugging
+            Log::error('Ticket creation failed during processing (S8): ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Provide a user-friendly error message
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาดร้ายแรงในการประมวลผลคำขอหรือการจัดการไฟล์ กรุณาลองใหม่อีกครั้ง.');
         }
     }
 
