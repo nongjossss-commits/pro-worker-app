@@ -30,7 +30,11 @@ class StoreTicketRequest extends FormRequest
             'attachments.existing_employees' => ['nullable', 'array'],
             'attachments.existing_employees.*' => ['integer', 'exists:employees,id'],
             'attachments.new_employees' => ['nullable', 'array'],
-            'attachments.new_employees.*' => ['json'], // Basic check, will be decoded in controller
+            // New employee data is now validated as a nested array of objects
+            'attachments.new_employees.*.employeeTitleTh' => ['required', 'string'],
+            'attachments.new_employees.*.employeeNameTh' => ['required', 'string'],
+            'attachments.new_employees.*.employeeDob' => ['required', 'date'],
+            'attachments.new_employees.*.employeeNationality' => ['required', 'string'],
             'attachments.files' => ['nullable', 'array'],
             'attachments.files.*.name' => ['required', 'string', 'max:255'],
             'attachments.files.*.size' => ['required', 'integer', 'min:1'],

@@ -85,13 +85,13 @@ class TicketController extends Controller
                 }
             }
 
-            // 4. Process New Employees (from JSON data)
+            // 4. Process New Employees
             if (!empty($attachments['new_employees'])) {
-                foreach ($attachments['new_employees'] as $jsonPayload) {
+                foreach ($attachments['new_employees'] as $employeeData) {
                     $ticket->messages()->create([
                         'user_id' => $user->id,
                         'message_type' => 'attach_employee_new',
-                        'body' => $jsonPayload, // Store the JSON directly
+                        'body' => json_encode($employeeData), // Store the validated data as a JSON string
                     ]);
                 }
             }

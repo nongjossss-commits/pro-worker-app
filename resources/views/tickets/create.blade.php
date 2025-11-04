@@ -8,15 +8,16 @@
     {{-- ... (Header, Error Display) ... --}}
     <h2 class="mb-4">สร้างคำขอใหม่ (Smart Ticket)</h2>
 
-    {{-- Error Display --}}
-    @if (session('error'))
+    {{-- Flash Message for Controller Errors & Validation --}}
+    @if (session('danger'))
         <div class="alert alert-danger mb-4" role="alert">
-            {{ session('error') }}
+            {{ session('danger') }}
         </div>
     @endif
+
     @if ($errors->any())
         <div class="alert alert-danger mb-4">
-            <strong>พบข้อผิดพลาด:</strong>
+            <strong>พบข้อผิดพลาดในการตรวจสอบข้อมูล:</strong>
             <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
