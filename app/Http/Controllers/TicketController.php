@@ -225,8 +225,12 @@ class TicketController extends Controller
             abort(403, 'Unauthorized action. You do not own this ticket.');
         }
 
-        $ticket->load('messages.user');
+        // V2.4-S9 Optimization: Load messages ordered by creation time (for history)
+        $ticket->load(['messages' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }, 'messages.user']);
 
+        // The categorized_attachments accessor will handle the rest of the data loading.
         return view('tickets.show', compact('ticket'));
     }
 }

@@ -39,9 +39,17 @@ class TicketController extends Controller
      */
     public function show(JobTicket $ticket): View
     {
-        // Admin/Staff can view any ticket details.
-        $ticket->load('messages.user');
+        // V2.4-S9 Optimization: Load messages, user info, and employer details
+        $ticket->load([
+            'messages' => function ($query) {
+                $query->orderBy('created_at', 'asc');
+            },
+            'messages.user',
+            'employerUser.employer', // Load employer details for the sidebar
+            'assignedStaff'
+        ]);
 
+        // The categorized_attachments accessor will handle the rest.
         return view('admin.tickets.show', compact('ticket'));
     }
 }
