@@ -17,6 +17,29 @@ class StoreTicketRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     *
+     * This method decodes the JSON string from the 'attachments' input field
+     * into an array, allowing the validation rules to inspect the nested data.
+     */
+    protected function prepareForValidation(): void
+    {
+        // First, decode the main 'attachments' JSON string into an array.
+        $attachmentsData = json_decode($this->input('attachments'), true);
+
+        // Ensure attachmentsData is an array before proceeding.
+        if (!is_array($attachmentsData)) {
+            $attachmentsData = [];
+        }
+
+        // Now, merge the decoded array back into the request.
+        // The validation rules will now see the structured array.
+        $this->merge([
+            'attachments' => $attachmentsData,
+        ]);
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>

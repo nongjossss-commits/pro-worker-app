@@ -26,8 +26,9 @@
         </div>
     @endif
 
-<form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data" @submit="populateAttachmentInput">
 @csrf
+<input type="hidden" name="attachments" x-ref="attachmentsInput">
 {{-- V2.4-S7: Hidden File Input (Triggered by the button) --}}
 <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
 <div class="row">
@@ -102,7 +103,6 @@
                                     </div>
                                     {{-- V2.4-S6: Use SweetAlert for deletion (removeConfirm) - Pass the name --}}
                                     <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
-                                    <input type="hidden" :name="'attachments[existing_employees][' + index + ']'" :value="item.id">
                                 </div>
                             </template>
                             {{-- Display New Employees (V2.4-S6 Feature) --}}
@@ -117,8 +117,6 @@
                                     </div>
                                     {{-- V2.4-S6: Use SweetAlert for deletion (removeConfirm) - Pass the name --}}
                                     <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">ลบ</button>
-                                    {{-- Hidden input (JSON string) --}}
-                                    <input type="hidden" :name="'attachments[new_employees][' + index + ']'" :value="JSON.stringify(item)">
                                 </div>
                             </template>
 {{-- ... (Existing/New Employees templates remain the same) ... --}}
@@ -135,10 +133,6 @@
 </div>
 {{-- Use SweetAlert for deletion (removeConfirm) --}}
 <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">ลบ</button>
-{{-- Hidden inputs for backend processing (Must match StoreTicketRequest validation) --}}
-<input type="hidden" :name="'attachments[files][' + index + '][path]'" :value="item.path">
-<input type="hidden" :name="'attachments[files][' + index + '][name]'" :value="item.name">
-<input type="hidden" :name="'attachments[files][' + index + '][size]'" :value="item.size">
 </div>
 </template>
 </div>
@@ -365,6 +359,20 @@ this.modalInstances.new.hide();
 this.resetNewEmployeeForm();
 },
 // --- V2.4-S7: General File Attachment Functions ---
+// V2.4-S10: The REAL Fix - This function runs on form submit
+// It bundles the entire basket into a single JSON string for the backend.
+populateAttachmentInput() {
+    const finalAttachments = {
+        existing_employees: this.basket.existing_employees.map(e => e.id),
+        new_employees: this.basket.new_employees, // Keep as objects
+        files: this.basket.files.map(f => ({ // Only send necessary data
+            path: f.path,
+            name: f.name,
+            size: f.size
+        }))
+    };
+    this.$refs.attachmentsInput.value = JSON.stringify(finalAttachments);
+},
 // 1. Trigger the hidden file input
 triggerFileInput() {
 // Use $refs to access the hidden input element
