@@ -1,17 +1,17 @@
 <?php
 
-// app/Http/Controllers/TicketController.php
 namespace App\Http\Controllers;
 
-use App\Models\JobTicket;
-// Import the new Form Request
 use App\Http\Requests\StoreTicketRequest;
-use Illuminate\Support\Facades\Auth;
-// Import DB facade for Transactions
-use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
+use App\Models\JobTicket;
+use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
-// Ensure Illuminate\Http\Request is NOT imported if it conflicts or is unused.
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
+use Throwable;
 
 class TicketController extends Controller
 {
@@ -20,15 +20,11 @@ class TicketController extends Controller
      */
     public function index(): View | RedirectResponse
     {
-        // Interface Enforcement: If the user can manage tickets (Staff/Admin), redirect to admin interface.
         if (Auth::user()->can('manage-tickets')) {
             return redirect()->route('admin.tickets.index');
         }
 
-        // V2.4-S3: Handle Per Page selection using request() helper, default to 25
         $perPage = request('per_page', 25);
-
-        // Enforce Tenancy
         $tickets = JobTicket::where('employer_user_id', Auth::id())
             ->latest()
             ->paginate($perPage);
@@ -41,7 +37,6 @@ class TicketController extends Controller
      */
     public function create(): View
     {
-        // Security Check: Ensure the user has the 'employer' role.
         if (!Auth::user()->hasRole('employer')) {
             abort(403, 'Unauthorized action. Only employers can submit requests.');
         }
@@ -50,8 +45,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Store a newly created ticket.
-     * CRITICAL: Use StoreTicketRequest for validation.
+     * Store a newly created ticket along with its attachments.
      */
     public function store(StoreTicketRequest $request): RedirectResponse
     {
@@ -59,17 +53,16 @@ class TicketController extends Controller
         $user = Auth::user();
 
         try {
-            // Use Transaction to ensure data integrity (Ticket + Messages must succeed together)
             DB::beginTransaction();
 
-            // 1. Create the Job Ticket
+            // 1. Create the parent JobTicket
             $ticket = JobTicket::create([
                 'employer_user_id' => $user->id,
                 'subject' => $validated['subject'],
-                'status' => 'pending_staff', // Explicitly set status
+                'status' => 'pending_staff',
             ]);
 
-            // 2. Create the Initial Message (Conditional: only if provided)
+            // 2. Create the initial text message, if provided
             if (!empty($validated['message'])) {
                 $ticket->messages()->create([
                     'user_id' => $user->id,
@@ -78,36 +71,77 @@ class TicketController extends Controller
                 ]);
             }
 
-            // 3. Handle Attachments (Future Logic Placeholder)
-            // In future steps (S5+), we will process the $validated['attachments'] array here.
-            // For 'new_employees', we will need to json_decode each element in the array.
+            $attachments = $validated['attachments'];
+
+            // 3. Process Existing Employees
+            if (!empty($attachments['existing_employees'])) {
+                foreach ($attachments['existing_employees'] as $employeeId) {
+                    $ticket->messages()->create([
+                        'user_id' => $user->id,
+                        'message_type' => 'attach_employee_existing',
+                        'related_model_type' => Employee::class,
+                        'related_model_id' => $employeeId,
+                    ]);
+                }
+            }
+
+            // 4. Process New Employees (from JSON data)
+            if (!empty($attachments['new_employees'])) {
+                foreach ($attachments['new_employees'] as $jsonPayload) {
+                    $ticket->messages()->create([
+                        'user_id' => $user->id,
+                        'message_type' => 'attach_employee_new',
+                        'body' => $jsonPayload, // Store the JSON directly
+                    ]);
+                }
+            }
+
+            // 5. Process File Uploads
+            if (!empty($attachments['files'])) {
+                foreach ($attachments['files'] as $fileData) {
+                    $tempPath = $fileData['path'];
+                    $permanentPath = 'ticket_attachments/' . $ticket->id . '/' . basename($tempPath);
+
+                    // Move file from temp to permanent storage
+                    Storage::disk('public')->move($tempPath, $permanentPath);
+
+                    $ticket->messages()->create([
+                        'user_id' => $user->id,
+                        'message_type' => 'attach_file',
+                        'body' => json_encode([
+                            'file_path' => $permanentPath,
+                            'file_name' => $fileData['name'],
+                            'file_size' => $fileData['size'],
+                        ]),
+                    ]);
+                }
+            }
 
             DB::commit();
 
-            // Redirect to the newly created ticket's detail page (Better UX).
-            return redirect()->route('tickets.show', $ticket)->with('success', 'สร้างคำขอเรียบร้อยแล้ว');
+            return redirect()->route('tickets.show', $ticket)->with('success', 'สร้างคำขอพร้อมแนบไฟล์เรียบร้อยแล้ว');
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
+            Log::error('Ticket creation failed: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-            // Log the error for debugging
-            \Log::error('Ticket creation failed: ' . $e->getMessage(), ['user_id' => $user->id]);
-
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาดในการสร้างคำขอ กรุณาลองใหม่อีกครั้ง');
+            return back()->withInput()->with('danger', 'เกิดข้อผิดพลาดร้ายแรงในการสร้างคำขอ');
         }
     }
+
 
     /**
      * Display the specified ticket (User View).
      */
     public function show(JobTicket $ticket): View | RedirectResponse
     {
-        // Interface Enforcement: If the user can manage tickets, redirect to the admin view of the ticket.
         if (Auth::user()->can('manage-tickets')) {
             return redirect()->route('admin.tickets.show', $ticket);
         }
 
-        // Enforce Tenancy: Authorize the user to view this ticket (Must be the owner).
         if ($ticket->employer_user_id !== Auth::id()) {
             abort(403, 'Unauthorized action. You do not own this ticket.');
         }
