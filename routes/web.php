@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Api\EmployerEmployeeController;
 // Add this new import:
 use App\Http\Controllers\Api\TemporaryUploadController;
+// Add this new import:
+use App\Http\Controllers\TicketReplyController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
@@ -74,6 +76,9 @@ Route::middleware('auth')->group(function () {
         'index', 'create', 'store', 'show'
     ]);
 
+    // V2.4-S10: Employer Reply Route
+    Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
+
     // --- V2.4-S5/S6: Internal API Routes for Web Interface ---
     Route::prefix('api-web')->name('api-web.')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
@@ -88,6 +93,8 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     // We define routes explicitly for the Admin side.
     Route::get('tickets', [AdminTicketController::class, 'index'])->name('tickets.index');
     Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
+    // V2.4-S10: Admin Reply Route (Points to the same controller method)
+    Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
     // Future routes (update/assign) will go here.
 });
 
