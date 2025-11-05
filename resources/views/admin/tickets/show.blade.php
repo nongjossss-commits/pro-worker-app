@@ -33,7 +33,7 @@
 
 @section('content')
 {{-- V2.4-S11: Initialize the unified Alpine.js component --}}
-<div class="content-section" x-data="hybridAttachmentManager()">
+<div class="content-section" x-data="hybridAttachmentManager({ ticketEmployerId: {{ $ticket->employer_user_id ?? 'null' }} })">
 
     {{-- V2.4-S10: Global Error/Success Display (Crucial for feedback after reply) --}}
     @if (session('error'))
