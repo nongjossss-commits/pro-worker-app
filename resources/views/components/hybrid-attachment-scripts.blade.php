@@ -1,7 +1,8 @@
 {{-- resources/views/components/hybrid-attachment-scripts.blade.php --}}
 {{-- V2.4-S11: Unified Reusable Alpine.js Component for Hybrid Attachments --}}
 <script>
-    function hybridAttachmentManager() {
+    function hybridAttachmentManager(options = {}) { // V2.4-S11.3: Add options
+        const ticketEmployerId = options.ticketEmployerId || null; // V2.4-S11.3: Store the ID
         return {
             // --- Core Basket State (Persistent) ---
             basket: {
@@ -133,11 +134,18 @@
             },
 
             // --- Existing Employee Functions ---
-            async fetchEmployees() {
+            async fetchEmployees(ticketEmployerId = null) { // V2.4-S11.3: Accept ID
                 if (this.availableEmployees.length > 0) return;
                 this.isLoading = true;
+
+                // V2.4-S11.3: Build the API URL
+                let apiUrl = '{{ route('api-web.employer.employees.index') }}';
+                if (ticketEmployerId) {
+                    apiUrl += `?ticket_employer_id=${ticketEmployerId}`;
+                }
+
                 try {
-                    const response = await fetch('{{ route('api-web.employer.employees.index') }}');
+                    const response = await fetch(apiUrl); // Use the new URL
                     if (!response.ok) throw new Error('Failed to fetch employees');
                     this.availableEmployees = await response.json();
                 } catch (error) {
@@ -149,26 +157,23 @@
             },
 
             async openExistingEmployeeModal() {
-                await this.fetchEmployees();
-                this.selectedEmployeeIds = this.basket.existing_employees.map(e => e.id.toString());
+                // V2.4-S11.3: Pass the stored ID (null for employer, ID for admin)
+                await this.fetchEmployees(ticketEmployerId);
+
+                // V2.4-S11.3 (Bug 2 Fix): Reset selections, don't pre-load
+                this.selectedEmployeeIds = [];
                 if (this.modalInstances.existing) this.modalInstances.existing.show();
             },
 
             filteredEmployees() {
-                // V2.4-S11.2: Get IDs of employees already in the basket (these are integers)
+                // V2.4-S11.3 (Bug 2 Fix): Get IDs of employees already in the basket
                 const basketIds = new Set(this.basket.existing_employees.map(e => e.id));
-
-                // V2.4-S11.2: Get IDs of employees currently selected in the modal (these are strings)
-                const selectedIds = new Set(this.selectedEmployeeIds);
-
                 const query = this.searchQuery.toLowerCase();
 
                 return this.availableEmployees.filter(employee => {
-                    // Rule 1: If it's already in the basket...
+                    // Rule 1: MUST NOT be in the basket.
                     if (basketIds.has(employee.id)) {
-                        // ...only show it if it's currently selected (string check)
-                        // (This allows it to be displayed AND un-checked)
-                        return selectedIds.has(employee.id.toString());
+                        return false;
                     }
 
                     // Rule 2: (It's not in the basket) Match search query (if any)
@@ -184,10 +189,17 @@
             },
 
             confirmSelection() {
+                // V2.4-S11.3 (Bug 2 Fix): Get IDs of employees selected in the modal
                 const transientIds = new Set(this.selectedEmployeeIds.map(id => parseInt(id)));
-                this.basket.existing_employees = this.availableEmployees.filter(employee => {
+
+                // V2.4-S11.3: Find the full employee objects that were selected
+                const newEmployeesToAdd = this.availableEmployees.filter(employee => {
                     return transientIds.has(employee.id);
                 });
+
+                // V2.4-S11.3: *Append* (push) them to the basket
+                this.basket.existing_employees.push(...newEmployeesToAdd);
+
                 if (this.modalInstances.existing) this.modalInstances.existing.hide();
                 this.searchQuery = '';
             },
