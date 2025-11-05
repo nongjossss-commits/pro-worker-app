@@ -5,7 +5,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="existingEmployeeModalLabel">เลือกลูกจ้างที่มีอยู่</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="showExistingEmployeeModal = false"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 {{-- Loading State --}}
@@ -56,7 +56,7 @@
             </div>
             <div class="modal-footer">
                 <span class="me-auto">เลือกแล้ว <strong x-text="selectedEmployeeIds.length"></strong> รายการ</span>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="showExistingEmployeeModal = false">ยกเลิก</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
                 {{-- Confirm Selection Button --}}
                 <button type="button" class="btn btn-primary" @click="confirmSelection()">
                     <i class="bi bi-check-circle me-1"></i> ยืนยันการเลือก
