@@ -82,6 +82,8 @@ Route::middleware('auth')->group(function () {
     // --- V2.4-S5/S6: Internal API Routes for Web Interface ---
     Route::prefix('api-web')->name('api-web.')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
+        // V2.4-S12 (Plan B): Add API route for Employer List Filter
+        Route::get('employers/list', [EmployerController::class, 'getEmployerListApi'])->name('employers.list_api');
         // V2.4-S6: New Route for Temporary Uploads (POST)
         Route::post('temp-upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
     });

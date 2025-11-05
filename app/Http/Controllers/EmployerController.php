@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employer;
 use App\Models\JobOwner;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\Employee; // <-- เพิ่มบรรทัดนี้
@@ -325,5 +326,33 @@ public function edit(Request $request, Employer $employer)
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * API endpoint to get a list of all employers (for Admin/Staff filters).
+     * (V2.4-S12: Plan B)
+     */
+    public function getEmployerListApi(Request $request): JsonResponse
+    {
+        // Authorization check for safety
+        if (!auth()->check() || !auth()->user()->can('manage-tickets')) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // Admin/Staff, bypass tenancy scope to get ALL employers.
+        $query = Employer::withoutGlobalScopes(['employerTenancy']);
+
+        $employers = $query->orderBy('employerNameTh')
+            ->get(['id', 'employerNameTh', 'employerId']);
+
+        $formattedList = $employers->map(function ($employer) {
+            return [
+                'id' => $employer->id,
+                'employerNameTh' => $employer->employerNameTh,
+                'employerId' => $employer->employerId,
+            ];
+        });
+
+        return response()->json($formattedList);
     }
 }
