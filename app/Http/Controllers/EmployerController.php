@@ -326,4 +326,38 @@ public function edit(Request $request, Employer $employer)
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * V2.4-S19 (Plan B): New API method for employer search.
+     * Provides a JSON list of employers for the "Attach Existing Employee" modal's
+     * search functionality, intended for Admin/Staff users.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function listApi(Request $request)
+    {
+        // V2.4-S15.1: Security check - only users who can manage tickets can use this API.
+        if (!auth()->user()->can('manage-tickets')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $query = $request->input('q');
+
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        $employers = Employer::query()
+            ->where(function ($q) use ($query) {
+                $q->where('employerNameTh', 'like', "%{$query}%")
+                  ->orWhere('employerNameEn', 'like', "%{$query}%")
+                  ->orWhere('employerId', 'like', "%{$query}%");
+            })
+            ->select('id', 'employerId', 'employerNameTh') // Select only necessary fields
+            ->limit(10) // Limit the results
+            ->get();
+
+        return response()->json($employers);
+    }
 }
