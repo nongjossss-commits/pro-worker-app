@@ -41,7 +41,7 @@ return [
 'id' => $employee->id,
 // --- V2.4-S19 (Plan B) Additions START ---
 'employer_id' => $employee->employer_id,
-'employer_name' => $employee->employer->employerNameTh ?? 'N/A', // Add Employer Name
+'employer_name' => $employee->employer?->employerNameTh ?? 'N/A', // Add Employer Name
 // --- V2.4-S19 (Plan B) Additions END ---
 'employeeNameTh' => $employee->employeeNameTh,
 'employeeNameEn' => $employee->employeeNameEn,
