@@ -1,4 +1,5 @@
 <?php
+
 // app/Http/Controllers/TicketReplyController.php
 namespace App\Http\Controllers;
 
@@ -13,102 +14,145 @@ use Exception;
 
 class TicketReplyController extends Controller
 {
-    /**
-     * Store a newly created reply in storage.
-     */
-    public function store(StoreTicketReplyRequest $request, JobTicket $ticket): RedirectResponse
-    {
-        $user = Auth::user();
-        $validated = $request->validated();
+/**
+* Store a newly created reply in storage.
+*/
+public function store(StoreTicketReplyRequest $request, JobTicket $ticket): RedirectResponse
+{
+$user = Auth::user();
+// V2.4-S11: Validation handles the complex structure. Data is prepared (JSON decoded) by the Request.
+$validated = $request->validated();
 
-        // --- V2.4-S10: Authorization and Status Check ---
-        // 1. Check if the ticket is closed
-        if (in_array($ticket->status, ['resolved', 'rejected'])) {
-            return back()->with('error', 'ไม่สามารถตอบกลับได้ เนื่องจากตั๋วงานนี้ถูกปิดแล้ว');
-        }
+// --- Authorization and Status Check (No Changes) ---
+if (in_array($ticket->status, ['resolved', 'rejected'])) {
+return back()->with('error', 'ไม่สามารถตอบกลับได้ เนื่องจากตั๋วงานนี้ถูกปิดแล้ว');
+}
 
-        // 2. Check Authorization (Who can reply?)
-        $isStaff = $user->can('manage-tickets');
-        $isOwner = $ticket->employer_user_id === $user->id;
+$isStaff = $user->can('manage-tickets');
+$isOwner = $ticket->employer_user_id === $user->id;
 
-        if (!$isStaff && !$isOwner) {
-            abort(403, 'Unauthorized action.');
-        }
+if (!$isStaff && !$isOwner) {
+abort(403, 'Unauthorized action.');
+}
 
-        // --- V2.4-S10: Processing Logic (Transaction & File Management) ---
-        $attachments = $validated['attachments'] ?? [];
-        $movedFiles = [];
-        $storageDisk = 'public';
-        $permanentBasePath = "ticket_attachments/{$ticket->id}";
+// --- V2.4-S11: Processing Logic (Transaction & File Management) ---
+$attachments = $validated['attachments'] ?? [];
+$movedFiles = [];
+$storageDisk = 'public';
+$permanentBasePath = "ticket_attachments/{$ticket->id}";
 
-        try {
-            DB::beginTransaction();
+try {
+DB::beginTransaction();
 
-            // 3. Process Message (comment)
-            if (!empty($validated['message'])) {
-                $ticket->messages()->create([
-                    'user_id' => $user->id,
-                    'message_type' => 'comment',
-                    'body' => $validated['message'],
-                ]);
-            }
+// 1. Process Message (comment)
+if (!empty($validated['message'])) {
+$ticket->messages()->create([
+'user_id' => $user->id,
+'message_type' => 'comment',
+'body' => $validated['message'],
+]);
+}
 
-            // 4. Process File Attachments (attachment_file)
-            // (Logic reused from V2.4-S8 TicketController@store)
-            if (!empty($attachments['files'])) {
-                foreach ($attachments['files'] as $fileData) {
-                    $tempPath = $fileData['path'];
-                    // Use the existing 'files' subdirectory
-                    $permanentPath = $permanentBasePath . '/files/' . basename($tempPath);
+// 2. Process File Attachments (attachment_file) (Existing Logic)
+if (!empty($attachments['files'])) {
+foreach ($attachments['files'] as $fileData) {
+$tempPath = $fileData['path'];
+$permanentPath = $permanentBasePath . '/files/' . basename($tempPath);
 
-                    if (Storage::disk($storageDisk)->move($tempPath, $permanentPath)) {
-                        $movedFiles[] = $permanentPath;
-                        $ticket->messages()->create([
-                            'user_id' => $user->id,
-                            'message_type' => 'attachment_file',
-                            'body' => json_encode([
-                                'path' => $permanentPath,
-                                'name' => $fileData['name'],
-                                'size' => $fileData['size'],
-                            ]),
-                        ]);
-                    } else {
-                        throw new Exception("Failed to move reply file from {$tempPath} to {$permanentPath}");
-                    }
-                }
-            }
+if (Storage::disk($storageDisk)->move($tempPath, $permanentPath)) {
+$movedFiles[] = $permanentPath;
+$ticket->messages()->create([
+'user_id' => $user->id,
+'message_type' => 'attachment_file',
+'body' => json_encode([
+'path' => $permanentPath,
+'name' => $fileData['name'],
+'size' => $fileData['size'],
+]),
+]);
+} else {
+throw new Exception("Failed to move reply file from {$tempPath} to {$permanentPath}");
+}
+}
+}
 
-            // 5. Workflow Automation: Update Ticket Status
-            // If Staff replies, wait for Employer. If Employer replies, wait for Staff.
-            $newStatus = $isStaff ? 'pending_employer' : 'pending_staff';
+// V2.4-S11: 3. Process Existing Employees (attachment_employee) (New Logic)
+if (!empty($attachments['existing_employees'])) {
+foreach ($attachments['existing_employees'] as $employeeId) {
+$ticket->messages()->create([
+'user_id' => $user->id,
+'message_type' => 'attachment_employee',
+'body' => $employeeId, // Store just the ID
+]);
+}
+}
 
-            // Update the ticket status (and updated_at timestamp)
-            if ($ticket->status !== $newStatus) {
-                $ticket->update(['status' => $newStatus]);
-            } else {
-                // If status didn't change, we should still update the timestamp to reflect recent activity.
-                $ticket->touch();
-            }
+// V2.4-S11: 4. Process New Employees (attachment_new_employee) (New Logic)
+if (!empty($attachments['new_employees'])) {
+// Data is already decoded arrays thanks to StoreTicketReplyRequest preparation.
+foreach ($attachments['new_employees'] as $index => $newEmployeeData) {
 
-            DB::commit();
+// Use Passport as a subfolder identifier for organization
+$employeeIdentifier = preg_replace('/[^A-Za-z0-9\-]/', '_', $newEmployeeData['employeePassport'] ?? "Index_{$index}");
 
-            // Redirect back to the ticket view (handles both Admin and standard routes)
-            // Using back() is simplest here as the user is already on the correct view.
-            return back()->with('success', 'ส่งข้อความตอบกลับเรียบร้อยแล้ว');
+// 4a. Move associated files
+$fileFields = ['employeePhoto', 'document_1'];
+foreach ($fileFields as $field) {
+if (!empty($newEmployeeData[$field])) {
+$tempPath = $newEmployeeData[$field];
+// Use 'new_employees' subdirectory and include the identifier
+$permanentPath = $permanentBasePath . "/new_employees/{$employeeIdentifier}/" . basename($tempPath);
 
-        } catch (Exception $e) {
-            DB::rollBack();
+// Ensure the directory exists before moving (Robustness)
+Storage::disk($storageDisk)->makeDirectory(dirname($permanentPath));
 
-            // Cleanup moved files on failure
-            if (count($movedFiles) > 0) {
-                Log::warning('Ticket reply transaction failed. Cleaning up moved files.', ['files' => $movedFiles]);
-                Storage::disk($storageDisk)->delete($movedFiles);
-            }
+if (Storage::disk($storageDisk)->move($tempPath, $permanentPath)) {
+$movedFiles[] = $permanentPath;
+// Update the path in the data array
+$newEmployeeData[$field] = $permanentPath;
+} else {
+throw new Exception("Failed to move new employee file ({$field}) from {$tempPath} to {$permanentPath}");
+}
+}
+}
 
-            Log::error('Ticket reply failed (S10): ' . $e->getMessage(), ['user_id' => $user->id, 'ticket_id' => $ticket->id]);
+// 4b. Create the message record
+$ticket->messages()->create([
+'user_id' => $user->id,
+'message_type' => 'attachment_new_employee',
+// Store the updated data (with permanent paths) as JSON
+'body' => json_encode($newEmployeeData),
+]);
+}
+}
 
-            // Redirect back with input data restored (Alpine init handles file restoration)
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาดในการส่งข้อความตอบกลับ กรุณาลองใหม่อีกครั้ง.');
-        }
-    }
+
+// 5. Workflow Automation: Update Ticket Status (No Changes)
+$newStatus = $isStaff ? 'pending_employer' : 'pending_staff';
+
+if ($ticket->status !== $newStatus) {
+$ticket->update(['status' => $newStatus]);
+} else {
+$ticket->touch();
+}
+
+DB::commit();
+
+return back()->with('success', 'ส่งข้อความตอบกลับเรียบร้อยแล้ว');
+
+} catch (Exception $e) {
+DB::rollBack();
+
+// Cleanup moved files on failure
+if (count($movedFiles) > 0) {
+Log::warning('Ticket reply transaction failed (S11). Cleaning up moved files.', ['files' => $movedFiles]);
+Storage::disk($storageDisk)->delete($movedFiles);
+}
+
+Log::error('Ticket reply failed (S11): ' . $e->getMessage(), ['user_id' => $user->id, 'ticket_id' => $ticket->id, 'trace' => $e->getTraceAsString()]);
+
+// Redirect back with input data restored (Alpine restoreOldInput handles restoration)
+return back()->withInput()->with('error', 'เกิดข้อผิดพลาดในการส่งข้อความตอบกลับ กรุณาลองใหม่อีกครั้ง. (Error: ' . $e->getMessage() . ')');
+}
+}
 }
