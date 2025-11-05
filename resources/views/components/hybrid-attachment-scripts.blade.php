@@ -235,7 +235,12 @@
             submitNewEmployeeForm() {
                 const isModalUploading = Object.values(this.uploadStatus).some(status => status.loading);
                 if (isModalUploading) {
-                    Swal.fire('รอสักครู่', 'กรุณารอให้การอัปโหลดไฟล์เสร็จสิ้นก่อนเพิ่มเข้าตะกร้า', 'warning');
+                    // V2.4-S11-P1: Add Swal stability check
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('รอสักครู่', 'กรุณารอให้การอัปโหลดไฟล์เสร็จสิ้นก่อนเพิ่มเข้าตะกร้า', 'warning');
+                    } else {
+                        alert('กรุณารอให้การอัปโหลดไฟล์เสร็จสิ้นก่อนเพิ่มเข้าตะกร้า');
+                    }
                     return;
                 }
                 this.basket.new_employees.push(JSON.parse(JSON.stringify(this.newEmployeeForm)));
@@ -295,11 +300,16 @@
                 event.target.value = null; // Reset file input
 
                 if (errors.length > 0) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'เกิดข้อผิดพลาดในการอัปโหลดบางไฟล์',
-                        html: errors.join('<br>'),
-                    });
+                    // V2.4-S11-P1: Add Swal stability check
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'เกิดข้อผิดพลาดในการอัปโหลดบางไฟล์',
+                            html: errors.join('<br>'),
+                        });
+                    } else {
+                        alert('เกิดข้อผิดพลาดในการอัปโหลดบางไฟล์:\n' + errors.join('\n'));
+                    }
                 }
             },
         }
