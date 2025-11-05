@@ -1,8 +1,7 @@
 {{-- resources/views/components/hybrid-attachment-scripts.blade.php --}}
 {{-- V2.4-S11: Unified Reusable Alpine.js Component for Hybrid Attachments --}}
 <script>
-    function hybridAttachmentManager(options = {}) { // V2.4-S11.3: Add options
-        const ticketEmployerId = options.ticketEmployerId || null; // V2.4-S11.3: Store the ID
+    function hybridAttachmentManager() {
         return {
             // --- Core Basket State (Persistent) ---
             basket: {
@@ -156,11 +155,12 @@
                 }
             },
 
-            async openExistingEmployeeModal() {
-                // V2.4-S11.3: Pass the stored ID (null for employer, ID for admin)
+            // V2.4-S11.4: Refactored to accept ID from @click
+            async openExistingEmployeeModal(ticketEmployerId = null) {
+                // Pass the ID (null for employer, ID for admin)
                 await this.fetchEmployees(ticketEmployerId);
 
-                // V2.4-S11.3 (Bug 2 Fix): Reset selections, don't pre-load
+                // V2.4-S11.3 (Bug 2 Fix): Reset selections
                 this.selectedEmployeeIds = [];
                 if (this.modalInstances.existing) this.modalInstances.existing.show();
             },

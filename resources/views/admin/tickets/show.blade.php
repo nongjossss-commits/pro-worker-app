@@ -33,7 +33,7 @@
 
 @section('content')
 {{-- V2.4-S11: Initialize the unified Alpine.js component --}}
-<div class="content-section" x-data="hybridAttachmentManager({ ticketEmployerId: {{ $ticket->employer_user_id ?? 'null' }} })">
+<div class="content-section" x-data="hybridAttachmentManager()">
 
     {{-- V2.4-S10: Global Error/Success Display (Crucial for feedback after reply) --}}
     @if (session('error'))
@@ -288,7 +288,7 @@
                             {{-- Action Buttons --}}
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div class="btn-group" role="group" aria-label="Attachment options">
-                                    <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading">
+                                    <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal({{ $ticket->employer_user_id ?? 'null' }})" :disabled="isUploading">
                                         <i class="bi bi-person-check"></i> แนบลูกจ้าง
                                     </button>
                                     <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
