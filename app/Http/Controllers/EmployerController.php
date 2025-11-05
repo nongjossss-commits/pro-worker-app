@@ -329,12 +329,12 @@ public function edit(Request $request, Employer $employer)
     }
 
     /**
-     * API endpoint to get a list of all employers (for Admin/Staff filters).
-     * (V2.4-S12: Plan B)
+     * API endpoint to get a list of all employers (for Admin/Staff filters in modals).
+     * (V2.4-S15: Plan B)
      */
     public function getEmployerListApi(Request $request): JsonResponse
     {
-        // Authorization check for safety
+        // Authorization check: Must be authenticated and have manage-tickets
         if (!auth()->check() || !auth()->user()->can('manage-tickets')) {
             abort(403, 'Unauthorized access.');
         }
@@ -342,14 +342,15 @@ public function edit(Request $request, Employer $employer)
         // Admin/Staff, bypass tenancy scope to get ALL employers.
         $query = Employer::withoutGlobalScopes(['employerTenancy']);
 
+        // Fetch essential fields for the dropdown filter.
         $employers = $query->orderBy('employerNameTh')
             ->get(['id', 'employerNameTh', 'employerId']);
 
         $formattedList = $employers->map(function ($employer) {
             return [
-                'id' => $employer->id,
+                'id' => $employer->id, // Use the actual 'id' (Primary Key) for the value
                 'employerNameTh' => $employer->employerNameTh,
-                'employerId' => $employer->employerId,
+                'employerId' => $employer->employerId, // (Keep this for display)
             ];
         });
 
