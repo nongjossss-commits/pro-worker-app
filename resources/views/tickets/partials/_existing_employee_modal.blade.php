@@ -15,32 +15,46 @@
                     </div>
                     <p class="mt-2">กำลังโหลดข้อมูลลูกจ้าง...</p>
                 </div>
+
                 {{-- Content State --}}
                 <div x-show="!isLoading">
-                    <div class="mb-3">
-                        {{-- Update placeholder text --}}
-                        <input type="search" class="form-control" placeholder="ค้นหา ชื่อ (ไทย/อังกฤษ) หรือ Passport..." x-model.debounce.300ms="searchQuery">
+                    {{-- START: V2.4-S12 (PLAN B) - EMPLOYER FILTER --}}
+                    {{-- Show this filter ONLY if the user is Admin/Staff (has permission) --}}
+                    @can('manage-tickets')
+                    <div class="mb-3 p-3 border rounded bg-light" x-data="{ userIsAdmin: true }">
+                        <label for="employerFilterDropdown" class="form-label fw-bold">กรองตามนายจ้าง (สำหรับ Admin):</label>
+                        <select x-model="selectedEmployerFilter" id="employerFilterDropdown" class="form-select">
+                            <option value="">-- แสดงลูกจ้างทั้งหมด --</option> [cite: 118]
+                            <template x-for="employer in employersList" :key="employer.id"> [cite: 118]
+                                <option :value="employer.id" x-text="`${employer.employerNameTh} (${employer.employerId})`"></option> [cite: 119]
+                            </template>
+                        </select>
                     </div>
+                    @endcan
+                    {{-- END: V2.4-S12 (PLAN B) - EMPLOYER FILTER --}}
+
+                    <div class="mb-3">
+                        <input type="search" class="form-control" placeholder="ค้นหา ชื่อ (ไทย/อังกฤษ) หรือ Passport..." x-model.debounce.300ms="searchQuery"> [cite: 120]
+                    </div>
+
                     <div class="list-group">
-                        {{-- ... (Empty State Template remains the same) ... --}}
                         <template x-if="filteredEmployees().length === 0">
                             <div class="text-center text-muted py-3">
                                 <span x-text="availableEmployees.length === 0 ? 'ไม่มีลูกจ้างในระบบ' : 'ไม่พบลูกจ้างที่ตรงกับคำค้นหา'"></span>
                             </div>
                         </template>
-                        {{-- Employee List Iteration (V2.4-S6 Update: Richer Display) --}}
                         <template x-for="employee in filteredEmployees()" :key="employee.id">
                             <label class="list-group-item d-flex align-items-center gap-3 py-2">
                                 {{-- Checkbox --}}
-                                <input class="form-check-input me-1" type="checkbox" :value="employee.id" x-model="selectedEmployeeIds">
-                                {{-- V2.4-S6: Employee Photo (using photo_url accessor from API) --}}
-                                <img :src="employee.photo_url" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
-                                {{-- V2.4-S6: Employee Details (Both Names) --}}
+                                <input class="form-check-input me-1" type="checkbox" :value="employee.id.toString()" x-model="selectedEmployeeIds"> [cite: 123]
+                                {{-- Photo --}}
+                                <img :src="employee.photo_url" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;"> [cite: 125]
                                 <span class="flex-grow-1">
+                                    {{-- Employee Details --}}
                                     <strong x-text="employee.employeeNameTh"></strong>
                                     <span class="text-muted" x-text="employee.employeeNameEn ? '(' + employee.employeeNameEn + ')' : ''"></span>
                                     <small class="text-muted d-block" x-text="'Passport: ' + (employee.employeePassport || 'N/A')"></small>
-                                    {{-- V2.5-S2: Nationality with Flag --}}
+                                    {{-- Nationality (V2.5-S2) --}}
                                     <div class="d-flex align-items-center" style="font-size: 0.85rem;">
                                         <span class="text-muted me-1">Nationality:</span>
                                         <template x-if="employee.flag_url">
@@ -48,6 +62,14 @@
                                         </template>
                                         <strong x-text="employee.nationality || 'N/A'"></strong>
                                     </div>
+
+                                    {{-- Employer Name (V2.4-S12 Plan B) --}}
+                                    @can('manage-tickets')
+                                    <div class="d-flex align-items-center text-info" style="font-size: 0.85rem;">
+                                        <i class="bi bi-building me-1"></i>
+                                        <strong x-text="employee.employer_name || 'N/A'"></strong> [cite: 128]
+                                    </div>
+                                    @endcan
                                 </span>
                             </label>
                         </template>
@@ -57,8 +79,7 @@
             <div class="modal-footer">
                 <span class="me-auto">เลือกแล้ว <strong x-text="selectedEmployeeIds.length"></strong> รายการ</span>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                {{-- Confirm Selection Button --}}
-                <button type="button" class="btn btn-primary" @click="confirmSelection()">
+                <button type="button" class="btn btn-primary" @click="confirmSelection()"> [cite: 134]
                     <i class="bi bi-check-circle me-1"></i> ยืนยันการเลือก
                 </button>
             </div>

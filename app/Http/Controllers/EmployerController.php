@@ -326,4 +326,26 @@ public function edit(Request $request, Employer $employer)
 
         return response()->stream($callback, 200, $headers);
     }
+/**
+ * API endpoint to get a list of all employers (for Admin/Staff filters).
+ * (V2.4-S12: Plan B)
+ */
+ public function getEmployerListApi(Request $request): JsonResponse {
+ // Authorization check for safety
+ if (!auth()->check() || !auth()->user()->can('manage-tickets')) { [cite: 138]
+ abort(403, 'Unauthorized access.'); [cite: 138]
+ }
+ // Admin/Staff, bypass tenancy scope to get ALL employers.
+ $query = Employer::withoutGlobalScopes(['employerTenancy']); [cite: 141]
+ $employers = $query->orderBy('employerNameTh')
+ ->get(['id', 'employerNameTh', 'employerId']); [cite: 142]
+ $formattedList = $employers->map(function ($employer) {
+ return [
+ 'id' => $employer->id,
+ 'employerNameTh' => $employer->employerNameTh,
+ 'employerId' => $employer->employerId,
+ ];
+ });
+ return response()->json($formattedList); [cite: 144]
+ }
 }
