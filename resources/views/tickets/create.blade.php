@@ -5,9 +5,8 @@
 @section('content')
 {{-- Initialize Alpine.js Component (V2.4-S11 Update) --}}
 <div class="content-section" x-data="hybridAttachmentManager()">
-    {{-- ... (Header, Error Display) ... --}}
-    <h2 class="mb-4">สร้างคำขอใหม่ (Smart Ticket)</h2>
-
+{{-- <div class="content-section" x-data="attachmentBasket()"> <-- OLD --}}
+{{-- ... (Jules: ส่วนเนื้อหา Form ทั้งหมดคงเดิม) ... --}}
     {{-- Error Display --}}
     @if (session('error'))
         <div class="alert alert-danger mb-4" role="alert">
@@ -27,8 +26,9 @@
 
 <form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data">
 @csrf
-{{-- V2.4-S7: Hidden File Input (Triggered by the button) --}}
+{{-- (ตรวจสอบ Hidden File Input ว่า ref และ @change ถูกต้อง) --}}
 <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
+{{-- ... (Jules: ส่วนเนื้อหา Form ทั้งหมดคงเดิม จนถึงท้ายไฟล์) ... --}}
 <div class="row">
 {{-- Column 1: Main Information (Left Side) - No Changes --}}
 <div class="col-lg-7">
@@ -163,8 +163,8 @@
     @include('tickets.partials._new_employee_modal')
 </div>
 @endsection
-
 @push('scripts')
 {{-- V2.4-S11: Load the unified script component --}}
 @include('components.hybrid-attachment-scripts')
+{{-- (Jules: ลบ Script เดิม <script> function attachmentBasket() { ... } </script> ที่อยู่ด้านล่างนี้ออกทั้งหมด) --}}
 @endpush
