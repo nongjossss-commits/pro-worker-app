@@ -329,31 +329,31 @@ public function edit(Request $request, Employer $employer)
     }
 
     /**
-     * API endpoint to get a list of all employers (for Admin/Staff filters in modals).
-     * (V2.4-S15: Plan B)
+     * V2.4-S15 (Plan B): Add new API method for employer search.
+     * Accessible by users who can manage tickets (Admin/Staff).
      */
-    public function getEmployerListApi(Request $request): JsonResponse
+    public function listApi(Request $request)
     {
-        // Authorization check: Must be authenticated and have manage-tickets
-        if (!auth()->check() || !auth()->user()->can('manage-tickets')) {
-            abort(403, 'Unauthorized access.');
+        // 1. Check permission
+        if (!auth()->user()->can('manage-tickets')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Admin/Staff, bypass tenancy scope to get ALL employers.
-        $query = Employer::withoutGlobalScopes(['employerTenancy']);
+        // 2. Get search query
+        $query = $request->input('q', '');
 
-        // Fetch essential fields for the dropdown filter.
-        $employers = $query->orderBy('employerNameTh')
-            ->get(['id', 'employerNameTh', 'employerId']);
+        // 3. Fetch employers
+        $employers = \App\Models\Employer::query()
+            ->select(['id', 'employerNameTh', 'employerId']) // Select only needed fields
+            ->where(function ($q) use ($query) {
+                $q->where('employerNameTh', 'like', '%' . $query . '%')
+                    ->orWhere('employerId', 'like', '%' . $query . '%');
+            })
+            ->orderBy('employerNameTh')
+            ->limit(50) // Limit results for performance
+            ->get();
 
-        $formattedList = $employers->map(function ($employer) {
-            return [
-                'id' => $employer->id, // Use the actual 'id' (Primary Key) for the value
-                'employerNameTh' => $employer->employerNameTh,
-                'employerId' => $employer->employerId, // (Keep this for display)
-            ];
-        });
-
-        return response()->json($formattedList);
+        // 4. Return JSON
+        return response()->json($employers);
     }
 }

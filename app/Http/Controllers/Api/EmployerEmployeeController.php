@@ -1,69 +1,67 @@
-<?php
-
-namespace App\Http\Controllers\Api; // Corrected namespace to match routes/web.php
+namespace App\Http\Controllers\Api;
 
 use App\Helpers\CountryHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class EmployerEmployeeController extends Controller
 {
     /**
-     * Get a list of employees for the authenticated user.
-     * Admin/Staff can retrieve all employees (bypassing tenancy scope).
-     * Employer users are automatically limited by employerTenancy Global Scope.
+     * Get a list of employees.
+     * V2.4-S15 (Plan B) Fix:
+     * - If user is Employer, use Global Scope (default).
+     * - If user is Admin/Staff, use withoutGlobalScopes() to prevent leak.
+     * - Eager load employer relationship to add employer_id/name to response.
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
         $user = Auth::user();
+
         if (!$user->hasRole('employer') && !$user->can('manage-tickets')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // --- START PLAN B: Remove broken ticket_employer_id logic and fetch based on role ---
+        // --- V2.4-S15 (Plan B) Logic START ---
+        $query = Employee::query();
+
         if ($user->can('manage-tickets')) {
-            // Staff/Admin can view all employees by bypassing the global scope
-            $query = Employee::withoutGlobalScopes(['employerTenancy']); // (แก้ไข: ระบุ Scope ที่จะข้าม)
-        } else {
-            // Employer is fetching (Global Scope 'employerTenancy' will apply automatically)
-            $query = Employee::query();
+            // Admin/Staff: Bypass tenancy scope to fetch ALL employees
+            $query->withoutGlobalScopes();
         }
 
-        // Apply termination filter and eager load employer for display info.
-        // We ensure employer is eager loaded to fetch employerNameTh below.
-        $employees = $query->with('employer')
+        // Note: If user is 'employer', the Global Scope applies automatically.
+        // --- V2.4-S15 (Plan B) Logic END ---
+
+        // V2.4-S15: Eager load employer relationship
+        $employees = $query->with('employer:id,employerNameTh') // Load only necessary fields
             ->whereNull('terminated_at')
             ->orderBy('employeeNameTh')
-            // Add employer_id for client-side filtering (Plan B requirement)
-            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality', 'employer_id']);
-        // --- END PLAN B IMPLEMENTATION ---
+            ->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
 
         // CRITICAL: Append the accessor so it's included in the JSON response.
         $employees->append('photo_url');
 
+        // V2.5-S2: Add nationality and flag URL
         $employeesData = $employees->map(function ($employee) {
             $nationality = $employee->employeeNationality;
             $countryCode = CountryHelper::getCountryCode($nationality);
             $flagUrl = $countryCode ? asset('images/flags/' . strtolower($countryCode) . '.png') : null;
 
-            // Add employer information
-            $employerName = $employee->employer->employerNameTh ?? 'N/A';
-            $employerId = $employee->employer_id;
-
             return [
                 'id' => $employee->id,
+                // --- V2.4-S15 (Plan B) Additions START ---
+                'employer_id' => $employee->employer_id,
+                'employer_name' => $employee->employer->employerNameTh ?? 'N/A', // Add Employer Name
+                // --- V2.4-S15 (Plan B) Additions END ---
                 'employeeNameTh' => $employee->employeeNameTh,
                 'employeeNameEn' => $employee->employeeNameEn,
                 'employeePassport' => $employee->employeePassport,
                 'companyWorkerId' => $employee->companyWorkerId,
-                'photo_url' => $employee->photo_url,
+                'photo_url' => $employee->photo_url, // Accessor field
                 'nationality' => $nationality,
                 'flag_url' => $flagUrl,
-                'employer_id' => $employerId,
-                'employer_name' => $employerName,
             ];
         });
 

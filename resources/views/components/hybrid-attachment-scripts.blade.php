@@ -1,1 +1,158 @@
-{{-- resources/views/components/hybrid-attachment-scripts.blade.php --}} {{-- V2.4-S15 (Plan B): Final Unified Script (Based on V2.4-S11.4 Checkpoint) --}} <script> function hybridAttachmentManager() { // V2.4-S15 (Plan B): Determine Admin/Staff status from Blade const userIsAdminOrStaff = @json(Auth::check() && Auth::user()->can('manage-tickets')); return { // --- Core Basket State (Persistent) --- basket: { existing_employees: [], new_employees: [], files: [], }, // --- General Upload State --- isUploading: false, uploadProgress: 0, filesToUploadCount: 0, filesUploadedCount: 0, // --- Modal Instances (Bootstrap) --- modalInstances: { existing: null, new: null }, // --- Existing/New Employee States (Transient) --- availableEmployees: [], // (All employees fetched from API) employersList: [], // (V2.4-S15: For Admin Filter) selectedEmployeeIds: [], // (IDs currently checked in modal) isLoading: false, searchQuery: '', // (Employee Search) selectedEmployerFilter: '', // (V2.4-S15: Employer Filter ID) // (V2.4-S11.4: New Employee Form state - UNCHANGED) defaultNewEmployeeForm: { employeeTitleTh: 'นาย', employeeNameTh: '', employeeTitleEn: 'Mr.', employeeNameEn: '', employeeNationality: '', employeePassport: '', nature_of_work: '', employeePhoto: null, document_1: null, }, newEmployeeForm: {}, uploadStatus: {}, // For New Employee Modal uploads // (V2.4-S11.4: init - MODIFIED) init() { this.$nextTick(() => { if (typeof bootstrap !== 'undefined') { const existingModalEl = document.getElementById('existingEmployeeModal'); const newModalEl = document.getElementById('newEmployeeModal'); if(existingModalEl) this.modalInstances.existing = new bootstrap.Modal(existingModalEl); if(newModalEl) this.modalInstances.new = new bootstrap.Modal(newModalEl); } }); this.resetNewEmployeeForm(); // (V2.4-S11.4: UNCHANGED) this.restoreOldInput(); // (V2.4-S11.4: UNCHANGED) // V2.4-S15 (Plan B): Fetch employer list for the filter if (userIsAdminOrStaff) { this.fetchEmployersList(); } }, // (V2.4-S11.4: restoreOldInput - UNCHANGED) restoreOldInput() { try { const oldAttachments = @json(old('attachments')); if (oldAttachments) { // (Logic from V11.4) if (Array.isArray(oldAttachments.new_employees)) { this.basket.new_employees = oldAttachments.new_employees.map(emp => { return (typeof emp === 'string') ? JSON.parse(emp) : emp; }); } // (V2.4-S11.4: We still won't restore files or existing_employees, it's too complex) } } catch (e) { console.error("Error restoring old input:", e); } }, // (V2.4-S11.4: totalItemsCount - UNCHANGED) totalItemsCount() { const filesCount = this.basket.files ? this.basket.files.length : 0; const existingCount = this.basket.existing_employees ? this.basket.existing_employees.length : 0; const newCount = this.basket.new_employees ? this.basket.new_employees.length : 0; return filesCount + existingCount + newCount; }, // (V2.4-S11.4: formatBytes - UNCHANGED) formatBytes(bytes, decimals = 2) { if (!+bytes) return '0 Bytes' const k = 1024 const dm = decimals < 0 ? 0 : decimals const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'] const i = Math.floor(Math.log(bytes) / Math.log(k)) return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}` }, // (V2.4-S11.4: removeConfirm - UNCHANGED) (Fixes Bug 02:32) removeConfirm(type, index, itemName) { if (typeof Swal === 'undefined') { if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบ ${itemName} ออกจากตะกร้า?`)) { this.basket[type].splice(index, 1); } return; } Swal.fire({ title: 'ยืนยันการลบ?', text: `คุณต้องการลบ '${itemName}' ออกจากตะกร้าใช่หรือไม่?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก' }).then((result) => { if (result.isConfirmed) { this.$nextTick(() => { if(this.basket[type] && typeof this.basket[type].splice === 'function') { this.basket[type].splice(index, 1); } }); } }); }, // --- V2.4-S15 (Plan B): NEW Function --- async fetchEmployersList() { try { // Call the new API endpoint const response = await fetch('{{ route('api-web.employers.list_api') }}'); if (!response.ok) throw new Error('Failed to fetch employers list'); this.employersList = await response.json(); } catch (error) { console.error('Error fetching employer list:', error); } }, // (V2.4-S11.4: fetchEmployees - MODIFIED for V2.4-S15) async fetchEmployees() { if (this.availableEmployees.length > 0) return; // Only fetch once this.isLoading = true; try { // (This API now correctly handles Admin vs Employer) const response = await fetch('{{ route('api-web.employer.employees.index') }}'); if (!response.ok) throw new Error('Failed to fetch employees'); this.availableEmployees = await response.json(); } catch (error) { console.error(error); if (typeof showToast === 'function') { showToast('เกิดข้อผิดพลาดในการโหลดข้อมูลลูกจ้าง', 'danger'); } } finally { this.isLoading = false; } }, // (V2.4-S11.4: openExistingEmployeeModal - UNCHANGED) async openExistingEmployeeModal() { await this.fetchEmployees(); // Fetch (if needed) // (V2.4-S11.4: Fixes duplicate selection) this.selectedEmployeeIds = this.basket.existing_employees.map(e => e.id.toString()); if (this.modalInstances.existing) this.modalInstances.existing.show(); }, // (V2.4-S11.4: filteredEmployees - MODIFIED for V2.4-S15) filteredEmployees() { // V2.4-S11.4 (Duplicate Fix): Get IDs of employees already in the reply basket const basketIds = new Set(this.basket.existing_employees.map(e => e.id)); const selectedIds = new Set(this.selectedEmployeeIds.map(id => parseInt(id))); // (Use parseInt for consistency) const query = this.searchQuery.toLowerCase(); // V2.4-S15 (Plan B): Get the selected Employer ID (it's a string, convert to int if needed) const filterEmployerId = this.selectedEmployerFilter ? parseInt(this.selectedEmployerFilter, 10) : null; return this.availableEmployees.filter(employee => { // Rule 1: (Duplicate Fix) If it's already in the basket... if (basketIds.has(employee.id)) { // ...only show it if it's currently selected (This allows it to be un-checked) return selectedIds.has(employee.id); } // Rule 2: (Plan B) MUST match Employer Filter (if set) if (userIsAdminOrStaff && filterEmployerId && employee.employer_id !== filterEmployerId) { return false; } // Rule 3: (Search Query) MUST match search query (if any) if (!this.searchQuery) { return true; // No query, matches filters = Show } // Rule 4: Match search logic return (employee.employeeNameTh && employee.employeeNameTh.toLowerCase().includes(query)) || (employee.employeeNameEn && employee.employeeNameEn.toLowerCase().includes(query)) || (employee.employeePassport && employee.employeePassport.toLowerCase().includes(query)); }); }, // (V2.4-S11.4: confirmSelection - UNCHANGED) confirmSelection() { const transientIds = new Set(this.selectedEmployeeIds.map(id => parseInt(id))); this.basket.existing_employees = this.availableEmployees.filter(employee => { return transientIds.has(employee.id); }); if (this.modalInstances.existing) this.modalInstances.existing.hide(); this.searchQuery = ''; // (Do NOT reset selectedEmployerFilter) }, // (V2.4-S11.4: resetNewEmployeeForm - UNCHANGED) (Fixes Bug 02:49) resetNewEmployeeForm() { this.newEmployeeForm = JSON.parse(JSON.stringify(this.defaultNewEmployeeForm)); this.uploadStatus = {}; Object.keys(this.defaultNewEmployeeForm).forEach(key => { if (key === 'employeePhoto' || key.startsWith('document_')) { this.uploadStatus[key] = { loading: false, error: null, url: null }; } }); const formElement = document.getElementById('newEmployeeActualForm'); if (formElement) { formElement.reset(); } }, // (V2.4-S11.4: openNewEmployeeModal - UNCHANGED) (Fixes Bug 02:49) openNewEmployeeModal() { this.resetNewEmployeeForm(); if (this.modalInstances.new) this.modalInstances.new.show(); }, // (V2.4-S11.4: handleFileUpload - UNCHANGED) async handleFileUpload(event, fieldName) { const file = event.target.files[0]; if (!file) return; const status = this.uploadStatus[fieldName]; status.loading = true; status.error = null; const formData = new FormData(); formData.append('file', file); const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); try { const response = await fetch('{{ route('api-web.temp_upload.store') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', }, body: formData, }); const data = await response.json(); if (!response.ok) { throw new Error(data.error || 'Upload failed'); } this.newEmployeeForm[fieldName] = data.path; status.url = data.url; } catch (error) { console.error('Upload error:', error); status.error = error.message; this.newEmployeeForm[fieldName] = null; event.target.value = null; // Clear the input } finally { status.loading = false; } }, // (V2.4-S11.4: submitNewEmployeeForm - UNCHANGED) (Fixes Bug 02:49) submitNewEmployeeForm() { const isModalUploading = Object.values(this.uploadStatus).some(status => status.loading); if (isModalUploading) { if (typeof Swal !== 'undefined') { Swal.fire('รอสักครู่', 'กรุณารอให้การอัปโหลดไฟล์เสร็จสิ้นก่อนเพิ่มเข้าตะกร้า', 'warning'); } else { alert('กรุณารอให้การอัปโหลดไฟล์เสร็จสิ้นก่อนเพิ่มเข้าตะกร้า'); } return; } this.basket.new_employees.push(JSON.parse(JSON.stringify(this.newEmployeeForm))); if (this.modalInstances.new) { this.modalInstances.new.hide(); } this.resetNewEmployeeForm(); }, // (V2.4-S11.4: triggerFileInput - UNCHANGED) (Fixes Bug 02:59) triggerFileInput() { this.$refs.replyFileInput ? this.$refs.replyFileInput.click() : this.$refs.generalFileInput.click(); }, // (V2.4-S11.4: handleGeneralFileUpload - UNCHANGED) async handleGeneralFileUpload(event) { const files = Array.from(event.target.files); if (files.length === 0) return; this.isUploading = true; this.filesToUploadCount = files.length; this.filesUploadedCount = 0; this.uploadProgress = 0; let errors = []; const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); for (const file of files) { this.uploadProgress = Math.round((this.filesUploadedCount / this.filesToUploadCount) * 100); try { const formData = new FormData(); formData.append('file', file); const response = await fetch('{{ route('api-web.temp_upload.store') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }, body: formData, }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Upload failed'); this.basket.files.push({ path: data.path, name: file.name, size: file.size, url: data.url }); this.filesUploadedCount++; } catch (error) { console.error(`Upload error for ${file.name}:`, error); errors.push(`${file.name}: ${error.message}`); } } this.isUploading = false; this.uploadProgress = 0; event.target.value = null; // Reset file input if (errors.length > 0) { if (typeof Swal !== 'undefined') { Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการอัปโหลดบางไฟล์', html: errors.join('<br>'), }); } else { alert('เกิดข้อผิดพลาดในการอัปโหลดบางไฟล์:\n' + errors.join('\n')); } } }, } } </script>
+{{-- ... (โค้ดก่อนหน้า) ... --}}
+<script>
+    function hybridAttachmentManager() {
+        return {
+            // ... (โค้ด basket, isUploading, uploadProgress, modalInstances) ...
+            // --- Existing/New Employee States (Transient) ---
+            availableEmployees: [],
+            selectedEmployeeIds: [],
+            isLoading: false,
+            searchQuery: '', // This is for EMPLOYEE search
+
+            // --- V2.4-S15 (Plan B) New States ---
+            availableEmployersList: [], // For employer search results
+            employerSearchQuery: '', // For employer search input
+            selectedEmployer: null, // Stores the selected employer object {id, name}
+            isLoadingEmployers: false, // Loading state for employer search
+            // --- V2.4-S15 (Plan B) END ---
+
+            defaultNewEmployeeForm: {
+                // ... (โค้ด newEmployeeForm) ...
+            },
+            newEmployeeForm: {},
+            uploadStatus: {}, // For New Employee Modal uploads
+
+            // Initialize the component
+            init() {
+                // ... (โค้ด init()) ...
+            },
+
+            // V2.4-S11: New function to restore state from old() helper
+            restoreOldInput() {
+                // ... (โค้ด restoreOldInput()) ...
+            },
+
+            // --- Core Basket Functions ---
+            // ... (โค้ด totalItemsCount, formatBytes, removeConfirm) ...
+
+            // --- V2.4-S15 (Plan B) New Employer Search Functions ---
+            // Fetches employer list from the new API
+            async fetchEmployersList() {
+                if (!this.employerSearchQuery) {
+                    this.availableEmployersList = [];
+                    return;
+                }
+                this.isLoadingEmployers = true;
+                try {
+                    // Use the new API route
+                    const response = await fetch(`{{ route('api-web.employers.list.api') }}?q=${this.employerSearchQuery}`);
+                    if (!response.ok) throw new Error('Failed to fetch employers');
+                    this.availableEmployersList = await response.json();
+                } catch (error) {
+                    console.error(error);
+                    showToast('เกิดข้อผิดพลาดในการค้นหานายจ้าง', 'danger');
+                } finally {
+                    this.isLoadingEmployers = false;
+                }
+            },
+
+            // Stores the selected employer and clears the search
+            selectEmployer(employer) {
+                this.selectedEmployer = employer;
+                this.employerSearchQuery = '';
+                this.availableEmployersList = [];
+            },
+
+            // Clears the selected employer, allowing a new search
+            clearEmployerSelection() {
+                this.selectedEmployer = null;
+                // We might also want to clear the employee list or searchQuery here if needed
+                this.searchQuery = '';
+            },
+            // --- V2.4-S15 (Plan B) END ---
+
+            // --- Existing Employee Functions (Modified) ---
+            async fetchEmployees() {
+                // V2.4-S15: We now fetch ALL employees for Admin on demand,
+                // so we MUST clear the cache if the selected employer changes.
+                // We will rely on openExistingEmployeeModal to fetch.
+                if (this.availableEmployees.length > 0) {
+                    // If we already have employees, don't refetch unless forced
+                    return;
+                }
+
+                this.isLoading = true;
+                try {
+                    const response = await fetch('{{ route('api-web.employer.employees.index') }}');
+                    if (!response.ok) throw new Error('Failed to fetch employees');
+                    this.availableEmployees = await response.json();
+                } catch (error) {
+                    console.error(error);
+                    showToast('เกิดข้อผิดพลาดในการโหลดข้อมูลลูกจ้าง', 'danger');
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            async openExistingEmployeeModal() {
+                await this.fetchEmployees(); // Always ensure employees are loaded
+
+                // V2.4-S15 (Plan B): Reset employer search state
+                this.clearEmployerSelection();
+                this.availableEmployersList = [];
+                this.isLoadingEmployers = false;
+
+                this.selectedEmployeeIds = this.basket.existing_employees.map(e => e.id.toString());
+                if (this.modalInstances.existing) this.modalInstances.existing.show();
+            },
+
+            filteredEmployees() {
+                // V2.4-S15: Get IDs of employees already in the basket (integers)
+                const basketIds = new Set(this.basket.existing_employees.map(e => e.id));
+                const selectedIds = new Set(this.selectedEmployeeIds.map(id => parseInt(id)));
+                const query = this.searchQuery.toLowerCase();
+
+                // --- V2.4-S15 (Plan B) Filtering Logic START ---
+
+                // 1. Filter by Selected Employer (if Admin/Staff has selected one)
+                let filteredByEmployer = this.availableEmployees;
+                if (this.selectedEmployer) {
+                    filteredByEmployer = this.availableEmployees.filter(employee => {
+                        return employee.employer_id === this.selectedEmployer.id;
+                    });
+                }
+                // Note: If user is 'employer', this.selectedEmployer will be null,
+                // and availableEmployees only contains their own staff anyway, so it works.
+
+                // 2. Filter by Basket Status and Search Query
+                return filteredByEmployer.filter(employee => {
+                    // Rule 1: If it's already in the basket...
+                    if (basketIds.has(employee.id)) {
+                        // ...only show it if it's currently selected (string check)
+                        return selectedIds.has(employee.id);
+                    }
+                    // Rule 2: (Not in basket) Match search query (if any)
+                    if (!this.searchQuery) {
+                        return true; // No query, not in basket, matches employer = Show
+                    }
+
+                    // Rule 3: (Not in basket) Match search logic
+                    return (employee.employeeNameTh && employee.employeeNameTh.toLowerCase().includes(query)) ||
+                           (employee.employeeNameEn && employee.employeeNameEn.toLowerCase().includes(query)) ||
+                           (employee.employeePassport && employee.employeePassport.toLowerCase().includes(query));
+                });
+                // --- V2.4-S15 (Plan B) Filtering Logic END ---
+            },
+
+            confirmSelection() {
+                // ... (โค้ด confirmSelection() ไม่เปลี่ยนแปลง) ...
+            },
+
+            // --- New Employee Functions ---
+            // ... (โค้ด resetNewEmployeeForm, openNewEmployeeModal, handleFileUpload, submitNewEmployeeForm) ...
+
+            // --- General File Attachment Functions ---
+            // ... (โค้ด triggerFileInput, handleGeneralFileUpload) ...
+        }
+    }
+</script>
