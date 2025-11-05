@@ -84,6 +84,8 @@ Route::middleware('auth')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
         // V2.4-S6: New Route for Temporary Uploads (POST)
         Route::post('temp-upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
+        // V2.4-S19 (Plan B): Add new API route for fetching employer list
+        Route::get('employers/list', [App\Http\Controllers\EmployerController::class, 'listApi'])->name('employers.list.api');
     });
 });
 

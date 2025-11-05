@@ -17,10 +17,57 @@
                 </div>
                 {{-- Content State --}}
                 <div x-show="!isLoading">
-                    <div class="mb-3">
-                        {{-- Update placeholder text --}}
-                        <input type="search" class="form-control" placeholder="ค้นหา ชื่อ (ไทย/อังกฤษ) หรือ Passport..." x-model.debounce.300ms="searchQuery">
+                    {{-- V2.4-S19 (Plan B): Employer Search (Admin/Staff Only) --}}
+                    @can('manage-tickets')
+                        <div class="px-3 pt-3">
+                            <label for="employerSearchInput" class="form-label fw-bold">1. ค้นหานายจ้าง (สำหรับ Admin/Staff)</label>
+                            {{-- If an employer is selected, show their name and a clear button --}}
+                            <template x-if="selectedEmployer">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text bg-light" x-text="selectedEmployer.employerNameTh"></span>
+                                    <button class="btn btn-outline-danger" type="button" @click="clearEmployerSelection">
+                                        <i class="bi bi-x-lg"></i> ล้าง
+                                    </button>
+                                </div>
+                            </template>
+                            {{-- Show search box ONLY if no employer is selected --}}
+                            <template x-if="!selectedEmployer">
+                                <div>
+                                    <input type="text" id="employerSearchInput" class="form-control" placeholder="พิมพ์ชื่อ หรือ รหัสนายจ้าง..."
+                                           x-model="employerSearchQuery" @input.debounce.500ms="fetchEmployersList">
+                                    {{-- Loading indicator for employer search --}}
+                                    <div x-show="isLoadingEmployers" class="text-muted small mt-1">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        กำลังค้นหานายจ้าง...
+                                    </div>
+                                    {{-- Employer Search Results List --}}
+                                    <template x-if="employerSearchQuery && availableEmployersList.length > 0">
+                                        <div class="list-group mt-2" style="max-height: 200px; overflow-y: auto;">
+                                            <template x-for="employer in availableEmployersList" :key="employer.id">
+                                                <button type="button" class="list-group-item list-group-item-action" @click="selectEmployer(employer)">
+                                                    <span x-text="employer.employerNameTh"></span> (<span x-text="employer.employerId"></span>)
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    @endcan
+                    {{-- V2.4-S19 (Plan B) END --}}
+
+                    {{-- Employee Search (Filter within selected Employer) --}}
+                    <div class="p-3">
+                        @can('manage-tickets')
+                             <label for="employeeSearchInput" class="form-label fw-bold">2. ค้นหาลูกจ้าง</label>
+                        @endcan
+                        <input type="text" id="employeeSearchInput" class="form-control"
+                               placeholder="พิมพ์ชื่อ, Passport, หรือรหัสลูกจ้าง..." x-model="searchQuery">
                     </div>
+
+                    <hr class="my-0">
+
+                    {{-- Employee List Container --}}
                     <div class="list-group">
                         {{-- ... (Empty State Template remains the same) ... --}}
                         <template x-if="filteredEmployees().length === 0">
