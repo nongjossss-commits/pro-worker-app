@@ -35,7 +35,7 @@
 {{-- V2.4-S13: Initialize component, PASSING employerId for context --}}
 {{-- V2.4-S13-P1: CRITICAL FIX - Use @json directive for safe and correct data passing to Alpine.js --}}
 {{-- This ensures that the PHP value (integer or null) is correctly encoded as a JavaScript literal. --}}
-<div class="content-section" x-data="hybridAttachmentManager({ employerId: @json($ticket->employer_id ?? null) })">
+<div class="content-section" x-data="hybridAttachmentManager({ employerId: @json($ticket->employerUser && $ticket->employerUser->employer ? $ticket->employerUser->employer->id : null) })">
 
     {{-- V2.4-S10: Global Error/Success Display (Crucial for feedback after reply) --}}
     @if (session('error'))
