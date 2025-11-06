@@ -32,8 +32,8 @@
 @section('title', $viewTitle . ' #' . $ticket->id)
 
 @section('content')
-{{-- V2.4-S11: Initialize the unified Alpine.js component --}}
-<div class="content-section" x-data="hybridAttachmentManager()">
+{{-- V2.4-S13: Initialize component, PASSING employerId for context --}}
+<div class="content-section" x-data="hybridAttachmentManager({ employerId: {{ $ticket->employer_user_id }} })">
 
     {{-- V2.4-S10: Global Error/Success Display (Crucial for feedback after reply) --}}
     @if (session('error'))
