@@ -1,7 +1,8 @@
 {{-- resources/views/components/hybrid-attachment-scripts.blade.php --}}
 <script>
-// V2.4-S11-P3: Unified Alpine.js component for Hybrid Attachments (Create & Reply)
-function hybridAttachmentManager() {
+// V2.4-S13: Unified Alpine.js component for Hybrid Attachments (Create & Reply)
+// Now with Dynamic Context for Admin/Staff usage.
+function hybridAttachmentManager(config = {}) {
     return {
         // --- Core Basket State (Persistent) ---
         basket: {
@@ -28,6 +29,13 @@ function hybridAttachmentManager() {
         isLoading: false,
         searchQuery: '',
 
+        // --- V2.4-S13: New Context State ---
+        // This holds the employer ID for the current context (e.g., the ticket owner).
+        // It's `null` for an employer user (API uses tenancy) but set for Admin/Staff.
+        contextEmployerId: null,
+        // This flag is true only on the Admin "Create Ticket" page, which has a dynamic employer dropdown.
+        isContextAdminCreate: false,
+
         defaultNewEmployeeForm: {
             employeeTitleTh: 'นาย',
             employeeNameTh: '',
@@ -44,9 +52,12 @@ function hybridAttachmentManager() {
 
         // Initialize the component
         init() {
+            // V2.4-S13: Set context from config passed via x-data
+            this.contextEmployerId = config.employerId || null;
+            this.isContextAdminCreate = config.is_admin_create_view || false;
+
             this.$nextTick(() => {
                 if (typeof bootstrap !== 'undefined') {
-                    // Check if elements exist before initializing (important for reusability)
                     const existingModalEl = document.getElementById('existingEmployeeModal');
                     const newModalEl = document.getElementById('newEmployeeModal');
 
@@ -55,11 +66,17 @@ function hybridAttachmentManager() {
                 }
             });
             this.resetNewEmployeeForm();
-            // V2.4-S11: Restore state if validation failed
             this.restoreOldInput();
+
+            // V2.4-S13: If this is the admin create view and an old employer_id was selected,
+            // pre-fetch the employees for that employer.
+            if (this.isContextAdminCreate && this.contextEmployerId) {
+                console.log(`Admin create context detected with pre-selected employer: ${this.contextEmployerId}. Fetching employees.`);
+                this.fetchEmployees();
+            }
         },
 
-        // V2.4-S11: Restore basket from Laravel's old() input (Robust Implementation)
+        // Restore basket from Laravel's old() input
         restoreOldInput() {
             const oldAttachments = @json(old('attachments'));
             if (!oldAttachments) return;
@@ -164,21 +181,31 @@ function hybridAttachmentManager() {
 
         // --- Existing Employee Functions ---
 
-        // V2.4-S11-P3: CRITICAL FIX - Ensure robustness and guarantee isLoading management via try/finally.
+        // V2.4-S13: CRITICAL - This function now handles dynamic context.
         async fetchEmployees() {
-            // Ensure we return a Promise for consistency
-            if (this.availableEmployees.length > 0) return Promise.resolve();
-            // Prevent concurrent requests
-            if (this.isLoading) return Promise.resolve();
+            // For the dynamic Admin Create view, do not fetch if no employer is selected.
+            if (this.isContextAdminCreate && !this.contextEmployerId) {
+                console.warn("Fetch prevented: No employer selected in Admin Create context.");
+                this.availableEmployees = []; // Ensure list is empty
+                return Promise.resolve();
+            }
 
-            this.isLoading = true; // Start loading spinner
+            // Standard fetch logic starts here.
+            if (this.isLoading) return Promise.resolve(); // Prevent concurrent requests
+            this.isLoading = true;
+
+            // V2.4-S13: Dynamically build the API URL
+            let apiUrl = new URL('{{ route('api-web.employer.employees.index') }}', document.baseURI);
+            if (this.contextEmployerId) {
+                // If contextEmployerId is set (either in Admin Create or Admin/Employer Reply),
+                // send it to the backend API for scoping.
+                apiUrl.searchParams.append('employer_id', this.contextEmployerId);
+            }
 
             try {
-                // This line MUST trigger a network request.
-                const response = await fetch('{{ route('api-web.employer.employees.index') }}');
+                const response = await fetch(apiUrl.toString());
 
                 if (!response.ok) {
-                    // Handle HTTP errors (4xx, 5xx) robustly
                     let errorDetails = 'N/A';
                     try {
                         // Attempt to read response body for details
@@ -207,26 +234,46 @@ function hybridAttachmentManager() {
             }
         },
 
-        // V2.4-S11-P3: CRITICAL FIX - Correct the sequence. Open modal first, then fetch data (Open-then-Fetch).
         openExistingEmployeeModal() {
-            // 1. Show modal immediately. This allows the user to see the spinner inside the modal.
+            // V2.4-S13: Prevent opening modal if no employer is selected in the dynamic context.
+            if (this.isContextAdminCreate && !this.contextEmployerId) {
+                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างก่อนทำการเพิ่มลูกจ้างที่มีอยู่' });
+                return;
+            }
+
             if (this.modalInstances.existing) {
                 this.modalInstances.existing.show();
             }
 
-            // 2. Fetch data (if necessary) in the background (Do NOT use await here).
-            // The Modal UI reacts to isLoading state changes which are managed inside fetchEmployees.
             this.fetchEmployees().then(() => {
-                // 3. Once data is fetched (or if already available), prepare selection IDs
                 if (this.basket.existing_employees) {
                     this.selectedEmployeeIds = this.basket.existing_employees.map(e => e.id.toString());
                 } else {
                     this.selectedEmployeeIds = [];
                 }
             }).catch(error => {
-                // Error handling (Swal/alert) is already done inside fetchEmployees.
                 console.log("Modal data preparation failed (handled).");
             });
+        },
+
+        // V2.4-S13: New handler for the employer dropdown in the Admin Create view.
+        handleEmployerChange(newEmployerId) {
+            console.log(`Employer selection changed to: ${newEmployerId}`);
+            // Update the context ID.
+            this.contextEmployerId = newEmployerId;
+
+            // CRITICAL: Reset state to prevent data from the previous employer from leaking.
+            this.availableEmployees = [];
+            this.basket.existing_employees = [];
+            this.basket.new_employees = [];
+            this.selectedEmployeeIds = [];
+            this.searchQuery = '';
+
+            // If a valid employer is selected, pre-fetch their employees.
+            // If the selection is cleared (e.g., placeholder), the API call will be blocked by fetchEmployees.
+            if (newEmployerId) {
+                this.fetchEmployees();
+            }
         },
 
         filteredEmployees() {
@@ -262,6 +309,11 @@ function hybridAttachmentManager() {
         },
 
         openNewEmployeeModal() {
+            // V2.4-S13: Prevent opening modal if no employer is selected in the dynamic context.
+            if (this.isContextAdminCreate && !this.contextEmployerId) {
+                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างก่อนทำการเพิ่มลูกจ้างใหม่' });
+                return;
+            }
             this.resetNewEmployeeForm();
             if (this.modalInstances.new) this.modalInstances.new.show();
         },

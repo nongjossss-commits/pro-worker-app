@@ -6,26 +6,43 @@ use App\Helpers\CountryHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request; // Import Request
 use Illuminate\Support\Facades\Auth;
 
 class EmployerEmployeeController extends Controller
 {
     /**
-     * Get a list of employees for the authenticated employer.
-     * Security relies on the employerTenancy Global Scope.
+     * Get a list of employees.
+     * - For 'employer' roles, it's scoped by tenancy.
+     * - For 'manage-tickets' roles (Admin/Staff), it can be filtered by employer_id.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        // ... (Authorization logic remains the same)
         $user = Auth::user();
         if (!$user->hasRole('employer') && !$user->can('manage-tickets')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // V2.4-S6 Update: Fetch richer data, V2.5-S2 adds nationality
-        $employees = Employee::whereNull('terminated_at')
-            ->orderBy('employeeNameTh')
-            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
+        $query = Employee::whereNull('terminated_at')->orderBy('employeeNameTh');
+
+        // V2.4-S13: API Scoping Logic for Admin/Staff
+        if ($user->can('manage-tickets')) {
+            $employerId = $request->input('employer_id');
+
+            // Admin/Staff MUST provide an employer_id to get results.
+            if ($employerId) {
+                // We remove the global tenancy scope to search across all employers,
+                // and then apply a specific filter for the requested employer.
+                $query->withoutGlobalScopes()->where('employer_id', $employerId);
+            } else {
+                // If no employer_id is provided, return an empty list to prevent data leakage.
+                return response()->json([]);
+            }
+        }
+        // For users with the 'employer' role, the existing employerTenancy global scope
+        // will automatically handle the filtering. No 'else' block is needed.
+
+        $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
 
         // CRITICAL: Append the accessor so it's included in the JSON response.
         $employees->append('photo_url');

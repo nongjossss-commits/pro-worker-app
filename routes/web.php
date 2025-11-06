@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\TicketController;
 // Use an alias for the Admin controller to avoid naming conflicts
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
+use App\Http\Controllers\Admin\AdminJobTicketController;
 use App\Http\Controllers\Api\EmployerEmployeeController;
 // Add this new import:
 use App\Http\Controllers\Api\TemporaryUploadController;
@@ -90,6 +91,10 @@ Route::middleware('auth')->group(function () {
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
 // Accessible only by users with 'manage-tickets' permission (Admin and Staff).
 Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name('admin.')->group(function () {
+    // V2.4-S12: Admin Create Ticket Routes
+    Route::get('tickets/create', [AdminJobTicketController::class, 'create'])->name('tickets.create');
+    Route::post('tickets', [AdminJobTicketController::class, 'store'])->name('tickets.store');
+
     // We define routes explicitly for the Admin side.
     Route::get('tickets', [AdminTicketController::class, 'index'])->name('tickets.index');
     Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
