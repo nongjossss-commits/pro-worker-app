@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// ... (Existing imports)
-// Add Attribute and Storage imports
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 class Employee extends Model
 {
@@ -99,24 +98,48 @@ class Employee extends Model
         'terminated_at' => 'datetime',
     ];
 
-    // --- V2.4-S6: Accessor for Photo URL ---
     /**
-     * Get the full URL for the employee's photo, with a fallback avatar.
-     * Usage in Blade/API: $employee->photo_url
+     * Get the URL to the employee's photo.
+     * V2.4-S13-P2: CRITICAL FIX - Ensure robustness during API serialization.
+     * Handle nulls, missing attributes, and missing files defensively to prevent crashes.
      */
     protected function photoUrl(): Attribute
     {
         return Attribute::make(
-            get: function () {
-                // Robust check: Ensure property is set AND file exists on disk
-                if ($this->employeePhoto && Storage::disk('public')->exists($this->employeePhoto)) {
-                    return Storage::disk('public')->url($this->employeePhoto);
+            get: function ($value, $attributes) {
+                // Define default placeholder (Ensure 'public/images/default_avatar.png' exists in your project)
+                $defaultAvatar = asset('images/default_avatar.png');
+
+                // 1. Check if 'employee_photo' attribute exists in the attributes array
+                // (Crucial when using specific select() queries)
+                if (!isset($attributes['employee_photo'])) {
+                    return $defaultAvatar;
                 }
-                // Fallback using ui-avatars.com based on the name
-                $name = urlencode($this->employeeNameTh ?? $this->employeeNameEn ?? 'User');
-                // Use primary color defined in app.blade.php (F97316 - Orange)
-                return "https://ui-avatars.com/api/?name={$name}&color=FFFFFF&background=F97316&size=128";
-            }
+
+                $photoPath = $attributes['employee_photo'];
+
+                // 2. Check if the path is null or empty
+                if (!$photoPath) {
+                    return $defaultAvatar;
+                }
+
+                // 3. Determine the storage disk (assuming 'public')
+                $disk = 'public';
+
+                // 4. Check if the file actually exists on the disk before generating URL
+                try {
+                    if (Storage::disk($disk)->exists($photoPath)) {
+                        return Storage::disk($disk)->url($photoPath);
+                    }
+                } catch (\Exception $e) {
+                    // Log the error if storage access fails (e.g., permission issues), but do not crash the API
+                    $employeeId = $attributes['id'] ?? 'N/A';
+                    Log::warning("Storage access error for Employee photo (ID: {$employeeId}): " . $e->getMessage());
+                }
+
+                // 5. Fallback if file is missing or error occurred
+                return $defaultAvatar;
+            },
         );
     }
 
