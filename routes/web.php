@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\EmployerEmployeeController;
 use App\Http\Controllers\Api\TemporaryUploadController;
 // Add this new import:
 use App\Http\Controllers\TicketReplyController;
+// Add this new import for V2.4-S11:
+use App\Http\Controllers\Admin\TicketStatusController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
@@ -100,6 +102,10 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
     // V2.4-S10: Admin Reply Route (Points to the same controller method)
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
+
+    // (V2.4-S11) Ticket Status Actions
+    Route::post('tickets/{ticket}/resolve', [TicketStatusController::class, 'resolve'])->name('tickets.resolve');
+    Route::post('tickets/{ticket}/reject', [TicketStatusController::class, 'reject'])->name('tickets.reject');
     // Future routes (update/assign) will go here.
 });
 
