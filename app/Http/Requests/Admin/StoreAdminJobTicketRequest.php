@@ -35,16 +35,8 @@ class StoreAdminJobTicketRequest extends FormRequest
             // --- Attachment Validation (Same as StoreTicketRequest) ---
             'attachments.existing_employees'   => ['nullable', 'array'],
             'attachments.existing_employees.*' => ['integer', 'exists:employees,id'],
-            'attachments.new_employees'        => ['nullable', 'array'],
-            // Notice: new_employees.* is now an array, not JSON
-            'attachments.new_employees.*.employeeTitleTh'   => ['required', 'string', 'max:20'],
-            'attachments.new_employees.*.employeeNameTh'    => ['required', 'string', 'max:100'],
-            'attachments.new_employees.*.employeeDob'       => ['required', 'date'],
-            'attachments.new_employees.*.employeeNationality' => ['required', 'string', 'max:100'],
-            'attachments.new_employees.*.employeePassport'  => ['nullable', 'string', 'max:100'],
-            // File paths are strings from the temp upload
-            'attachments.new_employees.*.employeePhoto' => ['nullable', 'string'],
-            'attachments.new_employees.*.document_1'    => ['nullable', 'string'],
+            'attachments.new_employees' => ['nullable', 'array'],
+            'attachments.new_employees.*' => ['json'],
 
             'attachments.files'       => ['nullable', 'array'],
             'attachments.files.*.path' => ['required', 'string'],
@@ -53,31 +45,6 @@ class StoreAdminJobTicketRequest extends FormRequest
         ];
     }
 
-    /**
-     * Prepare the data for validation.
-     *
-     * This method is crucial for handling the JSON-encoded strings for new employees
-     * that come from the Alpine.js component. We decode them into arrays so the
-     * validator can check the nested fields.
-     */
-    protected function prepareForValidation(): void
-    {
-        $attachments = $this->input('attachments', []);
-
-        // If new employees are present, decode each one from JSON string to array
-        if (!empty($attachments['new_employees']) && is_array($attachments['new_employees'])) {
-            $attachments['new_employees'] = array_map(function ($item) {
-                if (is_string($item)) {
-                    return json_decode($item, true);
-                }
-                return $item; // Already an array
-            }, $attachments['new_employees']);
-        }
-
-        $this->merge([
-            'attachments' => $attachments,
-        ]);
-    }
 
      /**
      * Custom error messages for validation failures.

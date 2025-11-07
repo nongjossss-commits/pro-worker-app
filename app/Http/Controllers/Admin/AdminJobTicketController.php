@@ -11,9 +11,11 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class AdminJobTicketController extends Controller
 {
@@ -33,119 +35,6 @@ class AdminJobTicketController extends Controller
         return view('admin.tickets.create', compact('employers'));
     }
 
-    /**
-     * Store a new job ticket created by an admin.
-     */
-    public function store(StoreAdminJobTicketRequest $request): RedirectResponse
-    {
-        $validated = $request->validated();
-        $movedFiles = []; // Initialize here to be in scope for the catch block
+/** * Store a new job ticket created by an admin. * V2.4-S15: Rewritten to follow blueprint logic (based on TicketController@store) */ public function store(StoreAdminJobTicketRequest $request): RedirectResponse { $validated = $request->validated(); $adminUser = Auth::user(); $employerUserId = $validated['employer_user_id']; $attachments = $validated['attachments'] ?? []; $movedFiles = []; $storageDisk = 'public'; try { // Use Transaction to ensure data integrity DB::beginTransaction(); // 1. Create the Job Ticket $ticket = JobTicket::create([ 'employer_user_id' => $employerUserId, 'subject' => $validated['subject'], 'status' => 'pending_staff', 'assigned_staff_id' => $adminUser->id, // Assign to the admin who created it ]); $permanentBasePath = "ticket_attachments/{$ticket->id}"; // 2. Create the Initial Message (Comment) // This message is authored by the Admin $ticket->messages()->create([ 'job_ticket_id' => $ticket->id, 'user_id' => $adminUser->id, 'message_type' => 'comment', 'body' => $validated['message'], ]); // --- Attachment Processing --- // 3. Process General Files (attachment_file) if (!empty($attachments['files'])) { foreach ($attachments['files'] as $fileData) { $tempPath = $fileData['path']; $permanentPath = $permanentBasePath . '/files/' . basename($tempPath); if (Storage::disk($storageDisk)->move($tempPath, $permanentPath)) { $movedFiles[] = $permanentPath; $ticket->messages()->create([ 'job_ticket_id' => $ticket->id, 'user_id' => $adminUser->id, // Admin is the author 'message_type' => 'attachment_file', 'body' => json_encode([ 'path' => $permanentPath, 'name' => $fileData['name'], 'size' => $fileData['size'], ]), ]); } else { throw new Exception("Failed to move file from {$tempPath} to {$permanentPath}"); } } } // 4. Process Existing Employees (attachment_employee) if (!empty($attachments['existing_employees'])) { $messagesToInsert = []; foreach ($attachments['existing_employees'] as $employeeId) { $messagesToInsert[] = [ 'job_ticket_id' => $ticket->id, 'user_id' => $adminUser->id, // Admin is the author 'message_type' => 'attachment_employee', 'body' => $employeeId, // Store just the ID 'created_at' => now(), 'updated_at' => now(), ]; } TicketMessage::insert($messagesToInsert); } // 5. Process New Employees (attachment_new_employee) if (!empty($attachments['new_employees'])) { $fileFields = ['employeePhoto', 'document_1']; foreach ($attachments['new_employees'] as $newEmployeeJson) { $data = json_decode($newEmployeeJson, true); if (is_null($data)) { throw new Exception("Invalid JSON data detected for new employee."); } // Move files associated with this new employee foreach ($fileFields as $field) { if (isset($data[$field]) && $data[$field] && str_starts_with($data[$field], 'temp_uploads/')) { $tempPath = $data[$field]; $permanentPath = $permanentBasePath . '/new_employees/' . basename($tempPath); if (Storage::disk($storageDisk)->exists($tempPath)) { if (Storage::disk($storageDisk)->move($tempPath, $permanentPath)) { $movedFiles[] = $permanentPath; $data[$field] = $permanentPath; // Update path in JSON data } else { throw new Exception("Failed to move new employee file from {$tempPath} to {$permanentPath}"); } } else { $data[$field] = null; // File missing, set to null } } } // Create the message record with the updated JSON $ticket->messages()->create([ 'job_ticket_id' => $ticket->id, 'user_id' => $adminUser->id, // Admin is the author 'message_type' => 'attachment_new_employee', 'body' => json_encode($data), ]); } } // --- End of Attachment Processing --- DB::commit(); return redirect()->route('admin.tickets.show', $ticket->id) ->with('success', 'Ticket created successfully.'); } catch (Exception $e) { DB::rollBack(); if (count($movedFiles) > 0) { Log::warning('Admin Ticket creation failed. Cleaning up moved files.', ['files' => $movedFiles]); Storage::disk($storageDisk)->delete($movedFiles); } Log::error('Admin Ticket creation failed (S15): ' . $e->getMessage(), [ 'user_id' => $adminUser->id, 'trace' => $e->getTraceAsString() ]); return back()->withInput()->with('danger', 'Failed to create ticket: ' . $e->getMessage()); } }
 
-        DB::beginTransaction();
-        try {
-            // 1. Create the Job Ticket
-            $ticket = JobTicket::create([
-                'employer_user_id' => $validated['employer_user_id'],
-                'subject' => $validated['subject'],
-                'status' => 'pending_staff', // Default status for new tickets
-                // Admins can create tickets for others, but they are the initial assigned staff.
-                'assigned_staff_id' => Auth::id(),
-            ]);
-
-            // 2. Create the initial Ticket Message
-            $message = TicketMessage::create([
-                'job_ticket_id' => $ticket->id,
-                'user_id' => Auth::id(), // The admin is the author of this first message
-                'message_type' => 'comment',
-                'body' => $validated['message'],
-            ]);
-
-            $attachments = $validated['attachments'] ?? [];
-            $this->processAttachments($message, $attachments, $ticket->id, $validated['employer_user_id'], $movedFiles);
-
-
-            DB::commit();
-
-            return redirect()->route('admin.tickets.show', $ticket->id)
-                ->with('success', 'Ticket created successfully.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            // Also clean up any files that were moved from temp
-            if (!empty($movedFiles)) {
-                Storage::disk('public')->delete($movedFiles);
-            }
-            return back()->withInput()->with('danger', 'Failed to create ticket: ' . $e->getMessage());
-        }
-    }
-
-     /**
-     * Process attachments from the request.
-     *
-     * @param TicketMessage $message The parent message model.
-     * @param array $attachments The attachments data from the validated request.
-     * @param int $ticketId The ID of the job ticket.
-     * @param int $employerUserId The user ID of the employer this ticket belongs to.
-     * @param array &movedFiles A reference to an array tracking moved files for potential rollback.
-     */
-    private function processAttachments(TicketMessage $message, array $attachments, int $ticketId, int $employerUserId, array &$movedFiles): void
-    {
-        // Associate Existing Employees
-        if (!empty($attachments['existing_employees'])) {
-            $message->employees()->attach($attachments['existing_employees']);
-        }
-
-        // Create New Employees
-        if (!empty($attachments['new_employees'])) {
-            foreach ($attachments['new_employees'] as $newEmployeeData) {
-                // The data is already a decoded array from the FormRequest
-                $newEmployeeRecord = Employee::create([
-                    // Find the employer_id from the user_id
-                    'employer_id' => User::find($employerUserId)->employer->id,
-                    'employeeTitleTh' => $newEmployeeData['employeeTitleTh'],
-                    'employeeNameTh' => $newEmployeeData['employeeNameTh'],
-                    'employeeDob' => $newEmployeeData['employeeDob'],
-                    'employeeNationality' => $newEmployeeData['employeeNationality'],
-                    'employeePassport' => $newEmployeeData['employeePassport'] ?? null,
-                    // Handle file paths
-                    'employeePhoto' => $this->moveAttachment($newEmployeeData['employeePhoto'], 'employee_photos', $ticketId, $movedFiles),
-                    'document_1' => $this->moveAttachment($newEmployeeData['document_1'], 'employee_documents', $ticketId, $movedFiles),
-                ]);
-
-                // Attach the newly created employee to the message
-                $message->employees()->attach($newEmployeeRecord->id);
-            }
-        }
-
-        // Attach General Files
-        if (!empty($attachments['files'])) {
-            foreach ($attachments['files'] as $fileData) {
-                 $finalPath = $this->moveAttachment($fileData['path'], 'ticket_attachments', $ticketId, $movedFiles);
-                 // Assuming you have a relationship on TicketMessage to store general files
-                 // If not, this part needs adjustment (e.g., storing JSON in the body)
-            }
-        }
-    }
-
-    /**
-     * Move a file from a temporary path to a permanent one.
-     *
-     * @param string|null $tempPath The temporary file path.
-     * @param string $destinationFolder The target directory within the public disk.
-     * @param int $ticketId The ticket ID for namespacing.
-     * @param array &$movedFiles A reference to an array tracking moved files for potential rollback.
-     * @return string|null The new path or null if the input was empty.
-     */
-    private function moveAttachment(?string $tempPath, string $destinationFolder, int $ticketId, array &$movedFiles): ?string
-    {
-        if (empty($tempPath) || !Storage::disk('temp')->exists($tempPath)) {
-            return null;
-        }
-
-        $newPath = "{$destinationFolder}/{$ticketId}/" . basename($tempPath);
-        Storage::disk('public')->move($tempPath, $newPath);
-        $movedFiles[] = $newPath; // Track for rollback
-
-        return $newPath;
-    }
 }
