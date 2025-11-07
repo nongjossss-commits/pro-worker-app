@@ -28,14 +28,21 @@ class EmployerEmployeeController extends Controller
         // V2.4-S13: API Scoping Logic for Admin/Staff
         if ($user->can('manage-tickets')) {
             $employerId = $request->input('employer_id');
-
+            $employerUserId = $request->input('employer_user_id'); // <-- ADDED
+            // V2.4-S14 FIX: If employer_user_id is provided (from admin create page), find its linked employer_id
+            if ($employerUserId && !$employerId) { // <-- MODIFIED
+                $employerUser = \App\Models\User::find($employerUserId);
+                if ($employerUser && $employerUser->employer) {
+                    $employerId = $employerUser->employer->id; // <-- Get the correct employer ID
+                }
+            } // <-- ADDED
             // Admin/Staff MUST provide an employer_id to get results.
             if ($employerId) {
                 // We remove the global tenancy scope to search across all employers,
                 // and then apply a specific filter for the requested employer.
                 $query->withoutGlobalScopes()->where('employer_id', $employerId);
             } else {
-                // If no employer_id is provided, return an empty list to prevent data leakage.
+                // If no employer_id is provided (or found), return an empty list.
                 return response()->json([]);
             }
         }
