@@ -26,7 +26,7 @@
     // Access the pre-processed attachments via the accessor
     $attachments = $ticket->categorized_attachments;
     // V2.4-S10: Check if the ticket is closed
-    $isClosed = in_array($ticket->status, ['resolved', 'rejected']);
+    $isClosed = in_array($ticket->status, [\App\Enums\TicketStatus::Resolved->value, \App\Enums\TicketStatus::Rejected->value, \App\Enums\TicketStatus::Closed->value]);
 @endphp
 
 @section('title', $viewTitle . ' #' . $ticket->id)
@@ -319,6 +319,44 @@
             @endif
             {{-- End Section 3: Reply Box --}}
 
+            {{-- V2.4-S12: Staff/Admin Action Buttons --}}
+            @can('manage-tickets')
+                @if (!$isClosed)
+                    <div class="card mt-4">
+                        <div class="card-header"><h5 class="mb-0">Ticket Actions</h5></div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-3">
+                                {{-- 1. Mark as Resolved --}}
+                                <form action="{{ route('tickets.resolve', $ticket) }}" method="POST" onsubmit="return confirm('Are you sure you want to mark this ticket as Resolved?');">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-check-circle me-2"></i>Mark as Resolved
+                                    </button>
+                                </form>
+
+                                {{-- 2. Mark as Rejected --}}
+                                <form action="{{ route('tickets.reject', $ticket) }}" method="POST" onsubmit="return confirm('Are you sure you want to REJECT this ticket?');">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-x-circle me-2"></i>Mark as Rejected
+                                    </button>
+                                </form>
+
+                                {{-- 3. Forward to P-Workflow --}}
+                                <form action="{{ route('tickets.forward', $ticket) }}" method="POST" onsubmit="return confirm('Are you sure you want to forward this to P-Workflow?');">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-arrow-right-circle me-2"></i>Forward to P-Workflow
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            @endcan
         </div>
 
         {{-- Column 2: Metadata Sidebar --}}
@@ -355,16 +393,7 @@
                         {{ $ticket->assignedStaff->name ?? ($isAdminView ? 'ยังไม่ได้มอบหมาย' : 'รอเจ้าหน้าที่รับเรื่อง') }}
                     </li>
                 </ul>
-                {{-- Admin Action Buttons (Placeholder for V2.4-S11) --}}
-                @if($isAdminView)
-                    <div class="card-body d-grid gap-2">
-                         <h5 class="mb-3">การจัดการ (Admin/Staff)</h5>
-                        <button class="btn btn-outline-success" disabled>Mark as Resolved (V2.4-S11)</button>
-                        <button class="btn btn-outline-danger" disabled>Reject Ticket (V2.4-S11)</button>
-                        <button class="btn btn-outline-primary" disabled>Forward to P-Workflow (V2.4-S11)</button>
-                         <button class="btn btn-outline-secondary" disabled>Change Assignment (V2.4-S11)</button>
-                    </div>
-                @endif
+                {{-- Admin actions are now in the main content area --}}
             </div>
         </div>
     </div>

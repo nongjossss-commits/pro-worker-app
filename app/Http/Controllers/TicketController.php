@@ -16,6 +16,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 // Import Exception for robust error handling
 use Exception;
+use App\Enums\TicketStatus;
 // Ensure Illuminate\Http\Request is NOT imported if it conflicts or is unused.
 
 class TicketController extends Controller
@@ -232,5 +233,26 @@ class TicketController extends Controller
 
         // The categorized_attachments accessor will handle the rest of the data loading.
         return view('tickets.show', compact('ticket'));
+    }
+
+    public function resolveTicket(JobTicket $ticket): RedirectResponse
+    {
+        $ticket->update(['status' => TicketStatus::Resolved]);
+
+        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket marked as Resolved.');
+    }
+
+    public function rejectTicket(JobTicket $ticket): RedirectResponse
+    {
+        $ticket->update(['status' => TicketStatus::Rejected]);
+
+        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket marked as Rejected.');
+    }
+
+    public function forwardToWorkflow(JobTicket $ticket): RedirectResponse
+    {
+        $ticket->update(['status' => TicketStatus::InWorkflow]);
+
+        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket forwarded to P-Workflow.');
     }
 }

@@ -80,6 +80,13 @@ Route::middleware('auth')->group(function () {
     // V2.4-S10: Employer Reply Route
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
+    // --- V2.4-S12: Staff/Admin Ticket Action Routes ---
+    Route::middleware('can:manage-tickets')->group(function () {
+        Route::patch('/tickets/{ticket}/resolve', [TicketController::class, 'resolveTicket'])->name('tickets.resolve');
+        Route::patch('/tickets/{ticket}/reject', [TicketController::class, 'rejectTicket'])->name('tickets.reject');
+        Route::patch('/tickets/{ticket}/forward', [TicketController::class, 'forwardToWorkflow'])->name('tickets.forward');
+    });
+
     // --- V2.4-S5/S6: Internal API Routes for Web Interface ---
     Route::prefix('api-web')->name('api-web.')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
