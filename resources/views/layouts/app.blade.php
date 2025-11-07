@@ -158,6 +158,9 @@
                 <a href="{{ route('employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                     <i class="bi bi-people-fill me-2"></i>ข้อมูลลูกจ้าง
                 </a>
+                <a href="{{ route('admin.tickets.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">
+                    <i class="bi bi-ticket-alt-fill me-2"></i> <span>ตั๋วงาน (Tickets)</span>
+                </a>
                 @endcan
                 @can('view-importers')
                 <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>ข้อมูลบริษัทนำเข้า</a>

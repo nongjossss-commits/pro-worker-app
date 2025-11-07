@@ -22,19 +22,12 @@ class TicketController extends Controller
     /**
      * Display a listing of all job tickets (Admin Inbox).
      */
-    public function index(): View
+    public function index()
     {
-        // V2.4-S3: Handle Per Page selection using request() helper, default to 25
-        $perPage = request('per_page', 25);
-
-        // V2.4-S3: Optimization - Eager Load nested relationships
-        $tickets = JobTicket::with([
-            'employerUser.employer', // Load User AND their linked Employer record (for Company Name)
-            'assignedStaff'
-        ])
-            ->latest()
-            ->paginate($perPage);
-
+        // V2.4-S13: Fetch all tickets for the admin inbox view
+        $tickets = JobTicket::with(['employer', 'assignedStaff'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
         return view('admin.tickets.index', compact('tickets'));
     }
 
