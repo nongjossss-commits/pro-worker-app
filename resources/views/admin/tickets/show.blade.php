@@ -360,17 +360,27 @@
                     <div class="card-body d-grid gap-2">
                          <h5 class="mb-3">การจัดการ (Admin/Staff)</h5>
                         {{-- Mark as Resolved Button --}}
-                        <form action="{{ route('admin.tickets.resolve', $ticket) }}" method="POST" class="d-grid" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปิดตั๋วนี้เป็น "Resolved"?');">
+<form id="resolve-form" action="{{ route('admin.tickets.resolve', $ticket) }}" method="POST" class="d-grid">
                             @csrf
-                            <button type="submit" class="btn btn-outline-success" {{ $isClosed ? 'disabled' : '' }}>
+    <button type="button" class="btn btn-outline-success btn-submit-swal"
+            data-swal-title="ยืนยันการปิดตั๋ว"
+            data-swal-text="คุณแน่ใจหรือไม่ว่าต้องการปิดตั๋วนี้เป็น 'Resolved'?"
+            data-swal-icon="success"
+            data-swal-confirm-text="ใช่, ปิดตั๋วเลย"
+            {{ $isClosed ? 'disabled' : '' }}>
                                 <i class="bi bi-check-circle-fill me-2"></i> Mark as Resolved
                             </button>
                         </form>
 
                         {{-- Reject Ticket Button --}}
-                        <form action="{{ route('admin.tickets.reject', $ticket) }}" method="POST" class="d-grid" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการ "Reject" ตั๋วนี้?');">
+<form id="reject-form" action="{{ route('admin.tickets.reject', $ticket) }}" method="POST" class="d-grid">
                             @csrf
-                            <button type="submit" class="btn btn-outline-danger" {{ $isClosed ? 'disabled' : '' }}>
+    <button type="button" class="btn btn-outline-danger btn-submit-swal"
+            data-swal-title="ยืนยันการปฏิเสธตั๋ว"
+            data-swal-text="คุณแน่ใจหรือไม่ว่าต้องการ 'Reject' ตั๋วนี้?"
+            data-swal-icon="warning"
+            data-swal-confirm-text="ใช่, ปฏิเสธตั๋ว"
+            {{ $isClosed ? 'disabled' : '' }}>
                                 <i class="bi bi-x-octagon-fill me-2"></i> Reject Ticket
                             </button>
                         </form>
@@ -393,4 +403,37 @@
 @push('scripts')
 {{-- Load the unified script component --}}
 @include('components.hybrid-attachment-scripts')
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.btn-submit-swal').forEach(button => {
+        button.addEventListener('click', function (e) {
+            e.preventDefault(); // ป้องกันการ submit ทันที
+            const form = this.closest('form'); // หา form แม่
+            if (!form) return;
+
+            // ดึงข้อมูลจาก data attributes ที่เราตั้งไว้
+            const title = this.dataset.swalTitle;
+            const text = this.dataset.swalText;
+            const icon = this.dataset.swalIcon;
+            const confirmText = this.dataset.swalConfirmText;
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: confirmText,
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); // สั่ง submit form เมื่อผู้ใช้ยืนยัน
+                }
+            });
+        });
+    });
+});
+</script>
 @endpush
