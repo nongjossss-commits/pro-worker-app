@@ -78,7 +78,7 @@ class TicketController extends Controller
 
         // 2. อัปเดตตั๋ว
         $ticket->update([
-            'assigned_to_user_id' => $newUser->id,
+            'assigned_staff_id' => $newUser->id,
         ]);
 
         // 3. บันทึก System Message
