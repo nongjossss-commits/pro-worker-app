@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -27,6 +28,7 @@ class Employer extends Model
     protected $fillable = [
         'employerNameTh',
         'employerNameEn',
+        'employerTitleTh',
         'employerId',
         'employerTaxId',
         'businessType',
@@ -61,5 +63,21 @@ class Employer extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * V2.4-S21: CRITICAL REFACTOR - Resolve Accessor/Column Conflict.
+     * Rename employerNameTh -> fullNameTh.
+     */
+    protected function fullNameTh(): Attribute
+    {
+        return Attribute::make(
+            // Access raw attributes directly using $attributes to avoid conflict/recursion
+            get: function ($value, $attributes) {
+                $title = $attributes['employerTitleTh'] ?? '';
+                $name = $attributes['employerNameTh'] ?? '';
+                return trim($title . ' ' . $name);
+            }
+        );
     }
 }

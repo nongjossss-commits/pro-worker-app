@@ -183,53 +183,70 @@ function hybridAttachmentManager(config = {}) {
 
         // V2.4-S13: CRITICAL - This function now handles dynamic context.
         async fetchEmployees() {
-            // For the dynamic Admin Create view, do not fetch if no employer is selected.
+            // ... (Jules: Context/Loading checks คงเดิม) ...
             if (this.isContextAdminCreate && !this.contextEmployerId) {
-                console.warn("Fetch prevented: No employer selected in Admin Create context.");
-                this.availableEmployees = []; // Ensure list is empty
+                this.availableEmployees = [];
                 return Promise.resolve();
             }
-
-            // Standard fetch logic starts here.
-            if (this.isLoading) return Promise.resolve(); // Prevent concurrent requests
+            if (this.availableEmployees.length > 0 || this.isLoading) return Promise.resolve();
             this.isLoading = true;
-
-            // V2.4-S13: Dynamically build the API URL
-            let apiUrl = new URL('{{ route('api-web.employer.employees.index') }}', document.baseURI);
-            if (this.contextEmployerId) {
-                // If contextEmployerId is set (either in Admin Create or Admin/Employer Reply),
-                // send it to the backend API for scoping.
-                apiUrl.searchParams.append('employer_id', this.contextEmployerId);
-            }
-
             try {
-                const response = await fetch(apiUrl.toString());
+                // ... (Jules: apiUrl construction คงเดิม) ...
+                let apiUrl = '{{ route('api-web.employer.employees.index') }}';
+                const params = new URLSearchParams();
+                if (this.contextEmployerId) params.append('employer_id', this.contextEmployerId);
+                if (params.toString()) apiUrl += (apiUrl.includes('?') ? '&' : '?') + params.toString();
 
-                if (!response.ok) {
-                    let errorDetails = 'N/A';
-                    try {
-                        // Attempt to read response body for details
-                        errorDetails = await response.text();
-                    } catch (e) { /* ignore parsing error */ }
-                    throw new Error(`Failed to fetch employees. Status: ${response.status}. Details: ${errorDetails.substring(0, 200)}`);
+                // V2.4-S21: Define Headers for AJAX Best Practices
+                // Ensures Laravel correctly identifies the request type and handles session/CSRF robustly.
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest', // Crucial for AJAX identification
+                };
+
+                if (this.isContextAdminCreate) {
+                    headers['X-Context'] = 'smart-ticket-create';
                 }
 
+                // Add CSRF Token (Best practice)
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (csrfToken) {
+                    headers['X-CSRF-TOKEN'] = csrfToken;
+                }
+
+                // Execute the fetch request with the headers
+                const response = await fetch(apiUrl, {
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    // ... (Jules: Error handling logic คงเดิม) ...
+                    let errorDetails = 'N/A';
+                    try {
+                        errorDetails = await response.text();
+                    } catch (e) { /* ignore */ }
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error(`Authentication failed (Session expired?). Please refresh the page. Status: ${response.status}.`);
+                    }
+                    throw new Error(`Failed to fetch employees. Status: ${response.status}. Details: ${errorDetails.substring(0, 200)}`);
+                }
                 this.availableEmployees = await response.json();
                 return Promise.resolve();
-
             } catch (error) {
-                // Handle network errors (CORS, connection refused) AND thrown HTTP errors.
+                // ... (Jules: Error reporting logic คงเดิม) ...
                 console.error("fetchEmployees Error:", error);
-                // V2.4-S11-P3: Use safe error reporting. DO NOT use undefined functions (e.g., showToast).
                 const errorMessage = 'เกิดข้อผิดพลาดในการโหลดข้อมูลลูกจ้าง (API Error): ' + error.message;
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'ข้อผิดพลาด', text: errorMessage });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ข้อผิดพลาด',
+                        text: errorMessage
+                    });
                 } else {
                     alert(errorMessage);
                 }
                 return Promise.reject(error);
             } finally {
-                // V2.4-S11-P3: CRITICAL - This block MUST execute to hide the spinner, regardless of success or failure.
                 this.isLoading = false;
             }
         },

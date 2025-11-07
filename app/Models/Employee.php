@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-// ... (Existing imports)
-// Add Attribute and Storage imports
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,7 +34,6 @@ class Employee extends Model
         });
     }
 
-    // The $fillable array is correct as it matches the camelCase schema.
     protected $fillable = [
         'employer_id',
         'english_prefix',
@@ -83,13 +81,7 @@ class Employee extends Model
         'termination_reason',
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        // --- FIX: The keys MUST be camelCase to match the database columns ---
         'passportExpiryDate' => 'date:Y-m-d',
         'workPermitExpiryDate' => 'date:Y-m-d',
         'visaExpiryDate' => 'date:Y-m-d',
@@ -99,24 +91,53 @@ class Employee extends Model
         'terminated_at' => 'datetime',
     ];
 
-    // --- V2.4-S6: Accessor for Photo URL ---
     /**
-     * Get the full URL for the employee's photo, with a fallback avatar.
-     * Usage in Blade/API: $employee->photo_url
+     * V2.4-S21: CRITICAL REFACTOR - Resolve Accessor/Column Conflict.
+     * Rename employeeNameTh -> fullNameTh.
+     */
+    protected function fullNameTh(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value, $attributes) {
+                $title = $attributes['employeeTitleTh'] ?? '';
+                $name = $attributes['employeeNameTh'] ?? '';
+                return trim($title . ' ' . $name);
+            }
+        );
+    }
+
+    /**
+     * Get the URL to the employee's photo.
+     * V2.4-S21: Stability Fix - Ensure $attributes type checking to prevent TypeError.
      */
     protected function photoUrl(): Attribute
     {
         return Attribute::make(
-            get: function () {
-                // Robust check: Ensure property is set AND file exists on disk
-                if ($this->employeePhoto && Storage::disk('public')->exists($this->employeePhoto)) {
-                    return Storage::disk('public')->url($this->employeePhoto);
+            get: function ($value, $attributes) {
+                $defaultAvatar = asset('images/default_avatar.png'); // Ensure this asset exists
+                // V2.4-S21: CRITICAL - Ensure $attributes is accessible as an array before use.
+                // This prevents "TypeError: Cannot access offset..."
+                if (!is_array($attributes) && !($attributes instanceof \ArrayAccess)) {
+                    return $defaultAvatar;
                 }
-                // Fallback using ui-avatars.com based on the name
-                $name = urlencode($this->employeeNameTh ?? $this->employeeNameEn ?? 'User');
-                // Use primary color defined in app.blade.php (F97316 - Orange)
-                return "https://ui-avatars.com/api/?name={$name}&color=FFFFFF&background=F97316&size=128";
-            }
+                if (!isset($attributes['employee_photo'])) {
+                    return $defaultAvatar;
+                }
+                $photoPath = $attributes['employee_photo'];
+                if (!$photoPath) {
+                    return $defaultAvatar;
+                }
+                $disk = 'public';
+                try {
+                    if (Storage::disk($disk)->exists($photoPath)) {
+                        return Storage::disk($disk)->url($photoPath);
+                    }
+                } catch (\Exception $e) {
+                    $employeeId = isset($attributes['id']) ? $attributes['id'] : 'N/A';
+                    Log::warning("Storage access error for Employee photo (ID: {$employeeId}): " . $e->getMessage());
+                }
+                return $defaultAvatar;
+            },
         );
     }
 

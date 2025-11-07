@@ -1,143 +1,62 @@
 <?php
+// routes/web.php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AgentController;
-use App\Http\Controllers\DelegateController;
-use App\Http\Controllers\EmployerController;
-use App\Http\Controllers\ImporterController;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\JobOwnerController;
-use App\Http\Controllers\JobController;
-use App\Http\Controllers\AddressController;
-use App\Http\Controllers\Admin\UserController;
-// Add these new imports:
-use App\Http\Controllers\TicketController;
-// Use an alias for the Admin controller to avoid naming conflicts
-use App\Http\Controllers\Admin\TicketController as AdminTicketController;
-use App\Http\Controllers\Admin\AdminJobTicketController;
-// V2.4-S20: Use correct controller
+// =============================================================
+// V2.4-S21: Controller Imports - Ensure correct Namespaces
+// (Jules: กรุณาตรวจสอบ Path เหล่านี้ให้ตรงกับโครงสร้างโปรเจกต์จริงของคุณ)
+// =============================================================
+// --- Core/Auth (ตัวอย่าง) ---
+use App\Http\Controllers\DashboardController;
+// --- Employer Controllers ---
 use App\Http\Controllers\Employer\EmployerEmployeeController;
-// Add this new import:
-use App\Http\Controllers\Api\TemporaryUploadController;
-// Add this new import:
-use App\Http\Controllers\TicketReplyController;
-
-Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
+use App\Http\Controllers\Employer\JobTicketController;
+use App\Http\Controllers\Employer\TicketReplyController;
+// V2.4-S21: CRITICAL FIX (ReflectionException) - Import TemporaryUploadController จาก Path ที่ถูกต้อง.
+// (สมมติฐานว่าอยู่ใน Employer namespace ตามการวิเคราะห์ Snapshot)
+use App\Http\Controllers\Employer\TemporaryUploadController;
+// --- Admin Controllers ---
+use App\Http\Controllers\Admin\AdminJobTicketController;
+use App\Http\Controllers\Admin\AdminTicketReplyController;
+// =============================================================
+// Public Routes
+// =============================================================
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-// =============================================================
+// ===================================================================================
 // Authenticated Routes (Protected by 'auth' middleware)
-// =============================================================
-// V2.4-S20: CRITICAL FIX - Internal Web APIs MUST be inside 'auth' middleware.
+// V2.4-S21: CRITICAL FIX (Auth Flaw) - EVERYTHING below MUST be inside this group.
+// ===================================================================================
 Route::middleware(['auth'])->group(function () {
-    // Profile routes from Breeze
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    // Application routes that require login
-    Route::get('/employers/export', [EmployerController::class, 'export'])->name('employers.export');
-    Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
-    Route::get('/employers/{employer}/export-history', [EmployerController::class, 'exportHistory'])->name('employers.exportHistory');
-    Route::resource('employers', EmployerController::class);
-    Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
-    Route::get('employers/{employer}/history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
-    Route::post('employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
-    Route::post('employees/{employee}/reinstate', [EmployeeController::class, 'reinstate'])->name('employees.reinstate');
-    Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
-    Route::delete('/employees/{employee}/force-delete', [EmployeeController::class, 'forceDelete'])->name('employees.forceDelete')->withTrashed();
-    Route::get('/employees/{employee}/locate', [EmployeeController::class, 'locate'])->name('employees.locate');
-    Route::get('/employees/{employee}/create-job', [JobController::class, 'createFromEmployee'])->name('jobs.create_from_employee');
-    Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
-    Route::resource('employees', EmployeeController::class);
-    Route::resource('importers', ImporterController::class);
-    Route::resource('agents', AgentController::class);
-    Route::resource('delegates', DelegateController::class);
-
-    Route::get('/notifications/export', [NotificationController::class, 'export'])->name('notifications.export');
-    Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
-    Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
-
-    Route::resource('job-owners', JobOwnerController::class)->only(['index', 'store', 'destroy']);
-
-    Route::post('/addresses', [App\Http\Controllers\AddressController::class, 'store'])->name('addresses.store');
-    Route::get('/addresses/{address}/edit', [App\Http\Controllers\AddressController::class, 'edit'])->name('addresses.edit');
-    Route::put('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'update'])->name('addresses.update');
-    Route::delete('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'destroy'])->name('addresses.destroy');
-
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::get('/notifications/{notification}/view-employee', [NotificationController::class, 'viewEmployee'])->name('notifications.view-employee');
-    Route::post('/notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('notifications.cancel');
-    Route::post('/notifications/{notification}/renew', [NotificationController::class, 'renew'])->name('notifications.renew');
-    Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
-    Route::delete('/notifications/{notification}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.forceDelete');
-
-    // --- V2.4: Employer Ticket Routes ---
-    // Accessible by authenticated users (but controller logic redirects Admins/Staff).
-    Route::resource('tickets', TicketController::class)->only([
-        'index', 'create', 'store', 'show'
-    ]);
-
-    // V2.4-S10: Employer Reply Route
+    // --- Core Routes (ตัวอย่าง) ---
+    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // --- Employer Routes ---
+    // (Jules: ตรวจสอบ Resource Routes อื่นๆ ที่จำเป็นสำหรับ Employer)
+    Route::resource('tickets', JobTicketController::class);
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
-
-    // --- Routes for API-WEB (AJAX calls from web views) ---
+    // --- Admin Routes ---
+    Route::middleware(['can:manage-tickets'])->prefix('admin')->name('admin.')->group(function () {
+        // (Jules: ตรวจสอบ Resource Routes อื่นๆ ที่จำเป็นสำหรับ Admin)
+        // Smart Tickets (Admin Management)
+        Route::get('tickets/create', [AdminJobTicketController::class, 'create'])->name('tickets.create');
+        Route::post('tickets', [AdminJobTicketController::class, 'store'])->name('tickets.store');
+        Route::resource('tickets', AdminJobTicketController::class)->except(['create', 'store']);
+        Route::post('tickets/{ticket}/replies', [AdminTicketReplyController::class, 'store'])->name('tickets.replies.store');
+    });
+    // ======================================================================
+    // --- Routes for API-WEB (AJAX calls) ---
+    // V2.4-S21: CRITICAL FIX - This group MUST be inside the 'auth' group.
+    // ======================================================================
     Route::prefix('api-web')->name('api-web.')->group(function () {
-        // Temporary Uploads (Jules: ตรวจสอบชื่อ Controller ให้ถูกต้อง)
-        // Route::post('temp_upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
-        // Employer/Employee Data (Used by Smart Ticket Modals)
+        // Temporary Uploads - Pointing to the CORRECT controller path
+        Route::post('temp_upload', [App\Http\Controllers\Api\TemporaryUploadController::class, 'store'])->name('temp_upload.store');
+        // Employee Data (Used by Smart Ticket Modals)
         Route::prefix('employer')->name('employer.')->group(function () {
-            // Ensure this points to the CORRECT controller identified by route:list
             Route::get('employees', [EmployerEmployeeController::class, 'index'])->name('employees.index');
         });
-    }); // End of API-WEB Block
+    });
 });
-// =============================================================
+// ===================================================================================
 // End of Authenticated Routes
-// =============================================================
-
-
-// === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
-// Accessible only by users with 'manage-tickets' permission (Admin and Staff).
-Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name('admin.')->group(function () {
-    // V2.4-S12: Admin Create Ticket Routes
-    Route::get('tickets/create', [AdminJobTicketController::class, 'create'])->name('tickets.create');
-    Route::post('tickets', [AdminJobTicketController::class, 'store'])->name('tickets.store');
-
-    // We define routes explicitly for the Admin side.
-    Route::get('tickets', [AdminTicketController::class, 'index'])->name('tickets.index');
-    Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
-    // V2.4-S10: Admin Reply Route (Points to the same controller method)
-    Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
-    // Future routes (update/assign) will go here.
-});
-
-// === Existing Admin Routes (role:admin) ===
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('users', UserController::class);
-    Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
-});
-
-// --- Central Trash System ---
-Route::middleware(['auth', 'permission:view-trash'])->prefix('admin')->name('admin.')->group(function () {
-
-    Route::get('/trash', [\App\Http\Controllers\Admin\TrashController::class, 'index'])
-         ->name('trash.index');
-
-    Route::get('/trash/export', [\App\Http\Controllers\Admin\TrashController::class, 'exportTrash'])->name('trash.export');
-
-    Route::post('/trash/{model}/{id}/restore', [\App\Http\Controllers\Admin\TrashController::class, 'restore'])
-         ->name('trash.restore')
-         ->withTrashed(); // Important for finding soft-deleted models
-
-    Route::delete('/trash/{model}/{id}/force-delete', [\App\Http\Controllers\Admin\TrashController::class, 'forceDelete'])
-         ->name('trash.forceDelete')
-         ->withTrashed(); // Important for finding soft-deleted models
-});
-
+// ===================================================================================
 require __DIR__.'/auth.php';

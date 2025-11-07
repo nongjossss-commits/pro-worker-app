@@ -23,21 +23,17 @@ class AdminJobTicketController extends Controller
      */
     public function create()
     {
-        // Start the query builder
-        // V2.4-S20: Remove orderBy() from the Query Builder initialization.
-        $query = Employer::select('id', 'employerNameTh', 'employerNameEn');
-        // ->orderBy('employerNameTh'); // <-- REMOVED
+        // V2.4-S21: We can now safely use orderBy() on the actual column name.
+        $query = Employer::select('id', 'employerNameTh', 'employerNameEn')
+            ->orderBy('employerNameTh'); // Robustly Override Soft Deletes
 
-        // V2.4-S20: Robustly Override Soft Deletes
         // Use class_uses_recursive to reliably detect the SoftDeletes trait.
         if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses_recursive(Employer::class))) {
             $query->withTrashed();
         }
 
-        // V2.4-S20: Execute the query and then sort the results using Collection methods (sortBy).
-        // This avoids the SQL ambiguity caused by the employerNameTh() Accessor in the Model.
-        $employers = $query->get()->sortBy('employerNameTh');
-
+        $employers = $query->get();
+        // (Jules: ลบ Collection Sorting ->sortBy(...) ที่เคยใช้เป็น Workaround ออก หากมี)
         return view('admin.tickets.create', compact('employers'));
     }
 
