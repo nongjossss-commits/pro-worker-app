@@ -137,9 +137,18 @@
                 {{-- V2.4: Admin/Staff Ticket Inbox --}}
                 {{-- Visible if the user has 'manage-tickets' permission. This takes precedence. --}}
                 @can('manage-tickets')
-                <a href="{{ route('admin.tickets.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">
-                <i class="bi bi-inbox-fill me-2"></i>กล่องตั๋วงาน
+                <hr>
+                <li class="nav-item-header mt-3 mb-1">การจัดการ (Admin/Staff)</li>
+                <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.tickets.create') ? 'active' : '' }}" href="{{ route('admin.tickets.create') }}">
+                <i class="bi bi-plus-circle-dotted me-2"></i> สร้างตั๋ว (ในนามนายจ้าง)
                 </a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link {{ (request()->routeIs('admin.tickets.index') || request()->routeIs('admin.tickets.show')) && !request()->routeIs('admin.tickets.create') ? 'active' : '' }}" href="{{ route('admin.tickets.index') }}">
+                <i class="bi bi-ticket-detailed me-2"></i> จัดการตั๋วงานทั้งหมด
+                </a>
+                </li>
                 @else
                 {{-- V2.4: Employer Ticket Menu --}}
                 {{-- Visible ONLY if the user CANNOT 'manage-tickets' AND is an 'employer'. --}}
