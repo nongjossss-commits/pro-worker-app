@@ -197,9 +197,14 @@ function hybridAttachmentManager(config = {}) {
             // V2.4-S13: Dynamically build the API URL
             let apiUrl = new URL('{{ route('api-web.employer.employees.index') }}', document.baseURI);
             if (this.contextEmployerId) {
-                // If contextEmployerId is set (either in Admin Create or Admin/Employer Reply),
-                // send it to the backend API for scoping.
-                apiUrl.searchParams.append('employer_id', this.contextEmployerId);
+                // V2.4-S14 Fix: Check if we are in the Admin Create view
+                if (this.isContextAdminCreate) {
+                    // In this view, contextEmployerId is a employer_USER_id.
+                    apiUrl.searchParams.append('employer_user_id', this.contextEmployerId);
+                } else {
+                    // In all other views (reply/show), contextEmployerId is the correct employer_id.
+                    apiUrl.searchParams.append('employer_id', this.contextEmployerId);
+                }
             }
 
             try {
