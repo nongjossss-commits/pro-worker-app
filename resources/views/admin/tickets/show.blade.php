@@ -368,12 +368,11 @@
             </div>
         </div>
     </div>
-</div> {{-- End content-section (x-data) --}}
-
-{{-- V2.4-S11: Include Modals (Required for the Hybrid System) --}}
-{{-- Include them regardless of $isClosed as Alpine needs initialization, but UI elements are hidden by the @if(!$isClosed) around the reply box --}}
-@include('tickets.partials._existing_employee_modal')
-@include('tickets.partials._new_employee_modal')
+    {{-- V2.4-S11: Include Modals (Required for the Hybrid System) --}}
+    {{-- CRITICAL (V2.4-S11.2 Fix): Modals MUST be inside the x-data scope --}}
+    @include('tickets.partials._existing_employee_modal')
+    @include('tickets.partials._new_employee_modal')
+</div> {{-- END of x-data scope (BUG 1 FIX) --}}
 
 @endsection
 

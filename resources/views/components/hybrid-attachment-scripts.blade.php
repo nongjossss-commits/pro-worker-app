@@ -277,10 +277,27 @@ function hybridAttachmentManager(config = {}) {
         },
 
         filteredEmployees() {
-            if (!this.searchQuery) return this.availableEmployees;
+            // V2.4-S11.2: Get IDs of employees already in the basket (these are integers)
+            const basketIds = new Set(this.basket.existing_employees.map(e => e.id));
+
+            // V2.4-S11.2: Get IDs of employees currently selected in the modal (these are strings)
+            const selectedIds = new Set(this.selectedEmployeeIds);
 
             const query = this.searchQuery.toLowerCase();
             return this.availableEmployees.filter(employee => {
+                // Rule 1: If it's already in the basket...
+                if (basketIds.has(employee.id)) {
+                    // ...only show it if it's currently selected (string check)
+                    // (This allows it to be displayed AND un-checked)
+                    return selectedIds.has(employee.id.toString());
+                }
+
+                // Rule 2: (It's not in the basket) Match search query (if any)
+                if (!this.searchQuery) {
+                    return true; // No query, not in basket = Show
+                }
+
+                // Rule 3: (It's not in the basket) Match search logic
                 return (employee.employeeNameTh && employee.employeeNameTh.toLowerCase().includes(query)) ||
                     (employee.employeeNameEn && employee.employeeNameEn.toLowerCase().includes(query)) ||
                     (employee.employeePassport && employee.employeePassport.toLowerCase().includes(query));
