@@ -359,8 +359,21 @@
                 @if($isAdminView)
                     <div class="card-body d-grid gap-2">
                          <h5 class="mb-3">การจัดการ (Admin/Staff)</h5>
-                        <button class="btn btn-outline-success" disabled>Mark as Resolved (V2.4-S11)</button>
-                        <button class="btn btn-outline-danger" disabled>Reject Ticket (V2.4-S11)</button>
+                        {{-- Mark as Resolved Button --}}
+                        <form action="{{ route('admin.tickets.resolve', $ticket) }}" method="POST" class="d-grid" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปิดตั๋วนี้เป็น "Resolved"?');">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-success" {{ $isClosed ? 'disabled' : '' }}>
+                                <i class="bi bi-check-circle-fill me-2"></i> Mark as Resolved
+                            </button>
+                        </form>
+
+                        {{-- Reject Ticket Button --}}
+                        <form action="{{ route('admin.tickets.reject', $ticket) }}" method="POST" class="d-grid" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการ "Reject" ตั๋วนี้?');">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-danger" {{ $isClosed ? 'disabled' : '' }}>
+                                <i class="bi bi-x-octagon-fill me-2"></i> Reject Ticket
+                            </button>
+                        </form>
                         <button class="btn btn-outline-primary" disabled>Forward to P-Workflow (V2.4-S11)</button>
                          <button class="btn btn-outline-secondary" disabled>Change Assignment (V2.4-S11)</button>
                     </div>
