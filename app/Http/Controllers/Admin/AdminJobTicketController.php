@@ -19,22 +19,25 @@ class AdminJobTicketController extends Controller
 {
     /**
      * Show the form for creating a new resource.
-     * V2.4-S15: Fix Data Integrity by overriding scopes.
+     * V2.4-S20: Fix BadMethodCallException using Collection Sorting and Robust Soft Delete check.
      */
     public function create()
     {
-        // Fetch all employers for the dropdown selection
-        $query = Employer::select('id', 'employerNameTh', 'employerNameEn')
-            ->orderBy('employerNameTh');
+        // Start the query builder
+        // V2.4-S20: Remove orderBy() from the Query Builder initialization.
+        $query = Employer::select('id', 'employerNameTh', 'employerNameEn');
+        // ->orderBy('employerNameTh'); // <-- REMOVED
 
-        // V2.4-S15: CRITICAL - Override Soft Deletes if the trait is used
-        // Check robustly if the model uses SoftDeletes trait before calling withTrashed()
-        if (method_exists(Employer::class, 'trashed')) {
+        // V2.4-S20: Robustly Override Soft Deletes
+        // Use class_uses_recursive to reliably detect the SoftDeletes trait.
+        if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses_recursive(Employer::class))) {
             $query->withTrashed();
         }
 
-        // If other Global Scopes are suspected (e.g., ActiveScope), they might need removal here.
-        $employers = $query->get();
+        // V2.4-S20: Execute the query and then sort the results using Collection methods (sortBy).
+        // This avoids the SQL ambiguity caused by the employerNameTh() Accessor in the Model.
+        $employers = $query->get()->sortBy('employerNameTh');
+
         return view('admin.tickets.create', compact('employers'));
     }
 

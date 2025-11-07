@@ -16,7 +16,8 @@ use App\Http\Controllers\TicketController;
 // Use an alias for the Admin controller to avoid naming conflicts
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Admin\AdminJobTicketController;
-use App\Http\Controllers\Api\EmployerEmployeeController;
+// V2.4-S20: Use correct controller
+use App\Http\Controllers\Employer\EmployerEmployeeController;
 // Add this new import:
 use App\Http\Controllers\Api\TemporaryUploadController;
 // Add this new import:
@@ -29,7 +30,12 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-Route::middleware('auth')->group(function () {
+
+// =============================================================
+// Authenticated Routes (Protected by 'auth' middleware)
+// =============================================================
+// V2.4-S20: CRITICAL FIX - Internal Web APIs MUST be inside 'auth' middleware.
+Route::middleware(['auth'])->group(function () {
     // Profile routes from Breeze
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -80,13 +86,21 @@ Route::middleware('auth')->group(function () {
     // V2.4-S10: Employer Reply Route
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
-    // --- V2.4-S5/S6: Internal API Routes for Web Interface ---
+    // --- Routes for API-WEB (AJAX calls from web views) ---
     Route::prefix('api-web')->name('api-web.')->group(function () {
-        Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
-        // V2.4-S6: New Route for Temporary Uploads (POST)
-        Route::post('temp-upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
-    });
+        // Temporary Uploads (Jules: ตรวจสอบชื่อ Controller ให้ถูกต้อง)
+        // Route::post('temp_upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
+        // Employer/Employee Data (Used by Smart Ticket Modals)
+        Route::prefix('employer')->name('employer.')->group(function () {
+            // Ensure this points to the CORRECT controller identified by route:list
+            Route::get('employees', [EmployerEmployeeController::class, 'index'])->name('employees.index');
+        });
+    }); // End of API-WEB Block
 });
+// =============================================================
+// End of Authenticated Routes
+// =============================================================
+
 
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
 // Accessible only by users with 'manage-tickets' permission (Admin and Staff).
