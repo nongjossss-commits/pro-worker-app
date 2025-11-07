@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminJobTicketRequest;
+use App\Models\Employer;
 use App\Models\JobTicket;
 use App\Models\TicketMessage;
 use App\Models\User;
 use App\Models\Employee;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,18 +18,23 @@ use Illuminate\Http\RedirectResponse;
 class AdminJobTicketController extends Controller
 {
     /**
-     * Show the form for creating a new job ticket by an admin.
+     * Show the form for creating a new resource.
+     * V2.4-S15: Fix Data Integrity by overriding scopes.
      */
-    public function create(): View
+    public function create()
     {
-        // V2.4-S12: Fetch all users with the 'employer' role for the dropdown.
-        // Eager load the 'employer' relationship to get the company name.
-        $employers = User::role('employer')
-            ->with('employer') // Make sure the 'employer' relationship exists on the User model
-            ->whereHas('employer') // Ensure we only get users linked to an employer profile
-            ->get()
-            ->sortBy('employer.employerNameTh'); // Sort by the company name
+        // Fetch all employers for the dropdown selection
+        $query = Employer::select('id', 'employerNameTh', 'employerNameEn')
+            ->orderBy('employerNameTh');
 
+        // V2.4-S15: CRITICAL - Override Soft Deletes if the trait is used
+        // Check robustly if the model uses SoftDeletes trait before calling withTrashed()
+        if (method_exists(Employer::class, 'trashed')) {
+            $query->withTrashed();
+        }
+
+        // If other Global Scopes are suspected (e.g., ActiveScope), they might need removal here.
+        $employers = $query->get();
         return view('admin.tickets.create', compact('employers'));
     }
 
