@@ -106,7 +106,8 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     // (V2.4-S11) Ticket Status Actions
     Route::post('tickets/{ticket}/resolve', [TicketStatusController::class, 'resolve'])->name('tickets.resolve');
     Route::post('tickets/{ticket}/reject', [TicketStatusController::class, 'reject'])->name('tickets.reject');
-Route::post('tickets/{ticket}/forward', [TicketStatusController::class, 'forward'])->name('tickets.forward'); // <-- เพิ่มบรรทัดนี้
+    Route::post('tickets/{ticket}/forward', [TicketStatusController::class, 'forward'])->name('tickets.forward');
+    Route::post('tickets/{ticket}/update-assignment', [AdminTicketController::class, 'updateAssignment'])->name('tickets.updateAssignment'); // <-- เพิ่มบรรทัดนี้
     // Future routes (update/assign) will go here.
 });
 

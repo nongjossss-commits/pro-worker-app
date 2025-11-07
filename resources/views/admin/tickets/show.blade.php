@@ -397,7 +397,10 @@
                                 Forward to P-Workflow
                             </button>
                         </form>
-                         <button class="btn btn-outline-secondary" disabled>Change Assignment (V2.4-S11)</button>
+                        {{-- Change Assignment Button --}}
+                        <button type="button" class="btn btn-outline-secondary d-grid" data-bs-toggle="modal" data-bs-target="#changeAssignmentModal" {{ $isClosed ? 'disabled' : '' }}>
+                            <i class="bi bi-person-fill-gear me-2"></i> Change Assignment
+                        </button>
                     </div>
                 @endif
             </div>
@@ -408,6 +411,39 @@
     @include('tickets.partials._existing_employee_modal')
     @include('tickets.partials._new_employee_modal')
 </div> {{-- END of x-data scope (BUG 1 FIX) --}}
+
+{{-- (S11.4) Change Assignment Modal --}}
+<div class="modal fade" id="changeAssignmentModal" tabindex="-1" aria-labelledby="changeAssignmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('admin.tickets.updateAssignment', $ticket) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changeAssignmentModalLabel">Change Ticket Assignment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Current Assignee: <strong>{{ $ticket->assignedTo->name ?? 'Unassigned' }}</strong></p>
+                    <div class="mb-3">
+                        <label for="assigned_to_user_id" class="form-label">Assign to New Staff:</label>
+                        <select class="form-select" id="assigned_to_user_id" name="assigned_to_user_id" required>
+                            <option value="">-- Select Staff --</option>
+                            @foreach($staffAndAdmins as $user)
+                                <option value="{{ $user->id }}" {{ $ticket->assigned_to_user_id == $user->id ? 'selected' : '' }}>
+                                    {{ $user->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @endsection
 
