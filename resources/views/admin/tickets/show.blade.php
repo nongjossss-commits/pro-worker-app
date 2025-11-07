@@ -384,7 +384,19 @@
                                 <i class="bi bi-x-octagon-fill me-2"></i> Reject Ticket
                             </button>
                         </form>
-                        <button class="btn btn-outline-primary" disabled>Forward to P-Workflow (V2.4-S11)</button>
+                        {{-- Forward to P-Workflow Button --}}
+                        <form id="forward-form" action="{{ route('admin.tickets.forward', $ticket) }}" method="POST" class="d-grid">
+                            @csrf
+                            <button type="button" class="btn btn-outline-primary btn-submit-swal"
+                                    data-swal-title="ยืนยันการส่งต่องาน"
+                                    data-swal-text="คุณต้องการส่งต่องานนี้เข้าสู่ P-Workflow (สถานะ In Progress) ใช่หรือไม่?"
+                                    data-swal-icon="info"
+                                    data-swal-confirm-text="ใช่, ส่งต่อเลย"
+                                    {{ $isClosed ? 'disabled' : '' }}>
+                                <i class="bi bi-arrow-right-circle-fill me-2"></i>
+                                Forward to P-Workflow
+                            </button>
+                        </form>
                          <button class="btn btn-outline-secondary" disabled>Change Assignment (V2.4-S11)</button>
                     </div>
                 @endif
