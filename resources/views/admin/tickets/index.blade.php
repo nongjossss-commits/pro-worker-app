@@ -1,85 +1,94 @@
-@extends('layouts.app')
-@section('title', 'กล่องตั๋วงาน (Admin/Staff)')
+@extends('layouts.admin')
 @section('content')
-<div class="content-section">
-    @if ($message = Session::get('success'))
-    <div class="alert alert-success mb-4" role="alert">
-        {{ $message }}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">กล่องข้อความตั๋วงาน (Ticket Inbox)</h1>
+        <a href="{{ route('admin.tickets.create') }}" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-plus"></i>
+            </span>
+            <span class="text">สร้างตั๋วใหม่</span>
+        </a>
     </div>
-    @endif
-
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-3 mb-md-0">กล่องตั๋วงานทั้งหมด</h2>
-        <div class="d-flex gap-2">
-            {{-- Per Page Selection (Must match employers.index) --}}
-            <form action="{{ route('admin.tickets.index') }}" method="GET" class="d-flex gap-2">
-                <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                    <option value="25" @selected(request('per_page', 25) == 25)>25</option>
-                    <option value="50" @selected(request('per_page') == 50)>50</option>
-                    <option value="100" @selected(request('per_page') == 100)>100</option>
-                </select>
-                {{-- Future Search/Filter inputs can be added here --}}
-            </form>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">รายการตั๋วทั้งหมด</h6>
         </div>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>ID</th>
-                    <th>หัวเรื่อง</th>
-                    <th>บริษัท/นายจ้าง</th>
-                    <th>สถานะ</th>
-                    <th>ผู้รับผิดชอบ</th>
-                    <th>วันที่สร้าง</th>
-                    <th class="text-center">จัดการ</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($tickets as $ticket)
-                <tr>
-                    <td>{{ $ticket->id }}</td>
-                    <td>{{ Str::limit($ticket->subject, 50) }}</td>
-                    <td>
-                        {{-- Display Company Name if available, otherwise User Name --}}
-                        {{-- Uses optimized relationship loading --}}
-                        @if($ticket->employerUser)
-                            {{-- Access employerNameTh via the nested relationship --}}
-                            {{ $ticket->employerUser->employer->employerNameTh ?? $ticket->employerUser->name }}
-                        @else
-                            N/A (User Deleted)
-                        @endif
-                    </td>
-                    <td>
-                        {{-- Use Accessors for Status Badge --}}
-                        <span class="badge bg-{{ $ticket->status_color }}">
-                            {{ $ticket->status_name }}
-                        </span>
-                    </td>
-                    <td>
-                        {{ $ticket->assignedStaff->name ?? 'ยังไม่ได้มอบหมาย' }}
-                    </td>
-                    {{-- Format date consistently --}}
-                    <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
-                    <td class="text-center">
-                        <a href="{{ route('admin.tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye"></i> ดูรายละเอียด
-                        </a>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="7" class="text-center text-muted">ไม่พบตั๋วงาน</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-
-        <div class="mt-4">
-            {{-- Pagination: Crucial to append existing query params (like per_page) --}}
-            {{ $tickets->appends(request()->except('page'))->links() }}
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>หัวเรื่อง</th>
+                            <th>นายจ้าง</th>
+                            <th>ผู้รับผิดชอบ (Staff)</th>
+                            <th>สถานะ</th>
+                            <th>อัปเดตล่าสุด</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($tickets as $ticket)
+                        <tr>
+                            <td>{{ $ticket->id }}</td>
+                            <td>{{ $ticket->subject }}</td>
+                            <td>
+                                @if ($ticket->employer)
+                                    {{ $ticket->employer->company_name }}
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($ticket->assignedStaff)
+                                    {{ $ticket->assignedStaff->name }}
+                                @else
+                                    <span class="text-warning">ยังไม่ได้รับมอบหมาย</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($ticket->status == 'open')
+                                    <span class="badge badge-success">เปิด (Open)</span>
+                                @elseif ($ticket->status == 'in_progress')
+                                    <span class="badge badge-info">กำลังดำเนินการ</span>
+                                @elseif ($ticket->status == 'closed')
+                                    <span class="badge badge-secondary">ปิด (Closed)</span>
+                                @else
+                                    <span class="badge badge-light">{{ ucfirst($ticket->status) }}</span>
+                                @endif
+                            </td>
+                            <td>{{ $ticket->updated_at->format('d/m/Y H:i') }}</td>
+                            <td>
+                                <a href="{{ route('admin.tickets.show', $ticket->id) }}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i> ดู/ตอบกลับ
+                                </a>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="text-center">ยังไม่มีตั๋วในระบบ</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 @endsection
+@push('scripts')
+<script src="{{ asset('vendor/datatables/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/dataTables.bootstrap4.min.js') }}"></script>
+<script>
+// Call the dataTables jQuery plugin
+$(document).ready(function() {
+    $('#dataTable').DataTable({
+        "order": [[ 5, "desc" ]] // Sort by "Last Update" (column index 5) descending
+    });
+});
+</script>
+@endpush
+@push('styles')
+<link href="{{ asset('vendor/datatables/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
+@endpush
