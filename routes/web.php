@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\TemporaryUploadController;
 use App\Http\Controllers\TicketReplyController;
 // Add this new import for V2.4-S11:
 use App\Http\Controllers\Admin\TicketStatusController;
+use App\Http\Controllers\PreviewController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 Route::get('/', function () {
@@ -32,6 +33,7 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 Route::middleware('auth')->group(function () {
+    Route::get('/preview', [PreviewController::class, 'show'])->name('global.preview');
     // Profile routes from Breeze
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
