@@ -1,6 +1,11 @@
 @props(['employee', 'showLocateButton' => false])
 
 <div class="d-flex align-items-center justify-content-start">
+    {{-- Preview Button (Info Blue) --}}
+    <button type="button" class="btn btn-sm btn-outline-info btn-preview me-1" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล">
+        <i class="bi bi-search"></i>
+    </button>
+
     {{-- Create Job Button (Green) - Placeholder --}}
     <a href="#" class="btn btn-sm btn-outline-success me-1" title="Create Job (Coming Soon)">
         <i class="bi bi-briefcase-fill"></i>
