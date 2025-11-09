@@ -1,3 +1,4 @@
+import { Modal } from 'bootstrap';
 import './bootstrap';
 import './employment-history.js';
 import './terminate-employee.js';
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const universalPreviewModalEl = document.getElementById('universalPreviewModal');
     if (!universalPreviewModalEl) return;
 
-    const universalPreviewModal = new bootstrap.Modal(universalPreviewModalEl);
+    const modal = Modal.getOrCreateInstance(universalPreviewModalEl);
     const modalBody = universalPreviewModalEl.querySelector('.modal-body');
     const modalTitle = universalPreviewModalEl.querySelector('.modal-title');
 
@@ -41,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 1. Reset modal and show spinner
         modalTitle.textContent = 'พรีวิวข้อมูล';
         modalBody.innerHTML = loadingSpinnerHtml;
-        universalPreviewModal.show();
+        modal.show();
 
         // 2. Fetch data
         fetch(`/preview?type=${modelType}&id=${modelId}`)
