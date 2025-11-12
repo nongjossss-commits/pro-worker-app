@@ -62,7 +62,7 @@
         </div>
         <div class="col-md-6">
             <label class="form-label fw-bold">จดทะเบียนวันที่</label>
-            {{-- This handles the 'regDate' as a STRING (because it's not casted in the Model) It checks if the string is not empty, then parses it, then formats it. --}} <p class="form-control-plaintext">{{ $employer->regDate ? Carbon::parse($employer->regDate)->format('d/m/Y') : 'N/A' }}</p>
+            {{-- This will now work correctly because regDate is cast in the Model --}} <p class="form-control-plaintext">{{ $employer->regDate?->format('d/m/Y') ?? 'N/A' }}</p>
         </div>
     </div>
 
