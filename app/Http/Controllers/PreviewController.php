@@ -50,7 +50,7 @@ class PreviewController extends Controller
      */
     private function getEmployeeStats($employer_id)
     {
-        $employees = Employee::where('employer_id', $employer_id)->get();
+        $employees = Employee::where('employer_id', $employer_id)->withTrashed()->get();
 
         $total = $employees->count();
         $male = $employees->where('employeeTitleTh', 'นาย')->count();

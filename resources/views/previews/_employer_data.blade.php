@@ -61,7 +61,7 @@
         </div>
         <div class="col-md-6">
             <label class="form-label fw-bold">จดทะเบียนวันที่</label>
-            <p class="form-control-plaintext">{{ $employer->regDate ? $employer->regDate->format('d/m/Y') : 'N/A' }}</p>
+            <p class="form-control-plaintext">{{ $employer->regDate?->format('d/m/Y') ?? 'N/A' }}</p>
         </div>
     </div>
 
