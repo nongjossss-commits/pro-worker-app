@@ -50,7 +50,7 @@
             @if(isset($isTrashView) && $isTrashView)
                 @include('admin.trash._action_buttons', ['modelName' => 'employees', 'item' => $employee])
             @else
-                @include('components.employee-action-buttons', ['employee' => $employee, 'showLocateButton' => ($showLocateButton ?? false)])
+                <x-employee-action-buttons :employee="$employee" :show-locate-button="($showLocateButton ?? false)" />
             @endif
         </div>
     </div>

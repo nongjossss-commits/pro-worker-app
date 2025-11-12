@@ -18,7 +18,10 @@
         <img src="{{ $notification->employee->employeePhoto ? asset('storage/' . $notification->employee->employeePhoto) : asset('images/default-profile.png') }}"
              alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
         <div>
-            <div>{{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}</div>
+            <div>
+                {{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}
+                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $notification->employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+            </div>
             <div class="small text-muted">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</div>
         </div>
     </td>
@@ -35,7 +38,12 @@
             @endif
         @endif
     </td>
-    <td>{{ $notification->employee->employer->employerNameTh ?? 'N/A' }}</td>
+    <td>
+        {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}
+        @if($notification->employee->employer)
+        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $notification->employee->employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+        @endif
+    </td>
     <td>{{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d M Y') }}</td>
     <td class="{{ $text_class }}">
         @if($is_overdue)

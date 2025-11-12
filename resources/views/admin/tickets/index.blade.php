@@ -44,9 +44,11 @@
                     <td>
                         {{-- Display Company Name if available, otherwise User Name --}}
                         {{-- Uses optimized relationship loading --}}
-                        @if($ticket->employerUser)
-                            {{-- Access employerNameTh via the nested relationship --}}
+                        @if($ticket->employerUser && $ticket->employerUser->employer)
                             {{ $ticket->employerUser->employer->employerNameTh ?? $ticket->employerUser->name }}
+                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $ticket->employerUser->employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                        @elseif($ticket->employerUser)
+                             {{ $ticket->employerUser->name }}
                         @else
                             N/A (User Deleted)
                         @endif
