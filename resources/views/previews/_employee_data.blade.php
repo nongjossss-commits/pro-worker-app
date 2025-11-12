@@ -17,11 +17,11 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">ชื่อพนักงาน (ไทย)</label>
-                    <p class="form-control-plaintext">{{ $employee->full_name_th ?? 'N/A' }}</p>
+                    <p class="form-control-plaintext">{{ trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: 'N/A' }}</p>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">ชื่อพนักงาน (อังกฤษ)</label>
-                    <p class="form-control-plaintext">{{ $employee->full_name_en ?? 'N/A' }}</p>
+                    <p class="form-control-plaintext">{{ trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->employeeNameEn ?? '')) ?: 'N/A' }}</p>
                 </div>
             </div>
             <div class="row mb-3">
