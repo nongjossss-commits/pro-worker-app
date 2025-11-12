@@ -40,7 +40,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // 1. Reset modal and show spinner
-        modalTitle.textContent = 'พรีวิวข้อมูล';
+        if (modalTitle) {
+            modalTitle.textContent = 'พรีวิวข้อมูล';
+        }
         modalBody.innerHTML = loadingSpinnerHtml;
         modal.show();
 
