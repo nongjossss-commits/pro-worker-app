@@ -34,6 +34,7 @@
                 <div class="flex-grow-1">
                     <h5 class="alert-heading mb-1">
                         {{ $itemNumber }}. {{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}
+                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $notification->employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
                         @if($flagCode)
                             <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
                                 <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" title="{{ $nationality }}" style="width: 16px; height: 12px; margin-right: 5px;">
@@ -42,7 +43,12 @@
                         @endif
                     </h5>
                     <p class="mb-1 small">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</p>
-                    <p class="mb-1 small"><strong>นายจ้าง:</strong> {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}</p>
+                    <p class="mb-1 small">
+                        <strong>นายจ้าง:</strong> {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}
+                        @if($notification->employee->employer)
+                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $notification->employee->employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                        @endif
+                    </p>
                     <p class="mb-0 small"><strong>วันครบกำหนด:</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}</p>
                 </div>
                 <div class="text-end flex-shrink-0 ms-2">

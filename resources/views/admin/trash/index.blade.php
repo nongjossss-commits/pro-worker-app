@@ -72,6 +72,9 @@
                                                             <p class="card-text"><small>Deleted: {{ $item->deleted_at->format('d M Y') }}</small></p>
                                                         </div>
                                                         <div class="card-footer bg-transparent border-0 text-end pb-3">
+                                                            @if($modelName === 'employers')
+                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                            @endif
                                                             @include('admin.trash._action_buttons', ['modelName' => $modelName, 'item' => $item])
                                                         </div>
                                                     </div>
@@ -134,6 +137,11 @@
                                                     @endif
                                                     <td>{{ $item->deleted_at->format('d M Y, H:i') }}</td>
                                                     <td class="text-end">
+                                                        @if($modelName === 'employees')
+                                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                        @elseif($modelName === 'employers')
+                                                             <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                        @endif
                                                         {{-- RESTORE BUTTON (Permission-Protected) --}}
                                                         @can('restore-' . $modelName)
                                                             {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
