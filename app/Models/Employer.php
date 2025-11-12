@@ -50,8 +50,7 @@ class Employer extends Model
      * @var array
      */
     protected $casts = [
-        'regDate' => 'date:Y-m-d', // Add other date fields here if they exist, e.g.
-        // 'another_date_field' => 'date:Y-m-d',
+        'regDate' => 'date:Y-m-d',
     ];
 
     public function employees()
