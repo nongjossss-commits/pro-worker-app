@@ -43,6 +43,15 @@ class Employer extends Model
         'user_id',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'regDate' => 'date:Y-m-d',
+    ];
+
     public function employees()
     {
         return $this->hasMany(Employee::class);
