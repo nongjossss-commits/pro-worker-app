@@ -6,6 +6,7 @@ use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\ImporterController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\Admin\AdminJobTicketController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobOwnerController;
@@ -15,7 +16,6 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\TicketController;
 // Use an alias for the Admin controller to avoid naming conflicts
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
-use App\Http\Controllers\Admin\AdminJobTicketController;
 use App\Http\Controllers\Api\EmployerEmployeeController;
 // Add this new import:
 use App\Http\Controllers\Api\TemporaryUploadController;
