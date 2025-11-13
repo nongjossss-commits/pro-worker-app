@@ -5,10 +5,10 @@ use App\Http\Controllers\DelegateController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\ImporterController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\JobController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobOwnerController;
-use App\Http\Controllers\JobController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\UserController;
 // Add these new imports:
