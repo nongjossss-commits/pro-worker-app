@@ -155,13 +155,11 @@
         <hr>
         <h5>เอกสารแนบของนายจ้าง</h5>
         <div class="row mb-3">
+                {{-- START: REPLACEMENT --}}
             <div class="col-md-6">
-                <label for="employer_doc_company" class="form-label">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
-                <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
-                @error('employer_doc_company')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                    <x-camera-upload name="employer_doc_company" label="1. หนังสือรับรองบริษัท / บัตรประชาชน" />
             </div>
+                {{-- END: REPLACEMENT --}}
             <div class="col-md-6">
                 <label for="employer_doc_company_expiry" class="form-label">วันหมดอายุ (หนังสือรับรอง/บัตร)</label>
                 <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry') }}">
