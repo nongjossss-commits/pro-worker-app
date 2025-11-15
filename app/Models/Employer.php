@@ -45,8 +45,11 @@ class Employer extends Model
         'employer_doc_lease',
         'employer_doc_construction',
         'employer_doc_other_1',
+        'employer_doc_other_1_desc',
         'employer_doc_other_2',
+        'employer_doc_other_2_desc',
         'employer_doc_other_3',
+        'employer_doc_other_3_desc',
         'job_owner_id',
         'user_id',
     ];

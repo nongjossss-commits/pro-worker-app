@@ -195,6 +195,7 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_1" class="form-label">4. เอกสารอื่นๆ 1</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_1_desc') is-invalid @enderror" id="employer_doc_other_1_desc" name="employer_doc_other_1_desc" value="{{ old('employer_doc_other_1_desc', $employer->employer_doc_other_1_desc ?? '') }}" placeholder="ระบุคำอธิบายเอกสาร...">
                 @if($employer->employer_doc_other_1)
                     <div class="file-upload-display mt-1">
                         <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
@@ -207,6 +208,7 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_2" class="form-label">5. เอกสารอื่นๆ 2</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_2_desc') is-invalid @enderror" id="employer_doc_other_2_desc" name="employer_doc_other_2_desc" value="{{ old('employer_doc_other_2_desc', $employer->employer_doc_other_2_desc ?? '') }}" placeholder="ระบุคำอธิบายเอกสาร...">
                 @if($employer->employer_doc_other_2)
                     <div class="file-upload-display mt-1">
                         <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
@@ -219,6 +221,7 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_3" class="form-label">6. เอกสารอื่นๆ 3</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_3_desc') is-invalid @enderror" id="employer_doc_other_3_desc" name="employer_doc_other_3_desc" value="{{ old('employer_doc_other_3_desc', $employer->employer_doc_other_3_desc ?? '') }}" placeholder="ระบุคำอธิบายเอกสาร...">
                 @if($employer->employer_doc_other_3)
                     <div class="file-upload-display mt-1">
                         <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
