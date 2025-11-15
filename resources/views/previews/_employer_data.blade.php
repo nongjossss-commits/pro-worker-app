@@ -155,35 +155,37 @@
         <div class="col-md-3">
             <div class="stat-card p-3 border rounded bg-light">
                 <h6 class="text-muted">ลูกจ้างทั้งหมด</h6>
-                <p class="fs-4 fw-bold mb-0">{{ $stats->total_employees ?? 0 }}</p>
+                <p class="fs-4 fw-bold mb-0">{{ $stats->total ?? 0 }}</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-card p-3 border rounded bg-light">
                 <h6 class="text-muted">เพศชาย</h6>
-                <p class="fs-4 fw-bold mb-0">{{ $stats->male_employees ?? 0 }}</p>
+                <p class="fs-4 fw-bold mb-0">{{ $stats->male ?? 0 }}</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-card p-3 border rounded bg-light">
                 <h6 class="text-muted">เพศหญิง</h6>
-                <p class="fs-4 fw-bold mb-0">{{ $stats->female_employees ?? 0 }}</p>
+                <p class="fs-4 fw-bold mb-0">{{ $stats->female ?? 0 }}</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-card p-3 border rounded bg-light">
-                <h6 class="text-muted">มีบัตรชมพู</h6>
-                <p class="fs-4 fw-bold mb-0">{{ $stats->with_pink_card ?? 0 }}</p>
+                <h6 class="text-muted">ลูกจ้างที่ถูกแจ้งออก</h6>
+                <p class="fs-4 fw-bold mb-0">{{ $stats->terminated_total ?? 0 }}</p>
             </div>
         </div>
     </div>
     <div class="mt-3">
-        <h6>สัญชาติ:</h6>
+        <h6>สรุปตามสัญชาติ (เฉพาะลูกจ้างที่ยังไม่แจ้งออก):</h6>
         <ul class="list-unstyled">
-            @forelse($stats->by_nationality ?? [] as $nat)
-                 <li>{{ $nat->employeeNationality }}: {{ $nat->total }} คน</li>
+            @forelse($stats->breakdown as $nationality => $data)
+                <li>
+                    <strong>{{ $nationality ?: 'ไม่ระบุสัญชาติ' }}:</strong> {{ $data->total_count }} คน (ชาย: {{ $data->male_count }} / หญิง: {{ $data->female_count }})
+                </li>
             @empty
-                <li>ไม่พบข้อมูล</li>
+                <li>ไม่พบข้อมูลการแบ่งสัญชาติ</li>
             @endforelse
         </ul>
     </div>

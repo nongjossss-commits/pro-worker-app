@@ -55,6 +55,7 @@ class PreviewController extends Controller
         $total = $employees->count();
         $male = $employees->where('employeeTitleTh', 'นาย')->count();
         $female = $employees->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+        // NEW: Count terminated employees $terminated_total = Employee::where('employer_id', $employer_id)->whereNotNull('terminated_at')->count();
 
         $breakdown = $employees->groupBy('employeeNationality')->map(function ($group) {
             return (object) [
@@ -68,6 +69,7 @@ class PreviewController extends Controller
             'total' => $total,
             'male' => $male,
             'female' => $female,
+            'terminated_total' => $terminated_total, // <-- ADD THIS LINE
             'breakdown' => $breakdown,
         ];
     }
