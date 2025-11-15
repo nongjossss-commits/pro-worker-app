@@ -98,7 +98,7 @@
  <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerPassword" class="form-label">รหัสผ่าน (สำหรับนายจ้าง)</label>
- <input type="password" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
+ <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
  @error('employerPassword')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
@@ -144,33 +144,89 @@
 
         <hr>
         <h5>เอกสารแนบของนายจ้าง</h5>
-        <div class="row">
-            <div class="col-md-4">
-                <label for="document_company_registration" class="form-label">หนังสือรับรองบริษัท</label>
-                <input type="file" class="form-control form-control-sm" id="document_company_registration" name="document_company_registration">
-                @if($employer->document_company_registration)
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="employer_doc_company" class="form-label">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
+                @if($employer->employer_doc_company)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->document_company_registration) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
+                @error('employer_doc_company')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6">
+                <label for="employer_doc_company_expiry" class="form-label">วันหมดอายุ (หนังสือรับรอง/บัตร)</label>
+                <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry', $employer->employer_doc_company_expiry) }}">
+                @error('employer_doc_company_expiry')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="employer_doc_lease" class="form-label">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
+                @if($employer->employer_doc_lease)
+                    <div class="file-upload-display mt-1">
+                        <a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                    </div>
+                @endif
+                @error('employer_doc_lease')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6">
+                <label for="employer_doc_construction" class="form-label">3. สัญญาก่อสร้าง / แผนที่</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
+                @if($employer->employer_doc_construction)
+                    <div class="file-upload-display mt-1">
+                        <a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                    </div>
+                @endif
+                @error('employer_doc_construction')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="employer_doc_other_1" class="form-label">4. เอกสารอื่นๆ 1</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
+                @if($employer->employer_doc_other_1)
+                    <div class="file-upload-display mt-1">
+                        <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                    </div>
+                @endif
+                @error('employer_doc_other_1')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
             <div class="col-md-4">
-                <label for="document_vat_registration" class="form-label">ภ.พ.20</label>
-                <input type="file" class="form-control form-control-sm" id="document_vat_registration" name="document_vat_registration">
-                @if($employer->document_vat_registration)
+                <label for="employer_doc_other_2" class="form-label">5. เอกสารอื่นๆ 2</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
+                @if($employer->employer_doc_other_2)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->document_vat_registration) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
+                @error('employer_doc_other_2')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
             <div class="col-md-4">
-                <label for="document_map" class="form-label">แผนที่</label>
-                <input type="file" class="form-control form-control-sm" id="document_map" name="document_map">
-                @if($employer->document_map)
+                <label for="employer_doc_other_3" class="form-label">6. เอกสารอื่นๆ 3</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
+                @if($employer->employer_doc_other_3)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->document_map) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
+                @error('employer_doc_other_3')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
         </div>
         <div class="mt-4">

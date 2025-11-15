@@ -59,20 +59,22 @@ class EmployerController extends Controller
             'regCapital' => 'nullable|numeric',
             'regDate' => 'nullable|date',
             'minimum_wage' => 'nullable|numeric',
-            'document_company_registration' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_vat_registration' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_map' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_company' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_company_expiry' => 'nullable|date',
+            'employer_doc_lease' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_construction' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'job_owner_id' => 'required|exists:job_owners,id',
         ]);
 
-        if ($request->hasFile('document_company_registration')) {
-            $validated['document_company_registration'] = $request->file('document_company_registration')->store('employer_documents', 'public');
-        }
-        if ($request->hasFile('document_vat_registration')) {
-            $validated['document_vat_registration'] = $request->file('document_vat_registration')->store('employer_documents', 'public');
-        }
-        if ($request->hasFile('document_map')) {
-            $validated['document_map'] = $request->file('document_map')->store('employer_documents', 'public');
+        // Handle new document uploads
+        $docFields = ['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'];
+        foreach ($docFields as $field) {
+            if ($request->hasFile($field)) {
+                $validated[$field] = $request->file($field)->store('employer_documents', 'public');
+            }
         }
 
         if (!empty($validated['employerPassword'])) {
@@ -159,29 +161,27 @@ public function edit(Request $request, Employer $employer)
             'regCapital' => 'nullable|numeric',
             'regDate' => 'nullable|date',
             'minimum_wage' => 'nullable|numeric',
-            'document_company_registration' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_vat_registration' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_map' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_company' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_company_expiry' => 'nullable|date',
+            'employer_doc_lease' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_construction' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'job_owner_id' => 'required|exists:job_owners,id',
         ]);
 
-        if ($request->hasFile('document_company_registration')) {
-            if ($employer->document_company_registration) {
-                Storage::disk('public')->delete($employer->document_company_registration);
+        // Handle new document uploads
+        $docFields = ['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'];
+        foreach ($docFields as $field) {
+            if ($request->hasFile($field)) {
+                // Delete old file if it exists
+                if ($employer->{$field}) {
+                    Storage::disk('public')->delete($employer->{$field});
+                }
+                // Store new file
+                $validated[$field] = $request->file($field)->store('employer_documents', 'public');
             }
-            $validated['document_company_registration'] = $request->file('document_company_registration')->store('employer_documents', 'public');
-        }
-        if ($request->hasFile('document_vat_registration')) {
-            if ($employer->document_vat_registration) {
-                Storage::disk('public')->delete($employer->document_vat_registration);
-            }
-            $validated['document_vat_registration'] = $request->file('document_vat_registration')->store('employer_documents', 'public');
-        }
-        if ($request->hasFile('document_map')) {
-            if ($employer->document_map) {
-                Storage::disk('public')->delete($employer->document_map);
-            }
-            $validated['document_map'] = $request->file('document_map')->store('employer_documents', 'public');
         }
 
         if (!empty($validated['employerPassword'])) {
