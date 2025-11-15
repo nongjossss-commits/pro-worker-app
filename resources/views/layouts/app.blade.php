@@ -328,7 +328,7 @@
         </div>
     </div>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js', 'resources/js/camera-handler.js'])
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
