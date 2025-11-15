@@ -64,8 +64,11 @@ class EmployerController extends Controller
             'employer_doc_lease' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_construction' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_1_desc' => 'nullable|string|max:255',
             'employer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_2_desc' => 'nullable|string|max:255',
             'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
         ]);
 
@@ -166,8 +169,11 @@ public function edit(Request $request, Employer $employer)
             'employer_doc_lease' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_construction' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_1_desc' => 'nullable|string|max:255',
             'employer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_2_desc' => 'nullable|string|max:255',
             'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
         ]);
 
