@@ -91,7 +91,7 @@
  <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerPassword" class="form-label">รหัสผ่าน (สำหรับนายจ้าง)</label>
- <input type="password" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
+ <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
  @error('employerPassword')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
@@ -153,26 +153,58 @@
             </div>
         </div>
         <hr>
-        <h5>เอกสารแนบ</h5>
+        <h5>เอกสารแนบของนายจ้าง</h5>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="employer_doc_company" class="form-label">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
+                @error('employer_doc_company')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6">
+                <label for="employer_doc_company_expiry" class="form-label">วันหมดอายุ (หนังสือรับรอง/บัตร)</label>
+                <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry') }}">
+                @error('employer_doc_company_expiry')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="employer_doc_lease" class="form-label">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
+                @error('employer_doc_lease')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6">
+                <label for="employer_doc_construction" class="form-label">3. สัญญาก่อสร้าง / แผนที่</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
+                @error('employer_doc_construction')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="document_company_registration" class="form-label">หนังสือรับรองบริษัท</label>
-                <input type="file" class="form-control @error('document_company_registration') is-invalid @enderror" id="document_company_registration" name="document_company_registration">
-                @error('document_company_registration')
+                <label for="employer_doc_other_1" class="form-label">4. เอกสารอื่นๆ 1</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
+                @error('employer_doc_other_1')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="document_vat_registration" class="form-label">ภ.พ.20</label>
-                <input type="file" class="form-control @error('document_vat_registration') is-invalid @enderror" id="document_vat_registration" name="document_vat_registration">
-                @error('document_vat_registration')
+                <label for="employer_doc_other_2" class="form-label">5. เอกสารอื่นๆ 2</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
+                @error('employer_doc_other_2')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="document_map" class="form-label">แผนที่</label>
-                <input type="file" class="form-control @error('document_map') is-invalid @enderror" id="document_map" name="document_map">
-                @error('document_map')
+                <label for="employer_doc_other_3" class="form-label">6. เอกสารอื่นๆ 3</label>
+                <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
+                @error('employer_doc_other_3')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
