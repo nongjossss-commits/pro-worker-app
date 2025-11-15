@@ -72,6 +72,38 @@
                 @enderror
             </div>
         </div>
+<div class="row mb-3">
+ <div class="col-md-6">
+ <label for="employerEmail" class="form-label">อีเมลนายจ้าง</label>
+ <input type="email" class="form-control @error('employerEmail') is-invalid @enderror" id="employerEmail" name="employerEmail" value="{{ old('employerEmail', $employer->employerEmail ?? '') }}">
+ @error('employerEmail')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ <div class="col-md-6">
+ <label for="employerPhone" class="form-label">เบอร์โทรศัพท์</label>
+ <input type="text" class="form-control @error('employerPhone') is-invalid @enderror" id="employerPhone" name="employerPhone" value="{{ old('employerPhone', $employer->employerPhone ?? '') }}">
+ @error('employerPhone')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ </div>
+ <div class="row mb-3">
+ <div class="col-md-6">
+ <label for="employerPassword" class="form-label">รหัสผ่าน (สำหรับนายจ้าง)</label>
+ <input type="password" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
+ @error('employerPassword')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ <div class="col-md-6">
+ <label for="socialSecurityHospital" class="form-label">โรงพยาบาลประกันสังคม</label>
+ <input type="text" class="form-control @error('socialSecurityHospital') is-invalid @enderror" id="socialSecurityHospital" name="socialSecurityHospital" value="{{ old('socialSecurityHospital', $employer->socialSecurityHospital ?? '') }}">
+ @error('socialSecurityHospital')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ </div>
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="signerNameTh" class="form-label">ผู้มีอำนาจลงนาม (ไทย)</label>

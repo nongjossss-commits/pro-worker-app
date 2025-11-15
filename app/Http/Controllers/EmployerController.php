@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\Employee; // <-- เพิ่มบรรทัดนี้
+use Illuminate\Support\Facades\Hash;
 
 class EmployerController extends Controller
 {
@@ -47,6 +48,10 @@ class EmployerController extends Controller
             'employerNameEn' => 'nullable|string|max:255',
             'employerId' => 'required|string|unique:employers,employerId|max:255',
             'employerTaxId' => 'nullable|string|max:255',
+            'employerEmail' => 'nullable|email|max:255|unique:employers,employerEmail',
+            'employerPassword' => 'nullable|string|max:255',
+            'employerPhone' => 'nullable|string|max:255',
+            'socialSecurityHospital' => 'nullable|string|max:255',
             'businessType' => 'required|string|max:255',
             'signerNameTh' => 'nullable|string|max:255',
             'signerNameEn' => 'nullable|string|max:255',
@@ -68,6 +73,10 @@ class EmployerController extends Controller
         }
         if ($request->hasFile('document_map')) {
             $validated['document_map'] = $request->file('document_map')->store('employer_documents', 'public');
+        }
+
+        if (!empty($validated['employerPassword'])) {
+            $validated['employerPassword'] = Hash::make($validated['employerPassword']);
         }
 
         Employer::create($validated);
@@ -139,6 +148,10 @@ public function edit(Request $request, Employer $employer)
             'employerNameEn' => 'nullable|string|max:255',
             'employerId' => ['required', 'string', Rule::unique('employers')->ignore($employer->id), 'max:255'],
             'employerTaxId' => 'nullable|string|max:255',
+            'employerEmail' => ['nullable', 'email', 'max:255', Rule::unique('employers', 'employerEmail')->ignore($employer->id)],
+            'employerPassword' => 'nullable|string|max:255',
+            'employerPhone' => 'nullable|string|max:255',
+            'socialSecurityHospital' => 'nullable|string|max:255',
             'businessType' => 'required|string|max:255',
             'signerNameTh' => 'nullable|string|max:255',
             'signerNameEn' => 'nullable|string|max:255',
@@ -169,6 +182,12 @@ public function edit(Request $request, Employer $employer)
                 Storage::disk('public')->delete($employer->document_map);
             }
             $validated['document_map'] = $request->file('document_map')->store('employer_documents', 'public');
+        }
+
+        if (!empty($validated['employerPassword'])) {
+            $validated['employerPassword'] = Hash::make($validated['employerPassword']);
+        } else {
+            unset($validated['employerPassword']);
         }
 
         $employer->update($validated);
