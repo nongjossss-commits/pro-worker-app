@@ -108,10 +108,10 @@
                 </div>
             </div>
             {{-- Right Column --}}
-            <div class="col-md-4 text-center">
+            <div class="col-md-4 d-flex flex-column justify-content-center align-items-center">
                 <label for="employeePhoto" class="form-label">รูปภาพพนักงาน</label>
-                <img id="employeePhotoPreview" src="https://placehold.co/150x180/f8fafc/6c757d?text=Photo" class="img-thumbnail mb-2" style="max-width: 150px; height: 180px; object-fit: cover;">
-                <input type="file" class="form-control form-control-sm" id="employeePhoto" name="employeePhoto" accept="image/*" capture="environment">
+                <img id="employeePhotoPreview" src="https://placehold.co/150x180/f8fafc/6c757d?text=Photo" class="img-thumbnail mb-2" style="width: 150px; height: 180px; object-fit: cover;">
+                <input type="file" class="form-control form-control-sm w-75" id="employeePhoto" name="employeePhoto" accept="image/*" capture="environment">
             </div>
         </div>
 
