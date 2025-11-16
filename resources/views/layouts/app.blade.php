@@ -133,7 +133,7 @@
 <body>
 
     <div class="main-layout">
-        <aside id="sidebar" class="offcanvas offcanvas-lg offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
+        <aside id="sidebar" class="offcanvas offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
             {{-- START: Offcanvas Header (Mobile Only) --}}
             <div class="offcanvas-header d-lg-none">
                 <h5 class="offcanvas-title" id="sidebarLabel"><i class="bi bi-building-fill-gear"></i> Company Records</h5>
@@ -227,6 +227,11 @@
         </aside>
 
         <main id="main-content" style="position: relative; z-index: 1;">
+            {{-- START: V.2 PC Toggle Button (Visible LG and up) --}}
+            <button class="btn btn-primary mb-3 d-none d-lg-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                <i class="bi bi-list me-2"></i> Open Menu
+            </button>
+            {{-- END: V.2 PC Toggle Button --}}
             {{-- START: Mobile Top-Bar (d-lg-none) --}}
             <nav class="navbar bg-white rounded shadow-sm mb-4 d-lg-none">
                 <div class="container-fluid">
