@@ -33,7 +33,31 @@
             <label class="form-label fw-bold">เลขประจำตัวนายจ้าง</label>
             <p class="form-control-plaintext">{{ $employer->employerTaxId ?? 'N/A' }}</p>
         </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">ประเภทกิจการ</label>
+            <p class="form-control-plaintext">{{ $employer->businessType ?? 'N/A' }}</p>
+        </div>
     </div>
+
+    {{-- START: เพิ่มฟิลด์ที่ขาดไป --}}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">อีเมลนายจ้าง</label>
+            <p class="form-control-plaintext">{{ $employer->employerEmail ?? 'N/A' }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">เบอร์โทรศัพท์</label>
+            <p class="form-control-plaintext">{{ $employer->employerPhone ?? 'N/A' }}</p>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">โรงพยาบาลประกันสังคม</label>
+            <p class="form-control-plaintext">{{ $employer->socialSecurityHospital ?? 'N/A' }}</p>
+        </div>
+    </div>
+    {{-- END: เพิ่มฟิลด์ที่ขาดไป --}}
+
     <div class="row mb-3">
         <div class="col-md-6">
             <label class="form-label fw-bold">ผู้มีอำนาจลงนาม (ไทย)</label>
@@ -46,59 +70,87 @@
     </div>
     <div class="row mb-3">
         <div class="col-md-6">
-            <label class="form-label fw-bold">ประเภทกิจการ</label>
-            <p class="form-control-plaintext">{{ $employer->businessType ?? 'N/A' }}</p>
-        </div>
-        <div class="col-md-6">
             <label class="form-label fw-bold">Type of Business</label>
             <p class="form-control-plaintext">{{ $employer->businessTypeEn ?? 'N/A' }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">ทุนจดทะเบียน</label>
+            <p class="form-control-plaintext">{{ $employer->regCapital ? number_format($employer->regCapital, 2) : 'N/A' }}</p>
         </div>
     </div>
     <div class="row mb-3">
         <div class="col-md-6">
-            <label class="form-label fw-bold">ทุนจดทะเบียน</label>
-            <p class="form-control-plaintext">{{ $employer->regCapital ?? 'N/A' }}</p>
-        </div>
-        <div class="col-md-6">
             <label class="form-label fw-bold">จดทะเบียนวันที่</label>
             <p class="form-control-plaintext">{{ $employer->regDate ? $employer->regDate->format('d/m/Y') : 'N/A' }}</p>
+        </div>
+         <div class="col-md-6">
+            <label class="form-label fw-bold">ค่าแรงขั้นต่ำ</label>
+            <p class="form-control-plaintext">{{ $employer->minimum_wage ? number_format($employer->minimum_wage, 2) : 'N/A' }}</p>
         </div>
     </div>
 
     <hr>
-    <h5>เอกสารแนบของนายจ้าง</h5>
-    <div class="row">
-        <div class="col-md-4">
-            <label class="form-label fw-bold">หนังสือรับรองบริษัท</label>
-            @if($employer->document_company_registration)
-                <p class="form-control-plaintext">
-                    <a href="{{ Storage::url($employer->document_company_registration) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูเอกสาร</a>
-                </p>
+    <h5>เอกสารแนบของนายจ้าง (อัปเดต)</h5>
+    {{-- START: แสดงเอกสารชุดใหม่ 6 ช่อง --}}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
+            @if($employer->employer_doc_company)
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a></p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
         </div>
-        <div class="col-md-4">
-            <label class="form-label fw-bold">ภ.พ.20</label>
-             @if($employer->document_vat_registration)
-                <p class="form-control-plaintext">
-                    <a href="{{ Storage::url($employer->document_vat_registration) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูเอกสาร</a>
-                </p>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">วันหมดอายุ (หนังสือรับรอง/บัตร)</label>
+            <p class="form-control-plaintext">{{ $employer->employer_doc_company_expiry ? \Carbon\Carbon::parse($employer->employer_doc_company_expiry)->format('d/m/Y') : 'N/A' }}</p>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
+             @if($employer->employer_doc_lease)
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a></p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
         </div>
-        <div class="col-md-4">
-            <label class="form-label fw-bold">แผนที่</label>
-            @if($employer->document_map)
-                <p class="form-control-plaintext">
-                    <a href="{{ Storage::url($employer->document_map) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูเอกสาร</a>
-                </p>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">3. สัญญาก่อสร้าง / แผนที่</label>
+            @if($employer->employer_doc_construction)
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a></p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
         </div>
     </div>
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-bold">4. เอกสารอื่นๆ 1</label>
+            @if($employer->employer_doc_other_1)
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_1_desc ?? 'N/A' }})</p>
+            @else
+                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
+            @endif
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold">5. เอกสารอื่นๆ 2</label>
+            @if($employer->employer_doc_other_2)
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_2_desc ?? 'N/A' }})</p>
+            @else
+                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
+            @endif
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold">6. เอกสารอื่นๆ 3</label>
+            @if($employer->employer_doc_other_3)
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_3_desc ?? 'N/A' }})</p>
+            @else
+                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
+            @endif
+        </div>
+    </div>
+    {{-- END: แสดงเอกสารชุดใหม่ 6 ช่อง --}}
 </div>
 
 {{-- Registered Address Section --}}
@@ -106,7 +158,7 @@
     <h5 class="mb-3">ที่อยู่ตามทะเบียน</h5>
     <div class="vstack gap-3">
         @forelse ($employer->addresses->where('type', 'registered') as $address)
-            <div class="address-card">
+            <div class="address-card p-3 border rounded">
                 <p class="mb-0">
                     เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
                     แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
@@ -129,7 +181,7 @@
     <h5 class="mb-3">ที่อยู่สถานที่ทำงาน</h5>
     <div class="vstack gap-3">
         @forelse ($employer->addresses->where('type', 'workplace') as $address)
-             <div class="address-card">
+             <div class="address-card p-3 border rounded">
                 <p class="mb-0">
                     เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
                     แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
@@ -147,9 +199,8 @@
     </div>
 </div>
 
-{{-- Blueprint: Add Stats Summary --}}
-<hr class="my-4">
-<div class="content-section">
+{{-- Stats Summary (from $stats) --}}
+<div class="content-section mt-4">
     <h5 class="mb-3">สรุปข้อมูลลูกจ้าง</h5>
     <div class="row">
         <div class="col-md-3">
@@ -177,16 +228,54 @@
             </div>
         </div>
     </div>
-<div class="mt-3">
- <h6>สรุปตามสัญชาติ (เฉพาะลูกจ้างที่ยังไม่แจ้งออก):</h6>
- <ul class="list-unstyled">
- @forelse($stats->breakdown as $nationality => $data)
- <li>
- <strong>{{ $nationality ?: 'ไม่ระบุสัญชาติ' }}:</strong> {{ $data->total_count }} คน (ชาย: {{ $data->male_count }} / หญิง: {{ $data->female_count }})
- </li>
- @empty
- <li>ไม่พบข้อมูลการแบ่งสัญชาติ</li>
- @endforelse
- </ul>
- </div>
+    <div class="mt-3">
+        <h6>สรุปตามสัญชาติ (เฉพาะลูกจ้างที่ยังไม่แจ้งออก):</h6>
+        <ul class="list-unstyled">
+        @forelse($stats->breakdown as $nationality => $data)
+        <li>
+            <strong>{{ $nationality ?: 'ไม่ระบุสัญชาติ' }}:</strong> {{ $data->total_count }} คน (ชาย: {{ $data->male_count }} / หญิง: {{ $data->female_count }})
+        </li>
+        @empty
+        <li>ไม่พบข้อมูลการแบ่งสัญชาติ</li>
+        @endforelse
+        </ul>
+    </div>
+</div>
+
+{{-- Active Employees List (from $employees) --}}
+<div class="content-section mt-4">
+    <h5 class="mb-0">ข้อมูลลูกจ้าง (ที่ยังไม่แจ้งออก)</h5>
+    <div id="employeeList">
+        @if($employees->isEmpty())
+            <p class="text-center text-muted mt-3">ไม่พบข้อมูลลูกจ้าง</p>
+        @else
+            <div class="list-group mt-3">
+                @foreach($employees as $employee)
+                    {{-- ใช้ partial view ของการแสดงผลลูกจ้าง --}}
+                    @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
+                @endforeach
+            </div>
+            <div class="mt-3">
+                {{-- แสดง pagination links (ถ้ามี) --}}
+                {{ $employees->links() }}
+            </div>
+        @endif
+    </div>
+</div>
+
+{{-- Terminated Employees List (from $terminatedEmployees) --}}
+<div class="content-section mt-4">
+    <h5 class="mb-0">ประวัติการจ้างงาน (ที่แจ้งออกแล้ว)</h5>
+    <div id="employmentHistoryList">
+        @if($terminatedEmployees->isEmpty())
+            <p class="text-center text-muted mt-3">ไม่พบข้อมูลลูกจ้างที่แจ้งออก</p>
+        @else
+            <div class="list-group mt-3">
+                @foreach($terminatedEmployees as $employee)
+                    {{-- ใช้ partial view เดียวกัน แต่ส่ง flag ว่าเป็น trash view --}}
+                    @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => null, 'showLocateButton' => false, 'isTrashView' => true])
+                @endforeach
+            </div>
+        @endif
+    </div>
 </div>
