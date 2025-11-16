@@ -249,7 +249,6 @@
                     <label for="insurance_document_path_social" class="form-label">แนบไฟล์เอกสารประกัน</label>
                      @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันสังคม') <div class="small mb-1"><a href="{{ asset('storage/' . $employee->insurance_document_path) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
                     <input type="file" class="form-control form-control-sm" name="insurance_document_path_social">
-                     @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันสังคม') <div class="form-check mt-1"><input class="form-check-input" type="checkbox" value="1" name="remove_insurance_document_path"><label class="form-check-label small text-danger">ลบไฟล์นี้</label></div> @endif
                 </div>
              </div>
         </div>
@@ -268,7 +267,6 @@
                     <label for="insurance_document_path_hospital" class="form-label">แนบไฟล์เอกสารประกัน</label>
                      @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันโรงพยาบาล') <div class="small mb-1"><a href="{{ asset('storage/' . $employee->insurance_document_path) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
                     <input type="file" class="form-control form-control-sm" name="insurance_document_path_hospital">
-                     @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันโรงพยาบาล') <div class="form-check mt-1"><input class="form-check-input" type="checkbox" value="1" name="remove_insurance_document_path"><label class="form-check-label small text-danger">ลบไฟล์นี้</label></div> @endif
                 </div>
             </div>
         </div>
@@ -287,7 +285,6 @@
                     <label for="insurance_document_path_private" class="form-label">แนบไฟล์เอกสารประกัน</label>
                     @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันเอกชน') <div class="small mb-1"><a href="{{ asset('storage/' . $employee->insurance_document_path) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
                     <input type="file" class="form-control form-control-sm" name="insurance_document_path_private">
-                    @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันเอกชน') <div class="form-check mt-1"><input class="form-check-input" type="checkbox" value="1" name="remove_insurance_document_path"><label class="form-check-label small text-danger">ลบไฟล์นี้</label></div> @endif
                 </div>
             </div>
         </div>
@@ -334,12 +331,6 @@
                     <input type="file" class="form-control form-control-sm" id="{{ $docField }}" name="{{ $docField }}">
                      @if(in_array($i, $descSlots))
                         <input type="text" class="form-control form-control-sm mt-2" name="{{ $descField }}" placeholder="คำอธิบาย..." value="{{ old($descField, $employee->{$descField}) }}">
-                    @endif
-                    @if($employee->{$docField})
-                        <div class="form-check mt-1">
-                            <input class="form-check-input" type="checkbox" value="1" name="remove_{{ $docField }}" id="remove_{{ $docField }}">
-                            <label class="form-check-label small text-danger" for="remove_{{ $docField }}">ลบไฟล์นี้</label>
-                        </div>
                     @endif
                 </div>
             @endforeach
