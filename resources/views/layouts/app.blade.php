@@ -48,7 +48,8 @@
             width: 260px;
             background-color: #ffffff;
             box-shadow: 0 1px 3px rgba(0,0,0,.05);
-            padding: 1.5rem;
+            /* padding: 1.5rem; <-- REMOVED */
+            --bs-offcanvas-width: 260px; /* <-- ADDED */
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
@@ -117,12 +118,29 @@
         .modal.fade.show{
             background: rgba(0, 0, 0, 0.6);
         }
+        /* Restore padding to the new offcanvas body */
+        #sidebar .offcanvas-body {
+            padding: 1.5rem;
+        }
+        /* Reduce main content padding on mobile view */
+        @media (max-width: 991.98px) {
+            #main-content {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="main-layout">
-        <aside id="sidebar">
+        <aside id="sidebar" class="offcanvas offcanvas-lg offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
+            {{-- START: Offcanvas Header (Mobile Only) --}}
+            <div class="offcanvas-header d-lg-none">
+                <h5 class="offcanvas-title" id="sidebarLabel"><i class="bi bi-building-fill-gear"></i> Company Records</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
+            </div>
+            {{-- END: Offcanvas Header --}}
+            <div class="offcanvas-body d-flex flex-column p-0">
             <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
             <div class="list-group" id="main-nav">
                 @can('view-dashboard')
@@ -205,9 +223,20 @@
                     </div>
                 </div>
             </div>
+            </div>
         </aside>
 
         <main id="main-content" style="position: relative; z-index: 1;">
+            {{-- START: Mobile Top-Bar (d-lg-none) --}}
+            <nav class="navbar bg-white rounded shadow-sm mb-4 d-lg-none">
+                <div class="container-fluid">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
+                </div>
+            </nav>
+            {{-- END: Mobile Top-Bar --}}
             @yield('debug-tracker')
             @if (session('success'))
                 <div class="alert alert-success">
