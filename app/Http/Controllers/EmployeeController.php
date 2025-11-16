@@ -201,11 +201,16 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
+            // V6 Fields
+            'job_title' => 'nullable|string|max:255',
+            'job_description' => 'nullable|string',
+            'employeeEmail' => 'nullable|email|max:255',
+            'employeePassword' => 'nullable|string|min:8',
+            'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
         $fileFields = [
             'employeePhoto',
-            'insurance_document_path',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
             'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
@@ -219,8 +224,28 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        if (empty($validated['password'])) {
+        // Manually add/overwrite all V6 fields
+        $validated['passport_issue_date'] = $request->passport_issue_date;
+        $validated['passport_type_cambodia'] = $request->passport_type_cambodia;
+        $validated['job_title'] = $request->job_title;
+        $validated['job_description'] = $request->job_description;
+        $validated['insurance_type'] = $request->insurance_type;
+        $validated['insurance_detail'] = $request->insurance_detail;
+        $validated['insurance_expiry_date'] = $request->insurance_expiry_date;
+        $validated['social_security_number'] = $request->social_security_number;
+        $validated['email'] = $request->employeeEmail; // Map from form name to DB column
+
+        // Handle password hashing from the correct field
+        if ($request->filled('employeePassword')) {
+            $validated['password'] = \Illuminate\Support\Facades\Hash::make($request->employeePassword);
+        } else {
+            // If the new field is empty, make sure the old one is gone too.
             unset($validated['password']);
+        }
+
+        if ($request->hasFile('insurance_document_path')) {
+            $path = $request->file('insurance_document_path')->store("employee_files/{$validated['employer_id']}", 'public');
+            $validated['insurance_document_path'] = $path;
         }
 
         Employee::create($validated);
@@ -303,11 +328,16 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
+            // V6 Fields
+            'job_title' => 'nullable|string|max:255',
+            'job_description' => 'nullable|string',
+            'employeeEmail' => 'nullable|email|max:255',
+            'employeePassword' => 'nullable|string|min:8',
+            'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
         $fileFields = [
             'employeePhoto',
-            'insurance_document_path',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
             'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
@@ -335,8 +365,39 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        if (empty($validated['password'])) {
-            unset($validated['password']);
+        // Manually add all V6 fields
+        $validated['passport_issue_date'] = $request->passport_issue_date;
+        $validated['passport_type_cambodia'] = $request->passport_type_cambodia;
+        $validated['job_title'] = $request->job_title;
+        $validated['job_description'] = $request->job_description;
+        $validated['insurance_type'] = $request->insurance_type;
+        $validated['insurance_detail'] = $request->insurance_detail;
+        $validated['insurance_expiry_date'] = $request->insurance_expiry_date;
+        $validated['social_security_number'] = $request->social_security_number;
+        $validated['email'] = $request->employeeEmail; // Map form field to db column
+
+        // Correctly handle password update
+        if ($request->filled('employeePassword')) {
+            $validated['password'] = \Illuminate\Support\Facades\Hash::make($request->employeePassword);
+        } else {
+            // If the new field is empty, make sure the old one is gone too.
+             unset($validated['password']);
+        }
+
+        // Handle insurance document separately
+        if ($request->has('remove_insurance_document_path')) {
+            if ($employee->insurance_document_path && Storage::disk('public')->exists($employee->insurance_document_path)) {
+                Storage::disk('public')->delete($employee->insurance_document_path);
+            }
+            $validated['insurance_document_path'] = null;
+        }
+
+        if ($request->hasFile('insurance_document_path')) {
+            if ($employee->insurance_document_path && Storage::disk('public')->exists($employee->insurance_document_path)) {
+                Storage::disk('public')->delete($employee->insurance_document_path);
+            }
+            $path = $request->file('insurance_document_path')->store("employee_files/{$employee->employer_id}", 'public');
+            $validated['insurance_document_path'] = $path;
         }
 
         $employee->update($validated);
