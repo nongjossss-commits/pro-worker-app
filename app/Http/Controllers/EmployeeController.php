@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class EmployeeController extends Controller
 {
@@ -202,13 +203,19 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'other_doc_4_desc' => 'nullable|string|max:255',
         ]);
 
-        if ($request->hasFile('employeePhoto')) {
-            $validated['employeePhoto'] = $request->file('employeePhoto')->store('employee_photos', 'public');
-        }
-        // Add other file uploads here...
-        for ($i = 1; $i <= 6; $i++) {
-            if ($request->hasFile("document_$i")) {
-                $validated["document_$i"] = $request->file("document_$i")->store("employee_documents", 'public');
+        $fileFields = [
+            'employeePhoto',
+            'insurance_document_path',
+            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+        ];
+
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $employerId = $request->input('employer_id', 'temp');
+                $path = $request->file($field)->store("employee_files/{$employerId}", 'public');
+                $validated[$field] = $path;
             }
         }
 
@@ -298,19 +305,33 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'other_doc_4_desc' => 'nullable|string|max:255',
         ]);
 
-        if ($request->hasFile('employeePhoto')) {
-            if ($employee->employeePhoto) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->employeePhoto);
-            }
-            $validated['employeePhoto'] = $request->file('employeePhoto')->store('employee_photos', 'public');
-        }
-        // Add other file updates here...
-        for ($i = 1; $i <= 6; $i++) {
-            if ($request->hasFile("document_$i")) {
-                if ($employee->{"document_$i"}) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->{"document_$i"});
+        $fileFields = [
+            'employeePhoto',
+            'insurance_document_path',
+            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+        ];
+
+        // Handle file deletions
+        foreach ($fileFields as $field) {
+            $removeCheckbox = 'remove_' . $field;
+            if ($request->has($removeCheckbox)) {
+                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
+                    Storage::disk('public')->delete($employee->{$field});
                 }
-                $validated["document_$i"] = $request->file("document_$i")->store("employee_documents", 'public');
+                $validated[$field] = null;
+            }
+        }
+
+        // Handle file uploads
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
+                    Storage::disk('public')->delete($employee->{$field});
+                }
+                $path = $request->file($field)->store("employee_files/{$employee->employer_id}", 'public');
+                $validated[$field] = $path;
             }
         }
 
