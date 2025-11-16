@@ -65,85 +65,47 @@
         </div>
     </div>
 
+{{-- NEW: Address Information --}}
+<div class="row mb-3">
+    <h5>ข้อมูลที่อยู่ (Addresses)</h5>
     <hr>
-    <h5>เอกสารแนบของนายจ้าง</h5>
-    <div class="row">
-        <div class="col-md-4">
-            <label class="form-label fw-bold">หนังสือรับรองบริษัท</label>
-            @if($employer->document_company_registration)
-                <p class="form-control-plaintext">
-                    <a href="{{ Storage::url($employer->document_company_registration) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูเอกสาร</a>
-                </p>
-            @else
-                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
-            @endif
-        </div>
-        <div class="col-md-4">
-            <label class="form-label fw-bold">ภ.พ.20</label>
-             @if($employer->document_vat_registration)
-                <p class="form-control-plaintext">
-                    <a href="{{ Storage::url($employer->document_vat_registration) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูเอกสาร</a>
-                </p>
-            @else
-                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
-            @endif
-        </div>
-        <div class="col-md-4">
-            <label class="form-label fw-bold">แผนที่</label>
-            @if($employer->document_map)
-                <p class="form-control-plaintext">
-                    <a href="{{ Storage::url($employer->document_map) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูเอกสาร</a>
-                </p>
-            @else
-                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
-            @endif
-        </div>
-    </div>
-</div>
-
-{{-- Registered Address Section --}}
-<div class="content-section mt-4">
-    <h5 class="mb-3">ที่อยู่ตามทะเบียน</h5>
-    <div class="vstack gap-3">
-        @forelse ($employer->addresses->where('type', 'registered') as $address)
-            <div class="address-card">
-                <p class="mb-0">
-                    เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
-                    แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
-                    {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
-                </p>
-                <p class="mb-0 text-muted small">
-                    Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
-                    {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
-                    {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
-                </p>
-            </div>
+    <div class="col-md-6">
+        <label class="form-label fw-bold">ที่อยู่ตามทะเบียน</label>
+        @php $registeredAddresses = $employer->addresses->where('type', 'registered'); @endphp
+        @forelse($registeredAddresses as $address)
+            {{-- Assuming 'full_address_string' accessor exists as implied by edit forms --}}
+            <p class="form-control-plaintext py-0">{{ $address->full_address_string ?? 'N/A' }}</p>
         @empty
-            <p class="text-muted">ยังไม่มีที่อยู่</p>
+            <p class="form-control-plaintext py-0">N/A</p>
+        @endforelse
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-bold">ที่อยู่สถานที่ทำงาน</label>
+        @php $workplaceAddresses = $employer->addresses->where('type', 'workplace'); @endphp
+        @forelse($workplaceAddresses as $address)
+            <p class="form-control-plaintext py-0">{{ $address->full_address_string ?? 'N/A' }}</p>
+        @empty
+            <p class="form-control-plaintext py-0">N/A</p>
         @endforelse
     </div>
 </div>
 
-{{-- Workplace Address Section --}}
-<div class="content-section mt-4">
-    <h5 class="mb-3">ที่อยู่สถานที่ทำงาน</h5>
-    <div class="vstack gap-3">
-        @forelse ($employer->addresses->where('type', 'workplace') as $address)
-             <div class="address-card">
-                <p class="mb-0">
-                    เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
-                    แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
-                    {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
-                </p>
-                <p class="mb-0 text-muted small">
-                    Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
-                    {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
-                    {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
-                </p>
-            </div>
-        @empty
-            <p class="text-muted">ยังไม่มีที่อยู่</p>
-        @endforelse
+{{-- NEW: File Attachments --}}
+<div class="row mb-3">
+    <h5>ไฟล์แนบ (File Attachments)</h5>
+    <hr>
+    <div class="col-12">
+        @if($employer->media->isEmpty())
+            <p class="text-muted">N/A</p>
+        @else
+            <ul class="list-unstyled">
+                @foreach($employer->media as $media)
+                    <li>
+                        <a href="{{ $media->getUrl() }}" target="_blank">{{ $media->file_name }}</a> ({{ $media->human_readable_size }})
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     </div>
 </div>
 

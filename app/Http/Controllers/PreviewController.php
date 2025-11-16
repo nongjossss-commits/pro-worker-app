@@ -28,7 +28,10 @@ class PreviewController extends Controller
                     return view('previews._employee_data', ['employee' => $employee]);
 
                 case 'employer':
-                    $employer = Employer::withTrashed()->findOrFail($id);
+                // Eager-load all required relationships for the preview
+                $employer = Employer::with(['jobOwner', 'addresses', 'media'])
+                    ->withTrashed()
+                    ->findOrFail($id);
                     $stats = $this->getEmployeeStats($id);
                     return view('previews._employer_data', ['employer' => $employer, 'stats' => $stats]);
 
