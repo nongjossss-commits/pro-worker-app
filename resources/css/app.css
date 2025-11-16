@@ -38,3 +38,64 @@
 #forceDeleteConfirmationModal {
     z-index: 1080;
 }
+
+/* START: Custom Form Styles (from index.html blueprint) */
+
+/* 1. กำหนดสีหลัก (ส้ม) และ Font ที่คุณ Wing เลือก */
+:root {
+    --bs-primary: #F97316;
+    --bs-primary-rgb: 249, 115, 22;
+    --bs-primary-dark: #EA580C;
+    --bs-primary-light: #FB923C;
+    --bs-body-font-family: 'Inter', 'Sarabun', sans-serif;
+    --bs-border-color: #e2e8f0;
+}
+
+/* 2. ตั้งค่า Font ให้กับ Body */
+body {
+    font-family: var(--bs-body-font-family);
+}
+
+/* 3. สไตล์สำหรับปุ่ม (เพื่อให้ปุ่มมี "Glow" สีส้มตอน Focus) */
+.btn-primary {
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-bg: var(--bs-primary-dark);
+    --bs-btn-hover-border-color: var(--bs-primary-dark);
+    --bs-btn-active-bg: var(--bs-primary-dark);
+    --bs-btn-active-border-color: var(--bs-primary-dark);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+}
+
+/* 4. สไตล์สำหรับป้ายกำกับ (Label) */
+.form-label {
+    font-weight: 500;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+/* * 5. สไตล์ช่องกรอกข้อมูล (นี่คือหัวใจสำคัญ!)
+ * ทำให้ขอบเป็นสีเทาอ่อน (border: 1px solid #d1d5db;)
+ */
+.form-control, .form-select {
+    font-size: 1rem;
+    border: 1px solid #d1d5db; /* <-- นี่คือเส้นขอบบางสีเทาที่คุณ Wing ต้องการ */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-radius: 0.375rem; /* ทำให้ขอบมนเล็กน้อย (tailwind 'rounded-md') */
+}
+
+/* * 6. สไตล์ช่องกรอกข้อมูล (ตอน Focus)
+ * ทำให้เกิด "Glow" สีส้ม
+ */
+.form-control:focus, .form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    outline: 0;
+}
+
+/* 7. สไตล์ช่องกรอกข้อมูล (ตอนปิดใช้งาน) */
+select:disabled, input:disabled, textarea:disabled, input:read-only, textarea:read-only {
+    background-color: #e9ecef;
+}
+
+/* END: Custom Form Styles */
