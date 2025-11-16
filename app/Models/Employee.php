@@ -107,6 +107,7 @@ class Employee extends Model
         'other_doc_2_desc',
         'other_doc_3_desc',
         'other_doc_4_desc',
+        'insurance_document_path',
     ];
 
     /**
