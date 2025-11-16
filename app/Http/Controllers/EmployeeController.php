@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class EmployeeController extends Controller
 {
@@ -141,76 +143,81 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function store(Request $request)
     {
+        // --- V6: Step 1: Validate ALL text/date data (new and old) ---
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
+            'employeeTitleTh' => 'required|string|max:255',
             'employeeNameTh' => 'required|string|max:255',
+            'employeeTitleEn' => 'nullable|string|max:255',
             'employeeNameEn' => 'nullable|string|max:255',
+            'father_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'employeeGender' => 'nullable|string|max:255',
+            'employeeDob' => 'nullable|date',
+            'employeeAge' => 'nullable|integer',
+            'employeePhone' => 'nullable|string|max:255',
             'employeeNationality' => 'nullable|string|max:255',
+            'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
+            'passport_issue_date' => 'nullable|date',
             'passportExpiryDate' => 'nullable|date',
+            'pinkCardNo' => 'nullable|string|max:255',
+            'visaType' => 'nullable|string|max:255',
+            'visaExpiryDate' => 'nullable|date',
+            'job_title' => 'nullable|string|max:255',
+            'job_description' => 'nullable|string',
+            'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
             'workPermitExpiryDate' => 'nullable|date',
-            'visaExpiryDate' => 'nullable|date',
-            'ninetyDayReportDate' => 'nullable|date',
-            'employeeTitleTh' => 'nullable|string|max:255',
-            'employeeTitleEn' => 'nullable|string|max:255',
-            'employeeDob' => 'nullable|date',
-            'passportType' => 'nullable|string|max:255',
-            'namelistNo' => 'nullable|string|max:255',
-            'requestNo' => 'nullable|string|max:255',
-            'workerRefNo' => 'nullable|string|max:255',
-            'personalId' => 'nullable|string|max:255',
-            'companyWorkerId' => 'nullable|string|max:255',
-            'pinkCardNo' => 'nullable|string|max:255',
-            'socialSecurityNo' => 'nullable|string|max:255',
-            'taxIdNo' => 'nullable|string|max:255',
-            'designatedHospital' => 'nullable|string|max:255',
-            'startDate' => 'nullable|date',
-            'employeePhone' => 'nullable|string|max:255',
-            'email' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:255',
-            'employeePosition' => 'nullable|string|max:255',
+            'workPermitType' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
             'workPermitMOUGroupOther' => 'nullable|string|max:255',
-            'employeePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'document_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_description_4' => 'nullable|string|max:255',
-            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_description_5' => 'nullable|string|max:255',
-            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_description_6' => 'nullable|string|max:255',
-            'nature_of_work' => 'nullable|string',
+            'ninetyDayReportDate' => 'nullable|date',
             'name_list_number' => 'nullable|string|max:255',
             'request_number' => 'nullable|string|max:255',
             'employee_id_number' => 'nullable|string|max:255',
             'tax_id_number' => 'nullable|string|max:255',
             'employer_employee_id' => 'nullable|string|max:255',
             'employee_reference_id' => 'nullable|string|max:255',
-            'father_name' => 'nullable|string|max:255',
-            'mother_name' => 'nullable|string|max:255',
-            'passport_issue_date' => 'nullable|date',
-            'passport_type_cambodia' => 'nullable|string|max:255',
             'insurance_type' => 'nullable|string|max:255',
             'insurance_detail' => 'nullable|string',
             'insurance_expiry_date' => 'nullable|date',
             'social_security_number' => 'nullable|string|max:255',
+            'employeeEmail' => 'nullable|email|max:255|unique:employees,email',
+            'employeePassword' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
-            // V6 Fields
-            'job_title' => 'nullable|string|max:255',
-            'job_description' => 'nullable|string',
-            'employeeEmail' => 'nullable|email|max:255',
-            'employeePassword' => 'nullable|string|min:8',
+            'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
+        // --- V6: Step 2: Handle email and password mapping & hashing ---
+        $validated['email'] = $validated['employeeEmail'] ?? null;
+        unset($validated['employeeEmail']);
+
+        if (!empty($validated['employeePassword'])) {
+            $validated['password'] = Hash::make($validated['employeePassword']);
+        }
+        unset($validated['employeePassword']);
+
+
+        // --- V6: Step 3: Unified File Upload Loop ---
         $fileFields = [
-            'employeePhoto',
+            'employeePhoto', 'insurance_document_path',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
             'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
@@ -218,41 +225,22 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
-                $employerId = $request->input('employer_id', 'temp');
-                $path = $request->file($field)->store("employee_files/{$employerId}", 'public');
+                $file = $request->file($field);
+                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs("employee_files/{$validated['employer_id']}", $filename, 'public');
                 $validated[$field] = $path;
             }
         }
 
-        // Manually add/overwrite all V6 fields
-        $validated['passport_issue_date'] = $request->passport_issue_date;
-        $validated['passport_type_cambodia'] = $request->passport_type_cambodia;
-        $validated['job_title'] = $request->job_title;
-        $validated['job_description'] = $request->job_description;
-        $validated['insurance_type'] = $request->insurance_type;
-        $validated['insurance_detail'] = $request->insurance_detail;
-        $validated['insurance_expiry_date'] = $request->insurance_expiry_date;
-        $validated['social_security_number'] = $request->social_security_number;
-        $validated['email'] = $request->employeeEmail; // Map from form name to DB column
-
-        // Handle password hashing from the correct field
-        if ($request->filled('employeePassword')) {
-            $validated['password'] = \Illuminate\Support\Facades\Hash::make($request->employeePassword);
-        } else {
-            // If the new field is empty, make sure the old one is gone too.
-            unset($validated['password']);
-        }
-
-        if ($request->hasFile('insurance_document_path')) {
-            $path = $request->file('insurance_document_path')->store("employee_files/{$validated['employer_id']}", 'public');
-            $validated['insurance_document_path'] = $path;
-        }
-
+        // --- V6: Step 4: Create Employee ---
         Employee::create($validated);
-        if ($request->has('source_employer_id')) {
-            return redirect()->route('employers.edit', $request->source_employer_id)->with('success', 'Employee created successfully.');
-        }
-        return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
+
+        // --- V6: Step 5: Redirect ---
+        $redirectRoute = $request->has('source_employer_id')
+            ? route('employers.edit', $request->source_employer_id) . '#employees'
+            : route('employees.index');
+
+        return redirect($redirectRoute)->with('success', 'Employee created successfully.');
     }
 
     public function show(Employee $employee)
@@ -268,85 +256,89 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function update(Request $request, Employee $employee)
     {
+        // --- V6: Step 1: Validate ALL text/date data (new and old) ---
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
+            'employeeTitleTh' => 'required|string|max:255',
             'employeeNameTh' => 'required|string|max:255',
+            'employeeTitleEn' => 'nullable|string|max:255',
             'employeeNameEn' => 'nullable|string|max:255',
+            'father_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'employeeGender' => 'nullable|string|max:255',
+            'employeeDob' => 'nullable|date',
+            'employeeAge' => 'nullable|integer',
+            'employeePhone' => 'nullable|string|max:255',
             'employeeNationality' => 'nullable|string|max:255',
+            'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
+            'passport_issue_date' => 'nullable|date',
             'passportExpiryDate' => 'nullable|date',
+            'pinkCardNo' => 'nullable|string|max:255',
+            'visaType' => 'nullable|string|max:255',
+            'visaExpiryDate' => 'nullable|date',
+            'job_title' => 'nullable|string|max:255',
+            'job_description' => 'nullable|string',
+            'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
             'workPermitExpiryDate' => 'nullable|date',
-            'visaExpiryDate' => 'nullable|date',
-            'ninetyDayReportDate' => 'nullable|date',
-            'employeeTitleTh' => 'nullable|string|max:255',
-            'employeeTitleEn' => 'nullable|string|max:255',
-            'employeeDob' => 'nullable|date',
-            'passportType' => 'nullable|string|max:255',
-            'namelistNo' => 'nullable|string|max:255',
-            'requestNo' => 'nullable|string|max:255',
-            'workerRefNo' => 'nullable|string|max:255',
-            'personalId' => 'nullable|string|max:255',
-            'companyWorkerId' => 'nullable|string|max:255',
-            'pinkCardNo' => 'nullable|string|max:255',
-            'socialSecurityNo' => 'nullable|string|max:255',
-            'taxIdNo' => 'nullable|string|max:255',
-            'designatedHospital' => 'nullable|string|max:255',
-            'startDate' => 'nullable|date',
-            'employeePhone' => 'nullable|string|max:255',
-            'email' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:255',
-            'employeePosition' => 'nullable|string|max:255',
+            'workPermitType' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
             'workPermitMOUGroupOther' => 'nullable|string|max:255',
-            'employeePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'document_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_description_4' => 'nullable|string|max:255',
-            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_description_5' => 'nullable|string|max:255',
-            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'document_description_6' => 'nullable|string|max:255',
-            'nature_of_work' => 'nullable|string',
+            'ninetyDayReportDate' => 'nullable|date',
             'name_list_number' => 'nullable|string|max:255',
             'request_number' => 'nullable|string|max:255',
             'employee_id_number' => 'nullable|string|max:255',
             'tax_id_number' => 'nullable|string|max:255',
             'employer_employee_id' => 'nullable|string|max:255',
             'employee_reference_id' => 'nullable|string|max:255',
-            'father_name' => 'nullable|string|max:255',
-            'mother_name' => 'nullable|string|max:255',
-            'passport_issue_date' => 'nullable|date',
-            'passport_type_cambodia' => 'nullable|string|max:255',
             'insurance_type' => 'nullable|string|max:255',
             'insurance_detail' => 'nullable|string',
             'insurance_expiry_date' => 'nullable|date',
             'social_security_number' => 'nullable|string|max:255',
+            'employeeEmail' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
+            'employeePassword' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
-            // V6 Fields
-            'job_title' => 'nullable|string|max:255',
-            'job_description' => 'nullable|string',
-            'employeeEmail' => 'nullable|email|max:255',
-            'employeePassword' => 'nullable|string|min:8',
+            'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
+        // --- V6: Step 2: Handle email and password mapping & hashing ---
+        $validated['email'] = $validated['employeeEmail'] ?? null;
+        unset($validated['employeeEmail']);
+
+        if (!empty($validated['employeePassword'])) {
+            $validated['password'] = Hash::make($validated['employeePassword']);
+        } else {
+            unset($validated['employeePassword']);
+        }
+
+        // --- V-6: Step 3: Define ALL 18 File Fields ---
         $fileFields = [
-            'employeePhoto',
+            'employeePhoto', 'insurance_document_path',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
             'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
         ];
 
-        // Handle file deletions
+        // --- V-6: Step 4: Unified File Deletion Loop (FIX) ---
         foreach ($fileFields as $field) {
-            $removeCheckbox = 'remove_' . $field;
-            if ($request->has($removeCheckbox)) {
+            if ($request->has('remove_' . $field)) {
                 if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
                     Storage::disk('public')->delete($employee->{$field});
                 }
@@ -354,57 +346,28 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        // Handle file uploads
+        // --- V-6: Step 5: Unified File Upload/Update Loop ---
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
                 if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
                     Storage::disk('public')->delete($employee->{$field});
                 }
-                $path = $request->file($field)->store("employee_files/{$employee->employer_id}", 'public');
+                $file = $request->file($field);
+                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
                 $validated[$field] = $path;
             }
         }
 
-        // Manually add all V6 fields
-        $validated['passport_issue_date'] = $request->passport_issue_date;
-        $validated['passport_type_cambodia'] = $request->passport_type_cambodia;
-        $validated['job_title'] = $request->job_title;
-        $validated['job_description'] = $request->job_description;
-        $validated['insurance_type'] = $request->insurance_type;
-        $validated['insurance_detail'] = $request->insurance_detail;
-        $validated['insurance_expiry_date'] = $request->insurance_expiry_date;
-        $validated['social_security_number'] = $request->social_security_number;
-        $validated['email'] = $request->employeeEmail; // Map form field to db column
-
-        // Correctly handle password update
-        if ($request->filled('employeePassword')) {
-            $validated['password'] = \Illuminate\Support\Facades\Hash::make($request->employeePassword);
-        } else {
-            // If the new field is empty, make sure the old one is gone too.
-             unset($validated['password']);
-        }
-
-        // Handle insurance document separately
-        if ($request->has('remove_insurance_document_path')) {
-            if ($employee->insurance_document_path && Storage::disk('public')->exists($employee->insurance_document_path)) {
-                Storage::disk('public')->delete($employee->insurance_document_path);
-            }
-            $validated['insurance_document_path'] = null;
-        }
-
-        if ($request->hasFile('insurance_document_path')) {
-            if ($employee->insurance_document_path && Storage::disk('public')->exists($employee->insurance_document_path)) {
-                Storage::disk('public')->delete($employee->insurance_document_path);
-            }
-            $path = $request->file('insurance_document_path')->store("employee_files/{$employee->employer_id}", 'public');
-            $validated['insurance_document_path'] = $path;
-        }
-
+        // --- V6: Step 6: Update Employee ---
         $employee->update($validated);
-        if ($request->has('source_employer_id')) {
-            return redirect()->route('employers.edit', $request->source_employer_id)->with('success', 'Employee updated successfully.');
-        }
-        return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
+
+        // --- V6: Step 7: Redirect ---
+        $redirectRoute = $request->has('source_employer_id')
+            ? route('employers.edit', $request->source_employer_id) . '#employee-card-' . $employee->id
+            : route('employees.index');
+
+        return redirect($redirectRoute)->with('success', 'Employee updated successfully.');
     }
 
     public function locate(Employee $employee)
