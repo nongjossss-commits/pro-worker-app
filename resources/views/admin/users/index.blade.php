@@ -17,6 +17,8 @@
                             User </a> </div> @if (session('success')) <div
                         class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
                         role="alert"> <span class="block sm:inline">{{ session('success') }}</span> </div> @endif <table
+<div class="table-responsive">
+                        <table
                         class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -43,15 +45,17 @@
                                         class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $user->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                         {{ $user->status }} </span> </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <form action="{{ route('admin.users.update', $user->id) }}" method="POST"
-                                        style="display:inline;"> @csrf @method('PUT') <button type="submit"
-                                            class="{{ $user->status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900' }} ml-4">
-                                            {{ $user->status === 'active' ? 'Deactivate' : 'Activate' }} </button>
-                                    </form> <a href="{{ route('admin.users.edit', $user->id) }}"
-                                        class="text-indigo-600 hover:text-indigo-900 ml-4">Edit</a>
+                                    <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
+                                        <form action="{{ route('admin.users.update', $user->id) }}" method="POST" class="d-grid d-md-inline"> @csrf @method('PUT') <button type="submit"
+                                                class="{{ $user->status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900' }} ml-4">
+                                                {{ $user->status === 'active' ? 'Deactivate' : 'Activate' }} </button>
+                                        </form>
+                                        <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                    </div>
                                 </td>
                             </tr> @endforeach </tbody>
                     </table>
+</div>
                 </div>
             </div>
         </div>
