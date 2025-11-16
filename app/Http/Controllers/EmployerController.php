@@ -23,9 +23,29 @@ class EmployerController extends Controller
         $this->middleware('permission:delete-employers', ['only' => ['destroy']]);
     }
 
-    public function index()
+    public function index(Request $request) // <-- เพิ่ม Request $request
     {
-        $employers = Employer::with('jobOwner')->latest()->paginate(10);
+        // $employers = Employer::with('jobOwner')->latest()->paginate(10); // <-- ลบแถวนี้
+
+        // --- START: เพิ่ม Logic การค้นหา ---
+        $query = Employer::with('jobOwner')->latest();
+
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('employerNameTh', 'like', $searchTerm)
+                  ->orWhere('employerNameEn', 'like', $searchTerm)
+                  ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
+                      $subQ->where('name', 'like', $searchTerm);
+                  });
+            });
+        }
+        // --- END: เพิ่ม Logic การค้นหา ---
+
+        // เพิ่ม withQueryString() เพื่อให้ pagination จำค่า search
+        $employers = $query->paginate(10)->withQueryString();
+
         return view('employers.index', compact('employers'));
     }
 
@@ -346,6 +366,71 @@ public function edit(Request $request, Employer $employer)
                 fputcsv($file, $row);
             }
 
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Exports the filtered list of employers to a CSV file.
+     */
+    public function export(Request $request)
+    {
+        $this->authorize('view-employers');
+
+        $query = Employer::with('jobOwner')->latest();
+
+        // --- START: ใช้ Logic การค้นหาเดียวกับ index ---
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('employerNameTh', 'like', $searchTerm)
+                  ->orWhere('employerNameEn', 'like', $searchTerm)
+                  ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
+                      $subQ->where('name', 'like', $searchTerm);
+                  });
+            });
+        }
+        // --- END: ใช้ Logic การค้นหาเดียวกับ index ---
+
+        $employers = $query->get();
+
+        $fileName = 'employers_export_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Encoding"    => "UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = [
+            'Employer ID', 'Employer Name (TH)', 'Employer Name (EN)',
+            'Job Owner', 'Business Type', 'Tax ID', 'Email', 'Phone'
+        ];
+
+        $callback = function() use($employers, $columns) {
+            $file = fopen('php://output', 'w');
+            // Add BOM to support UTF-8 in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $columns);
+
+            foreach ($employers as $employer) {
+                $row['Employer ID']        = $employer->employerId;
+                $row['Employer Name (TH)'] = $employer->employerNameTh;
+                $row['Employer Name (EN)'] = $employer->employerNameEn;
+                $row['Job Owner']          = $employer->jobOwner->name ?? 'N/A';
+                $row['Business Type']      = $employer->businessType;
+                $row['Tax ID']             = $employer->employerTaxId;
+                $row['Email']              = $employer->employerEmail;
+                $row['Phone']              = $employer->employerPhone;
+
+                fputcsv($file, array_values($row));
+            }
             fclose($file);
         };
 
