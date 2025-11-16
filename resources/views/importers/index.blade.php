@@ -11,7 +11,7 @@
     @endif
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
          <h2 class="mb-3 mb-md-0">รายการข้อมูลบริษัทนำเข้า</h2>
-         <div class="d-flex gap-2">
+         <div class="d-flex flex-column flex-md-row gap-2">
             <input type="text" id="importer-search-input" class="form-control form-control-sm" placeholder="ค้นหา...">
             <a href="{{ route('importers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
          </div>
@@ -35,16 +35,18 @@
                         <td>{{ $importer->importerId }}</td>
                         <td>{{ $importer->importerLicenseNo }}</td>
                         <td class="text-center">
+                            <div class="d-flex flex-column flex-md-row justify-content-center gap-2">
                             @can('edit-importers')
                             <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
                             @endcan
                             @can('delete-importers')
-                            <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-inline delete-form">
+                            <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-grid d-md-inline delete-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
                             </form>
                             @endcan
+                            </div>
                         </td>
                     </tr>
                 @empty
