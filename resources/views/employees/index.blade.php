@@ -21,7 +21,7 @@
 <div class="card p-3 mb-3">
     <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
         <form method="GET" action="{{ route('employees.index') }}" class="d-flex flex-wrap align-items-center gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา (ชื่อ, Passport, Work Permit, นายจ้าง)..." value="{{ request('search') }}" style="width: 250px;">
             <select name="nationality" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- ทุกสัญชาติ --</option>
                 <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
@@ -41,6 +41,25 @@
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
                 <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
             </select>
+
+            {{-- START: NEW DATE FILTERS --}}
+            <select name="expiry_month" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- เดือนหมดอายุ --</option>
+                @for ($m = 1; $m <= 12; $m++)
+                    <option value="{{ $m }}" {{ request('expiry_month') == $m ? 'selected' : '' }}>
+                        {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+                    </option>
+                @endfor
+            </select>
+            <select name="expiry_type" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- ทุกประเภทวันหมดอายุ --</option>
+                <option value="passportExpiryDate" {{ request('expiry_type') == 'passportExpiryDate' ? 'selected' : '' }}>Passport</option>
+                <option value="workPermitExpiryDate" {{ request('expiry_type') == 'workPermitExpiryDate' ? 'selected' : '' }}>Work Permit</option>
+                <option value="visaExpiryDate" {{ request('expiry_type') == 'visaExpiryDate' ? 'selected' : '' }}>Visa</option>
+                <option value="ninetyDayReportDate" {{ request('expiry_type') == 'ninetyDayReportDate' ? 'selected' : '' }}>90-Day Report</option>
+            </select>
+            {{-- END: NEW DATE FILTERS --}}
+
             <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
             <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
         </form>

@@ -70,56 +70,7 @@ public function reinstate(Employee $employee)
     return response()->json(['success' => 'Employee reinstated successfully.']);
 }
 
-    public function index(Request $request)
-{
-    $query = Employee::query()->whereNull('terminated_at');
-
-    // --- START: ADDED FILTERING LOGIC ---
-    if ($request->filled('search')) {
-        $searchTerm = '%' . $request->input('search') . '%';
-        $query->where(function ($q) use ($searchTerm) {
-            $q->where('employeeNameTh', 'like', $searchTerm)
-              ->orWhere('employeeNameEn', 'like', $searchTerm)
-              ->orWhere('employeePassport', 'like', $searchTerm)
-              ->orWhere('pinkCardNo', 'like', $searchTerm);
-        });
-    }
-
-    if ($request->filled('nationality')) {
-        $query->where('employeeNationality', $request->input('nationality'));
-    }
-
-    if ($request->filled('mou_group')) {
-        $query->where('workPermitMOUGroup', $request->input('mou_group'));
-    }
-
-    if ($request->filled('pink_card')) {
-        if ($request->input('pink_card') === 'yes') {
-            $query->where(function ($q) {
-                $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
-            });
-        } elseif ($request->input('pink_card') === 'no') {
-            $query->where(function ($q) {
-                $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
-            });
-        }
-    }
-    // --- END: ADDED FILTERING LOGIC ---
-
-    $totalEmployees = (clone $query)->count();
-
-    $perPageOptions = [25, 50, 100]; // Defined options here
-    $currentPerPage = $request->input('per_page', 25);
-
-    $employees = $query->with('employer')->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
-
-    return view('employees.index', compact(
-        'employees',
-        'totalEmployees',
-        'perPageOptions',
-        'currentPerPage'
-    ))->with('currentView', $request->input('view', 'card'));
-}
+public function index(Request $request) { $query = Employee::query()->whereNull('terminated_at'); // --- START: MODIFIED FILTERING LOGIC --- if ($request->filled('search')) { $searchTerm = '%' . $request->input('search') . '%'; $query->where(function ($q) use ($searchTerm) { // 1. Search direct employee fields $q->where('employeeNameTh', 'like', $searchTerm) ->orWhere('employeeNameEn', 'like', $searchTerm) ->orWhere('employeePassport', 'like', $searchTerm) ->orWhere('pinkCardNo', 'like', $searchTerm) ->orWhere('employeeWorkPermit', 'like', $searchTerm); // <-- ADDED: Search Work Permit No. // 2. Search related employer fields $q->orWhereHas('employer', function ($q_employer) use ($searchTerm) { $q_employer->where('employerNameTh', 'like', $searchTerm) ->orWhere('employerNameEn', 'like', 'like', $searchTerm); // <-- ADDED: Search Employer Name }); }); } if ($request->filled('nationality')) { $query->where('employeeNationality', $request->input('nationality')); } if ($request->filled('mou_group')) { $query->where('workPermitMOUGroup', $request->input('mou_group')); } if ($request->filled('pink_card')) { if ($request->input('pink_card') === 'yes') { $query->where(function ($q) { $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', ''); }); } elseif ($request->input('pink_card') === 'no') { $query->where(function ($q) { $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', ''); }); } } // --- END: MODIFIED FILTERING LOGIC --- // --- START: NEW DATE FILTER LOGIC --- if ($request->filled('expiry_month')) { $month = $request->input('expiry_month'); $type = $request->input('expiry_type'); $query->where(function ($q) use ($month, $type) { if ($type) { // Filter by specific type and month // (e.g., only Passport Expiry in March) $q->whereMonth($type, $month); } else { // Filter by any type and month // (e.g., Anything expiring in March) $q->orWhereMonth('passportExpiryDate', $month) ->orWhereMonth('workPermitExpiryDate', $month) ->orWhereMonth('visaExpiryDate', $month) ->orWhereMonth('ninetyDayReportDate', $month); } }); } // --- END: NEW DATE FILTER LOGIC --- $totalEmployees = (clone $query)->count(); $perPageOptions = [25, 50, 100]; $currentPerPage = $request->input('per_page', 25); $employees = $query->with('employer')->latest()->paginate($currentPerPage)->withQueryString(); return view('employees.index', compact( 'employees', 'totalEmployees', 'perPageOptions', 'currentPerPage' ))->with('currentView', $request->input('view', 'card')); }
 
 public function create(Request $request) // เพิ่ม Request $request เข้ามา
 {
