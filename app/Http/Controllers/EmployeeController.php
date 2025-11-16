@@ -316,17 +316,61 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'passport_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'visa_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'work_permit_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'pink_card_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'insurance_attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
         // --- V6: Step 2: Handle email and password mapping & hashing ---
-        $validated['email'] = $validated['employeeEmail'] ?? null;
-        unset($validated['employeeEmail']);
+        $data = $validated;
+        $data['email'] = $validated['employeeEmail'] ?? null;
+        unset($data['employeeEmail']);
 
-        if (!empty($validated['employeePassword'])) {
-            $validated['password'] = Hash::make($validated['employeePassword']);
+        if (!empty($request->input('employeePassword'))) {
+            $data['password'] = Hash::make($request->input('employeePassword'));
         } else {
-            unset($validated['employeePassword']);
+            unset($data['password']);
         }
+        unset($data['employeePassword']);
+
+        if ($request->hasFile('passport_file')) {
+            if ($employee->passport_file_path) {
+                Storage::disk('private')->delete($employee->passport_file_path);
+            }
+            $path = $request->file('passport_file')->store('employee_documents', 'private');
+            $data['passport_file_path'] = $path;
+        }
+        if ($request->hasFile('visa_file')) {
+            if ($employee->visa_file_path) {
+                Storage::disk('private')->delete($employee->visa_file_path);
+            }
+            $path = $request->file('visa_file')->store('employee_documents', 'private');
+            $data['visa_file_path'] = $path;
+        }
+        if ($request->hasFile('work_permit_file')) {
+            if ($employee->work_permit_file_path) {
+                Storage::disk('private')->delete($employee->work_permit_file_path);
+            }
+            $path = $request->file('work_permit_file')->store('employee_documents', 'private');
+            $data['work_permit_file_path'] = $path;
+        }
+        if ($request->hasFile('pink_card_file')) {
+            if ($employee->pink_card_file_path) {
+                Storage::disk('private')->delete($employee->pink_card_file_path);
+            }
+            $path = $request->file('pink_card_file')->store('employee_documents', 'private');
+            $data['pink_card_file_path'] = $path;
+        }
+        if ($request->hasFile('insurance_attachment')) {
+            if ($employee->insurance_attachment_path) {
+                Storage::disk('private')->delete($employee->insurance_attachment_path);
+            }
+            $path = $request->file('insurance_attachment')->store('employee_documents', 'private');
+            $data['insurance_attachment_path'] = $path;
+        }
+        $validated = $data;
 
         // --- V-6: Step 3: Define ALL 18 File Fields ---
         $fileFields = [

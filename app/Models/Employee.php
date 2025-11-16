@@ -110,6 +110,14 @@ class Employee extends Model
         'insurance_document_path',
         'job_title',
         'job_description',
+        'visa_type',
+        'insurance_company',
+        'hospital_name',
+        'passport_file_path',
+        'visa_file_path',
+        'work_permit_file_path',
+        'pink_card_file_path',
+        'insurance_attachment_path',
     ];
 
     /**
