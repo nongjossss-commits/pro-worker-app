@@ -10,7 +10,7 @@
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">รายการคำขอของฉัน</h2>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-column flex-md-row gap-2">
             {{-- Per Page Selection (Must match employers.index) --}}
             <form action="{{ route('tickets.index') }}" method="GET" class="d-flex gap-2">
                 <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
