@@ -14,7 +14,7 @@
         <div class="card-body">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
                 {{-- Search Form --}}
-                <form action="{{ route('admin.trash.index') }}" method="GET" class="d-flex gap-2">
+                <form action="{{ route('admin.trash.index') }}" method="GET" class="d-flex flex-column flex-md-row gap-2">
                     <input type="hidden" name="view" value="{{ $currentView ?? 'table' }}">
                     <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
                     <button type="submit" class="btn btn-primary">Search</button>
@@ -137,30 +137,32 @@
                                                     @endif
                                                     <td>{{ $item->deleted_at->format('d M Y, H:i') }}</td>
                                                     <td class="text-end">
-                                                        @if($modelName === 'employees')
-                                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
-                                                        @elseif($modelName === 'employers')
-                                                             <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
-                                                        @endif
-                                                        {{-- RESTORE BUTTON (Permission-Protected) --}}
-                                                        @can('restore-' . $modelName)
-                                                            {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
-                                                            <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline restore-form">
-                                                                @csrf
-                                                                <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
-                                                            </form>
-                                                        @endcan
+                                                        <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
+                                                            @if($modelName === 'employees')
+                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                            @elseif($modelName === 'employers')
+                                                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                            @endif
+                                                            {{-- RESTORE BUTTON (Permission-Protected) --}}
+                                                            @can('restore-' . $modelName)
+                                                                {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
+                                                                <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-grid d-md-inline restore-form">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
+                                                                </form>
+                                                            @endcan
 
-                                                        {{-- FORCE DELETE BUTTON (Permission-Protected) --}}
-                                                        @can('force-delete-' . $modelName)
-                                                            <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-inline delete-form">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-danger">
-                                                                    Force Delete
-                                                                </button>
-                                                            </form>
-                                                        @endcan
+                                                            {{-- FORCE DELETE BUTTON (Permission-Protected) --}}
+                                                            @can('force-delete-' . $modelName)
+                                                                <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-grid d-md-inline delete-form">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                                        Force Delete
+                                                                    </button>
+                                                                </form>
+                                                            @endcan
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             @endforeach
