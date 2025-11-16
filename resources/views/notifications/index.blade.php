@@ -7,7 +7,7 @@
 
     <div class="card mb-4">
         <div class="card-body">
-            <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+            <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-md-center">
                 <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'ninety_day_report') }}">
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}" style="width: 200px;">
                 <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
@@ -81,7 +81,7 @@
                     (ชาย: {{ $counts[$type]['male'] }} คน, หญิง: {{ $counts[$type]['female'] }} คน)
                 </div>
                 @endif
-<div class="d-flex justify-content-end mb-3">
+<div class="d-grid d-md-flex justify-content-md-end mb-3">
     <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-outline-success btn-sm">
         <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
     </a>

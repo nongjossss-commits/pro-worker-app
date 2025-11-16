@@ -53,13 +53,13 @@
         @endif
     </td>
     <td class="text-center">
-<div class="btn-group btn-group-sm">
+<div class="d-flex flex-column flex-md-row justify-content-center gap-2">
     @if($notification->status === 'cancelled')
-        <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-inline">
+        <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-grid d-md-inline">
             @csrf
             <button type="submit" class="btn btn-info btn-sm" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
         </form>
-         <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
+         <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
             @csrf
             @method('DELETE')
             <button type="submit" class="btn btn-danger btn-sm" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
@@ -71,5 +71,6 @@
         <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
     @endif
 </div>
-    </td>
+    </div>
+</td>
 </tr>
