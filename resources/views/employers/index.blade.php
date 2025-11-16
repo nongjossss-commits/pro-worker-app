@@ -11,8 +11,8 @@
     @endif
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">รายการข้อมูลนายจ้าง</h2>
-        <div class="d-flex gap-2">
-            <form action="{{ route('employers.index') }}" method="GET" class="d-flex gap-2">
+        <div class="d-flex flex-column flex-md-row gap-2">
+            <form action="{{ route('employers.index') }}" method="GET" class="d-flex flex-column flex-md-row gap-2">
                 <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
                     <option value="25" @selected(request('per_page', 25) == 25)>25</option>
                     <option value="50" @selected(request('per_page') == 50)>50</option>
@@ -48,17 +48,19 @@
                         <td>{{ $employer->businessType }}</td>
                         <td>{{ $employer->jobOwner->name ?? 'N/A' }}</td>
                         <td class="text-center">
-                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
-                            @can('edit-employers')
-                            <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
-                            @endcan
-                            @can('delete-employers')
-                            <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline delete-employer-form">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
-                            </form>
-                            @endcan
+                            <div class="d-flex flex-column flex-md-row gap-1 justify-content-center">
+                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                @can('edit-employers')
+                                <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                                @endcan
+                                @can('delete-employers')
+                                <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline delete-employer-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
+                                </form>
+                                @endcan
+                            </div>
                         </td>
                     </tr>
                 @empty
