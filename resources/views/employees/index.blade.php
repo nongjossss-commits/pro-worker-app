@@ -19,7 +19,7 @@
 </div>
 
 <div class="card p-3 mb-3">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
         <form method="GET" action="{{ route('employees.index') }}" class="d-flex flex-wrap align-items-center gap-2">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
             <select name="nationality" class="form-select form-select-sm" style="width: auto;">
