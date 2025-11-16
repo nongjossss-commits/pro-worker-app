@@ -122,7 +122,6 @@
         #sidebar .offcanvas-body {
             padding: 1.5rem;
         }
-
         /* Reduce main content padding on mobile view */
         @media (max-width: 991.98px) {
             #main-content {
@@ -142,8 +141,8 @@
             </div>
             {{-- END: Offcanvas Header --}}
             <div class="offcanvas-body d-flex flex-column p-0">
-                <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
-                <div class="list-group" id="main-nav">
+            <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
+            <div class="list-group" id="main-nav">
                 @can('view-dashboard')
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>ภาพรวม</a>
                 @endcan
