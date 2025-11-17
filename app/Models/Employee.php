@@ -118,6 +118,8 @@ class Employee extends Model
         'work_permit_file_path',
         'pink_card_file_path',
         'insurance_attachment_path',
+        'social_security_file',
+        'insurance_file',
     ];
 
     /**
