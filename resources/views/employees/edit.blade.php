@@ -5,7 +5,7 @@
 @section('content')
 <div class="content-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>แก้ไขข้อมูลพนักงาน: <span class="fw-bold">{{ $employee->employeeNameTh }}</span></h2>
+        <h2>แก้ไขข้อมูลพนักงาน: <span class="fw-bold">{{ optional($employee)->employeeNameTh ?? '' }}</span></h2>
         <a href="{{ route('employers.edit', $employee->employer_id) }}#employee-card-{{ $employee->id }}" class="btn btn-secondary">กลับไปที่นายจ้าง</a>
     </div>
 
@@ -22,7 +22,7 @@
     <form action="{{ route('employees.update', $employee->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
-        <input type="hidden" name="employer_id" value="{{ $employee->employer_id }}">
+        <input type="hidden" name="employer_id" value="{{ optional($employee)->employer_id ?? '' }}">
 
         {{-- Category 1: Personal Information --}}
         <h5><i class="bi bi-person-badge"></i> 1. ข้อมูลส่วนตัว (Personal Information)</h5>
@@ -34,14 +34,14 @@
                     <div class="col-md-6 mb-3">
                         <label for="employeeTitleTh" class="form-label">คำนำหน้าชื่อ (ไทย) <span class="text-danger">*</span></label>
                         <select class="form-select" id="employeeTitleTh" name="employeeTitleTh" required>
-                            <option value="นาย" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาย')>นาย</option>
-                            <option value="นางสาว" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นางสาว')>นางสาว</option>
-                            <option value="นาง" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาง')>นาง</option>
+                            <option value="นาย" @selected(old('employeeTitleTh', optional($employee)->employeeTitleTh) == 'นาย')>นาย</option>
+                            <option value="นางสาว" @selected(old('employeeTitleTh', optional($employee)->employeeTitleTh) == 'นางสาว')>นางสาว</option>
+                            <option value="นาง" @selected(old('employeeTitleTh', optional($employee)->employeeTitleTh) == 'นาง')>นาง</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="employeeNameTh" class="form-label">ชื่อ-สกุล (ไทย) <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="employeeNameTh" name="employeeNameTh" value="{{ old('employeeNameTh', $employee->employeeNameTh) }}" required>
+                        <input type="text" class="form-control" id="employeeNameTh" name="employeeNameTh" value="{{ old('employeeNameTh', optional($employee)->employeeNameTh ?? '') }}" required>
                     </div>
                 </div>
 
@@ -49,32 +49,32 @@
                      <div class="col-md-6 mb-3">
                         <label for="employeeTitleEn" class="form-label">Prefix (EN)</label>
                         <select class="form-select" id="employeeTitleEn" name="employeeTitleEn">
-                             <option value="Mr." @selected(old('employeeTitleEn', $employee->employeeTitleEn) == 'Mr.')>Mr.</option>
-                             <option value="Miss" @selected(old('employeeTitleEn', $employee->employeeTitleEn) == 'Miss')>Miss</option>
-                             <option value="Mrs." @selected(old('employeeTitleEn', $employee->employeeTitleEn) == 'Mrs.')>Mrs.</option>
+                             <option value="Mr." @selected(old('employeeTitleEn', optional($employee)->employeeTitleEn) == 'Mr.')>Mr.</option>
+                             <option value="Miss" @selected(old('employeeTitleEn', optional($employee)->employeeTitleEn) == 'Miss')>Miss</option>
+                             <option value="Mrs." @selected(old('employeeTitleEn', optional($employee)->employeeTitleEn) == 'Mrs.')>Mrs.</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="employeeNameEn" class="form-label">Full Name (EN)</label>
-                        <input type="text" class="form-control" id="employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn', $employee->employeeNameEn) }}">
+                        <input type="text" class="form-control" id="employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn', optional($employee)->employeeNameEn ?? '') }}">
                     </div>
                 </div>
 
                  <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="father_name" class="form-label">ชื่อพ่อ</label>
-                        <input type="text" class="form-control" id="father_name" name="father_name" value="{{ old('father_name', $employee->father_name) }}">
+                        <input type="text" class="form-control" id="father_name" name="father_name" value="{{ old('father_name', optional($employee)->father_name ?? '') }}">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="mother_name" class="form-label">ชื่อแม่</label>
-                        <input type="text" class="form-control" id="mother_name" name="mother_name" value="{{ old('mother_name', $employee->mother_name) }}">
+                        <input type="text" class="form-control" id="mother_name" name="mother_name" value="{{ old('mother_name', optional($employee)->mother_name ?? '') }}">
                     </div>
                 </div>
 
                 <div class="row">
                      <div class="col-md-4 mb-3">
                         <label for="employeeGender" class="form-label">เพศ</label>
-                        <input type="text" class="form-control" id="employeeGender" name="employeeGender" value="{{ old('employeeGender', $employee->employeeGender) }}" readonly>
+                        <input type="text" class="form-control" id="employeeGender" name="employeeGender" value="{{ old('employeeGender', optional($employee)->employeeGender ?? '') }}" readonly>
                      </div>
                      <div class="col-md-5 mb-3">
                         <label for="employeeDob" class="form-label">วันเดือนปีเกิด</label>
@@ -82,7 +82,7 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label for="employeeAge" class="form-label">อายุ</label>
-                        <input type="text" class="form-control" id="employeeAge" name="employeeAge" value="{{ old('employeeAge', $employee->employeeAge) }}" readonly>
+                        <input type="text" class="form-control" id="employeeAge" name="employeeAge" value="{{ old('employeeAge', optional($employee)->employeeAge ?? '') }}" readonly>
                     </div>
                 </div>
             </div>
@@ -101,32 +101,32 @@
         <div class="row">
             <div class="col-md-4 mb-3">
                 <label for="employeePhone" class="form-label">เบอร์โทรศัพท์</label>
-                <input type="tel" class="form-control" id="employeePhone" name="employeePhone" value="{{ old('employeePhone', $employee->employeePhone) }}">
+                <input type="tel" class="form-control" id="employeePhone" name="employeePhone" value="{{ old('employeePhone', optional($employee)->employeePhone ?? '') }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="employeeNationality" class="form-label">สัญชาติ</label>
                 <select class="form-select" id="employeeNationality" name="employeeNationality">
                     <option value="">-- เลือกสัญชาติ --</option>
-                    <option value="เมียนมา" @selected(old('employeeNationality', $employee->employeeNationality) == 'เมียนมา')>เมียนมา</option>
-                    <option value="ลาว" @selected(old('employeeNationality', $employee->employeeNationality) == 'ลาว')>ลาว</option>
-                    <option value="กัมพูชา" @selected(old('employeeNationality', $employee->employeeNationality) == 'กัมพูชา')>กัมพูชา</option>
-                    <option value="เวียดนาม" @selected(old('employeeNationality', $employee->employeeNationality) == 'เวียดนาม')>เวียดนาม</option>
+                    <option value="เมียนมา" @selected(old('employeeNationality', optional($employee)->employeeNationality) == 'เมียนมา')>เมียนมา</option>
+                    <option value="ลาว" @selected(old('employeeNationality', optional($employee)->employeeNationality) == 'ลาว')>ลาว</option>
+                    <option value="กัมพูชา" @selected(old('employeeNationality', optional($employee)->employeeNationality) == 'กัมพูชา')>กัมพูชา</option>
+                    <option value="เวียดนาม" @selected(old('employeeNationality', optional($employee)->employeeNationality) == 'เวียดนาม')>เวียดนาม</option>
                 </select>
             </div>
              <div class="col-md-4 mb-3 d-none" id="passportTypeContainer">
                 <label for="passportType" class="form-label">ประเภทหนังสือเดินทาง (สำหรับเมียนมา)</label>
                 <select class="form-select" id="passportType" name="passportType">
                     <option value="">-- เลือกประเภท --</option>
-                    <option value="PJ" @selected(old('passportType', $employee->passportType) == 'PJ')>เล่ม PJ</option>
-                    <option value="CI" @selected(old('passportType', $employee->passportType) == 'CI')>เล่ม CI</option>
+                    <option value="PJ" @selected(old('passportType', optional($employee)->passportType) == 'PJ')>เล่ม PJ</option>
+                    <option value="CI" @selected(old('passportType', optional($employee)->passportType) == 'CI')>เล่ม CI</option>
                 </select>
             </div>
             <div class="col-md-4 mb-3 d-none" id="passportTypeCambodiaContainer">
                 <label for="passport_type_cambodia" class="form-label">ประเภทหนังสือเดินทาง (สำหรับกัมพูชา)</label>
                 <select class="form-select" id="passport_type_cambodia" name="passport_type_cambodia">
                     <option value="">-- เลือกประเภท --</option>
-                    <option value="เล่ม TD" @selected(old('passport_type_cambodia', $employee->passport_type_cambodia) == 'เล่ม TD')>เล่ม TD</option>
-                    <option value="เล่มอินเตอร์" @selected(old('passport_type_cambodia', $employee->passport_type_cambodia) == 'เล่มอินเตอร์')>เล่มอินเตอร์</option>
+                    <option value="เล่ม TD" @selected(old('passport_type_cambodia', optional($employee)->passport_type_cambodia) == 'เล่ม TD')>เล่ม TD</option>
+                    <option value="เล่มอินเตอร์" @selected(old('passport_type_cambodia', optional($employee)->passport_type_cambodia) == 'เล่มอินเตอร์')>เล่มอินเตอร์</option>
                 </select>
             </div>
         </div>
@@ -137,7 +137,7 @@
         <div class="row">
             <div class="col-md-4 mb-3">
                 <label for="employeePassport" class="form-label">เลขพาสปอร์ต</label>
-                <input type="text" class="form-control" id="employeePassport" name="employeePassport" value="{{ old('employeePassport', $employee->employeePassport) }}">
+                <input type="text" class="form-control" id="employeePassport" name="employeePassport" value="{{ old('employeePassport', optional($employee)->employeePassport ?? '') }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="passport_issue_date" class="form-label">วันออกพาสปอร์ต</label>
@@ -151,11 +151,11 @@
         <div class="row">
             <div class="col-md-4 mb-3">
                 <label for="pinkCardNo" class="form-label">เลขบัตรชมพู</label>
-                <input type="text" class="form-control" id="pinkCardNo" name="pinkCardNo" value="{{ old('pinkCardNo', $employee->pinkCardNo) }}">
+                <input type="text" class="form-control" id="pinkCardNo" name="pinkCardNo" value="{{ old('pinkCardNo', optional($employee)->pinkCardNo ?? '') }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="visaType" class="form-label">ประเภทวีซ่า</label>
-                <input type="text" class="form-control" id="visaType" name="visaType" value="{{ old('visaType', $employee->visaType) }}">
+                <input type="text" class="form-control" id="visaType" name="visaType" value="{{ old('visaType', optional($employee)->visaType ?? '') }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="visaExpiryDate" class="form-label">วันหมดอายุวีซ่า</label>
@@ -169,11 +169,11 @@
         <div class="row">
             <div class="col-md-4 mb-3">
                 <label for="job_title" class="form-label">ตำแหน่งงาน</label>
-                <input type="text" class="form-control" id="job_title" name="job_title" value="{{ old('job_title', $employee->job_title) }}">
+                <input type="text" class="form-control" id="job_title" name="job_title" value="{{ old('job_title', optional($employee)->job_title ?? '') }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="job_description" class="form-label">ลักษณะงาน</label>
-                <input type="text" class="form-control" id="job_description" name="job_description" value="{{ old('job_description', $employee->job_description) }}">
+                <input type="text" class="form-control" id="job_description" name="job_description" value="{{ old('job_description', optional($employee)->job_description ?? '') }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="startDate" class="form-label">วันที่เริ่มงาน</label>
@@ -183,7 +183,7 @@
         <div class="row">
             <div class="col-md-4 mb-3">
                 <label for="employeeWorkPermit" class="form-label">เลข Work Permit</label>
-                <input type="text" class="form-control" id="employeeWorkPermit" name="employeeWorkPermit" value="{{ old('employeeWorkPermit', $employee->employeeWorkPermit) }}">
+                <input type="text" class="form-control" id="employeeWorkPermit" name="employeeWorkPermit" value="{{ old('employeeWorkPermit', optional($employee)->employeeWorkPermit ?? '') }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="workPermitExpiryDate" class="form-label">วันหมดอายุ Work Permit</label>
@@ -199,24 +199,24 @@
                 <label for="workPermitType" class="form-label">ประเภทใบอนุญาตทำงาน</label>
                 <select class="form-select" id="workPermitMOUGroup" name="workPermitMOUGroup">
                     <option value="">-- กรุณาเลือก --</option>
-                    <option value="MOU" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'MOU')>MOU</option>
-                    <option value="มติต่ออายุในประเทศ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
-                    <option value="มติขึ้นทะเบียน" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
-                    <option value="อื่นๆ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'อื่นๆ')>อื่นๆ ระบุ..</option>
+                    <option value="MOU" @selected(old('workPermitMOUGroup', optional($employee)->workPermitMOUGroup) == 'MOU')>MOU</option>
+                    <option value="มติต่ออายุในประเทศ" @selected(old('workPermitMOUGroup', optional($employee)->workPermitMOUGroup) == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
+                    <option value="มติขึ้นทะเบียน" @selected(old('workPermitMOUGroup', optional($employee)->workPermitMOUGroup) == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
+                    <option value="อื่นๆ" @selected(old('workPermitMOUGroup', optional($employee)->workPermitMOUGroup) == 'อื่นๆ')>อื่นๆ ระบุ..</option>
                 </select>
             </div>
             <div class="col-md-6 mb-3 d-none" id="workPermitMOUGroupOtherContainer">
                 <label for="workPermitMOUGroupOther" class="form-label">ระบุประเภทอื่นๆ</label>
-                 <input type="text" class="form-control" id="workPermitMOUGroupOther" name="workPermitMOUGroupOther" value="{{ old('workPermitMOUGroupOther', $employee->workPermitMOUGroupOther) }}">
+                 <input type="text" class="form-control" id="workPermitMOUGroupOther" name="workPermitMOUGroupOther" value="{{ old('workPermitMOUGroupOther', optional($employee)->workPermitMOUGroupOther ?? '') }}">
             </div>
         </div>
         <div class="row">
-             <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">เลข Name List</label><input type="text" class="form-control" id="name_list_number" name="name_list_number" value="{{ old('name_list_number', $employee->name_list_number) }}"></div>
-             <div class="col-md-4 mb-3"><label for="request_number" class="form-label">เลขที่คำขอ</label><input type="text" class="form-control" id="request_number" name="request_number" value="{{ old('request_number', $employee->request_number) }}"></div>
-             <div class="col-md-4 mb-3"><label for="employee_id_number" class="form-label">เลขประจำตัว</label><input type="text" class="form-control" id="employee_id_number" name="employee_id_number" value="{{ old('employee_id_number', $employee->employee_id_number) }}"></div>
-             <div class="col-md-4 mb-3"><label for="tax_id_number" class="form-label">เลขประจำตัวผู้เสียภาษี</label><input type="text" class="form-control" id="tax_id_number" name="tax_id_number" value="{{ old('tax_id_number', $employee->tax_id_number) }}"></div>
-             <div class="col-md-4 mb-3"><label for="employer_employee_id" class="form-label">รหัสคนงาน - ของนายจ้าง</label><input type="text" class="form-control" id="employer_employee_id" name="employer_employee_id" value="{{ old('employer_employee_id', $employee->employer_employee_id) }}"></div>
-             <div class="col-md-4 mb-3"><label for="employee_reference_id" class="form-label">เลขอ้างอิงคนงาน</label><input type="text" class="form-control" id="employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id', $employee->employee_reference_id) }}"></div>
+             <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">เลข Name List</label><input type="text" class="form-control" id="name_list_number" name="name_list_number" value="{{ old('name_list_number', optional($employee)->name_list_number ?? '') }}"></div>
+             <div class="col-md-4 mb-3"><label for="request_number" class="form-label">เลขที่คำขอ</label><input type="text" class="form-control" id="request_number" name="request_number" value="{{ old('request_number', optional($employee)->request_number ?? '') }}"></div>
+             <div class="col-md-4 mb-3"><label for="employee_id_number" class="form-label">เลขประจำตัว</label><input type="text" class="form-control" id="employee_id_number" name="employee_id_number" value="{{ old('employee_id_number', optional($employee)->employee_id_number ?? '') }}"></div>
+             <div class="col-md-4 mb-3"><label for="tax_id_number" class="form-label">เลขประจำตัวผู้เสียภาษี</label><input type="text" class="form-control" id="tax_id_number" name="tax_id_number" value="{{ old('tax_id_number', optional($employee)->tax_id_number ?? '') }}"></div>
+             <div class="col-md-4 mb-3"><label for="employer_employee_id" class="form-label">รหัสคนงาน - ของนายจ้าง</label><input type="text" class="form-control" id="employer_employee_id" name="employer_employee_id" value="{{ old('employer_employee_id', optional($employee)->employer_employee_id ?? '') }}"></div>
+             <div class="col-md-4 mb-3"><label for="employee_reference_id" class="form-label">เลขอ้างอิงคนงาน</label><input type="text" class="form-control" id="employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id', optional($employee)->employee_reference_id ?? '') }}"></div>
         </div>
 
 
@@ -228,9 +228,9 @@
                 <label for="insurance_type" class="form-label">ประเภทประกัน</label>
                 <select class="form-select" id="insurance_type" name="insurance_type">
                     <option value="">-- เลือกประเภท --</option>
-                    <option value="ประกันสังคม" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันสังคม')>ประกันสังคม</option>
-                    <option value="ประกันโรงพยาบาล" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันโรงพยาบาล')>ประกันโรงพยาบาล</option>
-                    <option value="ประกันเอกชน" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันเอกชน')>ประกันเอกชน</option>
+                    <option value="ประกันสังคม" @selected(old('insurance_type', optional($employee)->insurance_type) == 'ประกันสังคม')>ประกันสังคม</option>
+                    <option value="ประกันโรงพยาบาล" @selected(old('insurance_type', optional($employee)->insurance_type) == 'ประกันโรงพยาบาล')>ประกันโรงพยาบาล</option>
+                    <option value="ประกันเอกชน" @selected(old('insurance_type', optional($employee)->insurance_type) == 'ประกันเอกชน')>ประกันเอกชน</option>
                 </select>
             </div>
         </div>
@@ -239,11 +239,11 @@
              <div class="row">
                 <div class="col-md-4 mb-3">
                     <label for="social_security_number" class="form-label">เลขประกันสังคม</label>
-                    <input type="text" class="form-control" id="social_security_number" name="social_security_number" value="{{ old('social_security_number', $employee->social_security_number) }}">
+                    <input type="text" class="form-control" id="social_security_number" name="social_security_number" value="{{ old('social_security_number', optional($employee)->social_security_number ?? '') }}">
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="insurance_detail_social" class="form-label">สิทธิ์โรงพยาบาล</label>
-                    <input type="text" class="form-control" name="insurance_detail_social" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
+                    <input type="text" class="form-control" name="insurance_detail_social" value="{{ old('insurance_detail', optional($employee)->insurance_detail ?? '') }}">
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="insurance_document_path_social" class="form-label">แนบไฟล์เอกสารประกัน</label>
@@ -257,7 +257,7 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label for="insurance_detail_hospital" class="form-label">ชื่อโรงพยาบาล</label>
-                    <input type="text" class="form-control" name="insurance_detail_hospital" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
+                    <input type="text" class="form-control" name="insurance_detail_hospital" value="{{ old('insurance_detail', optional($employee)->insurance_detail ?? '') }}">
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="insurance_expiry_date_hospital" class="form-label">วันหมดอายุประกัน</label>
@@ -275,7 +275,7 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label for="insurance_detail_private" class="form-label">บริษัทประกัน</label>
-                    <input type="text" class="form-control" name="insurance_detail_private" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
+                    <input type="text" class="form-control" name="insurance_detail_private" value="{{ old('insurance_detail', optional($employee)->insurance_detail ?? '') }}">
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="insurance_expiry_date_private" class="form-label">วันหมดอายุประกัน</label>
@@ -296,7 +296,7 @@
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="employeeEmail" class="form-label">อีเมล</label>
-                <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', $employee->user?->email) }}">
+                <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', optional($employee->user)->email ?? '') }}">
             </div>
             <div class="col-md-6 mb-3">
                 <label for="employeePassword" class="form-label">รหัสผ่าน (กรอกเพื่อเปลี่ยน)</label>
@@ -359,7 +359,7 @@
                         <div class="small mb-1"><a href="{{ Storage::disk('private')->url($employee->{$docField}) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div>
                     @endif
                     <input type="file" class="form-control form-control-sm" id="{{ $docField }}" name="{{ $docField }}">
-                    <input type="text" class="form-control form-control-sm mt-2" name="{{ $descField }}" placeholder="คำอธิบาย..." value="{{ old($descField, $employee->{$descField}) }}">
+                    <input type="text" class="form-control form-control-sm mt-2" name="{{ $descField }}" placeholder="คำอธิบาย..." value="{{ old($descField, optional($employee)->{$descField} ?? '') }}">
                 </div>
             @endfor
         </div>

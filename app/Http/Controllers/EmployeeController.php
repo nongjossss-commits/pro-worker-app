@@ -143,6 +143,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function store(Request $request)
     {
+        // Using the same validation rules, but they will be mapped to the new $fillable fields.
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'employeeTitleTh' => 'required|string|max:255',
@@ -178,59 +179,54 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'pink_card_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'social_security_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'insurance_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_5_desc' => 'nullable|string|max:255',
-            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_6_desc' => 'nullable|string|max:255',
-            'document_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_7_desc' => 'nullable|string|max:255',
-            'document_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_8_desc' => 'nullable|string|max:255',
-            'document_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_9_desc' => 'nullable|string|max:255',
-            'document_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_10_desc' => 'nullable|string|max:255',
-            'document_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_11_desc' => 'nullable|string|max:255',
-            'document_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_12_desc' => 'nullable|string|max:255',
+            // Note: The form sends 'document_5', etc., but we will map them to 'file_5' for the DB.
         ]);
 
         $data = $validated;
 
-        if (isset($data['visa_type'])) {
-            $data['visaType'] = $data['visa_type'];
-            unset($data['visa_type']);
-        }
-
-        if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+        // STEP 2: Handle password hashing.
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
         } else {
             unset($data['password']);
         }
 
-        if (isset($data['insurance_type'])) {
-            if ($data['insurance_type'] === 'social_security') {
-                $data['insurance_company'] = null;
-            } elseif ($data['insurance_type'] === 'private') {
-                $data['hospital_name'] = null;
+        // STEP 2: Explicitly handle main file uploads.
+        if ($request->hasFile('employeePhoto')) {
+            $data['employeePhoto'] = $request->file('employeePhoto')->store('employee_photos', 'public');
+        }
+        if ($request->hasFile('passport_file')) {
+            $data['employeePassportFile'] = $request->file('passport_file')->store('employee_documents', 'private');
+        }
+        if ($request->hasFile('visa_file')) {
+            $data['employeeVisaFile'] = $request->file('visa_file')->store('employee_documents', 'private');
+        }
+        if ($request->hasFile('work_permit_file')) {
+            $data['employeeWorkPermitFile'] = $request->file('work_permit_file')->store('employee_documents', 'private');
+        }
+        if ($request->hasFile('pink_card_file')) {
+            $data['pinkCardFile'] = $request->file('pink_card_file')->store('employee_documents', 'private');
+        }
+
+        // STEP 2: Handle insurance files based on type.
+        // The form should submit 'social_security_file' or 'insurance_file' based on the selection.
+        if ($request->insurance_type == 'ประกันสังคม') { // Thai for "Social Security"
+            if ($request->hasFile('social_security_file')) {
+                $data['social_security_file'] = $request->file('social_security_file')->store('employee_documents', 'private');
+            }
+        } elseif ($request->insurance_type == 'ประกันเอกชน') { // Thai for "Private Insurance"
+            if ($request->hasFile('insurance_file')) {
+                $data['insurance_file'] = $request->file('insurance_file')->store('employee_documents', 'private');
             }
         }
 
-        $fileUploads = [
-            'employeePhoto' => 'employeePhoto',
-            'passport_file' => 'employeePassport',
-            'visa_file' => 'employeeVisa',
-            'work_permit_file' => 'employeeWorkPermit',
-            'pink_card_file' => 'pinkCardNo',
-            'social_security_file' => 'social_security_file',
-            'insurance_file' => 'insurance_file',
-        ];
-
-        foreach($fileUploads as $requestField => $dbColumn) {
-            if ($request->hasFile($requestField)) {
-                $path = $request->file($requestField)->store('employee_documents', 'private');
-                $data[$dbColumn] = $path;
-            }
-        }
-
+        // Handle other document loops, mapping request field 'document_i' to DB field 'file_i'
         for ($i = 5; $i <= 12; $i++) {
-            $fieldName = "document_{$i}";
-            if ($request->hasFile($fieldName)) {
-                $path = $request->file($fieldName)->store('employee_documents', 'private');
-                $data[$fieldName] = $path;
+            $requestFieldName = "document_{$i}";
+            if ($request->hasFile($requestFieldName)) {
+                $path = $request->file($requestFieldName)->store('employee_documents', 'private');
+                $dbFieldName = "file_{$i}";
+                $data[$dbFieldName] = $path;
             }
         }
 
@@ -287,65 +283,56 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'pink_card_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'social_security_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'insurance_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_5_desc' => 'nullable|string|max:255',
-            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_6_desc' => 'nullable|string|max:255',
-            'document_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_7_desc' => 'nullable|string|max:255',
-            'document_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_8_desc' => 'nullable|string|max:255',
-            'document_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_9_desc' => 'nullable|string|max:255',
-            'document_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_10_desc' => 'nullable|string|max:255',
-            'document_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_11_desc' => 'nullable|string|max:255',
-            'document_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_12_desc' => 'nullable|string|max:255',
         ]);
 
         $data = $validated;
 
-        if (isset($data['visa_type'])) {
-            $data['visaType'] = $data['visa_type'];
-            unset($data['visa_type']);
-        }
-
-        if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+        // STEP 2: Handle password hashing.
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
         } else {
             unset($data['password']);
         }
 
-        if (isset($data['insurance_type'])) {
-            if ($data['insurance_type'] === 'social_security') {
-                $data['insurance_company'] = null;
-            } elseif ($data['insurance_type'] === 'private') {
-                $data['hospital_name'] = null;
-            }
-        }
-
-        $fileUploads = [
-            'employeePhoto' => 'employeePhoto',
-            'passport_file' => 'employeePassport',
-            'visa_file' => 'employeeVisa',
-            'work_permit_file' => 'employeeWorkPermit',
-            'pink_card_file' => 'pinkCardNo',
-            'social_security_file' => 'social_security_file',
-            'insurance_file' => 'insurance_file',
-        ];
-
-        foreach($fileUploads as $requestField => $dbColumn) {
-            if ($request->hasFile($requestField)) {
+        // Helper function to update a file
+        $updateFile = function($request, $employee, $requestFieldName, $dbColumn) use (&$data) {
+            if ($request->hasFile($requestFieldName)) {
+                // Delete old file if it exists
                 if ($employee->{$dbColumn} && Storage::disk('private')->exists($employee->{$dbColumn})) {
                     Storage::disk('private')->delete($employee->{$dbColumn});
                 }
-                $path = $request->file($requestField)->store('employee_documents', 'private');
-                $data[$dbColumn] = $path;
+                 // Store the new file
+                $storageDisk = Str::contains($dbColumn, 'Photo') ? 'public' : 'private';
+                $folder = Str::contains($dbColumn, 'Photo') ? 'employee_photos' : 'employee_documents';
+                $data[$dbColumn] = $request->file($requestFieldName)->store($folder, $storageDisk);
             }
+        };
+
+        // STEP 2: Explicitly handle main file uploads.
+        $updateFile($request, $employee, 'employeePhoto', 'employeePhoto');
+        $updateFile($request, $employee, 'passport_file', 'employeePassportFile');
+        $updateFile($request, $employee, 'visa_file', 'employeeVisaFile');
+        $updateFile($request, $employee, 'work_permit_file', 'employeeWorkPermitFile');
+        $updateFile($request, $employee, 'pink_card_file', 'pinkCardFile');
+
+
+        // STEP 2: Handle insurance files based on type.
+        if ($request->insurance_type == 'ประกันสังคม') {
+            $updateFile($request, $employee, 'social_security_file', 'social_security_file');
+        } elseif ($request->insurance_type == 'ประกันเอกชน') {
+            $updateFile($request, $employee, 'insurance_file', 'insurance_file');
         }
 
+        // Handle other documents loop, mapping 'document_i' to 'file_i'
         for ($i = 5; $i <= 12; $i++) {
-            $fieldName = "document_{$i}";
-            if ($request->hasFile($fieldName)) {
-                 if ($employee->{$fieldName} && Storage::disk('private')->exists($employee->{$fieldName})) {
-                    Storage::disk('private')->delete($employee->{$fieldName});
+            $requestFieldName = "document_{$i}";
+            $dbFieldName = "file_{$i}";
+             if ($request->hasFile($requestFieldName)) {
+                // Delete old file if it exists
+                if ($employee->{$dbFieldName} && Storage::disk('private')->exists($employee->{$dbFieldName})) {
+                    Storage::disk('private')->delete($employee->{$dbFieldName});
                 }
-                $path = $request->file($fieldName)->store('employee_documents', 'private');
-                $data[$fieldName] = $path;
+                $data[$dbFieldName] = $request->file($requestFieldName)->store('employee_documents', 'private');
             }
         }
 
