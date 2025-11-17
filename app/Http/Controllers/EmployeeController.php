@@ -160,15 +160,15 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
             'passport_issue_date' => 'nullable|date',
-            'passportExpiryDate' => 'nullable|date',
-            'pinkCardNo' => 'nullable|string|max:255',
-            'visaType' => 'nullable|string|max:255',
-            'visaExpiryDate' => 'nullable|date',
+            'passport_expiry_date' => 'nullable|date',
+            'pink_card_no' => 'nullable|string|max:255',
+            'visa_type' => 'nullable|string|max:255',
+            'visa_expiry_date' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
             'job_description' => 'nullable|string',
             'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
-            'workPermitExpiryDate' => 'nullable|date',
+            'work_permit_expiry_date' => 'nullable|date',
             'workPermitType' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
             'workPermitMOUGroupOther' => 'nullable|string|max:255',
@@ -205,14 +205,42 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
-        // --- V6: Step 2: Handle email and password mapping & hashing ---
-        $validated['email'] = $validated['employeeEmail'] ?? null;
-        unset($validated['employeeEmail']);
+        // --- Manual Mapping for Legacy DB Schema (CamelCase) ---
+        $data = $validated;
 
-        if (!empty($validated['employeePassword'])) {
-            $validated['password'] = Hash::make($validated['employeePassword']);
+        if (isset($data['passport_issue_date'])) {
+            $data['passportIssueDate'] = $data['passport_issue_date'];
+            unset($data['passport_issue_date']);
         }
-        unset($validated['employeePassword']);
+        if (isset($data['passport_expiry_date'])) {
+            $data['passportExpiryDate'] = $data['passport_expiry_date'];
+            unset($data['passport_expiry_date']);
+        }
+        if (isset($data['visa_type'])) {
+            $data['visaType'] = $data['visa_type'];
+            unset($data['visa_type']);
+        }
+        if (isset($data['visa_expiry_date'])) {
+            $data['visaExpiryDate'] = $data['visa_expiry_date'];
+            unset($data['visa_expiry_date']);
+        }
+        if (isset($data['work_permit_expiry_date'])) {
+            $data['workPermitExpiryDate'] = $data['work_permit_expiry_date'];
+            unset($data['work_permit_expiry_date']);
+        }
+        if (isset($data['pink_card_no'])) {
+            $data['pinkCardNo'] = $data['pink_card_no'];
+            unset($data['pink_card_no']);
+        }
+
+        // --- V6: Step 2: Handle email and password mapping & hashing ---
+        $data['email'] = $data['employeeEmail'] ?? null;
+        unset($data['employeeEmail']);
+
+        if (!empty($data['employeePassword'])) {
+            $data['password'] = Hash::make($data['employeePassword']);
+        }
+        unset($data['employeePassword']);
 
 
         // --- V6: Step 3: Unified File Upload Loop ---
@@ -227,13 +255,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
                 $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs("employee_files/{$validated['employer_id']}", $filename, 'public');
-                $validated[$field] = $path;
+                $path = $file->storeAs("employee_files/{$data['employer_id']}", $filename, 'public');
+                $data[$field] = $path;
             }
         }
 
         // --- V6: Step 4: Create Employee ---
-        Employee::create($validated);
+        Employee::create($data);
 
         // --- V6: Step 5: Redirect ---
         $redirectRoute = $request->has('source_employer_id')
@@ -256,8 +284,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function update(Request $request, Employee $employee)
     {
-        // Step A: Validate generic inputs, including all possible insurance fields
-        $request->validate([
+        // Step A: Validate generic inputs, using snake_case for form fields
+        $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'employeeTitleTh' => 'required|string|max:255',
             'employeeNameTh' => 'required|string|max:255',
@@ -274,15 +302,15 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
             'passport_issue_date' => 'nullable|date',
-            'passportExpiryDate' => 'nullable|date',
-            'pinkCardNo' => 'nullable|string|max:255',
+            'passport_expiry_date' => 'nullable|date',
+            'pink_card_no' => 'nullable|string|max:255',
             'visa_type' => 'nullable|string|max:255',
-            'visaExpiryDate' => 'nullable|date',
+            'visa_expiry_date' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
             'job_description' => 'nullable|string',
             'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
-            'workPermitExpiryDate' => 'nullable|date',
+            'work_permit_expiry_date' => 'nullable|date',
             'workPermitType' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
             'workPermitMOUGroupOther' => 'nullable|string|max:255',
@@ -324,44 +352,61 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
-        // Start with a clean slate of request data, excluding non-model fields
-        $data = $request->except([
-            '_token', '_method', 'employeePassword', 'employeeEmail',
-            'insurance_detail_social', 'insurance_detail_hospital', 'insurance_detail_private',
-            'insurance_expiry_date_hospital', 'insurance_expiry_date_private',
-            'insurance_document_path_social', 'insurance_document_path_hospital', 'insurance_document_path_private',
-            'employeePhoto', 'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
-            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8', 'employee_doc_9',
-            'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
-        ]);
+        $data = $validated;
+
+        // --- Manual Mapping from snake_case to camelCase for DB schema ---
+        if (isset($data['passport_issue_date'])) {
+            $data['passportIssueDate'] = $data['passport_issue_date'];
+            unset($data['passport_issue_date']);
+        }
+        if (isset($data['passport_expiry_date'])) {
+            $data['passportExpiryDate'] = $data['passport_expiry_date'];
+            unset($data['passport_expiry_date']);
+        }
+        if (isset($data['visa_type'])) {
+            $data['visaType'] = $data['visa_type'];
+            unset($data['visa_type']);
+        }
+        if (isset($data['visa_expiry_date'])) {
+            $data['visaExpiryDate'] = $data['visa_expiry_date'];
+            unset($data['visa_expiry_date']);
+        }
+        if (isset($data['work_permit_expiry_date'])) {
+            $data['workPermitExpiryDate'] = $data['work_permit_expiry_date'];
+            unset($data['work_permit_expiry_date']);
+        }
+        if (isset($data['pink_card_no'])) {
+            $data['pinkCardNo'] = $data['pink_card_no'];
+            unset($data['pink_card_no']);
+        }
 
         // Handle login credentials
-        $data['email'] = $request->input('employeeEmail');
+        $data['email'] = $data['employeeEmail'] ?? null;
         if ($request->filled('employeePassword')) {
             $data['password'] = Hash::make($request->input('employeePassword'));
         }
+        unset($data['employeeEmail'], $data['employeePassword']);
 
         // Step C: HANDLE INSURANCE MAPPING
         $insurance_type = $request->input('insurance_type');
         $insuranceFile = null;
 
         if ($insurance_type == 'ประกันสังคม') {
-            $data['insurance_detail'] = $request->input('insurance_detail_social');
-            $data['social_security_number'] = $request->input('social_security_number');
+            $data['insurance_detail'] = $data['insurance_detail_social'] ?? null;
             $data['insurance_expiry_date'] = null;
             if ($request->hasFile('insurance_document_path_social')) {
                 $insuranceFile = $request->file('insurance_document_path_social');
             }
         } elseif ($insurance_type == 'ประกันโรงพยาบาล') {
-            $data['insurance_detail'] = $request->input('insurance_detail_hospital');
-            $data['insurance_expiry_date'] = $request->input('insurance_expiry_date_hospital');
+            $data['insurance_detail'] = $data['insurance_detail_hospital'] ?? null;
+            $data['insurance_expiry_date'] = $data['insurance_expiry_date_hospital'] ?? null;
             $data['social_security_number'] = null;
             if ($request->hasFile('insurance_document_path_hospital')) {
                 $insuranceFile = $request->file('insurance_document_path_hospital');
             }
         } elseif ($insurance_type == 'ประกันเอกชน') {
-            $data['insurance_detail'] = $request->input('insurance_detail_private');
-            $data['insurance_expiry_date'] = $request->input('insurance_expiry_date_private');
+            $data['insurance_detail'] = $data['insurance_detail_private'] ?? null;
+            $data['insurance_expiry_date'] = $data['insurance_expiry_date_private'] ?? null;
             $data['social_security_number'] = null;
             if ($request->hasFile('insurance_document_path_private')) {
                 $insuranceFile = $request->file('insurance_document_path_private');
@@ -371,6 +416,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $data['insurance_expiry_date'] = null;
             $data['social_security_number'] = null;
         }
+
+        // Clean up insurance-specific fields from data array
+        unset(
+            $data['insurance_detail_social'], $data['insurance_detail_hospital'], $data['insurance_detail_private'],
+            $data['insurance_expiry_date_hospital'], $data['insurance_expiry_date_private']
+        );
 
         // Handle insurance file upload
         if ($insuranceFile) {
@@ -382,30 +433,26 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $data['insurance_document_path'] = $path;
         }
 
-        // Handle Photo upload
-        if ($request->hasFile('employeePhoto')) {
-            if ($employee->employeePhoto && Storage::disk('public')->exists($employee->employeePhoto)) {
-                Storage::disk('public')->delete($employee->employeePhoto);
-            }
-            $file = $request->file('employeePhoto');
-            $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
-            $data['employeePhoto'] = $path;
-        }
-
-        // Step D: HANDLE FILES 1-4 MAPPING
-        $specialDocsMap = [
+        // Handle other file uploads
+        $fileFieldsToProcess = [
+            'employeePhoto' => 'employeePhoto',
             'employee_doc_1' => 'passport_file_path',
             'employee_doc_2' => 'visa_file_path',
             'employee_doc_3' => 'work_permit_file_path',
             'employee_doc_4' => 'pink_card_file_path',
+            'employee_doc_5' => 'employee_doc_5', 'employee_doc_6' => 'employee_doc_6',
+            'employee_doc_7' => 'employee_doc_7', 'employee_doc_8' => 'employee_doc_8',
+            'employee_doc_9' => 'employee_doc_9', 'employee_doc_10' => 'employee_doc_10',
+            'employee_doc_11' => 'employee_doc_11', 'employee_doc_12' => 'employee_doc_12',
         ];
 
-        foreach ($specialDocsMap as $formField => $dbColumn) {
+        foreach ($fileFieldsToProcess as $formField => $dbColumn) {
             if ($request->hasFile($formField)) {
+                // Delete old file if it exists
                 if ($employee->{$dbColumn} && Storage::disk('public')->exists($employee->{$dbColumn})) {
                     Storage::disk('public')->delete($employee->{$dbColumn});
                 }
+                // Store new file
                 $file = $request->file($formField);
                 $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
@@ -413,78 +460,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        // Step E: Save remaining files (5-12)
-        for ($i = 5; $i <= 12; $i++) {
-            $field = 'employee_doc_' . $i;
-            if ($request->hasFile($field)) {
-                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
-                    Storage::disk('public')->delete($employee->{$field});
-                }
-                $file = $request->file($field);
-                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
-                $data[$field] = $path;
-            }
-        }
-
-        // --- V8: Manual Mapping from snake_case to camelCase ---
-        if ($request->has('passport_issue_date')) {
-            $data['passportIssueDate'] = $request->input('passport_issue_date');
-            unset($data['passport_issue_date']);
-        }
-        if ($request->has('passport_expiry_date')) {
-            $data['passportExpiryDate'] = $request->input('passport_expiry_date');
-            unset($data['passport_expiry_date']);
-        }
-        if ($request->has('visa_type')) {
-            $data['visaType'] = $request->input('visa_type');
-            unset($data['visa_type']);
-        }
-        if ($request->has('visa_expiry_date')) {
-            $data['visaExpiryDate'] = $request->input('visa_expiry_date');
-            unset($data['visa_expiry_date']);
-        }
-        if ($request->has('work_permit_expiry_date')) {
-            $data['workPermitExpiryDate'] = $request->input('work_permit_expiry_date');
-            unset($data['work_permit_expiry_date']);
-        }
-        if ($request->has('pink_card_no')) {
-            $data['pinkCardNo'] = $request->input('pink_card_no');
-            unset($data['pink_card_no']);
-        }
-
-        // --- V8: Map file uploads to legacy document columns ---
-        if ($request->hasFile('passport_file')) {
-            if ($employee->document_1 && Storage::disk('private')->exists($employee->document_1)) {
-                Storage::disk('private')->delete($employee->document_1);
-            }
-            $path = $request->file('passport_file')->store('employee_documents', 'private');
-            $data['document_1'] = $path;
-        }
-        if ($request->hasFile('visa_file')) {
-            if ($employee->document_2 && Storage::disk('private')->exists($employee->document_2)) {
-                Storage::disk('private')->delete($employee->document_2);
-            }
-            $path = $request->file('visa_file')->store('employee_documents', 'private');
-            $data['document_2'] = $path;
-        }
-        if ($request->hasFile('work_permit_file')) {
-            if ($employee->document_3 && Storage::disk('private')->exists($employee->document_3)) {
-                Storage::disk('private')->delete($employee->document_3);
-            }
-            $path = $request->file('work_permit_file')->store('employee_documents', 'private');
-            $data['document_3'] = $path;
-        }
-        if ($request->hasFile('pink_card_file')) {
-            if ($employee->document_4 && Storage::disk('private')->exists($employee->document_4)) {
-                Storage::disk('private')->delete($employee->document_4);
-            }
-            $path = $request->file('pink_card_file')->store('employee_documents', 'private');
-            $data['document_4'] = $path;
-        }
-        // --- END V8 ---
-
-        // Step F: Update $employee
+        // Update the employee record
         $employee->update($data);
 
         // Redirect
