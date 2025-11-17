@@ -37,6 +37,12 @@ class Employee extends Model
 
     // The $fillable array is correct as it matches the camelCase schema.
     protected $fillable = [
+        'passportIssueDate',
+        'passportExpiryDate',
+        'visaType',
+        'visaExpiryDate',
+        'workPermitExpiryDate',
+        'pinkCardNo',
         'companyWorkerId',
         'designatedHospital',
         'document_1',

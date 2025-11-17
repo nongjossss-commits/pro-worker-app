@@ -427,6 +427,63 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
+        // --- V8: Manual Mapping from snake_case to camelCase ---
+        if ($request->has('passport_issue_date')) {
+            $data['passportIssueDate'] = $request->input('passport_issue_date');
+            unset($data['passport_issue_date']);
+        }
+        if ($request->has('passport_expiry_date')) {
+            $data['passportExpiryDate'] = $request->input('passport_expiry_date');
+            unset($data['passport_expiry_date']);
+        }
+        if ($request->has('visa_type')) {
+            $data['visaType'] = $request->input('visa_type');
+            unset($data['visa_type']);
+        }
+        if ($request->has('visa_expiry_date')) {
+            $data['visaExpiryDate'] = $request->input('visa_expiry_date');
+            unset($data['visa_expiry_date']);
+        }
+        if ($request->has('work_permit_expiry_date')) {
+            $data['workPermitExpiryDate'] = $request->input('work_permit_expiry_date');
+            unset($data['work_permit_expiry_date']);
+        }
+        if ($request->has('pink_card_no')) {
+            $data['pinkCardNo'] = $request->input('pink_card_no');
+            unset($data['pink_card_no']);
+        }
+
+        // --- V8: Map file uploads to legacy document columns ---
+        if ($request->hasFile('passport_file')) {
+            if ($employee->document_1 && Storage::disk('private')->exists($employee->document_1)) {
+                Storage::disk('private')->delete($employee->document_1);
+            }
+            $path = $request->file('passport_file')->store('employee_documents', 'private');
+            $data['document_1'] = $path;
+        }
+        if ($request->hasFile('visa_file')) {
+            if ($employee->document_2 && Storage::disk('private')->exists($employee->document_2)) {
+                Storage::disk('private')->delete($employee->document_2);
+            }
+            $path = $request->file('visa_file')->store('employee_documents', 'private');
+            $data['document_2'] = $path;
+        }
+        if ($request->hasFile('work_permit_file')) {
+            if ($employee->document_3 && Storage::disk('private')->exists($employee->document_3)) {
+                Storage::disk('private')->delete($employee->document_3);
+            }
+            $path = $request->file('work_permit_file')->store('employee_documents', 'private');
+            $data['document_3'] = $path;
+        }
+        if ($request->hasFile('pink_card_file')) {
+            if ($employee->document_4 && Storage::disk('private')->exists($employee->document_4)) {
+                Storage::disk('private')->delete($employee->document_4);
+            }
+            $path = $request->file('pink_card_file')->store('employee_documents', 'private');
+            $data['document_4'] = $path;
+        }
+        // --- END V8 ---
+
         // Step F: Update $employee
         $employee->update($data);
 
