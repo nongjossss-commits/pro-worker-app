@@ -143,7 +143,6 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function store(Request $request)
     {
-        // --- V6: Step 1: Validate ALL text/date data (new and old) ---
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'employeeTitleTh' => 'required|string|max:255',
@@ -152,95 +151,92 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeNameEn' => 'nullable|string|max:255',
             'father_name' => 'nullable|string|max:255',
             'mother_name' => 'nullable|string|max:255',
-            'employeeGender' => 'nullable|string|max:255',
             'employeeDob' => 'nullable|date',
-            'employeeAge' => 'nullable|integer',
             'employeePhone' => 'nullable|string|max:255',
             'employeeNationality' => 'nullable|string|max:255',
-            'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
             'passport_issue_date' => 'nullable|date',
             'passportExpiryDate' => 'nullable|date',
             'pinkCardNo' => 'nullable|string|max:255',
-            'visaType' => 'nullable|string|max:255',
+            'visa_type' => 'nullable|string|max:255',
             'visaExpiryDate' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
-            'job_description' => 'nullable|string',
             'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
             'workPermitExpiryDate' => 'nullable|date',
-            'workPermitType' => 'nullable|string|max:255',
-            'workPermitMOUGroup' => 'nullable|string|max:255',
-            'workPermitMOUGroupOther' => 'nullable|string|max:255',
             'ninetyDayReportDate' => 'nullable|date',
-            'name_list_number' => 'nullable|string|max:255',
-            'request_number' => 'nullable|string|max:255',
-            'employee_id_number' => 'nullable|string|max:255',
-            'tax_id_number' => 'nullable|string|max:255',
-            'employer_employee_id' => 'nullable|string|max:255',
-            'employee_reference_id' => 'nullable|string|max:255',
             'insurance_type' => 'nullable|string|max:255',
-            'insurance_detail' => 'nullable|string',
+            'insurance_company' => 'nullable|string|max:255',
+            'hospital_name' => 'nullable|string|max:255',
             'insurance_expiry_date' => 'nullable|date',
-            'social_security_number' => 'nullable|string|max:255',
-            'employeeEmail' => 'nullable|email|max:255|unique:employees,email',
-            'employeePassword' => 'nullable|string|min:8',
-            'other_doc_1_desc' => 'nullable|string|max:255',
-            'other_doc_2_desc' => 'nullable|string|max:255',
-            'other_doc_3_desc' => 'nullable|string|max:255',
-            'other_doc_4_desc' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255|unique:employees,email',
+            'password' => 'nullable|string|min:8',
             'employeePhoto' => 'nullable|image|max:2048',
-            'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'passport_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'visa_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'work_permit_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'pink_card_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'social_security_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'insurance_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_5_desc' => 'nullable|string|max:255',
+            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_6_desc' => 'nullable|string|max:255',
+            'document_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_7_desc' => 'nullable|string|max:255',
+            'document_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_8_desc' => 'nullable|string|max:255',
+            'document_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_9_desc' => 'nullable|string|max:255',
+            'document_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_10_desc' => 'nullable|string|max:255',
+            'document_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_11_desc' => 'nullable|string|max:255',
+            'document_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_12_desc' => 'nullable|string|max:255',
         ]);
 
-        // --- V6: Step 2: Handle email and password mapping & hashing ---
-        $validated['email'] = $validated['employeeEmail'] ?? null;
-        unset($validated['employeeEmail']);
+        $data = $validated;
 
-        if (!empty($validated['employeePassword'])) {
-            $validated['password'] = Hash::make($validated['employeePassword']);
+        if (isset($data['visa_type'])) {
+            $data['visaType'] = $data['visa_type'];
+            unset($data['visa_type']);
         }
-        unset($validated['employeePassword']);
 
+        if (!empty($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
+        }
 
-        // --- V6: Step 3: Unified File Upload Loop ---
-        $fileFields = [
-            'employeePhoto', 'insurance_document_path',
-            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
-            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
-            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
-        ];
-
-        foreach ($fileFields as $field) {
-            if ($request->hasFile($field)) {
-                $file = $request->file($field);
-                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs("employee_files/{$validated['employer_id']}", $filename, 'public');
-                $validated[$field] = $path;
+        if (isset($data['insurance_type'])) {
+            if ($data['insurance_type'] === 'social_security') {
+                $data['insurance_company'] = null;
+            } elseif ($data['insurance_type'] === 'private') {
+                $data['hospital_name'] = null;
             }
         }
 
-        // --- V6: Step 4: Create Employee ---
-        Employee::create($validated);
+        $fileUploads = [
+            'employeePhoto' => 'employeePhoto',
+            'passport_file' => 'employeePassport',
+            'visa_file' => 'employeeVisa',
+            'work_permit_file' => 'employeeWorkPermit',
+            'pink_card_file' => 'pinkCardNo',
+            'social_security_file' => 'social_security_file',
+            'insurance_file' => 'insurance_file',
+        ];
 
-        // --- V6: Step 5: Redirect ---
-        $redirectRoute = $request->has('source_employer_id')
-            ? route('employers.edit', $request->source_employer_id) . '#employees'
-            : route('employees.index');
+        foreach($fileUploads as $requestField => $dbColumn) {
+            if ($request->hasFile($requestField)) {
+                $path = $request->file($requestField)->store('employee_documents', 'private');
+                $data[$dbColumn] = $path;
+            }
+        }
 
-        return redirect($redirectRoute)->with('success', 'Employee created successfully.');
+        for ($i = 5; $i <= 12; $i++) {
+            $fieldName = "document_{$i}";
+            if ($request->hasFile($fieldName)) {
+                $path = $request->file($fieldName)->store('employee_documents', 'private');
+                $data[$fieldName] = $path;
+            }
+        }
+
+        Employee::create($data);
+
+        return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
     }
 
     public function show(Employee $employee)
@@ -256,7 +252,6 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function update(Request $request, Employee $employee)
     {
-        // --- V6: Step 1: Validate ALL text/date data (new and old) ---
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'employeeTitleTh' => 'required|string|max:255',
@@ -265,153 +260,98 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeNameEn' => 'nullable|string|max:255',
             'father_name' => 'nullable|string|max:255',
             'mother_name' => 'nullable|string|max:255',
-            'employeeGender' => 'nullable|string|max:255',
             'employeeDob' => 'nullable|date',
-            'employeeAge' => 'nullable|integer',
             'employeePhone' => 'nullable|string|max:255',
             'employeeNationality' => 'nullable|string|max:255',
-            'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
             'passport_issue_date' => 'nullable|date',
             'passportExpiryDate' => 'nullable|date',
             'pinkCardNo' => 'nullable|string|max:255',
-            'visaType' => 'nullable|string|max:255',
+            'visa_type' => 'nullable|string|max:255',
             'visaExpiryDate' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
-            'job_description' => 'nullable|string',
             'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
             'workPermitExpiryDate' => 'nullable|date',
-            'workPermitType' => 'nullable|string|max:255',
-            'workPermitMOUGroup' => 'nullable|string|max:255',
-            'workPermitMOUGroupOther' => 'nullable|string|max:255',
             'ninetyDayReportDate' => 'nullable|date',
-            'name_list_number' => 'nullable|string|max:255',
-            'request_number' => 'nullable|string|max:255',
-            'employee_id_number' => 'nullable|string|max:255',
-            'tax_id_number' => 'nullable|string|max:255',
-            'employer_employee_id' => 'nullable|string|max:255',
-            'employee_reference_id' => 'nullable|string|max:255',
             'insurance_type' => 'nullable|string|max:255',
-            'insurance_detail' => 'nullable|string',
+            'insurance_company' => 'nullable|string|max:255',
+            'hospital_name' => 'nullable|string|max:255',
             'insurance_expiry_date' => 'nullable|date',
-            'social_security_number' => 'nullable|string|max:255',
-            'employeeEmail' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
-            'employeePassword' => 'nullable|string|min:8',
-            'other_doc_1_desc' => 'nullable|string|max:255',
-            'other_doc_2_desc' => 'nullable|string|max:255',
-            'other_doc_3_desc' => 'nullable|string|max:255',
-            'other_doc_4_desc' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
+            'password' => 'nullable|string|min:8',
             'employeePhoto' => 'nullable|image|max:2048',
-            'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'passport_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'visa_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'work_permit_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'pink_card_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'insurance_attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'social_security_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'insurance_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'document_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_5_desc' => 'nullable|string|max:255',
+            'document_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_6_desc' => 'nullable|string|max:255',
+            'document_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_7_desc' => 'nullable|string|max:255',
+            'document_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_8_desc' => 'nullable|string|max:255',
+            'document_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_9_desc' => 'nullable|string|max:255',
+            'document_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_10_desc' => 'nullable|string|max:255',
+            'document_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_11_desc' => 'nullable|string|max:255',
+            'document_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png', 'document_12_desc' => 'nullable|string|max:255',
         ]);
 
-        // --- V6: Step 2: Handle email and password mapping & hashing ---
         $data = $validated;
-        $data['email'] = $validated['employeeEmail'] ?? null;
-        unset($data['employeeEmail']);
 
-        if (!empty($request->input('employeePassword'))) {
-            $data['password'] = Hash::make($request->input('employeePassword'));
+        if (isset($data['visa_type'])) {
+            $data['visaType'] = $data['visa_type'];
+            unset($data['visa_type']);
+        }
+
+        if (!empty($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);
         }
-        unset($data['employeePassword']);
 
-        if ($request->hasFile('passport_file')) {
-            if ($employee->passport_file_path) {
-                Storage::disk('private')->delete($employee->passport_file_path);
+        if (isset($data['insurance_type'])) {
+            if ($data['insurance_type'] === 'social_security') {
+                $data['insurance_company'] = null;
+            } elseif ($data['insurance_type'] === 'private') {
+                $data['hospital_name'] = null;
             }
-            $path = $request->file('passport_file')->store('employee_documents', 'private');
-            $data['passport_file_path'] = $path;
         }
-        if ($request->hasFile('visa_file')) {
-            if ($employee->visa_file_path) {
-                Storage::disk('private')->delete($employee->visa_file_path);
-            }
-            $path = $request->file('visa_file')->store('employee_documents', 'private');
-            $data['visa_file_path'] = $path;
-        }
-        if ($request->hasFile('work_permit_file')) {
-            if ($employee->work_permit_file_path) {
-                Storage::disk('private')->delete($employee->work_permit_file_path);
-            }
-            $path = $request->file('work_permit_file')->store('employee_documents', 'private');
-            $data['work_permit_file_path'] = $path;
-        }
-        if ($request->hasFile('pink_card_file')) {
-            if ($employee->pink_card_file_path) {
-                Storage::disk('private')->delete($employee->pink_card_file_path);
-            }
-            $path = $request->file('pink_card_file')->store('employee_documents', 'private');
-            $data['pink_card_file_path'] = $path;
-        }
-        if ($request->hasFile('insurance_attachment')) {
-            if ($employee->insurance_attachment_path) {
-                Storage::disk('private')->delete($employee->insurance_attachment_path);
-            }
-            $path = $request->file('insurance_attachment')->store('employee_documents', 'private');
-            $data['insurance_attachment_path'] = $path;
-        }
-        $validated = $data;
 
-        // --- V-6: Step 3: Define ALL 18 File Fields ---
-        $fileFields = [
-            'employeePhoto', 'insurance_document_path',
-            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
-            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
-            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+        $fileUploads = [
+            'employeePhoto' => 'employeePhoto',
+            'passport_file' => 'employeePassport',
+            'visa_file' => 'employeeVisa',
+            'work_permit_file' => 'employeeWorkPermit',
+            'pink_card_file' => 'pinkCardNo',
+            'social_security_file' => 'social_security_file',
+            'insurance_file' => 'insurance_file',
         ];
 
-        // --- V-6: Step 4: Unified File Deletion Loop (FIX) ---
-        foreach ($fileFields as $field) {
-            if ($request->has('remove_' . $field)) {
-                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
-                    Storage::disk('public')->delete($employee->{$field});
+        foreach($fileUploads as $requestField => $dbColumn) {
+            if ($request->hasFile($requestField)) {
+                if ($employee->{$dbColumn} && Storage::disk('private')->exists($employee->{$dbColumn})) {
+                    Storage::disk('private')->delete($employee->{$dbColumn});
                 }
-                $validated[$field] = null;
+                $path = $request->file($requestField)->store('employee_documents', 'private');
+                $data[$dbColumn] = $path;
             }
         }
 
-        // --- V-6: Step 5: Unified File Upload/Update Loop ---
-        foreach ($fileFields as $field) {
-            if ($request->hasFile($field)) {
-                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
-                    Storage::disk('public')->delete($employee->{$field});
+        for ($i = 5; $i <= 12; $i++) {
+            $fieldName = "document_{$i}";
+            if ($request->hasFile($fieldName)) {
+                 if ($employee->{$fieldName} && Storage::disk('private')->exists($employee->{$fieldName})) {
+                    Storage::disk('private')->delete($employee->{$fieldName});
                 }
-                $file = $request->file($field);
-                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
-                $validated[$field] = $path;
+                $path = $request->file($fieldName)->store('employee_documents', 'private');
+                $data[$fieldName] = $path;
             }
         }
 
-        // --- V6: Step 6: Update Employee ---
-        $employee->update($validated);
+        $employee->update($data);
 
-        // --- V6: Step 7: Redirect ---
-        $redirectRoute = $request->has('source_employer_id')
-            ? route('employers.edit', $request->source_employer_id) . '#employee-card-' . $employee->id
-            : route('employees.index');
-
-        return redirect($redirectRoute)->with('success', 'Employee updated successfully.');
+        return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
     }
 
     public function locate(Employee $employee)

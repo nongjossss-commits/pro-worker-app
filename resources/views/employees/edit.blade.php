@@ -307,33 +307,61 @@
         {{-- Category 7: File Attachments --}}
         <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
         <hr class="mb-4">
-        @php
-            $docSlots = [
-                1 => 'พาสปอร์ต', 2 => 'วีซ่า', 3 => 'ใบเสร็จ Work Permit', 4 => 'บัตรชมพู',
-                5 => 'ทร. 38', 6 => 'รายงานตัว 90 วัน', 7 => 'ใบแจ้งที่พักอาศัย', 8 => 'เอกสารบ้านเกิด',
-                9 => 'เอกสารอื่นๆ 1', 10 => 'เอกสารอื่นๆ 2', 11 => 'เอกสารอื่นๆ 3', 12 => 'เอกสารอื่นๆ 4'
-            ];
-            $descSlots = [9, 10, 11, 12];
-        @endphp
         <div class="row">
-            @foreach($docSlots as $i => $label)
+            {{-- Document 1: Passport --}}
+            <div class="col-md-4 mb-3">
+                <label for="passport_file" class="form-label fw-bold">1. พาสปอร์ต</label>
+                @if($employee->employeePassport)
+                    <div class="small mb-1"><a href="{{ Storage::disk('private')->url($employee->employeePassport) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div>
+                @endif
+                <input type="file" class="form-control form-control-sm" id="passport_file" name="passport_file">
+            </div>
+
+            {{-- Document 2: Visa --}}
+            <div class="col-md-4 mb-3">
+                <label for="visa_file" class="form-label fw-bold">2. วีซ่า</label>
+                 @if($employee->employeeVisa)
+                    <div class="small mb-1"><a href="{{ Storage::disk('private')->url($employee->employeeVisa) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div>
+                @endif
+                <input type="file" class="form-control form-control-sm" id="visa_file" name="visa_file">
+            </div>
+
+            {{-- Document 3: Work Permit --}}
+            <div class="col-md-4 mb-3">
+                <label for="work_permit_file" class="form-label fw-bold">3. ใบอนุญาตทำงาน</label>
+                @if($employee->employeeWorkPermit)
+                    <div class="small mb-1"><a href="{{ Storage::disk('private')->url($employee->employeeWorkPermit) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div>
+                @endif
+                <input type="file" class="form-control form-control-sm" id="work_permit_file" name="work_permit_file">
+            </div>
+
+            {{-- Document 4: Pink Card --}}
+            <div class="col-md-4 mb-3">
+                <label for="pink_card_file" class="form-label fw-bold">4. บัตรชมพู</label>
+                 @if($employee->pinkCardNo)
+                    <div class="small mb-1"><a href="{{ Storage::disk('private')->url($employee->pinkCardNo) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div>
+                @endif
+                <input type="file" class="form-control form-control-sm" id="pink_card_file" name="pink_card_file">
+            </div>
+        </div>
+
+        <h5 class="mt-4"><i class="bi bi-files"></i> 8. เอกสารอื่นๆ (Other Documents)</h5>
+        <hr class="mb-4">
+        <div class="row">
+            @for ($i = 5; $i <= 12; $i++)
                 @php
-                    $docField = 'employee_doc_' . $i;
-                    $descField = 'other_doc_' . ($i - 8) . '_desc';
+                    $docField = "document_{$i}";
+                    $descField = "document_{$i}_desc";
                 @endphp
-                <div class="{{ in_array($i, $descSlots) ? 'col-md-6' : 'col-md-4' }} mb-3">
-                    <label for="{{ $docField }}" class="form-label fw-bold">{{ $i }}. {{ $label }}</label>
-                    @if($employee->{$docField})
-                        <div class="small mb-1">
-                            <a href="{{ asset('storage/' . $employee->{$docField}) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a>
-                        </div>
+                <div class="col-md-6 mb-3">
+                     <label for="{{ $docField }}" class="form-label fw-bold">{{ $i }}. เอกสารแนบ {{ $i }}</label>
+                    @if ($employee->{$docField})
+                        <div class="small mb-1"><a href="{{ Storage::disk('private')->url($employee->{$docField}) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div>
                     @endif
                     <input type="file" class="form-control form-control-sm" id="{{ $docField }}" name="{{ $docField }}">
-                     @if(in_array($i, $descSlots))
-                        <input type="text" class="form-control form-control-sm mt-2" name="{{ $descField }}" placeholder="คำอธิบาย..." value="{{ old($descField, $employee->{$descField}) }}">
-                    @endif
+                    <input type="text" class="form-control form-control-sm mt-2" name="{{ $descField }}" placeholder="คำอธิบาย..." value="{{ old($descField, $employee->{$descField}) }}">
                 </div>
-            @endforeach
+            @endfor
         </div>
 
 
