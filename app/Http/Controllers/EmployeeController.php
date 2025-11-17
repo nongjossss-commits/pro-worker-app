@@ -335,42 +335,31 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
         unset($data['employeePassword']);
 
+        // 1. Passport
         if ($request->hasFile('passport_file')) {
-            if ($employee->passport_file_path) {
-                Storage::disk('private')->delete($employee->passport_file_path);
-            }
-            $path = $request->file('passport_file')->store('employee_documents', 'private');
-            $data['passport_file_path'] = $path;
+            if ($employee->passport_file_path) Storage::disk('private')->delete($employee->passport_file_path);
+            $data['passport_file_path'] = $request->file('passport_file')->store('employee_documents', 'private');
         }
+        // 2. Visa
         if ($request->hasFile('visa_file')) {
-            if ($employee->visa_file_path) {
-                Storage::disk('private')->delete($employee->visa_file_path);
-            }
-            $path = $request->file('visa_file')->store('employee_documents', 'private');
-            $data['visa_file_path'] = $path;
+            if ($employee->visa_file_path) Storage::disk('private')->delete($employee->visa_file_path);
+            $data['visa_file_path'] = $request->file('visa_file')->store('employee_documents', 'private');
         }
+        // 3. Work Permit
         if ($request->hasFile('work_permit_file')) {
-            if ($employee->work_permit_file_path) {
-                Storage::disk('private')->delete($employee->work_permit_file_path);
-            }
-            $path = $request->file('work_permit_file')->store('employee_documents', 'private');
-            $data['work_permit_file_path'] = $path;
+            if ($employee->work_permit_file_path) Storage::disk('private')->delete($employee->work_permit_file_path);
+            $data['work_permit_file_path'] = $request->file('work_permit_file')->store('employee_documents', 'private');
         }
+        // 4. Pink Card
         if ($request->hasFile('pink_card_file')) {
-            if ($employee->pink_card_file_path) {
-                Storage::disk('private')->delete($employee->pink_card_file_path);
-            }
-            $path = $request->file('pink_card_file')->store('employee_documents', 'private');
-            $data['pink_card_file_path'] = $path;
+            if ($employee->pink_card_file_path) Storage::disk('private')->delete($employee->pink_card_file_path);
+            $data['pink_card_file_path'] = $request->file('pink_card_file')->store('employee_documents', 'private');
         }
+        // 5. Insurance Attachment
         if ($request->hasFile('insurance_attachment')) {
-            if ($employee->insurance_attachment_path) {
-                Storage::disk('private')->delete($employee->insurance_attachment_path);
-            }
-            $path = $request->file('insurance_attachment')->store('employee_documents', 'private');
-            $data['insurance_attachment_path'] = $path;
+            if ($employee->insurance_attachment_path) Storage::disk('private')->delete($employee->insurance_attachment_path);
+            $data['insurance_attachment_path'] = $request->file('insurance_attachment')->store('employee_documents', 'private');
         }
-        $validated = $data;
 
         // --- V-6: Step 3: Define ALL 18 File Fields ---
         $fileFields = [
@@ -386,7 +375,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
                     Storage::disk('public')->delete($employee->{$field});
                 }
-                $validated[$field] = null;
+                $data[$field] = null;
             }
         }
 
@@ -399,12 +388,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $file = $request->file($field);
                 $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
-                $validated[$field] = $path;
+                $data[$field] = $path;
             }
         }
 
         // --- V6: Step 6: Update Employee ---
-        $employee->update($validated);
+        $employee->update($data);
 
         // --- V6: Step 7: Redirect ---
         $redirectRoute = $request->has('source_employer_id')
