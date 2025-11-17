@@ -256,8 +256,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function update(Request $request, Employee $employee)
     {
-        // --- V6: Step 1: Validate ALL text/date data (new and old) ---
-        $validated = $request->validate([
+        // Step A: Validate generic inputs, including all possible insurance fields
+        $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'employeeTitleTh' => 'required|string|max:255',
             'employeeNameTh' => 'required|string|max:255',
@@ -270,12 +270,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeAge' => 'nullable|integer',
             'employeePhone' => 'nullable|string|max:255',
             'employeeNationality' => 'nullable|string|max:255',
+            'passport_type' => 'nullable|string|max:255',
             'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
             'passport_issue_date' => 'nullable|date',
             'passportExpiryDate' => 'nullable|date',
             'pinkCardNo' => 'nullable|string|max:255',
-            'visaType' => 'nullable|string|max:255',
+            'visa_type' => 'nullable|string|max:255',
             'visaExpiryDate' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
             'job_description' => 'nullable|string',
@@ -293,9 +294,15 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employer_employee_id' => 'nullable|string|max:255',
             'employee_reference_id' => 'nullable|string|max:255',
             'insurance_type' => 'nullable|string|max:255',
-            'insurance_detail' => 'nullable|string',
-            'insurance_expiry_date' => 'nullable|date',
+            'insurance_detail_social' => 'nullable|string|max:255',
             'social_security_number' => 'nullable|string|max:255',
+            'insurance_document_path_social' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'insurance_detail_hospital' => 'nullable|string|max:255',
+            'insurance_expiry_date_hospital' => 'nullable|date',
+            'insurance_document_path_hospital' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'insurance_detail_private' => 'nullable|string|max:255',
+            'insurance_expiry_date_private' => 'nullable|date',
+            'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'employeeEmail' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
             'employeePassword' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
@@ -303,84 +310,112 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
             'employeePhoto' => 'nullable|image|max:2048',
-            'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'passport_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'visa_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'work_permit_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'pink_card_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'insurance_attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
-        // --- V6: Step 2: Handle email and password mapping & hashing ---
-        $data = $validated;
-        $data['email'] = $validated['employeeEmail'] ?? null;
-        unset($data['employeeEmail']);
+        // Start with a clean slate of request data, excluding non-model fields
+        $data = $request->except([
+            '_token', '_method', 'employeePassword', 'employeeEmail',
+            'insurance_detail_social', 'insurance_detail_hospital', 'insurance_detail_private',
+            'insurance_expiry_date_hospital', 'insurance_expiry_date_private',
+            'insurance_document_path_social', 'insurance_document_path_hospital', 'insurance_document_path_private',
+            'employeePhoto', 'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8', 'employee_doc_9',
+            'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+        ]);
 
-        if (!empty($request->input('employeePassword'))) {
+        // Handle login credentials
+        $data['email'] = $request->input('employeeEmail');
+        if ($request->filled('employeePassword')) {
             $data['password'] = Hash::make($request->input('employeePassword'));
+        }
+
+        // Step C: HANDLE INSURANCE MAPPING
+        $insurance_type = $request->input('insurance_type');
+        $insuranceFile = null;
+
+        if ($insurance_type == 'ประกันสังคม') {
+            $data['insurance_detail'] = $request->input('insurance_detail_social');
+            $data['social_security_number'] = $request->input('social_security_number');
+            $data['insurance_expiry_date'] = null;
+            if ($request->hasFile('insurance_document_path_social')) {
+                $insuranceFile = $request->file('insurance_document_path_social');
+            }
+        } elseif ($insurance_type == 'ประกันโรงพยาบาล') {
+            $data['insurance_detail'] = $request->input('insurance_detail_hospital');
+            $data['insurance_expiry_date'] = $request->input('insurance_expiry_date_hospital');
+            $data['social_security_number'] = null;
+            if ($request->hasFile('insurance_document_path_hospital')) {
+                $insuranceFile = $request->file('insurance_document_path_hospital');
+            }
+        } elseif ($insurance_type == 'ประกันเอกชน') {
+            $data['insurance_detail'] = $request->input('insurance_detail_private');
+            $data['insurance_expiry_date'] = $request->input('insurance_expiry_date_private');
+            $data['social_security_number'] = null;
+            if ($request->hasFile('insurance_document_path_private')) {
+                $insuranceFile = $request->file('insurance_document_path_private');
+            }
         } else {
-            unset($data['password']);
-        }
-        unset($data['employeePassword']);
-
-        // 1. Passport
-        if ($request->hasFile('passport_file')) {
-            if ($employee->passport_file_path) Storage::disk('private')->delete($employee->passport_file_path);
-            $data['passport_file_path'] = $request->file('passport_file')->store('employee_documents', 'private');
-        }
-        // 2. Visa
-        if ($request->hasFile('visa_file')) {
-            if ($employee->visa_file_path) Storage::disk('private')->delete($employee->visa_file_path);
-            $data['visa_file_path'] = $request->file('visa_file')->store('employee_documents', 'private');
-        }
-        // 3. Work Permit
-        if ($request->hasFile('work_permit_file')) {
-            if ($employee->work_permit_file_path) Storage::disk('private')->delete($employee->work_permit_file_path);
-            $data['work_permit_file_path'] = $request->file('work_permit_file')->store('employee_documents', 'private');
-        }
-        // 4. Pink Card
-        if ($request->hasFile('pink_card_file')) {
-            if ($employee->pink_card_file_path) Storage::disk('private')->delete($employee->pink_card_file_path);
-            $data['pink_card_file_path'] = $request->file('pink_card_file')->store('employee_documents', 'private');
-        }
-        // 5. Insurance Attachment
-        if ($request->hasFile('insurance_attachment')) {
-            if ($employee->insurance_attachment_path) Storage::disk('private')->delete($employee->insurance_attachment_path);
-            $data['insurance_attachment_path'] = $request->file('insurance_attachment')->store('employee_documents', 'private');
+            $data['insurance_detail'] = null;
+            $data['insurance_expiry_date'] = null;
+            $data['social_security_number'] = null;
         }
 
-        // --- V-6: Step 3: Define ALL 18 File Fields ---
-        $fileFields = [
-            'employeePhoto', 'insurance_document_path',
-            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
-            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
-            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+        // Handle insurance file upload
+        if ($insuranceFile) {
+            if ($employee->insurance_document_path && Storage::disk('public')->exists($employee->insurance_document_path)) {
+                Storage::disk('public')->delete($employee->insurance_document_path);
+            }
+            $filename = Str::random(20) . '.' . $insuranceFile->getClientOriginalExtension();
+            $path = $insuranceFile->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
+            $data['insurance_document_path'] = $path;
+        }
+
+        // Handle Photo upload
+        if ($request->hasFile('employeePhoto')) {
+            if ($employee->employeePhoto && Storage::disk('public')->exists($employee->employeePhoto)) {
+                Storage::disk('public')->delete($employee->employeePhoto);
+            }
+            $file = $request->file('employeePhoto');
+            $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
+            $data['employeePhoto'] = $path;
+        }
+
+        // Step D: HANDLE FILES 1-4 MAPPING
+        $specialDocsMap = [
+            'employee_doc_1' => 'passport_file_path',
+            'employee_doc_2' => 'visa_file_path',
+            'employee_doc_3' => 'work_permit_file_path',
+            'employee_doc_4' => 'pink_card_file_path',
         ];
 
-        // --- V-6: Step 4: Unified File Deletion Loop (FIX) ---
-        foreach ($fileFields as $field) {
-            if ($request->has('remove_' . $field)) {
-                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
-                    Storage::disk('public')->delete($employee->{$field});
+        foreach ($specialDocsMap as $formField => $dbColumn) {
+            if ($request->hasFile($formField)) {
+                if ($employee->{$dbColumn} && Storage::disk('public')->exists($employee->{$dbColumn})) {
+                    Storage::disk('public')->delete($employee->{$dbColumn});
                 }
-                $data[$field] = null;
+                $file = $request->file($formField);
+                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
+                $data[$dbColumn] = $path;
             }
         }
 
-        // --- V-6: Step 5: Unified File Upload/Update Loop ---
-        foreach ($fileFields as $field) {
+        // Step E: Save remaining files (5-12)
+        for ($i = 5; $i <= 12; $i++) {
+            $field = 'employee_doc_' . $i;
             if ($request->hasFile($field)) {
                 if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
                     Storage::disk('public')->delete($employee->{$field});
@@ -392,10 +427,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        // --- V6: Step 6: Update Employee ---
+        // Step F: Update $employee
         $employee->update($data);
 
-        // --- V6: Step 7: Redirect ---
+        // Redirect
         $redirectRoute = $request->has('source_employer_id')
             ? route('employers.edit', $request->source_employer_id) . '#employee-card-' . $employee->id
             : route('employees.index');
