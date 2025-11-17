@@ -114,11 +114,11 @@
                 </select>
             </div>
              <div class="col-md-4 mb-3 d-none" id="passportTypeContainer">
-                <label for="passportType" class="form-label">ประเภทหนังสือเดินทาง (สำหรับเมียนมา)</label>
-                <select class="form-select" id="passportType" name="passportType">
+                <label for="passport_type" class="form-label">ประเภทหนังสือเดินทาง (สำหรับเมียนมา)</label>
+                <select class="form-select" id="passport_type" name="passport_type">
                     <option value="">-- เลือกประเภท --</option>
-                    <option value="PJ" @selected(old('passportType', $employee->passportType) == 'PJ')>เล่ม PJ</option>
-                    <option value="CI" @selected(old('passportType', $employee->passportType) == 'CI')>เล่ม CI</option>
+                    <option value="PJ" @selected(old('passport_type', $employee->passport_type) == 'PJ')>เล่ม PJ</option>
+                    <option value="CI" @selected(old('passport_type', $employee->passport_type) == 'CI')>เล่ม CI</option>
                 </select>
             </div>
             <div class="col-md-4 mb-3 d-none" id="passportTypeCambodiaContainer">
@@ -154,8 +154,8 @@
                 <input type="text" class="form-control" id="pinkCardNo" name="pinkCardNo" value="{{ old('pinkCardNo', $employee->pinkCardNo) }}">
             </div>
             <div class="col-md-4 mb-3">
-                <label for="visaType" class="form-label">ประเภทวีซ่า</label>
-                <input type="text" class="form-control" id="visaType" name="visaType" value="{{ old('visaType', $employee->visaType) }}">
+                <label for="visa_type" class="form-label">ประเภทวีซ่า</label>
+                <input type="text" class="form-control" id="visa_type" name="visa_type" value="{{ old('visa_type', $employee->visa_type) }}">
             </div>
             <div class="col-md-4 mb-3">
                 <label for="visaExpiryDate" class="form-label">วันหมดอายุวีซ่า</label>
