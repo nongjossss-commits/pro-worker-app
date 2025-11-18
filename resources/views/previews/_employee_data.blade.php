@@ -1,125 +1,184 @@
-{{--
-    This view is intentionally simplified to display data.
-    It does not include @extends, @section, or any form elements.
-    It is loaded via AJAX into a modal.
---}}
 <div class="content-section">
-    {{-- Personal Information --}}
-    <h5>ข้อมูลส่วนตัว</h5>
-    <hr>
-    <div class="row">
-        <div class="col-md-8">
-            {{-- Employer Name (as per blueprint) --}}
-            <div class="mb-3">
-                <label class="form-label fw-bold">สังกัดนายจ้าง:</label>
-                <p class="form-control-plaintext">{{ $employee->employer->employerNameTh ?? 'N/A' }}</p>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">ชื่อพนักงาน (ไทย)</label>
-                    <p class="form-control-plaintext">{{ trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: 'N/A' }}</p>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">ชื่อพนักงาน (อังกฤษ)</label>
-                    <p class="form-control-plaintext">{{ trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->employeeNameEn ?? '')) ?: 'N/A' }}</p>
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">วันเดือนปีเกิด</label>
-                    <p class="form-control-plaintext">{{ $employee->employeeDob ? $employee->employeeDob->format('d/m/Y') : 'N/A' }}</p>
-                </div>
-                 <div class="col-md-6">
-                    <label class="form-label fw-bold">สัญชาติ</label>
-                    <p class="form-control-plaintext">{{ $employee->employeeNationality ?? 'N/A' }}</p>
-                </div>
-            </div>
-             <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">เลขหนังสือเดินทาง (Passport No.)</label>
-                    <p class="form-control-plaintext">{{ $employee->employeePassport ?? 'N/A' }}</p>
-                </div>
-                 <div class="col-md-6">
-                    <label class="form-label fw-bold">ประเภทหนังสือเดินทาง</label>
-                    <p class="form-control-plaintext">{{ $employee->passportType ?? 'N/A' }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 text-center">
-            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/120x120/f8fafc/6c757d?text=Photo' }}" class="img-thumbnail mb-2" style="width: 120px; height: 120px; object-fit: cover;">
-        </div>
-    </div>
-
-    <hr class="my-4">
-    <h5>ข้อมูลการจ้างงานและเอกสารราชการ</h5>
-    <div class="row g-3">
-        <div class="col-md-4"><label class="form-label fw-bold">เลขที่ Namelist</label><p class="form-control-plaintext">{{ $employee->namelistNo ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">เลขที่คำขอ</label><p class="form-control-plaintext">{{ $employee->requestNo ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">เลขอ้างอิงคนงาน</label><p class="form-control-plaintext">{{ $employee->workerRefNo ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">เลขประจำตัว</label><p class="form-control-plaintext">{{ $employee->personalId ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">รหัสคนงาน (บริษัท)</label><p class="form-control-plaintext">{{ $employee->companyWorkerId ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">เลขบัตรชมพู</label><p class="form-control-plaintext">{{ $employee->pinkCardNo ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">เลขประกันสังคม</label><p class="form-control-plaintext">{{ $employee->socialSecurityNo ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">เลขประจำตัวผู้เสียภาษี</label><p class="form-control-plaintext">{{ $employee->taxIdNo ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">โรงพยาบาลตามสิทธิ</label><p class="form-control-plaintext">{{ $employee->designatedHospital ?? 'N/A' }}</p></div>
-
-        <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุหนังสือเดินทาง</label><p class="form-control-plaintext">{{ $employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุใบอนุญาตทำงาน</label><p class="form-control-plaintext">{{ $employee->workPermitExpiryDate ? $employee->workPermitExpiryDate->format('d/m/Y') : 'N/A' }}</p></div>
-        <div class="col-md-4">
-            <label class="form-label fw-bold">ประเภทใบอนุญาตทำงาน(กลุ่ม มติ.)</label>
-            <p class="form-control-plaintext">
-                {{ $employee->workPermitMOUGroup ?? 'N/A' }}
-                @if($employee->workPermitMOUGroup === 'อื่นๆ')
-                    ({{ $employee->workPermitMOUGroupOther ?? 'ไม่ระบุ' }})
-                @endif
-            </p>
-        </div>
-        <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุวีซ่า</label><p class="form-control-plaintext">{{ $employee->visaExpiryDate ? $employee->visaExpiryDate->format('d/m/Y') : 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">ใบอนุญาตทำงาน (Work Permit No.)</label><p class="form-control-plaintext">{{ $employee->employeeWorkPermit ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุรายงานตัว 90 วัน</label><p class="form-control-plaintext">{{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">วันเริ่มงาน</label><p class="form-control-plaintext">{{ $employee->startDate ? $employee->startDate->format('d/m/Y') : 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">เบอร์โทรศัพท์</label><p class="form-control-plaintext">{{ $employee->employeePhone ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">อีเมล</label><p class="form-control-plaintext">{{ $employee->email ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">รหัสผ่าน / หมายเหตุ</label><p class="form-control-plaintext">{{ $employee->password ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">ตำแหน่ง</label><p class="form-control-plaintext">{{ $employee->employeePosition ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">ลักษณะงาน (Nature of Work)</label><p class="form-control-plaintext">{{ $employee->nature_of_work ?? 'N/A' }}</p></div>
-    </div>
-
-<hr class="my-4">
-<h5>เอกสารแนบ</h5>
-<div class="row g-3">
-    @for ($i = 1; $i <= 8; $i++)
-        @php
-            $doc_field = 'document_' . $i;
-            $desc_field = 'document_description_' . $i;
-            $labels = [
-                1 => '1. passport/visa/workpermit',
-                2 => '2. บัตรชมพู',
-                3 => '3. สัญญาจ้างงาน',
-                4 => '4. บัตรประชาชนเมียนมา/ทะเบียนบ้าน',
-                5 => 'เอกสารอื่นๆ 1',
-                6 => 'เอกสารอื่นๆ 2',
-                7 => 'เอกสารอื่นๆ 3',
-                8 => 'เอกสารอื่นๆ 4',
-            ];
-            $has_description_field = in_array($i, [3, 4, 5, 6, 7, 8]);
-        @endphp
-        <div class="col-md-4">
-            <label class="form-label fw-bold">{{ $labels[$i] }}</label>
-            @if($employee->{$doc_field})
-                {{-- Blueprint: Render as a link --}}
-                <p class="form-control-plaintext">
-                    <a href="{{ Storage::url($employee->{$doc_field}) }}" target="_blank">
-                        <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
-                    </a>
-                    @if($has_description_field && $employee->{$desc_field})
-                        <span class="text-muted"> ({{ $employee->{$desc_field} }})</span>
-                    @endif
-                </p>
-            @else
-                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
-            @endif
-        </div>
-    @endfor
-</div>
+ {{-- 1. Personal Information --}}
+ <h5 class="text-primary"><i class="bi bi-person-badge"></i> ข้อมูลส่วนตัว</h5>
+ <hr>
+ <div class="row g-3 mb-4">
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">ชื่อ-นามสกุล (ไทย)</label>
+ <p>{{ $employee->english_prefix ?? '' }} {{ $employee->employeeNameTh ?? '-' }}</p>
+ </div>
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">Name (English)</label>
+ <p>{{ $employee->employeeNameEn ?? '-' }}</p>
+ </div>
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">ชื่อเล่น</label>
+ <p>{{ $employee->employeeNickname ?? '-' }}</p>
+ </div>
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">สัญชาติ</label>
+ <p>{{ $employee->employeeNationality ?? '-' }}</p>
+ </div>
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">เบอร์โทรศัพท์</label>
+ <p>{{ $employee->employeePhone ?? '-' }}</p>
+ </div>
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">Email (Login)</label>
+ <p>{{ $employee->email ?? '-' }}</p>
+ </div>
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">Password</label>
+ <p class="text-danger">{{ $employee->password ?? '-' }}</p>
+ </div>
+ <div class="col-md-3">
+ <label class="fw-bold text-muted">สถานะ</label>
+ <span class="badge bg-{{ $employee->status == 1 ? 'success' : 'secondary' }}">
+ {{ $employee->status == 1 ? 'Active' : 'Inactive' }}
+ </span>
+ </div>
+ </div>
+ {{-- 2. Documents & Files --}}
+ <h5 class="text-success"><i class="bi bi-folder2-open"></i> เอกสารและไฟล์แนบ</h5>
+ <hr>
+ {{-- Passport --}}
+ <div class="card mb-3 border-light bg-light">
+ <div class="card-body">
+ <h6 class="card-title fw-bold text-dark">1. ข้อมูลพาสปอร์ต (Passport)</h6>
+ <div class="row">
+ <div class="col-md-3"><small class="text-muted">เลขที่:</small> {{ $employee->employeePassport ?? '-' }}</div>
+ <div class="col-md-3"><small class="text-muted">วันออก:</small> {{ $employee->passport_issue_date ? \Carbon\Carbon::parse($employee->passport_issue_date)->format('d/m/Y') : '-' }}</div>
+ <div class="col-md-3"><small class="text-muted">วันหมดอายุ:</small> {{ $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-' }}</div>
+ <div class="col-md-3">
+ @if($employee->passport_file)
+ <a href="{{ Storage::url($employee->passport_file) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> ดูไฟล์</a>
+ @else
+ <span class="text-muted">-</span>
+ @endif
+ </div>
+ </div>
+ </div>
+ </div>
+ {{-- Visa --}}
+ <div class="card mb-3 border-light bg-light">
+ <div class="card-body">
+ <h6 class="card-title fw-bold text-dark">2. ข้อมูลวีซ่า (Visa)</h6>
+ <div class="row">
+ <div class="col-md-3"><small class="text-muted">ประเภท:</small> {{ $employee->visa_type ?? '-' }}</div>
+ <div class="col-md-3"><small class="text-muted">วันหมดอายุ:</small> {{ $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-' }}</div>
+ <div class="col-md-6 text-end">
+ @if($employee->visa_file)
+ <a href="{{ Storage::url($employee->visa_file) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> ดูไฟล์</a>
+ @else
+ <span class="text-muted">-</span>
+ @endif
+ </div>
+ </div>
+ </div>
+ </div>
+ {{-- Work Permit --}}
+ <div class="card mb-3 border-light bg-light">
+ <div class="card-body">
+ <h6 class="card-title fw-bold text-dark">3. ใบอนุญาตทำงาน (Work Permit)</h6>
+ <div class="row">
+ <div class="col-md-3"><small class="text-muted">เลขที่:</small> {{ $employee->employeeWorkPermit ?? '-' }}</div>
+ <div class="col-md-3"><small class="text-muted">วันหมดอายุ:</small> {{ $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-' }}</div>
+ <div class="col-md-6 text-end">
+ @if($employee->work_permit_file)
+ <a href="{{ Storage::url($employee->work_permit_file) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> ดูไฟล์</a>
+ @else
+ <span class="text-muted">-</span>
+ @endif
+ </div>
+ </div>
+ </div>
+ </div>
+ {{-- Pink Card & 90 Day --}}
+ <div class="row mb-3">
+ <div class="col-md-6">
+ <div class="card border-light bg-light h-100">
+ <div class="card-body">
+ <h6 class="card-title fw-bold">4. บัตรชมพู</h6>
+ <p class="mb-1">เลขที่: {{ $employee->pinkCardNo ?? '-' }}</p>
+ @if($employee->pink_card_file)
+ <a href="{{ Storage::url($employee->pink_card_file) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> ดูไฟล์</a>
+ @endif
+ </div>
+ </div>
+ </div>
+ <div class="col-md-6">
+ <div class="card border-light bg-light h-100">
+ <div class="card-body">
+ <h6 class="card-title fw-bold">รายงานตัว 90 วัน</h6>
+ <p class="mb-0">วันครบกำหนด: {{ $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-' }}</p>
+ </div>
+ </div>
+ </div>
+ </div>
+ {{-- Insurance --}}
+ <h5 class="text-info mt-4"><i class="bi bi-shield-check"></i> ข้อมูลประกัน</h5>
+ <hr>
+ <div class="row g-3">
+ <div class="col-md-4">
+ <label class="fw-bold text-muted">ประเภทประกัน</label>
+ <p>{{ $employee->insurance_type ?? '-' }}</p>
+ </div>
+ @if($employee->insurance_type == 'ประกันสังคม')
+ <div class="col-md-4">
+ <label class="fw-bold text-muted">โรงพยาบาล</label>
+ <p>{{ $employee->hospital_name ?? '-' }}</p>
+ </div>
+ <div class="col-md-4">
+ <label class="fw-bold text-muted">ไฟล์ประกันสังคม</label>
+ @if($employee->social_security_file)
+ <br><a href="{{ Storage::url($employee->social_security_file) }}" target="_blank" class="btn btn-sm btn-outline-info">ดูไฟล์</a>
+ @else
+ <p>-</p>
+ @endif
+ </div>
+ @elseif($employee->insurance_type == 'ประกันโรงพยาบาล' || $employee->insurance_type == 'ประกันเอกชน')
+ <div class="col-md-4">
+ <label class="fw-bold text-muted">บริษัท/รพ.</label>
+ <p>{{ $employee->insurance_company ?? $employee->hospital_name ?? '-' }}</p>
+ </div>
+ <div class="col-md-4">
+ <label class="fw-bold text-muted">วันหมดอายุ</label>
+ <p>{{ $employee->insurance_expiry_date ? \Carbon\Carbon::parse($employee->insurance_expiry_date)->format('d/m/Y') : '-' }}</p>
+ </div>
+ <div class="col-md-12">
+ <label class="fw-bold text-muted">ไฟล์กรมธรรม์</label>
+ @if($employee->insurance_file)
+ <br><a href="{{ Storage::url($employee->insurance_file) }}" target="_blank" class="btn btn-sm btn-outline-info">ดูไฟล์</a>
+ @else
+ <p>-</p>
+ @endif
+ </div>
+ @endif
+ </div>
+ {{-- Other Files Loop --}}
+ @php
+ $hasOtherFiles = false;
+ for($i=5; $i<=12; $i++) {
+ if($employee->{'file_'.$i}) {
+ $hasOtherFiles = true;
+ break;
+ }
+ }
+ @endphp
+ @if($hasOtherFiles)
+ <h5 class="text-warning mt-4"><i class="bi bi-paperclip"></i> เอกสารอื่นๆ</h5>
+ <hr>
+ <ul class="list-group">
+ @for ($i = 5; $i <= 12; $i++)
+ @if($employee->{'file_'.$i})
+ <li class="list-group-item d-flex justify-content-between align-items-center">
+ <span>เอกสารแนบที่ {{ $i }}</span>
+ <a href="{{ Storage::url($employee->{'file_'.$i}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+ <i class="bi bi-download"></i> ดาวน์โหลด
+ </a>
+ </li>
+ @endif
+ @endfor
+ </ul>
+ @endif
 </div>
