@@ -77,7 +77,7 @@
         </div>
         <div class="col-md-4 d-flex flex-column align-items-center justify-content-center">
             <a href="{{ $employee->photo_url }}" target="_blank" rel="noopener noreferrer">
-                <img src="{{ $employee->photo_url }}" class="img-thumbnail mb-2" style="width: 180px; height: 180px; object-fit: cover;" alt="Employee Photo">
+                <img src="{{ $employee->photo_url }}" class="img-thumbnail mb-2" style="width: 250px; height: 250px; object-fit: cover;" alt="Employee Photo">
             </a>
         </div>
     </div>
@@ -179,7 +179,7 @@
             <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
             @if($employee->insurance_document_path_private)
                 <p class="form-control-plaintext">
-                    <a href="{{ route('employees.documents.serve', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank">
+                    <a href="{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}" target="_blank">
                         <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
                     </a>
                 </p>
@@ -217,10 +217,7 @@
                 $field = $file['field'];
                 $label = $file['label'];
                 $desc_field = $file['desc_field'] ?? null;
-                $isPrivate = in_array($field, ['employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4']);
-                $url = $isPrivate
-                    ? route('employees.documents.serve', ['employee' => $employee->id, 'field' => $field])
-                    : ($employee->{$field} ? Storage::disk('public')->url($employee->{$field}) : '#');
+                $url = $employee->{$field} ? Storage::disk('public')->url($employee->{$field}) : '#';
             @endphp
             <div class="col-md-4">
                 <label class="form-label fw-bold">{{ $label }}</label>
