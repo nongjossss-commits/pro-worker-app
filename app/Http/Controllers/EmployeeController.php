@@ -215,10 +215,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $validated['email'] = $validated['employeeEmail'] ?? null;
         unset($validated['employeeEmail']);
 
-        // if (!empty($validated['employeePassword'])) {
-        //     $validated['password'] = Hash::make($validated['employeePassword']);
-        // }
-        // unset($validated['employeePassword']);
+        if (!empty($validated['employeePassword'])) {
+            $validated['password'] = $validated['employeePassword']; // Save as plain text per user request
+        }
+        unset($validated['employeePassword']);
 
         // --- V6: Step 3: Unified File Upload Loop ---
         $fileFields = [
@@ -307,7 +307,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_detail_private' => 'nullable|string|max:255',
             'insurance_detail_social' => 'nullable|string|max:255',
             'employeeEmail' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
-            'employeePassword' => 'nullable|string|min:8',
+            'password' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
@@ -374,17 +374,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $data['insurance_attachment_path'] = $path;
         }
 
-        // if (!empty($data['password'])) {
-        //     $data['password'] = Hash::make($data['password']);
-        // } else {
-        //     unset($data['password']);
-        // }
-        $validated = $data;
-        if(empty($validated['employeePassword'])) {
-            unset($validated['employeePassword']);
-        } else {
-            $validated['employeePassword'];
+        // If 'password' field is filled, it's already in $data from validation.
+        // If it's empty, we should not update the password.
+        if (empty($data['password'])) {
+            unset($data['password']); // Prevent updating with an empty value
         }
+
+        $validated = $data;
         // --- V-6: Step 3: Define ALL 18 File Fields ---
         $fileFields = [
             'employeePhoto', 'insurance_document_path','insurance_document_path_private',
