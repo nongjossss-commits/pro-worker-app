@@ -203,7 +203,7 @@
                 '4' => ['field' => 'employee_doc_4', 'label' => '4. บัตรชมพู'],
                 '5' => ['field' => 'employee_doc_5', 'label' => '5. ทร. 38'],
                 '6' => ['field' => 'employee_doc_6', 'label' => '6. รายงานตัว 90 วัน'],
-                '7' => ['field' => 'employee_doc_7', 'label' => '7. ใบรายงานตัว'],
+                '7' => ['field' => 'employee_doc_7', 'label' => '7. ใบแจ้งที่พักอาศัย'],
                 '8' => ['field' => 'employee_doc_8', 'label' => '8. เอกสารบ้านเกิด'],
                 '9' => ['field' => 'employee_doc_9', 'label' => '9. เอกสารอื่นๆ 1', 'desc_field' => 'other_doc_1_desc'],
                 '10' => ['field' => 'employee_doc_10', 'label' => '10. เอกสารอื่นๆ 2', 'desc_field' => 'other_doc_2_desc'],
