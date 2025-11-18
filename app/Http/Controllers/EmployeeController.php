@@ -328,13 +328,6 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $data['email'] = $validated['employeeEmail'] ?? null;
         unset($data['employeeEmail']);
 
-        if (!empty($request->input('employeePassword'))) {
-            $data['password'] = Hash::make($request->input('employeePassword'));
-        } else {
-            unset($data['password']);
-        }
-        unset($data['employeePassword']);
-
         if ($request->hasFile('passport_file')) {
             if ($employee->passport_file_path) {
                 Storage::disk('private')->delete($employee->passport_file_path);
@@ -369,6 +362,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
             $path = $request->file('insurance_attachment')->store('employee_documents', 'private');
             $data['insurance_attachment_path'] = $path;
+        }
+
+        if (!empty($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
         }
         $validated = $data;
 
