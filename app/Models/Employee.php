@@ -171,6 +171,36 @@ class Employee extends Model
         );
     }
 
+    /**
+     * Calculate the employee's age from their date of birth.
+     * Usage in Blade/API: $employee->age
+     */
+    protected function age(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->employeeDob ? $this->employeeDob->age : 'N/A',
+        );
+    }
+
+    /**
+     * Determine the employee's gender from their Thai title.
+     * Usage in Blade/API: $employee->gender
+     */
+    protected function gender(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->employeeTitleTh === 'นาย') {
+                    return 'ชาย';
+                }
+                if (in_array($this->employeeTitleTh, ['นาง', 'นางสาว'])) {
+                    return 'หญิง';
+                }
+                return 'N/A';
+            }
+        );
+    }
+
     public function employer()
     {
         return $this->belongsTo(Employer::class);
