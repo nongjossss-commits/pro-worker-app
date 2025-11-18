@@ -76,7 +76,9 @@
             </div>
         </div>
         <div class="col-md-4 d-flex flex-column align-items-center justify-content-center">
-            <img src="{{ $employee->photo_url }}" class="img-thumbnail mb-2" style="width: 120px; height: 120px; object-fit: cover;">
+            <a href="{{ $employee->photo_url }}" target="_blank" rel="noopener noreferrer">
+                <img src="{{ $employee->photo_url }}" class="img-thumbnail mb-2" style="width: 180px; height: 180px; object-fit: cover;" alt="Employee Photo">
+            </a>
         </div>
     </div>
 
@@ -135,35 +137,35 @@
     <div class="row g-3">
         <div class="col-md-4">
             <label class="form-label fw-bold">ประเภทประกัน</label>
-            <p class="form-control-plaintext">{{ $employee->insurance_type ?? 'N/A' }}</p>
+            <p class="form-control-plaintext">{{ $employee->insuranceType ?? 'N/A' }}</p>
         </div>
 
-        @if($employee->insurance_type === 'ประกันสังคม')
+        @if($employee->insuranceType === 'ประกันสังคม')
             <div class="col-md-4">
                 <label class="form-label fw-bold">เลขประกันสังคม</label>
-                <p class="form-control-plaintext">{{ $employee->social_security_number ?? 'N/A' }}</p>
+                <p class="form-control-plaintext">{{ $employee->socialSecurityNumber ?? 'N/A' }}</p>
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-bold">โรงพยาบาลตามสิทธิ</label>
-                <p class="form-control-plaintext">{{ $employee->hospital_name ?? 'N/A' }}</p>
+                <p class="form-control-plaintext">{{ $employee->hospitalName ?? 'N/A' }}</p>
             </div>
-        @elseif($employee->insurance_type === 'ประกันเอกชน')
+        @elseif($employee->insuranceType === 'ประกันเอกชน')
             <div class="col-md-4">
                 <label class="form-label fw-bold">บริษัทประกัน</label>
-                <p class="form-control-plaintext">{{ $employee->insurance_company ?? 'N/A' }}</p>
+                <p class="form-control-plaintext">{{ $employee->insuranceCompany ?? 'N/A' }}</p>
             </div>
              <div class="col-md-4">
                 <label class="form-label fw-bold">วันหมดอายุ</label>
-                <p class="form-control-plaintext">{{ $employee->insurance_expiry_date ? $employee->insurance_expiry_date->format('d/m/Y') : 'N/A' }}</p>
+                <p class="form-control-plaintext">{{ $employee->insuranceExpiryDate ? $employee->insuranceExpiryDate->format('d/m/Y') : 'N/A' }}</p>
             </div>
-        @elseif($employee->insurance_type === 'ประกันโรงพยาบาล')
+        @elseif($employee->insuranceType === 'ประกันโรงพยาบาล')
              <div class="col-md-4">
                 <label class="form-label fw-bold">โรงพยาบาล</label>
-                <p class="form-control-plaintext">{{ $employee->hospital_name ?? 'N/A' }}</p>
+                <p class="form-control-plaintext">{{ $employee->hospitalName ?? 'N/A' }}</p>
             </div>
              <div class="col-md-4">
                 <label class="form-label fw-bold">วันหมดอายุ</label>
-                <p class="form-control-plaintext">{{ $employee->insurance_expiry_date ? $employee->insurance_expiry_date->format('d/m/Y') : 'N/A' }}</p>
+                <p class="form-control-plaintext">{{ $employee->insuranceExpiryDate ? $employee->insuranceExpiryDate->format('d/m/Y') : 'N/A' }}</p>
             </div>
         @else
             <div class="col-md-8">
@@ -175,9 +177,9 @@
         {{-- Insurance Attachment --}}
         <div class="col-md-4">
             <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
-            @if($employee->insurance_attachment_path)
+            @if($employee->insurance_document_path_private)
                 <p class="form-control-plaintext">
-                    <a href="{{ Storage::disk('private')->url($employee->insurance_attachment_path) }}" target="_blank">
+                    <a href="{{ Storage::disk('private')->url($employee->insurance_document_path_private) }}" target="_blank">
                         <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
                     </a>
                 </p>
@@ -195,13 +197,13 @@
         @php
             // Remap keys to match the form labels from the screenshot
             $attachmentFields = [
-                '1' => ['field' => 'passport_file_path', 'label' => '1. พาสปอร์ต'],
-                '2' => ['field' => 'visa_file_path', 'label' => '2. วีซ่า'],
-                '3' => ['field' => 'work_permit_file_path', 'label' => '3. ใบอนุญาต Work Permit'],
-                '4' => ['field' => 'pink_card_file_path', 'label' => '4. บัตรชมพู'],
+                '1' => ['field' => 'employee_doc_1', 'label' => '1. พาสปอร์ต'],
+                '2' => ['field' => 'employee_doc_2', 'label' => '2. วีซ่า'],
+                '3' => ['field' => 'employee_doc_3', 'label' => '3. ใบอนุญาต Work Permit'],
+                '4' => ['field' => 'employee_doc_4', 'label' => '4. บัตรชมพู'],
                 '5' => ['field' => 'employee_doc_5', 'label' => '5. ทร. 38'],
                 '6' => ['field' => 'employee_doc_6', 'label' => '6. รายงานตัว 90 วัน'],
-                '7' => ['field' => 'employee_doc_7', 'label' => '7. ใบตรวจโรค'],
+                '7' => ['field' => 'employee_doc_7', 'label' => '7. ใบรายงานตัว'],
                 '8' => ['field' => 'employee_doc_8', 'label' => '8. เอกสารบ้านเกิด'],
                 '9' => ['field' => 'employee_doc_9', 'label' => '9. เอกสารอื่นๆ 1', 'desc_field' => 'other_doc_1_desc'],
                 '10' => ['field' => 'employee_doc_10', 'label' => '10. เอกสารอื่นๆ 2', 'desc_field' => 'other_doc_2_desc'],
@@ -215,7 +217,8 @@
                 $field = $file['field'];
                 $label = $file['label'];
                 $desc_field = $file['desc_field'] ?? null;
-                $disk = in_array($field, ['passport_file_path', 'visa_file_path', 'work_permit_file_path', 'pink_card_file_path']) ? 'private' : 'public';
+                // Docs 1-4 are sensitive and stored on the private disk. Others are public.
+                $disk = in_array($field, ['employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4']) ? 'private' : 'public';
             @endphp
             <div class="col-md-4">
                 <label class="form-label fw-bold">{{ $label }}</label>

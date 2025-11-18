@@ -211,6 +211,31 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
+        // --- V6 Step 1.5: Map insurance data to correct model properties ---
+        $validated['insuranceType'] = $validated['insurance_type'] ?? null;
+
+        if ($validated['insuranceType'] === 'ประกันสังคม') {
+            $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
+            $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+            $validated['insuranceCompany'] = null;
+            $validated['insuranceExpiryDate'] = null;
+        } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
+            $validated['insuranceCompany'] = $validated['insurance_detail_private'] ?? null;
+            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
+            $validated['socialSecurityNumber'] = null;
+            $validated['hospitalName'] = null;
+        } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
+            $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
+            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
+            $validated['socialSecurityNumber'] = null;
+            $validated['insuranceCompany'] = null;
+        } else {
+            $validated['socialSecurityNumber'] = null;
+            $validated['hospitalName'] = null;
+            $validated['insuranceCompany'] = null;
+            $validated['insuranceExpiryDate'] = null;
+        }
+
         // --- V6: Step 2: Handle email and password mapping & hashing ---
         $validated['email'] = $validated['employeeEmail'] ?? null;
         unset($validated['employeeEmail']);
@@ -333,6 +358,33 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'pink_card_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'insurance_attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
+
+        // --- V6 Step 1.5: Map insurance data to correct model properties ---
+        $validated['insuranceType'] = $validated['insurance_type'] ?? null;
+
+        if ($validated['insuranceType'] === 'ประกันสังคม') {
+            $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
+            $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+            $validated['insuranceCompany'] = null;
+            $validated['insuranceExpiryDate'] = null;
+        } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
+            $validated['insuranceCompany'] = $validated['insurance_detail_private'] ?? null;
+            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
+            $validated['socialSecurityNumber'] = null;
+            $validated['hospitalName'] = null;
+        } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
+            $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
+            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
+            $validated['socialSecurityNumber'] = null;
+            $validated['insuranceCompany'] = null;
+        } else {
+            // For 'None' or other types, null out all specific fields
+            $validated['socialSecurityNumber'] = null;
+            $validated['hospitalName'] = null;
+            $validated['insuranceCompany'] = null;
+            $validated['insuranceExpiryDate'] = null;
+        }
+
 
         // --- V6: Step 2: Handle email and password mapping & hashing ---
         $data = $validated;
