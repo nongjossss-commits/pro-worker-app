@@ -31,13 +31,13 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">อายุ</label>
-                    <p class="form-control-plaintext">{{ $employee->employeeAge ?? 'N/A' }}</p>
+                    <p class="form-control-plaintext">{{ $employee->age ?? 'N/A' }}</p>
                 </div>
             </div>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">เพศ</label>
-                    <p class="form-control-plaintext">{{ $employee->employeeGender ?? 'N/A' }}</p>
+                    <p class="form-control-plaintext">{{ $employee->gender ?? 'N/A' }}</p>
                 </div>
                  <div class="col-md-6">
                     <label class="form-label fw-bold">สัญชาติ</label>
@@ -133,81 +133,105 @@
     {{-- Insurance Information --}}
     <h5>ข้อมูลประกัน</h5>
     <div class="row g-3">
-        <div class="col-md-4"><label class="form-label fw-bold">ประเภทประกัน</label><p class="form-control-plaintext">{{ $employee->insurance_type ?? 'N/A' }}</p></div>
-        @if($employee->insurance_type === 'ประกันสังคม')
-            <div class="col-md-4"><label class="form-label fw-bold">เลขประกันสังคม</label><p class="form-control-plaintext">{{ $employee->social_security_number ?? 'N/A' }}</p></div>
-            <div class="col-md-4"><label class="form-label fw-bold">โรงพยาบาลตามสิทธิ</label><p class="form-control-plaintext">{{ $employee->insurance_detail_hospital ?? 'N/A' }}</p></div>
-            <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุ</label><p class="form-control-plaintext">{{ $employee->insurance_expiry_date_hospital ? $employee->insurance_expiry_date_hospital->format('d/m/Y') : 'N/A' }}</p></div>
-        @elseif($employee->insurance_type === 'ประกันสุขภาพเอกชน')
-            <div class="col-md-4"><label class="form-label fw-bold">บริษัทประกัน</label><p class="form-control-plaintext">{{ $employee->insurance_detail_private ?? 'N/A' }}</p></div>
-            <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุ</label><p class="form-control-plaintext">{{ $employee->insurance_expiry_date_private ? $employee->insurance_expiry_date_private->format('d/m/Y') : 'N/A' }}</p></div>
-        @else
-             <div class="col-md-8"><label class="form-label fw-bold">รายละเอียด</label><p class="form-control-plaintext">{{ $employee->insurance_detail ?? 'N/A' }}</p></div>
-        @endif
-    </div>
-
-<hr class="my-4">
-
-{{-- V6: Standard Attachments --}}
-<h5>ไฟล์แนบมาตรฐาน</h5>
-<div class="row g-3">
-    @php
-        $fileFields = [
-            'passport_file_path' => 'ไฟล์หนังสือเดินทาง',
-            'visa_file_path' => 'ไฟล์วีซ่า',
-            'work_permit_file_path' => 'ไฟล์ใบอนุญาตทำงาน',
-            'pink_card_file_path' => 'ไฟล์บัตรชมพู',
-            'insurance_attachment_path' => 'ไฟล์แนบประกัน',
-        ];
-        // Conditionally add insurance documents based on type
-        if ($employee->insurance_type === 'ประกันสังคม') {
-            $fileFields['insurance_document_path'] = 'ไฟล์ประกันสังคม';
-        } elseif ($employee->insurance_type === 'ประกันสุขภาพเอกชน') {
-            $fileFields['insurance_document_path_private'] = 'ไฟล์ประกันสุขภาพเอกชน';
-        }
-    @endphp
-
-    @foreach($fileFields as $field => $label)
-    <div class="col-md-4">
-        <label class="form-label fw-bold">{{ $label }}</label>
-        @if($employee->{$field})
-            <p class="form-control-plaintext">
-                <a href="{{ Storage::disk('private')->url($employee->{$field}) }}" target="_blank">
-                    <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
-                </a>
-            </p>
-        @else
-            <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
-        @endif
-    </div>
-    @endforeach
-</div>
-
-<hr class="my-4">
-
-{{-- V6: Other Attachments --}}
-<h5>ไฟล์แนบอื่นๆ</h5>
-<div class="row g-3">
-    @for ($i = 1; $i <= 12; $i++)
-        @php
-            $doc_field = 'employee_doc_' . $i;
-            $desc_field = 'other_doc_' . $i . '_desc'; // Assuming description fields follow this pattern
-        @endphp
         <div class="col-md-4">
-            <label class="form-label fw-bold">เอกสารแนบ {{ $i }}</label>
-            @if($employee->{$doc_field})
+            <label class="form-label fw-bold">ประเภทประกัน</label>
+            <p class="form-control-plaintext">{{ $employee->insurance_type ?? 'N/A' }}</p>
+        </div>
+
+        @if($employee->insurance_type === 'ประกันสังคม')
+            <div class="col-md-4">
+                <label class="form-label fw-bold">เลขประกันสังคม</label>
+                <p class="form-control-plaintext">{{ $employee->social_security_number ?? 'N/A' }}</p>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">โรงพยาบาลตามสิทธิ</label>
+                <p class="form-control-plaintext">{{ $employee->hospital_name ?? 'N/A' }}</p>
+            </div>
+        @elseif($employee->insurance_type === 'ประกันเอกชน')
+            <div class="col-md-4">
+                <label class="form-label fw-bold">บริษัทประกัน</label>
+                <p class="form-control-plaintext">{{ $employee->insurance_company ?? 'N/A' }}</p>
+            </div>
+             <div class="col-md-4">
+                <label class="form-label fw-bold">วันหมดอายุ</label>
+                <p class="form-control-plaintext">{{ $employee->insurance_expiry_date ? $employee->insurance_expiry_date->format('d/m/Y') : 'N/A' }}</p>
+            </div>
+        @elseif($employee->insurance_type === 'ประกันโรงพยาบาล')
+             <div class="col-md-4">
+                <label class="form-label fw-bold">โรงพยาบาล</label>
+                <p class="form-control-plaintext">{{ $employee->hospital_name ?? 'N/A' }}</p>
+            </div>
+             <div class="col-md-4">
+                <label class="form-label fw-bold">วันหมดอายุ</label>
+                <p class="form-control-plaintext">{{ $employee->insurance_expiry_date ? $employee->insurance_expiry_date->format('d/m/Y') : 'N/A' }}</p>
+            </div>
+        @else
+            <div class="col-md-8">
+                <label class="form-label fw-bold">รายละเอียด</label>
+                <p class="form-control-plaintext">{{ $employee->insurance_detail ?? 'N/A' }}</p>
+            </div>
+        @endif
+
+        {{-- Insurance Attachment --}}
+        <div class="col-md-4">
+            <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
+            @if($employee->insurance_attachment_path)
                 <p class="form-control-plaintext">
-                    <a href="{{ Storage::disk('public')->url($employee->{$doc_field}) }}" target="_blank">
+                    <a href="{{ Storage::disk('private')->url($employee->insurance_attachment_path) }}" target="_blank">
                         <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
                     </a>
-                    @if($employee->{$desc_field})
-                        <span class="text-muted d-block" style="font-size: 0.875em;">({{ $employee->{$desc_field} }})</span>
-                    @endif
                 </p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
         </div>
-    @endfor
-</div>
+    </div>
+
+    <hr class="my-4">
+
+    {{-- Other Attachments --}}
+    <h5>ไฟล์แนบ</h5>
+    <div class="row g-3">
+        @php
+            // Remap keys to match the form labels from the screenshot
+            $attachmentFields = [
+                '1' => ['field' => 'passport_file_path', 'label' => '1. พาสปอร์ต'],
+                '2' => ['field' => 'visa_file_path', 'label' => '2. วีซ่า'],
+                '3' => ['field' => 'work_permit_file_path', 'label' => '3. ใบอนุญาต Work Permit'],
+                '4' => ['field' => 'pink_card_file_path', 'label' => '4. บัตรชมพู'],
+                '5' => ['field' => 'employee_doc_5', 'label' => '5. ทร. 38'],
+                '6' => ['field' => 'employee_doc_6', 'label' => '6. รายงานตัว 90 วัน'],
+                '7' => ['field' => 'employee_doc_7', 'label' => '7. ใบตรวจโรค'],
+                '8' => ['field' => 'employee_doc_8', 'label' => '8. เอกสารบ้านเกิด'],
+                '9' => ['field' => 'employee_doc_9', 'label' => '9. เอกสารอื่นๆ 1', 'desc_field' => 'other_doc_1_desc'],
+                '10' => ['field' => 'employee_doc_10', 'label' => '10. เอกสารอื่นๆ 2', 'desc_field' => 'other_doc_2_desc'],
+                '11' => ['field' => 'employee_doc_11', 'label' => '11. เอกสารอื่นๆ 3', 'desc_field' => 'other_doc_3_desc'],
+                '12' => ['field' => 'employee_doc_12', 'label' => '12. เอกสารอื่นๆ 4', 'desc_field' => 'other_doc_4_desc'],
+            ];
+        @endphp
+
+        @foreach($attachmentFields as $key => $file)
+            @php
+                $field = $file['field'];
+                $label = $file['label'];
+                $desc_field = $file['desc_field'] ?? null;
+                $disk = in_array($field, ['passport_file_path', 'visa_file_path', 'work_permit_file_path', 'pink_card_file_path']) ? 'private' : 'public';
+            @endphp
+            <div class="col-md-4">
+                <label class="form-label fw-bold">{{ $label }}</label>
+                @if($employee->{$field})
+                    <p class="form-control-plaintext">
+                        <a href="{{ Storage::disk($disk)->url($employee->{$field}) }}" target="_blank">
+                            <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
+                        </a>
+                         @if($desc_field && $employee->{$desc_field})
+                            <span class="text-muted d-block" style="font-size: 0.875em;">({{ $employee->{$desc_field} }})</span>
+                        @endif
+                    </p>
+                @else
+                    <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
+                @endif
+            </div>
+        @endforeach
+    </div>
 </div>
