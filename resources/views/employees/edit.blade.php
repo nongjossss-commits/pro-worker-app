@@ -242,14 +242,14 @@
                     <input type="text" class="form-control" id="social_security_number" name="social_security_number" value="{{ old('social_security_number', $employee->social_security_number) }}">
                 </div>
                 <div class="col-md-4 mb-3">
-                    <label for="insurance_detail_social" class="form-label">สิทธิ์โรงพยาบาล</label>
-                    <input type="text" class="form-control" name="insurance_detail_social" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
+                    <label for="insurance_detail" class="form-label">สิทธิ์โรงพยาบาล</label>
+                    <input type="text" class="form-control" name="insurance_detail" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
                 </div>
-                <div class="col-md-4 mb-3">
+                <!-- <div class="col-md-4 mb-3">
                     <label for="insurance_document_path_social" class="form-label">แนบไฟล์เอกสารประกัน</label>
                      @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันสังคม') <div class="small mb-1"><a href="{{ asset('storage/' . $employee->insurance_document_path) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
                     <input type="file" class="form-control form-control-sm" name="insurance_document_path_social">
-                </div>
+                </div> -->
              </div>
         </div>
         {{-- Hospital Insurance Container --}}
@@ -257,17 +257,17 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label for="insurance_detail_hospital" class="form-label">ชื่อโรงพยาบาล</label>
-                    <input type="text" class="form-control" name="insurance_detail_hospital" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
+                    <input type="text" class="form-control" name="insurance_detail_hospital" value="{{ old('insurance_detail_hospital', $employee->insurance_detail_hospital) }}">
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="insurance_expiry_date_hospital" class="form-label">วันหมดอายุประกัน</label>
-                    <input type="date" class="form-control" name="insurance_expiry_date_hospital" value="{{ old('insurance_expiry_date', optional($employee->insurance_expiry_date)->format('Y-m-d')) }}">
+                    <input type="date" class="form-control" name="insurance_expiry_date_hospital" value="{{ old('insurance_expiry_date_hospital', optional($employee->insurance_expiry_date_hospital)->format('Y-m-d')) }}">
                 </div>
-                 <div class="col-md-4 mb-3">
+                 <!-- <div class="col-md-4 mb-3">
                     <label for="insurance_document_path_hospital" class="form-label">แนบไฟล์เอกสารประกัน</label>
                      @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันโรงพยาบาล') <div class="small mb-1"><a href="{{ asset('storage/' . $employee->insurance_document_path) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
                     <input type="file" class="form-control form-control-sm" name="insurance_document_path_hospital">
-                </div>
+                </div> -->
             </div>
         </div>
         {{-- Private Insurance Container --}}
@@ -275,20 +275,21 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label for="insurance_detail_private" class="form-label">บริษัทประกัน</label>
-                    <input type="text" class="form-control" name="insurance_detail_private" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
+                    <input type="text" class="form-control" name="insurance_detail_private" value="{{ old('insurance_detail_private', $employee->insurance_detail_private) }}">
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="insurance_expiry_date_private" class="form-label">วันหมดอายุประกัน</label>
-                    <input type="date" class="form-control" name="insurance_expiry_date_private" value="{{ old('insurance_expiry_date', optional($employee->insurance_expiry_date)->format('Y-m-d')) }}">
-                </div>
-                 <div class="col-md-4 mb-3">
-                    <label for="insurance_document_path_private" class="form-label">แนบไฟล์เอกสารประกัน</label>
-                    @if($employee->insurance_document_path && $employee->insurance_type == 'ประกันเอกชน') <div class="small mb-1"><a href="{{ asset('storage/' . $employee->insurance_document_path) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
-                    <input type="file" class="form-control form-control-sm" name="insurance_document_path_private">
+                    <input type="date" class="form-control" name="insurance_expiry_date_private" value="{{ old('insurance_expiry_date_private', optional($employee->insurance_expiry_date_private)->format('Y-m-d')) }}">
                 </div>
             </div>
         </div>
-
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="insurance_document_path_private" class="form-label">แนบไฟล์เอกสารประกัน</label>
+                @if($employee->insurance_document_path_private) <div class="small mb-1"><a href="{{ asset('storage/' . $employee->insurance_document_path_private) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
+                <input type="file" class="form-control form-control-sm" name="insurance_document_path_private">
+            </div>
+        </div>
 
         {{-- Category 6: Login Information --}}
         <h5 class="mt-4"><i class="bi bi-lock-fill"></i> 6. ข้อมูลการเข้าสู่ระบบ (Login Information)</h5>
@@ -296,11 +297,11 @@
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="employeeEmail" class="form-label">อีเมล</label>
-                <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', $employee->user?->email) }}">
+                <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', $employee->email) }}">
             </div>
             <div class="col-md-6 mb-3">
                 <label for="employeePassword" class="form-label">รหัสผ่าน (กรอกเพื่อเปลี่ยน)</label>
-                <input type="text" class="form-control" id="employeePassword" name="employeePassword">
+                <input type="text" class="form-control" id="employeePassword" name="employeePassword" value="{{ old('employeePassword', $employee->password) }}">
             </div>
         </div>
 
