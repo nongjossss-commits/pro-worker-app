@@ -567,4 +567,38 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Serve a private document for a given employee.
+     *
+     * @param  \App\Models\Employee  $employee
+     * @param  string  $field
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function serveDocument(Employee $employee, $field)
+    {
+        // Whitelist of allowed document fields to prevent security risks
+        $allowedFields = [
+            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+            'insurance_document_path_private',
+            // Keep old fields for backward compatibility if needed
+            'passport_file_path', 'visa_file_path', 'work_permit_file_path',
+            'pink_card_file_path', 'insurance_attachment_path'
+        ];
+
+        if (!in_array($field, $allowedFields)) {
+            abort(404, 'Document type not found.');
+        }
+
+        // Use a policy to check if the user can view the employee
+        $this->authorize('view', $employee);
+
+        $filePath = $employee->{$field};
+
+        if (!$filePath || !Storage::disk('private')->exists($filePath)) {
+            abort(404, 'File not found.');
+        }
+
+        return Storage::disk('private')->response($filePath);
+    }
 }

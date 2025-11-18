@@ -179,7 +179,7 @@
             <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
             @if($employee->insurance_document_path_private)
                 <p class="form-control-plaintext">
-                    <a href="{{ Storage::disk('private')->url($employee->insurance_document_path_private) }}" target="_blank">
+                    <a href="{{ route('employees.documents.serve', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank">
                         <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
                     </a>
                 </p>
@@ -217,14 +217,16 @@
                 $field = $file['field'];
                 $label = $file['label'];
                 $desc_field = $file['desc_field'] ?? null;
-                // Docs 1-4 are sensitive and stored on the private disk. Others are public.
-                $disk = in_array($field, ['employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4']) ? 'private' : 'public';
+                $isPrivate = in_array($field, ['employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4']);
+                $url = $isPrivate
+                    ? route('employees.documents.serve', ['employee' => $employee->id, 'field' => $field])
+                    : ($employee->{$field} ? Storage::disk('public')->url($employee->{$field}) : '#');
             @endphp
             <div class="col-md-4">
                 <label class="form-label fw-bold">{{ $label }}</label>
                 @if($employee->{$field})
                     <p class="form-control-plaintext">
-                        <a href="{{ Storage::disk($disk)->url($employee->{$field}) }}" target="_blank">
+                        <a href="{{ $url }}" target="_blank">
                             <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
                         </a>
                          @if($desc_field && $employee->{$desc_field})
