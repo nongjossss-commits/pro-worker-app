@@ -300,8 +300,10 @@
                 <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', $employee->email) }}">
             </div>
             <div class="col-md-6 mb-3">
-                <label for="employeePassword" class="form-label">รหัสผ่าน (กรอกเพื่อเปลี่ยน)</label>
-                <input type="text" class="form-control" id="employeePassword" name="employeePassword" value="{{ old('employeePassword', $employee->password) }}">
+                <label for="password" class="form-label">รหัสผ่าน (Password) </label>
+                <input type="text" class="form-control" id="password" name="password"
+                       value="{{ $employee->password }}" placeholder="กรอกรหัสผ่าน">
+                {{-- Note: type="text" creates a plain text box as requested --}}
             </div>
         </div>
 
