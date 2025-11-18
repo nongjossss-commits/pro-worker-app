@@ -135,21 +135,38 @@
     {{-- Insurance Information --}}
     <h5>ข้อมูลประกัน</h5>
     <div class="row g-3">
+        @php
+            $insuranceType = $employee->insuranceType;
+            // Infer type if it's not explicitly set, based on which data fields are available.
+            if (!$insuranceType) {
+                if (!empty($employee->socialSecurityNumber)) {
+                    $insuranceType = 'ประกันสังคม';
+                } elseif (!empty($employee->insuranceCompany)) {
+                    $insuranceType = 'ประกันเอกชน';
+                } elseif (!empty($employee->hospitalName)) {
+                    // This could be Social Security or Hospital Insurance.
+                    // We assume if socialSecurityNumber is empty, it's Hospital Insurance.
+                    $insuranceType = 'ประกันโรงพยาบาล';
+                }
+            }
+        @endphp
+
         <div class="col-md-4">
             <label class="form-label fw-bold">ประเภทประกัน</label>
-            <p class="form-control-plaintext">{{ $employee->insuranceType ?? 'N/A' }}</p>
+            <p class="form-control-plaintext">{{ $insuranceType ?? 'N/A' }}</p>
         </div>
 
-        @if($employee->insuranceType === 'ประกันสังคม')
+        @if($insuranceType === 'ประกันสังคม')
             <div class="col-md-4">
                 <label class="form-label fw-bold">เลขประกันสังคม</label>
                 <p class="form-control-plaintext">{{ $employee->socialSecurityNumber ?? 'N/A' }}</p>
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-bold">โรงพยาบาลตามสิทธิ</label>
-                <p class="form-control-plaintext">{{ $employee->hospitalName ?? 'N/A' }}</p>
+                {{-- Data inconsistency fix: hospital name could be in either field --}}
+                <p class="form-control-plaintext">{{ $employee->hospitalName ?? $employee->insuranceCompany ?? 'N/A' }}</p>
             </div>
-        @elseif($employee->insuranceType === 'ประกันเอกชน')
+        @elseif($insuranceType === 'ประกันเอกชน')
             <div class="col-md-4">
                 <label class="form-label fw-bold">บริษัทประกัน</label>
                 <p class="form-control-plaintext">{{ $employee->insuranceCompany ?? 'N/A' }}</p>
@@ -158,7 +175,7 @@
                 <label class="form-label fw-bold">วันหมดอายุ</label>
                 <p class="form-control-plaintext">{{ $employee->insuranceExpiryDate ? $employee->insuranceExpiryDate->format('d/m/Y') : 'N/A' }}</p>
             </div>
-        @elseif($employee->insuranceType === 'ประกันโรงพยาบาล')
+        @elseif($insuranceType === 'ประกันโรงพยาบาล')
              <div class="col-md-4">
                 <label class="form-label fw-bold">โรงพยาบาล</label>
                 <p class="form-control-plaintext">{{ $employee->hospitalName ?? 'N/A' }}</p>
@@ -168,9 +185,10 @@
                 <p class="form-control-plaintext">{{ $employee->insuranceExpiryDate ? $employee->insuranceExpiryDate->format('d/m/Y') : 'N/A' }}</p>
             </div>
         @else
+            {{-- Fallback for cases with no clear type or data --}}
             <div class="col-md-8">
                 <label class="form-label fw-bold">รายละเอียด</label>
-                <p class="form-control-plaintext">{{ $employee->insurance_detail ?? 'N/A' }}</p>
+                <p class="form-control-plaintext">ไม่มีข้อมูล</p>
             </div>
         @endif
 
@@ -179,7 +197,7 @@
             <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
             @if($employee->insurance_document_path_private)
                 <p class="form-control-plaintext">
-                    <a href="{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}" target="_blank">
+                    <a href="{{ route('employees.documents.serve', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank">
                         <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
                     </a>
                 </p>
