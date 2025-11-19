@@ -114,7 +114,17 @@ class AdminJobTicketController extends Controller
 
             // 5. Process New Employees (attachment_new_employee)
             if (!empty($attachments['new_employees'])) {
-                $fileFields = ['employeePhoto', 'document_1']; // ตรงกับใน Modal (snippet 56)
+                // Define all possible file fields that need to be processed
+                $fileFields = [
+                    'employeePhoto',
+                    'insurance_document_path_social',
+                    'insurance_document_path_hospital',
+                    'insurance_document_path_private',
+                    'employee_doc_1', 'employee_doc_2', 'employee_doc_3',
+                    'employee_doc_4', 'employee_doc_5', 'employee_doc_6',
+                    'employee_doc_7', 'employee_doc_8', 'employee_doc_9',
+                    'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+                ];
 
                 // V2.5-PATCH: $validated['attachments']['new_employees'] คือ array of arrays (ไม่ใช่ JSON string)
                 foreach ($attachments['new_employees'] as $newEmployeeData) {
