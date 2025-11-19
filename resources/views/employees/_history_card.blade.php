@@ -1,7 +1,7 @@
 @php
     $employerName = $employee->employer->employerNameTh ?? 'N/A';
-    $employeeFullNameTh = $employee->employeeNameTh ?? 'N/A';
-    $employeeFullNameEn = $employee->employeeNameEn ?? 'N/A';
+    $employeeFullNameTh = ($employee->employeeTitleTh ? $employee->employeeTitleTh . ' ' : '') . ($employee->employeeNameTh ?? 'N/A');
+    $employeeFullNameEn = ($employee->employeeTitleEn ? $employee->employeeTitleEn . ' ' : '') . ($employee->employeeNameEn ?? 'N/A');
     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
 @endphp
 
@@ -45,19 +45,19 @@
 
         {{-- Action Buttons --}}
         <div class="ms-auto ps-3 d-flex align-items-center">
-            <div class="btn-group-vertical btn-group-sm">
-                <button type="button" class="btn btn-outline-secondary btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล">
-                    <i class="bi bi-eye-fill"></i>
+            <div class="d-flex flex-column flex-md-row gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล">
+                    <i class="bi bi-search"></i>
                 </button>
-                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง">
+                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-info" title="ไปที่ข้อมูลนายจ้าง">
                     <i class="bi bi-geo-alt-fill"></i>
                 </a>
-                <button type="button" class="btn btn-outline-primary" title="Create Job (Coming Soon)" disabled>
+                <button type="button" class="btn btn-sm btn-outline-primary" title="Create Job (Coming Soon)" disabled>
                     <i class="bi bi-briefcase-fill"></i>
                 </button>
-                 <button class="btn btn-outline-success btn-reinstate" title="Restore" data-employee-id="{{ $employee->id }}"><i class="bi bi-arrow-counterclockwise"></i></button>
-                <button class="btn btn-outline-danger btn-move-to-trash" title="Move to Trash" data-employee-id="{{ $employee->id }}"><i class="bi bi-trash3-fill"></i></button>
-                <button class="btn btn-outline-info btn-transfer-employee" title="Transfer Employer" data-employee-id="{{ $employee->id }}" data-employee-name="{{ $employee->employeeNameTh }}"><i class="bi bi-person-up"></i></button>
+                 <button class="btn btn-sm btn-outline-success btn-reinstate" title="Restore" data-employee-id="{{ $employee->id }}"><i class="bi bi-arrow-counterclockwise"></i></button>
+                <button class="btn btn-sm btn-outline-danger btn-move-to-trash" title="Move to Trash" data-employee-id="{{ $employee->id }}"><i class="bi bi-trash3-fill"></i></button>
+                <button class="btn btn-sm btn-outline-info btn-transfer-employee" title="Transfer Employer" data-employee-id="{{ $employee->id }}" data-employee-name="{{ $employee->employeeNameTh }}"><i class="bi bi-person-up"></i></button>
             </div>
         </div>
     </div>
