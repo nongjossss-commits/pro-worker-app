@@ -492,7 +492,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // --- V6: Step 6: Update Employee ---
         $employee->update($validated);
 
-        return back()->with('success', 'Employee updated successfully.');
+        return redirect($request->input('_previous', route('employees.index')))
+            ->with('success', 'Employee updated successfully.');
     }
 
     public function locate(Employee $employee)
