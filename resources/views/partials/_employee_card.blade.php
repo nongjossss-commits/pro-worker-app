@@ -34,7 +34,7 @@
             @endif
 
             <span class="employee-name-th d-block">
-                {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->employeePosition ?? 'N/A' }})
+                {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})
             </span>
 
             <span class="employer-name d-block text-muted">นายจ้าง: {{ $employerName }}</span>
