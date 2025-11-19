@@ -369,8 +369,8 @@
                 </select>
                 <select name="passport_type_cambodia" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- ประเภทพาสปอร์ต (กัมพูชา) --</option>
-                    <option value="TD" {{ request('passport_type_cambodia') == 'TD' ? 'selected' : '' }}>เล่ม TD</option>
-                    <option value="International" {{ request('passport_type_cambodia') == 'International' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+                    <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>เล่ม TD</option>
+                    <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>เล่มอินเตอร์</option>
                 </select>
                 <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="ค้นหาตามวันหมดอายุใบอนุญาตทำงาน">
                 <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
