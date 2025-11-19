@@ -131,12 +131,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     <label for="employer-search-input" class="form-label">ค้นหานายจ้างใหม่</label>
                     <input type="text" id="employer-search-input" class="form-control" placeholder="พิมพ์เพื่อค้นหาชื่อนายจ้าง...">
                 </div>
-                <div id="employer-search-results" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                <div id="employer-search-results" class="list-group mb-3" style="max-height: 250px; overflow-y: auto;">
                     {{-- Employer search results will be populated here --}}
+                </div>
+                <div id="selected-employer-display" class="alert alert-info" style="display: none;">
+                    <strong>นายจ้างที่เลือก:</strong> <span id="selected-employer-name"></span>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="confirm-transfer-btn" disabled>ยืนยันการย้าย</button>
             </div>
         </div>
     </div>
