@@ -162,19 +162,26 @@
                                             @endforeach
                                         </div>
                                     </div>
-                                    @if(!$isClosed && (auth()->id() === $ticket->employer_user_id || auth()->user()->can('manage-tickets')))
-                                    <form action="{{ route('admin.tickets.messages.destroy', $item->message_id) }}" method="POST" class="d-inline ms-auto">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                data-swal-title="ยืนยันการลบ"
-                                                data-swal-text="ต้องการลบ '{{ $newEmployee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
-                                                data-swal-icon="warning"
-                                                data-swal-confirm-text="ใช่, ลบเลย">
-                                            <i class="bi bi-trash"></i>
+                                    <div class="ms-auto btn-group">
+                                        {{-- Preview Button --}}
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="openNewEmployeePreview(@json($newEmployee))">
+                                            <i class="bi bi-search"></i>
                                         </button>
-                                    </form>
-                                    @endif
+
+                                        @if(!$isClosed && (auth()->id() === $ticket->employer_user_id || auth()->user()->can('manage-tickets')))
+                                        <form action="{{ route('admin.tickets.messages.destroy', $item->message_id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
+                                                    data-swal-title="ยืนยันการลบ"
+                                                    data-swal-text="ต้องการลบ '{{ $newEmployee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                    data-swal-icon="warning"
+                                                    data-swal-confirm-text="ใช่, ลบเลย">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        @endif
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -498,6 +505,9 @@
     @include('tickets.partials._existing_employee_modal')
     @include('tickets.partials._new_employee_modal')
 </div> {{-- END of x-data scope (BUG 1 FIX) --}}
+
+{{-- Preview Modal for New Employees --}}
+@include('tickets.partials._new_employee_preview_modal')
 
 {{-- (S11.4) Change Assignment Modal --}}
 <div class="modal fade" id="changeAssignmentModal" tabindex="-1" aria-labelledby="changeAssignmentModalLabel" aria-hidden="true">

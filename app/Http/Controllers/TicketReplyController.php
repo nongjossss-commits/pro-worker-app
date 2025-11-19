@@ -96,7 +96,16 @@ foreach ($attachments['new_employees'] as $index => $newEmployeeData) {
 $employeeIdentifier = preg_replace('/[^A-Za-z0-9\-]/', '_', $newEmployeeData['employeePassport'] ?? "Index_{$index}");
 
 // 4a. Move associated files
-$fileFields = ['employeePhoto', 'document_1'];
+$fileFields = [
+    'employeePhoto',
+    'insurance_document_path_social',
+    'insurance_document_path_hospital',
+    'insurance_document_path_private'
+];
+for ($i = 1; $i <= 12; $i++) {
+    $fileFields[] = 'employee_doc_' . $i;
+}
+
 foreach ($fileFields as $field) {
 if (!empty($newEmployeeData[$field])) {
 $tempPath = $newEmployeeData[$field];
