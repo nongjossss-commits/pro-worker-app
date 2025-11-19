@@ -2,31 +2,44 @@
  * Centralized script for handling the Employment History modal.
  *
  * This script manages:
- * 1. Fetching and rendering terminated employees.
+ * 1. Fetching and rendering terminated employees with checkboxes.
  * 2. Live search functionality.
- * 3. Handling "Restore" and "Move to Trash" actions with SweetAlert2 confirmations.
+ * 3. Bulk selection and a bulk action bar for transferring multiple employees.
+ * 4. A "Transfer Employee" feature for single or multiple employees.
+ * 5. Handling "Restore" and "Move to Trash" actions.
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // --- STATE AND CONSTANTS ---
     const historyModalEl = document.getElementById('employmentHistoryModal');
     if (!historyModalEl) return;
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    let currentEmployerId = null;
+    let transferModalInstance = null;
+    let isBulkTransfer = false; // Flag to track transfer mode
+
+    // --- DOM ELEMENT SELECTORS ---
     const tableBody = document.getElementById('historyTableBody');
     const searchInput = document.getElementById('history-search-input');
-    let currentEmployerId = null;
+    const bulkActionBar = document.getElementById('history-bulk-action-bar');
+    const selectedCountSpan = document.getElementById('history-selected-count');
+    const mainSelectAllCheckbox = document.getElementById('history-select-all-checkbox-main');
+    const tableSelectAllCheckbox = document.getElementById('history-select-all-checkbox-table');
+    const bulkActionButton = document.getElementById('history-bulk-action-btn');
+    const transferModalEl = document.getElementById('transferEmployeeModal');
+    const employeeToTransferIdInput = document.getElementById('employee-to-transfer-id');
+    const employeeToTransferNameSpan = document.getElementById('employee-to-transfer-name');
+    const employerSearchInput = document.getElementById('employer-search-input');
+    const employerSearchResultsDiv = document.getElementById('employer-search-results');
 
-    /**
-     * Fetches and renders the employment history for a given employer.
-     * @param {string} employerId - The ID of the employer.
-     * @param {string} [searchTerm=''] - The search term to filter results.
-     */
+    // --- RENDERING LOGIC ---
     const fetchAndRenderHistory = (employerId, searchTerm = '') => {
         if (!employerId) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error: Employer ID not found.</td></tr>';
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error: Employer ID not found.</td></tr>`;
             return;
         }
         if (searchTerm === '') {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center">Loading...</td></tr>`;
         }
 
         const fetchUrl = `/employers/${employerId}/history?search=${encodeURIComponent(searchTerm)}`;
@@ -36,137 +49,193 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 tableBody.innerHTML = '';
                 if (!data.data || data.data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center">No employment history found ${searchTerm ? 'matching search' : ''}.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center">No employment history found ${searchTerm ? 'matching search' : ''}.</td></tr>`;
                     return;
                 }
-
                 data.data.forEach((employee, index) => {
                     const terminatedDate = employee.terminated_at ? new Date(employee.terminated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+                    const employeeFullName = `${employee.employeeTitleTh || ''} ${employee.employeeNameTh || 'N/A'}`.trim();
 
-                    const restoreForm = employee.can_restore ? `
-                        <form action="/employees/${employee.id}/reinstate" method="POST" class="d-inline js-restore-form">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn btn-sm btn-success" title="Restore">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                            </button>
-                        </form>` : '';
-
-                    // Requirement: Change action to soft delete, update button text.
-                    const moveToTrashForm = employee.can_force_delete ? `
-                        <form action="/employees/${employee.id}" method="POST" class="d-inline js-delete-form">
-                             <input type="hidden" name="_method" value="DELETE">
-                             <input type="hidden" name="_token" value="${csrfToken}">
-                             <button type="submit" class="btn btn-sm btn-danger" title="Move to Trash">
-                                <i class="bi bi-trash3-fill"></i>
-                             </button>
-                        </form>` : '';
-
-                    const flagMap = { 'เมียนมา': 'mm', 'ลาว': 'la', 'กัมพูชา': 'kh', 'เวียดนาม': 'vn', 'ไทย': 'th' };
-                    const countryCode = flagMap[employee.employeeNationality];
-                    const flagHTML = countryCode ? `<img src="/images/flags/${countryCode}.png" alt="${employee.employeeNationality}" style="width: 16px; height: 11px; margin-right: 4px; border-radius: 2px;">` : '';
-
-                    const employeeNameEnWithPrefix = [employee.english_prefix, employee.employeeNameEn].filter(Boolean).join(' ');
-
+                    const restoreButton = `<button class="btn btn-sm btn-success btn-reinstate" title="Restore" data-employee-id="${employee.id}"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+                    const trashButton = `<button class="btn btn-sm btn-danger btn-move-to-trash" title="Move to Trash" data-employee-id="${employee.id}"><i class="bi bi-trash3-fill"></i></button>`;
+                    const transferButton = `<button class="btn btn-sm btn-info btn-transfer-employee" title="Transfer Employer" data-employee-id="${employee.id}" data-employee-name="${employeeFullName}"><i class="bi bi-person-up"></i></button>`;
+                    const createJobButton = `<button class="btn btn-sm btn-secondary btn-create-job-ticket" title="Create Job Ticket" disabled><i class="bi bi-ticket-detailed"></i></button>`;
                     const employeeCellHTML = `
                         <div class="d-flex align-items-center">
-                            <img src="${employee.employeePhoto ? `/storage/${employee.employeePhoto}` : '/images/default-avatar.png'}" alt="Photo" class="employee-photo-thumb">
+                            <img src="${employee.photo_url || '/images/default-avatar.png'}" alt="Photo" class="employee-photo-thumb">
                             <div>
-                                <strong>${employeeNameEnWithPrefix || 'No English Name'}</strong>
-                                <div class="text-muted small">${employee.employeeTitleTh || ''} ${employee.employeeNameTh || 'N/A'} (${employee.employeePosition || 'N/A'})</div>
+                                <strong>${employee.employeeNameEn || 'No English Name'}</strong>
+                                <div class="text-muted small">${employeeFullName} (${employee.job_title || 'N/A'})</div>
                                 <div class="text-muted small">Passport: ${employee.employeePassport || 'N/A'}</div>
-                                <div class="text-muted small d-flex align-items-center">${flagHTML} ${employee.employeeNationality || ''}</div>
                             </div>
                         </div>`;
 
                     const row = `
                         <tr id="history-row-${employee.id}">
+                            <td><input class="form-check-input history-employee-checkbox" type="checkbox" data-employee-id="${employee.id}"></td>
                             <td>${index + 1}</td>
                             <td>${employeeCellHTML}</td>
                             <td>${terminatedDate}</td>
                             <td>${employee.termination_reason || '-'}</td>
-                            <td><div class="d-flex gap-1">${restoreForm} ${moveToTrashForm}</div></td>
+                            <td><div class="d-flex gap-1">${restoreButton} ${trashButton} ${transferButton} ${createJobButton}</div></td>
                         </tr>`;
                     tableBody.insertAdjacentHTML('beforeend', row);
                 });
+                updateBulkActionBar();
             })
             .catch(error => {
                 console.error('Error fetching employment history:', error);
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data.</td></tr>';
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading data.</td></tr>`;
             });
     };
 
-    /**
-     * Handles the AJAX submission for a given form (Restore or Delete).
-     * @param {HTMLFormElement} form - The form to submit.
-     */
-    const submitFormAndRefresh = (form) => {
-        const actionUrl = form.action;
-        fetch(actionUrl, { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    // A full page reload is the most reliable way to refresh all states
-                    // for both main list and history modal after an action.
-                    window.location.reload();
-                } else {
-                    showToast(data.message || 'An unknown error occurred.', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Error submitting form:', error);
-                showToast('An error occurred while communicating with the server.', 'danger');
-            });
+    // --- BULK ACTION & TRANSFER MODAL LOGIC ---
+    const updateBulkActionBar = () => {
+        const selectedCheckboxes = document.querySelectorAll('.history-employee-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        bulkActionBar.style.display = count > 0 ? 'flex' : 'none';
+        selectedCountSpan.textContent = count;
+        bulkActionButton.disabled = count === 0;
+        const allCheckboxes = document.querySelectorAll('.history-employee-checkbox');
+        const isAllSelected = allCheckboxes.length > 0 && count === allCheckboxes.length;
+        mainSelectAllCheckbox.checked = isAllSelected;
+        tableSelectAllCheckbox.checked = isAllSelected;
     };
 
-    // --- Event Listeners ---
+    const openTransferModal = () => {
+        employerSearchInput.value = '';
+        employerSearchResultsDiv.innerHTML = '';
+        if (!transferModalInstance) {
+            transferModalInstance = new bootstrap.Modal(transferModalEl);
+        }
+        transferModalInstance.show();
+    };
 
-    // Open main history modal
+    // --- API CALLS ---
+    const performAction = (url, body = {}) => {
+        body._token = csrfToken;
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                window.location.reload();
+            } else {
+                showToast(data.message || 'An unknown error occurred.', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error(`Error performing action to ${url}:`, error);
+            showToast('An error occurred while communicating with the server.', 'danger');
+        });
+    };
+
+    // --- EVENT LISTENERS ---
     historyModalEl.addEventListener('show.bs.modal', function (event) {
         currentEmployerId = event.relatedTarget?.getAttribute('data-employer-id');
-        if (searchInput) searchInput.value = '';
-        if (tableBody) tableBody.innerHTML = '';
+        searchInput.value = '';
+        tableBody.innerHTML = '';
         fetchAndRenderHistory(currentEmployerId, '');
+        updateBulkActionBar();
     });
 
-    // Live search
     searchInput?.addEventListener('keyup', () => fetchAndRenderHistory(currentEmployerId, searchInput.value.trim()));
 
-    // Delegated listener for Restore/Delete form submissions to trigger SweetAlert
-    tableBody?.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const form = event.target;
-
-        let confirmConfig;
-
-        if (form.classList.contains('js-delete-form')) {
-            confirmConfig = {
-                title: 'Are you sure?',
-                text: "This employee will be moved to the Central Trash.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, move to trash!'
-            };
-        } else if (form.classList.contains('js-restore-form')) {
-             confirmConfig = {
-                title: 'Are you sure?',
-                text: "This employee will be restored to the active list.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, restore it!'
-            };
-        } else {
-            return; // Not a form we're interested in
+    tableBody.addEventListener('click', (event) => {
+        const target = event.target.closest('button');
+        if (!target) return;
+        const employeeId = target.dataset.employeeId;
+        if (target.classList.contains('btn-reinstate')) {
+            Swal.fire({ title: 'ยืนยันการคืนสถานะ', text: "ลูกจ้างจะถูกย้ายกลับไปอยู่ในรายชื่อลูกจ้างปัจจุบัน", icon: 'question', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+                .then(result => result.isConfirmed && performAction(`/employees/${employeeId}/reinstate`));
+        } else if (target.classList.contains('btn-move-to-trash')) {
+            Swal.fire({ title: 'ยืนยันการย้ายไปถังขยะ', text: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33' })
+                .then(result => result.isConfirmed && performAction(`/employees/${employeeId}`, { _method: 'DELETE' }));
+        } else if (target.classList.contains('btn-transfer-employee')) {
+            isBulkTransfer = false;
+            employeeToTransferIdInput.value = employeeId;
+            employeeToTransferNameSpan.textContent = `คุณกำลังจะย้ายลูกจ้าง: ${target.dataset.employeeName}`;
+            openTransferModal();
         }
+    });
 
-        Swal.fire(confirmConfig).then((result) => {
-            if (result.isConfirmed) {
-                submitFormAndRefresh(form);
-            }
+    tableBody.addEventListener('change', (event) => {
+        if (event.target.classList.contains('history-employee-checkbox')) {
+            updateBulkActionBar();
+        }
+    });
+
+    [mainSelectAllCheckbox, tableSelectAllCheckbox].forEach(checkbox => {
+        checkbox.addEventListener('change', (event) => {
+            const isChecked = event.target.checked;
+            document.querySelectorAll('.history-employee-checkbox').forEach(cb => cb.checked = isChecked);
+            mainSelectAllCheckbox.checked = isChecked;
+            tableSelectAllCheckbox.checked = isChecked;
+            updateBulkActionBar();
         });
     });
+
+    bulkActionButton.addEventListener('click', () => {
+        const selectedCheckboxes = document.querySelectorAll('.history-employee-checkbox:checked');
+        if (selectedCheckboxes.length === 0) return;
+        isBulkTransfer = true;
+        const employeeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.employeeId);
+        employeeToTransferIdInput.value = JSON.stringify(employeeIds);
+        employeeToTransferNameSpan.textContent = `คุณกำลังจะย้ายลูกจ้างที่เลือกจำนวน ${selectedCheckboxes.length} คน`;
+        openTransferModal();
+    });
+
+    employerSearchInput.addEventListener('keyup', () => {
+        const searchTerm = employerSearchInput.value.trim();
+        if (searchTerm.length < 2) {
+            employerSearchResultsDiv.innerHTML = '';
+            return;
+        }
+        fetch(`/api-web/employers/list?search=${encodeURIComponent(searchTerm)}`)
+            .then(response => response.json())
+            .then(data => {
+                employerSearchResultsDiv.innerHTML = data.length === 0 ? '<p class="text-muted p-2">ไม่พบข้อมูลนายจ้าง</p>' : '';
+                data.forEach(employer => {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = `${employer.employerNameTh} (${employer.employerId})`;
+                    item.dataset.employerId = employer.id;
+                    employerSearchResultsDiv.appendChild(item);
+                });
+            });
+    });
+
+    employerSearchResultsDiv.addEventListener('click', (event) => {
+        const target = event.target.closest('button');
+        if (!target) return;
+        const newEmployerId = target.dataset.employerId;
+        const newEmployerName = target.textContent;
+        const swalHtml = isBulkTransfer
+            ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
+            : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
+
+        Swal.fire({ title: 'ยืนยันการย้ายนายจ้าง', html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+            .then(result => {
+                if (result.isConfirmed) {
+                    if (isBulkTransfer) {
+                        const employeeIds = JSON.parse(employeeToTransferIdInput.value);
+                        performAction('/employees/bulk-transfer', { employee_ids: employeeIds, new_employer_id: newEmployerId });
+                    } else {
+                        const employeeId = employeeToTransferIdInput.value;
+                        performAction(`/employees/${employeeId}/transfer`, { new_employer_id: newEmployerId });
+                    }
+                }
+            });
+    });
+
+    // Modal stacking fix
+    if (transferModalEl) {
+        transferModalEl.addEventListener('show.bs.modal', () => historyModalEl.classList.add('modal-behind'));
+        transferModalEl.addEventListener('hidden.bs.modal', () => historyModalEl.classList.remove('modal-behind'));
+    }
 });

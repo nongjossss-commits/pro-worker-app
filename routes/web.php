@@ -88,9 +88,15 @@ Route::middleware('auth')->group(function () {
     // --- V2.4-S5/S6: Internal API Routes for Web Interface ---
     Route::prefix('api-web')->name('api-web.')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
+        Route::get('employers/list', [EmployerController::class, 'listApi'])->name('employers.list');
         // V2.4-S6: New Route for Temporary Uploads (POST)
         Route::post('temp-upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
     });
+
+    // Employee Transfer Route
+    Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');
+    // Bulk Employee Transfer Route
+    Route::post('employees/bulk-transfer', [EmployeeController::class, 'bulkTransfer'])->name('employees.bulkTransfer');
 });
 
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===

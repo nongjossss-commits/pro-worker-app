@@ -74,13 +74,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <input type="text" id="history-search-input" class="form-control" placeholder="ค้นหาตามชื่อ หรือ เลขพาสปอร์ต...">
+                <div class="d-flex justify-content-between mb-3">
+                    <input type="text" id="history-search-input" class="form-control" style="max-width: 300px;" placeholder="ค้นหาตามชื่อ หรือ เลขพาสปอร์ต...">
                 </div>
+
+                <div id="history-bulk-action-bar" class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-3" style="display: none;">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="history-select-all-checkbox-main">
+                        <label class="form-check-label" for="history-select-all-checkbox-main">
+                            เลือกทั้งหมด (<span id="history-selected-count">0</span>)
+                        </label>
+                    </div>
+                    <button id="history-bulk-action-btn" class="btn btn-sm btn-primary" disabled>
+                        <i class="bi bi-person-check-fill me-1"></i> ดำเนินการกับรายการที่เลือก
+                    </button>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="history-select-all-checkbox-table"></th>
                                 <th>#</th>
                                 <th style="width: 40%;">พนักงาน</th>
                                 <th>วันที่แจ้งออก</th>
@@ -96,6 +110,33 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{{-- Transfer Employee Modal (Child of History Modal) --}}
+<div class="modal fade" id="transferEmployeeModal" tabindex="-1" aria-labelledby="transferEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transferEmployeeModalLabel">ย้ายนายจ้างสำหรับลูกจ้าง</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="employee-to-transfer-id">
+                <p>คุณกำลังจะย้ายลูกจ้าง: <strong id="employee-to-transfer-name"></strong></p>
+                <div class="mb-3">
+                    <label for="employer-search-input" class="form-label">ค้นหานายจ้างใหม่</label>
+                    <input type="text" id="employer-search-input" class="form-control" placeholder="พิมพ์เพื่อค้นหาชื่อนายจ้าง...">
+                </div>
+                <div id="employer-search-results" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                    {{-- Employer search results will be populated here --}}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
             </div>
         </div>
     </div>
