@@ -121,8 +121,11 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     // Future routes (update/assign) will go here.
 });
 
+use App\Http\Controllers\Admin\NotificationSettingController;
 // === Existing Admin Routes (role:admin) ===
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/notification-settings', [NotificationSettingController::class, 'index'])->name('notification_settings.index');
+    Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');
     Route::resource('users', UserController::class);
     Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
 });

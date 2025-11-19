@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CounterSeeder::class,
             RoleAndPermissionSeeder::class, // เพิ่มบรรทัดนี้เข้ามา
+            NotificationSettingSeeder::class,
         ]);
     }
 }
