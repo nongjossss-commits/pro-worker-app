@@ -179,6 +179,9 @@
                 <a href="{{ route('employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                     <i class="bi bi-people-fill me-2"></i>ข้อมูลลูกจ้าง
                 </a>
+                <a href="{{ route('employees.history') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.history') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+                    <i class="bi bi-person-badge me-2"></i>ประวัติการจ้างงาน
+                </a>
                 @endcan
                 @can('view-importers')
                 <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>ข้อมูลบริษัทนำเข้า</a>
