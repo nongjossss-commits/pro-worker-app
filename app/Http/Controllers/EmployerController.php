@@ -469,7 +469,7 @@ public function edit(Request $request, Employer $employer)
         // This endpoint is used in contexts where a user needs to select an employer.
         // We can reuse the 'manage-tickets' permission as it's a good proxy
         // for "is an admin or staff member".
-        $this->authorize('permission:manage-tickets');
+        $this->authorize('view-employers');
 
         $query = Employer::query();
 
