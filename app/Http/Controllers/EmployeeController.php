@@ -84,8 +84,16 @@ public function reinstate(Employee $employee)
             $q->where('employeeNameTh', 'like', $searchTerm)
               ->orWhere('employeeNameEn', 'like', $searchTerm)
               ->orWhere('employeePassport', 'like', $searchTerm)
-              ->orWhere('pinkCardNo', 'like', $searchTerm);
+              ->orWhere('pinkCardNo', 'like', $searchTerm)
+              ->orWhere('employeeWorkPermit', 'like', $searchTerm)
+              ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
+                  $employerQuery->where('employerNameTh', 'like', $searchTerm)
+                                ->orWhere('employerNameEn', 'like', $searchTerm);
+              });
         });
+    }
+    if ($request->filled('work_permit_expiry_date')) {
+        $query->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
     }
 
     if ($request->filled('nationality')) {
@@ -500,8 +508,17 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
-                  ->orWhere('pinkCardNo', 'like', $searchTerm);
+                  ->orWhere('pinkCardNo', 'like', $searchTerm)
+                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
+                  ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
+                      $employerQuery->where('employerNameTh', 'like', $searchTerm)
+                                    ->orWhere('employerNameEn', 'like', $searchTerm);
+                  });
             });
+        }
+
+        if ($request->filled('work_permit_expiry_date')) {
+            $query->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
         }
 
         if ($request->filled('nationality')) {
