@@ -152,6 +152,7 @@ class CheckExpiries extends Command
                         'type' => $notificationType,
                     ],
                     [
+                        'employee_id' => null, // Explicitly set employee_id to null
                         'due_date' => $expiryDate,
                         'days_remaining' => $daysRemaining,
                         'status' => 'unread',
