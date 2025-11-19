@@ -271,7 +271,7 @@ public function edit(Request $request, Employer $employer)
             // FIX: Generate a full, correct URL for the employee photo
             $employee->photo_url = $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-avatar.png');
             // ADD: Calculate days since termination
-            $employee->days_since_termination = $employee->terminated_at ? \Carbon\Carbon::parse($employee->terminated_at)->diffInDays(\Carbon\Carbon::now()) : 0;
+            $employee->days_since_termination = floor($employee->terminated_at ? \Carbon\Carbon::parse($employee->terminated_at)->diffInDays(\Carbon\Carbon::now()) : 0);
             return $employee;
         });
 

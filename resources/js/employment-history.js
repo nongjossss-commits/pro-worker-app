@@ -31,6 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const employeeToTransferNameSpan = document.getElementById('employee-to-transfer-name');
     const employerSearchInput = document.getElementById('employer-search-input');
     const employerSearchResultsDiv = document.getElementById('employer-search-results');
+    const selectedEmployerDisplay = document.getElementById('selected-employer-display');
+    const selectedEmployerNameSpan = document.getElementById('selected-employer-name');
+    const confirmTransferBtn = document.getElementById('confirm-transfer-btn');
+
+    let selectedEmployer = null; // To store {id, name} of the selected employer
 
     // --- RENDERING LOGIC ---
     const fetchAndRenderHistory = (employerId, searchTerm = '') => {
@@ -108,6 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const openTransferModal = () => {
         employerSearchInput.value = '';
         employerSearchResultsDiv.innerHTML = '';
+        employerSearchResultsDiv.style.display = 'block'; // Show search results
+        selectedEmployer = null;
+        selectedEmployerDisplay.style.display = 'none';
+        confirmTransferBtn.disabled = true;
+
         if (!transferModalInstance) {
             transferModalInstance = new bootstrap.Modal(transferModalEl);
         }
@@ -135,6 +145,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(`Error performing action to ${url}:`, error);
             showToast('An error occurred while communicating with the server.', 'danger');
         });
+    };
+
+    // --- UTILITY FUNCTIONS ---
+    const debounce = (func, delay) => {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
     };
 
     // --- EVENT LISTENERS ---
@@ -192,32 +211,74 @@ document.addEventListener('DOMContentLoaded', () => {
         openTransferModal();
     });
 
-    employerSearchInput.addEventListener('keyup', () => {
+    const handleEmployerSearch = debounce(() => {
         const searchTerm = employerSearchInput.value.trim();
         if (searchTerm.length < 2) {
             employerSearchResultsDiv.innerHTML = '';
             return;
         }
+        employerSearchResultsDiv.innerHTML = '<p class="text-muted p-2">กำลังค้นหา...</p>';
+
         fetch(`/api-web/employers/list?search=${encodeURIComponent(searchTerm)}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 employerSearchResultsDiv.innerHTML = data.length === 0 ? '<p class="text-muted p-2">ไม่พบข้อมูลนายจ้าง</p>' : '';
                 data.forEach(employer => {
                     const item = document.createElement('button');
                     item.type = 'button';
-                    item.className = 'list-group-item list-group-item-action';
-                    item.textContent = `${employer.employerNameTh} (${employer.employerId})`;
+                    item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    item.innerHTML = `
+                        <div>
+                            <strong class="mb-1">${employer.employerNameTh}</strong>
+                            <small class="d-block text-muted">ID: ${employer.employerId}</small>
+                        </div>
+                        <i class="bi bi-chevron-right"></i>
+                    `;
                     item.dataset.employerId = employer.id;
+                    item.dataset.employerName = employer.employerNameTh; // Store name for selection
                     employerSearchResultsDiv.appendChild(item);
                 });
+            })
+            .catch(error => {
+                console.error('Error fetching employers:', error);
+                employerSearchResultsDiv.innerHTML = '<p class="text-danger p-2">เกิดข้อผิดพลาดในการค้นหา</p>';
             });
-    });
+    }, 300);
+
+    employerSearchInput.addEventListener('keyup', handleEmployerSearch);
+
 
     employerSearchResultsDiv.addEventListener('click', (event) => {
         const target = event.target.closest('button');
         if (!target) return;
-        const newEmployerId = target.dataset.employerId;
-        const newEmployerName = target.textContent;
+
+        // Store selected employer and update UI
+        selectedEmployer = {
+            id: target.dataset.employerId,
+            name: target.dataset.employerName // Use the stored name
+        };
+
+        selectedEmployerNameSpan.textContent = selectedEmployer.name;
+        selectedEmployerDisplay.style.display = 'block';
+        confirmTransferBtn.disabled = false;
+        employerSearchResultsDiv.style.display = 'none'; // Hide search results
+        employerSearchResultsDiv.innerHTML = ''; // Clear search results
+        employerSearchInput.value = ''; // Clear search input
+    });
+
+    confirmTransferBtn.addEventListener('click', () => {
+        if (!selectedEmployer) {
+            showToast('กรุณาเลือกนายจ้างใหม่ก่อน', 'danger');
+            return;
+        }
+
+        const { id: newEmployerId, name: newEmployerName } = selectedEmployer;
+
         const swalHtml = isBulkTransfer
             ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
             : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
@@ -235,6 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
     });
+
 
     // Modal stacking fix
     if (transferModalEl) {
