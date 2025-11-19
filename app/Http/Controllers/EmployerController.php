@@ -264,10 +264,14 @@ public function edit(Request $request, Employer $employer)
         // Paginate results and preserve query string
         $terminatedEmployees = $query->paginate(10)->withQueryString();
 
-        // Add authorization data to each employee object within the paginated result
-        $terminatedEmployees->through(function($employee) {
+        // Add authorization and computed data to each employee object
+        $terminatedEmployees->getCollection()->transform(function ($employee) {
             $employee->can_restore = auth()->user()->can('restore-employees');
             $employee->can_force_delete = auth()->user()->can('force-delete-employees');
+            // FIX: Generate a full, correct URL for the employee photo
+            $employee->photo_url = $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-avatar.png');
+            // ADD: Calculate days since termination
+            $employee->days_since_termination = $employee->terminated_at ? \Carbon\Carbon::parse($employee->terminated_at)->diffInDays(\Carbon\Carbon::now()) : 0;
             return $employee;
         });
 

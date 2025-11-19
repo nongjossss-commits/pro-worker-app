@@ -53,16 +53,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 data.data.forEach((employee, index) => {
+                    // FIX: Use the new days_since_termination and photo_url from controller
                     const terminatedDate = employee.terminated_at ? new Date(employee.terminated_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+                    const daysSinceTerminationText = ` <span class="badge bg-secondary">${employee.days_since_termination} วัน</span>`;
                     const employeeFullName = `${employee.employeeTitleTh || ''} ${employee.employeeNameTh || 'N/A'}`.trim();
 
                     const restoreButton = `<button class="btn btn-sm btn-success btn-reinstate" title="Restore" data-employee-id="${employee.id}"><i class="bi bi-arrow-counterclockwise"></i></button>`;
                     const trashButton = `<button class="btn btn-sm btn-danger btn-move-to-trash" title="Move to Trash" data-employee-id="${employee.id}"><i class="bi bi-trash3-fill"></i></button>`;
                     const transferButton = `<button class="btn btn-sm btn-info btn-transfer-employee" title="Transfer Employer" data-employee-id="${employee.id}" data-employee-name="${employeeFullName}"><i class="bi bi-person-up"></i></button>`;
                     const createJobButton = `<button class="btn btn-sm btn-secondary btn-create-job-ticket" title="Create Job Ticket" disabled><i class="bi bi-ticket-detailed"></i></button>`;
+
                     const employeeCellHTML = `
                         <div class="d-flex align-items-center">
-                            <img src="${employee.photo_url || '/images/default-avatar.png'}" alt="Photo" class="employee-photo-thumb">
+                            <img src="${employee.photo_url}" alt="Photo" class="employee-photo-thumb">
                             <div>
                                 <strong>${employee.employeeNameEn || 'No English Name'}</strong>
                                 <div class="text-muted small">${employeeFullName} (${employee.job_title || 'N/A'})</div>
@@ -75,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td><input class="form-check-input history-employee-checkbox" type="checkbox" data-employee-id="${employee.id}"></td>
                             <td>${index + 1}</td>
                             <td>${employeeCellHTML}</td>
-                            <td>${terminatedDate}</td>
+                            <td>${terminatedDate}${daysSinceTerminationText}</td>
                             <td>${employee.termination_reason || '-'}</td>
                             <td><div class="d-flex gap-1">${restoreButton} ${trashButton} ${transferButton} ${createJobButton}</div></td>
                         </tr>`;
