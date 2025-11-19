@@ -17,13 +17,13 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-    'password' => Hash::make('admin_password_1234'),
+            'password' => Hash::make('admin_password_1234'),
         ]);
 
         // Call the other seeders
         $this->call([
             CounterSeeder::class,
-            RoleAndPermissionSeeder::class, // เพิ่มบรรทัดนี้เข้ามา
+            RoleAndPermissionSeeder::class,
             NotificationSettingSeeder::class,
         ]);
     }
