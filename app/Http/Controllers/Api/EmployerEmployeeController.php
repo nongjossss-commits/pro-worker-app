@@ -46,8 +46,15 @@ class EmployerEmployeeController extends Controller
                 return response()->json([]);
             }
         }
-        // For users with the 'employer' role, the existing employerTenancy global scope
-        // will automatically handle the filtering. No 'else' block is needed.
+        // V2.5-S7 FIX: Explicitly apply tenancy for employers to prevent global scope issues.
+        } else if ($user->hasRole('employer')) {
+            if ($user->employer) {
+                $query->where('employer_id', $user->employer->id);
+            } else {
+                // If employer user is not linked to an employer record, return empty.
+                return response()->json([]);
+            }
+        }
 
         $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
 

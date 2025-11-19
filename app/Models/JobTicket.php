@@ -162,9 +162,11 @@ class JobTicket extends Model
 
                 // 2. Eager Load Employee models and map back with message IDs
                 if (!empty($employeeMessageMap)) {
+                    // V2.5-S6 FIX: Chain append('photo_url') to add the accessor to the collection
                     $employeeModels = Employee::withoutGlobalScopes()->withTrashed()
                         ->whereIn('id', array_keys($employeeMessageMap))
                         ->get()
+                        ->append('photo_url')
                         ->keyBy('id');
 
                     foreach ($employeeMessageMap as $employeeId => $messageIds) {
