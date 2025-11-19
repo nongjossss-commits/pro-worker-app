@@ -124,6 +124,14 @@ public function reinstate(Employee $employee)
             });
         }
     }
+
+    if ($request->filled('passport_type')) {
+        $passportType = $request->input('passport_type');
+        $query->where(function ($q) use ($passportType) {
+            $q->where('passportType', $passportType)
+                ->orWhere('passport_type_cambodia', $passportType);
+        });
+    }
     // --- END: ADDED FILTERING LOGIC ---
 
     $totalEmployees = (clone $query)->count();
@@ -544,6 +552,14 @@ public function create(Request $request) // เพิ่ม Request $request เ
             } elseif ($request->input('pink_card') === 'no') {
                 $query->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', ''));
             }
+        }
+
+        if ($request->filled('passport_type')) {
+            $passportType = $request->input('passport_type');
+            $query->where(function ($q) use ($passportType) {
+                $q->where('passportType', $passportType)
+                    ->orWhere('passport_type_cambodia', $passportType);
+            });
         }
 
         $employees = $query->with('employer')->get();
