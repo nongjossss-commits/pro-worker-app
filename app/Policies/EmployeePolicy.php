@@ -53,15 +53,22 @@ class EmployeePolicy
      * @param  \App\Models\Employee  $employee
      * @return \Illuminate\Auth\Access\Response|bool
      */
-    public function transfer(User $user, Employee $employee)
+    public function transfer(User $user, Employee $employee = null)
     {
-        // First, check the base permission for terminating/transferring.
+        // For admins/staff, this permission check is enough for both single and bulk actions.
         if ($user->can('terminate-employees')) {
             return true;
         }
 
-        // If not an admin/staff, check if they are the employer of this specific employee.
-        // The `Employee` model is passed to this method, so we can check ownership.
-        return $user->id === $employee->employer->user_id;
+        // If an employee instance is provided (single transfer), check ownership.
+        if ($employee) {
+            return $user->id === $employee->employer->user_id;
+        }
+
+        // For a bulk action ($employee is null) by a non-admin (e.g., an employer),
+        // we cannot check ownership of individual employees here.
+        // We allow the request to proceed to the controller, which is responsible
+        // for verifying that the user owns all employees in the request.
+        return true;
     }
 }
