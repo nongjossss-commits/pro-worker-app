@@ -73,7 +73,7 @@ class NotificationController extends Controller
 
     private function getFilteredQuery(Request $request, string $type)
     {
-        $query = Notification::with('employee.employer', 'employer');
+        $query = Notification::with(['employee.employer', 'employer']);
 
         if ($type === 'cancelled') {
             $query->where('status', 'cancelled')->latest('updated_at');

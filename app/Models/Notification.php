@@ -16,11 +16,14 @@ class Notification extends Model
      */
     protected $fillable = [
         'employee_id',
+        'employer_id',
         'type',
         'message',
         'due_date',
         'status',
-        'days_remaining', // FIX: Added this field to allow mass assignment
+        'days_remaining',
+        'cancellation_reason',
+        'cancelled_at',
     ];
 
     /**
@@ -29,5 +32,13 @@ class Notification extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    /**
+     * Get the employer that the notification belongs to.
+     */
+    public function employer()
+    {
+        return $this->belongsTo(Employer::class);
     }
 }
