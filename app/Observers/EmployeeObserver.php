@@ -18,6 +18,9 @@ class EmployeeObserver
             'workPermitExpiryDate',
             'visaExpiryDate',
             'ninetyDayReportDate',
+            'insurance_expiry_date',
+            'insurance_expiry_date_hospital',
+            'insurance_expiry_date_private',
         ];
 
         $wasChanged = false;

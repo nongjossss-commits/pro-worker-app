@@ -180,16 +180,20 @@ class NotificationController extends Controller
                 $targetModel = $employee;
                 break;
             case 'employee_insurance_expiry':
-                // Insurance Attachment -> insurance_attachment_path
-                $fileField = 'insurance_attachment_path';
                 $targetModel = $employee;
-                // Determine which date field to update based on insurance type
+                // Determine which date field and file field to update based on insurance type
                 if ($employee->insurance_type === 'ประกันเอกชน') {
                     $fieldToUpdate = 'insurance_expiry_date_private';
+                    // Use private insurance document path
+                    $fileField = 'insurance_document_path_private';
                 } elseif ($employee->insurance_type === 'ประกันโรงพยาบาล') {
                     $fieldToUpdate = 'insurance_expiry_date_hospital';
+                    // Use standard/hospital insurance document path
+                    $fileField = 'insurance_document_path';
                 } else {
                     $fieldToUpdate = 'insurance_expiry_date';
+                    // Use standard insurance document path
+                    $fileField = 'insurance_document_path';
                 }
                 break;
             case 'employer_document_expiry':
