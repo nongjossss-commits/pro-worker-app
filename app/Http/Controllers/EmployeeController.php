@@ -76,7 +76,7 @@ class EmployeeController extends Controller
  */
 public function reinstate(Employee $employee)
 {
-    $this->authorize('terminate-employees'); // Re-using permission, or create a new 'reinstate-employees' if needed
+    $this->authorize('terminate', $employee); // Use the 'terminate' policy action
     $employee->update(['terminated_at' => null]);
 
     return response()->json(['success' => 'Employee reinstated successfully.']);
@@ -645,8 +645,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
      */
     public function transfer(Request $request, Employee $employee)
     {
-        // Use a specific permission for this sensitive action.
-        $this->authorize('permission:terminate-employees');
+        // Use the 'transfer' policy action.
+        $this->authorize('transfer', $employee);
 
         $validated = $request->validate([
             'new_employer_id' => 'required|exists:employers,id',
@@ -671,13 +671,27 @@ public function create(Request $request) // เพิ่ม Request $request เ
      */
     public function bulkTransfer(Request $request)
     {
-        $this->authorize('permission:terminate-employees');
+        // Authorize based on the policy for a generic Employee class,
+        // as we don't have a specific instance for a bulk action.
+        // The policy will fall back to checking the user's base permission.
+        $this->authorize('transfer', Employee::class);
 
         $validated = $request->validate([
             'employee_ids' => 'required|array',
             'employee_ids.*' => 'exists:employees,id',
             'new_employer_id' => 'required|exists:employers,id',
         ]);
+
+        // Additional security: Explicitly check that the user owns ALL employees they are trying to transfer.
+        // This prevents an employer from maliciously including another employer's employee ID in the request.
+        if (!auth()->user()->can('manage-tickets')) { // Skip this check for admins/staff
+            $employeesToTransfer = Employee::whereIn('id', $validated['employee_ids'])->get();
+            foreach ($employeesToTransfer as $employee) {
+                if ($employee->employer->user_id !== auth()->id()) {
+                    return response()->json(['success' => false, 'message' => 'You are not authorized to transfer one or more of the selected employees.'], 403);
+                }
+            }
+        }
 
         Employee::whereIn('id', $validated['employee_ids'])
             ->whereNotNull('terminated_at') // Ensure we only transfer terminated employees
