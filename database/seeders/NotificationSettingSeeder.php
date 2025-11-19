@@ -15,6 +15,8 @@ class NotificationSettingSeeder extends Seeder
      */
     public function run()
     {
+        DB::table('notification_settings')->truncate();
+
         $notificationTypes = [
             ['notification_type' => 'ninety_day_report', 'days_before_expiry' => 30],
             ['notification_type' => 'passport_expiry', 'days_before_expiry' => 90],
