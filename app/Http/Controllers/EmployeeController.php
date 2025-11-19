@@ -26,11 +26,20 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Soft delete the specified employee.
+     * Terminate the specified employee.
      */
-    public function terminate(Employee $employee)
+    public function terminate(Request $request, Employee $employee)
     {
-        $employee->update(['terminated_at' => now()]);
+        $validated = $request->validate([
+            'termination_date' => 'required|date',
+            'termination_reason' => 'nullable|string',
+        ]);
+
+        $employee->update([
+            'terminated_at' => $validated['termination_date'],
+            'termination_reason' => $validated['termination_reason'],
+        ]);
+
         return back()->with('success', 'Employee terminated successfully.');
     }
 
@@ -617,5 +626,55 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         return Storage::disk('private')->response($filePath);
+    }
+
+    /**
+     * Transfer an employee to a new employer.
+     */
+    public function transfer(Request $request, Employee $employee)
+    {
+        // Use a specific permission for this sensitive action.
+        $this->authorize('permission:terminate-employees');
+
+        $validated = $request->validate([
+            'new_employer_id' => 'required|exists:employers,id',
+        ]);
+
+        // Ensure the employee is actually terminated before transferring
+        if (is_null($employee->terminated_at)) {
+            return response()->json(['success' => false, 'message' => 'Employee is not terminated and cannot be transferred.'], 422);
+        }
+
+        $employee->update([
+            'employer_id' => $validated['new_employer_id'],
+            'terminated_at' => null, // Make the employee active again
+            'termination_reason' => null, // Clear the old reason
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Employee transferred successfully.']);
+    }
+
+    /**
+     * Transfer multiple employees to a new employer.
+     */
+    public function bulkTransfer(Request $request)
+    {
+        $this->authorize('permission:terminate-employees');
+
+        $validated = $request->validate([
+            'employee_ids' => 'required|array',
+            'employee_ids.*' => 'exists:employees,id',
+            'new_employer_id' => 'required|exists:employers,id',
+        ]);
+
+        Employee::whereIn('id', $validated['employee_ids'])
+            ->whereNotNull('terminated_at') // Ensure we only transfer terminated employees
+            ->update([
+                'employer_id' => $validated['new_employer_id'],
+                'terminated_at' => null,
+                'termination_reason' => null,
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Selected employees transferred successfully.']);
     }
 }

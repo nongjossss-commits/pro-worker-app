@@ -436,4 +436,30 @@ public function edit(Request $request, Employer $employer)
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Provides a JSON list of employers for API calls.
+     */
+    public function listApi(Request $request)
+    {
+        // This endpoint is used in contexts where a user needs to select an employer.
+        // We can reuse the 'manage-tickets' permission as it's a good proxy
+        // for "is an admin or staff member".
+        $this->authorize('permission:manage-tickets');
+
+        $query = Employer::query();
+
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('employerNameTh', 'like', $searchTerm)
+                  ->orWhere('employerNameEn', 'like', $searchTerm)
+                  ->orWhere('employerId', 'like', $searchTerm);
+            });
+        }
+
+        $employers = $query->select(['id', 'employerNameTh', 'employerId'])->take(10)->get();
+
+        return response()->json($employers);
+    }
 }
