@@ -41,6 +41,7 @@
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
                 <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
             </select>
+            <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="ค้นหาตามวันหมดอายุใบอนุญาตทำงาน">
             <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
             <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
         </form>
