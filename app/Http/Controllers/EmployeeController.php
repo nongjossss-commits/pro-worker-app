@@ -492,12 +492,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // --- V6: Step 6: Update Employee ---
         $employee->update($validated);
 
-        // --- V6: Step 7: Redirect ---
-        $redirectRoute = $request->has('source_employer_id')
-            ? route('employers.edit', $request->source_employer_id) . '#employee-card-' . $employee->id
-            : route('employees.index');
-
-        return redirect($redirectRoute)->with('success', 'Employee updated successfully.');
+        return back()->with('success', 'Employee updated successfully.');
     }
 
     public function locate(Employee $employee)
