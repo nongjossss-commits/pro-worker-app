@@ -128,6 +128,40 @@
                 padding: 1.5rem;
             }
         }
+
+        .scroll-to-top {
+            position: fixed;
+            bottom: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--bs-primary);
+            color: #ffffff;
+            text-align: center;
+            line-height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+            transform: translateY(20px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .scroll-to-top.left {
+            left: 20px;
+        }
+        .scroll-to-top.right {
+            right: 20px;
+        }
+        .scroll-to-top.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .scroll-to-top:hover {
+            background-color: var(--bs-primary-dark);
+        }
     </style>
 </head>
 <body>
@@ -902,5 +936,38 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
+<!-- Scroll to Top Buttons -->
+<div class="scroll-to-top left" id="scrollToTopLeft"><i class="bi bi-chevron-up"></i></div>
+<div class="scroll-to-top right" id="scrollToTopRight"><i class="bi bi-chevron-up"></i></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const scrollToTopLeft = document.getElementById('scrollToTopLeft');
+    const scrollToTopRight = document.getElementById('scrollToTopRight');
+
+    function checkScroll() {
+        if (window.scrollY > 200) {
+            scrollToTopLeft.classList.add('show');
+            scrollToTopRight.classList.add('show');
+        } else {
+            scrollToTopLeft.classList.remove('show');
+            scrollToTopRight.classList.remove('show');
+        }
+    }
+
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    window.addEventListener('scroll', checkScroll);
+    scrollToTopLeft.addEventListener('click', scrollToTop);
+    scrollToTopRight.addEventListener('click', scrollToTop);
+});
+</script>
+
 </body>
 </html>
