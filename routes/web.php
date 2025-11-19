@@ -119,6 +119,9 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::post('tickets/{ticket}/forward', [TicketStatusController::class, 'forward'])->name('tickets.forward');
     Route::post('tickets/{ticket}/update-assignment', [AdminTicketController::class, 'updateAssignment'])->name('tickets.updateAssignment'); // <-- เพิ่มบรรทัดนี้
     // Future routes (update/assign) will go here.
+
+    // Deletion route for ticket messages/attachments
+    Route::delete('tickets/messages/{message}', [\App\Http\Controllers\TicketMessageController::class, 'destroy'])->name('tickets.messages.destroy');
 });
 
 use App\Http\Controllers\Admin\NotificationSettingController;

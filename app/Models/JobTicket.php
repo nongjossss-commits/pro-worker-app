@@ -97,15 +97,14 @@ class JobTicket extends Model
         return Attribute::make(
             get: function () {
                 $attachments = [
-                    'existing_employees' => collect(), // Will hold Employee models
-                    'new_employees' => collect(), // Will hold decoded JSON data (objects)
-                    'files' => collect(), // Will hold file metadata (objects)
+                    'existing_employees' => collect(), // Will hold objects { employee: Employee, message_id: int }
+                    'new_employees' => collect(),      // Will hold objects { data: object, message_id: int }
+                    'files' => collect(),              // Will hold objects { data: object, message_id: int }
                 ];
 
-                $existingEmployeeIds = [];
+                $employeeMessageMap = []; // [employee_id => [message_id1, message_id2, ...]]
 
-                // 1. Iterate through messages and categorize
-                // Ensure messages are loaded (Controller should handle this)
+                // 1. Iterate through messages and categorize, associating message IDs
                 if (!$this->relationLoaded('messages')) {
                     $this->load('messages');
                 }
@@ -113,56 +112,59 @@ class JobTicket extends Model
                 foreach ($this->messages as $message) {
                     switch ($message->message_type) {
                         case 'attachment_employee':
-                            // Collect IDs for Eager Loading
-                            $existingEmployeeIds[] = (int)$message->body;
+                            $employeeId = (int)$message->body;
+                            $employeeMessageMap[$employeeId][] = $message->id;
                             break;
+
                         case 'attachment_new_employee':
-                            // Decode JSON string into an object
                             $data = json_decode($message->body);
                             if ($data) {
-                                // V2.4-S9: Generate URLs for files within the JSON data
-                                $fileFields = ['employeePhoto', 'document_1']; // Add others if needed
+                                $fileFields = ['employeePhoto', 'document_1'];
                                 foreach ($fileFields as $field) {
-                                    // Check if field exists, has a value, AND the file exists on disk
                                     if (isset($data->$field) && $data->$field && Storage::disk('public')->exists($data->$field)) {
-                                        // Add a new property for the URL (e.g., employeePhoto_url)
                                         $urlField = $field . '_url';
                                         $data->$urlField = Storage::disk('public')->url($data->$field);
                                     }
                                 }
-                                $attachments['new_employees']->push($data);
+                                $attachments['new_employees']->push((object)[
+                                    'data' => $data,
+                                    'message_id' => $message->id
+                                ]);
                             }
                             break;
+
                         case 'attachment_file':
-                            // Decode JSON string into an object
                             $data = json_decode($message->body);
                             if ($data) {
-                                // V2.4-S9: Generate URL for the file and check existence
                                 if (isset($data->path) && Storage::disk('public')->exists($data->path)) {
                                     $data->url = Storage::disk('public')->url($data->path);
                                 } else {
-                                    $data->url = null; // Indicate file is missing
+                                    $data->url = null;
                                 }
-                                $attachments['files']->push($data);
+                                $attachments['files']->push((object)[
+                                    'data' => $data,
+                                    'message_id' => $message->id
+                                ]);
                             }
                             break;
-                        // 'comment' and 'system_activity' are ignored here (handled by Chat History)
                     }
                 }
 
-                // 2. Optimization & Historical Integrity: Eager Load Employee models
-                if (!empty($existingEmployeeIds)) {
-                    // CRITICAL: Use withTrashed() to include soft-deleted records.
-                    // Use withoutGlobalScopes() to bypass tenancy if the viewer (e.g. Staff) shouldn't normally see this employee.
+                // 2. Eager Load Employee models and map back with message IDs
+                if (!empty($employeeMessageMap)) {
                     $employeeModels = Employee::withoutGlobalScopes()->withTrashed()
-                        ->whereIn('id', array_unique($existingEmployeeIds))
+                        ->whereIn('id', array_keys($employeeMessageMap))
                         ->get()
                         ->keyBy('id');
 
-                    // Map the loaded models back (maintaining order if duplicates were attached)
-                    foreach ($existingEmployeeIds as $id) {
-                        if (isset($employeeModels[$id])) {
-                            $attachments['existing_employees']->push($employeeModels[$id]);
+                    foreach ($employeeMessageMap as $employeeId => $messageIds) {
+                        if (isset($employeeModels[$employeeId])) {
+                            foreach ($messageIds as $messageId) {
+                                $attachments['existing_employees']->push((object)[
+                                    'employee' => $employeeModels[$employeeId],
+                                    'message_id' => $messageId
+                                ]);
+                            }
                         }
                     }
                 }

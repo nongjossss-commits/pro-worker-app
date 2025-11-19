@@ -49,6 +49,14 @@
                                         <strong x-text="employee.nationality || 'N/A'"></strong>
                                     </div>
                                 </span>
+                                {{-- Preview Button --}}
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-info btn-preview"
+                                        :data-model-type="'employee'"
+                                        :data-model-id="employee.id"
+                                        @click.prevent.stop>
+                                    <i class="bi bi-search"></i>
+                                </button>
                             </label>
                         </template>
                     </div>
