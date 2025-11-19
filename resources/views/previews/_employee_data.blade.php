@@ -180,7 +180,7 @@
             <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
             @if($employee->insurance_document_path_private)
                 <p class="form-control-plaintext">
-                    <a href="{{ route('employees.documents.serve', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank">
+                    <a href="{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}" target="_blank">
                         <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
                     </a>
                 </p>
