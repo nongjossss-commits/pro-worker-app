@@ -210,4 +210,21 @@ class Employee extends Model
     {
         return $this->hasMany(Notification::class);
     }
+
+    /**
+     * Get the number of days since the employee was terminated.
+     * Usage in Blade/API: $employee->days_since_termination
+     */
+    protected function daysSinceTermination(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (!$this->terminated_at) {
+                    return 0;
+                }
+                // Use floor to ensure we get a whole number of days.
+                return floor(now()->diffInDays($this->terminated_at));
+            }
+        );
+    }
 }
