@@ -12,21 +12,29 @@
 @endphp
 
 <tr>
-    <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $notification->employee->id }}" id="notification_table_checkbox_{{ $notification->id }}"></td>
+    <td>
+        @if($notification->employee)
+            <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $notification->employee->id }}" id="notification_table_checkbox_{{ $notification->id }}">
+        @endif
+    </td>
     <td>{{ $itemNumber }}</td>
     <td class="d-flex align-items-center">
-        <img src="{{ $notification->employee->employeePhoto ? asset('storage/' . $notification->employee->employeePhoto) : asset('images/default-profile.png') }}"
-             alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
-        <div>
+        @if($notification->employee)
+            <img src="{{ $notification->employee->photo_url }}"
+                 alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
             <div>
-                {{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}
-                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $notification->employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                <div>
+                    {{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}
+                    <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $notification->employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                </div>
+                <div class="small text-muted">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</div>
             </div>
-            <div class="small text-muted">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</div>
-        </div>
+        @else
+            <div class="text-muted">N/A</div>
+        @endif
     </td>
     <td>
-        @if($notification->employee->employeeNationality)
+        @if(optional($notification->employee)->employeeNationality)
             @php
                 $countryCode = \App\Helpers\CountryHelper::getCountryCode($notification->employee->employeeNationality);
             @endphp
@@ -36,12 +44,17 @@
                     <span>{{ $notification->employee->employeeNationality }}</span>
                 </span>
             @endif
+        @else
+            <span class="text-muted">N/A</span>
         @endif
     </td>
     <td>
-        {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}
-        @if($notification->employee->employer)
-        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $notification->employee->employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+        @php
+            $employer = $notification->employee->employer ?? $notification->employer;
+        @endphp
+        {{ $employer->employerNameTh ?? 'N/A' }}
+        @if($employer)
+            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
         @endif
     </td>
     <td>{{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d M Y') }}</td>

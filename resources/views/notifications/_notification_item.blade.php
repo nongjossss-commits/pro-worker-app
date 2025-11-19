@@ -1,56 +1,69 @@
-@if($notification->employee)
-    @php
-        $days_remaining = $notification->days_remaining;
-        $is_overdue = $days_remaining < 0;
+@php
+    $employee = $notification->employee;
+    $employer = $notification->employee->employer ?? $notification->employer;
+    $days_remaining = $notification->days_remaining;
+    $is_overdue = $days_remaining < 0;
 
-        $card_class = '';
-        $badge_class = 'bg-info text-dark';
-        if ($is_overdue) {
-            $card_class = 'alert-dark';
-            $badge_class = 'bg-dark';
-        } elseif ($days_remaining <= 30) {
-            $card_class = 'alert-danger';
-            $badge_class = 'bg-danger';
-        } elseif ($days_remaining <= 60) {
-            $card_class = 'alert-warning';
-            $badge_class = 'bg-warning text-dark';
-        }
+    $card_class = '';
+    $badge_class = 'bg-info text-dark';
+    if ($is_overdue) {
+        $card_class = 'alert-dark';
+        $badge_class = 'bg-dark';
+    } elseif ($days_remaining <= 30) {
+        $card_class = 'alert-danger';
+        $badge_class = 'bg-danger';
+    } elseif ($days_remaining <= 60) {
+        $card_class = 'alert-warning';
+        $badge_class = 'bg-warning text-dark';
+    }
+@endphp
 
-        $flagMap = ['เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn'];
-        $nationality = $notification->employee->employeeNationality ?? '';
-        $flagCode = $flagMap[$nationality] ?? null;
-    @endphp
+<div class="alert {{ $card_class }} notification-item">
+    <div class="d-flex align-items-center gap-3">
+        @if($employee)
+            <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_checkbox_{{ $notification->id }}">
+        @else
+            <input class="form-check-input" type="checkbox" disabled>
+        @endif
 
-    <div class="alert {{ $card_class }} notification-item">
-        <div class="d-flex align-items-center gap-3">
-            <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $notification->employee->id }}" id="notification_checkbox_{{ $notification->id }}">
-            {{-- FINAL FIX: Use Tailwind classes for robust styling --}}
-            <img src="{{ $notification->employee->employeePhoto ? asset('storage/' . $notification->employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-                 alt="Photo"
-                 class="w-12 h-12 object-cover rounded-full bg-light flex-shrink-0"
-                 style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+        <img src="{{ $employee->photo_url ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
+             alt="Photo"
+             class="w-12 h-12 object-cover rounded-full bg-light flex-shrink-0"
+             style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
 
-            <div class="d-flex justify-content-between align-items-start w-100">
-                <div class="flex-grow-1">
-                    <h5 class="alert-heading mb-1">
-                        {{ $itemNumber }}. {{ $notification->employee->employeeTitleEn ?? '' }} {{ $notification->employee->employeeNameEn ?? 'N/A' }}
-                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $notification->employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
-                        @if($flagCode)
+        <div class="d-flex justify-content-between align-items-start w-100">
+            <div class="flex-grow-1">
+                <h5 class="alert-heading mb-1">
+                    {{ $itemNumber }}.
+                    @if($employee)
+                        {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
+                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                        @if(optional($employee)->employeeNationality)
+                            @php
+                                $flagCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                            @endphp
+                            @if($flagCode)
                             <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
-                                <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" title="{{ $nationality }}" style="width: 16px; height: 12px; margin-right: 5px;">
-                                <span>{{ $nationality }}</span>
+                                <img src="{{ asset('images/flags/' . strtolower($flagCode) . '.png') }}" alt="{{ $employee->employeeNationality }}" title="{{ $employee->employeeNationality }}" style="width: 16px; height: 12px; margin-right: 5px;">
+                                <span>{{ $employee->employeeNationality }}</span>
                             </span>
+                            @endif
                         @endif
-                    </h5>
-                    <p class="mb-1 small">{{ $notification->employee->employeeTitleTh ?? '' }} {{ $notification->employee->employeeNameTh ?? 'N/A' }}</p>
-                    <p class="mb-1 small">
-                        <strong>นายจ้าง:</strong> {{ $notification->employee->employer->employerNameTh ?? 'N/A' }}
-                        @if($notification->employee->employer)
-                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $notification->employee->employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
-                        @endif
-                    </p>
-                    <p class="mb-0 small"><strong>วันครบกำหนด:</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}</p>
-                </div>
+                    @else
+                        เอกสารนายจ้าง
+                    @endif
+                </h5>
+                @if($employee)
+                    <p class="mb-1 small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }}</p>
+                @endif
+                <p class="mb-1 small">
+                    <strong>นายจ้าง:</strong> {{ $employer->employerNameTh ?? 'N/A' }}
+                    @if($employer)
+                    <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                    @endif
+                </p>
+                <p class="mb-0 small"><strong>วันครบกำหนด:</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}</p>
+            </div>
                 <div class="text-end flex-shrink-0 ms-2">
                     <span class="badge {{ $badge_class }} mb-2 d-block text-nowrap fs-6">
                         @if($is_overdue)
