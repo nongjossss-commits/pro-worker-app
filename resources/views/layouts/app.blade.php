@@ -293,7 +293,7 @@
         <div class="modal fade" id="renewNotificationModal" tabindex="-1" aria-labelledby="renewModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <form id="renew-form" method="POST">
+                    <form id="renew-form" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="modal-header">
                             <h5 class="modal-title" id="renewModalLabel">ต่ออายุการแจ้งเตือน</h5>
@@ -303,6 +303,10 @@
                             <div class="mb-3">
                                 <label for="new_due_date" class="form-label">เลือกวันหมดอายุใหม่:</label>
                                 <input type="date" class="form-control" id="new_due_date" name="new_due_date" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="attachment" class="form-label">แนบไฟล์เอกสาร (ถ้ามี):</label>
+                                <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png">
                             </div>
                         </div>
                         <div class="modal-footer">
