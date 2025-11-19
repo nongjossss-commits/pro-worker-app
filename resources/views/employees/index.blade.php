@@ -41,6 +41,13 @@
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
                 <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
             </select>
+            <select name="passport_type" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- ประเภทพาสปอร์ต --</option>
+                <option value="CI" {{ request('passport_type') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
+                <option value="PJ" {{ request('passport_type') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
+                <option value="TD" {{ request('passport_type') == 'TD' ? 'selected' : '' }}>เล่ม TD</option>
+                <option value="International" {{ request('passport_type') == 'International' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+            </select>
             <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="ค้นหาตามวันหมดอายุใบอนุญาตทำงาน">
             <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
             <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">ล้างค่า</a>

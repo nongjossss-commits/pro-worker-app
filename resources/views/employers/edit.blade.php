@@ -362,6 +362,13 @@
                     <option value="yes" @if(request('pink_card') == 'yes') selected @endif>มีบัตรชมพู</option>
                     <option value="no" @if(request('pink_card') == 'no') selected @endif>ไม่มีบัตรชมพู</option>
                 </select>
+                <select name="passport_type" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">-- ประเภทพาสปอร์ต --</option>
+                    <option value="CI" {{ request('passport_type') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
+                    <option value="PJ" {{ request('passport_type') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
+                    <option value="TD" {{ request('passport_type') == 'TD' ? 'selected' : '' }}>เล่ม TD</option>
+                    <option value="International" {{ request('passport_type') == 'International' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+                </select>
                 <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
                 <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
             </form>

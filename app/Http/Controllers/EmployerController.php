@@ -144,6 +144,14 @@ public function edit(Request $request, Employer $employer)
             });
         }
     }
+
+    if ($request->filled('passport_type')) {
+        $passportType = $request->input('passport_type');
+        $employeeQuery->where(function ($q) use ($passportType) {
+            $q->where('passportType', $passportType)
+              ->orWhere('passport_type_cambodia', $passportType);
+        });
+    }
     // --- END: ADDED FILTERING LOGIC ---
 
     $perPageOptions = [10, 25, 50];
@@ -310,6 +318,14 @@ public function edit(Request $request, Employer $employer)
                 } elseif ($request->input('pink_card') === 'no') {
                     $query->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', ''));
                 }
+            }
+
+            if ($request->filled('passport_type')) {
+                $passportType = $request->input('passport_type');
+                $query->where(function ($q) use ($passportType) {
+                    $q->where('passportType', $passportType)
+                        ->orWhere('passport_type_cambodia', $passportType);
+                });
             }
         }
 
