@@ -17,6 +17,12 @@
             <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-md-center">
                 <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'ninety_day_report') }}">
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}" style="width: 200px;">
+                <select name="month" class="form-select form-select-sm" style="width: 150px;">
+                    <option value="">-- ทุกเดือน --</option>
+                    @foreach(range(1, 12) as $m)
+                        <option value="{{ $m }}" @selected(request('month') == $m)>เดือนที่ {{ $m }}</option>
+                    @endforeach
+                </select>
                 <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
                     <option value="">-- ทุกสัญชาติ --</option>
                     <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>

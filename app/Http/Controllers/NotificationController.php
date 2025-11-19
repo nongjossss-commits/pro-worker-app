@@ -81,6 +81,11 @@ class NotificationController extends Controller
             $query->where('status', '!=', 'cancelled')->where('type', $type)->latest('due_date');
         }
 
+        // Filter by month if provided
+        if ($request->filled('month')) {
+            $query->whereMonth('due_date', $request->input('month'));
+        }
+
         // --- NEW: Enhanced Search Logic ---
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -134,36 +139,92 @@ class NotificationController extends Controller
     // Add this new method to the controller
     public function renew(Request $request, \App\Models\Notification $notification)
     {
-        $request->validate(['new_due_date' => 'required|date']);
+        $request->validate([
+            'new_due_date' => 'required|date',
+            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240', // 10MB max
+        ]);
 
         $employee = $notification->employee;
+        $employer = $notification->employer; // Get employer directly
         $fieldToUpdate = '';
+        $fileField = '';
+        $targetModel = null;
 
         switch ($notification->type) {
             case 'passport_expiry':
+            case 'ci_renewal': // Handle CI renewal as passport update
                 $fieldToUpdate = 'passportExpiryDate';
+                $fileField = 'passport_file_path';
+                $targetModel = $employee;
                 break;
             case 'work_permit_expiry':
-            case 'work_permit_mou': // Added to handle new type
-            case 'resolution_renewal': // Added to handle new type
+            case 'work_permit_mou':
+            case 'resolution_renewal':
+            case 'new_registration_renewal':
                 $fieldToUpdate = 'workPermitExpiryDate';
+                $fileField = 'work_permit_file_path';
+                $targetModel = $employee;
                 break;
             case 'visa_expiry':
                 $fieldToUpdate = 'visaExpiryDate';
+                $fileField = 'visa_file_path';
+                $targetModel = $employee;
                 break;
             case 'ninety_day_report':
                 $fieldToUpdate = 'ninetyDayReportDate';
+                // Use employee_doc_1 for 90-day reports if no specific column exists
+                $fileField = 'employee_doc_1';
+                $targetModel = $employee;
+                break;
+            case 'employee_insurance_expiry':
+                $fileField = 'insurance_attachment_path';
+                $targetModel = $employee;
+                // Determine which date field to update based on insurance type
+                if ($employee->insurance_type === 'ประกันเอกชน') {
+                    $fieldToUpdate = 'insurance_expiry_date_private';
+                } elseif ($employee->insurance_type === 'ประกันโรงพยาบาล') {
+                    $fieldToUpdate = 'insurance_expiry_date_hospital';
+                } else {
+                    $fieldToUpdate = 'insurance_expiry_date';
+                }
+                break;
+            case 'employer_document_expiry':
+                $fieldToUpdate = 'employer_doc_company_expiry';
+                $fileField = 'employer_doc_company';
+                $targetModel = $employer;
                 break;
         }
 
-        if ($fieldToUpdate && $employee) {
-            $employee->{$fieldToUpdate} = $request->new_due_date;
-            $employee->save();
+        if ($fieldToUpdate && $targetModel) {
+            $targetModel->{$fieldToUpdate} = $request->new_due_date;
+
+            // Handle file upload
+            if ($request->hasFile('attachment') && $fileField) {
+                // Delete old file if exists
+                if ($targetModel->{$fileField} && \Illuminate\Support\Facades\Storage::disk('public')->exists($targetModel->{$fileField})) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($targetModel->{$fileField});
+                }
+
+                $file = $request->file('attachment');
+                $filename = \Illuminate\Support\Str::random(20) . '.' . $file->getClientOriginalExtension();
+
+                // Determine storage path based on model type
+                if ($targetModel instanceof \App\Models\Employee) {
+                    $path = $file->storeAs("employee_files/{$targetModel->employer_id}", $filename, 'public');
+                } else {
+                     // Employer documents
+                    $path = $file->storeAs("employer_documents", $filename, 'public');
+                }
+
+                $targetModel->{$fileField} = $path;
+            }
+
+            $targetModel->save();
         }
 
         $notification->delete(); // Remove the notification after handling
 
-        return redirect()->route('notifications.index')->with('success', 'ต่ออายุข้อมูลเรียบร้อยแล้ว');
+        return redirect()->route('notifications.index')->with('success', 'ต่ออายุข้อมูลและบันทึกเอกสารเรียบร้อยแล้ว');
     }
 
     // Add this new method to the controller
