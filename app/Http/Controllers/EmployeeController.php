@@ -606,6 +606,70 @@ public function create(Request $request) // เพิ่ม Request $request เ
         return response()->stream($callback, 200, $headers);
     }
 
+    public function historyIndex(Request $request)
+    {
+        $this->authorize('view-employees');
+
+        $query = Employee::query()->whereNotNull('terminated_at');
+
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('employeeNameTh', 'like', $searchTerm)
+                  ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('pinkCardNo', 'like', $searchTerm)
+                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
+                  ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
+                      $employerQuery->where('employerNameTh', 'like', $searchTerm)
+                                    ->orWhere('employerNameEn', 'like', $searchTerm);
+                  });
+            });
+        }
+
+        if ($request->filled('nationality')) {
+            $query->where('employeeNationality', $request->input('nationality'));
+        }
+
+        if ($request->filled('mou_group')) {
+            $query->where('workPermitMOUGroup', $request->input('mou_group'));
+        }
+
+        if ($request->filled('pink_card')) {
+            if ($request->input('pink_card') === 'yes') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+                });
+            } elseif ($request->input('pink_card') === 'no') {
+                $query->where(function ($q) {
+                    $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+                });
+            }
+        }
+
+        if ($request->filled('passport_type')) {
+            $passportType = $request->input('passport_type');
+            $query->where(function ($q) use ($passportType) {
+                $q->where('passportType', $passportType)
+                    ->orWhere('passport_type_cambodia', $passportType);
+            });
+        }
+
+        $totalEmployees = (clone $query)->count();
+
+        $perPageOptions = [25, 50, 100];
+        $currentPerPage = $request->input('per_page', 25);
+
+        $employees = $query->with('employer')->latest('terminated_at')->paginate($currentPerPage)->withQueryString();
+
+        return view('employees.history', compact(
+            'employees',
+            'totalEmployees',
+            'perPageOptions',
+            'currentPerPage'
+        ))->with('currentView', $request->input('view', 'card'));
+    }
+
     /**
      * Serve a private document for a given employee.
      *
