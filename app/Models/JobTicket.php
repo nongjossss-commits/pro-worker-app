@@ -119,9 +119,19 @@ class JobTicket extends Model
                         case 'attachment_new_employee':
                             $data = json_decode($message->body);
                             if ($data) {
-                                $fileFields = ['employeePhoto', 'document_1'];
+                                // V2.5-S4: Dynamically check all possible document fields
+                                $fileFields = ['employeePhoto'];
+                                for ($i = 1; $i <= 12; $i++) {
+                                    $fileFields[] = 'employee_doc_' . $i;
+                                }
+                                // V2.5-S4: Add insurance documents
+                                $fileFields[] = 'insurance_document_path_social';
+                                $fileFields[] = 'insurance_document_path_hospital';
+                                $fileFields[] = 'insurance_document_path_private';
+
+
                                 foreach ($fileFields as $field) {
-                                    if (isset($data->$field) && $data->$field && Storage::disk('public')->exists($data->$field)) {
+                                    if (isset($data->$field) && !empty($data->$field) && Storage::disk('public')->exists($data->$field)) {
                                         $urlField = $field . '_url';
                                         $data->$urlField = Storage::disk('public')->url($data->$field);
                                     }
