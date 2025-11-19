@@ -3,7 +3,14 @@
 
 @section('content')
 <div class="p-4 p-md-5 content-section">
-    <h2 class="mb-4">รายการแจ้งเตือน</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">รายการแจ้งเตือน</h2>
+        @can('manage-users')
+            <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-primary">
+                <i class="bi bi-gear-fill"></i> ตั้งค่าการแจ้งเตือน
+            </a>
+        @endcan
+    </div>
 
     <div class="card mb-4">
         <div class="card-body">
