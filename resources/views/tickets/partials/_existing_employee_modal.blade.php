@@ -53,8 +53,7 @@
                                 <button type="button"
                                         class="btn btn-sm btn-outline-info btn-preview"
                                         :data-model-type="'employee'"
-                                        :data-model-id="employee.id"
-                                        @click.prevent.stop>
+                                        :data-model-id="employee.id">
                                     <i class="bi bi-search"></i>
                                 </button>
                             </label>
