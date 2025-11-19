@@ -131,6 +131,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');
     Route::resource('users', UserController::class);
     Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
+
+    // Employee Completeness Settings
+    Route::get('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'index'])->name('settings.completeness.index');
+    Route::post('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'store'])->name('settings.completeness.store');
+});
+
+// === Incomplete Employees (Viewable by Admin/Staff - managing tickets permissions usually implies managing employees) ===
+// Using 'manage-tickets' as a proxy for "staff who manage employees", or 'view-employers' + 'view-employees'.
+// Let's stick to 'manage-tickets' or check roles. The prompt says "functions for employees in the company".
+// Staff should see the list. Admin sets the list.
+Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/incomplete-employees', [App\Http\Controllers\Admin\IncompleteEmployeeController::class, 'index'])->name('incomplete_employees.index');
 });
 
 // --- Central Trash System ---
