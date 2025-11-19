@@ -47,7 +47,7 @@ class EmployerEmployeeController extends Controller
             }
         }
         // V2.5-S7 FIX: Explicitly apply tenancy for employers to prevent global scope issues.
-        } else if ($user->hasRole('employer')) {
+        else if ($user->hasRole('employer')) {
             if ($user->employer) {
                 $query->where('employer_id', $user->employer->id);
             } else {

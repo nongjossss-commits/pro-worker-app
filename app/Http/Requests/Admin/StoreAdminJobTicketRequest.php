@@ -80,15 +80,30 @@ class StoreAdminJobTicketRequest extends FormRequest
             // 3. New Employees (JSON data from modal)
             'attachments.new_employees' => ['nullable', 'array'],
             'attachments.new_employees.*' => ['required', 'array'], // ตรวจสอบว่าเป็น array ที่ถูก decode แล้ว
-            // V2.5-PATCH: ตรวจสอบ field ตามฟอร์มใน _new_employee_modal.blade.php (snippet 56)
-            // เราไม่ต้องการ employeeDob ที่นี่
+
+            // Validation for text fields
             'attachments.new_employees.*.employeeTitleTh' => ['nullable', 'string', 'max:50'],
             'attachments.new_employees.*.employeeNameTh' => ['nullable', 'string', 'max:255'],
             'attachments.new_employees.*.employeeNationality' => ['nullable', 'string', 'max:100'],
             'attachments.new_employees.*.employeePassport' => ['nullable', 'string', 'max:50'],
-            // ตรวจสอบไฟล์ที่แนบมาใน JSON
+
+            // Validation for all file attachments
             'attachments.new_employees.*.employeePhoto' => $tempFileValidation,
-            'attachments.new_employees.*.document_1' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_social' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_hospital' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_private' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_1' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_2' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_3' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_4' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_5' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_6' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_7' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_8' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_9' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_10' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_11' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_12' => $tempFileValidation,
         ];
     }
 
