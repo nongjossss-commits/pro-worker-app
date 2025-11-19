@@ -341,7 +341,7 @@
 
 
         <div class="mt-4 d-flex justify-content-end">
-            <a href="{{ route('employers.edit', $employee->employer_id) }}#employee-card-{{ $employee->id }}" class="btn btn-secondary me-2">ยกเลิก</a>
+            <a href="{{ url()->previous() }}" class="btn btn-secondary me-2">ยกเลิก</a>
             <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน</button>
         </div>
     </form>
