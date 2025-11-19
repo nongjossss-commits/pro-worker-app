@@ -171,6 +171,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // --- V6: Step 1: Validate ALL text/date data (new and old) ---
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
+            'passportType' => 'nullable|string|max:255',
             'employeeTitleTh' => 'required|string|max:255',
             'employeeNameTh' => 'required|string|max:255',
             'employeeTitleEn' => 'nullable|string|max:255',
