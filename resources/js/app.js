@@ -11,6 +11,29 @@ window.Alpine = Alpine;
 Alpine.start();
 
 document.addEventListener('DOMContentLoaded', function () {
+    // START: Floating Sidebar Logic
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+
+    if (sidebar && mainContent) {
+        window.addEventListener('scroll', function() {
+            if (window.innerWidth < 992) {
+                // Don't apply scrolling effect on smaller screens where sidebar is an offcanvas
+                return;
+            }
+
+            if (window.scrollY > 200) { // Adjust this value to change when the effect triggers
+                sidebar.classList.add('sidebar-scrolled');
+                // Add padding to the main content to prevent it from jumping underneath the fixed sidebar
+                mainContent.style.setProperty('padding-left', '100px', 'important');
+            } else {
+                sidebar.classList.remove('sidebar-scrolled');
+                 mainContent.style.paddingLeft = ''; // Revert to original padding
+            }
+        });
+    }
+    // END: Floating Sidebar Logic
+
     const universalPreviewModalEl = document.getElementById('universalPreviewModal');
     if (!universalPreviewModalEl) return;
 
