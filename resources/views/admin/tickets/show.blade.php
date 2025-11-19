@@ -121,15 +121,45 @@
                                 @php $newEmployee = $item->data; @endphp
                                 <div class="list-group-item py-2 d-flex align-items-center">
                                     <div class="flex-grow-1">
+                                        {{-- V2.5-S4: Display Both Thai and English names --}}
                                         <strong>{{ $newEmployee->employeeTitleTh ?? '' }}{{ $newEmployee->employeeNameTh }}</strong>
-                                        <small class="text-muted">({{ $newEmployee->employeePassport }})</small>
+                                        @if(!empty($newEmployee->employeeNameEn))
+                                            <span class="text-muted">/ {{ $newEmployee->employeeTitleEn ?? '' }}{{ $newEmployee->employeeNameEn }}</span>
+                                        @endif
+                                        <small class="d-block text-muted">Passport: {{ $newEmployee->employeePassport ?? 'N/A' }}</small>
+
+                                        {{-- V2.5-S4: Dynamically list all available documents --}}
                                         <div class="mt-2 d-flex gap-2 flex-wrap">
-                                            @if(isset($newEmployee->employeePhoto_url))
-                                                <a href="{{ $newEmployee->employeePhoto_url }}" target="_blank" class="btn btn-sm btn-outline-info">รูปถ่าย</a>
-                                            @endif
-                                            @if(isset($newEmployee->document_1_url))
-                                                <a href="{{ $newEmployee->document_1_url }}" target="_blank" class="btn btn-sm btn-outline-info">เอกสาร 1</a>
-                                            @endif
+                                            @php
+                                                // Create a map for user-friendly labels
+                                                $docLabels = [
+                                                    'employeePhoto' => 'รูปถ่าย',
+                                                    'employee_doc_1' => 'Passport',
+                                                    'employee_doc_2' => 'Visa',
+                                                    'employee_doc_3' => 'Work Permit',
+                                                    'employee_doc_4' => 'Pink Card',
+                                                    'employee_doc_5' => 'ทะเบียนบ้าน',
+                                                    'employee_doc_6' => 'บัตรประชาชน',
+                                                    'employee_doc_7' => 'ใบแจ้งที่พักอาศัย',
+                                                    'employee_doc_8' => 'เอกสารอื่นๆ 1',
+                                                    'employee_doc_9' => 'เอกสารอื่นๆ 2',
+                                                    'employee_doc_10' => 'เอกสารอื่นๆ 3',
+                                                    'employee_doc_11' => 'เอกสารอื่นๆ 4',
+                                                    'employee_doc_12' => 'เอกสารอื่นๆ 5',
+                                                    'insurance_document_path_social' => 'ประกันสังคม',
+                                                    'insurance_document_path_hospital' => 'ประกัน รพ.',
+                                                    'insurance_document_path_private' => 'ประกันเอกชน'
+                                                ];
+                                            @endphp
+
+                                            @foreach($docLabels as $field => $label)
+                                                @php $urlField = $field . '_url'; @endphp
+                                                @if(isset($newEmployee->$urlField))
+                                                    <a href="{{ $newEmployee->$urlField }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bi bi-file-earmark-arrow-down"></i> {{ $label }}
+                                                    </a>
+                                                @endif
+                                            @endforeach
                                         </div>
                                     </div>
                                     @if(!$isClosed && (auth()->id() === $ticket->employer_user_id || auth()->user()->can('manage-tickets')))
@@ -256,8 +286,8 @@
                     <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> ตอบกลับ / ส่งข้อความ</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
-                        {{-- V2.4-S11: Ensure the correct function is called and ref is replyFileInput --}}
-                        <input type="file" multiple class="d-none" x-ref="replyFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
+                        {{-- V2.5-S4 Bug Fix: Use the correct x-ref to match the trigger function --}}
+                        <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
 
                         {{-- Determine the correct route --}}
                         @php
