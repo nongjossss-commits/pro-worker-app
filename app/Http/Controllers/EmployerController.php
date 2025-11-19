@@ -149,12 +149,12 @@ public function edit(Request $request, Employer $employer)
         $employeeQuery->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
     }
 
-    if ($request->filled('passport_type')) {
-        $passportType = $request->input('passport_type');
-        $employeeQuery->where(function ($q) use ($passportType) {
-            $q->where('passportType', $passportType)
-              ->orWhere('passport_type_cambodia', $passportType);
-        });
+    if ($request->filled('passport_type_myanmar')) {
+        $employeeQuery->where('passportType', $request->input('passport_type_myanmar'));
+    }
+
+    if ($request->filled('passport_type_cambodia')) {
+        $employeeQuery->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
     }
     // --- END: ADDED FILTERING LOGIC ---
 
@@ -328,12 +328,12 @@ public function edit(Request $request, Employer $employer)
                 }
             }
 
-            if ($request->filled('passport_type')) {
-                $passportType = $request->input('passport_type');
-                $query->where(function ($q) use ($passportType) {
-                    $q->where('passportType', $passportType)
-                        ->orWhere('passport_type_cambodia', $passportType);
-                });
+            if ($request->filled('passport_type_myanmar')) {
+                $query->where('passportType', $request->input('passport_type_myanmar'));
+            }
+
+            if ($request->filled('passport_type_cambodia')) {
+                $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
             }
         }
 

@@ -41,12 +41,15 @@
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
                 <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
             </select>
-            <select name="passport_type" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- ประเภทพาสปอร์ต --</option>
-                <option value="CI" {{ request('passport_type') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
-                <option value="PJ" {{ request('passport_type') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
-                <option value="TD" {{ request('passport_type') == 'TD' ? 'selected' : '' }}>เล่ม TD</option>
-                <option value="International" {{ request('passport_type') == 'International' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+            <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- ประเภทพาสปอร์ต (เมียนมา) --</option>
+                <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
+                <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
+            </select>
+            <select name="passport_type_cambodia" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- ประเภทพาสปอร์ต (กัมพูชา) --</option>
+                <option value="TD" {{ request('passport_type_cambodia') == 'TD' ? 'selected' : '' }}>เล่ม TD</option>
+                <option value="International" {{ request('passport_type_cambodia') == 'International' ? 'selected' : '' }}>เล่มอินเตอร์</option>
             </select>
             <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="ค้นหาตามวันหมดอายุใบอนุญาตทำงาน">
             <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
