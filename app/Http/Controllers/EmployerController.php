@@ -145,6 +145,10 @@ public function edit(Request $request, Employer $employer)
         }
     }
 
+    if ($request->filled('work_permit_expiry_date')) {
+        $employeeQuery->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
+    }
+
     if ($request->filled('passport_type')) {
         $passportType = $request->input('passport_type');
         $employeeQuery->where(function ($q) use ($passportType) {
