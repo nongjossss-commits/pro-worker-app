@@ -5,7 +5,9 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use App\Models\Employee;
+use App\Models\Employer;
 use App\Observers\EmployeeObserver;
+use App\Observers\EmployerObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,5 +26,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
         Employee::observe(EmployeeObserver::class);
+        Employer::observe(EmployerObserver::class);
     }
 }
