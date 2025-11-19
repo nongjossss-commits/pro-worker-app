@@ -82,10 +82,10 @@ class StoreAdminJobTicketRequest extends FormRequest
             'attachments.new_employees.*' => ['required', 'array'], // ตรวจสอบว่าเป็น array ที่ถูก decode แล้ว
             // V2.5-PATCH: ตรวจสอบ field ตามฟอร์มใน _new_employee_modal.blade.php (snippet 56)
             // เราไม่ต้องการ employeeDob ที่นี่
-            'attachments.new_employees.*.employeeTitleTh' => ['required', 'string', 'max:50'],
-            'attachments.new_employees.*.employeeNameTh' => ['required', 'string', 'max:255'],
-            'attachments.new_employees.*.employeeNationality' => ['required', 'string', 'max:100'],
-            'attachments.new_employees.*.employeePassport' => ['required', 'string', 'max:50'],
+            'attachments.new_employees.*.employeeTitleTh' => ['nullable', 'string', 'max:50'],
+            'attachments.new_employees.*.employeeNameTh' => ['nullable', 'string', 'max:255'],
+            'attachments.new_employees.*.employeeNationality' => ['nullable', 'string', 'max:100'],
+            'attachments.new_employees.*.employeePassport' => ['nullable', 'string', 'max:50'],
             // ตรวจสอบไฟล์ที่แนบมาใน JSON
             'attachments.new_employees.*.employeePhoto' => $tempFileValidation,
             'attachments.new_employees.*.document_1' => $tempFileValidation,

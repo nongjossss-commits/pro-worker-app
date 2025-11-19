@@ -100,36 +100,128 @@ function hybridAttachmentManager(config = {}) {
             }
         },
 
-        // --- Existing Functions (some may be adapted) ---
-
         restoreOldInput() {
-            // ... (remains the same)
+            const oldAttachments = @json(old('attachments'));
+            if (oldAttachments) {
+                this.basket.files = oldAttachments.files || [];
+                this.basket.existing_employees = oldAttachments.existing_employees || [];
+
+                if (oldAttachments.new_employees) {
+                    this.basket.new_employees = oldAttachments.new_employees.map(item => {
+                        try {
+                            // If it's a string, parse it. If it's already an object, use it.
+                            return typeof item === 'string' ? JSON.parse(item) : item;
+                        } catch (e) {
+                            console.error('Failed to parse old new_employee data:', item, e);
+                            return null;
+                        }
+                    }).filter(Boolean); // Filter out any nulls from parsing errors
+                }
+            }
         },
+
         totalItemsCount() {
             return (this.basket.existing_employees?.length || 0) +
                    (this.basket.new_employees?.length || 0) +
                    (this.basket.files?.length || 0);
         },
+
         formatBytes(bytes, decimals = 2) {
-            // ... (remains the same)
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         },
+
         removeConfirm(type, index, itemName) {
-            // ... (remains the same)
+            Swal.fire({
+                title: `ลบ ${itemName}?`,
+                text: "คุณต้องการนำรายการนี้ออกจากสิ่งที่แนบมาใช่หรือไม่?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "ใช่, ลบออก",
+                cancelButtonText: "ยกเลิก"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (this.basket[type] && this.basket[type][index]) {
+                        this.basket[type].splice(index, 1);
+                        Swal.fire({
+                           toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+                           icon: 'success', title: 'ลบรายการสำเร็จ'
+                        });
+                    }
+                }
+            });
         },
+
         async fetchEmployees() {
-            // ... (remains the same)
+            if (!this.contextEmployerId) return;
+            this.isLoading = true;
+            try {
+                // Determine which parameter to send based on context
+                const params = new URLSearchParams();
+                if (this.isContextAdminCreate) {
+                    params.append('employer_user_id', this.contextEmployerId);
+                } else {
+                    params.append('employer_id', this.contextEmployerId);
+                }
+                const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                this.availableEmployees = await response.json();
+            } catch (error) {
+                console.error('Failed to fetch employees:', error);
+                this.availableEmployees = [];
+                 Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลลูกจ้างได้', 'error');
+            } finally {
+                this.isLoading = false;
+            }
         },
+
         openExistingEmployeeModal() {
-            // ... (remains the same)
+             if (this.isContextAdminCreate && !this.contextEmployerId) {
+                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างก่อนทำการแนบลูกจ้าง' });
+                return;
+            }
+            this.fetchEmployees();
+            if (this.modalInstances.existing) this.modalInstances.existing.show();
         },
+
         handleEmployerChange(newEmployerId) {
-            // ... (remains the same)
+            this.contextEmployerId = newEmployerId;
+            // Clear everything related to the previous employer
+            this.basket.existing_employees = [];
+            this.availableEmployees = [];
+            this.selectedEmployeeIds = [];
+            if (newEmployerId) {
+                this.fetchEmployees(); // Pre-fetch for the new employer
+            }
         },
+
         filteredEmployees() {
-            // ... (remains the same)
+            if (!this.searchQuery) return this.availableEmployees;
+            const query = this.searchQuery.toLowerCase();
+            return this.availableEmployees.filter(emp =>
+                (emp.employeeNameTh && emp.employeeNameTh.toLowerCase().includes(query)) ||
+                (emp.employeeNameEn && emp.employeeNameEn.toLowerCase().includes(query)) ||
+                (emp.employeePassport && emp.employeePassport.toLowerCase().includes(query))
+            );
         },
+
         confirmSelection() {
-            // ... (remains the same)
+            this.selectedEmployeeIds.forEach(id => {
+                const employee = this.availableEmployees.find(e => e.id == id);
+                // Prevent duplicates
+                if (employee && !this.basket.existing_employees.some(e => e.id == id)) {
+                    this.basket.existing_employees.push(employee);
+                }
+            });
+            this.selectedEmployeeIds = []; // Reset selection
+            this.searchQuery = ''; // Reset search
+            if (this.modalInstances.existing) this.modalInstances.existing.hide();
         },
 
         resetNewEmployeeForm() {
@@ -154,16 +246,14 @@ function hybridAttachmentManager(config = {}) {
             if (this.modalInstances.new) this.modalInstances.new.show();
         },
 
-        // --- V2.5-S3: Upgraded File Upload Handling with Preview ---
-        async handleFileUpload(event, fieldName, previewSelector = null) {
+        async handleFileUpload(event, fieldName) {
             const file = event.target.files[0];
             if (!file) return;
 
             // Handle image preview locally before upload
-            if (previewSelector && file.type.startsWith('image/')) {
+            if (fieldName === 'employeePhoto' && file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    // This is a special field for the preview URL
                     this.newEmployeeForm.photo_preview_url = e.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -189,35 +279,101 @@ function hybridAttachmentManager(config = {}) {
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Upload failed');
 
-                this.newEmployeeForm[fieldName] = data.path; // Store the permanent path
-                status.url = data.url; // Store the temporary URL for links if needed
+                this.newEmployeeForm[fieldName] = data.path;
+                status.url = data.url;
 
-                if (typeof Swal !== 'undefined') {
-                    const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
-                    Toast.fire({ icon: 'success', title: `'${file.name}' อัปโหลดสำเร็จ` });
-                }
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+                Toast.fire({ icon: 'success', title: `'${file.name}' อัปโหลดสำเร็จ` });
 
             } catch (error) {
                 console.error(`Upload error for ${fieldName}:`, error);
                 status.error = error.message;
                 this.newEmployeeForm[fieldName] = null;
                 event.target.value = null; // Clear the input
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'อัปโหลดล้มเหลว', text: error.message });
-                }
+                Swal.fire({ icon: 'error', title: 'อัปโหลดล้มเหลว', text: error.message });
             } finally {
                 status.loading = false;
             }
         },
 
         submitNewEmployeeForm() {
-            // ... (remains the same)
+            // Since validation is now optional, we just check if a name is present for display purposes.
+            // If not, we'll use a placeholder.
+             const displayName = this.newEmployeeForm.employeeNameTh?.trim() || 'ลูกจ้างใหม่ (ไม่มีชื่อ)';
+
+            // Create a temporary ID for client-side removal
+            const tempId = `new_${Date.now()}`;
+
+            // Add the form data to the basket
+            this.basket.new_employees.push({
+                ...this.newEmployeeForm,
+                temp_id: tempId, // Add temp id
+                display_name: displayName // Add display name
+            });
+
+            // Reset the form for the next entry
+            this.resetNewEmployeeForm();
+
+            // Close the modal
+            if (this.modalInstances.new) this.modalInstances.new.hide();
+
+            // Show success message
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+            Toast.fire({ icon: 'success', title: `เพิ่ม '${displayName}' ในรายการแนบแล้ว` });
         },
+
         triggerFileInput() {
-            // ... (remains the same)
+            this.$refs.generalFileInput.click();
         },
+
         async handleGeneralFileUpload(event) {
-            // ... (remains the same)
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            this.isUploading = true;
+            this.uploadProgress = 0;
+            this.filesToUploadCount = files.length;
+            this.filesUploadedCount = 0;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('{{ route('api-web.temp_upload.store') }}', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                         throw new Error(data.error || `Failed to upload ${file.name}`);
+                    }
+
+                    // Add to basket
+                    this.basket.files.push({
+                        name: file.name,
+                        size: file.size,
+                        path: data.path, // The path returned by the server
+                        url: data.url
+                    });
+
+                } catch (error) {
+                    console.error('File upload error:', error);
+                    Swal.fire('Upload Error', error.message, 'error');
+                } finally {
+                    this.filesUploadedCount++;
+                    this.uploadProgress = Math.round((this.filesUploadedCount / this.filesToUploadCount) * 100);
+                }
+            }
+
+            // Reset file input for next time
+            event.target.value = '';
+            this.isUploading = false;
         },
     }
 }
