@@ -13,7 +13,7 @@
         </div>
 
         {{-- Employee Photo --}}
-        <div class="me-3">
+        <div class="me-3 d-flex align-items-center">
             <img src="{{ $employee->photo_url }}" alt="Photo" class="employee-photo-thumb">
         </div>
 
@@ -36,7 +36,7 @@
                     <small class="text-muted d-block">Passport: <strong>{{ $employee->employeePassport ?? '-' }}</strong></small>
                     <small class="text-muted d-block">Work Permit: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> ({{ $employee->workPermitType ?? '-' }})</small>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 d-flex flex-column justify-content-center">
                     <small class="text-muted d-block">Terminated: <strong>{{ $employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : '-' }}</strong> <span class="badge bg-secondary">{{ $employee->days_since_termination }} วัน</span></small>
                     <small class="text-muted d-block">Reason: {{ $employee->termination_reason ?: '-' }}</small>
                 </div>
