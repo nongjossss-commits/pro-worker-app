@@ -26,6 +26,8 @@ class NotificationSettingController extends Controller
             'ci_renewal' => 'ต่ออายุ CI',
             'resolution_renewal' => 'ต่ออายุมติ',
             'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
+            'employer_document_expiry' => 'เอกสารนายจ้าง',
+            'employee_insurance_expiry' => 'ประกันลูกจ้าง',
         ];
         return view('admin.notification_settings.index', compact('settings', 'typeLabels'));
     }

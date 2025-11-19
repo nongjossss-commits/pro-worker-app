@@ -26,6 +26,8 @@ class NotificationController extends Controller
             'ci_renewal' => 'ต่ออายุ CI',
             'resolution_renewal' => 'ต่ออายุมติ',
             'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
+            'employer_document_expiry' => 'เอกสารนายจ้าง',
+            'employee_insurance_expiry' => 'ประกันลูกจ้าง',
         ];
 
         $notificationsData = [];
@@ -35,16 +37,24 @@ class NotificationController extends Controller
             $query = $this->getFilteredQuery($request, $type);
 
             // --- NEW: Gender Counting Logic ---
-            $employeeIds = (clone $query)->pluck('employee_id');
-            $male_count = Employee::whereIn('id', $employeeIds)->whereIn('employeeTitleTh', ['นาย'])->count();
-            $female_count = Employee::whereIn('id', $employeeIds)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
-            $total_count = $employeeIds->count();
+            if ($type === 'employer_document_expiry') {
+                $counts[$type] = ['total' => (clone $query)->count(), 'male' => 0, 'female' => 0];
+            } else {
+                $employeeIds = (clone $query)->pluck('employee_id')->filter();
+                if ($employeeIds->isNotEmpty()) {
+                    $male_count = Employee::whereIn('id', $employeeIds)->where('employeeTitleTh', 'นาย')->count();
+                    $female_count = Employee::whereIn('id', $employeeIds)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count();
+                    $total_count = $employeeIds->count();
+                } else {
+                    $male_count = $female_count = $total_count = 0;
+                }
 
-            $counts[$type] = [
-                'total' => $total_count,
-                'male' => $male_count,
-                'female' => $female_count,
-            ];
+                $counts[$type] = [
+                    'total' => $total_count,
+                    'male' => $male_count,
+                    'female' => $female_count,
+                ];
+            }
             // --- END: Gender Counting Logic ---
 
             if ($type === 'work_permit_mou') {
@@ -63,7 +73,7 @@ class NotificationController extends Controller
 
     private function getFilteredQuery(Request $request, string $type)
     {
-        $query = Notification::with('employee.employer');
+        $query = Notification::with('employee.employer', 'employer');
 
         if ($type === 'cancelled') {
             $query->where('status', 'cancelled')->latest('updated_at');
@@ -74,13 +84,22 @@ class NotificationController extends Controller
         // --- NEW: Enhanced Search Logic ---
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('employee', function ($q_employee) use ($search) {
-                $q_employee->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%")
-                  ->orWhereHas('employer', function ($q_employer) use ($search) {
-                      $q_employer->where('employerNameTh', 'like', "%{$search}%");
-                  });
+            $query->where(function ($q) use ($search, $type) {
+                if ($type === 'employer_document_expiry') {
+                    $q->whereHas('employer', function ($q_employer) use ($search) {
+                        $q_employer->where('employerNameTh', 'like', "%{$search}%")
+                                   ->orWhere('employerNameEn', 'like', "%{$search}%");
+                    });
+                } else {
+                    $q->whereHas('employee', function ($q_employee) use ($search) {
+                        $q_employee->where('employeeNameTh', 'like', "%{$search}%")
+                                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                                   ->orWhere('employeePassport', 'like', "%{$search}%")
+                                   ->orWhereHas('employer', function ($q_employer) use ($search) {
+                                       $q_employer->where('employerNameTh', 'like', "%{$search}%");
+                                   });
+                    });
+                }
             });
         }
         // --- END: Enhanced Search Logic ---

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Employee;
+use App\Models\Employer;
 use App\Models\Notification;
 use App\Models\NotificationSetting;
 use Carbon\Carbon;
@@ -111,6 +112,95 @@ class CheckExpiries extends Command
         }
 
         $this->info('Finished checking for expiring documents.');
+
+        $this->info('Checking for expiring employer documents...');
+        $this->checkEmployerDocumentExpiries($today, $settings);
+
+        $this->info('Checking for expiring employee insurances...');
+        $this->checkEmployeeInsuranceExpiries($today, $settings);
+
+        $this->info('Expiry check process finished.');
         return 0;
+    }
+
+    protected function checkEmployerDocumentExpiries($today, $settings)
+    {
+        $notificationType = 'employer_document_expiry';
+        $setting = $settings->get($notificationType);
+        if (!$setting) {
+            $this->warn("Setting for {$notificationType} not found. Skipping.");
+            return;
+        }
+
+        $threshold = $setting->days_before_expiry;
+        $futureThreshold = $today->copy()->addDays($threshold);
+
+        $employers = Employer::whereNotNull('employer_doc_company_expiry')
+            ->whereBetween('employer_doc_company_expiry', [$today, $futureThreshold])
+            ->get();
+
+        $this->info("Found {$employers->count()} employers with expiring documents within a {$threshold}-day threshold.");
+
+        foreach ($employers as $employer) {
+            $expiryDate = Carbon::parse($employer->employer_doc_company_expiry);
+            $daysRemaining = $today->diffInDays($expiryDate, false);
+
+            if ($daysRemaining <= $threshold) {
+                Notification::updateOrCreate(
+                    [
+                        'employer_id' => $employer->id,
+                        'type' => $notificationType,
+                    ],
+                    [
+                        'due_date' => $expiryDate,
+                        'days_remaining' => $daysRemaining,
+                        'status' => 'unread',
+                        'message' => "เอกสารบริษัทของนายจ้างจะหมดอายุใน {$daysRemaining} วัน",
+                    ]
+                );
+            }
+        }
+    }
+
+    protected function checkEmployeeInsuranceExpiries($today, $settings)
+    {
+        $notificationType = 'employee_insurance_expiry';
+        $setting = $settings->get($notificationType);
+        if (!$setting) {
+            $this->warn("Setting for {$notificationType} not found. Skipping.");
+            return;
+        }
+
+        $threshold = $setting->days_before_expiry;
+        $futureThreshold = $today->copy()->addDays($threshold);
+        $insuranceFields = ['insurance_expiry_date', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'];
+
+        foreach ($insuranceFields as $field) {
+            $employees = Employee::whereNotNull($field)
+                ->whereBetween($field, [$today, $futureThreshold])
+                ->get();
+
+            $this->info("Found {$employees->count()} employees with expiring insurance (field: {$field}) within a {$threshold}-day threshold.");
+
+            foreach ($employees as $employee) {
+                $expiryDate = Carbon::parse($employee->{$field});
+                $daysRemaining = $today->diffInDays($expiryDate, false);
+
+                if ($daysRemaining <= $threshold) {
+                    Notification::updateOrCreate(
+                        [
+                            'employee_id' => $employee->id,
+                            'type' => $notificationType,
+                        ],
+                        [
+                            'due_date' => $expiryDate,
+                            'days_remaining' => $daysRemaining,
+                            'status' => 'unread',
+                            'message' => "ประกันของลูกจ้างจะหมดอายุใน {$daysRemaining} วัน",
+                        ]
+                    );
+                }
+            }
+        }
     }
 }

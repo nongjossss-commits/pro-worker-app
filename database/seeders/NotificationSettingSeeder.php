@@ -25,6 +25,8 @@ class NotificationSettingSeeder extends Seeder
             ['notification_type' => 'ci_renewal', 'days_before_expiry' => 45],
             ['notification_type' => 'resolution_renewal', 'days_before_expiry' => 60],
             ['notification_type' => 'new_registration_renewal', 'days_before_expiry' => 60],
+            ['notification_type' => 'employer_document_expiry', 'days_before_expiry' => 30],
+            ['notification_type' => 'employee_insurance_expiry', 'days_before_expiry' => 30],
         ];
 
         foreach ($notificationTypes as $type) {
