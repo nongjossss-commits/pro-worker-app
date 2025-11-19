@@ -154,7 +154,8 @@ class NotificationController extends Controller
             case 'passport_expiry':
             case 'ci_renewal': // Handle CI renewal as passport update
                 $fieldToUpdate = 'passportExpiryDate';
-                $fileField = 'passport_file_path';
+                // 1. พาสปอร์ต -> employee_doc_1
+                $fileField = 'employee_doc_1';
                 $targetModel = $employee;
                 break;
             case 'work_permit_expiry':
@@ -162,21 +163,24 @@ class NotificationController extends Controller
             case 'resolution_renewal':
             case 'new_registration_renewal':
                 $fieldToUpdate = 'workPermitExpiryDate';
-                $fileField = 'work_permit_file_path';
+                // 3. ใบอนุญาต Work Permit -> employee_doc_3
+                $fileField = 'employee_doc_3';
                 $targetModel = $employee;
                 break;
             case 'visa_expiry':
                 $fieldToUpdate = 'visaExpiryDate';
-                $fileField = 'visa_file_path';
+                // 2. วีซ่า -> employee_doc_2
+                $fileField = 'employee_doc_2';
                 $targetModel = $employee;
                 break;
             case 'ninety_day_report':
                 $fieldToUpdate = 'ninetyDayReportDate';
-                // Use employee_doc_1 for 90-day reports if no specific column exists
-                $fileField = 'employee_doc_1';
+                // 6. รายงานตัว 90 วัน -> employee_doc_6
+                $fileField = 'employee_doc_6';
                 $targetModel = $employee;
                 break;
             case 'employee_insurance_expiry':
+                // Insurance Attachment -> insurance_attachment_path
                 $fileField = 'insurance_attachment_path';
                 $targetModel = $employee;
                 // Determine which date field to update based on insurance type
@@ -190,6 +194,7 @@ class NotificationController extends Controller
                 break;
             case 'employer_document_expiry':
                 $fieldToUpdate = 'employer_doc_company_expiry';
+                // 1. หนังสือรับรองบริษัท / บัตรประชาชน -> employer_doc_company
                 $fileField = 'employer_doc_company';
                 $targetModel = $employer;
                 break;
