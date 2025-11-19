@@ -22,6 +22,7 @@
     <form action="{{ route('employees.update', $employee->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
+        <input type="hidden" name="_previous" value="{{ url()->previous() }}">
         <input type="hidden" name="employer_id" value="{{ $employee->employer_id }}">
 
         {{-- Category 1: Personal Information --}}
@@ -341,7 +342,7 @@
 
 
         <div class="mt-4 d-flex justify-content-end">
-            <a href="{{ url()->previous() }}" class="btn btn-secondary me-2">ยกเลิก</a>
+            <button type="button" onclick="history.back();" class="btn btn-secondary me-2">ยกเลิก</button>
             <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน</button>
         </div>
     </form>
