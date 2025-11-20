@@ -60,8 +60,8 @@
             <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
         @endif
     </td>
-    <td>{{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d M Y') }}</td>
-    <td class="{{ $text_class }}">
+    <td class="text-nowrap">{{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d M Y') }}</td>
+    <td class="{{ $text_class }} text-nowrap">
         @if($is_overdue)
             หมดอายุ {{ abs($days_remaining) }} วัน
         @else

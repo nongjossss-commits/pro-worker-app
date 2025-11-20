@@ -116,12 +116,10 @@
                                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-std"></th>
                                         <th style="width: 1%;">#</th>
                                         <th>ชื่อลูกจ้าง</th>
-                                        <th>นายจ้าง</th>
-                                        <th>ประเภท</th>
                                         <th>สัญชาติ</th>
+                                        <th>นายจ้าง</th>
                                         <th>วันที่ครบกำหนด</th>
-                                        <th>สถานะ</th>
-                                        <th>วันคงเหลือ</th>
+                                        <th>สถานะ / วันคงเหลือ</th>
                                         <th class="text-center">จัดการ</th>
                                     </tr>
                                 </thead>
@@ -132,7 +130,7 @@
                                         @endphp
                                         @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $itemNumber])
                                     @empty
-                                        <tr><td colspan="10" class="text-center text-muted">ไม่พบข้อมูล</td></tr>
+                                        <tr><td colspan="8" class="text-center text-muted">ไม่พบข้อมูล</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
