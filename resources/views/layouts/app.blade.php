@@ -286,6 +286,11 @@
                 </button>
                 {{-- END: V.2 PC Toggle Button --}}
 
+                {{-- Download Center Button (Fixed for better visibility) --}}
+                <button class="btn btn-outline-secondary d-none d-md-block mx-2" onclick="openDownloadCenter()">
+                    <i class="bi bi-cloud-download-fill me-1"></i> Download Center
+                </button>
+
                 <div class="d-flex align-items-center ms-auto">
                      <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -651,6 +656,7 @@
     }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @include('components.download-modals')
     @stack('scripts')
 
 <!-- Universal Preview Modal -->
