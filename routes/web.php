@@ -97,6 +97,9 @@ Route::middleware('auth')->group(function () {
     // V2.4-S10: Employer Reply Route
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
+    // Employer Delete Message Route (Matches Admin functionality)
+    Route::delete('tickets/messages/{message}', [\App\Http\Controllers\TicketMessageController::class, 'destroy'])->name('tickets.messages.destroy');
+
     // --- V2.4-S5/S6: Internal API Routes for Web Interface ---
     Route::prefix('api-web')->name('api-web.')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
