@@ -75,6 +75,22 @@ class NotificationController extends Controller
     {
         $query = Notification::with(['employee.employer', 'employer']);
 
+        // Apply tenancy scope for Employer role to prevent data leakage
+        if (Auth::check() && Auth::user()->hasRole('employer')) {
+            $employerId = Auth::user()->employer->id ?? null;
+            if ($employerId) {
+                $query->where(function($q) use ($employerId) {
+                    // 1. Notifications directly linked to the employer (e.g., employer_document_expiry)
+                    $q->where('employer_id', $employerId)
+                    // 2. Notifications linked to employees (respects Employee global scope)
+                      ->orWhereHas('employee');
+                });
+            } else {
+                // Fallback: If user is 'employer' but has no linked Employer record, show nothing.
+                $query->whereRaw('1 = 0');
+            }
+        }
+
         if ($type === 'cancelled') {
             $query->where('status', 'cancelled')->latest('updated_at');
         } else {
