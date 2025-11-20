@@ -21,6 +21,10 @@
                 {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}
             </span>
 
+            <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล">
+                <i class="bi bi-search"></i>
+            </button>
+
             @if($employee->employeeNationality)
                 @php
                     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
@@ -37,7 +41,14 @@
                 {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})
             </span>
 
-            <span class="employer-name d-block text-muted">นายจ้าง: {{ $employerName }}</span>
+            <span class="employer-name d-block text-muted">
+                นายจ้าง: {{ $employerName }}
+                @if($employee->employer)
+                <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="พรีวิวข้อมูล">
+                    <i class="bi bi-search"></i>
+                </button>
+                @endif
+            </span>
 
             <div class="document-details small mt-2">
                 Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : '-' }})
