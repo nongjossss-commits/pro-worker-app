@@ -145,8 +145,10 @@ class TicketController extends Controller
                 $fileFields = ['employeePhoto', 'document_1']; // Add other file fields here if needed
 
                 foreach ($attachments['new_employees'] as $newEmployeeJson) {
-                    $data = json_decode($newEmployeeJson, true);
-                    if (is_null($data)) {
+                    // Fix: Handle array (from validation) or string. StoreTicketRequest converts JSON strings to arrays.
+                    $data = is_array($newEmployeeJson) ? $newEmployeeJson : json_decode($newEmployeeJson, true);
+
+                    if (!is_array($data)) {
                         throw new Exception("Invalid JSON data detected during processing.");
                     }
 

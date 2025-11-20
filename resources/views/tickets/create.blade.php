@@ -4,7 +4,7 @@
 {{-- Ensure there are no duplicate directives here --}}
 @section('content')
 {{-- Initialize Alpine.js Component (V2.4-S11 Update) --}}
-<div class="content-section" x-data="hybridAttachmentManager()">
+<div class="content-section" x-data="hybridAttachmentManager({ employerId: {{ optional(Auth::user()->employer)->id ?? 'null' }} })">
     {{-- ... (Header, Error Display) ... --}}
     <h2 class="mb-4">สร้างคำขอใหม่ (Smart Ticket)</h2>
 
