@@ -167,24 +167,27 @@
                                                 <input type="file" class="form-control individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}">
                                             </div>
                                             @php
-                                                $isPrivateFile = in_array($field, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment']);
-                                                // Determine path attribute: for private files, it's field_path. For public, it's just the field.
-                                                // However, Employee model accessors might handle $employee->$field if defined,
-                                                // but the DB column for private files is usually suffixed with _path.
-                                                // Let's check if we can access the path directly or via attribute.
-                                                // Based on controller logic: $updateData[$field . '_path'] = $path;
-                                                // So the column is likely passport_file_path, etc.
-                                                // But in the view $employee->$field might be null if the accessor doesn't exist.
-                                                // Let's try to access the correct attribute.
-                                                $pathAttribute = $isPrivateFile ? $field . '_path' : $field;
-                                                $filePath = $employee->$pathAttribute ?? $employee->$field;
+                                                // Define mapping for legacy file fields to actual database columns
+                                                $fieldMapping = [
+                                                    'passport_file'      => 'employee_doc_1',
+                                                    'visa_file'          => 'employee_doc_2',
+                                                    'work_permit_file'   => 'employee_doc_3',
+                                                    'pink_card_file'     => 'employee_doc_4',
+                                                    'insurance_attachment' => 'insurance_document_path',
+                                                ];
+                                                $dbColumn = $fieldMapping[$field] ?? $field;
+                                                $filePath = $employee->$dbColumn;
                                             @endphp
 
                                             @if($filePath)
                                                 <div class="mt-1 text-success small">
                                                     <i class="bi bi-check-circle-fill"></i> {{ __('File exists') }}
-                                                    @if($isPrivateFile)
-                                                        <a href="{{ route('employees.documents.serve', ['employee' => $employee->id, 'field' => $pathAttribute]) }}" target="_blank" class="text-decoration-none ms-1">({{ __('View') }})</a>
+                                                    @php
+                                                        $isSensitive = in_array($field, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment']);
+                                                    @endphp
+
+                                                    @if($isSensitive)
+                                                         <a href="{{ route('employees.documents.serve', ['employee' => $employee->id, 'field' => $dbColumn]) }}" target="_blank" class="text-decoration-none ms-1">({{ __('View') }})</a>
                                                     @else
                                                         <a href="{{ Storage::disk('public')->url($filePath) }}" target="_blank" class="text-decoration-none ms-1">({{ __('View') }})</a>
                                                     @endif

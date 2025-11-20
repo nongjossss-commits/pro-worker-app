@@ -423,41 +423,49 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $data = $validated;
         $data['email'] = $validated['employeeEmail'] ?? null;
         unset($data['employeeEmail']);
-        if ($request->hasFile('passport_file')) {
-            if ($employee->passport_file_path) {
-                Storage::disk('private')->delete($employee->passport_file_path);
+
+        // Helper to map and upload file
+        // V6-Patch: Secure sensitive files by storing in 'private' disk, others in 'public'.
+        // Also checks both disks for cleanup during migration.
+        $handleFileUpload = function ($fileInputName, $dbColumnName) use ($request, &$data, $employee) {
+            if ($request->hasFile($fileInputName)) {
+                // 1. Determine Storage Disk based on file type
+                // Sensitive files must go to 'private'.
+                $isSensitive = in_array($fileInputName, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment']);
+                $disk = $isSensitive ? 'private' : 'public';
+                $folder = $isSensitive ? 'employee_documents' : "employee_files/{$employee->employer_id}";
+
+                // 2. Cleanup: Delete old file from BOTH public and private to ensure clean migration
+                if ($employee->$dbColumnName) {
+                    if (Storage::disk('public')->exists($employee->$dbColumnName)) {
+                        Storage::disk('public')->delete($employee->$dbColumnName);
+                    }
+                    if (Storage::disk('private')->exists($employee->$dbColumnName)) {
+                        Storage::disk('private')->delete($employee->$dbColumnName);
+                    }
+                }
+
+                // 3. Upload new file
+                $file = $request->file($fileInputName);
+                if ($disk === 'private') {
+                    // Private storage usually just needs a folder name, not storeAs with ID, unless organized that way.
+                    // Existing 'private' logic in update() used 'employee_documents'.
+                    $path = $file->store($folder, $disk);
+                } else {
+                    $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs($folder, $filename, $disk);
+                }
+
+                $data[$dbColumnName] = $path;
             }
-            $path = $request->file('passport_file')->store('employee_documents', 'private');
-            $data['passport_file_path'] = $path;
-        }
-        if ($request->hasFile('visa_file')) {
-            if ($employee->visa_file_path) {
-                Storage::disk('private')->delete($employee->visa_file_path);
-            }
-            $path = $request->file('visa_file')->store('employee_documents', 'private');
-            $data['visa_file_path'] = $path;
-        }
-        if ($request->hasFile('work_permit_file')) {
-            if ($employee->work_permit_file_path) {
-                Storage::disk('private')->delete($employee->work_permit_file_path);
-            }
-            $path = $request->file('work_permit_file')->store('employee_documents', 'private');
-            $data['work_permit_file_path'] = $path;
-        }
-        if ($request->hasFile('pink_card_file')) {
-            if ($employee->pink_card_file_path) {
-                Storage::disk('private')->delete($employee->pink_card_file_path);
-            }
-            $path = $request->file('pink_card_file')->store('employee_documents', 'private');
-            $data['pink_card_file_path'] = $path;
-        }
-        if ($request->hasFile('insurance_attachment')) {
-            if ($employee->insurance_attachment_path) {
-                Storage::disk('private')->delete($employee->insurance_attachment_path);
-            }
-            $path = $request->file('insurance_attachment')->store('employee_documents', 'private');
-            $data['insurance_attachment_path'] = $path;
-        }
+        };
+
+        // Map legacy named inputs to actual DB columns (employee_doc_X)
+        $handleFileUpload('passport_file', 'employee_doc_1');
+        $handleFileUpload('visa_file', 'employee_doc_2');
+        $handleFileUpload('work_permit_file', 'employee_doc_3');
+        $handleFileUpload('pink_card_file', 'employee_doc_4');
+        $handleFileUpload('insurance_attachment', 'insurance_document_path');
 
         // If 'password' field is filled, it's already in $data from validation.
         // If it's empty, we should not update the password.
@@ -941,6 +949,15 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $selectedFields = $request->input('selected_fields');
         $updatedCount = 0;
 
+        // Define mapping for legacy file fields to actual database columns
+        $fieldMapping = [
+            'passport_file'      => 'employee_doc_1',
+            'visa_file'          => 'employee_doc_2',
+            'work_permit_file'   => 'employee_doc_3',
+            'pink_card_file'     => 'employee_doc_4',
+            'insurance_attachment' => 'insurance_document_path',
+        ];
+
         foreach ($employeeIds as $id) {
             $employee = Employee::find($id);
             if (!$employee) continue;
@@ -954,35 +971,42 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $employeeInput = $inputData[$id] ?? [];
 
             foreach ($selectedFields as $field) {
+                // Determine the actual database column name
+                $dbColumn = $fieldMapping[$field] ?? $field;
+
                 // 1. Handle File Uploads
                 if ($request->hasFile("data.{$id}.{$field}")) {
                     $file = $request->file("data.{$id}.{$field}");
 
-                    // Logic adapted from update method:
-                    if (in_array($field, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment'])) {
-                        // These are private files
-                        if ($employee->{$field . '_path'}) {
-                            Storage::disk('private')->delete($employee->{$field . '_path'});
-                        }
-                        $path = $file->store('employee_documents', 'private');
-                        $updateData[$field . '_path'] = $path;
+                    // V6-Patch: Secure sensitive files
+                    $isSensitive = in_array($field, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment']);
+                    $disk = $isSensitive ? 'private' : 'public';
+                    $folder = $isSensitive ? 'employee_documents' : "employee_files/{$employee->employer_id}";
 
-                    } elseif (str_starts_with($field, 'employee_doc_') || in_array($field, ['employeePhoto', 'insurance_document_path', 'insurance_document_path_private'])) {
-                        // These are public files
-                        // Check if old file exists and delete it
-                        if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
-                            Storage::disk('public')->delete($employee->$field);
+                    // Cleanup old files from BOTH disks
+                    if ($employee->$dbColumn) {
+                        if (Storage::disk('public')->exists($employee->$dbColumn)) {
+                            Storage::disk('public')->delete($employee->$dbColumn);
                         }
-                        $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                        $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
-                        $updateData[$field] = $path;
+                        if (Storage::disk('private')->exists($employee->$dbColumn)) {
+                            Storage::disk('private')->delete($employee->$dbColumn);
+                        }
                     }
+
+                    if ($disk === 'private') {
+                        $path = $file->store($folder, $disk);
+                    } else {
+                        $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs($folder, $filename, $disk);
+                    }
+
+                    $updateData[$dbColumn] = $path;
 
                 }
                 // 2. Handle Text/Date Inputs
                 // We check array_key_exists because the value might be null or empty string, which we want to save.
                 elseif (array_key_exists($field, $employeeInput)) {
-                    $updateData[$field] = $employeeInput[$field];
+                    $updateData[$dbColumn] = $employeeInput[$field];
                 }
             }
 
