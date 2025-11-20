@@ -30,10 +30,18 @@ class AppServiceProvider extends ServiceProvider
 
         // Share incomplete employee count with specific views (layout)
         view()->composer('layouts.app', function ($view) {
-            // Only calculate if the user is logged in and has permission to view this
-            if (auth()->check() && auth()->user()->can('manage-tickets')) {
-                 $incompleteCount = \App\Helpers\CompletenessHelper::getIncompleteCount();
-                 $view->with('incompleteCount', $incompleteCount);
+            if (auth()->check()) {
+                // 1. Incomplete Data Count (Admin/Staff only)
+                if (auth()->user()->can('manage-tickets')) {
+                    $incompleteCount = \App\Helpers\CompletenessHelper::getIncompleteCount();
+                    $view->with('incompleteCount', $incompleteCount);
+                }
+
+                // 2. Notification Count (All users who can view notifications)
+                if (auth()->user()->can('view-notifications')) {
+                    $totalNotificationCount = \App\Helpers\NotificationHelper::getTotalNotificationCount();
+                    $view->with('totalNotificationCount', $totalNotificationCount);
+                }
             }
         });
     }
