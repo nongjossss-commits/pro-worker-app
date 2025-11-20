@@ -299,7 +299,7 @@
 
                 {{-- Download Center Button (Fixed for better visibility) --}}
                 <button class="btn btn-outline-secondary d-none d-md-block mx-2" onclick="openDownloadCenter()">
-                    <i class="bi bi-cloud-download-fill me-1"></i> Download Center
+                    <i class="bi bi-cloud-download-fill me-1"></i> {{ __('Download Center') }}
                 </button>
 
                 <div class="d-flex align-items-center ms-auto">

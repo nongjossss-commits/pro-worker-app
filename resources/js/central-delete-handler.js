@@ -9,6 +9,7 @@
  * - `data-action`: The URL the form should submit to.
  * - `data-message`: The confirmation message to display in the modal body.
  * - `data-is-force-delete`: ('true' or 'false') Controls the confirmation button's style.
+ * - `data-confirm-btn-text`: (Optional) Text for the confirmation button.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const deleteModalEl = document.getElementById('centralDeleteConfirmationModal');
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const action = button.getAttribute('data-action');
         const message = button.getAttribute('data-message');
         const isForceDelete = button.getAttribute('data-is-force-delete') === 'true';
+        const confirmBtnText = button.getAttribute('data-confirm-btn-text');
 
         // 1. Set the form's action URL
         deleteForm.action = action;
@@ -37,7 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
         methodInput.value = 'DELETE';
 
         // 4. Style the confirmation button
-        confirmBtn.textContent = isForceDelete ? 'Yes, force delete' : 'Yes, move to trash';
+        if (confirmBtnText) {
+            confirmBtn.textContent = confirmBtnText;
+        } else {
+            // Fallback if no translation is provided via attribute
+            confirmBtn.textContent = isForceDelete ? 'Yes, force delete' : 'Yes, move to trash';
+        }
+
         confirmBtn.classList.remove('btn-danger', 'btn-primary');
         confirmBtn.classList.add(isForceDelete ? 'btn-danger' : 'btn-primary');
     });
@@ -45,6 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Optional: Reset form action when modal is hidden to prevent accidental submissions
     deleteModalEl.addEventListener('hidden.bs.modal', function () {
         deleteForm.action = '';
-        modalMessage.textContent = 'Are you sure?';
+        modalMessage.textContent = ''; // Clear message
     });
 });

@@ -3,7 +3,7 @@
 {{-- Determine the correct context and prepare data --}}
 @php
     $isAdminView = request()->routeIs('admin.tickets.*');
-    $viewTitle = $isAdminView ? 'จัดการต๋วงาน' : 'รายละเอียดคำขอ';
+    $viewTitle = $isAdminView ? __('Manage Ticket') : __('Request Details');
 
     // Helper function for file size formatting (defined here as it's not globally available)
     if (!function_exists('formatBytes')) {
@@ -46,7 +46,7 @@
     @endif
     @if ($errors->any())
         <div class="alert alert-danger mb-4">
-            <strong>พบข้อผิดพลาด:</strong>
+            <strong>{{ __('Errors Found:') }}</strong>
             <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -71,13 +71,13 @@
             @if($attachments->existing_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->isNotEmpty())
             <div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>สิ่งที่แนบมา (Attachments Triage)</h5>
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>{{ __('Attachments Triage') }}</h5>
                 </div>
                 <div class="card-body">
 
                     {{-- 1.1 Existing Employees --}}
                     @if($attachments->existing_employees->isNotEmpty())
-                        <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
+                        <h6 class="text-primary mt-3">{{ __('Existing Employees') }} ({{ $attachments->existing_employees->count() }} {{ __('persons') }})</h6>
 
                         <x-bulk-action-bar id="ticket-existing-employees-bar" />
 
@@ -94,7 +94,7 @@
                                         <small class="text-muted">({{ $employee->employeePassport }})</small>
                                     </span>
                                     @if($employee->trashed())
-                                        <span class="badge bg-danger me-2">ลบ/จำหน่ายแล้ว</span>
+                                        <span class="badge bg-danger me-2">{{ __('Deleted/Terminated') }}</span>
                                     @endif
                                     <div class="ms-auto btn-group">
                                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}">
@@ -105,10 +105,10 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                    data-swal-title="ยืนยันการลบ"
-                                                    data-swal-text="ต้องการลบ '{{ $employee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                    data-swal-title="{{ __('Confirm Deletion') }}"
+                                                    data-swal-text="{{ __('Are you sure you want to remove this item?') }}"
                                                     data-swal-icon="warning"
-                                                    data-swal-confirm-text="ใช่, ลบเลย">
+                                                    data-swal-confirm-text="{{ __('Yes, remove it!') }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -121,7 +121,7 @@
 
                     {{-- 1.2 New Employees --}}
                     @if($attachments->new_employees->isNotEmpty())
-                        <h6 class="text-success mt-3">ลูกจ้างใหม่/แจ้งเข้า ({{ $attachments->new_employees->count() }} คน)</h6>
+                        <h6 class="text-success mt-3">{{ __('New Employees/Register') }} ({{ $attachments->new_employees->count() }} {{ __('persons') }})</h6>
                         <div class="list-group mb-3">
                             <script>
                                 // Initialize the global map if it doesn't exist
@@ -154,22 +154,22 @@
                                             @php
                                                 // Create a map for user-friendly labels
                                                 $docLabels = [
-                                                    'employeePhoto' => 'รูปถ่าย',
-                                                    'employee_doc_1' => 'Passport',
-                                                    'employee_doc_2' => 'Visa',
-                                                    'employee_doc_3' => 'Work Permit',
-                                                    'employee_doc_4' => 'Pink Card',
-                                                    'employee_doc_5' => 'ทะเบียนบ้าน',
-                                                    'employee_doc_6' => 'บัตรประชาชน',
-                                                    'employee_doc_7' => 'ใบแจ้งที่พักอาศัย',
-                                                    'employee_doc_8' => 'เอกสารบ้านเกิด',
-                                                    'employee_doc_9' => 'เอกสารอื่นๆ 1',
-                                                    'employee_doc_10' => 'เอกสารอื่นๆ 2',
-                                                    'employee_doc_11' => 'เอกสารอื่นๆ 3',
-                                                    'employee_doc_12' => 'เอกสารอื่นๆ 4',
-                                                    'insurance_document_path_social' => 'ประกันสังคม',
-                                                    'insurance_document_path_hospital' => 'ประกัน รพ.',
-                                                    'insurance_document_path_private' => 'ประกันเอกชน'
+                                                    'employeePhoto' => __('Photo'),
+                                                    'employee_doc_1' => __('Passport'),
+                                                    'employee_doc_2' => __('Visa'),
+                                                    'employee_doc_3' => __('Work Permit'),
+                                                    'employee_doc_4' => __('Pink Card'),
+                                                    'employee_doc_5' => __('Tor Ror 38'),
+                                                    'employee_doc_6' => __('ID Card'),
+                                                    'employee_doc_7' => __('Residence Notification'),
+                                                    'employee_doc_8' => __('Hometown Document'),
+                                                    'employee_doc_9' => __('Other Document 1'),
+                                                    'employee_doc_10' => __('Other Document 2'),
+                                                    'employee_doc_11' => __('Other Document 3'),
+                                                    'employee_doc_12' => __('Other Document 4'),
+                                                    'insurance_document_path_social' => __('Social Security'),
+                                                    'insurance_document_path_hospital' => __('Hospital Insurance'),
+                                                    'insurance_document_path_private' => __('Private Insurance')
                                                 ];
                                             @endphp
 
@@ -194,10 +194,10 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                    data-swal-title="ยืนยันการลบ"
-                                                    data-swal-text="ต้องการลบ '{{ $newEmployee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                    data-swal-title="{{ __('Confirm Deletion') }}"
+                                                    data-swal-text="{{ __('Are you sure you want to remove this item?') }}"
                                                     data-swal-icon="warning"
-                                                    data-swal-confirm-text="ใช่, ลบเลย">
+                                                    data-swal-confirm-text="{{ __('Yes, remove it!') }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -210,7 +210,7 @@
 
                     {{-- 1.3 General Files --}}
                     @if($attachments->files->isNotEmpty())
-                        <h6 class="text-secondary mt-3">ไฟล์แนบทั่วไป ({{ $attachments->files->count() }} ไฟล์)</h6>
+                        <h6 class="text-secondary mt-3">{{ __('General Files') }} ({{ $attachments->files->count() }} {{ __('files') }})</h6>
                         <div class="list-group mb-3">
                             @foreach($attachments->files as $item)
                                 @php $file = $item->data; @endphp
@@ -219,7 +219,7 @@
                                         @if($file->url)
                                             <span><i class="bi bi-file-earmark-text me-2"></i> {{ $file->name }}</span>
                                         @else
-                                            <span class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i> {{ $file->name }} (ไฟล์สูญหาย)</span>
+                                            <span class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i> {{ $file->name }} ({{ __('File Lost') }})</span>
                                         @endif
                                     </a>
                                     <small class="text-muted me-3">{{ formatBytes($file->size) }}</small>
@@ -228,10 +228,10 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                data-swal-title="ยืนยันการลบ"
-                                                data-swal-text="ต้องการลบไฟล์ '{{ $file->name }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                data-swal-title="{{ __('Confirm Deletion') }}"
+                                                data-swal-text="{{ __('Are you sure you want to remove this item?') }}"
                                                 data-swal-icon="warning"
-                                                data-swal-confirm-text="ใช่, ลบเลย">
+                                                data-swal-confirm-text="{{ __('Yes, remove it!') }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -249,7 +249,7 @@
             {{-- Section 2: Communication History (Chat View) --}}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>ประวัติการสนทนา</h5>
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>{{ __('Conversation History') }}</h5>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @php $hasConversation = false; @endphp
@@ -265,7 +265,7 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <strong>{{ $message->user->name ?? 'ผู้ใช้งาน (ลบแล้ว)' }}</strong>
+                                        <strong>{{ $message->user->name ?? __('User (Deleted)') }}</strong>
                                         <div class="d-flex align-items-center">
                                             <small class="text-muted me-2">{{ $message->created_at->format('d M Y H:i') }}</small>
                                             @if(!$isClosed && (auth()->id() === $message->user_id || auth()->user()->can('manage-tickets')))
@@ -273,10 +273,10 @@
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                            data-swal-title="ยืนยันการลบ"
-                                                            data-swal-text="ต้องการลบข้อความนี้ใช่หรือไม่?"
+                                                            data-swal-title="{{ __('Confirm Deletion') }}"
+                                                            data-swal-text="{{ __('Are you sure you want to delete this message?') }}"
                                                             data-swal-icon="warning"
-                                                            data-swal-confirm-text="ใช่, ลบเลย">
+                                                            data-swal-confirm-text="{{ __('Yes, delete it!') }}">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
@@ -301,7 +301,7 @@
                     @endforeach
 
                     @if(!$hasConversation)
-                        <p class="text-center text-muted py-4">ยังไม่มีการสนทนา</p>
+                        <p class="text-center text-muted py-4">{{ __('No conversation yet') }}</p>
                     @endif
                 </div>
             </div>
@@ -311,7 +311,7 @@
             {{-- Section 3: Reply Box (V2.4-S11 Implementation - Major Overhaul) --}}
             @if(!$isClosed)
                 <div class="card mb-4" id="reply-box">
-                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> ตอบกลับ / ส่งข้อความ</h5></div>
+                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> {{ __('Reply / Send Message') }}</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
                         {{-- V2.5-S4 Bug Fix: Use the correct x-ref to match the trigger function --}}
@@ -325,8 +325,8 @@
                             @csrf
                             {{-- Text Area --}}
                             <div class="mb-3">
-                                <label for="message" class="form-label">ข้อความ:</label>
-                                <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" placeholder="พิมพ์ข้อความตอบกลับของคุณที่นี่...">{{ old('message') }}</textarea>
+                                <label for="message" class="form-label">{{ __('Message') }}:</label>
+                                <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" placeholder="{{ __('Type your reply here...') }}">{{ old('message') }}</textarea>
                                 @error('message')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -334,20 +334,20 @@
 
                             {{-- Attachment Basket --}}
                             <div class="mb-3">
-                                <label class="form-label">สิ่งที่แนบมา (<span x-text="totalItemsCount()"></span> รายการ):</label>
+                                <label class="form-label">{{ __('Attachments') }} (<span x-text="totalItemsCount()"></span> {{ __('items') }}):</label>
 
                                 {{-- V2.4-S11: Upload Progress Bar --}}
                                 <div x-show="isUploading" class="mb-2">
                                     <div class="progress" style="height: 25px;">
                                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-secondary" role="progressbar" :style="'width: ' + uploadProgress + '%'" :aria-valuenow="uploadProgress" aria-valuemin="0" aria-valuemax="100">
-                                            กำลังอัปโหลด (<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
+                                            {{ __('Uploading') }} (<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="list-group" style="max-height: 250px; overflow-y: auto;">
                                     <template x-if="totalItemsCount() === 0">
-                                        <div class="list-group-item text-muted fst-italic">ยังไม่มีรายการที่แนบ</div>
+                                        <div class="list-group-item text-muted fst-italic">{{ __('No items attached yet') }}</div>
                                     </template>
                                     {{-- 1. Display Existing Employees --}}
                                     <template x-for="(item, index) in basket.existing_employees" :key="'e-' + item.id">
@@ -360,7 +360,7 @@
                                                     <span class="text-muted" x-text="item.employeeNameEn ? '(' + item.employeeNameEn + ')' : ''"></span>
                                                 </span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">{{ __('Remove') }}</button>
                                             <input type="hidden" :name="'attachments[existing_employees][' + index + ']'" :value="item.id">
                                         </div>
                                     </template>
@@ -370,11 +370,11 @@
                                             <div class="d-flex align-items-center gap-3">
                                                 <i class="bi bi-person-plus fs-4 text-success"></i>
                                                 <span>
-                                                    ใหม่: <span x-text="item.employeeNameTh"></span>
+                                                    {{ __('New') }}: <span x-text="item.employeeNameTh"></span>
                                                     <small class="text-muted d-block" x-text="'Passport: ' + item.employeePassport"></small>
                                                 </span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">ลบ</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">{{ __('Remove') }}</button>
                                             <input type="hidden" :name="'attachments[new_employees][' + index + ']'" :value="JSON.stringify(item)">
                                         </div>
                                     </template>
@@ -388,7 +388,7 @@
                                                     <small class="text-muted d-block" x-text="formatBytes(item.size)"></small>
                                                 </span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">ลบ</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">{{ __('Remove') }}</button>
                                             <input type="hidden" :name="'attachments[files][' + index + '][path]'" :value="item.path">
                                             <input type="hidden" :name="'attachments[files][' + index + '][name]'" :value="item.name">
                                             <input type="hidden" :name="'attachments[files][' + index + '][size]'" :value="item.size">
@@ -406,21 +406,21 @@
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div class="btn-group" role="group" aria-label="Attachment options">
                                     <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-check"></i> แนบลูกจ้าง
+                                        <i class="bi bi-person-check"></i> {{ __('Attach Employee') }}
                                     </button>
                                     <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-plus"></i> แจ้งเข้า
+                                        <i class="bi bi-person-plus"></i> {{ __('Register New') }}
                                     </button>
                                     <button type="button" class="btn btn-outline-secondary" @click="triggerFileInput" :disabled="isUploading">
-                                        <i class="bi bi-paperclip"></i> แนบไฟล์
+                                        <i class="bi bi-paperclip"></i> {{ __('Attach File') }}
                                     </button>
                                 </div>
                                 <button type="submit" class="btn btn-primary" :disabled="isUploading">
                                     <template x-if="isUploading">
-                                        <span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังดำเนินการ...</span>
+                                        <span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> {{ __('Processing...') }}</span>
                                     </template>
                                     <template x-if="!isUploading">
-                                        <span><i class="bi bi-send-fill me-2"></i> ส่งข้อความ</span>
+                                        <span><i class="bi bi-send-fill me-2"></i> {{ __('Send Message') }}</span>
                                     </template>
                                 </button>
                             </div>
@@ -429,7 +429,7 @@
                 </div>
             @else
                 <div class="alert alert-warning text-center">
-                    <i class="bi bi-lock-fill me-2"></i> ตั๋วงานนี้ถูกปิดแล้ว ({{ $ticket->status_name }}). หากต้องการความช่วยเหลือเพิ่มเติม กรุณาสร้างตั๋วงานใหม่.
+                    <i class="bi bi-lock-fill me-2"></i> {{ __('This ticket is closed (:status). Please create a new ticket for further assistance.', ['status' => $ticket->status_name]) }}
                 </div>
             @endif
             {{-- End Section 3: Reply Box --}}
@@ -440,50 +440,50 @@
         <div class="col-lg-4">
             <div class="card sticky-top" style="top: 20px;">
                 <div class="card-header">
-                    <h5 class="mb-0">ข้อมูลตั๋วงาน</h5>
+                    <h5 class="mb-0">{{ __('Ticket Information') }}</h5>
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">
                         <strong>Ticket ID:</strong> #{{ $ticket->id }}
                     </li>
                     <li class="list-group-item">
-                        <strong>สร้างเมื่อ:</strong> {{ $ticket->created_at->format('d M Y H:i') }}
+                        <strong>{{ __('Created At') }}:</strong> {{ $ticket->created_at->format('d M Y H:i') }}
                     </li>
                      <li class="list-group-item">
-                        <strong>อัปเดตล่าสุด:</strong> {{ $ticket->updated_at->format('d M Y H:i') }}
+                        <strong>{{ __('Last Updated') }}:</strong> {{ $ticket->updated_at->format('d M Y H:i') }}
                     </li>
                     {{-- Show Employer Info (More detailed in Admin view) --}}
                     <li class="list-group-item">
-                        <strong>ผู้ส่งคำขอ:</strong>
+                        <strong>{{ __('Requester') }}:</strong>
                         @if($isAdminView && $ticket->employerUser)
                              {{-- Eager loaded in Admin Controller --}}
                             {{ optional($ticket->employerUser->employer)->employerNameTh ?? 'N/A' }} ({{ $ticket->employerUser->name }})
                         @elseif($ticket->employerUser)
                             {{ $ticket->employerUser->name }}
                         @else
-                            N/A (ผู้ใช้งานถูกลบ)
+                            N/A ({{ __('User Deleted') }})
                         @endif
                     </li>
                     {{-- Show Assigned Staff --}}
                     <li class="list-group-item">
-                        <strong>ผู้รับผิดชอบ:</strong>
-                        {{ $ticket->assignedStaff->name ?? ($isAdminView ? 'ยังไม่ได้มอบหมาย' : 'รอเจ้าหน้าที่รับเรื่อง') }}
+                        <strong>{{ __('Assigned To') }}:</strong>
+                        {{ $ticket->assignedStaff->name ?? ($isAdminView ? __('Unassigned') : __('Waiting for Staff')) }}
                     </li>
                 </ul>
                 {{-- Admin Action Buttons (Placeholder for V2.4-S11) --}}
                 @if($isAdminView)
                     <div class="card-body d-grid gap-2">
-                         <h5 class="mb-3">การจัดการ (Admin/Staff)</h5>
+                         <h5 class="mb-3">{{ __('Actions (Admin/Staff)') }}</h5>
                         {{-- Mark as Resolved Button --}}
 <form id="resolve-form" action="{{ route('admin.tickets.resolve', $ticket) }}" method="POST" class="d-grid">
                             @csrf
     <button type="button" class="btn btn-outline-success btn-submit-swal"
-            data-swal-title="ยืนยันการปิดตั๋ว"
-            data-swal-text="คุณแน่ใจหรือไม่ว่าต้องการปิดตั๋วนี้เป็น 'Resolved'?"
+            data-swal-title="{{ __('Confirm Close Ticket') }}"
+            data-swal-text="{{ __('Are you sure you want to close this ticket as Resolved?') }}"
             data-swal-icon="success"
-            data-swal-confirm-text="ใช่, ปิดตั๋วเลย"
+            data-swal-confirm-text="{{ __('Yes, Close Ticket') }}"
             {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-check-circle-fill me-2"></i> Mark as Resolved
+                                <i class="bi bi-check-circle-fill me-2"></i> {{ __('Mark as Resolved') }}
                             </button>
                         </form>
 
@@ -491,30 +491,30 @@
 <form id="reject-form" action="{{ route('admin.tickets.reject', $ticket) }}" method="POST" class="d-grid">
                             @csrf
     <button type="button" class="btn btn-outline-danger btn-submit-swal"
-            data-swal-title="ยืนยันการปฏิเสธตั๋ว"
-            data-swal-text="คุณแน่ใจหรือไม่ว่าต้องการ 'Reject' ตั๋วนี้?"
+            data-swal-title="{{ __('Confirm Reject Ticket') }}"
+            data-swal-text="{{ __('Are you sure you want to Reject this ticket?') }}"
             data-swal-icon="warning"
-            data-swal-confirm-text="ใช่, ปฏิเสธตั๋ว"
+            data-swal-confirm-text="{{ __('Yes, Reject Ticket') }}"
             {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-x-octagon-fill me-2"></i> Reject Ticket
+                                <i class="bi bi-x-octagon-fill me-2"></i> {{ __('Reject Ticket') }}
                             </button>
                         </form>
                         {{-- Forward to P-Workflow Button --}}
                         <form id="forward-form" action="{{ route('admin.tickets.forward', $ticket) }}" method="POST" class="d-grid">
                             @csrf
                             <button type="button" class="btn btn-outline-primary btn-submit-swal"
-                                    data-swal-title="ยืนยันการส่งต่องาน"
-                                    data-swal-text="คุณต้องการส่งต่องานนี้เข้าสู่ P-Workflow (สถานะ In Progress) ใช่หรือไม่?"
+                                    data-swal-title="{{ __('Confirm Forward') }}"
+                                    data-swal-text="{{ __('Forward this ticket to P-Workflow (In Progress)?') }}"
                                     data-swal-icon="info"
-                                    data-swal-confirm-text="ใช่, ส่งต่อเลย"
+                                    data-swal-confirm-text="{{ __('Yes, Forward') }}"
                                     {{ $isClosed ? 'disabled' : '' }}>
                                 <i class="bi bi-arrow-right-circle-fill me-2"></i>
-                                Forward to P-Workflow
+                                {{ __('Forward to P-Workflow') }}
                             </button>
                         </form>
                         {{-- Change Assignment Button --}}
                         <button type="button" class="btn btn-outline-secondary d-grid" data-bs-toggle="modal" data-bs-target="#changeAssignmentModal" {{ $isClosed ? 'disabled' : '' }}>
-                            <i class="bi bi-person-fill-gear me-2"></i> Change Assignment
+                            <i class="bi bi-person-fill-gear me-2"></i> {{ __('Change Assignment') }}
                         </button>
                     </div>
                 @endif
@@ -537,15 +537,15 @@
             <form action="{{ route('admin.tickets.updateAssignment', $ticket) }}" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title" id="changeAssignmentModalLabel">Change Ticket Assignment</h5>
+                    <h5 class="modal-title" id="changeAssignmentModalLabel">{{ __('Change Ticket Assignment') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Current Assignee: <strong>{{ $ticket->assignedTo->name ?? 'Unassigned' }}</strong></p>
+                    <p>{{ __('Current Assignee') }}: <strong>{{ $ticket->assignedTo->name ?? 'Unassigned' }}</strong></p>
                     <div class="mb-3">
-                        <label for="assigned_to_user_id" class="form-label">Assign to New Staff:</label>
+                        <label for="assigned_to_user_id" class="form-label">{{ __('Assign to New Staff') }}:</label>
                         <select class="form-select" id="assigned_to_user_id" name="assigned_to_user_id" required>
-                            <option value="">-- Select Staff --</option>
+                            <option value="">-- {{ __('Select Staff') }} --</option>
                             @foreach($staffAndAdmins as $user)
                                 <option value="{{ $user->id }}" {{ $ticket->assigned_to_user_id == $user->id ? 'selected' : '' }}>
                                     {{ $user->name }}
@@ -555,8 +555,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
                 </div>
             </form>
         </div>
@@ -592,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: confirmText,
-                cancelButtonText: 'ยกเลิก'
+                cancelButtonText: '{{ __('Cancel') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit(); // สั่ง submit form เมื่อผู้ใช้ยืนยัน

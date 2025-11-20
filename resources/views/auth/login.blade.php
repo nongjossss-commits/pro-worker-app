@@ -30,7 +30,7 @@
                     {{ __('Login') }}
                 </h2>
                 <p class="mt-2 text-center text-sm text-slate-600">
-                    Pro Worker Labour Business OS
+                    {{ __('Pro Worker Labour Business OS') }}
                 </p>
             </div>
 

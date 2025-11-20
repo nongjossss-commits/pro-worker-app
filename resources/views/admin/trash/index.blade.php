@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'Central Trash')
+@section('title', __('Central Trash'))
 
 @section('header')
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-    <h1 class="mb-3 mb-md-0">Central Trash</h1>
+    <h1 class="mb-3 mb-md-0">{{ __('Central Trash') }}</h1>
 </div>
 @endsection
 
@@ -16,9 +16,9 @@
                 {{-- Search Form --}}
                 <form action="{{ route('admin.trash.index') }}" method="GET" class="d-flex flex-column flex-md-row gap-2">
                     <input type="hidden" name="view" value="{{ $currentView ?? 'table' }}">
-                    <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
-                    <button type="submit" class="btn btn-primary">Search</button>
-                    <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">Export</a>
+                    <input type="text" name="search" class="form-control" placeholder="{{ __('Search in trash...') }}" value="{{ $search ?? '' }}">
+                    <button type="submit" class="btn btn-primary">{{ __('Search') }}</button>
+                    <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">{{ __('Export') }}</a>
                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#trashSettingsModal">
                         <i class="bi bi-gear"></i>
                     </button>
@@ -26,10 +26,10 @@
 
                 {{-- View Toggle --}}
                 <div class="btn-group">
-                    <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn btn-outline-secondary @if(($currentView ?? 'table') === 'table') active @endif" title="Table View">
+                    <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn btn-outline-secondary @if(($currentView ?? 'table') === 'table') active @endif" title="{{ __('Table View') }}">
                         <i class="bi bi-list-ul"></i>
                     </a>
-                    <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn btn-outline-secondary @if(($currentView ?? 'table') === 'card') active @endif" title="Card View">
+                    <a href="{{ route('admin.trash.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn btn-outline-secondary @if(($currentView ?? 'table') === 'card') active @endif" title="{{ __('Card View') }}">
                         <i class="bi bi-grid-3x3-gap-fill"></i>
                     </a>
                 </div>
@@ -37,7 +37,7 @@
 
             @if(collect($trashedData)->every(fn($items) => $items->isEmpty()))
                 <div class="alert alert-info text-center">
-                    <i class="bi bi-trash3 me-2"></i> The trash is currently empty{{ $search ? ' for your search query' : '' }}.
+                    <i class="bi bi-trash3 me-2"></i> {{ __('The trash is currently empty') }}{{ $search ? __(' for your search query') : '' }}.
                 </div>
             @else
                 <ul class="nav nav-tabs" id="trashTabs" role="tablist">
@@ -72,11 +72,11 @@
                                                         <div class="card-body">
                                                             <h5 class="card-title">{{ $item->employerNameTh ?? $item->name ?? 'Item' }}</h5>
                                                             <p class="card-text text-muted">ID: {{ $item->id }}</p>
-                                                            <p class="card-text"><small>Deleted: {{ $item->deleted_at->format('d M Y') }}</small></p>
+                                                            <p class="card-text"><small>{{ __('Deleted') }}: {{ $item->deleted_at->format('d M Y') }}</small></p>
                                                         </div>
                                                         <div class="card-footer bg-transparent border-0 text-end pb-3">
                                                             @if($modelName === 'employers')
-                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
                                                             @endif
                                                             @include('admin.trash._action_buttons', ['modelName' => $modelName, 'item' => $item])
                                                         </div>
@@ -91,13 +91,13 @@
                                     <table class="table table-striped table-hover align-middle">
                                         <thead>
                                             <tr>
-                                                <th style="width: 40%;">Identifier</th>
+                                                <th style="width: 40%;">{{ __('Identifier') }}</th>
                                                 @if($modelName === 'employees')
-                                                    <th>Nationality</th>
-                                                    <th>Employer</th>
+                                                    <th>{{ __('Nationality') }}</th>
+                                                    <th>{{ __('Employer') }}</th>
                                                 @endif
-                                                <th>Deleted At</th>
-                                                <th class="text-end">Actions</th>
+                                                <th>{{ __('Deleted At') }}</th>
+                                                <th class="text-end">{{ __('Actions') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -142,16 +142,16 @@
                                                     <td class="text-end">
                                                         <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
                                                             @if($modelName === 'employees')
-                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $item->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
                                                             @elseif($modelName === 'employers')
-                                                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
                                                             @endif
                                                             {{-- RESTORE BUTTON (Permission-Protected) --}}
                                                             @can('restore-' . $modelName)
                                                                 {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
                                                                 <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-grid d-md-inline restore-form">
                                                                     @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
+                                                                    <button type="submit" class="btn btn-sm btn-outline-success">{{ __('Restore') }}</button>
                                                                 </form>
                                                             @endcan
 
@@ -161,7 +161,7 @@
                                                                     @csrf
                                                                     @method('DELETE')
                                                                     <button type="submit" class="btn btn-sm btn-danger">
-                                                                        Force Delete
+                                                                        {{ __('Force Delete') }}
                                                                     </button>
                                                                 </form>
                                                             @endcan
@@ -237,7 +237,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 showCancelButton: true,
                 confirmButtonColor: options.confirmButtonColor || '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: options.confirmButtonText
+                confirmButtonText: options.confirmButtonText,
+                cancelButtonText: '{{ __('Cancel') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     submitFormAjax(form);
@@ -264,8 +265,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (response.ok) {
                 Swal.fire({
-                    title: 'Success!',
-                    text: data.success || 'Action completed successfully.',
+                    title: '{{ __('Success!') }}',
+                    text: data.success || '{{ __('Action completed successfully.') }}',
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -273,29 +274,29 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.location.reload();
                 });
             } else {
-                Swal.fire('Error!', data.error || 'An unknown error occurred.', 'error');
+                Swal.fire('{{ __('Error!') }}', data.error || '{{ __('An unknown error occurred') }}', 'error');
             }
         } catch (error) {
             console.error('Submission error:', error);
-            Swal.fire('Error!', 'A network or server error occurred.', 'error');
+            Swal.fire('{{ __('Error!') }}', '{{ __('A network or server error occurred.') }}', 'error');
         }
     };
 
     // Attach to Restore forms
     attachSweetAlert('.restore-form', {
-        title: 'Are you sure?',
-        text: "This item will be restored from the trash.",
+        title: '{{ __('Are you sure?') }}',
+        text: "{{ __('This item will be restored from the trash.') }}",
         icon: 'question',
-        confirmButtonText: 'Yes, restore it!'
+        confirmButtonText: '{{ __('Yes, restore it!') }}'
     });
 
     // Attach to Force Delete forms
     attachSweetAlert('.delete-form', {
-        title: 'Are you sure?',
-        text: "This action is permanent and cannot be undone!",
+        title: '{{ __('Are you sure?') }}',
+        text: "{{ __('This action is permanent and cannot be undone!') }}",
         icon: 'warning',
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, permanently delete it!'
+        confirmButtonText: '{{ __('Yes, permanently delete it!') }}'
     });
 });
 </script>

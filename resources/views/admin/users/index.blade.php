@@ -6,7 +6,7 @@
     </h2>
 @endsection
 
-@section('title', 'Central User Management')
+@section('title', __('User Management'))
 
 @section('content')
 <div class="container-fluid content-section">
@@ -17,14 +17,14 @@
                 {{-- Actions & Search Bar --}}
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
                     <a href="{{ route('admin.users.create') }}" class="btn btn-primary w-100 w-md-auto">
-                        <i class="bi bi-person-plus-fill me-1"></i> Create New User
+                        <i class="bi bi-person-plus-fill me-1"></i> {{ __('Create New User') }}
                     </a>
 
                     <form action="{{ route('admin.users.index') }}" method="GET" class="d-flex gap-2 w-100 w-md-auto" style="max-width: 400px;">
-                        <input type="text" name="search" class="form-control" placeholder="Search name or email..." value="{{ request('search') }}">
-                        <button type="submit" class="btn btn-secondary">Search</button>
+                        <input type="text" name="search" class="form-control" placeholder="{{ __('Search name or email...') }}" value="{{ request('search') }}">
+                        <button type="submit" class="btn btn-secondary">{{ __('Search') }}</button>
                         @if(request('search'))
-                            <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">Clear</a>
+                            <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
                         @endif
                     </form>
                 </div>
@@ -39,17 +39,17 @@
                 <ul class="nav nav-tabs mb-3" id="userRoleTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ ($activeTab ?? 'admin') == 'admin' ? 'active' : '' }}" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-pane" type="button" role="tab" aria-controls="admin-pane" aria-selected="true">
-                            <i class="bi bi-shield-lock me-1"></i> Admin
+                            <i class="bi bi-shield-lock me-1"></i> {{ __('Admin') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ ($activeTab ?? 'admin') == 'staff' ? 'active' : '' }}" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff-pane" type="button" role="tab" aria-controls="staff-pane" aria-selected="false">
-                            <i class="bi bi-person-badge me-1"></i> Staff
+                            <i class="bi bi-person-badge me-1"></i> {{ __('Staff') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ ($activeTab ?? 'admin') == 'employer' ? 'active' : '' }}" id="employer-tab" data-bs-toggle="tab" data-bs-target="#employer-pane" type="button" role="tab" aria-controls="employer-pane" aria-selected="false">
-                            <i class="bi bi-briefcase me-1"></i> Employer
+                            <i class="bi bi-briefcase me-1"></i> {{ __('Employer') }}
                         </button>
                     </li>
                 </ul>
