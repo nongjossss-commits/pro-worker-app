@@ -39,9 +39,14 @@
             </thead>
             <tbody>
                 @forelse ($tickets as $ticket)
-                <tr>
+                <tr class="{{ $ticket->employer_unread_count > 0 ? 'table-warning' : '' }}">
                     <td>{{ $ticket->id }}</td>
-                    <td>{{ Str::limit($ticket->subject, 70) }}</td>
+                    <td>
+                        {{ Str::limit($ticket->subject, 70) }}
+                        @if($ticket->employer_unread_count > 0)
+                            <span class="badge bg-danger ms-2">ข้อความใหม่</span>
+                        @endif
+                    </td>
                     <td>
                         {{-- Use Accessors for Status Badge --}}
                         <span class="badge bg-{{ $ticket->status_color }}">
@@ -51,8 +56,13 @@
                     {{-- Format date consistently --}}
                     <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                     <td class="text-center">
-                        <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
                             <i class="bi bi-eye"></i> ดูรายละเอียด
+                            @if($ticket->employer_unread_count > 0)
+                                <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
+                                    <span class="visually-hidden">Unread</span>
+                                </span>
+                            @endif
                         </a>
                     </td>
                 </tr>

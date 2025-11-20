@@ -136,14 +136,20 @@ $ticket->messages()->create([
 }
 
 
-// 5. Workflow Automation: Update Ticket Status (No Changes)
+// 5. Workflow Automation: Update Ticket Status & Unread Counts
 $newStatus = $isStaff ? 'pending_employer' : 'pending_staff';
 
-if ($ticket->status !== $newStatus) {
-$ticket->update(['status' => $newStatus]);
+$updateData = ['status' => $newStatus];
+
+if ($isStaff) {
+    // Staff replied -> Increment Employer's unread count
+    $updateData['employer_unread_count'] = DB::raw('employer_unread_count + 1');
 } else {
-$ticket->touch();
+    // Employer replied -> Increment Admin's unread count
+    $updateData['admin_unread_count'] = DB::raw('admin_unread_count + 1');
 }
+
+$ticket->update($updateData);
 
 DB::commit();
 

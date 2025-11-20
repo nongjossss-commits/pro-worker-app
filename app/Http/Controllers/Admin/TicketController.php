@@ -24,18 +24,38 @@ class TicketController extends Controller
      */
     public function index(): View
     {
-        // V2.4-S3: Handle Per Page selection using request() helper, default to 25
-        $perPage = request('per_page', 25);
+        // V2.5: Check if filtering by employer
+        $employerId = request('employer_id');
 
-        // V2.4-S3: Optimization - Eager Load nested relationships
-        $tickets = JobTicket::with([
-            'employerUser.employer', // Load User AND their linked Employer record (for Company Name)
-            'assignedStaff'
-        ])
-            ->latest()
-            ->paginate($perPage);
+        if ($employerId) {
+            // Show tickets list for a specific employer
+            $perPage = request('per_page', 25);
+            $tickets = JobTicket::with(['employerUser.employer', 'assignedStaff'])
+                ->where('employer_user_id', $employerId)
+                ->latest()
+                ->paginate($perPage);
 
-        return view('admin.tickets.index', compact('tickets'));
+            // Get Employer Name for the header
+            $employerUser = User::with('employer')->find($employerId);
+            $employerName = $employerUser?->employer?->employerNameTh ?? $employerUser?->name ?? 'Unknown Employer';
+
+            return view('admin.tickets.index', compact('tickets', 'employerName'));
+        }
+
+        // Default: Show List of Employers (Employer Boxes)
+        // Group by employer_user_id and calculate stats
+        $employersWithTickets = JobTicket::selectRaw('
+                employer_user_id,
+                COUNT(*) as total_tickets,
+                SUM(CASE WHEN admin_unread_count > 0 THEN 1 ELSE 0 END) as unread_tickets_count,
+                MAX(updated_at) as last_activity
+            ')
+            ->groupBy('employer_user_id')
+            ->orderByDesc('last_activity') // Employers with recent activity first
+            ->with('employerUser.employer') // Eager load User and Employer profile
+            ->get();
+
+        return view('admin.tickets.employers', compact('employersWithTickets'));
     }
 
     /**
@@ -43,6 +63,11 @@ class TicketController extends Controller
      */
     public function show(JobTicket $ticket): View
     {
+        // Reset Unread Count for Admin
+        if ($ticket->admin_unread_count > 0) {
+            $ticket->update(['admin_unread_count' => 0]);
+        }
+
         // V2.4-S9 Optimization: Load messages, user info, and employer details
         $ticket->load([
             'messages' => function ($query) {

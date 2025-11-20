@@ -9,16 +9,28 @@
     @endif
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-3 mb-md-0">กล่องตั๋วงานทั้งหมด</h2>
-        <div class="d-flex gap-2">
+        <div class="d-flex align-items-center gap-3">
+            @if(request('employer_id'))
+                <a href="{{ route('admin.tickets.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> กลับ
+                </a>
+                <h2 class="mb-0">ตั๋วงาน: {{ $employerName ?? 'ไม่ระบุ' }}</h2>
+            @else
+                <h2 class="mb-0">กล่องตั๋วงานทั้งหมด</h2>
+            @endif
+        </div>
+
+        <div class="d-flex gap-2 mt-3 mt-md-0">
             {{-- Per Page Selection (Must match employers.index) --}}
-            <form action="{{ route('admin.tickets.index') }}" method="GET" class="d-flex gap-2">
+            <form action="{{ route('admin.tickets.index') }}" method="GET" class="d-flex gap-2 align-items-center">
+                @if(request('employer_id'))
+                    <input type="hidden" name="employer_id" value="{{ request('employer_id') }}">
+                @endif
                 <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
                     <option value="25" @selected(request('per_page', 25) == 25)>25</option>
                     <option value="50" @selected(request('per_page') == 50)>50</option>
                     <option value="100" @selected(request('per_page') == 100)>100</option>
                 </select>
-                {{-- Future Search/Filter inputs can be added here --}}
             </form>
         </div>
     </div>
@@ -38,9 +50,14 @@
             </thead>
             <tbody>
                 @forelse ($tickets as $ticket)
-                <tr>
+                <tr class="{{ $ticket->admin_unread_count > 0 ? 'table-info' : '' }}">
                     <td>{{ $ticket->id }}</td>
-                    <td>{{ Str::limit($ticket->subject, 50) }}</td>
+                    <td>
+                        {{ Str::limit($ticket->subject, 50) }}
+                        @if($ticket->admin_unread_count > 0)
+                            <span class="badge bg-danger ms-2">ใหม่</span>
+                        @endif
+                    </td>
                     <td>
                         {{-- Display Company Name if available, otherwise User Name --}}
                         {{-- Uses optimized relationship loading --}}
@@ -65,8 +82,13 @@
                     {{-- Format date consistently --}}
                     <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                     <td class="text-center">
-                        <a href="{{ route('admin.tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ route('admin.tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
                             <i class="bi bi-eye"></i> ดูรายละเอียด
+                            @if($ticket->admin_unread_count > 0)
+                                <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
+                                    <span class="visually-hidden">Unread</span>
+                                </span>
+                            @endif
                         </a>
                     </td>
                 </tr>

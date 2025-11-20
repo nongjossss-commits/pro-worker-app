@@ -58,6 +58,7 @@ class AdminJobTicketController extends Controller
                 'subject' => $validated['subject'],
                 'status' => 'pending_staff', // สถานะเริ่มต้น
                 'assigned_staff_id' => $adminUser->id, // มอบหมายให้ Admin ที่สร้างตั๋วนี้
+                'employer_unread_count' => 1, // Admin creates -> Employer has 1 unread message
             ]);
 
             // Define the permanent storage directory for this ticket
