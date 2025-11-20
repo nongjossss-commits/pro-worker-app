@@ -35,7 +35,7 @@
 {{-- V-S13: Initialize component, PASSING employerId for context --}}
 {{-- V2.4-S13-P1: CRITICAL FIX - Use @json directive for safe and correct data passing to Alpine.js --}}
 {{-- This ensures that the PHP value (integer or null) is correctly encoded as a JavaScript literal. --}}
-<div class="content-section" x-data="hybridAttachmentManager({ employerId: @json($ticket->employer_id ?? null) })">
+<div class="content-section" x-data="hybridAttachmentManager({ employerId: @json(optional($ticket->employerUser->employer)->id) })">
 
     {{-- V2.4-S10: Global Error/Success Display (Crucial for feedback after reply) --}}
     @if (session('error'))
@@ -79,7 +79,9 @@
                     @if($attachments->existing_employees->isNotEmpty())
                         <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
                         <div class="list-group mb-3">
-                            @foreach($attachments->existing_employees as $employee)
+                            @foreach($attachments->existing_employees as $attachment)
+                                {{-- Access the employee model via the 'employee' property of the attachment object --}}
+                                @php $employee = $attachment->employee; @endphp
                                 <div class="list-group-item d-flex align-items-center gap-3 py-2">
                                     <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                                     <span class="flex-grow-1">
@@ -104,7 +106,9 @@
                     @if($attachments->new_employees->isNotEmpty())
                         <h6 class="text-success mt-3">ลูกจ้างใหม่/แจ้งเข้า ({{ $attachments->new_employees->count() }} คน)</h6>
                         <div class="list-group mb-3">
-                            @foreach($attachments->new_employees as $newEmployee)
+                            @foreach($attachments->new_employees as $attachment)
+                                {{-- Access the data via the 'data' property --}}
+                                @php $newEmployee = $attachment->data; @endphp
                                 <div class="list-group-item py-2">
                                     <strong>{{ $newEmployee->employeeTitleTh ?? '' }}{{ $newEmployee->employeeNameTh }}</strong>
                                     <small class="text-muted">({{ $newEmployee->employeePassport }})</small>
@@ -126,7 +130,9 @@
                     @if($attachments->files->isNotEmpty())
                         <h6 class="text-secondary mt-3">ไฟล์แนบทั่วไป ({{ $attachments->files->count() }} ไฟล์)</h6>
                         <div class="list-group mb-3">
-                            @foreach($attachments->files as $file)
+                            @foreach($attachments->files as $attachment)
+                                {{-- Access the data via the 'data' property --}}
+                                @php $file = $attachment->data; @endphp
                                 @if($file->url)
                                     <a href="{{ $file->url }}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2">
                                         <span><i class="bi bi-file-earmark-text me-2"></i> {{ $file->name }}</span>
