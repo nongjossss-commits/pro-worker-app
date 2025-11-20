@@ -179,7 +179,7 @@
             {{-- END: Offcanvas Header --}}
             <div class="offcanvas-body d-flex flex-column p-0">
             <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="#">
-                <img src="{{ asset('images/logo.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 100px; width: auto; max-width: 80%;">
+                <img src="{{ asset('images/logo.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
                 <span style="line-height: 1.2;">Proworker labour</span>
             </a>
             <div class="list-group" id="main-nav">
