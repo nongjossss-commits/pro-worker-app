@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'ข้อมูลนายจ้าง')
+@section('title', __('Employer Data'))
 
 @section('content')
 <div class="content-section">
@@ -10,7 +10,7 @@
         </div>
     @endif
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-3 mb-md-0">รายการข้อมูลนายจ้าง</h2>
+        <h2 class="mb-3 mb-md-0">{{ __('Employer List') }}</h2>
         <div class="d-flex flex-column flex-md-row gap-2">
             <form action="{{ route('employers.index') }}" method="GET" class="d-flex flex-column flex-md-row gap-2">
                 <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
@@ -18,12 +18,12 @@
                     <option value="50" @selected(request('per_page') == 50)>50</option>
                     <option value="100" @selected(request('per_page') == 100)>100</option>
                 </select>
-                <input type="text" name="search" class="form-control form-control-sm w-auto" placeholder="ค้นหา..." value="{{ request('search') }}">
-                <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
+                <input type="text" name="search" class="form-control form-control-sm w-auto" placeholder="{{ __('Search') }}..." value="{{ request('search') }}">
+                <button type="submit" class="btn btn-primary btn-sm">{{ __('Search') }}</button>
             </form>
-            <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</a>
+            <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> {{ __('Export') }}</a>
             @can('create-employers')
-            <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+            <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> {{ __('Add New') }}</a>
             @endcan
         </div>
     </div>
@@ -32,11 +32,11 @@
             <thead class="table-light">
                 <tr>
                     <th>#</th>
-                    <th>ชื่อนายจ้าง (ไทย)</th>
-                    <th>รหัสนายจ้าง</th>
-                    <th>ประเภทกิจการ</th>
-                    <th>เจ้าของงาน</th>
-                    <th class="text-center">จัดการ</th>
+                    <th>{{ __('Employer Name (Thai)') }}</th>
+                    <th>{{ __('Employer ID') }}</th>
+                    <th>{{ __('Business Type') }}</th>
+                    <th>{{ __('Job Owner') }}</th>
+                    <th class="text-center">{{ __('Actions') }}</th>
                 </tr>
             </thead>
             <tbody id="employer-table-body">
@@ -49,15 +49,15 @@
                         <td>{{ $employer->jobOwner->name ?? 'N/A' }}</td>
                         <td class="text-center">
                             <div class="d-flex flex-column flex-md-row gap-1 justify-content-center">
-                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
                                 @can('edit-employers')
-                                <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                                <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">{{ __('Edit') }}</a>
                                 @endcan
                                 @can('delete-employers')
                                 <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline delete-employer-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">{{ __('Delete') }}</button>
                                 </form>
                                 @endcan
                             </div>
@@ -65,7 +65,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted">ไม่พบข้อมูลนายจ้าง</td>
+                        <td colspan="6" class="text-center text-muted">{{ __('No employers found') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -85,14 +85,14 @@ document.addEventListener('DOMContentLoaded', function () {
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             Swal.fire({
-                title: 'ยืนยันการลบ',
-                text: "คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?",
+                title: '{{ __('Confirm Deletion') }}',
+                text: "{{ __('Are you sure you want to delete this item?') }}",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: 'ใช่, ลบเลย!',
-                cancelButtonText: 'ยกเลิก'
+                confirmButtonText: '{{ __('Yes, delete it!') }}',
+                cancelButtonText: '{{ __('Cancel') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     this.submit();
