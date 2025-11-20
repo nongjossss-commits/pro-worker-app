@@ -141,8 +141,16 @@ class TicketController extends Controller
 
             // 5. Process New Employees (attachment_new_employee)
             if (!empty($attachments['new_employees'])) {
-                // Define fields within the JSON that might contain file paths
-                $fileFields = ['employeePhoto', 'document_1']; // Add other file fields here if needed
+                // Define all possible file fields that need to be processed
+                $fileFields = [
+                    'employeePhoto',
+                    'insurance_document_path_social',
+                    'insurance_document_path_hospital',
+                    'insurance_document_path_private'
+                ];
+                for ($i = 1; $i <= 12; $i++) {
+                    $fileFields[] = 'employee_doc_' . $i;
+                }
 
                 foreach ($attachments['new_employees'] as $newEmployeeJson) {
                     // Fix: Handle array (from validation) or string. StoreTicketRequest converts JSON strings to arrays.

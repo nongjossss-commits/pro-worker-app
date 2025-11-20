@@ -26,6 +26,18 @@ class StoreTicketRequest extends FormRequest
     public function rules(): array
     {
         // V2.5-S8: Loosen validation to match Admin side. Controller handles logic.
+
+        // Common validation for temporary files
+        $tempFileValidation = [
+            'nullable',
+            'string',
+            function ($attribute, $value, $fail) {
+                if ($value && (!str_starts_with($value, 'temp_uploads/') || !Storage::disk('public')->exists($value))) {
+                    $fail("The file attachment path ($value) is invalid or the file has expired.");
+                }
+            },
+        ];
+
         return [
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['nullable', 'string', 'max:5000'],
@@ -63,9 +75,24 @@ class StoreTicketRequest extends FormRequest
             'attachments.new_employees.*.employeeNameTh' => ['nullable', 'string', 'max:255'],
             'attachments.new_employees.*.employeeNationality' => ['nullable', 'string', 'max:100'],
             'attachments.new_employees.*.employeePassport' => ['nullable', 'string', 'max:50'],
-            'attachments.new_employees.*.employeePhoto' => ['nullable', 'string'],
-            'attachments.new_employees.*.document_1' => ['nullable', 'string'],
 
+            // File validations
+            'attachments.new_employees.*.employeePhoto' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_social' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_hospital' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_private' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_1' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_2' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_3' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_4' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_5' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_6' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_7' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_8' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_9' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_10' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_11' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_12' => $tempFileValidation,
         ];
     }
 

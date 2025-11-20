@@ -114,7 +114,21 @@ class StoreTicketReplyRequest extends FormRequest
             ...$this->buildNestedValidationRules('attachments.new_employees.*.', $newEmployeeRequiredFields),
             // Validate file paths
             'attachments.new_employees.*.employeePhoto' => $tempFileValidation,
-            'attachments.new_employees.*.document_1' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_social' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_hospital' => $tempFileValidation,
+            'attachments.new_employees.*.insurance_document_path_private' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_1' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_2' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_3' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_4' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_5' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_6' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_7' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_8' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_9' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_10' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_11' => $tempFileValidation,
+            'attachments.new_employees.*.employee_doc_12' => $tempFileValidation,
         ];
     }
 
