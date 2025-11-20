@@ -76,9 +76,10 @@ class NotificationController extends Controller
         $query = Notification::with(['employee.employer', 'employer']);
 
         if ($type === 'cancelled') {
-            $query->where('status', 'cancelled')->latest('updated_at');
+            $query->where('status', 'cancelled')->orderBy('updated_at', 'desc');
         } else {
-            $query->where('status', '!=', 'cancelled')->where('type', $type)->latest('due_date');
+            // Modified sorting: Sort by due_date ASC (Earliest expiry first, expired items at top)
+            $query->where('status', '!=', 'cancelled')->where('type', $type)->orderBy('due_date', 'asc');
         }
 
         // Filter by month if provided
@@ -192,8 +193,9 @@ class NotificationController extends Controller
                     $fileField = 'insurance_document_path';
                 } else {
                     $fieldToUpdate = 'insurance_expiry_date';
-                    // Use standard insurance document path
-                    $fileField = 'insurance_document_path';
+                    // Use legacy attachment path for Social Security / General Insurance
+                    // This matches "ไฟล์แนบประกัน" (Insurance Attachment)
+                    $fileField = 'insurance_attachment_path';
                 }
                 break;
             case 'employer_document_expiry':
@@ -209,20 +211,45 @@ class NotificationController extends Controller
 
             // Handle file upload
             if ($request->hasFile('attachment') && $fileField) {
+                $disk = 'public';
+                // Check if it's the special private field (for Social Security / General Insurance)
+                if ($fileField === 'insurance_attachment_path') {
+                    $disk = 'private';
+                }
+
                 // Delete old file if exists
-                if ($targetModel->{$fileField} && \Illuminate\Support\Facades\Storage::disk('public')->exists($targetModel->{$fileField})) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($targetModel->{$fileField});
+                if ($targetModel->{$fileField} && \Illuminate\Support\Facades\Storage::disk($disk)->exists($targetModel->{$fileField})) {
+                    \Illuminate\Support\Facades\Storage::disk($disk)->delete($targetModel->{$fileField});
                 }
 
                 $file = $request->file('attachment');
+                // Generate filename only if not using the 'private' generic storage behavior which handles it,
+                // but store() generates hash name anyway.
+                // However, EmployeeController uses store() for private, which generates hash.
+                // NotificationController uses storeAs() with random filename for public.
+                // We will unify by using random filename pattern but respecting the folder/disk.
+
                 $filename = \Illuminate\Support\Str::random(20) . '.' . $file->getClientOriginalExtension();
 
-                // Determine storage path based on model type
+                // Determine storage path based on model type and disk
                 if ($targetModel instanceof \App\Models\Employee) {
-                    $path = $file->storeAs("employee_files/{$targetModel->employer_id}", $filename, 'public');
+                    // If private, match EmployeeController's folder 'employee_documents'
+                    // If public, match NotificationController's folder 'employee_files/{employer_id}'
+                    $folder = ($disk === 'private') ? 'employee_documents' : "employee_files/{$targetModel->employer_id}";
+
+                    if ($disk === 'private') {
+                         // Use store() to mimic EmployeeController behavior perfectly if needed, or storeAs if we want specific name.
+                         // EmployeeController: $request->file(...)->store('employee_documents', 'private');
+                         // store() uses hash name.
+                         // Let's stick to storeAs() with our generated filename for consistency within this method,
+                         // as long as it is in the correct folder and disk.
+                         $path = $file->storeAs($folder, $filename, $disk);
+                    } else {
+                         $path = $file->storeAs($folder, $filename, $disk);
+                    }
                 } else {
                      // Employer documents
-                    $path = $file->storeAs("employer_documents", $filename, 'public');
+                    $path = $file->storeAs("employer_documents", $filename, $disk);
                 }
 
                 $targetModel->{$fileField} = $path;
