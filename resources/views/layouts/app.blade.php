@@ -186,7 +186,12 @@
                     </a>
                     @can('manage-tickets')
                     <a href="{{ route('admin.incomplete_employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.incomplete_employees.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-                        <i class="bi bi-exclamation-octagon-fill me-2"></i>ข้อมูลไม่ครบถ้วน
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-exclamation-octagon-fill me-2"></i>ข้อมูลไม่ครบถ้วน</span>
+                            @if(isset($incompleteCount) && $incompleteCount > 0)
+                                <span class="badge bg-warning text-dark rounded-pill">{{ $incompleteCount }}</span>
+                            @endif
+                        </div>
                     </a>
                     @endcan
                 @endcan

@@ -307,7 +307,11 @@ public function create(Request $request) // เพิ่ม Request $request เ
     public function edit(Employee $employee)
     {
         $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
-        return view('employees.edit', compact('employee', 'employers'));
+
+        // Fetch missing fields to highlight in the view
+        $missingFields = \App\Helpers\CompletenessHelper::getMissingFields($employee);
+
+        return view('employees.edit', compact('employee', 'employers', 'missingFields'));
     }
 
     public function update(Request $request, Employee $employee)
