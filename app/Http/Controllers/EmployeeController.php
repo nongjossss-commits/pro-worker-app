@@ -930,49 +930,46 @@ public function create(Request $request) // เพิ่ม Request $request เ
     public function bulkUpdate(Request $request)
     {
         $request->validate([
-            'data' => 'required|array',
+            // We rely on 'employee_ids' to iterate, as 'data' might be partial or empty if only files are uploaded
+            'employee_ids' => 'required|array',
             'selected_fields' => 'required|array',
         ]);
 
-        $data = $request->input('data');
+        // $data contains text inputs. Files are in $request->file('data')
+        $inputData = $request->input('data', []);
+        $employeeIds = $request->input('employee_ids');
         $selectedFields = $request->input('selected_fields');
         $updatedCount = 0;
 
-        // Define file fields mapping to storage paths
-        // Note: The form submits files via `data[id][field]`, handled by PHP automatically in $request->file('data.id.field')
-
-        foreach ($data as $id => $fields) {
+        foreach ($employeeIds as $id) {
             $employee = Employee::find($id);
             if (!$employee) continue;
 
             // Authorize
-             // $this->authorize('update', $employee); // Assuming policy exists, otherwise check ownership manually
             if (!auth()->user()->can('manage-tickets') && $employee->employer->user_id !== auth()->id()) {
                 continue;
             }
 
             $updateData = [];
+            $employeeInput = $inputData[$id] ?? [];
 
             foreach ($selectedFields as $field) {
-                // Handle File Uploads
+                // 1. Handle File Uploads
                 if ($request->hasFile("data.{$id}.{$field}")) {
                     $file = $request->file("data.{$id}.{$field}");
-                    // Determine storage path (logic from update method)
-                    $storageFolder = "employee_documents";
-                    // Use public disk for doc_1-12, private for others (based on legacy logic)
-                    // For simplicity in this feature, let's follow the update method logic for known fields
 
-                    // Logic copied/adapted from update method:
+                    // Logic adapted from update method:
                     if (in_array($field, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment'])) {
-                        // These are private
-                         if ($employee->{$field . '_path'}) {
+                        // These are private files
+                        if ($employee->{$field . '_path'}) {
                             Storage::disk('private')->delete($employee->{$field . '_path'});
                         }
                         $path = $file->store('employee_documents', 'private');
                         $updateData[$field . '_path'] = $path;
 
-                    } elseif (str_starts_with($field, 'employee_doc_')) {
-                        // These are public
+                    } elseif (str_starts_with($field, 'employee_doc_') || in_array($field, ['employeePhoto', 'insurance_document_path', 'insurance_document_path_private'])) {
+                        // These are public files
+                        // Check if old file exists and delete it
                         if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
                             Storage::disk('public')->delete($employee->$field);
                         }
@@ -980,9 +977,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
                         $updateData[$field] = $path;
                     }
-                } elseif (isset($fields[$field])) {
-                    // Handle Text/Date
-                    $updateData[$field] = $fields[$field];
+
+                }
+                // 2. Handle Text/Date Inputs
+                // We check array_key_exists because the value might be null or empty string, which we want to save.
+                elseif (array_key_exists($field, $employeeInput)) {
+                    $updateData[$field] = $employeeInput[$field];
                 }
             }
 
