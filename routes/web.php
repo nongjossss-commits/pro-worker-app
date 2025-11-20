@@ -111,7 +111,7 @@ Route::middleware('auth')->group(function () {
     // Advanced Bulk Edit Routes (Must come BEFORE resource route)
     Route::post('employees/bulk-edit/select-fields', [EmployeeController::class, 'bulkEditSelectFields'])->name('employees.bulk_edit.select_fields');
     Route::post('employees/bulk-edit/form', [EmployeeController::class, 'bulkEditForm'])->name('employees.bulk_edit.form');
-    Route::put('employees/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('employees.bulk_update');
+    Route::post('employees/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('employees.bulk_update');
 
     // Employee Transfer Route
     Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');

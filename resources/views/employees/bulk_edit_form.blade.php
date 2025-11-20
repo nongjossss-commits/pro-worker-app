@@ -51,7 +51,6 @@
 
     <form action="{{ route('employees.bulk_update') }}" method="POST" enctype="multipart/form-data">
         @csrf
-        @method('PUT')
 
         {{-- Hidden inputs for Employee IDs --}}
         @foreach($employees as $employee)
@@ -124,8 +123,27 @@
                         <button class="accordion-button {{ $index === 0 ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employee->id }}" aria-expanded="{{ $index === 0 ? 'true' : 'false' }}" aria-controls="collapse{{ $employee->id }}">
                             <div class="d-flex align-items-center w-100">
                                 <span class="badge bg-secondary me-3 rounded-pill">{{ $index + 1 }}</span>
-                                <span class="fw-bold me-3">{{ $employee->employeeNameTh ?? $employee->employeeNameEn }}</span>
-                                <span class="text-muted small me-auto"><i class="bi bi-person-badge"></i> {{ $employee->employeeCode ?? $employee->employeePassport ?? 'N/A' }}</span>
+
+                                @php
+                                    $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                                @endphp
+
+                                <span class="me-3 d-flex align-items-center">
+                                    @if($countryCode)
+                                        <img src="{{ asset('images/flags/' . $countryCode . '.png') }}" alt="{{ $employee->employeeNationality }}" class="me-2 rounded-circle border" style="width: 24px; height: 24px; object-fit: cover;">
+                                    @endif
+                                    <span class="fw-bold text-dark">{{ $employee->employeeNationality }}</span>
+                                </span>
+
+                                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center me-auto">
+                                    <span class="fw-bold me-2 text-primary">
+                                        {{ $employee->employeeTitleEn }} {{ $employee->employeeNameEn }}
+                                    </span>
+                                    <span class="d-none d-md-inline text-muted mx-2">|</span>
+                                    <span class="fw-bold">
+                                        {{ $employee->employeeTitleTh }} {{ $employee->employeeNameTh }}
+                                    </span>
+                                </div>
 
                                 @if($employee->employer)
                                     <span class="badge bg-light text-dark border me-3 d-none d-md-inline-block">
