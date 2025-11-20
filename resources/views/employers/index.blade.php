@@ -18,13 +18,15 @@
                     <option value="50" @selected(request('per_page') == 50)>50</option>
                     <option value="100" @selected(request('per_page') == 100)>100</option>
                 </select>
-                <input type="text" name="search" class="form-control form-control-sm w-auto" placeholder="{{ __('Search') }}..." value="{{ request('search') }}">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}">
                 <button type="submit" class="btn btn-primary btn-sm">{{ __('Search') }}</button>
             </form>
-            <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> {{ __('Export') }}</a>
-            @can('create-employers')
-            <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> {{ __('Add New') }}</a>
-            @endcan
+            <div class="d-flex gap-2 mt-2 mt-md-0">
+                 <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary flex-grow-1 flex-md-grow-0 text-nowrap"><i class="bi bi-download"></i> {{ __('Export') }}</a>
+                @can('create-employers')
+                <a href="{{ route('employers.create') }}" class="btn btn-primary btn-sm flex-grow-1 flex-md-grow-0 text-nowrap"><i class="bi bi-plus-circle me-1"></i> {{ __('Add New') }}</a>
+                @endcan
+            </div>
         </div>
     </div>
     <div class="table-responsive">
@@ -54,7 +56,7 @@
                                 <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">{{ __('Edit') }}</a>
                                 @endcan
                                 @can('delete-employers')
-                                <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-inline delete-employer-form">
+                                <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-grid d-md-inline delete-employer-form">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger">{{ __('Delete') }}</button>
