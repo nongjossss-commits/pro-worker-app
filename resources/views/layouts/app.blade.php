@@ -168,7 +168,7 @@
 <body>
 
     <div class="main-layout">
-        <aside id="sidebar" class="offcanvas offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
+        <aside id="sidebar" class="offcanvas-lg offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
             {{-- START: Offcanvas Header (Mobile Only) --}}
             <div class="offcanvas-header d-lg-none">
                 <h5 class="offcanvas-title d-flex align-items-center gap-2" id="sidebarLabel">
@@ -296,11 +296,6 @@
 
         <main id="main-content" style="position: relative; z-index: 1;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                {{-- START: V.2 PC Toggle Button (Visible LG and up) --}}
-                <button class="btn btn-primary d-none d-lg-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
-                    <i class="bi bi-list me-2"></i> {{ __('Open Menu') }}
-                </button>
-                {{-- END: V.2 PC Toggle Button --}}
 
                 {{-- Download Center Button (Fixed for better visibility) --}}
                 <button class="btn btn-outline-secondary d-none d-md-block mx-2" onclick="openDownloadCenter()">

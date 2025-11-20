@@ -16,10 +16,6 @@
         </div>
 
         {{-- Dashboard Content --}}
-        <div class="position-relative text-center" style="z-index: 1;">
-            <h2 class="display-4 fw-bold text-secondary mb-3">{{ __('Dashboard') }}</h2>
-            <p class="lead text-muted">{{ __("You're logged in!") }}</p>
-        </div>
 
     </div>
 @endsection
