@@ -85,6 +85,8 @@
             {{ __('Actions') }}
         </button>
         <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
+            <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
+            <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
             <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
         </ul>
@@ -190,6 +192,43 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 console.error('Download modal function not found.');
             }
+        });
+    }
+
+    // Handle Advanced Edit
+    const bulkEditBtn = document.getElementById('bulk-advanced-edit-btn');
+    if (bulkEditBtn) {
+        bulkEditBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+            if (selected.length === 0) {
+                showToast('{{ __('Please select employees first.') }}', 'danger');
+                return;
+            }
+
+            // Create a form dynamically and submit POST
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route('employees.bulk_edit.select_fields') }}';
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            selected.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'employee_ids[]';
+                input.value = id;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
         });
     }
 });
