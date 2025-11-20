@@ -425,15 +425,11 @@ public function create(Request $request) // เพิ่ม Request $request เ
         unset($data['employeeEmail']);
 
         // Helper to map and upload file
-        // V6-Patch: Secure sensitive files by storing in 'private' disk, others in 'public'.
-        // Also checks both disks for cleanup during migration.
+        // REVERTED: Sensitive files are now stored in 'public' disk to prevent 403 Forbidden errors in views.
         $handleFileUpload = function ($fileInputName, $dbColumnName) use ($request, &$data, $employee) {
             if ($request->hasFile($fileInputName)) {
-                // 1. Determine Storage Disk based on file type
-                // Sensitive files must go to 'private'.
-                $isSensitive = in_array($fileInputName, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment']);
-                $disk = $isSensitive ? 'private' : 'public';
-                $folder = $isSensitive ? 'employee_documents' : "employee_files/{$employee->employer_id}";
+                $disk = 'public';
+                $folder = "employee_files/{$employee->employer_id}";
 
                 // 2. Cleanup: Delete old file from BOTH public and private to ensure clean migration
                 if ($employee->$dbColumnName) {
@@ -447,14 +443,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
                 // 3. Upload new file
                 $file = $request->file($fileInputName);
-                if ($disk === 'private') {
-                    // Private storage usually just needs a folder name, not storeAs with ID, unless organized that way.
-                    // Existing 'private' logic in update() used 'employee_documents'.
-                    $path = $file->store($folder, $disk);
-                } else {
-                    $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                    $path = $file->storeAs($folder, $filename, $disk);
-                }
+                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs($folder, $filename, $disk);
 
                 $data[$dbColumnName] = $path;
             }
@@ -978,10 +968,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 if ($request->hasFile("data.{$id}.{$field}")) {
                     $file = $request->file("data.{$id}.{$field}");
 
-                    // V6-Patch: Secure sensitive files
-                    $isSensitive = in_array($field, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment']);
-                    $disk = $isSensitive ? 'private' : 'public';
-                    $folder = $isSensitive ? 'employee_documents' : "employee_files/{$employee->employer_id}";
+                    // REVERTED: Use 'public' disk to prevent 403 Forbidden errors.
+                    $disk = 'public';
+                    $folder = "employee_files/{$employee->employer_id}";
 
                     // Cleanup old files from BOTH disks
                     if ($employee->$dbColumn) {
@@ -993,12 +982,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         }
                     }
 
-                    if ($disk === 'private') {
-                        $path = $file->store($folder, $disk);
-                    } else {
-                        $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                        $path = $file->storeAs($folder, $filename, $disk);
-                    }
+                    $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs($folder, $filename, $disk);
 
                     $updateData[$dbColumn] = $path;
 
