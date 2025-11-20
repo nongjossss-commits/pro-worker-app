@@ -38,6 +38,8 @@ Route::get('lang/{locale}', function ($locale) {
 Route::get('/', function () {
     return view('welcome');
 });
+Route::get('lang/{locale}', [App\Http\Controllers\LanguageController::class, 'switch'])->name('lang.switch');
+
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');

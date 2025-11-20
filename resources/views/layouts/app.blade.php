@@ -278,7 +278,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 {{-- START: V.2 PC Toggle Button (Visible LG and up) --}}
                 <button class="btn btn-primary d-none d-lg-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
-                    <i class="bi bi-list me-2"></i> Open Menu
+                    <i class="bi bi-list me-2"></i> {{ __('Open Menu') }}
                 </button>
                 {{-- END: V.2 PC Toggle Button --}}
 
@@ -327,22 +327,22 @@
                     <form id="renew-form" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="modal-header">
-                            <h5 class="modal-title" id="renewModalLabel">ต่ออายุการแจ้งเตือน</h5>
+                            <h5 class="modal-title" id="renewModalLabel">{{ __('Renew Notification') }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="mb-3">
-                                <label for="new_due_date" class="form-label">เลือกวันหมดอายุใหม่:</label>
+                                <label for="new_due_date" class="form-label">{{ __('Select new expiry date') }}:</label>
                                 <input type="date" class="form-control" id="new_due_date" name="new_due_date" required>
                             </div>
                             <div class="mb-3">
-                                <label for="attachment" class="form-label">แนบไฟล์เอกสาร (ถ้ามี):</label>
+                                <label for="attachment" class="form-label">{{ __('Attach document (if any)') }}:</label>
                                 <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png">
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
                         </div>
                     </form>
                 </div>
@@ -355,15 +355,15 @@
                     <form id="cancel-form" method="POST">
                         @csrf
                         <div class="modal-header">
-                            <h5 class="modal-title" id="cancelModalLabel">ยืนยันการยกเลิกการต่ออายุ</h5>
+                            <h5 class="modal-title" id="cancelModalLabel">{{ __('Confirm Cancellation') }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <p>คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการแจ้งเตือนนี้? การกระทำนี้จะย้ายรายการไปที่แท็บ "รายการที่ยกเลิก" และคุณสามารถกู้คืนได้ในภายหลัง</p>
+                            <p>{{ __('Are you sure you want to cancel this notification?') }}</p>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                            <button type="submit" class="btn btn-danger">ยืนยันการยกเลิก</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                            <button type="submit" class="btn btn-danger">{{ __('Confirm Cancel') }}</button>
                         </div>
                     </form>
                 </div>
@@ -376,24 +376,24 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="jobOwnerModalLabel">จัดการข้อมูลเจ้าของงาน</h5>
+                    <h5 class="modal-title" id="jobOwnerModalLabel">{{ __('Manage Job Owners') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     {{-- List of current owners --}}
-                    <h5>เจ้าของงานทั้งหมด</h5>
+                    <h5>{{ __('All Job Owners') }}</h5>
                     <ul class="list-group mb-3" id="jobOwnerList">
                         {{-- Owners will be loaded here via JS --}}
-                        <li class="list-group-item text-muted">กำลังโหลด...</li>
+                        <li class="list-group-item text-muted">{{ __('Loading...') }}</li>
                     </ul>
 
                     <hr>
 
                     {{-- Add new owner form --}}
-                    <h6>เพิ่มเจ้าของงานใหม่</h6>
+                    <h6>{{ __('Add New Job Owner') }}</h6>
                     <div class="input-group">
-                        <input type="text" id="newJobOwnerName" class="form-control" placeholder="ชื่อเจ้าของงาน">
-                        <button class="btn btn-primary" type="button" id="saveNewJobOwnerBtn">บันทึก</button>
+                        <input type="text" id="newJobOwnerName" class="form-control" placeholder="{{ __('Job Owner Name') }}">
+                        <button class="btn btn-primary" type="button" id="saveNewJobOwnerBtn">{{ __('Save') }}</button>
                     </div>
                     <div id="jobOwnerError" class="text-danger small mt-1" style="display: none;"></div>
                 </div>
@@ -406,15 +406,15 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion</h5>
+                <h5 class="modal-title" id="deleteConfirmModalLabel">{{ __('Confirm Deletion') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete this address? This action cannot be undone.
+                {{ __('Are you sure you want to delete this address?') }}
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm Delete</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">{{ __('Delete') }}</button>
             </div>
         </div>
     </div>
@@ -426,7 +426,7 @@
         <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">
                 <i class="bi bi-check-circle-fill rounded me-2 text-success"></i>
-                <strong class="me-auto">การแจ้งเตือน</strong>
+                <strong class="me-auto">{{ __('Notification') }}</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
             <div class="toast-body" id="toast-body-content">
@@ -487,7 +487,7 @@
         saveNewJobOwnerBtn.addEventListener('click', function () {
             const name = newJobOwnerNameInput.value.trim();
             if (!name) {
-                showError('กรุณาใส่ชื่อเจ้าของงาน');
+                showError('{{ __('Please enter job owner name') }}');
                 return;
             }
 
@@ -523,7 +523,7 @@
                 if (error.errors && error.errors.name) {
                     showError(error.errors.name[0]);
                 } else {
-                    showError('เกิดข้อผิดพลาดในการบันทึก');
+                    showError('{{ __('Error saving') }}');
                 }
             });
         });
@@ -532,7 +532,7 @@
         jobOwnerList.addEventListener('click', function(e) {
             if (e.target.classList.contains('delete-job-owner-icon')) {
                 const ownerId = e.target.dataset.id;
-                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบเจ้าของงานนี้?')) {
+                if (confirm('{{ __('Are you sure you want to delete this job owner?') }}')) {
                     deleteOwner(ownerId);
                 }
             }
@@ -542,12 +542,12 @@
         if (deleteJobOwnerBtn && mainJobOwnerSelect) {
             deleteJobOwnerBtn.addEventListener('click', function() {
                 const selectedOwnerId = mainJobOwnerSelect.value;
-                if (selectedOwnerId && selectedOwnerId !== '--- เลือกเจ้าของงาน ---') {
-                     if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบเจ้าของงานที่เลือก?')) {
+                if (selectedOwnerId && selectedOwnerId !== '--- เลือกเจ้าของงาน ---') { // Note: This check might be fragile if translation changes, using ID is better but logic is based on value
+                     if (confirm('{{ __('Are you sure you want to delete this job owner?') }}')) {
                         deleteOwner(selectedOwnerId);
                     }
                 } else {
-                    alert('กรุณาเลือกเจ้าของงานที่ต้องการลบ');
+                    alert('{{ __('Please select a job owner to delete') }}');
                 }
             });
         }
@@ -556,13 +556,13 @@
         // --- Helper Functions ---
 
         function fetchJobOwners() {
-            jobOwnerList.innerHTML = '<li class="list-group-item text-muted">กำลังโหลด...</li>';
+            jobOwnerList.innerHTML = '<li class="list-group-item text-muted">{{ __('Loading...') }}</li>';
             fetch('{{ route('job-owners.index') }}')
                 .then(response => response.json())
                 .then(data => {
                     jobOwnerList.innerHTML = '';
                     if (data.length === 0) {
-                        jobOwnerList.innerHTML = '<li class="list-group-item text-muted">ไม่มีข้อมูลเจ้าของงาน</li>';
+                        jobOwnerList.innerHTML = '<li class="list-group-item text-muted">{{ __('No job owner data') }}</li>';
                     } else {
                         data.forEach(owner => appendOwnerToList(owner));
                     }
@@ -608,7 +608,7 @@
                         if (optionToRemove) optionToRemove.remove();
                     }
                 } else {
-                    alert(data.message || 'ไม่สามารถลบข้อมูลได้');
+                    alert(data.message || '{{ __('Cannot delete') }}');
                 }
             });
         }
@@ -654,13 +654,13 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="universalPreviewModalLabel">พรีวิวข้อมูล</h5>
+                <h5 class="modal-title" id="universalPreviewModalLabel">{{ __('Preview Data') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
                     </div>
                 </div>
             </div>
@@ -717,13 +717,13 @@ document.addEventListener('DOMContentLoaded', function () {
             populateProvinces();
         } catch (error) {
             console.error('Failed to fetch Thai address data:', error);
-            showToast('ไม่สามารถโหลดข้อมูลที่อยู่ได้', 'danger');
+            showToast('{{ __('Failed to load address data') }}', 'danger');
         }
     }
 
     // --- Dropdown Population ---
     function populateProvinces() {
-        fields.addrProvince.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
+        fields.addrProvince.innerHTML = '<option value="">{{ __('Select Province') }}</option>';
         const uniqueProvinces = [...new Map(thaiAddressData.map(item => [item['province_th'], item])).values()];
         uniqueProvinces.sort((a, b) => a.province_th.localeCompare(b.province_th, 'th'));
         uniqueProvinces.forEach(item => {
@@ -733,8 +733,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function populateDistricts(province) {
-        fields.addrDistrict.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
-        fields.addrSubDistrict.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>'; // Reset sub-districts
+        fields.addrDistrict.innerHTML = '<option value="">{{ __('Select District') }}</option>';
+        fields.addrSubDistrict.innerHTML = '<option value="">{{ __('Select Sub-district') }}</option>'; // Reset sub-districts
         if (!province) return;
 
         const districts = [...new Set(thaiAddressData.filter(d => d.province_th === province).map(d => d.district_th))];
@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function populateSubDistricts(province, district) {
-        fields.addrSubDistrict.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
+        fields.addrSubDistrict.innerHTML = '<option value="">{{ __('Select Sub-district') }}</option>';
         if (!province || !district) return;
 
         const subDistricts = thaiAddressData.filter(d => d.province_th === province && d.district_th === district);
@@ -802,10 +802,10 @@ document.addEventListener('DOMContentLoaded', function () {
             fields.addressable_id.value = button.dataset.addressableId;
             fields.addressable_type.value = 'App\\Models\\Employer';
             fields.type.value = button.dataset.type;
-            document.getElementById('addressModalLabel').textContent = 'เพิ่มที่อยู่ใหม่';
+            document.getElementById('addressModalLabel').textContent = '{{ __('Add New Address') }}';
         } else if (isEditButton) {
             const addressId = button.dataset.addressId;
-            document.getElementById('addressModalLabel').textContent = 'กำลังโหลด...';
+            document.getElementById('addressModalLabel').textContent = '{{ __('Loading...') }}';
             try {
                 const response = await fetch(`/addresses/${addressId}`);
                 if (!response.ok) throw new Error('Failed to fetch address data.');
@@ -823,10 +823,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 populateSubDistricts(data.addrProvince, data.addrDistrict);
                 fields.addrSubDistrict.value = data.addrSubDistrict;
 
-                document.getElementById('addressModalLabel').textContent = 'แก้ไขที่อยู่';
+                document.getElementById('addressModalLabel').textContent = '{{ __('Edit Address') }}';
             } catch (error) {
                 console.error('Error fetching address for edit:', error);
-                showToast('ไม่สามารถโหลดข้อมูลที่อยู่เพื่อแก้ไขได้', 'danger');
+                showToast('{{ __('Failed to fetch address data') }}', 'danger');
                 addressModal.hide();
             }
         }
@@ -845,7 +845,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             saveBtn.disabled = true;
-            saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...`;
+            saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> {{ __('Saving...') }}`;
 
             const response = await fetch(url, {
                 method: method,
@@ -860,27 +860,27 @@ document.addEventListener('DOMContentLoaded', function () {
                      let errorMsg = Object.values(result.errors).flat().join('\\n');
                      throw new Error(errorMsg);
                 }
-                throw new Error(result.message || 'An unknown error occurred.');
+                throw new Error(result.message || '{{ __('An unknown error occurred') }}');
             }
 
-            showToast(result.message || 'บันทึกที่อยู่เรียบร้อยแล้ว', 'success');
+            showToast(result.message || '{{ __('Address saved successfully') }}', 'success');
             addressModal.hide();
 
             setTimeout(() => location.reload(), 1500);
 
         } catch (error) {
             console.error('Save address error:', error);
-            showToast(error.message || 'เกิดข้อผิดพลาดในการบันทึก', 'danger');
+            showToast(error.message || '{{ __('Error saving address') }}', 'danger');
         } finally {
             saveBtn.disabled = false;
-            saveBtn.innerHTML = 'บันทึก';
+            saveBtn.innerHTML = '{{ __('Save') }}';
         }
     });
 
     addressModalEl.addEventListener('hidden.bs.modal', function () {
         addressForm.reset();
         populateDistricts('');
-        document.getElementById('addressModalLabel').textContent = 'เพิ่ม/แก้ไขที่อยู่';
+        document.getElementById('addressModalLabel').textContent = '{{ __('Add New Address') }}';
     });
 });
 </script>
@@ -933,13 +933,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const form = e.target;
 
             Swal.fire({
-                title: 'Are you sure?',
-                text: "This will move the employee to the Central Trash. You can recover them later.",
+                title: '{{ __('Are you sure?') }}',
+                text: "{{ __('This will move the employee to the Central Trash. You can recover them later.') }}",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, move to Trash!'
+                confirmButtonText: '{{ __('Yes, move to Trash!') }}',
+                cancelButtonText: '{{ __('Cancel') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     const action = form.getAttribute('action');
@@ -958,12 +959,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (data.success) {
                              window.location.reload();
                         } else {
-                            showToast(data.message || 'An error occurred while trying to delete the employee.', 'danger');
+                            showToast(data.message || '{{ __('An error occurred while trying to delete the employee.') }}', 'danger');
                         }
                     })
                     .catch(error => {
                         console.error('Delete Error:', error);
-                        showToast('A network error occurred. Please try again.', 'danger');
+                        showToast('{{ __('A network error occurred. Please try again.') }}', 'danger');
                     });
                 }
             });
