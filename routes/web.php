@@ -26,6 +26,15 @@ use App\Http\Controllers\Admin\TicketStatusController;
 use App\Http\Controllers\PreviewController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
+
+// Language Switch Route
+Route::get('lang/{locale}', function ($locale) {
+    if (in_array($locale, ['en', 'th', 'zh'])) {
+        Illuminate\Support\Facades\Session::put('locale', $locale);
+    }
+    return redirect()->back();
+})->name('lang.switch');
+
 Route::get('/', function () {
     return view('welcome');
 });

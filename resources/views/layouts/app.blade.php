@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -178,20 +178,20 @@
             <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
             <div class="list-group" id="main-nav">
                 @can('view-dashboard')
-                <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>ภาพรวม</a>
+                <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Dashboard') }}</a>
                 @endcan
                 @can('view-notifications')
                 <a href="#notificationSubmenu" data-bs-toggle="collapse" aria-expanded="{{ request()->routeIs('notifications.*') || request()->routeIs('admin.incomplete_employees.*') ? 'true' : 'false' }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-bell-fill me-2"></i>แจ้งเตือน</span>
+                    <span><i class="bi bi-bell-fill me-2"></i>{{ __('Notifications') }}</span>
                     <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>
                 </a>
                 <div class="collapse {{ request()->routeIs('notifications.*') || request()->routeIs('admin.incomplete_employees.*') ? 'show' : '' }}" id="notificationSubmenu">
                     <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action border-0 {{ request()->routeIs('notifications.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-                        <i class="bi bi-list-ul me-2"></i>รายการแจ้งเตือน
+                        <i class="bi bi-list-ul me-2"></i>{{ __('Notification List') }}
                     </a>
                     @can('manage-tickets')
                     <a href="{{ route('admin.incomplete_employees.index') }}" class="list-group-item list-group-item-action border-0 {{ request()->routeIs('admin.incomplete_employees.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-                        <i class="bi bi-exclamation-octagon-fill me-2"></i>ข้อมูลไม่ครบถ้วน
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>{{ __('Incomplete Data') }}
                     </a>
                     @endcan
                 </div>
@@ -201,49 +201,49 @@
                 {{-- Visible if the user has 'manage-tickets' permission. This takes precedence. --}}
                 @can('manage-tickets')
                 <a href="{{ route('admin.tickets.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.index') ? 'active' : '' }}">
-                <i class="bi bi-inbox-fill me-2"></i>กล่องตั๋วงาน
+                <i class="bi bi-inbox-fill me-2"></i>{{ __('Ticket Inbox') }}
                 </a>
                 <a href="{{ route('admin.tickets.create') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.create') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-                    <i class="bi bi-plus-circle me-2"></i>สร้างตั๋วใหม่ (Admin)
+                    <i class="bi bi-plus-circle me-2"></i>{{ __('Create New Ticket (Admin)') }}
                 </a>
                 @else
                 {{-- V2.4: Employer Ticket Menu --}}
                 {{-- Visible ONLY if the user CANNOT 'manage-tickets' AND is an 'employer'. --}}
                 @role('employer')
                 <a href="{{ route('tickets.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
-                <i class="bi bi-ticket-detailed-fill me-2"></i>ส่งคำขอ/ติดตามงาน
+                <i class="bi bi-ticket-detailed-fill me-2"></i>{{ __('Submit Request/Track Work') }}
                 </a>
                 @endrole
                 @endcan
                 {{-- END V2.4: Smart Ticket Links --}}
                 <hr>
                 @can('view-employers')
-                <a href="{{ route('employers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employers.*') ? 'active' : '' }}"><i class="bi bi-person-vcard-fill me-2"></i>ข้อมูลนายจ้าง</a>
+                <a href="{{ route('employers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employers.*') ? 'active' : '' }}"><i class="bi bi-person-vcard-fill me-2"></i>{{ __('Employers') }}</a>
                 @endcan
                 @can('view-employees')
                 <a href="{{ route('employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.*') ? 'active' : '' }}">
-                    <i class="bi bi-people-fill me-2"></i>ข้อมูลลูกจ้าง
+                    <i class="bi bi-people-fill me-2"></i>{{ __('Employees') }}
                 </a>
                 <a href="{{ route('employees.history') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.history') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-                    <i class="bi bi-person-badge me-2"></i>ประวัติการจ้างงาน
+                    <i class="bi bi-person-badge me-2"></i>{{ __('Employment History') }}
                 </a>
                 @endcan
                 @can('view-importers')
-                <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>ข้อมูลบริษัทนำเข้า</a>
+                <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>{{ __('Importers') }}</a>
                 @endcan
                 @can('view-agents')
-                <a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>ข้อมูลเอเจนซี่</a>
+                <a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>{{ __('Agents') }}</a>
                 @endcan
                 @can('view-delegates')
-                <a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>ข้อมูลพนักงาน</a>
+                <a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>{{ __('Delegates') }}</a>
                 @endcan
 
                 @can('manage-users')
-                <a href="{{ route('admin.users.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-person-fill-gear me-2"></i>จัดการผู้ใช้งาน</a>
+                <a href="{{ route('admin.users.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-person-fill-gear me-2"></i>{{ __('User Management') }}</a>
                 @endcan
                 @canany(['manage-roles', 'manage-settings'])
                 <hr>
-                <a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>จัดการสิทธิ์</a>
+                <a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>{{ __('Roles & Permissions') }}</a>
                 @endcanany
                 @can('view-trash')
                     <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.trash.index') ? 'active' : '' }}" href="{{ route('admin.trash.index') }}">
@@ -259,13 +259,13 @@
                         <i class="bi bi-person-circle fs-2"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">{{ Auth::user()->name ?? 'User Name' }}</h6>
+                        <h6 class="mb-0">{{ Auth::user()->name ?? __('User Name') }}</h6>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <a href="{{ route('logout') }}"
                                onclick="event.preventDefault(); this.closest('form').submit();"
                                class="text-muted small">
-                                Logout
+                                {{ __('Logout') }}
                             </a>
                         </form>
                     </div>
@@ -275,11 +275,31 @@
         </aside>
 
         <main id="main-content" style="position: relative; z-index: 1;">
-            {{-- START: V.2 PC Toggle Button (Visible LG and up) --}}
-            <button class="btn btn-primary mb-3 d-none d-lg-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
-                <i class="bi bi-list me-2"></i> Open Menu
-            </button>
-            {{-- END: V.2 PC Toggle Button --}}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                {{-- START: V.2 PC Toggle Button (Visible LG and up) --}}
+                <button class="btn btn-primary d-none d-lg-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                    <i class="bi bi-list me-2"></i> Open Menu
+                </button>
+                {{-- END: V.2 PC Toggle Button --}}
+
+                <div class="d-flex align-items-center ms-auto">
+                     <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-translate me-1"></i>
+                            @switch(app()->getLocale())
+                                @case('th') 🇹🇭 ไทย @break
+                                @case('zh') 🇨🇳 中文 @break
+                                @default 🇺🇸 English
+                            @endswitch
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">🇹🇭 ไทย (Thai)</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'en') }}">🇺🇸 English</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             {{-- START: Mobile Top-Bar (d-lg-none) --}}
             <nav class="navbar bg-white rounded shadow-sm mb-4 d-lg-none">
                 <div class="container-fluid">
