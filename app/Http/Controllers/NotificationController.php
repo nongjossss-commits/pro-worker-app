@@ -231,9 +231,15 @@ class NotificationController extends Controller
             $targetModel->save();
         }
 
+        // Determine active tab for redirect
+        $activeTab = $notification->type;
+        if ($activeTab === 'work_permit_expiry') {
+            $activeTab = 'work_permit_mou';
+        }
+
         $notification->delete(); // Remove the notification after handling
 
-        return redirect()->route('notifications.index')->with('success', 'ต่ออายุข้อมูลและบันทึกเอกสารเรียบร้อยแล้ว');
+        return redirect()->route('notifications.index', ['active_tab' => $activeTab])->with('success', 'ต่ออายุข้อมูลและบันทึกเอกสารเรียบร้อยแล้ว');
     }
 
     // Add this new method to the controller
@@ -243,7 +249,13 @@ class NotificationController extends Controller
         // For now, we will just delete it as a simple cancel action.
         $notification->update(['status' => 'cancelled']);
 
-        return redirect()->route('notifications.index')->with('success', 'ยกเลิกการแจ้งเตือนเรียบร้อยแล้ว');
+        // Determine active tab for redirect
+        $activeTab = $notification->type;
+        if ($activeTab === 'work_permit_expiry') {
+            $activeTab = 'work_permit_mou';
+        }
+
+        return redirect()->route('notifications.index', ['active_tab' => $activeTab])->with('success', 'ยกเลิกการแจ้งเตือนเรียบร้อยแล้ว');
     }
 
     public function export(Request $request)
