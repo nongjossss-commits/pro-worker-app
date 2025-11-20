@@ -98,9 +98,6 @@
             <div class="row g-3">
                 @foreach($employees as $employee)
                     <div class="col-12 col-md-6 col-xl-4 position-relative">
-                        <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
-                            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
-                        </div>
                         @include('employees._employee_card', ['employee' => $employee, 'is_incomplete_view' => true])
                     </div>
                 @endforeach
