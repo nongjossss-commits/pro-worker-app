@@ -72,7 +72,7 @@
                             <span class="text-muted small">{{ $employee->employeeCode ?? '' }}</span>
                         </button>
                     </h2>
-                    <div id="collapse{{ $employee->id }}" class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}" aria-labelledby="heading{{ $employee->id }}" data-bs-parent="#employeeAccordion">
+                    <div id="collapse{{ $employee->id }}" class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}" aria-labelledby="heading{{ $employee->id }}">
                         <div class="accordion-body">
                             <div class="row g-3">
                                 @foreach($selectedFields as $field)
