@@ -124,8 +124,27 @@
                         <button class="accordion-button {{ $index === 0 ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employee->id }}" aria-expanded="{{ $index === 0 ? 'true' : 'false' }}" aria-controls="collapse{{ $employee->id }}">
                             <div class="d-flex align-items-center w-100">
                                 <span class="badge bg-secondary me-3 rounded-pill">{{ $index + 1 }}</span>
-                                <span class="fw-bold me-3">{{ $employee->employeeNameTh ?? $employee->employeeNameEn }}</span>
-                                <span class="text-muted small me-auto"><i class="bi bi-person-badge"></i> {{ $employee->employeeCode ?? $employee->employeePassport ?? 'N/A' }}</span>
+
+                                {{-- Name Thai --}}
+                                <div class="me-3">
+                                    <span class="fw-bold d-block">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }}</span>
+                                </div>
+
+                                {{-- Name English --}}
+                                <div class="me-3 d-none d-md-block">
+                                    <span class="text-muted small d-block">{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}</span>
+                                </div>
+
+                                {{-- Nationality & Flag --}}
+                                <div class="me-auto d-flex align-items-center">
+                                    @php
+                                        $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                                    @endphp
+                                    @if($countryCode)
+                                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" class="me-2" style="width: 24px; height: 16px;">
+                                    @endif
+                                    <span class="badge bg-info text-dark">{{ $employee->employeeNationality ?? 'N/A' }}</span>
+                                </div>
 
                                 @if($employee->employer)
                                     <span class="badge bg-light text-dark border me-3 d-none d-md-inline-block">

@@ -65,6 +65,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
     Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->name('employees.history');
     Route::get('/employees/{employee}/documents/{field}', [EmployeeController::class, 'serveDocument'])->name('employees.documents.serve');
+
+    // Advanced Bulk Edit Routes (Must come BEFORE resource route)
+    Route::post('employees/bulk-edit/select-fields', [EmployeeController::class, 'bulkEditSelectFields'])->name('employees.bulk_edit.select_fields');
+    Route::post('employees/bulk-edit/form', [EmployeeController::class, 'bulkEditForm'])->name('employees.bulk_edit.form');
+    Route::put('employees/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('employees.bulk_update');
+
     Route::resource('employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
@@ -107,11 +113,6 @@ Route::middleware('auth')->group(function () {
         // V2.4-S6: New Route for Temporary Uploads (POST)
         Route::post('temp-upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
     });
-
-    // Advanced Bulk Edit Routes (Must come BEFORE resource route)
-    Route::post('employees/bulk-edit/select-fields', [EmployeeController::class, 'bulkEditSelectFields'])->name('employees.bulk_edit.select_fields');
-    Route::post('employees/bulk-edit/form', [EmployeeController::class, 'bulkEditForm'])->name('employees.bulk_edit.form');
-    Route::put('employees/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('employees.bulk_update');
 
     // Employee Transfer Route
     Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');
