@@ -6,6 +6,11 @@
         <i class="bi bi-search"></i>
     </button>
 
+    {{-- Download Button --}}
+    <button type="button" class="btn btn-sm btn-outline-dark btn-download-single" data-employee-id="{{ $employee->id }}" title="ดาวน์โหลดเอกสาร">
+        <i class="bi bi-download"></i>
+    </button>
+
     {{-- Create Job Button (Green) - Placeholder --}}
     <a href="#" class="btn btn-sm btn-outline-success" title="Create Job (Coming Soon)">
         <i class="bi bi-briefcase-fill"></i>

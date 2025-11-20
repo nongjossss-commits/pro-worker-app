@@ -297,6 +297,10 @@
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
                         </ul>
                     </div>
+
+                    {{-- V2.4 Download Menu --}}
+                    @include('components.download-menu')
+
                 </div>
             </div>
             {{-- START: Mobile Top-Bar (d-lg-none) --}}
@@ -421,6 +425,8 @@
 {{-- END: Delete Address Confirmation Modal --}}
 
     {{-- Toast Notification Container --}}
+    @include('components.download-modal')
+
     <div class="toast-container position-fixed top-0 end-0 p-3">
         <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">

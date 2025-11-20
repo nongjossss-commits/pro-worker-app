@@ -24,6 +24,7 @@ use App\Http\Controllers\TicketReplyController;
 // Add this new import for V2.4-S11:
 use App\Http\Controllers\Admin\TicketStatusController;
 use App\Http\Controllers\PreviewController;
+use App\Http\Controllers\DownloadController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 
@@ -109,6 +110,12 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');
     // Bulk Employee Transfer Route
     Route::post('employees/bulk-transfer', [EmployeeController::class, 'bulkTransfer'])->name('employees.bulkTransfer');
+
+    // Download System
+    Route::get('/downloads/list', [DownloadController::class, 'index'])->name('downloads.index');
+    Route::post('/downloads', [DownloadController::class, 'store'])->name('downloads.store');
+    Route::get('/downloads/{downloadJob}/file', [DownloadController::class, 'download'])->name('downloads.file');
+    Route::get('/downloads/{downloadJob}/status', [DownloadController::class, 'checkStatus'])->name('downloads.status');
 });
 
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
