@@ -35,12 +35,18 @@ class DownloadController extends Controller
             'status' => 'pending',
         ]);
 
-        ProcessDownload::dispatch($task->id, $validated['employee_ids'], $validated['selected_files']);
+        // Use dispatchSync to ensure immediate execution, avoiding stuck "pending" tasks
+        // if the queue worker is not running.
+        ProcessDownload::dispatchSync($task->id, $validated['employee_ids'], $validated['selected_files']);
+
+        $task->refresh();
 
         return response()->json([
             'success' => true,
-            'message' => 'Download started in background.',
-            'task_id' => $task->id
+            'message' => $task->status === 'completed' ? 'Download prepared successfully.' : 'Download started.',
+            'task_id' => $task->id,
+            'status' => $task->status,
+            'download_url' => $task->status === 'completed' ? route('admin.downloads.download', $task->id) : null
         ]);
     }
 

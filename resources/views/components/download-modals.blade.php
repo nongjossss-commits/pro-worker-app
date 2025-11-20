@@ -146,6 +146,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     let downloadModal = new bootstrap.Modal(document.getElementById('downloadOptionsModal'));
     let downloadCenterModal = new bootstrap.Modal(document.getElementById('downloadCenterModal'));
+    let downloadCenterInterval = null;
 
     // --- 1. Handle Triggering Download Options ---
     // From Single Action
@@ -200,9 +201,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 downloadModal.hide();
                 showToast(data.message, 'success');
+
                 // Open Download Center to show progress
                 loadDownloadTasks();
                 downloadCenterModal.show();
+
+                // Auto download if ready (using iframe to avoid popup blockers/replacing page)
+                if (data.download_url) {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = data.download_url;
+                    document.body.appendChild(iframe);
+                    // Cleanup iframe after a bit
+                    setTimeout(() => document.body.removeChild(iframe), 60000);
+                }
             } else {
                 showToast('Error starting download.', 'danger');
             }
@@ -220,7 +232,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- 3. Handle Download Center ---
     function loadDownloadTasks() {
         const tbody = document.getElementById('downloadTasksTableBody');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+        // Only show loading if empty, to avoid flickering on refresh
+        if (!tbody.innerHTML.trim() || tbody.innerText.includes('Loading') || tbody.innerText.includes('No tasks')) {
+             tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+        }
 
         fetch('{{ route("admin.downloads.index") }}')
             .then(res => res.json())
@@ -243,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (task.status === 'failed') {
                         actionBtn = `<span class="text-danger" title="${task.error_message}">Failed</span>`;
                     } else {
-                        actionBtn = `<span class="text-muted">Wait...</span>`;
+                        actionBtn = `<span class="text-muted spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span class="text-muted">Processing...</span>`;
                     }
 
                     const date = new Date(task.created_at).toLocaleString('th-TH');
@@ -260,11 +275,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             })
             .catch(err => {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading tasks.</td></tr>';
+                console.error(err);
+                // Only show error if list is empty, otherwise keep old list
+                if(tbody.children.length === 1 && tbody.innerText.includes('Loading')) {
+                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading tasks.</td></tr>';
+                }
             });
     }
 
     document.getElementById('btnRefreshDownloads').addEventListener('click', loadDownloadTasks);
+
+    // Auto-refresh when modal is open
+    const centerModalEl = document.getElementById('downloadCenterModal');
+    centerModalEl.addEventListener('shown.bs.modal', function () {
+        loadDownloadTasks();
+        // Poll every 3 seconds
+        downloadCenterInterval = setInterval(loadDownloadTasks, 3000);
+    });
+
+    centerModalEl.addEventListener('hidden.bs.modal', function () {
+        if (downloadCenterInterval) {
+            clearInterval(downloadCenterInterval);
+            downloadCenterInterval = null;
+        }
+    });
 
     // Expose function globally if needed or just rely on button click
     window.openDownloadCenter = function() {
