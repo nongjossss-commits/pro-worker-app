@@ -16,10 +16,33 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('roles')->latest()->get();
-        return view('admin.users.index', compact('users'));
+        $search = $request->input('search');
+        $query = User::with('roles')->latest();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->get();
+
+        // Determine active tab based on search results
+        $activeTab = 'admin';
+        if ($search && $users->isNotEmpty()) {
+            $counts = [
+                'admin' => $users->filter(fn($u) => $u->roles->contains('name', 'admin'))->count(),
+                'staff' => $users->filter(fn($u) => $u->roles->contains('name', 'staff'))->count(),
+                'employer' => $users->filter(fn($u) => $u->roles->contains('name', 'employer'))->count(),
+            ];
+            // Get the role with the most results
+            $activeTab = array_keys($counts, max($counts))[0];
+        }
+
+        return view('admin.users.index', compact('users', 'search', 'activeTab'));
     }
 
     /**
