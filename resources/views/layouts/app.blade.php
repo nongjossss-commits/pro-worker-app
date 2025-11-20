@@ -58,9 +58,10 @@
         #sidebar .navbar-brand {
             font-weight: 700;
             color: var(--bs-primary);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             text-align: center;
-            font-size: 1.75rem !important;
+            font-size: 1.5rem;
+            text-decoration: none;
         }
 
         #sidebar .list-group-item {
@@ -170,12 +171,17 @@
         <aside id="sidebar" class="offcanvas offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
             {{-- START: Offcanvas Header (Mobile Only) --}}
             <div class="offcanvas-header d-lg-none">
-                <h5 class="offcanvas-title" id="sidebarLabel"><i class="bi bi-building-fill-gear"></i> Company Records</h5>
+                <h5 class="offcanvas-title d-flex align-items-center gap-2" id="sidebarLabel">
+                    <img src="{{ asset('images/logo.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             {{-- END: Offcanvas Header --}}
             <div class="offcanvas-body d-flex flex-column p-0">
-            <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
+            <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="#">
+                <img src="{{ asset('images/logo.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 100px; width: auto; max-width: 80%;">
+                <span style="line-height: 1.2;">Proworker labour</span>
+            </a>
             <div class="list-group" id="main-nav">
                 @can('view-dashboard')
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Dashboard') }}</a>
@@ -325,7 +331,10 @@
                     <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                         <span class="navbar-toggler-icon"></span>
                     </button>
-                    <a class="navbar-brand fs-4" href="#"><i class="bi bi-building-fill-gear"></i> Company Records</a>
+                    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                        <img src="{{ asset('images/logo.jpg') }}" alt="Logo" style="height: 40px; width: auto;">
+                        <span>Proworker labour</span>
+                    </a>
                 </div>
             </nav>
             {{-- END: Mobile Top-Bar --}}
