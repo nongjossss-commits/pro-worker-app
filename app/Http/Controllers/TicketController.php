@@ -77,6 +77,7 @@ class TicketController extends Controller
                 'employer_user_id' => $user->id,
                 'subject' => $validated['subject'],
                 'status' => 'pending_staff',
+                'admin_unread_count' => 1, // Employer creates -> Admin has 1 unread message
             ]);
 
             // Define the permanent storage directory for this ticket
@@ -233,6 +234,11 @@ class TicketController extends Controller
         // Enforce Tenancy: Authorize the user to view this ticket (Must be the owner).
         if ($ticket->employer_user_id !== Auth::id()) {
             abort(403, 'Unauthorized action. You do not own this ticket.');
+        }
+
+        // Reset Unread Count for Employer
+        if ($ticket->employer_unread_count > 0) {
+            $ticket->update(['employer_unread_count' => 0]);
         }
 
         // V2.4-S9 Optimization: Load messages ordered by creation time (for history)
