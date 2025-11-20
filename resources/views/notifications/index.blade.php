@@ -2,11 +2,11 @@
 @section('title', 'รายการแจ้งเตือน')
 
 @section('content')
-<div class="p-4 p-md-5 content-section">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">รายการแจ้งเตือน</h2>
+<div class="content-section">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <h2 class="mb-3 mb-md-0">{{ __('รายการแจ้งเตือน') }}</h2>
         @can('manage-users')
-            <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-primary">
+            <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-primary w-100 w-md-auto">
                 <i class="bi bi-gear-fill"></i> ตั้งค่าการแจ้งเตือน
             </a>
         @endcan
@@ -14,51 +14,56 @@
 
     <div class="card mb-4">
         <div class="card-body">
-            <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-md-center">
+            <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-column gap-3">
                 <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'ninety_day_report') }}">
-                <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}" style="width: 200px;">
-                <select name="month" class="form-select form-select-sm" style="width: 150px;">
-                    <option value="">-- ทุกเดือน --</option>
-                    @foreach(range(1, 12) as $m)
-                        <option value="{{ $m }}" @selected(request('month') == $m)>เดือนที่ {{ $m }}</option>
-                    @endforeach
-                </select>
-                <select name="nationality" class="form-select form-select-sm" style="width: 150px;">
-                    <option value="">-- ทุกสัญชาติ --</option>
-                    <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
-                    <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
-                    <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
-                    <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
-                </select>
-                <select name="mou_type" class="form-select form-select-sm" style="width: 200px;">
-                    <option value="">-- ทุกประเภท มติ. --</option>
-                    <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
-                    <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
-                    <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
-                    <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
-                </select>
-                <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm">ล้างค่า</a>
 
-                {{-- VIEW CONTROLS --}}
-                <div class="btn-group btn-group-sm ms-md-auto">
-                    <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
-                    <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i></label>
-
-                    <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked(request('view') === 'table')>
-                    <label class="btn btn-outline-primary" for="view-table"><i class="bi bi-table"></i></label>
+                <div class="d-flex flex-column flex-md-row gap-2 flex-wrap">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}" style="min-width: 200px;">
+                    <select name="month" class="form-select form-select-sm" style="min-width: 120px;">
+                        <option value="">-- ทุกเดือน --</option>
+                        @foreach(range(1, 12) as $m)
+                            <option value="{{ $m }}" @selected(request('month') == $m)>เดือนที่ {{ $m }}</option>
+                        @endforeach
+                    </select>
+                    <select name="nationality" class="form-select form-select-sm" style="min-width: 120px;">
+                        <option value="">-- ทุกสัญชาติ --</option>
+                        <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
+                        <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
+                        <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
+                        <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
+                    </select>
+                    <select name="mou_type" class="form-select form-select-sm" style="min-width: 150px;">
+                        <option value="">-- ทุกประเภท มติ. --</option>
+                        <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
+                        <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
+                        <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
+                        <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
+                    <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm">ล้างค่า</a>
                 </div>
-                <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                    @foreach($perPageOptions as $option)
-                    <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>แสดง {{ $option }}</option>
-                    @endforeach
-                </select>
+
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 border-top pt-3">
+                    {{-- VIEW CONTROLS --}}
+                    <div class="btn-group btn-group-sm">
+                        <input type="radio" class="btn-check" name="view" id="view-card" value="card" onchange="this.form.submit()" @checked(request('view', 'card') === 'card')>
+                        <label class="btn btn-outline-primary" for="view-card"><i class="bi bi-grid-3x3-gap-fill"></i></label>
+
+                        <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked(request('view') === 'table')>
+                        <label class="btn btn-outline-primary" for="view-table"><i class="bi bi-table"></i></label>
+                    </div>
+                    <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                        @foreach($perPageOptions as $option)
+                        <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>แสดง {{ $option }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </form>
         </div>
     </div>
 
     {{-- NEW: Bulk Action Bar --}}
-    <div id="bulk-action-bar-notifications" class="alert alert-info d-flex justify-content-between align-items-center mb-4" style="display: none !important;">
+    <div id="bulk-action-bar-notifications" class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-2" style="display: none !important;">
         <div>
             <input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications">
             <label class="form-check-label ms-2" for="select-all-checkbox-notifications">
@@ -66,30 +71,32 @@
             </label>
         </div>
 
-        <div class="dropdown">
-            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+        <div class="dropdown w-100 w-md-auto">
+            <button class="btn btn-primary btn-sm dropdown-toggle w-100" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 ดำเนินการกับรายการที่เลือก
             </button>
-            <ul class="dropdown-menu" aria-labelledby="notificationBulkActionBtn">
+            <ul class="dropdown-menu w-100" aria-labelledby="notificationBulkActionBtn">
                 <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2"></i>Download Files</a></li>
             </ul>
         </div>
     </div>
 
-    <ul class="nav nav-tabs" id="notificationTab" role="tablist">
-        @foreach($tabs as $type => $title)
+    <div class="overflow-auto mb-3">
+        <ul class="nav nav-tabs flex-nowrap" id="notificationTab" role="tablist" style="min-width: max-content;">
+            @foreach($tabs as $type => $title)
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
+                        {{ $title }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type]['total'] ?? 0 }}</span>
+                    </button>
+                </li>
+            @endforeach
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
-                    {{ $title }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type]['total'] ?? 0 }}</span>
+                <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled-pane" type="button">
+                    รายการที่ยกเลิก <span class="badge bg-secondary rounded-pill ms-1">{{ $counts['cancelled'] ?? 0 }}</span>
                 </button>
             </li>
-        @endforeach
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled-pane" type="button">
-                รายการที่ยกเลิก <span class="badge bg-secondary rounded-pill ms-1">{{ $counts['cancelled'] ?? 0 }}</span>
-            </button>
-        </li>
-    </ul>
+        </ul>
+    </div>
 
     <div class="tab-content pt-4" id="notificationTabContent">
         @foreach($notificationsData as $type => $notifications)
@@ -102,11 +109,11 @@
                     (ชาย: {{ $counts[$type]['male'] }} คน, หญิง: {{ $counts[$type]['female'] }} คน)
                 </div>
                 @endif
-<div class="d-grid d-md-flex justify-content-md-end mb-3">
-    <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-outline-success btn-sm">
-        <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
-    </a>
-</div>
+                <div class="d-grid d-md-flex justify-content-md-end mb-3">
+                    <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-outline-success btn-sm w-100 w-md-auto">
+                        <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
+                    </a>
+                </div>
 
                 @if($type === 'work_permit_mou')
                     @if($currentView == 'table')
@@ -118,7 +125,7 @@
                     {{-- Standard rendering for all other tabs --}}
                     @if($currentView == 'table')
                         <div class="table-responsive">
-                            <table class="table table-hover table-sm">
+                            <table class="table table-hover table-sm align-middle">
                                 <thead>
                                     <tr>
                                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-std"></th>
@@ -138,7 +145,7 @@
                                         @endphp
                                         @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $itemNumber])
                                     @empty
-                                        <tr><td colspan="8" class="text-center text-muted">ไม่พบข้อมูล</td></tr>
+                                        <tr><td colspan="8" class="text-center text-muted py-4">ไม่พบข้อมูล</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
@@ -150,7 +157,7 @@
                             @endphp
                             @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $itemNumber])
                         @empty
-                            <p class="text-center text-muted">ไม่พบข้อมูล</p>
+                            <p class="text-center text-muted py-4">ไม่พบข้อมูล</p>
                         @endforelse
                     @endif
 
