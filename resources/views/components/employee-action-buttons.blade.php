@@ -20,6 +20,11 @@
         </a>
     @endif
 
+    {{-- Download Button (Teal) --}}
+    <button type="button" class="btn btn-sm btn-info text-white btn-download-single" title="Download Files" data-employee-id="{{ $employee->id }}">
+        <i class="bi bi-download"></i>
+    </button>
+
     {{-- Terminate Button (Dark Grey) --}}
     @can('terminate-employees')
         <button type="button"

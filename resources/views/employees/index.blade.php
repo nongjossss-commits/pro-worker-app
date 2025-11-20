@@ -72,14 +72,23 @@
     </div>
 </div>
 
-<div class="bulk-action-bar mb-3" style="display: none;">
-    <div class="form-check">
+<div class="bulk-action-bar mb-3 align-items-center gap-2" style="display: none;">
+    <div class="form-check mb-0">
         <input class="form-check-input" type="checkbox" id="select-all-checkbox">
         <label class="form-check-label" for="select-all-checkbox">
             {{ __('Select All') }} (<span id="selected-count">0</span>)
         </label>
     </div>
-    <button class="btn btn-sm btn-outline-danger" disabled>{{ __('Action on selected items') }}</button>
+
+    <div class="dropdown">
+        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="bulkActionDropdown" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+            {{ __('Actions') }}
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
+            <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+            <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
+        </ul>
+    </div>
 </div>
 
 <div id="employeeListContainer">
@@ -162,71 +171,27 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const containerId = 'employeeListContainer';
-    const checkboxClass = 'bulk-action-checkbox';
-    const selectAllId = 'select-all-checkbox';
-    const countId = 'selected-count';
-    const barId = 'bulk-action-bar';
-    const actionButtonSelector = '.btn';
+    // This script is superseded by the global listener in layouts/app.blade.php
+    // which handles the .employee-checkbox class correctly.
+    // However, we need to attach the bulk download handler here.
 
-    const container = document.getElementById(containerId);
-    if (!container) return;
+    const bulkDownloadBtn = document.getElementById('bulk-download-btn');
+    if (bulkDownloadBtn) {
+        bulkDownloadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) {
+                showToast('{{ __('Please select employees first.') }}', 'danger');
+                return;
+            }
 
-    const selectAllCheckbox = document.getElementById(selectAllId);
-    const selectedCountSpan = document.getElementById(countId);
-    const actionBar = document.getElementById(barId);
-    // Ensure actionBar and its children exist before proceeding
-    if (!actionBar || !selectAllCheckbox || !selectedCountSpan) {
-        console.error('Bulk action UI elements not found.');
-        return;
-    }
-    const actionButton = actionBar.querySelector(actionButtonSelector);
-    if (!actionButton) {
-        console.error('Bulk action button not found.');
-        return;
-    }
-
-    const getCheckboxes = () => container.querySelectorAll(`.${checkboxClass}`);
-
-    function updateSelection() {
-        const checkboxes = getCheckboxes();
-        const selectedCheckboxes = container.querySelectorAll(`.${checkboxClass}:checked`);
-        const selectedCount = selectedCheckboxes.length;
-
-        if (selectedCount > 0) {
-            actionBar.style.setProperty('display', 'flex', 'important');
-            selectedCountSpan.textContent = selectedCount;
-            actionButton.disabled = false;
-        } else {
-            actionBar.style.setProperty('display', 'none', 'important');
-            selectedCountSpan.textContent = 0;
-            actionButton.disabled = true;
-        }
-
-        if (checkboxes.length > 0) {
-            selectAllCheckbox.checked = selectedCount === checkboxes.length;
-        } else {
-            selectAllCheckbox.checked = false;
-        }
-    }
-
-    // Use event delegation on the container
-    container.addEventListener('change', function(event) {
-        if (event.target.classList.contains(checkboxClass)) {
-            updateSelection();
-        }
-    });
-
-    selectAllCheckbox.addEventListener('change', () => {
-        const checkboxes = getCheckboxes();
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = selectAllCheckbox.checked;
+            if (window.openBulkDownloadModal) {
+                window.openBulkDownloadModal(selected);
+            } else {
+                console.error('Download modal function not found.');
+            }
         });
-        updateSelection();
-    });
-
-    // Initial state check on page load
-    updateSelection();
+    }
 });
 </script>
 @endpush

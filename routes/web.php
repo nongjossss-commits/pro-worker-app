@@ -146,6 +146,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Employee Completeness Settings
     Route::get('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'index'])->name('settings.completeness.index');
     Route::post('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'store'])->name('settings.completeness.store');
+
+    // Notification Settings Routes
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::resource('notifications', App\Http\Controllers\Admin\NotificationSettingController::class);
+    });
+
+    // Download Center Routes
+    Route::get('/downloads/tasks', [App\Http\Controllers\DownloadController::class, 'index'])->name('downloads.index');
+    Route::post('/downloads/initiate', [App\Http\Controllers\DownloadController::class, 'initiate'])->name('downloads.initiate');
+    Route::get('/downloads/{task}/file', [App\Http\Controllers\DownloadController::class, 'download'])->name('downloads.download');
 });
 
 // === Incomplete Employees (Viewable by Admin/Staff - managing tickets permissions usually implies managing employees) ===
