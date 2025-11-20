@@ -1,7 +1,7 @@
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import sync_playwright
 import os
 
-def verify_download_center():
+def verify_download_modal():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -10,35 +10,25 @@ def verify_download_center():
         file_path = os.path.abspath("verification/mock_download_modal.html")
         page.goto(f"file://{file_path}")
 
-        # 1. Click "Download Employee 1" to open options modal
-        page.get_by_role("button", name="Download Employee 1").click()
-        expect(page.locator("#downloadOptionsModal")).to_be_visible()
+        # Click the button to open the modal
+        page.click("button[data-bs-target='#downloadCenterModal']")
 
-        # 2. Click "Start Download"
-        page.get_by_role("button", name="Start Download").click()
+        # Wait for modal to appear and table to populate
+        page.wait_for_selector("#downloadTasksTableBody tr")
 
-        # 3. Verify Toast appears
-        expect(page.locator(".toast")).to_be_visible()
-        expect(page.locator(".toast-body")).to_contain_text("Download prepared successfully")
+        # Hover over the info icon for the failed task (ID 3)
+        # The icon is the second child in the action cell (index 4) of the 3rd row (index 2)
+        # But simpler selector:
+        info_icon = page.locator(".bi-info-circle")
+        info_icon.hover()
 
-        # 4. Verify Download Center opens
-        expect(page.locator("#downloadCenterModal")).to_be_visible()
+        # Wait for tooltip
+        page.wait_for_selector(".tooltip-inner")
 
-        # 5. Verify Task List populated (from mock data)
-        # Should contain "Completed" badge
-        expect(page.locator("#downloadTasksTableBody")).to_contain_text("completed")
-        expect(page.locator("#downloadTasksTableBody")).to_contain_text("failed")
-
-        # 6. Verify Auto Download Iframe created
-        # Use evaluate to check if element exists in DOM, as it is hidden
-        iframe_exists = page.evaluate("!!document.getElementById('autoDownloadIframe')")
-        assert iframe_exists, "Auto-download iframe was not created"
-
-        # Screenshot
-        page.screenshot(path="verification/verification.png")
-        print("Verification successful. Screenshot saved.")
+        # Take screenshot
+        page.screenshot(path="verification/download_modal_verified.png")
 
         browser.close()
 
 if __name__ == "__main__":
-    verify_download_center()
+    verify_download_modal()

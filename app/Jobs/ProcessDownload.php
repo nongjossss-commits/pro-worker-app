@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 use setasign\Fpdi\Fpdi;
 use Exception;
+use Throwable;
 
 class ProcessDownload implements ShouldQueue
 {
@@ -49,6 +50,10 @@ class ProcessDownload implements ShouldQueue
 
     public function handle()
     {
+        // Increase memory limit and execution time for large PDF merges
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $task = DownloadTask::find($this->taskId);
         if (!$task) return;
 
@@ -77,7 +82,7 @@ class ProcessDownload implements ShouldQueue
             // Cleanup temp dir
             $this->deleteDir($tempDir);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $task->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage()
@@ -136,39 +141,44 @@ class ProcessDownload implements ShouldQueue
             throw new Exception("FPDI library not found.");
         }
 
-        $pdf = new Fpdi();
-        // Disable auto page break to handle large images manually if needed,
-        // but mostly we want to control page adding.
-        $pdf->SetAutoPageBreak(false);
+        try {
+            $pdf = new Fpdi();
+            // Disable auto page break to handle large images manually if needed,
+            // but mostly we want to control page adding.
+            $pdf->SetAutoPageBreak(false);
 
-        foreach ($employees as $employee) {
-            $employeeName = $employee->employeeNameTh ?? $employee->employeeNameEn ?? 'Employee ' . $employee->id;
+            foreach ($employees as $employee) {
+                $employeeName = $employee->employeeNameTh ?? $employee->employeeNameEn ?? 'Employee ' . $employee->id;
 
-            // Add a separator page for the employee
-            $pdf->AddPage();
-            $pdf->SetFont('Arial', 'B', 20);
-            // Note: FPDF generic font doesn't support Thai.
-            // We might need to use a supported font or just use English/ID.
-            // For now, using English ID fallback to avoid ????? characters if font missing.
-            $displayName = iconv('UTF-8', 'cp874//TRANSLIT', $employeeName); // Try conversion or fallback
-            if (!$displayName) $displayName = "Employee ID: " . $employee->id;
+                // Add a separator page for the employee
+                $pdf->AddPage();
+                $pdf->SetFont('Arial', 'B', 20);
+                // Note: FPDF generic font doesn't support Thai.
+                // We might need to use a supported font or just use English/ID.
+                // For now, using English ID fallback to avoid ????? characters if font missing.
+                $displayName = @iconv('UTF-8', 'cp874//TRANSLIT', $employeeName); // Try conversion or fallback
+                if (!$displayName) $displayName = "Employee ID: " . $employee->id;
 
-            $pdf->Cell(0, 10, $displayName, 0, 1, 'C');
+                $pdf->Cell(0, 10, $displayName, 0, 1, 'C');
 
-            foreach ($this->selectedFiles as $fileType) {
-                $this->addFilesToPdf($pdf, $employee, $fileType);
+                foreach ($this->selectedFiles as $fileType) {
+                    $this->addFilesToPdf($pdf, $employee, $fileType);
+                }
             }
+
+            $fileName = 'merged_' . $task->id . '_' . date('YmdHis') . '.pdf';
+            $outputPath = storage_path('app/public/downloads/' . $fileName);
+
+            if (!file_exists(dirname($outputPath))) {
+                mkdir(dirname($outputPath), 0755, true);
+            }
+
+            $pdf->Output('F', $outputPath);
+            return 'downloads/' . $fileName;
+
+        } catch (Throwable $e) {
+            throw new Exception("PDF Generation Error: " . $e->getMessage());
         }
-
-        $fileName = 'merged_' . $task->id . '_' . date('YmdHis') . '.pdf';
-        $outputPath = storage_path('app/public/downloads/' . $fileName);
-
-        if (!file_exists(dirname($outputPath))) {
-            mkdir(dirname($outputPath), 0755, true);
-        }
-
-        $pdf->Output('F', $outputPath);
-        return 'downloads/' . $fileName;
     }
 
     protected function addFilesToPdf($pdf, $employee, $fileType)
@@ -182,23 +192,30 @@ class ProcessDownload implements ShouldQueue
             if (!empty($employee->$attr)) {
                 $filePath = $this->getFilePath($employee->$attr);
                 if ($filePath && file_exists($filePath)) {
-                    $mime = mime_content_type($filePath);
                     try {
+                        // Safer mime detection
+                        $mime = @mime_content_type($filePath);
+
                         if ($mime === 'application/pdf') {
                             $pageCount = $pdf->setSourceFile($filePath);
                             for ($i = 1; $i <= $pageCount; $i++) {
-                                $tplIdx = $pdf->importPage($i);
-                                $size = $pdf->getTemplateSize($tplIdx);
-                                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                                $pdf->useTemplate($tplIdx);
+                                try {
+                                    $tplIdx = $pdf->importPage($i);
+                                    $size = $pdf->getTemplateSize($tplIdx);
+                                    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                                    $pdf->useTemplate($tplIdx);
+                                } catch (Throwable $e) {
+                                    // Skip individual pages if they fail (e.g., internal damage)
+                                    continue;
+                                }
                             }
                         } elseif (in_array($mime, ['image/jpeg', 'image/png', 'image/gif'])) {
                             $pdf->AddPage();
                             // Scale image to fit page
                             $pdf->Image($filePath, 10, 10, 190);
                         }
-                    } catch (Exception $e) {
-                        // Log error but continue
+                    } catch (Throwable $e) {
+                        // Log error but continue with other files
                         // Log::error("Failed to merge file: " . $e->getMessage());
                     }
                 }
