@@ -227,42 +227,29 @@ class NotificationController extends Controller
 
             // Handle file upload
             if ($request->hasFile('attachment') && $fileField) {
+                // REVERTED: Use 'public' disk for all uploads to prevent 403 errors and ensure consistency.
                 $disk = 'public';
-                // Check if it's the special private field (for Social Security / General Insurance)
-                if ($fileField === 'insurance_attachment_path') {
-                    $disk = 'private';
-                }
 
                 // Delete old file if exists
-                if ($targetModel->{$fileField} && \Illuminate\Support\Facades\Storage::disk($disk)->exists($targetModel->{$fileField})) {
-                    \Illuminate\Support\Facades\Storage::disk($disk)->delete($targetModel->{$fileField});
+                // Note: For unified public disk, we check public first.
+                // We also check private just in case a legacy file exists there to clean it up.
+                if ($targetModel->{$fileField}) {
+                     if (\Illuminate\Support\Facades\Storage::disk('public')->exists($targetModel->{$fileField})) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($targetModel->{$fileField});
+                     }
+                     if (\Illuminate\Support\Facades\Storage::disk('private')->exists($targetModel->{$fileField})) {
+                        \Illuminate\Support\Facades\Storage::disk('private')->delete($targetModel->{$fileField});
+                     }
                 }
 
                 $file = $request->file('attachment');
-                // Generate filename only if not using the 'private' generic storage behavior which handles it,
-                // but store() generates hash name anyway.
-                // However, EmployeeController uses store() for private, which generates hash.
-                // NotificationController uses storeAs() with random filename for public.
-                // We will unify by using random filename pattern but respecting the folder/disk.
-
                 $filename = \Illuminate\Support\Str::random(20) . '.' . $file->getClientOriginalExtension();
 
                 // Determine storage path based on model type and disk
                 if ($targetModel instanceof \App\Models\Employee) {
-                    // If private, match EmployeeController's folder 'employee_documents'
-                    // If public, match NotificationController's folder 'employee_files/{employer_id}'
-                    $folder = ($disk === 'private') ? 'employee_documents' : "employee_files/{$targetModel->employer_id}";
-
-                    if ($disk === 'private') {
-                         // Use store() to mimic EmployeeController behavior perfectly if needed, or storeAs if we want specific name.
-                         // EmployeeController: $request->file(...)->store('employee_documents', 'private');
-                         // store() uses hash name.
-                         // Let's stick to storeAs() with our generated filename for consistency within this method,
-                         // as long as it is in the correct folder and disk.
-                         $path = $file->storeAs($folder, $filename, $disk);
-                    } else {
-                         $path = $file->storeAs($folder, $filename, $disk);
-                    }
+                    // Always use public folder structure
+                    $folder = "employee_files/{$targetModel->employer_id}";
+                    $path = $file->storeAs($folder, $filename, $disk);
                 } else {
                      // Employer documents
                     $path = $file->storeAs("employer_documents", $filename, $disk);
