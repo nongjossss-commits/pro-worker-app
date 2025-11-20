@@ -3,10 +3,10 @@
 
 @section('content')
 <div class="content-section">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-3 mb-md-0">{{ __('รายการแจ้งเตือน') }}</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">{{ __('รายการแจ้งเตือน') }}</h2>
         @can('manage-users')
-            <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-primary w-100 w-md-auto">
+            <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-outline-primary">
                 <i class="bi bi-gear-fill"></i> ตั้งค่าการแจ้งเตือน
             </a>
         @endcan
@@ -17,30 +17,42 @@
             <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-column gap-3">
                 <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'ninety_day_report') }}">
 
-                <div class="d-flex flex-column flex-md-row gap-2 flex-wrap">
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}" style="min-width: 200px;">
-                    <select name="month" class="form-select form-select-sm" style="min-width: 120px;">
-                        <option value="">-- ทุกเดือน --</option>
-                        @foreach(range(1, 12) as $m)
-                            <option value="{{ $m }}" @selected(request('month') == $m)>เดือนที่ {{ $m }}</option>
-                        @endforeach
-                    </select>
-                    <select name="nationality" class="form-select form-select-sm" style="min-width: 120px;">
-                        <option value="">-- ทุกสัญชาติ --</option>
-                        <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
-                        <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
-                        <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
-                        <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
-                    </select>
-                    <select name="mou_type" class="form-select form-select-sm" style="min-width: 150px;">
-                        <option value="">-- ทุกประเภท มติ. --</option>
-                        <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
-                        <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
-                        <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
-                        <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">กรอง</button>
-                    <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm">ล้างค่า</a>
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-3">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select name="month" class="form-select form-select-sm">
+                            <option value="">-- ทุกเดือน --</option>
+                            @foreach(range(1, 12) as $m)
+                                <option value="{{ $m }}" @selected(request('month') == $m)>เดือนที่ {{ $m }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select name="nationality" class="form-select form-select-sm">
+                            <option value="">-- ทุกสัญชาติ --</option>
+                            <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
+                            <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
+                            <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
+                            <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <select name="mou_type" class="form-select form-select-sm">
+                            <option value="">-- ทุกประเภท มติ. --</option>
+                            <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
+                            <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
+                            <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
+                            <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-auto">
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> กรอง</button>
+                    </div>
+                    <div class="col-6 col-md-auto">
+                        <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm w-100">ล้างค่า</a>
+                    </div>
                 </div>
 
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 border-top pt-3">
