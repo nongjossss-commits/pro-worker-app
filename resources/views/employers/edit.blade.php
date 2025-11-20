@@ -393,22 +393,19 @@
         </div>
     </div>
 
-    <div class="bulk-action-bar mb-3" style="display: none;">
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
-            <label class="form-check-label" for="select-all-checkbox">
-                {{ __('Select All') }} (<span id="selected-count">0</span>)
-            </label>
-        </div>
-        <button class="btn btn-sm btn-outline-danger" disabled>{{ __('Action on selected items') }}</button>
-    </div>
+    <x-bulk-action-bar id="employer-edit-bulk-bar" />
 
     <div id="employeeList">
         @if($currentView === 'card')
             <div class="list-group">
             @forelse($employees as $employee)
-                {{-- DEFINITIVE FIX: Use the single, unified partial --}}
-                @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
+                <div class="position-relative">
+                    <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
+                        <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
+                    </div>
+                    {{-- DEFINITIVE FIX: Use the single, unified partial --}}
+                    @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
+                </div>
             @empty
                 <p class="text-center text-muted">{{ __('No employees found matching criteria') }}</p>
             @endforelse
@@ -518,28 +515,5 @@
             }
         @endif
     });
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const checkboxes = document.querySelectorAll('.employee-checkbox');
-    const bulkActionBar = document.querySelector('.bulk-action-bar');
-    const selectedCountSpan = document.getElementById('selected-count');
-
-    function updateBulkActionBar() {
-        const selectedCheckboxes = document.querySelectorAll('.employee-checkbox:checked');
-        const count = selectedCheckboxes.length;
-
-        if (count > 0) {
-            bulkActionBar.style.display = 'flex';
-            selectedCountSpan.textContent = '{{ __('Select All') }} (' + count + ')';
-        } else {
-            bulkActionBar.style.display = 'none';
-        }
-    }
-
-    checkboxes.forEach(function (checkbox) {
-        checkbox.addEventListener('change', updateBulkActionBar);
-    });
-});
 </script>
 @endpush

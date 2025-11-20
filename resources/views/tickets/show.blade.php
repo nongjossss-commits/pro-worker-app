@@ -78,10 +78,16 @@
                     {{-- 1.1 Existing Employees --}}
                     @if($attachments->existing_employees->isNotEmpty())
                         <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
+
+                        <x-bulk-action-bar id="ticket-employer-existing-employees-bar" />
+
                         <div class="list-group mb-3">
                             @foreach($attachments->existing_employees as $item)
                                 @php $employee = $item->employee; @endphp
                                 <div class="list-group-item d-flex align-items-center gap-3 py-2">
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
+                                    </div>
                                     <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                                     <span class="flex-grow-1">
                                         <strong>{{ $employee->employeeNameTh }}</strong>

@@ -92,10 +92,15 @@
             </div>
         </div>
 
+        <x-bulk-action-bar id="incomplete-bulk-bar" />
+
         @if($currentView === 'card')
             <div class="row g-3">
                 @foreach($employees as $employee)
-                    <div class="col-12 col-md-6 col-xl-4">
+                    <div class="col-12 col-md-6 col-xl-4 position-relative">
+                        <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
+                            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
+                        </div>
                         @include('employees._employee_card', ['employee' => $employee, 'is_incomplete_view' => true])
                     </div>
                 @endforeach
@@ -107,6 +112,7 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
+                                <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
                                 <th scope="col">{{ __('Employee') }}</th>
                                 <th scope="col">{{ __('Nationality') }}</th>
                                 <th scope="col">{{ __('Employer') }}</th>
@@ -119,6 +125,7 @@
                         <tbody>
                             @foreach($employees as $employee)
                             <tr>
+                                <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">
