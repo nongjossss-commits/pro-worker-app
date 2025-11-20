@@ -27,5 +27,14 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
         Employee::observe(EmployeeObserver::class);
         Employer::observe(EmployerObserver::class);
+
+        // Share incomplete employee count with specific views (layout)
+        view()->composer('layouts.app', function ($view) {
+            // Only calculate if the user is logged in and has permission to view this
+            if (auth()->check() && auth()->user()->can('manage-tickets')) {
+                 $incompleteCount = \App\Helpers\CompletenessHelper::getIncompleteCount();
+                 $view->with('incompleteCount', $incompleteCount);
+            }
+        });
     }
 }

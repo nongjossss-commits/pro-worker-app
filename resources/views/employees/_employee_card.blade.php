@@ -2,7 +2,21 @@
     // Helper to prevent errors if employer relationship is not loaded
     $employerName = $employee->employer->employerNameTh ?? 'N/A';
 @endphp
-<div id="employee-card-{{ $employee->id }}" class="list-group-item list-group-item-action">
+@php
+    // V2.5: Check completeness for badge display (Only in Incomplete View)
+    $missingCount = 0;
+    if (isset($is_incomplete_view) && $is_incomplete_view) {
+        $missingCount = count(\App\Helpers\CompletenessHelper::getMissingFields($employee, $mandatoryFields ?? null));
+    }
+@endphp
+
+<div id="employee-card-{{ $employee->id }}" class="list-group-item list-group-item-action position-relative">
+    @if($missingCount > 0)
+        <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-warning text-dark border border-light shadow-sm" style="z-index: 10; margin-left: 15px; margin-top: 15px; font-size: 0.8rem;">
+            {{ $missingCount }}
+            <span class="visually-hidden">missing fields</span>
+        </span>
+    @endif
     <div class="d-flex align-items-center">
         {{-- Checkbox for Bulk Actions --}}
         <div class="me-3">
