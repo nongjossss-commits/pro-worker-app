@@ -126,11 +126,13 @@ public function reinstate(Employee $employee)
     }
 
     if ($request->filled('passport_type_myanmar')) {
-        $query->where('passportType', $request->input('passport_type_myanmar'));
+        $query->where('passportType', $request->input('passport_type_myanmar'))
+              ->where('employeeNationality', 'เมียนมา');
     }
 
     if ($request->filled('passport_type_cambodia')) {
-        $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
+        $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'))
+              ->where('employeeNationality', 'กัมพูชา');
     }
     // --- END: ADDED FILTERING LOGIC ---
 
@@ -557,11 +559,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         if ($request->filled('passport_type_myanmar')) {
-            $query->where('passportType', $request->input('passport_type_myanmar'));
+            $query->where('passportType', $request->input('passport_type_myanmar'))
+                  ->where('employeeNationality', 'เมียนมา');
         }
 
         if ($request->filled('passport_type_cambodia')) {
-            $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
+            $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'))
+                  ->where('employeeNationality', 'กัมพูชา');
         }
 
         $employees = $query->with('employer')->get();
@@ -654,11 +658,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         if ($request->filled('passport_type_myanmar')) {
-            $query->where('passportType', $request->input('passport_type_myanmar'));
+            $query->where('passportType', $request->input('passport_type_myanmar'))
+                  ->where('employeeNationality', 'เมียนมา');
         }
 
         if ($request->filled('passport_type_cambodia')) {
-            $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
+            $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'))
+                  ->where('employeeNationality', 'กัมพูชา');
         }
 
         $totalEmployees = (clone $query)->count();
