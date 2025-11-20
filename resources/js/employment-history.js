@@ -11,7 +11,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE AND CONSTANTS ---
     const historyModalEl = document.getElementById('employmentHistoryModal');
-    if (!historyModalEl) return;
+    // If modal doesn't exist, we might be on the standalone page, but this script is primarily for the modal.
+    // However, we should check if we need to run safely.
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     let currentEmployerId = null;
@@ -21,11 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DOM ELEMENT SELECTORS ---
     const tableBody = document.getElementById('historyTableBody');
     const searchInput = document.getElementById('history-search-input');
-    const bulkActionBar = document.getElementById('history-bulk-action-bar');
-    const selectedCountSpan = document.getElementById('history-selected-count');
-    const mainSelectAllCheckbox = document.getElementById('history-select-all-checkbox-main');
+
+    // REFACTOR: The bulk action bar is now a component. We don't manage its visibility manually.
+    // We just need to find the "Transfer" button which is now inside the component's dropdown (or slot).
+    // The ID we gave it in the blade file is 'history-bulk-transfer-btn'.
+    const bulkTransferBtn = document.getElementById('history-bulk-transfer-btn');
+
+    // We still have the table header checkbox
     const tableSelectAllCheckbox = document.getElementById('history-select-all-checkbox-table');
-    const bulkActionButton = document.getElementById('history-bulk-action-btn');
+
     const transferModalEl = document.getElementById('transferEmployeeModal');
     const employeeToTransferIdInput = document.getElementById('employee-to-transfer-id');
     const employeeToTransferNameSpan = document.getElementById('employee-to-transfer-name');
@@ -40,11 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- RENDERING LOGIC ---
     const fetchAndRenderHistory = (employerId, searchTerm = '') => {
         if (!employerId) {
-            tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error: Employer ID not found.</td></tr>`;
+            if(tableBody) tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error: Employer ID not found.</td></tr>`;
             return;
         }
         if (searchTerm === '') {
-            tableBody.innerHTML = `<tr><td colspan="6" class="text-center">Loading...</td></tr>`;
+            if(tableBody) tableBody.innerHTML = `<tr><td colspan="6" class="text-center">Loading...</td></tr>`;
         }
 
         const fetchUrl = `/employers/${employerId}/history?search=${encodeURIComponent(searchTerm)}`;
@@ -52,9 +57,16 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(fetchUrl)
             .then(response => response.ok ? response.json() : Promise.reject(response.status))
             .then(data => {
+                if (!tableBody) return;
                 tableBody.innerHTML = '';
                 if (!data.data || data.data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="text-center">No employment history found ${searchTerm ? 'matching search' : ''}.</td></tr>`;
+                    // Ensure component hides itself if it was showing (by unchecking everything)
+                    // The component logic listens to changes, so if we clear checkboxes, we might need to trigger an update.
+                    // But since the DOM elements are gone, the component's `querySelectorAll` will find nothing.
+                    // We can trigger a fake change event on body to force component update?
+                    // Or just rely on the user not being able to select anything.
+                     document.body.dispatchEvent(new Event('change'));
                     return;
                 }
                 data.data.forEach((employee, index) => {
@@ -80,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const row = `
                         <tr id="history-row-${employee.id}">
-                            <td><input class="form-check-input history-employee-checkbox" type="checkbox" data-employee-id="${employee.id}"></td>
+                            <td><input class="form-check-input history-employee-checkbox" type="checkbox" value="${employee.id}" data-employee-id="${employee.id}"></td>
                             <td>${index + 1}</td>
                             <td>${employeeCellHTML}</td>
                             <td>${terminatedDate}${daysSinceTerminationText}</td>
@@ -89,27 +101,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         </tr>`;
                     tableBody.insertAdjacentHTML('beforeend', row);
                 });
-                updateBulkActionBar();
+                // Trigger update for the component to see new checkboxes (it calculates count)
+                document.dispatchEvent(new Event('bulk-action-bar:update'));
             })
             .catch(error => {
                 console.error('Error fetching employment history:', error);
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading data.</td></tr>`;
+                if(tableBody) tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading data.</td></tr>`;
             });
     };
 
-    // --- BULK ACTION & TRANSFER MODAL LOGIC ---
-    const updateBulkActionBar = () => {
-        const selectedCheckboxes = document.querySelectorAll('.history-employee-checkbox:checked');
-        const count = selectedCheckboxes.length;
-        bulkActionBar.style.display = count > 0 ? 'flex' : 'none';
-        selectedCountSpan.textContent = count;
-        bulkActionButton.disabled = count === 0;
-        const allCheckboxes = document.querySelectorAll('.history-employee-checkbox');
-        const isAllSelected = allCheckboxes.length > 0 && count === allCheckboxes.length;
-        mainSelectAllCheckbox.checked = isAllSelected;
-        tableSelectAllCheckbox.checked = isAllSelected;
-    };
-
+    // --- MODAL OPEN LOGIC ---
     const openTransferModal = () => {
         employerSearchInput.value = '';
         employerSearchResultsDiv.innerHTML = '';
@@ -157,59 +158,62 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- EVENT LISTENERS ---
-    historyModalEl.addEventListener('show.bs.modal', function (event) {
-        currentEmployerId = event.relatedTarget?.getAttribute('data-employer-id');
-        searchInput.value = '';
-        tableBody.innerHTML = '';
-        fetchAndRenderHistory(currentEmployerId, '');
-        updateBulkActionBar();
-    });
-
-    searchInput?.addEventListener('keyup', () => fetchAndRenderHistory(currentEmployerId, searchInput.value.trim()));
-
-    tableBody.addEventListener('click', (event) => {
-        const target = event.target.closest('button');
-        if (!target) return;
-        const employeeId = target.dataset.employeeId;
-        if (target.classList.contains('btn-reinstate')) {
-            Swal.fire({ title: 'ยืนยันการคืนสถานะ', text: "ลูกจ้างจะถูกย้ายกลับไปอยู่ในรายชื่อลูกจ้างปัจจุบัน", icon: 'question', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
-                .then(result => result.isConfirmed && performAction(`/employees/${employeeId}/reinstate`));
-        } else if (target.classList.contains('btn-move-to-trash')) {
-            Swal.fire({ title: 'ยืนยันการย้ายไปถังขยะ', text: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33' })
-                .then(result => result.isConfirmed && performAction(`/employees/${employeeId}`, { _method: 'DELETE' }));
-        } else if (target.classList.contains('btn-transfer-employee')) {
-            isBulkTransfer = false;
-            employeeToTransferIdInput.value = employeeId;
-            employeeToTransferNameSpan.textContent = `คุณกำลังจะย้ายลูกจ้าง: ${target.dataset.employeeName}`;
-            openTransferModal();
-        }
-    });
-
-    tableBody.addEventListener('change', (event) => {
-        if (event.target.classList.contains('history-employee-checkbox')) {
-            updateBulkActionBar();
-        }
-    });
-
-    [mainSelectAllCheckbox, tableSelectAllCheckbox].forEach(checkbox => {
-        checkbox.addEventListener('change', (event) => {
-            const isChecked = event.target.checked;
-            document.querySelectorAll('.history-employee-checkbox').forEach(cb => cb.checked = isChecked);
-            mainSelectAllCheckbox.checked = isChecked;
-            tableSelectAllCheckbox.checked = isChecked;
-            updateBulkActionBar();
+    if (historyModalEl) {
+        historyModalEl.addEventListener('show.bs.modal', function (event) {
+            currentEmployerId = event.relatedTarget?.getAttribute('data-employer-id');
+            if(searchInput) searchInput.value = '';
+            if(tableBody) tableBody.innerHTML = '';
+            fetchAndRenderHistory(currentEmployerId, '');
         });
-    });
+    }
 
-    bulkActionButton.addEventListener('click', () => {
-        const selectedCheckboxes = document.querySelectorAll('.history-employee-checkbox:checked');
-        if (selectedCheckboxes.length === 0) return;
-        isBulkTransfer = true;
-        const employeeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.employeeId);
-        employeeToTransferIdInput.value = JSON.stringify(employeeIds);
-        employeeToTransferNameSpan.textContent = `คุณกำลังจะย้ายลูกจ้างที่เลือกจำนวน ${selectedCheckboxes.length} คน`;
-        openTransferModal();
-    });
+    if(searchInput) searchInput.addEventListener('keyup', () => fetchAndRenderHistory(currentEmployerId, searchInput.value.trim()));
+
+    if(tableBody) {
+        tableBody.addEventListener('click', (event) => {
+            const target = event.target.closest('button');
+            if (!target) return;
+            const employeeId = target.dataset.employeeId;
+            if (target.classList.contains('btn-reinstate')) {
+                Swal.fire({ title: 'ยืนยันการคืนสถานะ', text: "ลูกจ้างจะถูกย้ายกลับไปอยู่ในรายชื่อลูกจ้างปัจจุบัน", icon: 'question', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+                    .then(result => result.isConfirmed && performAction(`/employees/${employeeId}/reinstate`));
+            } else if (target.classList.contains('btn-move-to-trash')) {
+                Swal.fire({ title: 'ยืนยันการย้ายไปถังขยะ', text: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33' })
+                    .then(result => result.isConfirmed && performAction(`/employees/${employeeId}`, { _method: 'DELETE' }));
+            } else if (target.classList.contains('btn-transfer-employee')) {
+                isBulkTransfer = false;
+                employeeToTransferIdInput.value = employeeId;
+                employeeToTransferNameSpan.textContent = `คุณกำลังจะย้ายลูกจ้าง: ${target.dataset.employeeName}`;
+                openTransferModal();
+            }
+        });
+    }
+
+    // Sync table header checkbox with component
+    if (tableSelectAllCheckbox) {
+        tableSelectAllCheckbox.addEventListener('change', (event) => {
+            const isChecked = event.target.checked;
+            document.querySelectorAll('.history-employee-checkbox').forEach(cb => {
+                cb.checked = isChecked;
+                // Dispatch change event so the component updates
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+    }
+
+    // Updated Bulk Transfer Listener for the component's button
+    if (bulkTransferBtn) {
+        bulkTransferBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const selectedCheckboxes = document.querySelectorAll('.history-employee-checkbox:checked');
+            if (selectedCheckboxes.length === 0) return;
+            isBulkTransfer = true;
+            const employeeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.employeeId || cb.value);
+            employeeToTransferIdInput.value = JSON.stringify(employeeIds);
+            employeeToTransferNameSpan.textContent = `คุณกำลังจะย้ายลูกจ้างที่เลือกจำนวน ${selectedCheckboxes.length} คน`;
+            openTransferModal();
+        });
+    }
 
     const handleEmployerSearch = debounce(() => {
         const searchTerm = employerSearchInput.value.trim();
@@ -250,56 +254,58 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }, 300);
 
-    employerSearchInput.addEventListener('keyup', handleEmployerSearch);
+    if(employerSearchInput) employerSearchInput.addEventListener('keyup', handleEmployerSearch);
 
+    if(employerSearchResultsDiv) {
+        employerSearchResultsDiv.addEventListener('click', (event) => {
+            const target = event.target.closest('button');
+            if (!target) return;
 
-    employerSearchResultsDiv.addEventListener('click', (event) => {
-        const target = event.target.closest('button');
-        if (!target) return;
+            // Store selected employer and update UI
+            selectedEmployer = {
+                id: target.dataset.employerId,
+                name: target.dataset.employerName // Use the stored name
+            };
 
-        // Store selected employer and update UI
-        selectedEmployer = {
-            id: target.dataset.employerId,
-            name: target.dataset.employerName // Use the stored name
-        };
+            selectedEmployerNameSpan.textContent = selectedEmployer.name;
+            selectedEmployerDisplay.style.display = 'block';
+            confirmTransferBtn.disabled = false;
+            employerSearchResultsDiv.style.display = 'none'; // Hide search results
+            employerSearchResultsDiv.innerHTML = ''; // Clear search results
+            employerSearchInput.value = ''; // Clear search input
+        });
+    }
 
-        selectedEmployerNameSpan.textContent = selectedEmployer.name;
-        selectedEmployerDisplay.style.display = 'block';
-        confirmTransferBtn.disabled = false;
-        employerSearchResultsDiv.style.display = 'none'; // Hide search results
-        employerSearchResultsDiv.innerHTML = ''; // Clear search results
-        employerSearchInput.value = ''; // Clear search input
-    });
+    if(confirmTransferBtn) {
+        confirmTransferBtn.addEventListener('click', () => {
+            if (!selectedEmployer) {
+                showToast('กรุณาเลือกนายจ้างใหม่ก่อน', 'danger');
+                return;
+            }
 
-    confirmTransferBtn.addEventListener('click', () => {
-        if (!selectedEmployer) {
-            showToast('กรุณาเลือกนายจ้างใหม่ก่อน', 'danger');
-            return;
-        }
+            const { id: newEmployerId, name: newEmployerName } = selectedEmployer;
 
-        const { id: newEmployerId, name: newEmployerName } = selectedEmployer;
+            const swalHtml = isBulkTransfer
+                ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
+                : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
 
-        const swalHtml = isBulkTransfer
-            ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
-            : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
-
-        Swal.fire({ title: 'ยืนยันการย้ายนายจ้าง', html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
-            .then(result => {
-                if (result.isConfirmed) {
-                    if (isBulkTransfer) {
-                        const employeeIds = JSON.parse(employeeToTransferIdInput.value);
-                        performAction('/employees/bulk-transfer', { employee_ids: employeeIds, new_employer_id: newEmployerId });
-                    } else {
-                        const employeeId = employeeToTransferIdInput.value;
-                        performAction(`/employees/${employeeId}/transfer`, { new_employer_id: newEmployerId });
+            Swal.fire({ title: 'ยืนยันการย้ายนายจ้าง', html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+                .then(result => {
+                    if (result.isConfirmed) {
+                        if (isBulkTransfer) {
+                            const employeeIds = JSON.parse(employeeToTransferIdInput.value);
+                            performAction('/employees/bulk-transfer', { employee_ids: employeeIds, new_employer_id: newEmployerId });
+                        } else {
+                            const employeeId = employeeToTransferIdInput.value;
+                            performAction(`/employees/${employeeId}/transfer`, { new_employer_id: newEmployerId });
+                        }
                     }
-                }
-            });
-    });
-
+                });
+        });
+    }
 
     // Modal stacking fix
-    if (transferModalEl) {
+    if (transferModalEl && historyModalEl) {
         transferModalEl.addEventListener('show.bs.modal', () => historyModalEl.classList.add('modal-behind'));
         transferModalEl.addEventListener('hidden.bs.modal', () => historyModalEl.classList.remove('modal-behind'));
     }

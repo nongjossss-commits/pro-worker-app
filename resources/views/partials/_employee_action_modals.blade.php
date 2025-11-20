@@ -78,17 +78,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     <input type="text" id="history-search-input" class="form-control" style="max-width: 300px;" placeholder="ค้นหาตามชื่อ หรือ เลขพาสปอร์ต...">
                 </div>
 
-                <div id="history-bulk-action-bar" class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-3" style="display: none;">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="history-select-all-checkbox-main">
-                        <label class="form-check-label" for="history-select-all-checkbox-main">
-                            เลือกทั้งหมด (<span id="history-selected-count">0</span>)
-                        </label>
-                    </div>
-                    <button id="history-bulk-action-btn" class="btn btn-sm btn-primary" disabled>
-                        <i class="bi bi-person-check-fill me-1"></i> ดำเนินการกับรายการที่เลือก
-                    </button>
-                </div>
+                {{-- REPLACED: Use the component instead of manual HTML --}}
+                <x-bulk-action-bar id="history-bulk-action-bar" checkboxSelector=".history-employee-checkbox">
+                    <li>
+                        <a class="dropdown-item" href="#" id="history-bulk-transfer-btn">
+                            <i class="bi bi-person-up me-2"></i>{{ __('ย้ายนายจ้าง') }}
+                        </a>
+                    </li>
+                </x-bulk-action-bar>
 
                 <div class="table-responsive">
                     <table class="table table-hover">
