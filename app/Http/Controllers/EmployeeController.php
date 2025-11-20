@@ -520,7 +520,14 @@ public function create(Request $request) // เพิ่ม Request $request เ
     {
         $this->authorize('view-employees');
 
-        $query = Employee::query()->whereNull('terminated_at');
+        // Determine scope: history (terminated) or active
+        $isHistoryExport = $request->has('history');
+
+        if ($isHistoryExport) {
+            $query = Employee::query()->whereNotNull('terminated_at');
+        } else {
+            $query = Employee::query()->whereNull('terminated_at');
+        }
 
         // Reuse the same filtering logic from the index method
         if ($request->filled('search')) {
@@ -570,7 +577,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $employees = $query->with('employer')->get();
 
-        $fileName = 'employees_export_' . date('Y-m-d') . '.csv';
+        $exportType = $isHistoryExport ? 'history' : 'active';
+        $fileName = "employees_{$exportType}_export_" . date('Y-m-d') . '.csv';
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
@@ -588,26 +596,38 @@ public function create(Request $request) // เพิ่ม Request $request เ
             '90 Day Report', 'Pink Card No'
         ];
 
-        $callback = function() use($employees, $columns) {
+        if ($isHistoryExport) {
+            $columns[] = 'Terminated At';
+            $columns[] = 'Termination Reason';
+        }
+
+        $callback = function() use($employees, $columns, $isHistoryExport) {
             $file = fopen('php://output', 'w');
             // Add BOM to support UTF-8 in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, $columns);
 
             foreach ($employees as $employee) {
-                $row['Employer Name']        = $employee->employer->employerNameTh ?? 'N/A';
-                $row['Employee Name (TH)']   = $employee->employeeNameTh;
-                $row['Employee Name (EN)']   = $employee->employeeNameEn;
-                $row['Nationality']          = $employee->employeeNationality;
-                $row['Passport No']          = $employee->employeePassport;
-                $row['Passport Expiry']      = $employee->passportExpiryDate;
-                $row['Work Permit No']       = $employee->employeeWorkPermit;
-                $row['Work Permit Expiry']   = $employee->workPermitExpiryDate;
-                $row['Visa Expiry']          = $employee->visaExpiryDate;
-                $row['90 Day Report']        = $employee->ninetyDayReportDate;
-                $row['Pink Card No']         = $employee->pinkCardNo;
+                $row = [
+                    'Employer Name'      => $employee->employer->employerNameTh ?? 'N/A',
+                    'Employee Name (TH)' => $employee->employeeNameTh,
+                    'Employee Name (EN)' => $employee->employeeNameEn,
+                    'Nationality'        => $employee->employeeNationality,
+                    'Passport No'        => $employee->employeePassport,
+                    'Passport Expiry'    => $employee->passportExpiryDate,
+                    'Work Permit No'     => $employee->employeeWorkPermit,
+                    'Work Permit Expiry' => $employee->workPermitExpiryDate,
+                    'Visa Expiry'        => $employee->visaExpiryDate,
+                    '90 Day Report'      => $employee->ninetyDayReportDate,
+                    'Pink Card No'       => $employee->pinkCardNo,
+                ];
 
-                fputcsv($file, array_values($row));
+                if ($isHistoryExport) {
+                    $row['Terminated At'] = $employee->terminated_at;
+                    $row['Termination Reason'] = $employee->termination_reason;
+                }
+
+                fputcsv($file, $row);
             }
 
             fclose($file);

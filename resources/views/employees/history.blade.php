@@ -44,7 +44,7 @@
         </form>
         <div class="d-flex align-items-center gap-2">
             <a href="{{ route('employees.export', array_merge(request()->query(), ['history' => 1])) }}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-file-earmark-excel me-1"></i> Export
+                <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
             </a>
             <div class="btn-group btn-group-sm">
                 <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>

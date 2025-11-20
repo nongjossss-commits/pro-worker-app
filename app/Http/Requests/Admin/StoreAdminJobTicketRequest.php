@@ -81,11 +81,11 @@ class StoreAdminJobTicketRequest extends FormRequest
             'attachments.new_employees' => ['nullable', 'array'],
             'attachments.new_employees.*' => ['required', 'array'], // ตรวจสอบว่าเป็น array ที่ถูก decode แล้ว
 
-            // Validation for text fields
-            'attachments.new_employees.*.employeeTitleTh' => ['nullable', 'string', 'max:50'],
-            'attachments.new_employees.*.employeeNameTh' => ['nullable', 'string', 'max:255'],
-            'attachments.new_employees.*.employeeNationality' => ['nullable', 'string', 'max:100'],
-            'attachments.new_employees.*.employeePassport' => ['nullable', 'string', 'max:50'],
+            // Validation for text fields (Updated to 'required' to match messages and intent)
+            'attachments.new_employees.*.employeeTitleTh' => ['required', 'string', 'max:50'],
+            'attachments.new_employees.*.employeeNameTh' => ['required', 'string', 'max:255'],
+            'attachments.new_employees.*.employeeNationality' => ['required', 'string', 'max:100'],
+            'attachments.new_employees.*.employeePassport' => ['required', 'string', 'max:50'],
 
             // Validation for all file attachments
             'attachments.new_employees.*.employeePhoto' => $tempFileValidation,
