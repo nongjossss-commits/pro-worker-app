@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'เพิ่มข้อมูลนายจ้าง')
+@section('title', __('Add Employer'))
 
 @section('content')
 <div class="content-section">
-    <h2 class="mb-4">เพิ่มข้อมูลนายจ้าง</h2>
+    <h2 class="mb-4">{{ __('Add Employer') }}</h2>
     <form id="saveEmployerForm" action="{{ route('employers.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
@@ -20,24 +20,24 @@
 
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employerNameTh" class="form-label">ชื่อนายจ้าง (ไทย)</label>
+                <label for="employerNameTh" class="form-label">{{ __('Employer Name (Thai)') }}</label>
                 <input type="text" class="form-control @error('employerNameTh') is-invalid @enderror" id="employerNameTh" name="employerNameTh" value="{{ old('employerNameTh') }}" required>
                 @error('employerNameTh')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="employerNameEn" class="form-label">ชื่อนายจ้าง (อังกฤษ)</label>
+                <label for="employerNameEn" class="form-label">{{ __('Employer Name (English)') }}</label>
                 <input type="text" class="form-control @error('employerNameEn') is-invalid @enderror" id="employerNameEn" name="employerNameEn" value="{{ old('employerNameEn') }}">
                 @error('employerNameEn')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="job_owner_id" class="form-label">เจ้าของงาน</label>
+                <label for="job_owner_id" class="form-label">{{ __('Job Owner') }}</label>
                 <div class="input-group">
                     <select class="form-select" id="job_owner_id" name="job_owner_id">
-                        <option selected disabled>--- เลือกเจ้าของงาน ---</option>
+                        <option selected disabled>{{ __('Select Job Owner') }}</option>
                         @foreach($jobOwners as $owner)
                             <option value="{{ $owner->id }}">{{ $owner->name }}</option>
                         @endforeach
@@ -49,7 +49,7 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employerId" class="form-label">รหัสนายจ้าง</label>
+                <label for="employerId" class="form-label">{{ __('Employer ID') }}</label>
                 <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="{{ $newEmployerId }}" readonly required>
                 @error('employerId')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -58,14 +58,14 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employerTaxId" class="form-label">เลขประจำตัวนายจ้าง</label>
+                <label for="employerTaxId" class="form-label">{{ __('Employer Tax ID') }}</label>
                 <input type="text" class="form-control @error('employerTaxId') is-invalid @enderror" id="employerTaxId" name="employerTaxId" value="{{ old('employerTaxId') }}">
                 @error('employerTaxId')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="businessType" class="form-label">ประเภทกิจการ</label>
+                <label for="businessType" class="form-label">{{ __('Business Type') }}</label>
                 <input type="text" class="form-control @error('businessType') is-invalid @enderror" id="businessType" name="businessType" value="{{ old('businessType') }}">
                 @error('businessType')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -74,14 +74,14 @@
         </div>
 <div class="row mb-3">
  <div class="col-md-6">
- <label for="employerEmail" class="form-label">อีเมลนายจ้าง</label>
+ <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
  <input type="email" class="form-control @error('employerEmail') is-invalid @enderror" id="employerEmail" name="employerEmail" value="{{ old('employerEmail', $employer->employerEmail ?? '') }}">
  @error('employerEmail')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
  <div class="col-md-6">
- <label for="employerPhone" class="form-label">เบอร์โทรศัพท์</label>
+ <label for="employerPhone" class="form-label">{{ __('Phone Number') }}</label>
  <input type="text" class="form-control @error('employerPhone') is-invalid @enderror" id="employerPhone" name="employerPhone" value="{{ old('employerPhone', $employer->employerPhone ?? '') }}">
  @error('employerPhone')
  <div class="invalid-feedback">{{ $message }}</div>
@@ -90,14 +90,14 @@
  </div>
  <div class="row mb-3">
  <div class="col-md-6">
- <label for="employerPassword" class="form-label">รหัสผ่าน (สำหรับนายจ้าง)</label>
+ <label for="employerPassword" class="form-label">{{ __('Password (for Employer)') }}</label>
  <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
  @error('employerPassword')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
  <div class="col-md-6">
- <label for="socialSecurityHospital" class="form-label">โรงพยาบาลประกันสังคม</label>
+ <label for="socialSecurityHospital" class="form-label">{{ __('Social Security Hospital') }}</label>
  <input type="text" class="form-control @error('socialSecurityHospital') is-invalid @enderror" id="socialSecurityHospital" name="socialSecurityHospital" value="{{ old('socialSecurityHospital', $employer->socialSecurityHospital ?? '') }}">
  @error('socialSecurityHospital')
  <div class="invalid-feedback">{{ $message }}</div>
@@ -106,14 +106,14 @@
  </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="signerNameTh" class="form-label">ผู้มีอำนาจลงนาม (ไทย)</label>
+                <label for="signerNameTh" class="form-label">{{ __('Authorized Signatory (Thai)') }}</label>
                 <input type="text" class="form-control @error('signerNameTh') is-invalid @enderror" id="signerNameTh" name="signerNameTh" value="{{ old('signerNameTh') }}">
                 @error('signerNameTh')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="signerNameEn" class="form-label">ผู้มีอำนาจลงนาม (อังกฤษ)</label>
+                <label for="signerNameEn" class="form-label">{{ __('Authorized Signatory (English)') }}</label>
                 <input type="text" class="form-control @error('signerNameEn') is-invalid @enderror" id="signerNameEn" name="signerNameEn" value="{{ old('signerNameEn') }}">
                 @error('signerNameEn')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -122,14 +122,14 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="businessTypeEn" class="form-label">Type of Business</label>
+                <label for="businessTypeEn" class="form-label">{{ __('Type of Business') }}</label>
                 <input type="text" class="form-control @error('businessTypeEn') is-invalid @enderror" id="businessTypeEn" name="businessTypeEn" value="{{ old('businessTypeEn') }}">
                 @error('businessTypeEn')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="regCapital" class="form-label">ทุนจดทะเบียน</label>
+                <label for="regCapital" class="form-label">{{ __('Registered Capital') }}</label>
                 <input type="text" class="form-control @error('regCapital') is-invalid @enderror" id="regCapital" name="regCapital" value="{{ old('regCapital') }}">
                 @error('regCapital')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -138,14 +138,14 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="regDate" class="form-label">จดทะเบียนวันที่</label>
+                <label for="regDate" class="form-label">{{ __('Registration Date') }}</label>
                 <input type="date" class="form-control @error('regDate') is-invalid @enderror" id="regDate" name="regDate" value="{{ old('regDate') }}">
                 @error('regDate')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="minimum_wage" class="form-label">ค่าแรงขั้นต่ำ</label>
+                <label for="minimum_wage" class="form-label">{{ __('Minimum Wage') }}</label>
                 <input type="text" class="form-control @error('minimum_wage') is-invalid @enderror" id="minimum_wage" name="minimum_wage" value="{{ old('minimum_wage') }}">
                 @error('minimum_wage')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -153,17 +153,17 @@
             </div>
         </div>
         <hr>
-        <h5>เอกสารแนบของนายจ้าง</h5>
+        <h5>{{ __('Employer Attachments') }}</h5>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_company" class="form-label">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
+                <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }}</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
                 @error('employer_doc_company')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="employer_doc_company_expiry" class="form-label">วันหมดอายุ (หนังสือรับรอง/บัตร)</label>
+                <label for="employer_doc_company_expiry" class="form-label">{{ __('Expiry Date') }}</label>
                 <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry') }}">
                 @error('employer_doc_company_expiry')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -172,14 +172,14 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_lease" class="form-label">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
+                <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }}</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
                 @error('employer_doc_lease')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="employer_doc_construction" class="form-label">3. สัญญาก่อสร้าง / แผนที่</label>
+                <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }}</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
                 @error('employer_doc_construction')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -188,25 +188,25 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="employer_doc_other_1" class="form-label">4. เอกสารอื่นๆ 1</label>
+                <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_1_desc') is-invalid @enderror" id="employer_doc_other_1_desc" name="employer_doc_other_1_desc" value="{{ old('employer_doc_other_1_desc') }}" placeholder="ระบุคำอธิบายเอกสาร...">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_1_desc') is-invalid @enderror" id="employer_doc_other_1_desc" name="employer_doc_other_1_desc" value="{{ old('employer_doc_other_1_desc') }}" placeholder="{{ __('Specify description...') }}">
                 @error('employer_doc_other_1')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_2" class="form-label">5. เอกสารอื่นๆ 2</label>
+                <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_2_desc') is-invalid @enderror" id="employer_doc_other_2_desc" name="employer_doc_other_2_desc" value="{{ old('employer_doc_other_2_desc') }}" placeholder="ระบุคำอธิบายเอกสาร...">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_2_desc') is-invalid @enderror" id="employer_doc_other_2_desc" name="employer_doc_other_2_desc" value="{{ old('employer_doc_other_2_desc') }}" placeholder="{{ __('Specify description...') }}">
                 @error('employer_doc_other_2')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_3" class="form-label">6. เอกสารอื่นๆ 3</label>
+                <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_3_desc') is-invalid @enderror" id="employer_doc_other_3_desc" name="employer_doc_other_3_desc" value="{{ old('employer_doc_other_3_desc') }}" placeholder="ระบุคำอธิบายเอกสาร...">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_3_desc') is-invalid @enderror" id="employer_doc_other_3_desc" name="employer_doc_other_3_desc" value="{{ old('employer_doc_other_3_desc') }}" placeholder="{{ __('Specify description...') }}">
                 @error('employer_doc_other_3')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -217,36 +217,36 @@
             {{-- Registered Address Section --}}
             <div class="content-section mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
+                    <h5 class="mb-0">{{ __('Registered Address') }}</h5>
                     <button type="button" class="btn btn-sm btn-primary add-address-btn"
                             data-bs-toggle="modal"
                             data-bs-target="#addressModal"
                             data-type="registered"
                             disabled
                             title="You must save the employer first before adding an address.">
-                        + เพิ่มที่อยู่
+                        {{ __('Add Address') }}
                     </button>
                 </div>
                 <div id="registeredAddressList" class="vstack gap-3">
-                    <p class="text-muted">ยังไม่มีที่อยู่</p>
+                    <p class="text-muted">{{ __('No address yet') }}</p>
                 </div>
             </div>
 
             {{-- Workplace Address Section --}}
             <div class="content-section mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
+                    <h5 class="mb-0">{{ __('Workplace Address') }}</h5>
                     <button type="button" class="btn btn-sm btn-primary add-address-btn"
                             data-bs-toggle="modal"
                             data-bs-target="#addressModal"
                             data-type="workplace"
                             disabled
                             title="You must save the employer first before adding an address.">
-                        + เพิ่มที่อยู่
+                        {{ __('Add Address') }}
                     </button>
                 </div>
                 <div id="workplaceAddressList" class="vstack gap-3">
-                    <p class="text-muted">ยังไม่มีที่อยู่</p>
+                    <p class="text-muted">{{ __('No address yet') }}</p>
                 </div>
             </div>
         </div>
@@ -255,8 +255,8 @@
         <input type="hidden" name="workplace_addresses" id="workplace_addresses_json">
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary">บันทึก</button>
-            <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+            <a href="{{ route('employers.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
         </div>
     </form>
 </div>
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         listContainer.innerHTML = ''; // Clear previous list
         if (addresses.length === 0) {
-            listContainer.innerHTML = '<p class="text-muted fst-italic">ยังไม่มีที่อยู่</p>';
+            listContainer.innerHTML = '<p class="text-muted fst-italic">{{ __('No address yet') }}</p>';
             return;
         }
 
@@ -336,8 +336,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p class="mb-0 text-muted small">${fullAddress.en}</p>
                 </div>
                 <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-secondary temp-edit-address-btn" data-type="${type}" data-index="${index}" title="แก้ไข"><i class="bi bi-pencil"></i></button>
-                    <button type="button" class="btn btn-outline-danger temp-delete-address-btn" data-type="${type}" data-index="${index}" title="ลบ"><i class="bi bi-trash"></i></button>
+                    <button type="button" class="btn btn-outline-secondary temp-edit-address-btn" data-type="${type}" data-index="${index}" title="{{ __('Edit') }}"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-danger temp-delete-address-btn" data-type="${type}" data-index="${index}" title="{{ __('Delete') }}"><i class="bi bi-trash"></i></button>
                 </div>
             `;
             listContainer.appendChild(card);
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Saving address temporarily:', addressType);
         // Basic validation check
         if (!addressData.addrNo || !addressData.addrProvince || !addressData.addrDistrict || !addressData.addrSubDistrict) {
-             showToast('กรุณากรอกข้อมูลที่อยู่ให้ครบถ้วน', 'danger');
+             showToast('{{ __('Please fill in complete address information') }}', 'danger');
              return;
         }
 
@@ -426,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const type = deleteBtn.dataset.type;
             const index = parseInt(deleteBtn.dataset.index, 10);
 
-            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?')) {
+            if (confirm('{{ __('Are you sure you want to delete this address?') }}')) {
                 if (type === 'registered') {
                     tempRegisteredAddresses.splice(index, 1);
                 } else {
