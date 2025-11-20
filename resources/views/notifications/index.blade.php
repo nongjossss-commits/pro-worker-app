@@ -81,8 +81,8 @@
         </div>
     </div>
 
-    <div class="overflow-auto mb-3">
-        <ul class="nav nav-tabs flex-nowrap" id="notificationTab" role="tablist" style="min-width: max-content;">
+    <div class="mb-3">
+        <ul class="nav nav-tabs flex-wrap" id="notificationTab" role="tablist">
             @foreach($tabs as $type => $title)
                 <li class="nav-item" role="presentation">
                     <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
