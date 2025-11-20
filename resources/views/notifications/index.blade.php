@@ -65,7 +65,15 @@
                 เลือกทั้งหมด (<span id="selected-count-notifications">0</span>)
             </label>
         </div>
-        <button class="btn btn-primary btn-sm" disabled>ดำเนินการกับรายการที่เลือก</button>
+
+        <div class="dropdown">
+            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                ดำเนินการกับรายการที่เลือก
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="notificationBulkActionBtn">
+                <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2"></i>Download Files</a></li>
+            </ul>
+        </div>
     </div>
 
     <ul class="nav nav-tabs" id="notificationTab" role="tablist">
@@ -186,7 +194,8 @@
         const actionBar = document.getElementById('bulk-action-bar-notifications');
         const selectAllCheckbox = document.getElementById('select-all-checkbox-notifications');
         const selectedCountSpan = document.getElementById('selected-count-notifications');
-        const actionButton = actionBar.querySelector('button');
+        const actionButton = document.getElementById('notificationBulkActionBtn');
+        const downloadBtn = document.getElementById('notification-bulk-download-btn');
 
         function updateActionBar() {
             // Only select checkboxes in the currently active tab pane
@@ -223,6 +232,22 @@
                 checkbox.checked = this.checked;
             });
             updateActionBar();
+        });
+
+        // Download Handler
+        downloadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const activePane = container.querySelector('.tab-pane.active');
+            if (!activePane) return;
+
+            const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+
+            if (window.openBulkDownloadModal) {
+                window.openBulkDownloadModal(selected);
+            } else {
+                alert('Download function not ready.');
+            }
         });
 
         // Listen for tab changes to reset the selection
