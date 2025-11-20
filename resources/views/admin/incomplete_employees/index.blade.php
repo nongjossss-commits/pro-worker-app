@@ -34,7 +34,7 @@
         <div class="row g-3">
             @foreach($employees as $employee)
                 <div class="col-12 col-md-6 col-xl-4">
-                    @include('employees.partials._employee_card', ['employee' => $employee, 'is_incomplete_view' => true])
+                    @include('employees._employee_card', ['employee' => $employee, 'is_incomplete_view' => true])
                 </div>
             @endforeach
         </div>
