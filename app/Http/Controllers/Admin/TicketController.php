@@ -42,20 +42,48 @@ class TicketController extends Controller
             return view('admin.tickets.index', compact('tickets', 'employerName'));
         }
 
-        // Default: Show List of Employers (Employer Boxes)
-        // Group by employer_user_id and calculate stats
-        $employersWithTickets = JobTicket::selectRaw('
-                employer_user_id,
-                COUNT(*) as total_tickets,
-                SUM(CASE WHEN admin_unread_count > 0 THEN 1 ELSE 0 END) as unread_tickets_count,
-                MAX(updated_at) as last_activity
-            ')
-            ->groupBy('employer_user_id')
-            ->orderByDesc('last_activity') // Employers with recent activity first
-            ->with('employerUser.employer') // Eager load User and Employer profile
-            ->get();
+        // Default: Show List of Employers (Employer Boxes/Table)
+        // Refactored for Search, View Toggle, and Pagination (User Request)
 
-        return view('admin.tickets.employers', compact('employersWithTickets'));
+        $perPage = request('per_page', 12); // Default 12 for grid
+        $view = request('view', 'card');
+        $search = request('search');
+
+        // Query Users who have submitted tickets
+        $query = User::whereHas('submittedTickets')
+            ->with('employer'); // Eager load employer profile
+
+        // Add Search Filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function($subQ) use ($search) {
+                      $subQ->where('employerNameTh', 'like', "%{$search}%")
+                           ->orWhere('employerNameEn', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Add Counts and Last Activity via Subqueries
+        $query->withCount(['submittedTickets as total_tickets']);
+
+        // Count unread tickets (where admin_unread_count > 0)
+        $query->withCount(['submittedTickets as unread_tickets_count' => function ($q) {
+            $q->where('admin_unread_count', '>', 0);
+        }]);
+
+        // Add Last Activity (Max updated_at of tickets)
+        // We use addSelect with a subquery for sorting
+        $query->addSelect(['last_activity' => JobTicket::selectRaw('MAX(updated_at)')
+            ->whereColumn('employer_user_id', 'users.id')
+        ]);
+
+        // Order by Last Activity (Recent first)
+        $query->orderByDesc('last_activity');
+
+        $employersWithTickets = $query->paginate($perPage)->withQueryString();
+
+        return view('admin.tickets.employers', compact('employersWithTickets', 'view', 'search', 'perPage'));
     }
 
     /**

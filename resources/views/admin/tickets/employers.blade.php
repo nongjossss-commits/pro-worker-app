@@ -4,53 +4,156 @@
 <div class="content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h2 class="mb-3 mb-md-0">กล่องตั๋วงานทั้งหมด</h2>
+
+        {{-- Control Bar (Search, View Toggle, Per Page) --}}
+        <div class="d-flex flex-column flex-md-row gap-2">
+            <form method="GET" action="{{ route('admin.tickets.index') }}" class="d-flex flex-wrap align-items-center gap-2">
+                {{-- Preserve View State --}}
+                <input type="hidden" name="view" value="{{ $view }}">
+
+                {{-- Search Input --}}
+                <div class="input-group input-group-sm" style="width: 250px;">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0" placeholder="ค้นหานายจ้าง..." value="{{ $search }}">
+                </div>
+
+                {{-- View Toggle Buttons --}}
+                <div class="btn-group btn-group-sm">
+                    <a href="{{ route('admin.tickets.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $view == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}" title="Card View">
+                        <i class="bi bi-grid-fill"></i>
+                    </a>
+                    <a href="{{ route('admin.tickets.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $view == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}" title="Table View">
+                        <i class="bi bi-list-ul"></i>
+                    </a>
+                </div>
+
+                {{-- Per Page Dropdown --}}
+                <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    @foreach([12, 24, 48, 100] as $option)
+                        <option value="{{ $option }}" @selected($perPage == $option)>{{ $option }} / หน้า</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
     </div>
 
-    <div class="row g-4">
-        @forelse ($employersWithTickets as $stat)
-            <div class="col-12 col-md-6 col-xl-4">
-                <a href="{{ route('admin.tickets.index', ['employer_id' => $stat->employer_user_id]) }}" class="text-decoration-none">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
-                                        <i class="bi bi-building text-primary fs-4"></i>
+    @if($view == 'card')
+        {{-- Card View --}}
+        <div class="row g-4">
+            @forelse ($employersWithTickets as $user)
+                <div class="col-12 col-md-6 col-xl-4">
+                    <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="text-decoration-none">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-building text-primary fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="card-title text-dark mb-1 fw-bold">
+                                                {{ $user->employer->employerNameTh ?? $user->name }}
+                                            </h5>
+                                            <p class="card-text text-muted small">
+                                                <i class="bi bi-clock me-1"></i> อัปเดตล่าสุด: {{ \Carbon\Carbon::parse($user->last_activity)->diffForHumans() }}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h5 class="card-title text-dark mb-1 fw-bold">
-                                            {{ $stat->employerUser->employer->employerNameTh ?? $stat->employerUser->name }}
-                                        </h5>
-                                        <p class="card-text text-muted small">
-                                            <i class="bi bi-clock me-1"></i> อัปเดตล่าสุด: {{ \Carbon\Carbon::parse($stat->last_activity)->diffForHumans() }}
-                                        </p>
-                                    </div>
+                                    @if($user->unread_tickets_count > 0)
+                                        <span class="badge bg-danger rounded-pill animate-pulse">
+                                            {{ $user->unread_tickets_count }} ข้อความใหม่
+                                        </span>
+                                    @endif
                                 </div>
-                                @if($stat->unread_tickets_count > 0)
-                                    <span class="badge bg-danger rounded-pill animate-pulse">
-                                        {{ $stat->unread_tickets_count }} ข้อความใหม่
-                                    </span>
-                                @endif
-                            </div>
 
-                            <div class="mt-auto pt-3 border-top">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-muted small">ตั๋วงานทั้งหมด</span>
-                                    <span class="badge bg-secondary rounded-pill">{{ $stat->total_tickets }}</span>
+                                <div class="mt-auto pt-3 border-top">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">ตั๋วงานทั้งหมด</span>
+                                        <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </a>
-            </div>
-        @empty
-            <div class="col-12">
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                    ยังไม่มีข้อมูลตั๋วงาน
+                    </a>
                 </div>
+            @empty
+                <div class="col-12">
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                        ยังไม่มีข้อมูลตั๋วงาน
+                    </div>
+                </div>
+            @endforelse
+        </div>
+    @else
+        {{-- Table View --}}
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>นายจ้าง/บริษัท</th>
+                            <th class="text-center">ข้อความใหม่</th>
+                            <th class="text-center">ตั๋วงานทั้งหมด</th>
+                            <th>อัปเดตล่าสุด</th>
+                            <th class="text-end">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($employersWithTickets as $user)
+                            <tr>
+                                <td class="text-center text-muted">{{ $loop->iteration + ($employersWithTickets->currentPage() - 1) * $employersWithTickets->perPage() }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-light text-primary me-3">
+                                            <i class="bi bi-building"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">{{ $user->employer->employerNameTh ?? $user->name }}</div>
+                                            <div class="text-muted small">{{ $user->employer->employerNameEn ?? '' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    @if($user->unread_tickets_count > 0)
+                                        <span class="badge bg-danger rounded-pill">
+                                            {{ $user->unread_tickets_count }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
+                                </td>
+                                <td class="text-muted small">
+                                    {{ \Carbon\Carbon::parse($user->last_activity)->format('d M Y H:i') }}
+                                    <br>
+                                    ({{ \Carbon\Carbon::parse($user->last_activity)->diffForHumans() }})
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                    ยังไม่มีข้อมูลตั๋วงาน
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        @endforelse
+        </div>
+    @endif
+
+    <div class="mt-4">
+        {{ $employersWithTickets->links() }}
     </div>
 </div>
 
@@ -69,6 +172,15 @@
         0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
         70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
     }
 </style>
 @endsection
