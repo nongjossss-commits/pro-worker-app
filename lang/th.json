@@ -1,0 +1,21 @@
+{
+    "Dashboard": "ภาพรวม",
+    "Notifications": "แจ้งเตือน",
+    "Company Records": "Company Records",
+    "Ticket Inbox": "กล่องตั๋วงาน",
+    "Create New Ticket (Admin)": "สร้างตั๋วใหม่ (Admin)",
+    "Submit Request/Track Work": "ส่งคำขอ/ติดตามงาน",
+    "Employers": "ข้อมูลนายจ้าง",
+    "Employees": "ข้อมูลลูกจ้าง",
+    "Employment History": "ประวัติการจ้างงาน",
+    "Importers": "ข้อมูลบริษัทนำเข้า",
+    "Agents": "ข้อมูลเอเจนซี่",
+    "Delegates": "ข้อมูลพนักงาน",
+    "User Management": "จัดการผู้ใช้งาน",
+    "Roles & Permissions": "จัดการสิทธิ์",
+    "Central Trash": "ถังขยะกลาง",
+    "Logout": "ออกจากระบบ",
+    "Incomplete Data": "ข้อมูลไม่ครบถ้วน",
+    "Notification List": "รายการแจ้งเตือน",
+    "User Name": "ชื่อผู้ใช้"
+}

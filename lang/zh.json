@@ -1,0 +1,21 @@
+{
+    "Dashboard": "仪表板",
+    "Notifications": "通知",
+    "Company Records": "公司记录",
+    "Ticket Inbox": "工单收件箱",
+    "Create New Ticket (Admin)": "创建新工单 (Admin)",
+    "Submit Request/Track Work": "提交请求/跟踪工作",
+    "Employers": "雇主信息",
+    "Employees": "员工信息",
+    "Employment History": "就业历史",
+    "Importers": "进口商信息",
+    "Agents": "中介信息",
+    "Delegates": "代表信息",
+    "User Management": "用户管理",
+    "Roles & Permissions": "角色与权限",
+    "Central Trash": "中央垃圾箱",
+    "Logout": "注销",
+    "Incomplete Data": "不完整数据",
+    "Notification List": "通知列表",
+    "User Name": "用户名"
+}
