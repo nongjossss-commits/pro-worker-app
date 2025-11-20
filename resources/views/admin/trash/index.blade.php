@@ -19,6 +19,9 @@
                     <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
                     <button type="submit" class="btn btn-primary">Search</button>
                     <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">Export</a>
+                    <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#trashSettingsModal">
+                        <i class="bi bi-gear"></i>
+                    </button>
                 </form>
 
                 {{-- View Toggle --}}
@@ -180,6 +183,8 @@
 </div>
 
 @endsection
+
+@include('admin.trash.partials._settings_modal')
 
 @push('scripts')
 <script>

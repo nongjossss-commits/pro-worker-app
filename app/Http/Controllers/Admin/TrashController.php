@@ -14,6 +14,7 @@ use App\Models\Agent;
 use App\Models\Importer;
 use App\Models\Delegate;
 use App\Models\Address;
+use App\Models\SystemConfig;
 
 class TrashController extends Controller
 {
@@ -31,6 +32,7 @@ class TrashController extends Controller
         $trashedData = [];
         $models = $this->getPrunableModels();
         $searchTerm = $request->input('search');
+        $retentionSettings = [];
 
         foreach ($models as $modelName => $modelClass) {
             $query = $modelClass::onlyTrashed();
@@ -73,15 +75,59 @@ class TrashController extends Controller
             }
 
             $trashedData[$modelName] = $query->paginate(10, ['*'], $modelName . '_page')->withQueryString();
+
+            // Fetch retention settings for the view
+            $retentionSettings[$modelName] = SystemConfig::where('key', "trash_retention_days_{$modelName}")->value('value');
         }
 
         return view('admin.trash.index', [
             'trashedData' => $trashedData,
             'search' => $searchTerm,
-            'currentView' => $request->input('view', 'table') // Pass the view state
+            'currentView' => $request->input('view', 'table'), // Pass the view state
+            'retentionSettings' => $retentionSettings,
         ]);
     }
 
+    /**
+     * Update the retention settings for trash.
+     */
+    public function updateSettings(Request $request)
+    {
+        if (Gate::denies('view-trash')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $data = $request->validate([
+            'retention_days' => 'required|array',
+            'retention_days.*' => 'nullable|string', // Can be number string or 'forever' or null
+        ]);
+
+        foreach ($data['retention_days'] as $modelName => $value) {
+            // Ensure the model name is valid
+            if (!array_key_exists($modelName, $this->getPrunableModels())) {
+                continue;
+            }
+
+            // If value is 'forever' or empty, save it as 'forever' or null.
+            // If it is a number, save it.
+            // We'll sanitize: if empty/null -> 'forever'.
+            if (empty($value) || $value === 'forever') {
+                $valueToSave = 'forever';
+            } else {
+                $valueToSave = (int)$value;
+                if ($valueToSave <= 0) {
+                    $valueToSave = 'forever';
+                }
+            }
+
+            SystemConfig::updateOrCreate(
+                ['key' => "trash_retention_days_{$modelName}"],
+                ['value' => $valueToSave]
+            );
+        }
+
+        return redirect()->route('admin.trash.index')->with('success', 'Trash retention settings updated successfully.');
+    }
 
     /**
      * Exports the filtered soft-deleted items to a CSV file.
