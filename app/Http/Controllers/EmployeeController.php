@@ -779,4 +779,192 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         return response()->json(['success' => true, 'message' => 'Selected employees transferred successfully.']);
     }
+
+    /**
+     * Step 1: Render the Field Selection Page (Mock Form)
+     */
+    public function bulkEditSelectFields(Request $request)
+    {
+        $request->validate([
+            'employee_ids' => 'required|array',
+            'employee_ids.*' => 'exists:employees,id',
+        ]);
+
+        $employeeIds = $request->input('employee_ids');
+
+        // Define all available fields grouped by category
+        $fieldGroups = [
+            'Personal Information' => [
+                'employeeTitleTh' => 'Title (TH)',
+                'employeeNameTh' => 'Name (TH)',
+                'employeeTitleEn' => 'Title (EN)',
+                'employeeNameEn' => 'Name (EN)',
+                'father_name' => 'Father Name',
+                'mother_name' => 'Mother Name',
+                'employeeGender' => 'Gender',
+                'employeeDob' => 'Date of Birth',
+                'employeePhone' => 'Phone',
+                'employeeNationality' => 'Nationality',
+            ],
+            'Passport & Visa' => [
+                'employeePassport' => 'Passport Number',
+                'passport_issue_date' => 'Passport Issue Date',
+                'passportExpiryDate' => 'Passport Expiry Date',
+                'passportType' => 'Passport Type',
+                'passport_type_cambodia' => 'Passport Type (Cambodia)',
+                'visaType' => 'Visa Type',
+                'visaExpiryDate' => 'Visa Expiry Date',
+                'passport_file' => 'Passport File (Upload)',
+                'visa_file' => 'Visa File (Upload)',
+            ],
+            'Work Permit & Pink Card' => [
+                'employeeWorkPermit' => 'Work Permit Number',
+                'workPermitExpiryDate' => 'Work Permit Expiry',
+                'workPermitType' => 'Work Permit Type',
+                'workPermitMOUGroup' => 'MOU Group',
+                'pinkCardNo' => 'Pink Card Number',
+                'work_permit_file' => 'Work Permit File (Upload)',
+                'pink_card_file' => 'Pink Card File (Upload)',
+            ],
+            'Job Details' => [
+                'job_title' => 'Job Title',
+                'job_description' => 'Job Description',
+                'startDate' => 'Start Date',
+            ],
+            'Insurance' => [
+                'insurance_type' => 'Insurance Type',
+                'social_security_number' => 'Social Security Number',
+                'insurance_detail_hospital' => 'Hospital Name',
+                'insurance_expiry_date_hospital' => 'Hospital Expiry',
+                'insurance_detail_private' => 'Private Insurance Company',
+                'insurance_expiry_date_private' => 'Private Insurance Expiry',
+                'insurance_attachment' => 'Insurance File (Upload)',
+            ],
+             'Other Documents' => [
+                'employee_doc_1' => 'Document 1',
+                'employee_doc_2' => 'Document 2',
+                'employee_doc_3' => 'Document 3',
+                'employee_doc_4' => 'Document 4',
+                // Add more if needed
+            ],
+        ];
+
+        return view('employees.bulk_edit_selector', compact('employeeIds', 'fieldGroups'));
+    }
+
+    /**
+     * Step 2: Render the Bulk Edit Form (Master + Individual)
+     */
+    public function bulkEditForm(Request $request)
+    {
+        $request->validate([
+            'employee_ids' => 'required|array',
+            'selected_fields' => 'required|array|max:5', // Limit to 5 fields
+        ]);
+
+        $employees = Employee::whereIn('id', $request->input('employee_ids'))->get();
+        $selectedFields = $request->input('selected_fields');
+
+        // Define metadata for fields to render correct inputs
+        $fileFields = [
+            'passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment',
+            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4'
+        ];
+
+        $dateFields = [
+            'employeeDob', 'passport_issue_date', 'passportExpiryDate',
+            'visaExpiryDate', 'workPermitExpiryDate', 'startDate',
+            'insurance_expiry_date_hospital', 'insurance_expiry_date_private'
+        ];
+
+        $options = [
+            'employeeNationality' => ['เมียนมา' => 'เมียนมา', 'ลาว' => 'ลาว', 'กัมพูชา' => 'กัมพูชา', 'เวียดนาม' => 'เวียดนาม'],
+            'employeeGender' => ['ชาย' => 'ชาย', 'หญิง' => 'หญิง'],
+            // Add more options as needed
+        ];
+
+        // Map keys to labels (simplified version of what was in selectFields)
+        // Ideally this should be a shared constant or helper.
+        $fieldLabels = [
+            'employeeNameTh' => 'Name (TH)',
+            'employeePassport' => 'Passport No.',
+            'passportExpiryDate' => 'Passport Expiry',
+            'employeeWorkPermit' => 'Work Permit No.',
+            'pinkCardNo' => 'Pink Card No.',
+             // ... Add others for display
+        ];
+
+        return view('employees.bulk_edit_form', compact('employees', 'selectedFields', 'fileFields', 'dateFields', 'options', 'fieldLabels'));
+    }
+
+    /**
+     * Step 3: Process Bulk Update
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'data' => 'required|array',
+            'selected_fields' => 'required|array',
+        ]);
+
+        $data = $request->input('data');
+        $selectedFields = $request->input('selected_fields');
+        $updatedCount = 0;
+
+        // Define file fields mapping to storage paths
+        // Note: The form submits files via `data[id][field]`, handled by PHP automatically in $request->file('data.id.field')
+
+        foreach ($data as $id => $fields) {
+            $employee = Employee::find($id);
+            if (!$employee) continue;
+
+            // Authorize
+             // $this->authorize('update', $employee); // Assuming policy exists, otherwise check ownership manually
+            if (!auth()->user()->can('manage-tickets') && $employee->employer->user_id !== auth()->id()) {
+                continue;
+            }
+
+            $updateData = [];
+
+            foreach ($selectedFields as $field) {
+                // Handle File Uploads
+                if ($request->hasFile("data.{$id}.{$field}")) {
+                    $file = $request->file("data.{$id}.{$field}");
+                    // Determine storage path (logic from update method)
+                    $storageFolder = "employee_documents";
+                    // Use public disk for doc_1-12, private for others (based on legacy logic)
+                    // For simplicity in this feature, let's follow the update method logic for known fields
+
+                    // Logic copied/adapted from update method:
+                    if (in_array($field, ['passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment'])) {
+                        // These are private
+                         if ($employee->{$field . '_path'}) {
+                            Storage::disk('private')->delete($employee->{$field . '_path'});
+                        }
+                        $path = $file->store('employee_documents', 'private');
+                        $updateData[$field . '_path'] = $path;
+
+                    } elseif (str_starts_with($field, 'employee_doc_')) {
+                        // These are public
+                        if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
+                            Storage::disk('public')->delete($employee->$field);
+                        }
+                        $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
+                        $updateData[$field] = $path;
+                    }
+                } elseif (isset($fields[$field])) {
+                    // Handle Text/Date
+                    $updateData[$field] = $fields[$field];
+                }
+            }
+
+            if (!empty($updateData)) {
+                $employee->update($updateData);
+                $updatedCount++;
+            }
+        }
+
+        return redirect()->route('employees.index')->with('success', "Bulk updated {$updatedCount} employees successfully.");
+    }
 }
