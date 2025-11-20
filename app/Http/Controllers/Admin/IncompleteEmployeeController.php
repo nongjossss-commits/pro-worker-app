@@ -107,7 +107,7 @@ class IncompleteEmployeeController extends Controller
         // 3. Paginate
         $perPageOptions = [12, 25, 50, 100];
         $currentPerPage = $request->input('per_page', 12);
-        $employees = $query->latest()->paginate($currentPerPage)->withQueryString();
+        $employees = $query->with('employer')->latest()->paginate($currentPerPage)->withQueryString();
 
         return view('admin.incomplete_employees.index', [
             'employees' => $employees,

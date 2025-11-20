@@ -148,7 +148,7 @@
                                         {{ $employee->employeeNationality ?? '-' }}
                                     @endif
                                 </td>
-                                <td class="text-muted">{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
+                                <td class="text-muted">{{ optional($employee->employer)->employerNameTh ?? 'N/A' }}</td>
                                 <td>{{ $employee->employeePassport ?? '-' }}</td>
                                 <td>{{ $employee->employeeWorkPermit ?? '-' }}</td>
                                 <td>{{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}</td>
