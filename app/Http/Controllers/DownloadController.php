@@ -29,6 +29,21 @@ class DownloadController extends Controller
             'type' => 'required|in:zip,pdf',
         ]);
 
+        // Authorization Logic:
+        // If user is NOT admin/staff (can't manage tickets), we must filter the IDs to ensure they own them.
+        // Using Employee::whereIn automatically applies the 'employerTenancy' global scope for employers.
+        // This means querying for IDs that don't belong to the employer will return nothing.
+        $authorizedEmployeeIds = Employee::whereIn('id', $validated['employee_ids'])
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($authorizedEmployeeIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid employees selected or you do not have permission to view them.'
+            ], 403);
+        }
+
         $task = DownloadTask::create([
             'user_id' => Auth::id(),
             'type' => $validated['type'],
@@ -37,7 +52,7 @@ class DownloadController extends Controller
 
         // Use dispatchSync to ensure immediate execution, avoiding stuck "pending" tasks
         // if the queue worker is not running.
-        ProcessDownload::dispatchSync($task->id, $validated['employee_ids'], $validated['selected_files']);
+        ProcessDownload::dispatchSync($task->id, $authorizedEmployeeIds, $validated['selected_files']);
 
         $task->refresh();
 

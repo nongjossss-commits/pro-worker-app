@@ -159,8 +159,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::resource('notifications', App\Http\Controllers\Admin\NotificationSettingController::class);
     });
+});
 
-    // Download Center Routes
+// === Download Center Routes (Accessible by both Admin and Employers) ===
+// We keep the 'admin' prefix/name to match existing frontend logic, but allow 'auth' users.
+// Authorization is handled inside the controller.
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/downloads/tasks', [App\Http\Controllers\DownloadController::class, 'index'])->name('downloads.index');
     Route::post('/downloads/initiate', [App\Http\Controllers\DownloadController::class, 'initiate'])->name('downloads.initiate');
     Route::get('/downloads/{task}/file', [App\Http\Controllers\DownloadController::class, 'download'])->name('downloads.download');
