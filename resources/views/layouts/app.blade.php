@@ -172,14 +172,14 @@
             {{-- START: Offcanvas Header (Mobile Only) --}}
             <div class="offcanvas-header d-lg-none">
                 <h5 class="offcanvas-title d-flex align-items-center gap-2" id="sidebarLabel">
-                    <img src="{{ asset('images/logo.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
+                    <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             {{-- END: Offcanvas Header --}}
             <div class="offcanvas-body d-flex flex-column p-0">
             <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="#">
-                <img src="{{ asset('images/logo.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
+                <img src="{{ asset('images/logo_new.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
                 <span style="line-height: 1.2;">Proworker labour</span>
             </a>
             <div class="list-group" id="main-nav">
@@ -332,7 +332,7 @@
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <a class="navbar-brand d-flex align-items-center gap-2" href="#">
-                        <img src="{{ asset('images/logo.jpg') }}" alt="Logo" style="height: 40px; width: auto;">
+                        <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;">
                         <span>Proworker labour</span>
                     </a>
                 </div>
