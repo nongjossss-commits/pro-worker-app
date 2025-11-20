@@ -178,6 +178,7 @@ class CheckExpiries extends Command
 
         foreach ($insuranceFields as $field) {
             $employees = Employee::whereNotNull($field)
+                ->where('insurance_type', '!=', 'ประกันสังคม')
                 ->whereBetween($field, [$today, $futureThreshold])
                 ->get();
 
