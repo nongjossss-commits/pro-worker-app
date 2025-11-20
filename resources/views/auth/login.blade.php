@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ __('Login') }} - Pro Worker Labour</title>
+    <title>เข้าสู่ระบบ - Pro Worker Labour</title>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -27,7 +27,7 @@
         <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
             <div>
                 <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900">
-                    {{ __('Login') }}
+                    เข้าสู่ระบบ
                 </h2>
                 <p class="mt-2 text-center text-sm text-slate-600">
                     Pro Worker Labour Business OS
@@ -40,18 +40,18 @@
                 @csrf
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div>
-                        <label for="email" class="sr-only">{{ __('Email / Username') }}</label>
+                        <label for="email" class="sr-only">รหัสพนักงาน (Username)</label>
                         <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus
                                class="appearance-none rounded-t-md relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
-                               placeholder="{{ __('Email / Username') }}">
+                               placeholder="รหัสพนักงาน (อีเมล)">
                         <x-input-error :messages="$errors->get('email')" class="mt-2" />
                     </div>
 
                     <div>
-                        <label for="password" class="sr-only">{{ __('Password') }}</label>
+                        <label for="password" class="sr-only">รหัสผ่าน</label>
                         <input id="password" name="password" type="password" required autocomplete="current-password"
                                class="appearance-none rounded-b-md relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
-                               placeholder="{{ __('Password') }}">
+                               placeholder="รหัสผ่าน">
                         <x-input-error :messages="$errors->get('password')" class="mt-2" />
                     </div>
                 </div>

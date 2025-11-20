@@ -17,13 +17,13 @@
 </style>
 @endpush
 
-@section('title', __('Edit Employer'))
+@section('title', 'แก้ไขข้อมูลนายจ้าง')
 
 @section('content')
 
 {{-- Employer Info Form --}}
 <div class="content-section">
-    <h2 class="mb-4">{{ __('Edit Employer') }}</h2>
+    <h2 class="mb-4">แก้ไขข้อมูลนายจ้าง</h2>
     <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
@@ -38,28 +38,28 @@
             </div>
         @endif
 
-        <h5>{{ __('Employer Info') }}</h5>
+        <h5>ข้อมูลนายจ้าง</h5>
         <hr>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employerNameTh" class="form-label">{{ __('Employer Name (Thai)') }}</label>
+                <label for="employerNameTh" class="form-label">ชื่อนายจ้าง (ไทย)</label>
                 <input type="text" class="form-control" id="employerNameTh" name="employerNameTh" value="{{ old('employerNameTh', $employer->employerNameTh) }}">
             </div>
             <div class="col-md-6">
-                <label for="employerNameEn" class="form-label">{{ __('Employer Name (English)') }}</label>
+                <label for="employerNameEn" class="form-label">ชื่อนายจ้าง (อังกฤษ)</label>
                 <input type="text" class="form-control" id="employerNameEn" name="employerNameEn" value="{{ old('employerNameEn', $employer->employerNameEn) }}">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employerId" class="form-label">{{ __('Employer ID') }}</label>
+                <label for="employerId" class="form-label">รหัสนายจ้าง</label>
                 <input type="text" class="form-control" id="employerId" name="employerId" value="{{ old('employerId', $employer->employerId) }}" readonly required>
             </div>
             <div class="col-md-6">
-                <label for="job_owner_id" class="form-label">{{ __('Job Owner') }}</label>
+                <label for="job_owner_id" class="form-label">เจ้าของงาน</label>
                 <div class="input-group">
                     <select class="form-select" id="job_owner_id" name="job_owner_id">
-                        <option selected disabled>{{ __('Select Job Owner') }}</option>
+                        <option selected disabled>--- เลือกเจ้าของงาน ---</option>
                         @foreach($jobOwners as $owner)
                             <option value="{{ $owner->id }}" {{ $employer->job_owner_id == $owner->id ? 'selected' : '' }}>{{ $owner->name }}</option>
                         @endforeach
@@ -71,24 +71,24 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employerTaxId" class="form-label">{{ __('Employer Tax ID') }}</label>
+                <label for="employerTaxId" class="form-label">เลขประจำตัวนายจ้าง</label>
                 <input type="text" class="form-control" id="employerTaxId" name="employerTaxId" value="{{ old('employerTaxId', $employer->employerTaxId) }}">
             </div>
             <div class="col-md-6">
-                <label for="businessType" class="form-label">{{ __('Business Type') }}</label>
+                <label for="businessType" class="form-label">ประเภทกิจการ</label>
                 <input type="text" class="form-control" id="businessType" name="businessType" value="{{ old('businessType', $employer->businessType) }}">
             </div>
         </div>
         <div class="row mb-3">
  <div class="col-md-6">
- <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
+ <label for="employerEmail" class="form-label">อีเมลนายจ้าง</label>
  <input type="email" class="form-control @error('employerEmail') is-invalid @enderror" id="employerEmail" name="employerEmail" value="{{ old('employerEmail', $employer->employerEmail ?? '') }}">
  @error('employerEmail')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
  <div class="col-md-6">
- <label for="employerPhone" class="form-label">{{ __('Phone Number') }}</label>
+ <label for="employerPhone" class="form-label">เบอร์โทรศัพท์</label>
  <input type="text" class="form-control @error('employerPhone') is-invalid @enderror" id="employerPhone" name="employerPhone" value="{{ old('employerPhone', $employer->employerPhone ?? '') }}">
  @error('employerPhone')
  <div class="invalid-feedback">{{ $message }}</div>
@@ -97,14 +97,14 @@
  </div>
  <div class="row mb-3">
  <div class="col-md-6">
- <label for="employerPassword" class="form-label">{{ __('Password (for Employer)') }}</label>
+ <label for="employerPassword" class="form-label">รหัสผ่าน (สำหรับนายจ้าง)</label>
  <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
  @error('employerPassword')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
  <div class="col-md-6">
- <label for="socialSecurityHospital" class="form-label">{{ __('Social Security Hospital') }}</label>
+ <label for="socialSecurityHospital" class="form-label">โรงพยาบาลประกันสังคม</label>
  <input type="text" class="form-control @error('socialSecurityHospital') is-invalid @enderror" id="socialSecurityHospital" name="socialSecurityHospital" value="{{ old('socialSecurityHospital', $employer->socialSecurityHospital ?? '') }}">
  @error('socialSecurityHospital')
  <div class="invalid-feedback">{{ $message }}</div>
@@ -113,44 +113,44 @@
  </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="signerNameTh" class="form-label">{{ __('Authorized Signatory (Thai)') }}</label>
+                <label for="signerNameTh" class="form-label">ผู้มีอำนาจลงนาม (ไทย)</label>
                 <input type="text" class="form-control" id="signerNameTh" name="signerNameTh" value="{{ old('signerNameTh', $employer->signerNameTh) }}">
             </div>
             <div class="col-md-6">
-                <label for="signerNameEn" class="form-label">{{ __('Authorized Signatory (English)') }}</label>
+                <label for="signerNameEn" class="form-label">ผู้มีอำนาจลงนาม (อังกฤษ)</label>
                 <input type="text" class="form-control" id="signerNameEn" name="signerNameEn" value="{{ old('signerNameEn', $employer->signerNameEn) }}">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="businessTypeEn" class="form-label">{{ __('Type of Business') }}</label>
-                <input type="text" class="form-control" id="businessTypeEn" name="businessTypeEn" value="{{ old('businessTypeEn', $employer->businessTypeEn) }}">
+                <label for="businessType" class="form-label">ประเภทกิจการ</label>
+                <input type="text" class="form-control" id="businessType" name="businessType" value="{{ old('businessType', $employer->businessType) }}">
             </div>
             <div class="col-md-6">
-                <label for="regCapital" class="form-label">{{ __('Registered Capital') }}</label>
-                <input type="text" class="form-control" id="regCapital" name="regCapital" value="{{ old('regCapital', $employer->regCapital) }}">
+                <label for="businessTypeEn" class="form-label">Type of Business</label>
+                <input type="text" class="form-control" id="businessTypeEn" name="businessTypeEn" value="{{ old('businessTypeEn', $employer->businessTypeEn) }}">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="regDate" class="form-label">{{ __('Registration Date') }}</label>
-                <input type="date" class="form-control" id="regDate" name="regDate" value="{{ old('regDate', $employer->regDate) }}">
+                <label for="regCapital" class="form-label">ทุนจดทะเบียน</label>
+                <input type="text" class="form-control" id="regCapital" name="regCapital" value="{{ old('regCapital', $employer->regCapital) }}">
             </div>
             <div class="col-md-6">
-                <label for="minimum_wage" class="form-label">{{ __('Minimum Wage') }}</label>
-                <input type="text" class="form-control" id="minimum_wage" name="minimum_wage" value="{{ old('minimum_wage') }}">
+                <label for="regDate" class="form-label">จดทะเบียนวันที่</label>
+                <input type="date" class="form-control" id="regDate" name="regDate" value="{{ old('regDate', $employer->regDate) }}">
             </div>
         </div>
 
         <hr>
-        <h5>{{ __('Employer Attachments') }}</h5>
+        <h5>เอกสารแนบของนายจ้าง</h5>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }}</label>
+                <label for="employer_doc_company" class="form-label">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
                 @if($employer->employer_doc_company)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank">{{ __('View current file') }}</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
                 @error('employer_doc_company')
@@ -158,7 +158,7 @@
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="employer_doc_company_expiry" class="form-label">{{ __('Expiry Date') }}</label>
+                <label for="employer_doc_company_expiry" class="form-label">วันหมดอายุ (หนังสือรับรอง/บัตร)</label>
                 <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry', $employer->employer_doc_company_expiry) }}">
                 @error('employer_doc_company_expiry')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -167,11 +167,11 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }}</label>
+                <label for="employer_doc_lease" class="form-label">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
                 @if($employer->employer_doc_lease)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank">{{ __('View current file') }}</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
                 @error('employer_doc_lease')
@@ -179,11 +179,11 @@
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }}</label>
+                <label for="employer_doc_construction" class="form-label">3. สัญญาก่อสร้าง / แผนที่</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
                 @if($employer->employer_doc_construction)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank">{{ __('View current file') }}</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
                 @error('employer_doc_construction')
@@ -193,12 +193,12 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1</label>
+                <label for="employer_doc_other_1" class="form-label">4. เอกสารอื่นๆ 1</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_1_desc') is-invalid @enderror" id="employer_doc_other_1_desc" name="employer_doc_other_1_desc" value="{{ old('employer_doc_other_1_desc', $employer->employer_doc_other_1_desc ?? '') }}" placeholder="{{ __('Specify description...') }}">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_1_desc') is-invalid @enderror" id="employer_doc_other_1_desc" name="employer_doc_other_1_desc" value="{{ old('employer_doc_other_1_desc', $employer->employer_doc_other_1_desc ?? '') }}" placeholder="ระบุคำอธิบายเอกสาร...">
                 @if($employer->employer_doc_other_1)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank">{{ __('View current file') }}</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
                 @error('employer_doc_other_1')
@@ -206,12 +206,12 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2</label>
+                <label for="employer_doc_other_2" class="form-label">5. เอกสารอื่นๆ 2</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_2_desc') is-invalid @enderror" id="employer_doc_other_2_desc" name="employer_doc_other_2_desc" value="{{ old('employer_doc_other_2_desc', $employer->employer_doc_other_2_desc ?? '') }}" placeholder="{{ __('Specify description...') }}">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_2_desc') is-invalid @enderror" id="employer_doc_other_2_desc" name="employer_doc_other_2_desc" value="{{ old('employer_doc_other_2_desc', $employer->employer_doc_other_2_desc ?? '') }}" placeholder="ระบุคำอธิบายเอกสาร...">
                 @if($employer->employer_doc_other_2)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank">{{ __('View current file') }}</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
                 @error('employer_doc_other_2')
@@ -219,12 +219,12 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3</label>
+                <label for="employer_doc_other_3" class="form-label">6. เอกสารอื่นๆ 3</label>
                 <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_3_desc') is-invalid @enderror" id="employer_doc_other_3_desc" name="employer_doc_other_3_desc" value="{{ old('employer_doc_other_3_desc', $employer->employer_doc_other_3_desc ?? '') }}" placeholder="{{ __('Specify description...') }}">
+                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_3_desc') is-invalid @enderror" id="employer_doc_other_3_desc" name="employer_doc_other_3_desc" value="{{ old('employer_doc_other_3_desc', $employer->employer_doc_other_3_desc ?? '') }}" placeholder="ระบุคำอธิบายเอกสาร...">
                 @if($employer->employer_doc_other_3)
                     <div class="file-upload-display mt-1">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank">{{ __('View current file') }}</a>
+                        <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank">ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
                 @error('employer_doc_other_3')
@@ -234,9 +234,9 @@
         </div>
         <div class="mt-4">
             @can('edit-employers')
-            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> {{ __('Save Employer Info') }}</button>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึกข้อมูลนายจ้าง</button>
             @endcan
-            <a href="{{ route('employers.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
+            <a href="{{ route('employers.index') }}" class="btn btn-secondary">ยกเลิก</a>
         </div>
     </form>
 </div>
@@ -245,13 +245,13 @@
     {{-- Registered Address Section --}}
     <div class="content-section mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">{{ __('Registered Address') }}</h5>
+            <h5 class="mb-0">ที่อยู่ตามทะเบียน</h5>
             <button type="button" class="btn btn-sm btn-primary add-address-btn"
                     data-bs-toggle="modal"
                     data-bs-target="#addressModal"
                     data-type="registered"
                     data-addressable-id="{{ $employer->id }}">
-                {{ __('Add Address') }}
+                + เพิ่มที่อยู่
             </button>
         </div>
         <div id="registeredAddressList" class="vstack gap-3">
@@ -270,11 +270,11 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>
+                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
                     </div>
                 </div>
             @empty
-                <p class="text-muted">{{ __('No address yet') }}</p>
+                <p class="text-muted">ยังไม่มีที่อยู่</p>
             @endforelse
         </div>
     </div>
@@ -282,13 +282,13 @@
     {{-- Workplace Address Section --}}
     <div class="content-section mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">{{ __('Workplace Address') }}</h5>
+            <h5 class="mb-0">ที่อยู่สถานที่ทำงาน</h5>
             <button type="button" class="btn btn-sm btn-primary add-address-btn"
                     data-bs-toggle="modal"
                     data-bs-target="#addressModal"
                     data-type="workplace"
                     data-addressable-id="{{ $employer->id }}">
-                {{ __('Add Address') }}
+                + เพิ่มที่อยู่
             </button>
         </div>
         <div id="workplaceAddressList" class="vstack gap-3">
@@ -307,11 +307,11 @@
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>
+                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">Delete</button>
                     </div>
                 </div>
             @empty
-                <p class="text-muted">{{ __('No address yet') }}</p>
+                <p class="text-muted">ยังไม่มีที่อยู่</p>
             @endforelse
         </div>
     </div>
@@ -330,11 +330,11 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">
-            {{ __('Employee Info (Total: :total | Male: :male | Female: :female)', ['total' => $totalEmployees, 'male' => $maleCount, 'female' => $femaleCount]) }}
+            ข้อมูลลูกจ้าง (รวม: {{ $totalEmployees }} | ชาย: {{ $maleCount }} | หญิง: {{ $femaleCount }})
         </h5>
         @can('create-employees')
         <a href="{{ route('employees.create', ['employer_id' => $employer->id]) }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> {{ __('Add Employee') }}
+            <i class="bi bi-plus-circle me-1"></i> เพิ่มลูกจ้าง
         </a>
         @endcan
     </div>
@@ -342,47 +342,47 @@
     <div class="card p-3 mb-3">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="d-flex flex-wrap align-items-center gap-2">
-                <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}" style="width: 200px;">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
                 <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                     <option value="">-- {{ __('All Nationalities') }} --</option>
+                     <option value="">-- ทุกสัญชาติ --</option>
                     <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>เมียนมา</option>
                     <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>ลาว</option>
                     <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>กัมพูชา</option>
                     <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>เวียดนาม</option>
                 </select>
                 <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
-                    <option value="">-- {{ __('All MOU Types') }} --</option>
+                    <option value="">-- ทุกประเภท มติ. --</option>
                     <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
                     <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
                     <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
                     <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
                 </select>
                 <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
-                    <option value="">-- {{ __('Pink Card') }} --</option>
-                    <option value="yes" @if(request('pink_card') == 'yes') selected @endif>{{ __('Has Pink Card') }}</option>
-                    <option value="no" @if(request('pink_card') == 'no') selected @endif>{{ __('No Pink Card') }}</option>
+                    <option value="">-- บัตรชมพู --</option>
+                    <option value="yes" @if(request('pink_card') == 'yes') selected @endif>มีบัตรชมพู</option>
+                    <option value="no" @if(request('pink_card') == 'no') selected @endif>ไม่มีบัตรชมพู</option>
                 </select>
                 <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
-                    <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
+                    <option value="">-- ประเภทพาสปอร์ต (เมียนมา) --</option>
                     <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
                     <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
                 </select>
                 <select name="passport_type_cambodia" class="form-select form-select-sm" style="width: auto;">
-                    <option value="">-- {{ __('Passport Type (Cambodia)') }} --</option>
+                    <option value="">-- ประเภทพาสปอร์ต (กัมพูชา) --</option>
                     <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>เล่ม TD</option>
                     <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>เล่มอินเตอร์</option>
                 </select>
-                <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
-                <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
-                <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">{{ __('Clear') }}</a>
+                <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="ค้นหาตามวันหมดอายุใบอนุญาตทำงาน">
+                <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
+                <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
             </form>
             <div class="d-flex align-items-center gap-2">
                 <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-success">
                      <i class="bi bi-file-earmark-excel me-1"></i> Export
                 </a>
                 <div class="btn-group btn-group-sm">
-                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
-                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
+                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
+                    <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
                 </div>
                 <div class="btn-group btn-group-sm">
                     @foreach($perPageOptions as $option)
@@ -397,10 +397,10 @@
         <div class="form-check">
             <input class="form-check-input" type="checkbox" id="select-all-checkbox">
             <label class="form-check-label" for="select-all-checkbox">
-                {{ __('Select All') }} (<span id="selected-count">0</span>)
+                เลือกทั้งหมด (<span id="selected-count">0</span>)
             </label>
         </div>
-        <button class="btn btn-sm btn-outline-danger" disabled>{{ __('Action on selected items') }}</button>
+        <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
     </div>
 
     <div id="employeeList">
@@ -410,7 +410,7 @@
                 {{-- DEFINITIVE FIX: Use the single, unified partial --}}
                 @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
             @empty
-                <p class="text-center text-muted">{{ __('No employees found matching criteria') }}</p>
+                <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</p>
             @endforelse
             </div>
         @else
@@ -424,8 +424,8 @@
                             <th style="width: 25%;">Name (EN)</th>
                             <th style="width: 25%;">Name (TH)</th>
                             <th style="width: 15%;">Passport</th>
-                            <th style="width: 10%;">{{ __('Status') }}</th>
-                            <th style="width: 10%;">{{ __('Actions') }}</th>
+                            <th style="width: 10%;">สัญชาติ</th>
+                            <th style="width: 10%;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -443,8 +443,8 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? __('No English Name') }}</td>
-                                <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? __('No Thai Name') }}<br><small class="text-muted">{{ $employee->employeePosition ?? __('Unspecified Position') }}</small></td>
+                                <td>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'No English Name' }}</td>
+                                <td>{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}<br><small class="text-muted">{{ $employee->employeePosition ?? 'ไม่ระบุตำแหน่ง' }}</small></td>
                                 <td>{{ $employee->employeePassport ?? '-' }}</td>
                                 <td>
                                     @php
@@ -465,7 +465,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-3">{{ __('No employees found matching criteria') }}</td>
+                                <td colspan="8" class="text-center text-muted py-3">ไม่พบข้อมูลลูกจ้างที่ตรงกับเงื่อนไข</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -482,14 +482,14 @@
 {{-- Employment History Section --}}
 <div class="d-flex justify-content-between align-items-center mt-5">
     <div>
-        <h4 class="mb-0">{{ __('Employment History') }}</h4>
-        <p class="text-muted small">{{ __('View all past employment history here') }}</p>
+        <h4 class="mb-0">ประวัติการจ้างงาน</h4>
+        <p class="text-muted small">ดูประวัติพนักงานที่เคยจ้างงานทั้งหมดได้ที่นี่</p>
     </div>
     <button type="button" class="btn btn-outline-secondary"
             data-bs-toggle="modal"
             data-bs-target="#employmentHistoryModal"
             data-employer-id="{{ $employer->id }}">
-        <i class="bi bi-clock-history me-2"></i>{{ __('View Employment History') }}
+        <i class="bi bi-clock-history me-2"></i>ดูประวัติการจ้างงาน
     </button>
 </div>
 
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (count > 0) {
             bulkActionBar.style.display = 'flex';
-            selectedCountSpan.textContent = '{{ __('Select All') }} (' + count + ')';
+            selectedCountSpan.textContent = 'เลือกทั้งหมด (' + count + ')';
         } else {
             bulkActionBar.style.display = 'none';
         }

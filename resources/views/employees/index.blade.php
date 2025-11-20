@@ -9,11 +9,11 @@
 <div class="p-4 p-md-5 content-section">
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">
-        {{ __('Employee List (Total: :total)', ['total' => $totalEmployees]) }}
+        รายการข้อมูลลูกจ้างทั้งหมด (รวม: {{ $totalEmployees }} คน)
     </h4>
     @can('create-employees')
         <a href="{{ route('employees.create') }}" class="btn btn-success">
-            <i class="bi bi-plus-circle me-2"></i>{{ __('Add New') }}
+            <i class="bi bi-plus-circle me-2"></i>เพิ่มข้อมูลใหม่
         </a>
     @endcan
 </div>
@@ -21,47 +21,47 @@
 <div class="card p-3 mb-3">
     <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
         <form method="GET" action="{{ route('employees.index') }}" class="d-flex flex-wrap align-items-center gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}" style="width: 200px;">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
             <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- {{ __('All Nationalities') }} --</option>
+                <option value="">-- ทุกสัญชาติ --</option>
                 <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
                 <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
                 <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
                 <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
             </select>
             <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- {{ __('All MOU Types') }} --</option>
+                <option value="">-- ทุกประเภท มติ. --</option>
                 <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
                 <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
                 <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
                 <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
             </select>
             <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- {{ __('Pink Card') }} --</option>
-                <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>{{ __('Has Pink Card') }}</option>
-                <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>{{ __('No Pink Card') }}</option>
+                <option value="">-- บัตรชมพู --</option>
+                <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
+                <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
             </select>
             <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
+                <option value="">-- ประเภทพาสปอร์ต (เมียนมา) --</option>
                 <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
                 <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
             </select>
             <select name="passport_type_cambodia" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- {{ __('Passport Type (Cambodia)') }} --</option>
+                <option value="">-- ประเภทพาสปอร์ต (กัมพูชา) --</option>
                 <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>เล่ม TD</option>
                 <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>เล่มอินเตอร์</option>
             </select>
-            <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
-            <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
-            <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">{{ __('Clear') }}</a>
+            <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="ค้นหาตามวันหมดอายุใบอนุญาตทำงาน">
+            <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
+            <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
         </form>
         <div class="d-flex align-items-center gap-2">
             <a href="{{ route('employees.export', request()->query()) }}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-file-earmark-excel me-1"></i> {{ __('Export') }}
+                <i class="bi bi-file-earmark-excel me-1"></i> Export
             </a>
             <div class="btn-group btn-group-sm">
-                <a href="{{ route('employees.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
-                <a href="{{ route('employees.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
+                <a href="{{ route('employees.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
+                <a href="{{ route('employees.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
             </div>
             <div class="btn-group btn-group-sm">
                 @foreach($perPageOptions as $option)
@@ -76,10 +76,10 @@
     <div class="form-check">
         <input class="form-check-input" type="checkbox" id="select-all-checkbox">
         <label class="form-check-label" for="select-all-checkbox">
-            {{ __('Select All') }} (<span id="selected-count">0</span>)
+            เลือกทั้งหมด (<span id="selected-count">0</span>)
         </label>
     </div>
-    <button class="btn btn-sm btn-outline-danger" disabled>{{ __('Action on selected items') }}</button>
+    <button class="btn btn-sm btn-outline-danger" disabled>ดำเนินการกับรายการที่เลือก</button>
 </div>
 
 <div id="employeeListContainer">
@@ -88,7 +88,7 @@
             @forelse($employees as $employee)
                 @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => true])
             @empty
-                <p class="text-center text-muted">{{ __('No employees found') }}</p>
+                <p class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</p>
             @endforelse
         </div>
     @else
@@ -98,13 +98,13 @@
                 <thead class="table-light">
                     <tr>
                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
-                        <th scope="col">{{ __('Employee') }}</th>
-                        <th scope="col">{{ __('All Nationalities') }}</th>
-                        <th scope="col">{{ __('Employers') }}</th>
-                        <th scope="col">{{ __('Passport') }}</th>
-                        <th scope="col">{{ __('Work Permit') }}</th>
-                        <th scope="col">{{ __('90-Day Report') }}</th>
-                        <th scope="col">{{ __('Actions') }}</th>
+                        <th scope="col">Employee</th>
+                        <th scope="col">สัญชาติ</th>
+                        <th scope="col">Employer</th>
+                        <th scope="col">Passport</th>
+                        <th scope="col">Work Permit</th>
+                        <th scope="col">90-Day Report</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -143,7 +143,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted">{{ __('No employees found') }}</td>
+                        <td colspan="8" class="text-center text-muted">ไม่พบข้อมูลลูกจ้าง</td>
                     </tr>
                     @endforelse
                 </tbody>
