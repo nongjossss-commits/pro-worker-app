@@ -19,3 +19,39 @@
 
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const initMobileSidebar = () => {
+            // Check if we are on mobile/tablet (Bootstrap lg breakpoint is 992px)
+            if (window.innerWidth < 992) {
+                const sidebarEl = document.getElementById('sidebar');
+
+                if (sidebarEl && typeof bootstrap !== 'undefined') {
+                    // Get or create the Offcanvas instance
+                    const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(sidebarEl);
+
+                    // Show the sidebar (waiting state)
+                    bsOffcanvas.show();
+
+                    // Select all links inside the sidebar
+                    const links = sidebarEl.querySelectorAll('a');
+                    links.forEach(link => {
+                        link.addEventListener('click', () => {
+                            // Hide the sidebar when a user selects a menu item
+                            bsOffcanvas.hide();
+                        });
+                    });
+                } else if (typeof bootstrap === 'undefined') {
+                    // If bootstrap is not yet loaded, retry shortly
+                    setTimeout(initMobileSidebar, 50);
+                }
+            }
+        };
+
+        // Initialize the logic
+        initMobileSidebar();
+    });
+</script>
+@endpush
