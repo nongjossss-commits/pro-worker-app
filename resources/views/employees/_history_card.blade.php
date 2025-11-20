@@ -9,7 +9,7 @@
     <div class="d-flex w-100">
         {{-- Checkbox --}}
         <div class="me-3 d-flex align-items-center">
-            <input class="form-check-input history-employee-checkbox" type="checkbox" data-employee-id="{{ $employee->id }}">
+            <input class="form-check-input history-employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}">
         </div>
 
         {{-- Employee Photo --}}

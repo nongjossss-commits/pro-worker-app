@@ -73,9 +73,6 @@
         <div class="list-group">
             @forelse($employees as $employee)
                 <div class="position-relative">
-                    <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
-                        <input class="form-check-input history-employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}">
-                    </div>
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
                 </div>
             @empty

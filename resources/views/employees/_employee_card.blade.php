@@ -20,7 +20,7 @@
     <div class="d-flex align-items-center">
         {{-- Checkbox for Bulk Actions --}}
         <div class="me-3">
-            <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="employee_checkbox_{{ $employee->id }}">
+            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" id="employee_checkbox_{{ $employee->id }}" data-employee-id="{{ $employee->id }}">
         </div>
 
         {{-- Employee Photo --}}
