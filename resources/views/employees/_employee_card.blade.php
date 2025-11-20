@@ -19,7 +19,7 @@
                 <h5 class="mb-1">
                     {{ $employee->employeeNameEn ?? 'N/A' }}
                     @if($employee->employeeNationality)
-                        @php $flagCode = \App\Helpers\CountryHelper::getFlagCode($employee->employeeNationality); @endphp
+                        @php $flagCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality); @endphp
                         @if($flagCode)
                             <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $employee->employeeNationality }}" title="{{ $employee->employeeNationality }}">
                         @endif
