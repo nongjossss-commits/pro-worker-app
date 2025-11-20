@@ -900,7 +900,14 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $options = [
             'employeeNationality' => ['เมียนมา' => 'เมียนมา', 'ลาว' => 'ลาว', 'กัมพูชา' => 'กัมพูชา', 'เวียดนาม' => 'เวียดนาม'],
             'employeeGender' => ['ชาย' => 'ชาย', 'หญิง' => 'หญิง'],
-            // Add more options as needed
+            'employeeTitleTh' => ['นาย' => 'นาย', 'นางสาว' => 'นางสาว', 'นาง' => 'นาง'],
+            'employeeTitleEn' => ['Mr.' => 'Mr.', 'Miss' => 'Miss', 'Mrs.' => 'Mrs.'],
+            'passportType' => ['PJ' => 'เล่ม PJ', 'CI' => 'เล่ม CI'],
+            'passport_type_cambodia' => ['เล่ม TD' => 'เล่ม TD', 'เล่มอินเตอร์' => 'เล่มอินเตอร์'],
+            'insurance_type' => ['ประกันสังคม' => 'ประกันสังคม', 'ประกันโรงพยาบาล' => 'ประกันโรงพยาบาล', 'ประกันเอกชน' => 'ประกันเอกชน'],
+            // Note: 'workPermitType' in bulk selection often maps to the MOU Group dropdown in Create/Edit forms
+            'workPermitType' => ['MOU' => 'MOU', 'มติต่ออายุในประเทศ' => 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน' => 'มติขึ้นทะเบียน', 'อื่นๆ' => 'อื่นๆ'],
+            'workPermitMOUGroup' => ['MOU' => 'MOU', 'มติต่ออายุในประเทศ' => 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน' => 'มติขึ้นทะเบียน', 'อื่นๆ' => 'อื่นๆ'],
         ];
 
         // Map keys to labels (simplified version of what was in selectFields)
