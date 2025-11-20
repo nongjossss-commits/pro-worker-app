@@ -256,7 +256,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         const url = '{{ route("admin.downloads.download", ":id") }}'.replace(':id', task.id);
                         actionBtn = `<a href="${url}" class="btn btn-sm btn-success" target="_blank"><i class="bi bi-download"></i> Download</a>`;
                     } else if (task.status === 'failed') {
-                        actionBtn = `<span class="text-danger" title="${task.error_message}">Failed</span>`;
+                        actionBtn = `
+                            <span class="text-danger fw-bold">Failed</span>
+                            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" title="${task.error_message}"></i>
+                        `;
                     } else {
                         actionBtn = `<span class="text-muted spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span class="text-muted">Processing...</span>`;
                     }
