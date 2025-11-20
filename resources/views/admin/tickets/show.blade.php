@@ -117,8 +117,23 @@
                     @if($attachments->new_employees->isNotEmpty())
                         <h6 class="text-success mt-3">ลูกจ้างใหม่/แจ้งเข้า ({{ $attachments->new_employees->count() }} คน)</h6>
                         <div class="list-group mb-3">
-                            @foreach($attachments->new_employees as $item)
-                                @php $newEmployee = $item->data; @endphp
+                            <script>
+                                // Initialize the global map if it doesn't exist
+                                if (typeof window.newEmployeeDataMap === 'undefined') {
+                                    window.newEmployeeDataMap = {};
+                                }
+                            </script>
+                            @foreach($attachments->new_employees as $index => $item)
+                                @php
+                                    $newEmployee = $item->data;
+                                    // Use a unique key combining message ID and index to ensure uniqueness
+                                    $mapKey = 'msg_' . $item->message_id . '_' . $index;
+                                @endphp
+                                <script>
+                                    // Store data in the global map
+                                    window.newEmployeeDataMap['{{ $mapKey }}'] = @json($newEmployee);
+                                </script>
+
                                 <div class="list-group-item py-2 d-flex align-items-center">
                                     <div class="flex-grow-1">
                                         {{-- V2.5-S4: Display Both Thai and English names --}}
@@ -141,11 +156,11 @@
                                                     'employee_doc_5' => 'ทะเบียนบ้าน',
                                                     'employee_doc_6' => 'บัตรประชาชน',
                                                     'employee_doc_7' => 'ใบแจ้งที่พักอาศัย',
-                                                    'employee_doc_8' => 'เอกสารอื่นๆ 1',
-                                                    'employee_doc_9' => 'เอกสารอื่นๆ 2',
-                                                    'employee_doc_10' => 'เอกสารอื่นๆ 3',
-                                                    'employee_doc_11' => 'เอกสารอื่นๆ 4',
-                                                    'employee_doc_12' => 'เอกสารอื่นๆ 5',
+                                                    'employee_doc_8' => 'เอกสารบ้านเกิด',
+                                                    'employee_doc_9' => 'เอกสารอื่นๆ 1',
+                                                    'employee_doc_10' => 'เอกสารอื่นๆ 2',
+                                                    'employee_doc_11' => 'เอกสารอื่นๆ 3',
+                                                    'employee_doc_12' => 'เอกสารอื่นๆ 4',
                                                     'insurance_document_path_social' => 'ประกันสังคม',
                                                     'insurance_document_path_hospital' => 'ประกัน รพ.',
                                                     'insurance_document_path_private' => 'ประกันเอกชน'
@@ -164,7 +179,7 @@
                                     </div>
                                     <div class="ms-auto btn-group">
                                         {{-- Preview Button --}}
-                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="openNewEmployeePreview(@json($newEmployee))">
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="openNewEmployeePreview('{{ $mapKey }}')">
                                             <i class="bi bi-search"></i>
                                         </button>
 
