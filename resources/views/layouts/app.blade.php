@@ -168,15 +168,13 @@
 <body>
 
     <div class="main-layout">
-        <aside id="sidebar" class="offcanvas-lg offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
-            {{-- START: Offcanvas Header (Mobile Only) --}}
-            <div class="offcanvas-header d-lg-none">
+        <aside id="sidebar" class="offcanvas offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
+            <div class="offcanvas-header">
                 <h5 class="offcanvas-title d-flex align-items-center gap-2" id="sidebarLabel">
                     <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
-            {{-- END: Offcanvas Header --}}
             <div class="offcanvas-body d-flex flex-column p-0">
             <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="#">
                 <img src="{{ asset('images/logo_new.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
@@ -296,14 +294,19 @@
 
         <main id="main-content" style="position: relative; z-index: 1;">
             <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
 
-                {{-- Download Center Button (Fixed for better visibility) --}}
-                <button class="btn btn-outline-secondary d-none d-md-block mx-2" onclick="openDownloadCenter()">
-                    <i class="bi bi-cloud-download-fill me-1"></i> Download Center
-                </button>
+                    {{-- Download Center Button (Fixed for better visibility) --}}
+                    <button class="btn btn-outline-secondary d-none d-md-block" onclick="openDownloadCenter()">
+                        <i class="bi bi-cloud-download-fill me-1"></i> Download Center
+                    </button>
+                </div>
 
-                <div class="d-flex align-items-center ms-auto">
-                     <div class="dropdown">
+                <div class="d-flex align-items-center ms-auto gap-2">
+                    <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-translate me-1"></i>
                             @switch(app()->getLocale())
@@ -320,19 +323,6 @@
                     </div>
                 </div>
             </div>
-            {{-- START: Mobile Top-Bar (d-lg-none) --}}
-            <nav class="navbar bg-white rounded shadow-sm mb-4 d-lg-none">
-                <div class="container-fluid">
-                    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
-                        <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;">
-                        <span>Proworker labour</span>
-                    </a>
-                </div>
-            </nav>
-            {{-- END: Mobile Top-Bar --}}
             @yield('debug-tracker')
             @if (session('success'))
                 <div class="alert alert-success">
