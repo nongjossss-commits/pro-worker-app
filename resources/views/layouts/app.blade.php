@@ -181,9 +181,20 @@
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>ภาพรวม</a>
                 @endcan
                 @can('view-notifications')
-                <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                <a href="#notificationSubmenu" data-bs-toggle="collapse" aria-expanded="{{ request()->routeIs('notifications.*') || request()->routeIs('admin.incomplete_employees.*') ? 'true' : 'false' }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-bell-fill me-2"></i>แจ้งเตือน</span>
+                    <i class="bi bi-chevron-down" style="font-size: 0.8rem;"></i>
                 </a>
+                <div class="collapse {{ request()->routeIs('notifications.*') || request()->routeIs('admin.incomplete_employees.*') ? 'show' : '' }}" id="notificationSubmenu">
+                    <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action border-0 {{ request()->routeIs('notifications.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+                        <i class="bi bi-list-ul me-2"></i>รายการแจ้งเตือน
+                    </a>
+                    @can('manage-tickets')
+                    <a href="{{ route('admin.incomplete_employees.index') }}" class="list-group-item list-group-item-action border-0 {{ request()->routeIs('admin.incomplete_employees.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>ข้อมูลไม่ครบถ้วน
+                    </a>
+                    @endcan
+                </div>
                 @endcan
                 {{-- START V2.4: Smart Ticket Links --}}
                 {{-- V2.4: Admin/Staff Ticket Inbox --}}
@@ -191,9 +202,6 @@
                 @can('manage-tickets')
                 <a href="{{ route('admin.tickets.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.index') ? 'active' : '' }}">
                 <i class="bi bi-inbox-fill me-2"></i>กล่องตั๋วงาน
-                </a>
-                <a href="{{ route('admin.incomplete_employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.incomplete_employees.*') ? 'active' : '' }}">
-                    <i class="bi bi-exclamation-octagon-fill me-2"></i>ข้อมูลไม่ครบถ้วน
                 </a>
                 <a href="{{ route('admin.tickets.create') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.create') ? 'active' : '' }}" style="padding-left: 2.5rem;">
                     <i class="bi bi-plus-circle me-2"></i>สร้างตั๋วใหม่ (Admin)
