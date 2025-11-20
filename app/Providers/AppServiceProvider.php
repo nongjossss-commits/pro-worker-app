@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use App\Models\Employee;
 use App\Models\Employer;
+use App\Models\JobTicket;
 use App\Observers\EmployeeObserver;
 use App\Observers\EmployerObserver;
 
@@ -31,13 +32,22 @@ class AppServiceProvider extends ServiceProvider
         // Share incomplete employee count with specific views (layout)
         view()->composer('layouts.app', function ($view) {
             if (auth()->check()) {
-                // 1. Incomplete Data Count (Admin/Staff only)
+                // 1. Incomplete Data Count & Admin Ticket Unread (Admin/Staff only)
                 if (auth()->user()->can('manage-tickets')) {
                     $incompleteCount = \App\Helpers\CompletenessHelper::getIncompleteCount();
                     $view->with('incompleteCount', $incompleteCount);
+
+                    $adminTicketUnreadCount = JobTicket::sum('admin_unread_count');
+                    $view->with('adminTicketUnreadCount', $adminTicketUnreadCount);
+                }
+                // 2. Employer Ticket Unread (Employer only, if not Admin/Staff)
+                elseif (auth()->user()->hasRole('employer')) {
+                    $employerTicketUnreadCount = JobTicket::where('employer_user_id', auth()->id())
+                        ->sum('employer_unread_count');
+                    $view->with('employerTicketUnreadCount', $employerTicketUnreadCount);
                 }
 
-                // 2. Notification Count (All users who can view notifications)
+                // 3. Notification Count (All users who can view notifications)
                 if (auth()->user()->can('view-notifications')) {
                     $totalNotificationCount = \App\Helpers\NotificationHelper::getTotalNotificationCount();
                     $view->with('totalNotificationCount', $totalNotificationCount);
