@@ -31,36 +31,66 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">Select Files to Include</label>
                         <div class="row">
+                            <!-- Column 1 -->
                             <div class="col-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="photo" id="chkPhoto" checked>
-                                    <label class="form-check-label" for="chkPhoto">Photo</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="passport" id="chkPassport" checked>
-                                    <label class="form-check-label" for="chkPassport">Passport</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="visa" id="chkVisa" checked>
-                                    <label class="form-check-label" for="chkVisa">Visa</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="work_permit" id="chkWorkPermit" checked>
-                                    <label class="form-check-label" for="chkWorkPermit">Work Permit</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="pink_card" id="chkPinkCard" checked>
-                                    <label class="form-check-label" for="chkPinkCard">Pink Card</label>
+                                    <label class="form-check-label" for="chkPhoto">รูปถ่าย (Photo)</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="insurance" id="chkInsurance" checked>
-                                    <label class="form-check-label" for="chkInsurance">Insurance</label>
+                                    <label class="form-check-label" for="chkInsurance">ไฟล์แนบประกัน (Insurance)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_docs" id="chkOther">
-                                    <label class="form-check-label" for="chkOther">Other Docs</label>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="passport" id="chkPassport" checked>
+                                    <label class="form-check-label" for="chkPassport">1. พาสปอร์ต (Passport)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="visa" id="chkVisa" checked>
+                                    <label class="form-check-label" for="chkVisa">2. วีซ่า (Visa)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="work_permit" id="chkWorkPermit" checked>
+                                    <label class="form-check-label" for="chkWorkPermit">3. ใบอนุญาต Work Permit</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="pink_card" id="chkPinkCard" checked>
+                                    <label class="form-check-label" for="chkPinkCard">4. บัตรชมพู (Pink Card)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="tor_ror_38" id="chkTorRor38">
+                                    <label class="form-check-label" for="chkTorRor38">5. ทร. 38</label>
+                                </div>
+                            </div>
+                            <!-- Column 2 -->
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="report_90_day" id="chkReport90Day">
+                                    <label class="form-check-label" for="chkReport90Day">6. รายงานตัว 90 วัน</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="residence_notification" id="chkResidenceNotification">
+                                    <label class="form-check-label" for="chkResidenceNotification">7. ใบแจ้งที่พักอาศัย</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="hometown_doc" id="chkHometownDoc">
+                                    <label class="form-check-label" for="chkHometownDoc">8. เอกสารบ้านเกิด</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_1" id="chkOther1">
+                                    <label class="form-check-label" for="chkOther1">9. เอกสารอื่นๆ 1</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_2" id="chkOther2">
+                                    <label class="form-check-label" for="chkOther2">10. เอกสารอื่นๆ 2</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_3" id="chkOther3">
+                                    <label class="form-check-label" for="chkOther3">11. เอกสารอื่นๆ 3</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_4" id="chkOther4">
+                                    <label class="form-check-label" for="chkOther4">12. เอกสารอื่นๆ 4</label>
                                 </div>
                             </div>
                         </div>
