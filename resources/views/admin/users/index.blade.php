@@ -17,14 +17,14 @@
                 {{-- Actions & Search Bar --}}
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
                     <a href="{{ route('admin.users.create') }}" class="btn btn-primary w-100 w-md-auto">
-                        <i class="bi bi-person-plus-fill me-1"></i> Create New User
+                        <i class="bi bi-person-plus-fill me-1"></i> {{ __('Create New User') }}
                     </a>
 
                     <form action="{{ route('admin.users.index') }}" method="GET" class="d-flex gap-2 w-100 w-md-auto" style="max-width: 400px;">
-                        <input type="text" name="search" class="form-control" placeholder="Search name or email..." value="{{ request('search') }}">
-                        <button type="submit" class="btn btn-secondary">Search</button>
+                        <input type="text" name="search" class="form-control" placeholder="{{ __('Search name or email...') }}" value="{{ request('search') }}">
+                        <button type="submit" class="btn btn-secondary">{{ __('Search') }}</button>
                         @if(request('search'))
-                            <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">Clear</a>
+                            <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
                         @endif
                     </form>
                 </div>
