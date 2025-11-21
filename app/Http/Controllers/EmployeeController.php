@@ -1003,4 +1003,130 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         return redirect()->route('employees.index')->with('success', "Bulk updated {$updatedCount} employees successfully.");
     }
+
+    /**
+     * Export selected employees with selected columns.
+     */
+    public function advancedExport(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_ids' => 'required|string',
+            'columns' => 'required|array|max:15',
+        ]);
+
+        $employeeIds = json_decode($validated['employee_ids'], true);
+        $selectedColumns = $validated['columns'];
+
+        if (empty($employeeIds)) {
+            return back()->with('error', 'No employees selected.');
+        }
+
+        $employees = Employee::whereIn('id', $employeeIds)->get();
+
+        // Define labels for the header
+        $columnLabels = [
+            'employeePhoto' => 'Photo',
+            'employeeTitleTh' => 'Title (TH)',
+            'employeeNameTh' => 'Name (TH)',
+            'employeeTitleEn' => 'Prefix (EN)',
+            'employeeNameEn' => 'Name (EN)',
+            'father_name' => 'Father Name',
+            'mother_name' => 'Mother Name',
+            'employeeGender' => 'Gender',
+            'employeeDob' => 'Date of Birth',
+            'employeeAge' => 'Age',
+            'employeePhone' => 'Phone',
+            'employeeNationality' => 'Nationality',
+            'passportType' => 'Passport Type (MM)',
+            'passport_type_cambodia' => 'Passport Type (KH)',
+            'employeePassport' => 'Passport No',
+            'passport_issue_date' => 'Passport Issue Date',
+            'passportExpiryDate' => 'Passport Expiry Date',
+            'pinkCardNo' => 'Pink Card No',
+            'visaType' => 'Visa Type',
+            'visaExpiryDate' => 'Visa Expiry',
+            'job_title' => 'Job Title',
+            'job_description' => 'Nature of Work',
+            'startDate' => 'Start Date',
+            'employeeWorkPermit' => 'Work Permit No',
+            'workPermitExpiryDate' => 'Work Permit Expiry',
+            'ninetyDayReportDate' => '90 Day Report',
+            'workPermitMOUGroup' => 'WP Type',
+            'workPermitMOUGroupOther' => 'WP Other',
+            'name_list_number' => 'Name List No',
+            'request_number' => 'Request No',
+            'employee_id_number' => 'Personal ID',
+            'tax_id_number' => 'Tax ID',
+            'employer_employee_id' => 'Employer-Worker ID',
+            'employee_reference_id' => 'Reference ID',
+            'insurance_type' => 'Insurance Type',
+            'social_security_number' => 'SS Number',
+            'insurance_detail' => 'Hospital Rights (SS)',
+            'insurance_detail_hospital' => 'Hospital Name',
+            'insurance_expiry_date_hospital' => 'Hospital Expiry',
+            'insurance_detail_private' => 'Private Company',
+            'insurance_expiry_date_private' => 'Private Expiry',
+            'email' => 'Email',
+        ];
+
+        // Handle Photo Column Logic: Must be first if selected
+        $hasPhoto = in_array('employeePhoto', $selectedColumns);
+        if ($hasPhoto) {
+            // Remove 'employeePhoto' from its current position
+            $selectedColumns = array_diff($selectedColumns, ['employeePhoto']);
+            // Prepend it to the beginning
+            array_unshift($selectedColumns, 'employeePhoto');
+        }
+
+        // Generate HTML Table for Excel
+        $html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+        $html .= '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+        $html .= '<body>';
+        $html .= '<table border="1">';
+
+        // Header Row
+        $html .= '<tr>';
+        foreach ($selectedColumns as $col) {
+            $label = $columnLabels[$col] ?? $col;
+            $html .= '<th style="background-color: #f2f2f2;">' . $label . '</th>';
+        }
+        $html .= '</tr>';
+
+        // Data Rows
+        foreach ($employees as $employee) {
+            $html .= '<tr>';
+            foreach ($selectedColumns as $col) {
+                if ($col === 'employeePhoto') {
+                    $photoUrl = $employee->photo_url;
+                    // Use full URL for the image. Excel needs an absolute URL or embedded data.
+                    // Since this is a web app, public URL is best.
+                    $html .= '<td style="text-align: center; vertical-align: middle;">';
+                    $html .= '<img src="' . $photoUrl . '" width="80" height="80" style="object-fit: cover;">';
+                    $html .= '</td>';
+                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'])) {
+                    // Format Dates
+                    $val = $employee->$col ? \Carbon\Carbon::parse($employee->$col)->format('d/m/Y') : '-';
+                    $html .= '<td>' . $val . '</td>';
+                } elseif ($col === 'employeeAge') {
+                    // Use accessor
+                    $html .= '<td>' . $employee->age . '</td>';
+                } elseif ($col === 'employeeGender') {
+                     // Use accessor or raw
+                    $html .= '<td>' . ($employee->gender ?? $employee->employeeGender) . '</td>';
+                } else {
+                    $html .= '<td>' . ($employee->$col ?? '-') . '</td>';
+                }
+            }
+            $html .= '</tr>';
+        }
+
+        $html .= '</table>';
+        $html .= '</body></html>';
+
+        $fileName = "advanced_employee_export_" . date('Y-m-d_H-i') . ".xls";
+
+        return response($html)
+            ->header('Content-Type', 'application/vnd.ms-excel')
+            ->header('Content-Disposition', "attachment; filename=\"{$fileName}\"");
+    }
 }

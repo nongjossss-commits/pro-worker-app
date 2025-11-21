@@ -86,6 +86,7 @@
         </button>
         <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
             <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
+            <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
             <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
@@ -169,6 +170,7 @@
 </div>
 
 @include('partials._employee_action_modals')
+@include('employees.modals.advanced_export')
 
 @push('scripts')
 <script>
@@ -176,6 +178,27 @@ document.addEventListener('DOMContentLoaded', function () {
     // This script is superseded by the global listener in layouts/app.blade.php
     // which handles the .employee-checkbox class correctly.
     // However, we need to attach the bulk download handler here.
+
+    const bulkExportBtn = document.getElementById('bulk-advanced-export-btn');
+    if (bulkExportBtn) {
+        bulkExportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+            if (selected.length === 0) {
+                showToast('{{ __('Please select employees first.') }}', 'danger');
+                return;
+            }
+
+            // Populate the hidden input with JSON array of IDs
+            document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+
+            // Open the modal
+            const modalEl = document.getElementById('advancedExportModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        });
+    }
 
     const bulkDownloadBtn = document.getElementById('bulk-download-btn');
     if (bulkDownloadBtn) {

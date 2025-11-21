@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/{employee}/locate', [EmployeeController::class, 'locate'])->name('employees.locate');
     Route::get('/employees/{employee}/create-job', [JobController::class, 'createFromEmployee'])->name('jobs.create_from_employee');
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
+    Route::post('/employees/advanced-export', [EmployeeController::class, 'advancedExport'])->name('employees.advanced_export');
     Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->name('employees.history');
     Route::get('/employees/{employee}/documents/{field}', [EmployeeController::class, 'serveDocument'])->name('employees.documents.serve');
 
