@@ -6,7 +6,7 @@
     </h2>
 @endsection
 
-@section('title', 'Central User Management')
+@section('title', __('User Management'))
 
 @section('content')
 <div class="container-fluid content-section">
@@ -39,17 +39,17 @@
                 <ul class="nav nav-tabs mb-3" id="userRoleTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ ($activeTab ?? 'admin') == 'admin' ? 'active' : '' }}" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-pane" type="button" role="tab" aria-controls="admin-pane" aria-selected="true">
-                            <i class="bi bi-shield-lock me-1"></i> Admin
+                            <i class="bi bi-shield-lock me-1"></i> {{ __('Admin') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ ($activeTab ?? 'admin') == 'staff' ? 'active' : '' }}" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff-pane" type="button" role="tab" aria-controls="staff-pane" aria-selected="false">
-                            <i class="bi bi-person-badge me-1"></i> Staff
+                            <i class="bi bi-person-badge me-1"></i> {{ __('Staff') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ ($activeTab ?? 'admin') == 'employer' ? 'active' : '' }}" id="employer-tab" data-bs-toggle="tab" data-bs-target="#employer-pane" type="button" role="tab" aria-controls="employer-pane" aria-selected="false">
-                            <i class="bi bi-briefcase me-1"></i> Employer
+                            <i class="bi bi-briefcase me-1"></i> {{ __('Employers') }}
                         </button>
                     </li>
                 </ul>

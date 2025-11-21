@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'กล่องตั๋วงาน (Admin/Staff)')
+@section('title', __('Ticket Inbox') . ' (Admin/Staff)')
 @section('content')
 <div class="content-section">
     @if ($message = Session::get('success'))
@@ -12,11 +12,11 @@
         <div class="d-flex align-items-center gap-3">
             @if(request('employer_id'))
                 <a href="{{ route('admin.tickets.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-left"></i> กลับ
+                    <i class="bi bi-arrow-left"></i> {{ __('Back') }}
                 </a>
-                <h2 class="mb-0">ตั๋วงาน: {{ $employerName ?? 'ไม่ระบุ' }}</h2>
+                <h2 class="mb-0">{{ __('Ticket') }}: {{ $employerName ?? __('Unspecified') }}</h2>
             @else
-                <h2 class="mb-0">กล่องตั๋วงานทั้งหมด</h2>
+                <h2 class="mb-0">{{ __('Ticket Inbox') }}</h2>
             @endif
         </div>
 
@@ -27,9 +27,9 @@
                     <input type="hidden" name="employer_id" value="{{ request('employer_id') }}">
                 @endif
                 <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                    <option value="25" @selected(request('per_page', 25) == 25)>25</option>
-                    <option value="50" @selected(request('per_page') == 50)>50</option>
-                    <option value="100" @selected(request('per_page') == 100)>100</option>
+                    <option value="25" @selected(request('per_page', 25) == 25)>{{ __('Show') }} 25</option>
+                    <option value="50" @selected(request('per_page') == 50)>{{ __('Show') }} 50</option>
+                    <option value="100" @selected(request('per_page') == 100)>{{ __('Show') }} 100</option>
                 </select>
             </form>
         </div>
@@ -40,12 +40,12 @@
             <thead class="table-light">
                 <tr>
                     <th>ID</th>
-                    <th>หัวเรื่อง</th>
-                    <th>บริษัท/นายจ้าง</th>
-                    <th>สถานะ</th>
-                    <th>ผู้รับผิดชอบ</th>
-                    <th>วันที่สร้าง</th>
-                    <th class="text-center">จัดการ</th>
+                    <th>{{ __('Subject') }}</th>
+                    <th>{{ __('Company/Employer') }}</th>
+                    <th>{{ __('Status') }}</th>
+                    <th>{{ __('Assignee') }}</th>
+                    <th>{{ __('Created Date') }}</th>
+                    <th class="text-center">{{ __('Manage') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -55,7 +55,7 @@
                     <td>
                         {{ Str::limit($ticket->subject, 50) }}
                         @if($ticket->admin_unread_count > 0)
-                            <span class="badge bg-danger ms-2">ใหม่</span>
+                            <span class="badge bg-danger ms-2">{{ __('New') }}</span>
                         @endif
                     </td>
                     <td>
@@ -63,7 +63,7 @@
                         {{-- Uses optimized relationship loading --}}
                         @if($ticket->employerUser && $ticket->employerUser->employer)
                             {{ $ticket->employerUser->employer->employerNameTh ?? $ticket->employerUser->name }}
-                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $ticket->employerUser->employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $ticket->employerUser->employer->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
                         @elseif($ticket->employerUser)
                              {{ $ticket->employerUser->name }}
                         @else
@@ -77,13 +77,13 @@
                         </span>
                     </td>
                     <td>
-                        {{ $ticket->assignedStaff->name ?? 'ยังไม่ได้มอบหมาย' }}
+                        {{ $ticket->assignedStaff->name ?? __('Unassigned') }}
                     </td>
                     {{-- Format date consistently --}}
                     <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                     <td class="text-center">
                         <a href="{{ route('admin.tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
-                            <i class="bi bi-eye"></i> ดูรายละเอียด
+                            <i class="bi bi-eye"></i> {{ __('View Details') }}
                             @if($ticket->admin_unread_count > 0)
                                 <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
                                     <span class="visually-hidden">Unread</span>
@@ -94,7 +94,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="text-center text-muted">ไม่พบตั๋วงาน</td>
+                    <td colspan="7" class="text-center text-muted">{{ __('No tickets found') }}</td>
                 </tr>
                 @endforelse
             </tbody>

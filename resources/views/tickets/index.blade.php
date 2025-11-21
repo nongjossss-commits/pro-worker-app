@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'ส่งคำขอ/ติดตามงาน')
+@section('title', __('Submit Request/Track Work'))
 @section('content')
 <div class="content-section">
     @if ($message = Session::get('success'))
@@ -14,9 +14,9 @@
             {{-- Per Page Selection (Must match employers.index) --}}
             <form action="{{ route('tickets.index') }}" method="GET" class="d-flex gap-2">
                 <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                    <option value="25" @selected(request('per_page', 25) == 25)>25</option>
-                    <option value="50" @selected(request('per_page') == 50)>50</option>
-                    <option value="100" @selected(request('per_page') == 100)>100</option>
+                    <option value="25" @selected(request('per_page', 25) == 25)>{{ __('Show') }} 25</option>
+                    <option value="50" @selected(request('per_page') == 50)>{{ __('Show') }} 50</option>
+                    <option value="100" @selected(request('per_page') == 100)>{{ __('Show') }} 100</option>
                 </select>
             </form>
             {{-- Create New Ticket Button --}}
