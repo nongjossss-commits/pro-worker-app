@@ -16,7 +16,8 @@ class NotificationSettingController extends Controller
 
     public function index()
     {
-        $settings = NotificationSetting::all();
+        $settings = NotificationSetting::all()->keyBy('notification_type');
+
         // A simple mapping for Thai labels in the view
         $typeLabels = [
             'ninety_day_report' => 'รายงานตัว 90 วัน',
@@ -28,7 +29,22 @@ class NotificationSettingController extends Controller
             'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
             'employer_document_expiry' => 'เอกสารนายจ้าง',
             'employee_insurance_expiry' => 'ประกันลูกจ้าง',
+            'pink_card_missing' => 'แจ้งเตือนบัตรชมพู', // New Type
+            'residence_permit_missing' => 'แจ้งเตือนแจ้งที่พักอาศัย', // New Type
         ];
+
+        // Ensure all types are present in the settings collection, even if not in DB yet
+        // (Though migration should have seeded them, this is a fallback for display)
+        foreach ($typeLabels as $type => $label) {
+            if (!$settings->has($type)) {
+                $settings[$type] = new NotificationSetting([
+                    'notification_type' => $type,
+                    'days_before_expiry' => 30,
+                    'is_enabled' => true
+                ]);
+            }
+        }
+
         return view('admin.notification_settings.index', compact('settings', 'typeLabels'));
     }
 
@@ -36,12 +52,24 @@ class NotificationSettingController extends Controller
     {
         $request->validate([
             'settings' => 'required|array',
-            'settings.*.days_before_expiry' => 'required|integer|min:0',
+            'settings.*.days_before_expiry' => 'nullable|integer|min:0',
+            'settings.*.is_enabled' => 'nullable|boolean',
         ]);
 
         foreach ($request->settings as $type => $settingData) {
-            NotificationSetting::where('notification_type', $type)
-                ->update(['days_before_expiry' => $settingData['days_before_expiry']]);
+            $data = [];
+
+            if (isset($settingData['days_before_expiry'])) {
+                $data['days_before_expiry'] = $settingData['days_before_expiry'];
+            }
+
+            // Handle the checkbox (if unchecked, it won't be in the request, so default to 0/false)
+            $data['is_enabled'] = isset($settingData['is_enabled']) ? 1 : 0;
+
+            NotificationSetting::updateOrCreate(
+                ['notification_type' => $type],
+                $data
+            );
         }
 
         // Trigger the expiry check command

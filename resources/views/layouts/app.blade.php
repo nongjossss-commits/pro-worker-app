@@ -344,13 +344,25 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="mb-3">
-                                <label for="new_due_date" class="form-label">{{ __('Select new expiry date') }}:</label>
-                                <input type="date" class="form-control" id="new_due_date" name="new_due_date" required>
+                            {{-- Dynamic Content Area --}}
+
+                            {{-- Field for Pink Card Number (Only for pink_card_missing) --}}
+                            <div class="mb-3 d-none" id="pink_card_number_group">
+                                <label for="pink_card_number" class="form-label">เลขบัตรชมพู <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="pink_card_number" name="pink_card_number">
                             </div>
+
+                            {{-- Field for Expiry Date (Hidden for missing data types) --}}
+                            <div class="mb-3" id="new_due_date_group">
+                                <label for="new_due_date" class="form-label">{{ __('Select new expiry date') }}: <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="new_due_date" name="new_due_date">
+                            </div>
+
+                            {{-- File Attachment --}}
                             <div class="mb-3">
-                                <label for="attachment" class="form-label">{{ __('Attach document (if any)') }}:</label>
+                                <label for="attachment" class="form-label" id="attachment_label">{{ __('Attach document (if any)') }}:</label>
                                 <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text text-muted" id="attachment_help"></div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -456,9 +468,46 @@
                 renewModal.addEventListener('show.bs.modal', function (event) {
                     const button = event.relatedTarget;
                     const notificationId = button.getAttribute('data-notification-id');
+                    const notificationType = button.getAttribute('data-notification-type');
+
                     const form = document.getElementById('renew-form');
+                    const modalTitle = document.getElementById('renewModalLabel');
+                    const pinkCardGroup = document.getElementById('pink_card_number_group');
+                    const dueDateGroup = document.getElementById('new_due_date_group');
+                    const dueDateInput = document.getElementById('new_due_date');
+                    const attachmentLabel = document.getElementById('attachment_label');
+                    const attachmentInput = document.getElementById('attachment');
+                    const pinkCardInput = document.getElementById('pink_card_number');
+
+                    // Reset Fields
+                    pinkCardGroup.classList.add('d-none');
+                    dueDateGroup.classList.remove('d-none');
+                    dueDateInput.required = true;
+                    pinkCardInput.required = false;
+                    attachmentInput.required = false; // Default
+                    attachmentLabel.textContent = '{{ __('Attach document (if any)') }}:';
+
                     if(notificationId) {
                         form.action = `/notifications/${notificationId}/renew`;
+                    }
+
+                    // Adjust modal based on type
+                    if (notificationType === 'pink_card_missing') {
+                        modalTitle.textContent = 'อัพเดตข้อมูลบัตรชมพู';
+                        pinkCardGroup.classList.remove('d-none');
+                        pinkCardInput.required = true;
+                        dueDateGroup.classList.add('d-none');
+                        dueDateInput.required = false;
+                        attachmentLabel.innerHTML = 'แนบไฟล์บัตรชมพู <span class="text-danger">*</span>';
+                        attachmentInput.required = true;
+                    } else if (notificationType === 'residence_permit_missing') {
+                        modalTitle.textContent = 'อัพเดตใบแจ้งที่พักอาศัย';
+                        dueDateGroup.classList.add('d-none');
+                        dueDateInput.required = false;
+                        attachmentLabel.innerHTML = 'แนบไฟล์ใบแจ้งที่พักอาศัย <span class="text-danger">*</span>';
+                        attachmentInput.required = true;
+                    } else {
+                        modalTitle.textContent = '{{ __('Renew Notification') }}';
                     }
                 });
             }

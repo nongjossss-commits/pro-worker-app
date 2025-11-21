@@ -12,5 +12,6 @@ class NotificationSetting extends Model
     protected $fillable = [
         'notification_type',
         'days_before_expiry',
+        'is_enabled',
     ];
 }

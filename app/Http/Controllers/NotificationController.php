@@ -28,6 +28,8 @@ class NotificationController extends Controller
             'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
             'employer_document_expiry' => 'เอกสารนายจ้าง',
             'employee_insurance_expiry' => 'ประกันลูกจ้าง',
+            'pink_card_missing' => 'บัตรชมพู', // New Tab
+            'residence_permit_missing' => 'แจ้งที่พักอาศัย', // New Tab
         ];
 
         $notificationsData = [];
@@ -95,6 +97,7 @@ class NotificationController extends Controller
             $query->where('status', 'cancelled')->orderBy('updated_at', 'desc');
         } else {
             // Modified sorting: Sort by due_date ASC (Earliest expiry first, expired items at top)
+            // For missing data types, due_date might be null or irrelevant, but we keep sorting for consistency
             $query->where('status', '!=', 'cancelled')->where('type', $type)->orderBy('due_date', 'asc');
         }
 
@@ -156,10 +159,22 @@ class NotificationController extends Controller
     // Add this new method to the controller
     public function renew(Request $request, \App\Models\Notification $notification)
     {
-        $request->validate([
-            'new_due_date' => 'required|date',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240', // 10MB max
-        ]);
+        // Validation rules adjusted for new types
+        $rules = [];
+
+        if (in_array($notification->type, ['pink_card_missing', 'residence_permit_missing'])) {
+            // For update action
+             $rules['attachment'] = 'required|file|mimes:pdf,jpg,jpeg,png|max:10240'; // Attachment required
+             if ($notification->type === 'pink_card_missing') {
+                 $rules['pink_card_number'] = 'required|string|max:255';
+             }
+        } else {
+            // For renewal action
+            $rules['new_due_date'] = 'required|date';
+            $rules['attachment'] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240';
+        }
+
+        $request->validate($rules);
 
         $employee = $notification->employee;
         $employer = $notification->employer; // Get employer directly
@@ -220,10 +235,29 @@ class NotificationController extends Controller
                 $fileField = 'employer_doc_company';
                 $targetModel = $employer;
                 break;
+
+            // --- New Types ---
+            case 'pink_card_missing':
+                // Updates pinkCardNo and employee_doc_4 (Pink Card File)
+                if ($request->filled('pink_card_number')) {
+                    $employee->pinkCardNo = $request->input('pink_card_number');
+                }
+                $fileField = 'employee_doc_4';
+                $targetModel = $employee;
+                // No date field to update for this type
+                break;
+            case 'residence_permit_missing':
+                // Updates employee_doc_7 (Residence Notification File)
+                $fileField = 'employee_doc_7';
+                $targetModel = $employee;
+                // No date field to update for this type
+                break;
         }
 
-        if ($fieldToUpdate && $targetModel) {
-            $targetModel->{$fieldToUpdate} = $request->new_due_date;
+        if ($targetModel) {
+            if ($fieldToUpdate && $request->has('new_due_date')) {
+                $targetModel->{$fieldToUpdate} = $request->new_due_date;
+            }
 
             // Handle file upload
             if ($request->hasFile('attachment') && $fileField) {
@@ -269,7 +303,15 @@ class NotificationController extends Controller
 
         $notification->delete(); // Remove the notification after handling
 
-        return redirect()->route('notifications.index', ['active_tab' => $activeTab])->with('success', 'ต่ออายุข้อมูลและบันทึกเอกสารเรียบร้อยแล้ว');
+        // Customize success message
+        $msg = 'ดำเนินการเรียบร้อยแล้ว';
+        if (in_array($notification->type, ['pink_card_missing', 'residence_permit_missing'])) {
+            $msg = 'อัพเดตข้อมูลและบันทึกเอกสารเรียบร้อยแล้ว';
+        } else {
+            $msg = 'ต่ออายุข้อมูลและบันทึกเอกสารเรียบร้อยแล้ว';
+        }
+
+        return redirect()->route('notifications.index', ['active_tab' => $activeTab])->with('success', $msg);
     }
 
     // Add this new method to the controller
