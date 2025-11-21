@@ -5,9 +5,16 @@
     $days_remaining = $notification->days_remaining;
     $is_overdue = $days_remaining < 0;
 
+    // For missing data types, days_remaining is 0/irrelevant, so handle badge
+    $isMissingDataType = in_array($notification->type, ['pink_card_missing', 'residence_permit_missing']);
+
     $card_class = '';
     $badge_class = 'bg-info text-dark';
-    if ($is_overdue) {
+
+    if ($isMissingDataType) {
+        $card_class = 'alert-danger'; // Always red for missing data
+        $badge_class = 'bg-danger';
+    } elseif ($is_overdue) {
         $card_class = 'alert-dark';
         $badge_class = 'bg-dark';
     } elseif ($days_remaining <= 30) {
@@ -66,11 +73,19 @@
                     <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
                     @endif
                 </p>
-                <p class="mb-0 small"><strong>วันครบกำหนด:</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}</p>
+                <p class="mb-0 small">
+                    @if($isMissingDataType)
+                        <strong>สถานะ:</strong> <span class="text-danger">ข้อมูลยังไม่ครบถ้วน</span>
+                    @else
+                        <strong>วันครบกำหนด:</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}
+                    @endif
+                </p>
             </div>
             <div class="text-end flex-shrink-0 ms-2">
                 <span class="badge {{ $badge_class }} mb-2 d-block text-nowrap fs-6">
-                    @if($is_overdue)
+                    @if($isMissingDataType)
+                        กรุณาอัพเดต
+                    @elseif($is_overdue)
                         หมดอายุ {{ abs($days_remaining) }} วัน
                     @else
                         เหลือ {{ $days_remaining }} วัน
@@ -89,7 +104,18 @@
                         </form>
                     @else
                         <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
-                        <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
+
+                        {{-- Update/Renew Button --}}
+                        <a href="#" class="btn btn-success"
+                           title="{{ $isMissingDataType ? 'อัพเดตข้อมูล' : 'ต่ออายุ' }}"
+                           data-bs-toggle="modal"
+                           data-bs-target="#renewNotificationModal"
+                           data-notification-id="{{ $notification->id }}"
+                           data-notification-type="{{ $notification->type }}">
+                           <i class="bi {{ $isMissingDataType ? 'bi-pencil-square' : 'bi-calendar-check' }}"></i>
+                           {{ $isMissingDataType ? 'อัพเดต' : '' }}
+                        </a>
+
                         {{-- Only show the 'Locate' button if there is an employee --}}
                         @if($employee)
                             <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>

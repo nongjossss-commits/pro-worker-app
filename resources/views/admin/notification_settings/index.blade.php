@@ -31,20 +31,41 @@
                             <thead>
                                 <tr>
                                     <th>ประเภทการแจ้งเตือน</th>
-                                    <th>แจ้งเตือนล่วงหน้า (วัน)</th>
+                                    <th>การตั้งค่า</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($settings as $setting)
+                                @foreach ($typeLabels as $type => $label)
+                                    @php
+                                        $setting = $settings[$type] ?? new \App\Models\NotificationSetting(['days_before_expiry' => 30, 'is_enabled' => true]);
+                                        $isMissingDataType = in_array($type, ['pink_card_missing', 'residence_permit_missing']);
+                                    @endphp
                                     <tr>
-                                        <td>{{ $typeLabels[$setting->notification_type] ?? $setting->notification_type }}</td>
+                                        <td>{{ $label }}</td>
                                         <td>
-                                            <input type="number"
-                                                   name="settings[{{ $setting->notification_type }}][days_before_expiry]"
-                                                   class="form-control"
-                                                   value="{{ old('settings.'.$setting->notification_type.'.days_before_expiry', $setting->days_before_expiry) }}"
-                                                   min="0"
-                                                   required>
+                                            @if ($isMissingDataType)
+                                                {{-- Toggle Switch for New Types --}}
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="switch_{{ $type }}"
+                                                           name="settings[{{ $type }}][is_enabled]"
+                                                           value="1"
+                                                           {{ old('settings.'.$type.'.is_enabled', $setting->is_enabled) ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="switch_{{ $type }}">เปิดใช้งานการแจ้งเตือน</label>
+                                                </div>
+                                            @else
+                                                {{-- Input for Days --}}
+                                                <div class="input-group" style="max-width: 200px;">
+                                                    <input type="number"
+                                                           name="settings[{{ $type }}][days_before_expiry]"
+                                                           class="form-control"
+                                                           value="{{ old('settings.'.$type.'.days_before_expiry', $setting->days_before_expiry) }}"
+                                                           min="0"
+                                                           required>
+                                                    <span class="input-group-text">วัน</span>
+                                                </div>
+                                                <input type="hidden" name="settings[{{ $type }}][is_enabled]" value="1"> {{-- Always enabled for expiry types for now --}}
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
