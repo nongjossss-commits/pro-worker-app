@@ -245,6 +245,8 @@
         const actionBar = document.getElementById('bulk-action-bar-notifications');
         const selectAllCheckbox = document.getElementById('select-all-checkbox-notifications');
         const selectAllCheckboxStd = document.getElementById('select-all-checkbox-notifications-std');
+        const selectAllCheckboxMOU1 = document.getElementById('select-all-checkbox-notifications-mou1');
+        const selectAllCheckboxMOU2 = document.getElementById('select-all-checkbox-notifications-mou2');
         const selectedCountSpan = document.getElementById('selected-count-notifications');
         const actionButton = document.getElementById('notificationBulkActionBtn');
         const downloadBtn = document.getElementById('notification-bulk-download-btn');
@@ -291,6 +293,30 @@
             });
         }
 
+        // Function to handle section-specific select all (for MOU table)
+        function handleSectionSelectAll(triggerCheckbox) {
+             const thead = triggerCheckbox.closest('thead');
+             if(!thead) return;
+             const tbody = thead.nextElementSibling;
+             if(tbody && tbody.tagName === 'TBODY') {
+                 const checkboxes = tbody.querySelectorAll('.bulk-action-checkbox');
+                 checkboxes.forEach(cb => cb.checked = triggerCheckbox.checked);
+                 updateActionBar();
+             }
+        }
+
+        if (selectAllCheckboxMOU1) {
+            selectAllCheckboxMOU1.addEventListener('change', function() {
+                handleSectionSelectAll(this);
+            });
+        }
+
+        if (selectAllCheckboxMOU2) {
+            selectAllCheckboxMOU2.addEventListener('change', function() {
+                handleSectionSelectAll(this);
+            });
+        }
+
         if (selectAllCheckboxStd) {
             selectAllCheckboxStd.addEventListener('change', function() {
                 const activePane = container.querySelector('.tab-pane.active');
@@ -324,6 +350,8 @@
             tab.addEventListener('shown.bs.tab', function() {
                 if(selectAllCheckbox) selectAllCheckbox.checked = false;
                 if(selectAllCheckboxStd) selectAllCheckboxStd.checked = false;
+                if(selectAllCheckboxMOU1) selectAllCheckboxMOU1.checked = false;
+                if(selectAllCheckboxMOU2) selectAllCheckboxMOU2.checked = false;
                 updateActionBar();
             });
         });
