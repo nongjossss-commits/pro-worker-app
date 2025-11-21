@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'รายการแจ้งเตือน')
+@section('title', __('Notification List'))
 
 @section('content')
 <div class="content-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">{{ __('รายการแจ้งเตือน') }}</h2>
+        <h2 class="mb-0">{{ __('Notification List') }}</h2>
         @can('manage-users')
             <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-outline-primary">
-                <i class="bi bi-gear-fill"></i> ตั้งค่าการแจ้งเตือน
+                <i class="bi bi-gear-fill"></i> {{ __('Notification Settings') }}
             </a>
         @endcan
     </div>
@@ -19,39 +19,39 @@
 
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-3">
-                        <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." value="{{ request('search') }}">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search name or email...') }}" value="{{ request('search') }}">
                     </div>
                     <div class="col-6 col-md-2">
                         <select name="month" class="form-select form-select-sm">
-                            <option value="">-- ทุกเดือน --</option>
+                            <option value="">-- {{ __('Filter') }} {{ __('Month') }} --</option>
                             @foreach(range(1, 12) as $m)
-                                <option value="{{ $m }}" @selected(request('month') == $m)>เดือนที่ {{ $m }}</option>
+                                <option value="{{ $m }}" @selected(request('month') == $m)>{{ __('Month') }} {{ $m }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-6 col-md-2">
                         <select name="nationality" class="form-select form-select-sm">
-                            <option value="">-- ทุกสัญชาติ --</option>
-                            <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>เมียนมา</option>
-                            <option value="ลาว" @selected(request('nationality') == 'ลาว')>ลาว</option>
-                            <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>กัมพูชา</option>
-                            <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>เวียดนาม</option>
+                            <option value="">-- {{ __('All Nationalities') }} --</option>
+                            <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>{{ __('Myanmar') }}</option>
+                            <option value="ลาว" @selected(request('nationality') == 'ลาว')>{{ __('Laos') }}</option>
+                            <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>{{ __('Cambodia') }}</option>
+                            <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>{{ __('Vietnam') }}</option>
                         </select>
                     </div>
                     <div class="col-12 col-md-2">
                         <select name="mou_type" class="form-select form-select-sm">
-                            <option value="">-- ทุกประเภท มติ. --</option>
-                            <option value="MOU" @selected(request('mou_type') == 'MOU')>MOU</option>
-                            <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
-                            <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
-                            <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>อื่นๆ</option>
+                            <option value="">-- {{ __('All MOU Types') }} --</option>
+                            <option value="MOU" @selected(request('mou_type') == 'MOU')>{{ __('MOU') }}</option>
+                            <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>{{ __('MOU Extension in Country') }}</option>
+                            <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>{{ __('MOU Registration') }}</option>
+                            <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>{{ __('Others') }}</option>
                         </select>
                     </div>
                     <div class="col-6 col-md-auto">
-                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> กรอง</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> {{ __('Filter') }}</button>
                     </div>
                     <div class="col-6 col-md-auto">
-                        <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm w-100">ล้างค่า</a>
+                        <a href="{{ route('notifications.index') }}" class="btn btn-secondary btn-sm w-100">{{ __('Clear') }}</a>
                     </div>
                 </div>
 
@@ -66,7 +66,7 @@
                     </div>
                     <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
                         @foreach($perPageOptions as $option)
-                        <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>แสดง {{ $option }}</option>
+                        <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>{{ __('Show') }} {{ $option }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -79,16 +79,16 @@
         <div>
             <input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications">
             <label class="form-check-label ms-2" for="select-all-checkbox-notifications">
-                เลือกทั้งหมด (<span id="selected-count-notifications">0</span>)
+                {{ __('Select All') }} (<span id="selected-count-notifications">0</span>)
             </label>
         </div>
 
         <div class="dropdown w-100 w-md-auto" style="max-width: 300px;">
             <button class="btn btn-primary btn-sm dropdown-toggle w-100" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                ดำเนินการกับรายการที่เลือก
+                {{ __('Action on selected items') }}
             </button>
             <ul class="dropdown-menu w-100" aria-labelledby="notificationBulkActionBtn">
-                <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2"></i>Download Files</a></li>
+                <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
             </ul>
         </div>
     </div>
@@ -97,14 +97,16 @@
         <ul class="nav nav-tabs flex-wrap" id="notificationTab" role="tablist">
             @foreach($tabs as $type => $title)
                 <li class="nav-item" role="presentation">
+                    {{-- Note: $title here typically comes from Controller/Config. I should translate it if possible or check if it's a key --}}
+                    {{-- Assuming $title might be a key or raw string. Let's try to translate it if it matches a key, or output as is --}}
                     <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
-                        {{ $title }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type]['total'] ?? 0 }}</span>
+                         {{ __($title) }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type]['total'] ?? 0 }}</span>
                     </button>
                 </li>
             @endforeach
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled-pane" type="button">
-                    รายการที่ยกเลิก <span class="badge bg-secondary rounded-pill ms-1">{{ $counts['cancelled'] ?? 0 }}</span>
+                    {{ __('Cancelled Items') }} <span class="badge bg-secondary rounded-pill ms-1">{{ $counts['cancelled'] ?? 0 }}</span>
                 </button>
             </li>
         </ul>
@@ -118,8 +120,8 @@
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                     @if(isset($counts[$type]['total']))
                     <div class="text-muted">
-                        <strong>ยอดรวม:</strong> {{ $counts[$type]['total'] }} คน
-                        (ชาย: {{ $counts[$type]['male'] }} คน, หญิง: {{ $counts[$type]['female'] }} คน)
+                        <strong>{{ __('Total') }}:</strong> {{ $counts[$type]['total'] }} {{ __('persons') }}
+                        ({{ __('Male') }}: {{ $counts[$type]['male'] }} {{ __('persons') }}, {{ __('Female') }}: {{ $counts[$type]['female'] }} {{ __('persons') }})
                     </div>
                     @else
                     <div></div>
@@ -127,7 +129,7 @@
 
                     <div>
                         <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
+                            <i class="bi bi-download"></i> {{ __('Export Data') }} ({{ __($tabs[$type] ?? 'Cancelled Items') }})
                         </a>
                     </div>
                 </div>
@@ -147,12 +149,12 @@
                                     <tr>
                                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-std"></th>
                                         <th style="width: 1%;">#</th>
-                                        <th>ชื่อลูกจ้าง</th>
-                                        <th>สัญชาติ</th>
-                                        <th>นายจ้าง</th>
-                                        <th>วันที่ครบกำหนด</th>
-                                        <th>สถานะ / วันคงเหลือ</th>
-                                        <th class="text-center">จัดการ</th>
+                                        <th>{{ __('Employee Name') }}</th>
+                                        <th>{{ __('Nationality') }}</th>
+                                        <th>{{ __('Employer') }}</th>
+                                        <th>{{ __('Expiry Date') }}</th>
+                                        <th>{{ __('Status / Days Remaining') }}</th>
+                                        <th class="text-center">{{ __('Manage') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -162,7 +164,7 @@
                                         @endphp
                                         @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $itemNumber])
                                     @empty
-                                        <tr><td colspan="8" class="text-center text-muted py-4">ไม่พบข้อมูล</td></tr>
+                                        <tr><td colspan="8" class="text-center text-muted py-4">{{ __('No data found') }}</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
@@ -174,7 +176,7 @@
                             @endphp
                             @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $itemNumber])
                         @empty
-                            <p class="text-center text-muted py-4">ไม่พบข้อมูล</p>
+                            <p class="text-center text-muted py-4">{{ __('No data found') }}</p>
                         @endforelse
                     @endif
 
@@ -270,7 +272,7 @@
             if (window.openBulkDownloadModal) {
                 window.openBulkDownloadModal(selected);
             } else {
-                alert('Download function not ready.');
+                alert('{{ __('Download function not ready.') }}');
             }
         });
 

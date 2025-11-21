@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Roles and Permissions')
+@section('title', __('Manage Roles and Permissions'))
 
 @section('content')
 <div class="content-section">
@@ -22,12 +22,13 @@
                     @foreach ($roles as $role)
                         <div class="mb-4 pb-3 border-bottom last:border-bottom-0">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="fw-bold text-primary mb-0">{{ ucfirst($role->name) }}</h5>
-                                <span class="badge bg-light text-dark border">{{ $role->permissions->count() }} permissions</span>
+                                <h5 class="fw-bold text-primary mb-0">{{ ucfirst(__($role->name)) }}</h5>
+                                <span class="badge bg-light text-dark border">{{ $role->permissions->count() }} {{ __('permissions') }}</span>
                             </div>
                             <div class="d-flex flex-wrap gap-1">
                                 @forelse ($role->permissions as $permission)
-                                    <span class="badge bg-secondary fw-normal">{{ $permission->name }}</span>
+                                    {{-- Attempt to translate permission name, fallback to formatted string --}}
+                                    <span class="badge bg-secondary fw-normal">{{ __($permission->name) }}</span>
                                 @empty
                                     <span class="text-muted fst-italic small">{{ __('No permissions assigned.') }}</span>
                                 @endforelse
@@ -47,7 +48,7 @@
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-1">
                         @foreach ($permissions as $permission)
-                             <span class="badge bg-info text-dark fw-normal">{{ $permission->name }}</span>
+                             <span class="badge bg-info text-dark fw-normal">{{ __($permission->name) }}</span>
                         @endforeach
                     </div>
                 </div>

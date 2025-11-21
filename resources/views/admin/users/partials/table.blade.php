@@ -15,13 +15,13 @@
                 <td>{{ $user->name }}</td>
                 <td>{{ $user->email }}</td>
                 <td>
-                    <span class="badge bg-secondary">{{ $user->roles->first()->name ?? 'N/A' }}</span>
+                    <span class="badge bg-secondary">{{ ucfirst(__($user->roles->first()->name ?? 'N/A')) }}</span>
                 </td>
                 <td>
                     @if($user->status === 'active')
-                        <span class="badge bg-success">Active</span>
+                        <span class="badge bg-success">{{ __('Active') }}</span>
                     @else
-                        <span class="badge bg-danger">Inactive</span>
+                        <span class="badge bg-danger">{{ __('Inactive') }}</span>
                     @endif
                 </td>
                 <td class="text-end">
@@ -30,10 +30,10 @@
                             @csrf
                             @method('PUT')
                             <button type="submit" class="btn btn-sm {{ $user->status === 'active' ? 'btn-outline-danger' : 'btn-outline-success' }}">
-                                {{ $user->status === 'active' ? 'Deactivate' : 'Activate' }}
+                                {{ $user->status === 'active' ? __('Deactivate') : __('Activate') }}
                             </button>
                         </form>
-                        <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                        <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-warning">{{ __('Edit') }}</a>
                     </div>
                 </td>
             </tr>
