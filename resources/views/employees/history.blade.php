@@ -66,6 +66,7 @@
             <i class="bi bi-person-up me-2"></i>{{ __('ย้ายนายจ้าง') }}
         </a>
     </li>
+    <li><a class="dropdown-item" href="#" id="history-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
 </x-bulk-action-bar>
 
 <div id="employeeListContainer">
@@ -134,10 +135,29 @@
 </div>
 
 @include('partials._employee_action_modals')
+@include('employees.modals.advanced_export')
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const bulkExportBtn = document.getElementById('history-bulk-advanced-export-btn');
+    if (bulkExportBtn) {
+        bulkExportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selected = Array.from(document.querySelectorAll('.history-employee-checkbox:checked')).map(cb => cb.value);
+
+            if (selected.length === 0) {
+                showToast('{{ __('Please select employees first.') }}', 'danger');
+                return;
+            }
+
+            document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+            const modalEl = document.getElementById('advancedExportModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        });
+    }
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     let transferModalInstance = null;
     let isBulkTransfer = false;
