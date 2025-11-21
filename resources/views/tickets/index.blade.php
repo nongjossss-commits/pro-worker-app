@@ -9,7 +9,7 @@
     @endif
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-3 mb-md-0">รายการคำขอของฉัน</h2>
+        <h2 class="mb-3 mb-md-0">{{ __('My Request List') }}</h2>
         <div class="d-flex flex-column flex-md-row gap-2">
             {{-- Per Page Selection (Must match employers.index) --}}
             <form action="{{ route('tickets.index') }}" method="GET" class="d-flex gap-2">
@@ -21,7 +21,7 @@
             </form>
             {{-- Create New Ticket Button --}}
             <a href="{{ route('tickets.create') }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-circle me-1"></i> สร้างคำขอใหม่
+                <i class="bi bi-plus-circle me-1"></i> {{ __('Create New Ticket') }}
             </a>
         </div>
     </div>
@@ -31,10 +31,10 @@
             <thead class="table-light">
                 <tr>
                     <th>ID</th>
-                    <th>หัวเรื่อง</th>
-                    <th>สถานะ</th>
-                    <th>วันที่สร้าง</th>
-                    <th class="text-center">จัดการ</th>
+                    <th>{{ __('Subject') }}</th>
+                    <th>{{ __('Status') }}</th>
+                    <th>{{ __('Created Date') }}</th>
+                    <th class="text-center">{{ __('Manage') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -44,7 +44,7 @@
                     <td>
                         {{ Str::limit($ticket->subject, 70) }}
                         @if($ticket->employer_unread_count > 0)
-                            <span class="badge bg-danger ms-2">ข้อความใหม่</span>
+                            <span class="badge bg-danger ms-2">{{ __('New Message') }}</span>
                         @endif
                     </td>
                     <td>
@@ -57,7 +57,7 @@
                     <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                     <td class="text-center">
                         <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
-                            <i class="bi bi-eye"></i> ดูรายละเอียด
+                            <i class="bi bi-eye"></i> {{ __('View Details') }}
                             @if($ticket->employer_unread_count > 0)
                                 <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
                                     <span class="visually-hidden">Unread</span>
@@ -68,7 +68,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="text-center text-muted">คุณยังไม่ได้ส่งคำขอใดๆ</td>
+                    <td colspan="5" class="text-center text-muted">{{ __('You haven't submitted any requests yet') }}</td>
                 </tr>
                 @endforelse
             </tbody>

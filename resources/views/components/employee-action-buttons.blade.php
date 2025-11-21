@@ -2,26 +2,26 @@
 
 <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-start gap-2">
     {{-- Create Job Button (Green) - Placeholder --}}
-    <a href="#" class="btn btn-sm btn-outline-success" title="Create Job (Coming Soon)">
+    <a href="#" class="btn btn-sm btn-outline-success" title="{{ __('Create Job (Coming Soon)') }}">
         <i class="bi bi-briefcase-fill"></i>
     </a>
     
     {{-- Edit Button (Yellow) --}}
     @can('edit-employees')
-        <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning" title="Edit Employee">
+        <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning" title="{{ __('Edit Employee') }}">
             <i class="bi bi-pencil-fill"></i>
         </a>
     @endcan
 
     {{-- Locate Button (Blue) - Conditional --}}
     @if($showLocateButton)
-        <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-primary" title="Locate in Employer List">
+        <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-primary" title="{{ __('Locate in Employer List') }}">
             <i class="bi bi-geo-alt-fill"></i>
         </a>
     @endif
 
     {{-- Download Button (Teal) --}}
-    <button type="button" class="btn btn-sm btn-info text-white btn-download-single" title="Download Files" data-employee-id="{{ $employee->id }}">
+    <button type="button" class="btn btn-sm btn-info text-white btn-download-single" title="{{ __('Download Files') }}" data-employee-id="{{ $employee->id }}">
         <i class="bi bi-download"></i>
     </button>
 
@@ -29,7 +29,7 @@
     @can('terminate-employees')
         <button type="button"
                 class="btn btn-sm btn-secondary btn-terminate"
-                title="Terminate Employment"
+                title="{{ __('Terminate Employment') }}"
                 data-bs-toggle="modal"
                 data-bs-target="#terminateEmployeeModal"
                 data-employee-id="{{ $employee->id }}"
@@ -43,7 +43,7 @@
         <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" class="d-grid d-md-inline delete-employee-form">
             @csrf
             @method('DELETE')
-            <button type="submit" class="btn btn-sm btn-danger" title="Delete Employee (to Trash)">
+            <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete Employee (to Trash)') }}">
                 <i class="bi bi-trash-fill"></i>
             </button>
         </form>

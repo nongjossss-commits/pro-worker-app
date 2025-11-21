@@ -71,13 +71,13 @@
             @if($attachments->existing_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->isNotEmpty())
             <div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>สิ่งที่แนบมา (Attachments Triage)</h5>
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>{{ __('Attachments') }} (Attachments Triage)</h5>
                 </div>
                 <div class="card-body">
 
                     {{-- 1.1 Existing Employees --}}
                     @if($attachments->existing_employees->isNotEmpty())
-                        <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
+                        <h6 class="text-primary mt-3">{{ __('Existing Employees') }} ({{ $attachments->existing_employees->count() }} คน)</h6>
 
                         <x-bulk-action-bar id="ticket-employer-existing-employees-bar" />
 
@@ -94,7 +94,7 @@
                                         <small class="text-muted">({{ $employee->employeePassport }})</small>
                                     </span>
                                     @if($employee->trashed())
-                                        <span class="badge bg-danger me-2">ลบ/จำหน่ายแล้ว</span>
+                                        <span class="badge bg-danger me-2">{{ __('Deleted/Terminated') }}</span>
                                     @endif
                                     <div class="ms-auto btn-group">
                                         {{-- Preview Button --}}
@@ -107,10 +107,10 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                    data-swal-title="ยืนยันการลบ"
-                                                    data-swal-text="ต้องการลบ '{{ $employee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                    data-swal-title="{{ __('Confirm Delete') }}"
+                                                    data-swal-text="{{ __('Are you sure you want to delete ...?') }}"
                                                     data-swal-icon="warning"
-                                                    data-swal-confirm-text="ใช่, ลบเลย">
+                                                    data-swal-confirm-text="{{ __('Yes, delete it') }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -123,7 +123,7 @@
 
                     {{-- 1.2 New Employees --}}
                     @if($attachments->new_employees->isNotEmpty())
-                        <h6 class="text-success mt-3">ลูกจ้างใหม่/แจ้งเข้า ({{ $attachments->new_employees->count() }} คน)</h6>
+                        <h6 class="text-success mt-3">{{ __('New Employees') }} ({{ $attachments->new_employees->count() }} คน)</h6>
                         <div class="list-group mb-3">
                             <script>
                                 // Initialize the global map if it doesn't exist
@@ -196,10 +196,10 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                    data-swal-title="ยืนยันการลบ"
-                                                    data-swal-text="ต้องการลบ '{{ $newEmployee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                    data-swal-title="{{ __('Confirm Delete') }}"
+                                                    data-swal-text="{{ __('Are you sure you want to delete ...?') }}"
                                                     data-swal-icon="warning"
-                                                    data-swal-confirm-text="ใช่, ลบเลย">
+                                                    data-swal-confirm-text="{{ __('Yes, delete it') }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -212,7 +212,7 @@
 
                     {{-- 1.3 General Files --}}
                     @if($attachments->files->isNotEmpty())
-                        <h6 class="text-secondary mt-3">ไฟล์แนบทั่วไป ({{ $attachments->files->count() }} ไฟล์)</h6>
+                        <h6 class="text-secondary mt-3">{{ __('General Files') }} ({{ $attachments->files->count() }} ไฟล์)</h6>
                         <div class="list-group mb-3">
                             @foreach($attachments->files as $item)
                                 @php $file = $item->data; @endphp
@@ -230,10 +230,10 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                data-swal-title="ยืนยันการลบ"
-                                                data-swal-text="ต้องการลบไฟล์ '{{ $file->name }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                data-swal-title="{{ __('Confirm Delete') }}"
+                                                data-swal-text="{{ __('Are you sure you want to delete ...?') }}"
                                                 data-swal-icon="warning"
-                                                data-swal-confirm-text="ใช่, ลบเลย">
+                                                data-swal-confirm-text="{{ __('Yes, delete it') }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -251,7 +251,7 @@
             {{-- Section 2: Communication History (Chat View) --}}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>ประวัติการสนทนา</h5>
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>{{ __('Conversation History') }}</h5>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @php $hasConversation = false; @endphp
@@ -275,10 +275,10 @@
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                            data-swal-title="ยืนยันการลบ"
-                                                            data-swal-text="ต้องการลบข้อความนี้ใช่หรือไม่?"
+                                                            data-swal-title="{{ __('Confirm Delete') }}"
+                                                            data-swal-text="{{ __('Are you sure you want to delete ...?') }}"
                                                             data-swal-icon="warning"
-                                                            data-swal-confirm-text="ใช่, ลบเลย">
+                                                            data-swal-confirm-text="{{ __('Yes, delete it') }}">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
@@ -313,7 +313,7 @@
             {{-- Section 3: Reply Box --}}
             @if(!$isClosed)
                 <div class="card mb-4" id="reply-box">
-                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> ตอบกลับ / ส่งข้อความ</h5></div>
+                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> {{ __('Reply / Send Message') }}</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
                         <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
@@ -327,7 +327,7 @@
                             {{-- Text Area --}}
                             <div class="mb-3">
                                 <label for="message" class="form-label">ข้อความ:</label>
-                                <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" placeholder="พิมพ์ข้อความตอบกลับของคุณที่นี่...">{{ old('message') }}</textarea>
+                                <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" placeholder="{{ __('Type your reply here...') }}">{{ old('message') }}</textarea>
                                 @error('message')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -335,20 +335,20 @@
 
                             {{-- Attachment Basket --}}
                             <div class="mb-3">
-                                <label class="form-label">สิ่งที่แนบมา (<span x-text="totalItemsCount()"></span> รายการ):</label>
+                                <label class="form-label">{{ __('Attached Items') }} (<span x-text="totalItemsCount()"></span> รายการ):</label>
 
                                 {{-- Upload Progress Bar --}}
                                 <div x-show="isUploading" class="mb-2">
                                     <div class="progress" style="height: 25px;">
                                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-secondary" role="progressbar" :style="'width: ' + uploadProgress + '%'" :aria-valuenow="uploadProgress" aria-valuemin="0" aria-valuemax="100">
-                                            กำลังอัปโหลด (<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
+                                            {{ __('Uploading') }} (<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="list-group" style="max-height: 250px; overflow-y: auto;">
                                     <template x-if="totalItemsCount() === 0">
-                                        <div class="list-group-item text-muted fst-italic">ยังไม่มีรายการที่แนบ</div>
+                                        <div class="list-group-item text-muted fst-italic">{{ __('No items attached') }}</div>
                                     </template>
                                     @include('tickets.partials._basket_display_templates')
                                 </div>
@@ -363,21 +363,21 @@
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div class="btn-group" role="group" aria-label="Attachment options">
                                     <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-check"></i> แนบลูกจ้าง
+                                        <i class="bi bi-person-check"></i> {{ __('Attach Existing Employee') }}
                                     </button>
                                     <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-plus"></i> แจ้งเข้า
+                                        <i class="bi bi-person-plus"></i> {{ __('Attach New Employee/Register') }}
                                     </button>
                                     <button type="button" class="btn btn-outline-secondary" @click="triggerFileInput" :disabled="isUploading">
-                                        <i class="bi bi-paperclip"></i> แนบไฟล์
+                                        <i class="bi bi-paperclip"></i> {{ __('Attach File/Image') }}
                                     </button>
                                 </div>
                                 <button type="submit" class="btn btn-primary" :disabled="isUploading">
                                     <template x-if="isUploading">
-                                        <span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังดำเนินการ...</span>
+                                        <span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> {{ __('Loading...') }}</span>
                                     </template>
                                     <template x-if="!isUploading">
-                                        <span><i class="bi bi-send-fill me-2"></i> ส่งข้อความ</span>
+                                        <span><i class="bi bi-send-fill me-2"></i> {{ __('Send Message') }}</span>
                                     </template>
                                 </button>
                             </div>
@@ -386,7 +386,7 @@
                 </div>
             @else
                 <div class="alert alert-warning text-center">
-                    <i class="bi bi-lock-fill me-2"></i> ตั๋วงานนี้ถูกปิดแล้ว ({{ $ticket->status_name }}). หากต้องการความช่วยเหลือเพิ่มเติม กรุณาสร้างตั๋วงานใหม่.
+                    <i class="bi bi-lock-fill me-2"></i> {{ __('This ticket is closed') }} ({{ $ticket->status_name }}). หากต้องการความช่วยเหลือเพิ่มเติม กรุณาสร้างตั๋วงานใหม่.
                 </div>
             @endif
             {{-- End Section 3: Reply Box --}}
@@ -397,7 +397,7 @@
         <div class="col-lg-4">
             <div class="card sticky-top" style="top: 20px;">
                 <div class="card-header">
-                    <h5 class="mb-0">ข้อมูลตั๋วงาน</h5>
+                    <h5 class="mb-0">{{ __('Ticket Info') }}</h5>
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">
@@ -411,7 +411,7 @@
                     </li>
                     {{-- Show Employer Info (More detailed in Admin view) --}}
                     <li class="list-group-item">
-                        <strong>ผู้ส่งคำขอ:</strong>
+                        <strong>{{ __('Requester') }}:</strong>
                         @if($isAdminView && $ticket->employerUser)
                              {{-- Eager loaded in Admin Controller --}}
                             {{ $ticket->employerUser->employer->employerNameTh ?? '' }} ({{ $ticket->employerUser->name }})
@@ -423,14 +423,14 @@
                     </li>
                     {{-- Show Assigned Staff --}}
                     <li class="list-group-item">
-                        <strong>ผู้รับผิดชอบ:</strong>
+                        <strong>{{ __('Assignee') }}:</strong>
                         {{ $ticket->assignedStaff->name ?? ($isAdminView ? 'ยังไม่ได้มอบหมาย' : 'รอเจ้าหน้าที่รับเรื่อง') }}
                     </li>
                 </ul>
                 {{-- Admin Action Buttons (Placeholder for V2.4-S11) --}}
                 @if($isAdminView)
                     <div class="card-body d-grid gap-2">
-                         <h5 class="mb-3">การจัดการ (Admin/Staff)</h5>
+                         <h5 class="mb-3">{{ __('Management') }} (Admin/Staff)</h5>
                         {{-- Mark as Resolved Button --}}
                         <form id="resolve-form" action="{{ route('admin.tickets.resolve', $ticket) }}" method="POST" class="d-grid">
                             @csrf
