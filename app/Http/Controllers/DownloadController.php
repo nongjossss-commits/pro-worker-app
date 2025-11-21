@@ -26,7 +26,7 @@ class DownloadController extends Controller
         $validated = $request->validate([
             'employee_ids' => 'required|array',
             'selected_files' => 'required|array',
-            'type' => 'required|in:zip,pdf',
+            'type' => 'required|in:zip,pdf,zip_single',
         ]);
 
         // Authorization Logic:

@@ -69,7 +69,9 @@ class ProcessDownload implements ShouldQueue
             $outputFile = '';
 
             if ($task->type === 'zip') {
-                $outputFile = $this->createZip($employees, $tempDir, $task);
+                $outputFile = $this->createZip($employees, $tempDir, $task, false);
+            } elseif ($task->type === 'zip_single') {
+                $outputFile = $this->createZip($employees, $tempDir, $task, true);
             } else {
                 $outputFile = $this->createPdf($employees, $tempDir, $task);
             }
@@ -90,7 +92,7 @@ class ProcessDownload implements ShouldQueue
         }
     }
 
-    protected function createZip($employees, $tempDir, $task)
+    protected function createZip($employees, $tempDir, $task, $singleFolder = false)
     {
         $zipFileName = 'download_' . $task->id . '_' . date('YmdHis') . '.zip';
         $zipPath = storage_path('app/public/downloads/' . $zipFileName);
@@ -114,10 +116,16 @@ class ProcessDownload implements ShouldQueue
                 $rawName = $employee->employeeNameTh ?? 'Employee_' . $employee->id;
             }
 
-            $folderName = $this->sanitizeFileName($rawName);
+            $safeName = $this->sanitizeFileName($rawName);
+
+            // If singleFolder is true, we use an empty folder name (root),
+            // but we might want to prefix the file with the employee name to avoid collisions.
+            // If separated, we use the safeName as the folder.
+            $folderName = $singleFolder ? '' : $safeName;
+            $filePrefix = $singleFolder ? $safeName . '_' : '';
 
             foreach ($this->selectedFiles as $fileType) {
-                $this->addFilesToZip($zip, $employee, $fileType, $folderName);
+                $this->addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix);
             }
         }
 
@@ -125,7 +133,7 @@ class ProcessDownload implements ShouldQueue
         return 'downloads/' . $zipFileName;
     }
 
-    protected function addFilesToZip($zip, $employee, $fileType, $folderName)
+    protected function addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix = '')
     {
         $attributes = $this->fileMap[$fileType] ?? [];
         if (!is_array($attributes)) {
@@ -137,7 +145,15 @@ class ProcessDownload implements ShouldQueue
                 $filePath = $this->getFilePath($employee->$attr);
                 if ($filePath && file_exists($filePath)) {
                     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
-                    $zip->addFile($filePath, $folderName . '/' . $fileType . '_' . basename($filePath));
+
+                    // Construct the internal path in the zip
+                    // If folderName is empty, it goes to root.
+                    // format: [Folder/] [Prefix] [FileType] _ [OriginalName]
+
+                    $internalPath = ($folderName ? $folderName . '/' : '') .
+                                    $filePrefix . $fileType . '_' . basename($filePath);
+
+                    $zip->addFile($filePath, $internalPath);
                 }
             }
         }

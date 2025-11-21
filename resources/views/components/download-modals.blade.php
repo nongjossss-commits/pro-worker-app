@@ -24,6 +24,13 @@
                                 <small class="d-block text-muted">Combines all selected files into a single PDF per employee (or one giant PDF).</small>
                             </label>
                         </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="download_type" id="dlTypeZipSingle" value="zip_single">
+                            <label class="form-check-label" for="dlTypeZipSingle">
+                                Single Folder (ZIP)
+                                <small class="d-block text-muted">Combines all files from all selected employees into one single folder.</small>
+                            </label>
+                        </div>
                     </div>
 
                     <hr>
@@ -265,11 +272,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     const date = new Date(task.created_at).toLocaleString('th-TH');
+                    // Pretty type
+                    let displayType = task.type.toUpperCase();
+                    if(task.type === 'zip_single') displayType = 'ZIP (Single Folder)';
 
                     tbody.innerHTML += `
                         <tr>
                             <td>${task.id}</td>
-                            <td>${task.type.toUpperCase()}</td>
+                            <td>${displayType}</td>
                             <td>${date}</td>
                             <td><span class="badge ${badgeClass}">${task.status}</span></td>
                             <td>${actionBtn}</td>
