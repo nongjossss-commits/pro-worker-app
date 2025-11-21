@@ -119,6 +119,12 @@ class CheckExpiries extends Command
         $this->info('Checking for expiring employee insurances...');
         $this->checkEmployeeInsuranceExpiries($today, $settings);
 
+        $this->info('Checking for missing Pink Cards...');
+        $this->checkPinkCardMissing($today, $settings);
+
+        $this->info('Checking for missing Residence Notifications...');
+        $this->checkResidencePermitMissing($today, $settings);
+
         $this->info('Expiry check process finished.');
         return 0;
     }
@@ -203,6 +209,77 @@ class CheckExpiries extends Command
                     );
                 }
             }
+        }
+    }
+
+    protected function checkPinkCardMissing($today, $settings)
+    {
+        $notificationType = 'pink_card_missing';
+        $setting = $settings->get($notificationType);
+
+        if (!$setting || !$setting->is_enabled) {
+            $this->info("Skipping {$notificationType} (disabled or settings missing).");
+            return;
+        }
+
+        // Pink Card is missing if pinkCardNo is null or empty string
+        // And employee is not terminated
+        $employees = Employee::where(function($query) {
+                $query->whereNull('pinkCardNo')
+                      ->orWhere('pinkCardNo', '=', '');
+            })
+            ->whereNull('terminated_at')
+            ->get();
+
+        $this->info("Found {$employees->count()} employees with missing Pink Card.");
+
+        foreach ($employees as $employee) {
+            Notification::updateOrCreate(
+                [
+                    'employee_id' => $employee->id,
+                    'type' => $notificationType,
+                ],
+                [
+                    'due_date' => $today,
+                    'days_remaining' => 0,
+                    'status' => 'unread',
+                    'message' => "ยังไม่มีข้อมูลบัตรชมพู",
+                ]
+            );
+        }
+    }
+
+    protected function checkResidencePermitMissing($today, $settings)
+    {
+        $notificationType = 'residence_permit_missing';
+        $setting = $settings->get($notificationType);
+
+        if (!$setting || !$setting->is_enabled) {
+            $this->info("Skipping {$notificationType} (disabled or settings missing).");
+            return;
+        }
+
+        // Residence Notification is missing if employee_doc_7 is null
+        // And employee is not terminated
+        $employees = Employee::whereNull('employee_doc_7')
+            ->whereNull('terminated_at')
+            ->get();
+
+        $this->info("Found {$employees->count()} employees with missing Residence Notification.");
+
+        foreach ($employees as $employee) {
+            Notification::updateOrCreate(
+                [
+                    'employee_id' => $employee->id,
+                    'type' => $notificationType,
+                ],
+                [
+                    'due_date' => $today,
+                    'days_remaining' => 0,
+                    'status' => 'unread',
+                    'message' => "ยังไม่มีเอกสารแจ้งที่พักอาศัย",
+                ]
+            );
         }
     }
 }
