@@ -71,6 +71,17 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
+                <label for="assigned_staff_id" class="form-label">{{ __('Responsible Person') }}</label>
+                <select class="form-select" id="assigned_staff_id" name="assigned_staff_id">
+                    <option value="">{{ __('Select Responsible Person') }}</option>
+                    @foreach($staffUsers as $staff)
+                        <option value="{{ $staff->id }}" {{ $employer->assigned_staff_id == $staff->id ? 'selected' : '' }}>{{ $staff->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
                 <label for="employerTaxId" class="form-label">{{ __('Employer Tax ID') }}</label>
                 <input type="text" class="form-control" id="employerTaxId" name="employerTaxId" value="{{ old('employerTaxId', $employer->employerTaxId) }}">
             </div>

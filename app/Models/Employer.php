@@ -52,6 +52,7 @@ class Employer extends Model
         'employer_doc_other_3_desc',
         'job_owner_id',
         'user_id',
+        'assigned_staff_id',
     ];
 
     /**
@@ -81,5 +82,10 @@ class Employer extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function assignedStaff()
+    {
+        return $this->belongsTo(User::class, 'assigned_staff_id');
     }
 }
