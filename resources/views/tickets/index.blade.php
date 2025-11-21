@@ -68,7 +68,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="text-center text-muted">{{ __('You haven't submitted any requests yet') }}</td>
+                    <td colspan="5" class="text-center text-muted">{{ __("You haven't submitted any requests yet") }}</td>
                 </tr>
                 @endforelse
             </tbody>
