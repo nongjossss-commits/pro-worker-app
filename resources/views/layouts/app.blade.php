@@ -187,7 +187,7 @@
                 @can('view-notifications')
                     <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-bell-fill me-2"></i>แจ้งเตือน</span>
+                            <span><i class="bi bi-bell-fill me-2"></i>{{ __('Notifications') }}</span>
                             @if(isset($totalNotificationCount) && $totalNotificationCount > 0)
                                 <span class="badge bg-danger rounded-pill">{{ $totalNotificationCount }}</span>
                             @endif
@@ -196,7 +196,7 @@
                     @can('manage-tickets')
                     <a href="{{ route('admin.incomplete_employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.incomplete_employees.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-octagon-fill me-2"></i>ข้อมูลไม่ครบถ้วน</span>
+                            <span><i class="bi bi-exclamation-octagon-fill me-2"></i>{{ __('Incomplete Data') }}</span>
                             @if(isset($incompleteCount) && $incompleteCount > 0)
                                 <span class="badge bg-warning text-dark rounded-pill">{{ $incompleteCount }}</span>
                             @endif
