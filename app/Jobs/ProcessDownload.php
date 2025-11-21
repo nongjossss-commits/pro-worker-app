@@ -106,7 +106,15 @@ class ProcessDownload implements ShouldQueue
         }
 
         foreach ($employees as $employee) {
-            $folderName = $this->sanitizeFileName($employee->employeeNameTh ?? $employee->employeeNameEn ?? 'Employee_' . $employee->id);
+            // Use English Title + Name if available, per user request
+            if (!empty($employee->employeeNameEn)) {
+                $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
+                $rawName = $prefix . $employee->employeeNameEn;
+            } else {
+                $rawName = $employee->employeeNameTh ?? 'Employee_' . $employee->id;
+            }
+
+            $folderName = $this->sanitizeFileName($rawName);
 
             foreach ($this->selectedFiles as $fileType) {
                 $this->addFilesToZip($zip, $employee, $fileType, $folderName);
