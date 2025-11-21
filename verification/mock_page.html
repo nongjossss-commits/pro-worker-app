@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Page for Verification</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .bulk-action-bar { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Mock Page</h1>
+
+        <!-- Mock Bulk Action Bar (replicates what's in your components) -->
+        <div id="mock-bulk-bar" class="bulk-action-bar mb-3 align-items-center gap-2" style="display: flex;">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="mock-select-all" checked>
+                <label class="form-check-label" for="mock-select-all">
+                    Select All (<span id="mock-count">1</span>)
+                </label>
+            </div>
+
+            <div class="dropdown">
+                <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Actions
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" id="mock-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Advanced Export</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Checkbox to simulate selection -->
+        <div class="form-check">
+            <input class="form-check-input employee-checkbox" type="checkbox" value="123" id="emp1" checked>
+            <label class="form-check-label" for="emp1">Employee 1</label>
+        </div>
+
+        <!-- Advanced Export Modal (Simulated content) -->
+        <div class="modal fade" id="advancedExportModal" tabindex="-1" aria-labelledby="advancedExportModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form id="advancedExportForm">
+                        <input type="hidden" name="employee_ids" id="export_employee_ids">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="advancedExportModalLabel">Advanced Export (Max 15 items)</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Select fields to export...</p>
+                            <div class="form-check">
+                                <input class="form-check-input export-checkbox" type="checkbox" id="col_name_th">
+                                <label class="form-check-label" for="col_name_th">Name (TH)</label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success">Export Selected</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const bulkExportBtn = document.getElementById('mock-advanced-export-btn');
+            if (bulkExportBtn) {
+                bulkExportBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+                    if (selected.length === 0) {
+                        alert('Please select employees first.');
+                        return;
+                    }
+
+                    document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                    const modalEl = document.getElementById('advancedExportModal');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

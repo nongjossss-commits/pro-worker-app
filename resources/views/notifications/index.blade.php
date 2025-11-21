@@ -89,6 +89,7 @@
             </button>
             <ul class="dropdown-menu w-100" aria-labelledby="notificationBulkActionBtn">
                 <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="notification-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
             </ul>
         </div>
     </div>
@@ -190,11 +191,35 @@
         @endforeach
     </div>
 </div>
+@include('employees.modals.advanced_export')
 @endsection
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const notificationExportBtn = document.getElementById('notification-bulk-advanced-export-btn');
+        const container = document.querySelector('.tab-content');
+
+        if (notificationExportBtn) {
+            notificationExportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const activePane = container.querySelector('.tab-pane.active');
+                if (!activePane) return;
+
+                const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                const modalEl = document.getElementById('advancedExportModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+        }
+
         const tabs = document.querySelectorAll('#notificationTab .nav-link');
         const activeTabInput = document.getElementById('active_tab_input');
 

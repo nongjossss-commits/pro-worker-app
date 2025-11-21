@@ -85,7 +85,9 @@
             </div>
         </div>
 
-        <x-bulk-action-bar id="incomplete-bulk-bar" />
+        <x-bulk-action-bar id="incomplete-bulk-bar">
+            <li><a class="dropdown-item" href="#" id="incomplete-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+        </x-bulk-action-bar>
 
         @if($currentView === 'card')
             <div class="row g-3">
@@ -158,4 +160,29 @@
         </div>
     @endif
 </div>
+@include('employees.modals.advanced_export')
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const bulkExportBtn = document.getElementById('incomplete-bulk-advanced-export-btn');
+        if (bulkExportBtn) {
+            bulkExportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                const modalEl = document.getElementById('advancedExportModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+        }
+    });
+</script>
+@endpush

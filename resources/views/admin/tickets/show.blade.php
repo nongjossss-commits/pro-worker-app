@@ -79,7 +79,9 @@
                     @if($attachments->existing_employees->isNotEmpty())
                         <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
 
-                        <x-bulk-action-bar id="ticket-existing-employees-bar" />
+                        <x-bulk-action-bar id="ticket-existing-employees-bar">
+                            <li><a class="dropdown-item" href="#" id="ticket-existing-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+                        </x-bulk-action-bar>
 
                         <div class="list-group mb-3">
                             @foreach($attachments->existing_employees as $item)
@@ -529,6 +531,7 @@
 
 {{-- Preview Modal for New Employees --}}
 @include('tickets.partials._new_employee_preview_modal')
+@include('employees.modals.advanced_export')
 
 {{-- (S11.4) Change Assignment Modal --}}
 <div class="modal fade" id="changeAssignmentModal" tabindex="-1" aria-labelledby="changeAssignmentModalLabel" aria-hidden="true">
@@ -572,6 +575,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const bulkExportBtn = document.getElementById('ticket-existing-bulk-advanced-export-btn');
+    if (bulkExportBtn) {
+        bulkExportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Note: Checkboxes in ticket show are .employee-checkbox
+            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+            if (selected.length === 0) {
+                showToast('{{ __('Please select employees first.') }}', 'danger');
+                return;
+            }
+
+            document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+            const modalEl = document.getElementById('advancedExportModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        });
+    }
+
     document.querySelectorAll('.btn-submit-swal').forEach(button => {
         button.addEventListener('click', function (e) {
             e.preventDefault(); // ป้องกันการ submit ทันที
