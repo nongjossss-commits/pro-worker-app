@@ -75,7 +75,7 @@
     </div>
 
     {{-- NEW: Bulk Action Bar --}}
-    <div id="bulk-action-bar-notifications" class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 py-2 px-3 bg-light border rounded gap-2" style="display: none !important;">
+    <div id="bulk-action-bar-notifications" class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 py-2 px-3 bg-light border rounded gap-2" style="display: none;">
         <div>
             <input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications">
             <label class="form-check-label ms-2" for="select-all-checkbox-notifications">
@@ -244,6 +244,7 @@
         const container = document.querySelector('.tab-content'); // Target tab content for notifications
         const actionBar = document.getElementById('bulk-action-bar-notifications');
         const selectAllCheckbox = document.getElementById('select-all-checkbox-notifications');
+        const selectAllCheckboxStd = document.getElementById('select-all-checkbox-notifications-std');
         const selectedCountSpan = document.getElementById('selected-count-notifications');
         const actionButton = document.getElementById('notificationBulkActionBtn');
         const downloadBtn = document.getElementById('notification-bulk-download-btn');
@@ -258,15 +259,18 @@
             const count = selectedCheckboxes.length;
 
             if (count > 0) {
-                actionBar.style.display = 'flex'; // Removed !important
+                actionBar.style.display = 'flex';
                 selectedCountSpan.textContent = count;
                 actionButton.disabled = false;
             } else {
-                actionBar.style.display = 'none'; // Removed !important
+                actionBar.style.display = 'none';
                 selectedCountSpan.textContent = 0;
                 actionButton.disabled = true;
             }
-            selectAllCheckbox.checked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
+
+            const allChecked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
+            if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
+            if (selectAllCheckboxStd) selectAllCheckboxStd.checked = allChecked;
         }
 
         container.addEventListener('change', function(e) {
@@ -275,15 +279,29 @@
             }
         });
 
-        selectAllCheckbox.addEventListener('change', function() {
-            const activePane = container.querySelector('.tab-pane.active');
-            if (!activePane) return;
-            const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
-            itemCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const activePane = container.querySelector('.tab-pane.active');
+                if (!activePane) return;
+                const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
+                itemCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateActionBar();
             });
-            updateActionBar();
-        });
+        }
+
+        if (selectAllCheckboxStd) {
+            selectAllCheckboxStd.addEventListener('change', function() {
+                const activePane = container.querySelector('.tab-pane.active');
+                if (!activePane) return;
+                const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
+                itemCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateActionBar();
+            });
+        }
 
         // Download Handler
         downloadBtn.addEventListener('click', function(e) {
@@ -305,6 +323,7 @@
         document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
             tab.addEventListener('shown.bs.tab', function() {
                 if(selectAllCheckbox) selectAllCheckbox.checked = false;
+                if(selectAllCheckboxStd) selectAllCheckboxStd.checked = false;
                 updateActionBar();
             });
         });

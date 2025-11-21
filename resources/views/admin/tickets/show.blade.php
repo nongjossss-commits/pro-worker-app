@@ -79,11 +79,25 @@
                     @if($attachments->existing_employees->isNotEmpty())
                         <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
 
-                        <x-bulk-action-bar id="ticket-existing-employees-bar">
-                            <li><a class="dropdown-item" href="#" id="ticket-existing-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
-                        </x-bulk-action-bar>
-
                         <div class="list-group mb-3">
+                            {{-- Bulk Action Header --}}
+                            <div class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" id="ticket-existing-select-all">
+                                    <label class="form-check-label" for="ticket-existing-select-all">
+                                        {{ __('Select All') }} (<span id="ticket-existing-selected-count">0</span>)
+                                    </label>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="ticket-existing-actions-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                                        {{ __('Manage Selected') }}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" id="ticket-existing-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
                             @foreach($attachments->existing_employees as $item)
                                 @php $employee = $item->employee; @endphp
                                 <div class="list-group-item d-flex align-items-center gap-3 py-2">
@@ -575,6 +589,35 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Logic for Ticket Existing Employees Bulk Actions
+    const ticketSelectAll = document.getElementById('ticket-existing-select-all');
+    const ticketCheckboxes = document.querySelectorAll('.employee-checkbox');
+    const ticketActionsBtn = document.getElementById('ticket-existing-actions-btn');
+    const ticketSelectedCount = document.getElementById('ticket-existing-selected-count');
+
+    function updateTicketBulkActions() {
+        const checkedCount = document.querySelectorAll('.employee-checkbox:checked').length;
+        if (ticketSelectedCount) ticketSelectedCount.textContent = checkedCount;
+        if (ticketActionsBtn) ticketActionsBtn.disabled = checkedCount === 0;
+
+        if (ticketSelectAll && ticketCheckboxes.length > 0) {
+            ticketSelectAll.checked = (checkedCount > 0 && checkedCount === ticketCheckboxes.length);
+            ticketSelectAll.indeterminate = (checkedCount > 0 && checkedCount < ticketCheckboxes.length);
+        }
+    }
+
+    if (ticketSelectAll) {
+        ticketSelectAll.addEventListener('change', function() {
+            const isChecked = this.checked;
+            ticketCheckboxes.forEach(cb => cb.checked = isChecked);
+            updateTicketBulkActions();
+        });
+    }
+
+    ticketCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateTicketBulkActions);
+    });
+
     const bulkExportBtn = document.getElementById('ticket-existing-bulk-advanced-export-btn');
     if (bulkExportBtn) {
         bulkExportBtn.addEventListener('click', function(e) {
