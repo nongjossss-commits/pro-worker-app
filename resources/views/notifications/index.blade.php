@@ -75,7 +75,7 @@
     </div>
 
     {{-- NEW: Bulk Action Bar --}}
-    <div id="bulk-action-bar-notifications" class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-2" style="display: none !important;">
+    <div id="bulk-action-bar-notifications" class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 py-2 px-3 bg-light border rounded gap-2" style="display: none !important;">
         <div>
             <input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications">
             <label class="form-check-label ms-2" for="select-all-checkbox-notifications">
@@ -83,7 +83,7 @@
             </label>
         </div>
 
-        <div class="dropdown w-100 w-md-auto">
+        <div class="dropdown w-100 w-md-auto" style="max-width: 300px;">
             <button class="btn btn-primary btn-sm dropdown-toggle w-100" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 ดำเนินการกับรายการที่เลือก
             </button>
@@ -114,17 +114,22 @@
         @foreach($notificationsData as $type => $notifications)
             <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $type }}-pane" role="tabpanel">
 
-                {{-- NEW: Gender Count Display --}}
-                @if(isset($counts[$type]['total']))
-                <div class="mb-3 text-muted">
-                    <strong>ยอดรวม:</strong> {{ $counts[$type]['total'] }} คน
-                    (ชาย: {{ $counts[$type]['male'] }} คน, หญิง: {{ $counts[$type]['female'] }} คน)
-                </div>
-                @endif
-                <div class="d-grid d-md-flex justify-content-md-end mb-3">
-                    <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-outline-success btn-sm w-100 w-md-auto">
-                        <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
-                    </a>
+                {{-- NEW: Gender Count Display & Export Button --}}
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                    @if(isset($counts[$type]['total']))
+                    <div class="text-muted">
+                        <strong>ยอดรวม:</strong> {{ $counts[$type]['total'] }} คน
+                        (ชาย: {{ $counts[$type]['male'] }} คน, หญิง: {{ $counts[$type]['female'] }} คน)
+                    </div>
+                    @else
+                    <div></div>
+                    @endif
+
+                    <div>
+                        <a href="{{ route('notifications.export', array_merge(request()->query(), ['export_type' => $type])) }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-download"></i> Export ข้อมูล ({{ $tabs[$type] ?? 'รายการที่ยกเลิก' }})
+                        </a>
+                    </div>
                 </div>
 
                 @if($type === 'work_permit_mou')
