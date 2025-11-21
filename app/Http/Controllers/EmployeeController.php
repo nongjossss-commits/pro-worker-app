@@ -1080,15 +1080,22 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // Generate HTML Table for Excel
         $html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
-        $html .= '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>';
+        $html .= '<head>';
+        $html .= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+        $html .= '<style>';
+        $html .= 'table { border-collapse: collapse; width: 100%; }';
+        $html .= 'th { background-color: #f2f2f2; border: 1px solid #000000; text-align: center; vertical-align: middle; font-weight: bold; padding: 10px; }';
+        $html .= 'td { border: 1px solid #000000; text-align: center; vertical-align: middle; padding: 5px; }'; // Center all content vertically and horizontally
+        $html .= '</style>';
+        $html .= '</head>';
         $html .= '<body>';
-        $html .= '<table border="1">';
+        $html .= '<table>';
 
         // Header Row
         $html .= '<tr>';
         foreach ($selectedColumns as $col) {
             $label = $columnLabels[$col] ?? $col;
-            $html .= '<th style="background-color: #f2f2f2;">' . $label . '</th>';
+            $html .= '<th>' . $label . '</th>';
         }
         $html .= '</tr>';
 
@@ -1100,8 +1107,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
                     $photoUrl = $employee->photo_url;
                     // Use full URL for the image. Excel needs an absolute URL or embedded data.
                     // Since this is a web app, public URL is best.
-                    $html .= '<td style="text-align: center; vertical-align: middle;">';
-                    $html .= '<img src="' . $photoUrl . '" width="80" height="80" style="object-fit: cover;">';
+                    // Added explicit cell dimensions to enforce row height in Excel
+                    $html .= '<td style="width: 110px; height: 130px;">';
+                    $html .= '<img src="' . $photoUrl . '" width="100" height="120" style="display: block; margin: auto;">';
                     $html .= '</td>';
                 } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'])) {
                     // Format Dates
