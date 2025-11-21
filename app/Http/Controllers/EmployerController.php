@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employer;
 use App\Models\JobOwner;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -28,7 +29,7 @@ class EmployerController extends Controller
         // $employers = Employer::with('jobOwner')->latest()->paginate(10); // <-- ลบแถวนี้
 
         // --- START: เพิ่ม Logic การค้นหา ---
-        $query = Employer::with('jobOwner')->latest();
+        $query = Employer::with(['jobOwner', 'assignedStaff'])->latest();
 
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
@@ -36,15 +37,20 @@ class EmployerController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
+                  ->orWhere('businessType', 'like', $searchTerm)
                   ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
+                      $subQ->where('name', 'like', $searchTerm);
+                  })
+                  ->orWhereHas('assignedStaff', function($subQ) use ($searchTerm) {
                       $subQ->where('name', 'like', $searchTerm);
                   });
             });
         }
         // --- END: เพิ่ม Logic การค้นหา ---
 
+        $perPage = $request->input('per_page', 10);
         // เพิ่ม withQueryString() เพื่อให้ pagination จำค่า search
-        $employers = $query->paginate(10)->withQueryString();
+        $employers = $query->paginate($perPage)->withQueryString();
 
         return view('employers.index', compact('employers'));
     }
@@ -52,13 +58,14 @@ class EmployerController extends Controller
     public function create()
     {
         $jobOwners = JobOwner::orderBy('name')->get();
+        $staffUsers = User::role(['admin', 'staff'])->orderBy('name')->get();
 
         // สร้างรหัสนายจ้างใหม่ที่ไม่ซ้ำใคร
         $lastEmployer = Employer::orderBy('id', 'desc')->first();
         $nextId = $lastEmployer ? $lastEmployer->id + 1 : 1;
         $newEmployerId = 'EMP-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
 
-    return view('employers.create', compact('jobOwners', 'newEmployerId'));
+    return view('employers.create', compact('jobOwners', 'newEmployerId', 'staffUsers'));
     }
 
     public function store(Request $request)
@@ -90,6 +97,7 @@ class EmployerController extends Controller
             'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
+            'assigned_staff_id' => 'nullable|exists:users,id',
         ]);
 
         // Handle new document uploads
@@ -111,6 +119,7 @@ class EmployerController extends Controller
 public function edit(Request $request, Employer $employer)
 {
     $jobOwners = JobOwner::orderBy('name')->get();
+    $staffUsers = User::role(['admin', 'staff'])->orderBy('name')->get();
 
     $employeeQuery = $employer->employees()->whereNull('terminated_at');
 
@@ -170,6 +179,7 @@ public function edit(Request $request, Employer $employer)
     return view('employers.edit', compact(
         'employer',
         'jobOwners',
+        'staffUsers',
         'employees',
         'terminatedEmployees',
         'perPageOptions',
@@ -207,6 +217,7 @@ public function edit(Request $request, Employer $employer)
             'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
+            'assigned_staff_id' => 'nullable|exists:users,id',
         ]);
 
         // Handle new document uploads

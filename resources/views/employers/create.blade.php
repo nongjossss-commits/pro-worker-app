@@ -49,6 +49,17 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
+                <label for="assigned_staff_id" class="form-label">{{ __('Responsible Person') }}</label>
+                <select class="form-select" id="assigned_staff_id" name="assigned_staff_id">
+                    <option value="">{{ __('Select Responsible Person') }}</option>
+                    @foreach($staffUsers as $staff)
+                        <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
                 <label for="employerId" class="form-label">{{ __('Employer ID') }}</label>
                 <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="{{ $newEmployerId }}" readonly required>
                 @error('employerId')

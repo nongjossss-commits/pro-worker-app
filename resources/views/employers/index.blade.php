@@ -14,12 +14,16 @@
         <div class="d-flex flex-column flex-md-row gap-2">
             <form action="{{ route('employers.index') }}" method="GET" class="d-flex flex-column flex-md-row gap-2">
                 <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                    <option value="25" @selected(request('per_page', 25) == 25)>25</option>
+                    <option value="10" @selected(request('per_page', 10) == 10)>10</option>
+                    <option value="25" @selected(request('per_page') == 25)>25</option>
                     <option value="50" @selected(request('per_page') == 50)>50</option>
                     <option value="100" @selected(request('per_page') == 100)>100</option>
                 </select>
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}">
                 <button type="submit" class="btn btn-primary btn-sm">{{ __('Search') }}</button>
+                @if(request('search'))
+                    <a href="{{ route('employers.index') }}" class="btn btn-outline-secondary btn-sm">{{ __('Clear') }}</a>
+                @endif
             </form>
             <div class="d-flex gap-2 mt-2 mt-md-0">
                  <a href="{{ route('employers.export') }}" class="btn btn-sm btn-outline-secondary flex-grow-1 flex-md-grow-0 text-nowrap"><i class="bi bi-download"></i> {{ __('Export') }}</a>
@@ -38,6 +42,7 @@
                     <th>{{ __('Employer ID') }}</th>
                     <th>{{ __('Business Type') }}</th>
                     <th>{{ __('Job Owner') }}</th>
+                    <th>{{ __('Responsible Person') }}</th>
                     <th class="text-center">{{ __('Actions') }}</th>
                 </tr>
             </thead>
@@ -49,6 +54,7 @@
                         <td>{{ $employer->employerId }}</td>
                         <td>{{ $employer->businessType }}</td>
                         <td>{{ $employer->jobOwner->name ?? 'N/A' }}</td>
+                        <td>{{ $employer->assignedStaff->name ?? '-' }}</td>
                         <td class="text-center">
                             <div class="d-flex flex-column flex-md-row gap-1 justify-content-center">
                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
