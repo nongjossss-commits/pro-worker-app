@@ -79,12 +79,12 @@
                                         };
                                     @endphp
                                     <span class="badge bg-{{ $actionColor }} text-uppercase">
-                                        {{ $log->action }}
+                                        {{ \App\Helpers\ActivityLogHelper::formatAction($log->action) }}
                                     </span>
                                 </td>
                                 <td>
                                     <div class="fw-bold">{{ $log->description }}</div>
-                                    <div class="small text-muted">ID: {{ $log->subject_id }} ({{ class_basename($log->subject_type) }})</div>
+                                    <div class="small text-muted">ID: {{ $log->subject_id }} ({{ \App\Helpers\ActivityLogHelper::formatModel($log->subject_type) }})</div>
                                 </td>
                                 <td>
                                     @if($log->properties && (isset($log->properties['old']) || isset($log->properties['attributes'])))
@@ -104,14 +104,41 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        @if(isset($log->properties['old']))
-                                                            <h6 class="fw-bold text-danger">ค่าเดิม (Old):</h6>
-                                                            <pre class="bg-light p-2 rounded">@json($log->properties['old'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</pre>
-                                                        @endif
+                                                        @php
+                                                            $readableChanges = \App\Helpers\ActivityLogHelper::generateReadableChanges($log);
+                                                        @endphp
 
-                                                        @if(isset($log->properties['attributes']))
-                                                            <h6 class="fw-bold text-success mt-3">ค่าใหม่ (New):</h6>
-                                                            <pre class="bg-light p-2 rounded">@json($log->properties['attributes'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</pre>
+                                                        @if(count($readableChanges) > 0)
+                                                            <ul class="list-group">
+                                                                @foreach($readableChanges as $change)
+                                                                    <li class="list-group-item">{!! $change !!}</li>
+                                                                @endforeach
+                                                            </ul>
+                                                        @else
+                                                            <p class="text-muted">ไม่มีข้อมูลการเปลี่ยนแปลงที่สำคัญ หรือไม่สามารถระบุได้</p>
+
+                                                            <div class="accordion mt-3" id="accordionRaw{{ $log->id }}">
+                                                                <div class="accordion-item">
+                                                                    <h2 class="accordion-header" id="headingRaw{{ $log->id }}">
+                                                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRaw{{ $log->id }}" aria-expanded="false" aria-controls="collapseRaw{{ $log->id }}">
+                                                                            ดูข้อมูลดิบ (Raw Data)
+                                                                        </button>
+                                                                    </h2>
+                                                                    <div id="collapseRaw{{ $log->id }}" class="accordion-collapse collapse" aria-labelledby="headingRaw{{ $log->id }}" data-bs-parent="#accordionRaw{{ $log->id }}">
+                                                                        <div class="accordion-body">
+                                                                            @if(isset($log->properties['old']))
+                                                                                <h6 class="fw-bold text-danger">ค่าเดิม (Old):</h6>
+                                                                                <pre class="bg-light p-2 rounded">@json($log->properties['old'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</pre>
+                                                                            @endif
+
+                                                                            @if(isset($log->properties['attributes']))
+                                                                                <h6 class="fw-bold text-success mt-3">ค่าใหม่ (New):</h6>
+                                                                                <pre class="bg-light p-2 rounded">@json($log->properties['attributes'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</pre>
+                                                                            @endif
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         @endif
                                                     </div>
                                                 </div>

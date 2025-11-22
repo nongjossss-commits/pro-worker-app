@@ -24,62 +24,93 @@ class EmployerEmployeeController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $query = Employee::whereNull('terminated_at')->orderBy('employeeNameTh');
-
-        // Check for specific IDs (V2.5-FIX for Bulk Send Data)
+        // 1. Handle Specific IDs Request (e.g. from "Send Data")
         $requestedIds = $request->input('ids');
         if ($requestedIds && is_array($requestedIds)) {
-             if ($user->can('manage-tickets')) {
-                 // Admins can fetch any specific employees by ID, regardless of employer
-                 $query->withoutGlobalScopes()->whereIn('id', $requestedIds);
-             } elseif ($user->hasRole('employer')) {
-                 // Employers can only fetch their own
+            // Start a fresh query to avoid any scope pollution
+            $query = Employee::query();
+
+            // Basic filter for active employees (unless specific requirement to include terminated)
+            $query->whereNull('terminated_at');
+
+            if ($user->can('manage-tickets')) {
+                 // Admin/Staff: Bypass employer tenancy scope to find any employee by ID
+                 // We also need to ensure we don't accidentally include soft-deleted records
+                 // unless we explicitly want them (usually not for ticket creation).
+                 $query->withoutGlobalScopes()
+                       ->whereNull('deleted_at') // Re-apply soft delete check
+                       ->whereIn('id', $requestedIds);
+            } elseif ($user->hasRole('employer')) {
+                 // Employer: Must own the employees
                   if ($user->employer) {
-                     $query->whereIn('id', $requestedIds)->where('employer_id', $user->employer->id);
+                     $query->where('employer_id', $user->employer->id)
+                           ->whereIn('id', $requestedIds);
                   } else {
                       return response()->json([]);
                   }
-             }
-             // When specific IDs are requested, we return them directly
+            } else {
+                return response()->json([]);
+            }
+
+            // Retrieve data with necessary fields
+             $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
+
+             return response()->json($this->formatEmployees($employees));
         }
-        else {
-            // --- Standard Listing Logic ---
-            // V2.4-S13: API Scoping Logic for Admin/Staff
-            if ($user->can('manage-tickets')) {
-                $employerId = $request->input('employer_id');
-                $employerUserId = $request->input('employer_user_id');
 
-                // V2.4-S14 FIX: If employer_user_id is provided, find its linked employer_id
-                if ($employerUserId && !$employerId) {
-                    $employerUser = \App\Models\User::find($employerUserId);
-                    if ($employerUser && $employerUser->employer) {
-                        $employerId = $employerUser->employer->id;
-                    }
-                }
+        // 2. Handle Standard List Request (Filtered by Context)
+        $query = Employee::whereNull('terminated_at')->orderBy('employeeNameTh');
 
-                if ($employerId) {
-                    $query->withoutGlobalScopes()->where('employer_id', $employerId);
-                } else {
-                    return response()->json([]);
+        // V2.4-S13: API Scoping Logic for Admin/Staff
+        if ($user->can('manage-tickets')) {
+            $employerId = $request->input('employer_id');
+            $employerUserId = $request->input('employer_user_id');
+
+            // V2.4-S14 FIX: If employer_user_id is provided, find its linked employer_id
+            if ($employerUserId && !$employerId) {
+                $employerUser = \App\Models\User::find($employerUserId);
+                if ($employerUser && $employerUser->employer) {
+                    $employerId = $employerUser->employer->id;
                 }
             }
-            // V2.5-S7 FIX: Explicitly apply tenancy for employers
-            else if ($user->hasRole('employer')) {
-                if ($user->employer) {
-                    $query->where('employer_id', $user->employer->id);
-                } else {
-                    return response()->json([]);
-                }
+
+            if ($employerId) {
+                // For listing by employer, we need to bypass the default scope if the admin
+                // is viewing an employer that isn't "theirs" (though admin usually sees all).
+                // But specifically, withoutGlobalScopes ensures we see that employer's data.
+                $query->withoutGlobalScopes()
+                      ->whereNull('deleted_at') // Re-apply soft delete check
+                      ->where('employer_id', $employerId);
+            } else {
+                // If no employer context is provided for admin, return empty list
+                // (unless we want to list ALL employees, which is usually too many)
+                return response()->json([]);
+            }
+        }
+        // V2.5-S7 FIX: Explicitly apply tenancy for employers
+        else if ($user->hasRole('employer')) {
+            if ($user->employer) {
+                $query->where('employer_id', $user->employer->id);
+            } else {
+                return response()->json([]);
             }
         }
 
         $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
 
+        return response()->json($this->formatEmployees($employees));
+    }
+
+    /**
+     * Format employee collection for JSON response.
+     */
+    private function formatEmployees($employees)
+    {
         // CRITICAL: Append the accessor so it's included in the JSON response.
         $employees->append('photo_url');
 
         // V2.5-S2: Add nationality and flag URL
-        $employeesData = $employees->map(function ($employee) {
+        return $employees->map(function ($employee) {
             $nationality = $employee->employeeNationality;
             $countryCode = CountryHelper::getCountryCode($nationality);
             $flagUrl = $countryCode ? asset('images/flags/' . strtolower($countryCode) . '.png') : null;
@@ -96,7 +127,5 @@ class EmployerEmployeeController extends Controller
                 'flag_url' => $flagUrl,
             ];
         });
-
-        return response()->json($employeesData);
     }
 }

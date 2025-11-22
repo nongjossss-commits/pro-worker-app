@@ -166,6 +166,10 @@ function hybridAttachmentManager(config = {}) {
 
         // --- V2.5-FIX: Fetch Preselected Employees by IDs ---
         async fetchPreselectedEmployees() {
+            if (!this.selectedEmployeeIds || this.selectedEmployeeIds.length === 0) {
+                return;
+            }
+
             this.isLoading = true;
             try {
                 const params = new URLSearchParams();

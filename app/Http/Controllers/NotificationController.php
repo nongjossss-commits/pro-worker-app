@@ -77,6 +77,13 @@ class NotificationController extends Controller
     {
         $query = Notification::with(['employee.employer', 'employer']);
 
+        // Filter out notifications where the related model is missing (e.g. soft deleted)
+        if ($type === 'employer_document_expiry') {
+            $query->whereHas('employer');
+        } else {
+            $query->whereHas('employee');
+        }
+
         // Apply tenancy scope for Employer role to prevent data leakage
         if (Auth::check() && Auth::user()->hasRole('employer')) {
             $employerId = Auth::user()->employer->id ?? null;

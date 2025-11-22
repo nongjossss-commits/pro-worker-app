@@ -81,7 +81,7 @@
                     </div>
 
                     <div class="mt-6">
-                        <h3 class="text-lg font-medium">Delegate Permissions (Feature D)</h3>
+                        <h3 class="text-lg font-medium">{{ __('Delegate Permissions') }}</h3>
                         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                             @foreach ($allPermissions as $permission)
                                 <div>
@@ -90,7 +90,9 @@
                                             {{ in_array($permission->name, $userPermissions) ? 'checked' : '' }}
                                             class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                             >
-                                        <span class="ml-2 text-sm text-gray-600">{{ $permission->name }}</span>
+                                        <span class="ml-2 text-sm text-gray-600">
+                                            {{ \App\Helpers\PermissionHelper::getLabel($permission->name) }}
+                                        </span>
                                     </label>
                                 </div>
                             @endforeach

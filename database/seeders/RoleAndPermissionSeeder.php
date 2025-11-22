@@ -23,6 +23,7 @@ class RoleAndPermissionSeeder extends Seeder
         $permissions = [
             'view-dashboard',
             'view-notifications',
+            'cancel-notifications', 'renew-notifications', 'restore-notifications', 'force-delete-notifications', // NEW
             'manage-users', 'manage-roles', 'manage-settings',
             'view-trash', //
             'view-employers', 'create-employers', 'edit-employers', 'delete-employers',
