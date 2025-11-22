@@ -75,14 +75,18 @@ class ChatController extends Controller
     {
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'message' => 'required|string',
+            'message' => 'nullable|string', // Make message nullable if sending file only
             'context_data' => 'nullable|array'
         ]);
+
+        if (empty($request->message) && empty($request->context_data)) {
+             return response()->json(['error' => 'Message or attachment required'], 422);
+        }
 
         $message = ChatMessage::create([
             'sender_id' => Auth::id(),
             'receiver_id' => $request->receiver_id,
-            'message' => $request->message,
+            'message' => $request->message ?? '',
             'context_data' => $request->context_data,
             'is_read' => false,
         ]);
@@ -127,6 +131,7 @@ class ChatController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
+            'name' => 'required|string|max:255',
             'position_title' => 'nullable|string|max:255',
             'bio' => 'nullable|string|max:1000',
             'avatar' => 'nullable|image|max:2048', // 2MB
@@ -138,6 +143,7 @@ class ChatController extends Controller
              $user = User::find(Auth::id());
         }
 
+        $user->name = $request->name;
         $user->position_title = $request->position_title;
         $user->bio = $request->bio;
 
@@ -160,6 +166,28 @@ class ChatController extends Controller
                 'position_title' => $user->position_title,
                 'bio' => $user->bio
             ]
+        ]);
+    }
+
+    /**
+     * Upload a file for chat.
+     */
+    public function uploadFile(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240', // 10MB max
+        ]);
+
+        $path = $request->file('file')->store('chat_attachments', 'public');
+        $url = Storage::disk('public')->url($path);
+        $name = $request->file('file')->getClientOriginalName();
+        $mime = $request->file('file')->getMimeType();
+
+        return response()->json([
+            'url' => $url,
+            'name' => $name,
+            'type' => str_starts_with($mime, 'image/') ? 'image' : 'file',
+            'mime' => $mime
         ]);
     }
 }
