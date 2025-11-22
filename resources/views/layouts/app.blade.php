@@ -184,6 +184,12 @@
                 @can('view-dashboard')
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Dashboard') }}</a>
                 @endcan
+
+                @role('admin')
+                <a href="{{ route('admin.activity-logs.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
+                    <i class="bi bi-activity me-2"></i>{{ __('Activity Logs') }}
+                </a>
+                @endrole
                 @can('view-notifications')
                     <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                         <div class="d-flex justify-content-between align-items-center">
