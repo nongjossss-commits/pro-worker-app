@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Models\NotificationSetting;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class EmployeeObserver
 {
@@ -83,7 +84,7 @@ class EmployeeObserver
                 ],
                 [
                     'employer_id' => $employee->employer_id,
-                    'due_date' => null, // Not applicable
+                    'due_date' => Carbon::now(), // Set to now() because column is not nullable
                     'status' => 'unread',
                     'days_remaining' => 0, // Not applicable, but useful for sorting if needed
                     'message' => 'ข้อมูลบัตรชมพูไม่ครบถ้วน', // Default message
@@ -117,7 +118,7 @@ class EmployeeObserver
                 ],
                 [
                     'employer_id' => $employee->employer_id,
-                    'due_date' => null,
+                    'due_date' => Carbon::now(), // Set to now() because column is not nullable
                     'status' => 'unread',
                     'days_remaining' => 0,
                     'message' => 'เอกสารแจ้งที่พักอาศัยไม่ครบถ้วน', // Default message
