@@ -25,7 +25,27 @@ class EmployeePolicy
         }
 
         // Employers can only view their own employees.
-        return $user->id === $employee->employer->user_id;
+        if ($user->id === $employee->employer->user_id) {
+            return true;
+        }
+
+        // Allow employer to view 'External' employees if they are attached to a ticket owned by this employer.
+        // This enables the 'Preview' button in the ticket view to work for attached external employees.
+        if ($user->hasRole('employer')) {
+            // Check if there is any ticket message containing this employee's ID attached to a ticket owned by the user
+            $isAttachedToMyTicket = \App\Models\TicketMessage::where('message_type', 'attachment_employee')
+                ->where('body', $employee->id)
+                ->whereHas('ticket', function ($query) use ($user) {
+                    $query->where('employer_user_id', $user->id);
+                })
+                ->exists();
+
+            if ($isAttachedToMyTicket) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
