@@ -435,7 +435,13 @@
                     };
                 })
                 .catch(err => {
-                    alert('{{ __('Upload failed') }}');
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Upload failed') }}',
+                        text: '{{ __('Could not upload the file.') }}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                     console.error(err);
                 })
                 .finally(() => {
@@ -499,12 +505,22 @@
                     if (data.success) {
                         this.showProfileModal = false;
                         this.profileForm.original_avatar_url = data.user.avatar_url; // Update original
-                        alert('{{ __('Profile Updated') }}');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __('Profile Updated') }}',
+                            text: '{{ __('Your chat profile has been updated successfully.') }}',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('{{ __('Update failed') }}');
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Update failed') }}',
+                        text: '{{ __('An error occurred while updating your profile.') }}',
+                    });
                 });
             },
 
