@@ -16,6 +16,7 @@ class EmployerEmployeeController extends Controller
      * - For 'employer' roles, it's scoped by tenancy.
      * - For 'manage-tickets' roles (Admin/Staff), it can be filtered by employer_id.
      * - Supports fetching specific employees by IDs (bypassing employer filter for admins).
+     * - V2.5-S16: Supports Global Search for Admin/Staff.
      */
     public function index(Request $request): JsonResponse
     {
@@ -58,33 +59,53 @@ class EmployerEmployeeController extends Controller
              return response()->json($this->formatEmployees($employees));
         }
 
-        // 2. Handle Standard List Request (Filtered by Context)
+        // 2. Handle Standard List Request (Filtered by Context) or Global Search
         $query = Employee::whereNull('terminated_at')->orderBy('employeeNameTh');
 
         // V2.4-S13: API Scoping Logic for Admin/Staff
         if ($user->can('manage-tickets')) {
-            $employerId = $request->input('employer_id');
-            $employerUserId = $request->input('employer_user_id');
 
-            // V2.4-S14 FIX: If employer_user_id is provided, find its linked employer_id
-            if ($employerUserId && !$employerId) {
-                $employerUser = \App\Models\User::find($employerUserId);
-                if ($employerUser && $employerUser->employer) {
-                    $employerId = $employerUser->employer->id;
-                }
-            }
+            // V2.5-S16: Check for Global Search Flag
+            $isGlobalSearch = $request->boolean('global_search');
+            $searchTerm = $request->input('search');
 
-            if ($employerId) {
-                // For listing by employer, we need to bypass the default scope if the admin
-                // is viewing an employer that isn't "theirs" (though admin usually sees all).
-                // But specifically, withoutGlobalScopes ensures we see that employer's data.
-                $query->withoutGlobalScopes()
-                      ->whereNull('deleted_at') // Re-apply soft delete check
-                      ->where('employer_id', $employerId);
+            if ($isGlobalSearch && $searchTerm) {
+                 // Global Search Mode (Admin/Staff only)
+                 // Search across ALL employers.
+                 $query->withoutGlobalScopes()
+                       ->whereNull('deleted_at')
+                       ->where(function($q) use ($searchTerm) {
+                           $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
+                             ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                             ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
+                       })
+                       ->limit(50); // Limit results for performance
+
             } else {
-                // If no employer context is provided for admin, return empty list
-                // (unless we want to list ALL employees, which is usually too many)
-                return response()->json([]);
+                // Standard Mode: Filter by Employer
+                $employerId = $request->input('employer_id');
+                $employerUserId = $request->input('employer_user_id');
+
+                // V2.4-S14 FIX: If employer_user_id is provided, find its linked employer_id
+                if ($employerUserId && !$employerId) {
+                    $employerUser = \App\Models\User::find($employerUserId);
+                    if ($employerUser && $employerUser->employer) {
+                        $employerId = $employerUser->employer->id;
+                    }
+                }
+
+                if ($employerId) {
+                    // For listing by employer, we need to bypass the default scope if the admin
+                    // is viewing an employer that isn't "theirs" (though admin usually sees all).
+                    // But specifically, withoutGlobalScopes ensures we see that employer's data.
+                    $query->withoutGlobalScopes()
+                          ->whereNull('deleted_at') // Re-apply soft delete check
+                          ->where('employer_id', $employerId);
+                } else {
+                    // If no employer context is provided for admin, return empty list
+                    // (unless we want to list ALL employees, which is usually too many)
+                    return response()->json([]);
+                }
             }
         }
         // V2.5-S7 FIX: Explicitly apply tenancy for employers

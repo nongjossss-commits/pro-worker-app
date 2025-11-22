@@ -18,14 +18,29 @@
                 {{-- Content State --}}
                 <div x-show="!isLoading">
                     <div class="mb-3">
-                        {{-- Update placeholder text --}}
-                        <input type="search" class="form-control" placeholder="ค้นหา ชื่อ (ไทย/อังกฤษ) หรือ Passport..." x-model.debounce.300ms="searchQuery">
+                        <div class="input-group">
+                             <span class="input-group-text bg-white">
+                                <i class="bi bi-search text-muted"></i>
+                            </span>
+                            <input type="search" class="form-control border-start-0 ps-0"
+                                   :placeholder="isGlobalSearch ? 'ค้นหาลูกจ้างจากทั้งหมด (พิมพ์ชื่อ/พาสปอร์ต)' : 'ค้นหา ชื่อ (ไทย/อังกฤษ) หรือ Passport...'"
+                                   x-model.debounce.300ms="searchQuery">
+                        </div>
+                        {{-- V2.5-S16: Toggle for Global Search (External Employees) --}}
+                        @can('manage-tickets')
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="globalSearchCheck" x-model="isGlobalSearch">
+                            <label class="form-check-label text-primary fw-bold" for="globalSearchCheck">
+                                <i class="bi bi-globe me-1"></i> ค้นหาจากทั้งหมด (ลูกจ้างภายนอก)
+                            </label>
+                        </div>
+                        @endcan
                     </div>
                     <div class="list-group">
                         {{-- ... (Empty State Template remains the same) ... --}}
                         <template x-if="filteredEmployees().length === 0">
                             <div class="text-center text-muted py-3">
-                                <span x-text="availableEmployees.length === 0 ? 'ไม่มีลูกจ้างในระบบ' : 'ไม่พบลูกจ้างที่ตรงกับคำค้นหา'"></span>
+                                <span x-text="isGlobalSearch ? 'กรุณาพิมพ์คำค้นหา (อย่างน้อย 2 ตัวอักษร)' : (availableEmployees.length === 0 ? 'ไม่มีลูกจ้างในระบบ' : 'ไม่พบลูกจ้างที่ตรงกับคำค้นหา')"></span>
                             </div>
                         </template>
                         {{-- Employee List Iteration (V2.4-S6 Update: Richer Display) --}}
@@ -40,8 +55,12 @@
                                     <strong x-text="employee.employeeNameTh"></strong>
                                     <span class="text-muted" x-text="employee.employeeNameEn ? '(' + employee.employeeNameEn + ')' : ''"></span>
                                     <small class="text-muted d-block" x-text="'Passport: ' + (employee.employeePassport || 'N/A')"></small>
+                                    {{-- V2.5-S16: Employer Name for External Search --}}
+                                    <small class="text-info d-block" x-show="isGlobalSearch">
+                                        <i class="bi bi-building me-1"></i> นายจ้าง: <span x-text="employee.employer_name || 'N/A'"></span>
+                                    </small>
                                     {{-- V2.5-S2: Nationality with Flag --}}
-                                    <div class="d-flex align-items-center" style="font-size: 0.85rem;">
+                                    <div class="d-flex align-items-center mt-1" style="font-size: 0.85rem;">
                                         <span class="text-muted me-1">Nationality:</span>
                                         <template x-if="employee.flag_url">
                                             <img :src="employee.flag_url" class="me-1" style="width: 16px; height: 12px; object-fit: cover;" alt="Flag">
