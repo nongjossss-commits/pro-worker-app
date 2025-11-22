@@ -12,7 +12,7 @@
                 </ol>
             </nav>
             @php
-                $monthName = \Carbon\Carbon::create()->month($month)->locale('th')->translatedFormat('F');
+                $monthName = \Carbon\Carbon::create()->month((int)$month)->locale('th')->translatedFormat('F');
             @endphp
             <h2 class="fw-bold mb-3">เดือน {{ $monthName }} {{ $year }} - เลือกวัน (Day)</h2>
         </div>
@@ -24,7 +24,7 @@
                 <div class="row g-3">
                     @foreach($days as $day)
                     @php
-                        $date = \Carbon\Carbon::createFromDate($year, $month, $day);
+                        $date = \Carbon\Carbon::createFromDate($year, (int)$month, $day);
                         $dayName = $date->locale('th')->translatedFormat('l');
                         $fullDate = $date->locale('th')->translatedFormat('d F Y');
                     @endphp
