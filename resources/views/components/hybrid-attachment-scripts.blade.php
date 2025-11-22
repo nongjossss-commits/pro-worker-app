@@ -68,6 +68,18 @@ function hybridAttachmentManager(config = {}) {
             if (this.isContextAdminCreate && this.contextEmployerId) {
                 this.fetchEmployees();
             }
+
+            // Check for preselected IDs from session (injected via config)
+            if (config.preselectedEmployeeIds && config.preselectedEmployeeIds.length > 0) {
+                this.selectedEmployeeIds = config.preselectedEmployeeIds;
+                // We need to wait for employees to be fetched if they haven't been already
+                // Or trigger a fetch if we have contextEmployerId
+                if (this.contextEmployerId) {
+                    this.fetchEmployees().then(() => {
+                        this.confirmSelection();
+                    });
+                }
+            }
         },
 
         // --- V2.5-S3: New Form Logic Functions ---
