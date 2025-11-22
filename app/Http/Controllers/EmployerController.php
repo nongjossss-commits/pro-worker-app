@@ -58,7 +58,7 @@ class EmployerController extends Controller
     public function create()
     {
         $jobOwners = JobOwner::orderBy('name')->get();
-        $staffUsers = User::role(['admin', 'staff'])->orderBy('name')->get();
+        $staffUsers = User::role(['admin', 'staff', 'caretaker'])->orderBy('name')->get();
 
         // สร้างรหัสนายจ้างใหม่ที่ไม่ซ้ำใคร
         $lastEmployer = Employer::orderBy('id', 'desc')->first();
@@ -119,7 +119,7 @@ class EmployerController extends Controller
 public function edit(Request $request, Employer $employer)
 {
     $jobOwners = JobOwner::orderBy('name')->get();
-    $staffUsers = User::role(['admin', 'staff'])->orderBy('name')->get();
+    $staffUsers = User::role(['admin', 'staff', 'caretaker'])->orderBy('name')->get();
 
     $employeeQuery = $employer->employees()->whereNull('terminated_at');
 

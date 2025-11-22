@@ -20,17 +20,26 @@ class Employee extends Model
     protected static function booted(): void
     {
         static::addGlobalScope('employerTenancy', function (Builder $builder) {
-            if (Auth::check() && Auth::user()->hasRole('employer')) {
-                // Find the employer record linked to this user
-                $employer = Auth::user()->employer;
-                if ($employer) {
-                    // This user is an 'employer'. Filter their view to *only*
-                    // Employees who belong to their linked Employer ID.
-                    $builder->where('employer_id', $employer->id);
-                } else {
-                    // This employer user is not linked to any employer record.
-                    // Show them nothing.
-                    $builder->whereRaw('1 = 0'); // Forces query to return empty
+            if (Auth::check()) {
+                $user = Auth::user();
+                if ($user->hasRole('employer')) {
+                    // Find the employer record linked to this user
+                    $employer = $user->employer;
+                    if ($employer) {
+                        // This user is an 'employer'. Filter their view to *only*
+                        // Employees who belong to their linked Employer ID.
+                        $builder->where('employer_id', $employer->id);
+                    } else {
+                        // This employer user is not linked to any employer record.
+                        // Show them nothing.
+                        $builder->whereRaw('1 = 0'); // Forces query to return empty
+                    }
+                } elseif ($user->hasRole('caretaker')) {
+                    // This user is a 'caretaker'. Filter their view to *only*
+                    // Employees whose Employer has this user assigned as staff.
+                    $builder->whereHas('employer', function ($q) use ($user) {
+                        $q->where('assigned_staff_id', $user->id);
+                    });
                 }
             }
         });

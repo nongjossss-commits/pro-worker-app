@@ -17,10 +17,17 @@ class Employer extends Model
     protected static function booted(): void
     {
         static::addGlobalScope('employerTenancy', function (Builder $builder) {
-            if (Auth::check() && Auth::user()->hasRole('employer')) {
-                // This user is an 'employer'. Filter their view to *only*
-                // the Employer record linked to their user_id.
-                $builder->where('user_id', Auth::id());
+            if (Auth::check()) {
+                $user = Auth::user();
+                if ($user->hasRole('employer')) {
+                    // This user is an 'employer'. Filter their view to *only*
+                    // the Employer record linked to their user_id.
+                    $builder->where('user_id', $user->id);
+                } elseif ($user->hasRole('caretaker')) {
+                    // This user is a 'caretaker'. Filter their view to *only*
+                    // Employer records where they are the assigned staff.
+                    $builder->where('assigned_staff_id', $user->id);
+                }
             }
         });
     }
