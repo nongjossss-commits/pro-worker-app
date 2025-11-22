@@ -2,6 +2,7 @@
 <!-- Floating Chat Widget -->
 <div x-data="chatWidget()"
      x-init="initChat()"
+     x-cloak
      @keydown.escape.window="isExpanded = false"
      class="chat-wrapper"
      :class="{'chat-hidden': isHidden}"
@@ -9,7 +10,8 @@
 
     <!-- Hidden Tab (Top Right) -->
     <div x-show="isHidden"
-         class="position-fixed top-0 end-0 mt-2 me-2 p-2 bg-primary text-white rounded-start shadow cursor-pointer d-flex align-items-center justify-content-center"
+         class="position-fixed top-0 end-0 mt-2 me-2 p-2 bg-primary text-white rounded-start shadow cursor-pointer align-items-center justify-content-center"
+         :class="{ 'd-flex': isHidden }"
          style="width: 40px; height: 40px; z-index: 1041; transition: all 0.3s ease;"
          @click="toggleHide()"
          title="{{ __('Show Chat') }}">
@@ -28,7 +30,8 @@
 
         <!-- Floating Button Content (Minimized) -->
         <div x-show="!isExpanded"
-             class="w-100 h-100 d-flex align-items-center justify-content-center bg-primary text-white rounded-circle position-relative cursor-pointer"
+             class="w-100 h-100 align-items-center justify-content-center bg-primary text-white rounded-circle position-relative cursor-pointer"
+             :class="{ 'd-flex': !isExpanded }"
              @click="if(!isDragging) toggleChat()"
              title="{{ __('Open Chat') }}">
             <i class="bi bi-chat-dots-fill fs-4"></i>
@@ -64,7 +67,7 @@
                 <div x-show="view === 'contacts'" class="flex-grow-1 overflow-auto p-0 d-flex flex-column">
                     <div class="p-2 border-bottom bg-light d-flex justify-content-between align-items-center">
                         <small class="text-muted">{{ __('Contacts') }}</small>
-                        <button @click="showProfileModal = true" class="btn btn-sm btn-link text-decoration-none p-0">
+                        <button @click="showProfileModal = true" class="btn btn-sm btn-link text-decoration-none p-0" id="btn-my-profile">
                             <i class="bi bi-person-circle me-1"></i>{{ __('My Profile') }}
                         </button>
                     </div>
@@ -151,14 +154,16 @@
 
                     <!-- Input Area -->
                     <div class="p-2 border-top bg-white">
-                        <!-- Attachment Preview -->
-                        <div x-show="contextToAttach" class="mb-2 p-1 border rounded bg-light d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center small text-primary text-truncate" style="max-width: 90%;">
-                                <i class="bi" :class="getAttachmentIcon(contextToAttach.type)"></i>
-                                <span class="ms-1 text-truncate" x-text="contextToAttach.name || contextToAttach.text"></span>
+                        <!-- Attachment Preview (Use x-if to prevent error when null) -->
+                        <template x-if="contextToAttach">
+                            <div class="mb-2 p-1 border rounded bg-light d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center small text-primary text-truncate" style="max-width: 90%;">
+                                    <i class="bi" :class="getAttachmentIcon(contextToAttach.type)"></i>
+                                    <span class="ms-1 text-truncate" x-text="contextToAttach.name || contextToAttach.text"></span>
+                                </div>
+                                <button type="button" class="btn-close btn-close-sm" @click="contextToAttach = null"></button>
                             </div>
-                            <button type="button" class="btn-close btn-close-sm" @click="contextToAttach = null"></button>
-                        </div>
+                        </template>
 
                         <!-- Progress Bar -->
                         <div x-show="isUploading" class="progress mb-2" style="height: 3px;">
@@ -189,14 +194,17 @@
 
     <!-- Profile Modal (Overlay) -->
     <div x-show="showProfileModal"
-         class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-black bg-opacity-50"
+         x-cloak
+         class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-black bg-opacity-50"
+         :class="{ 'd-flex': showProfileModal }"
          style="z-index: 1045;"
          x-transition.opacity
-         @click.self="showProfileModal = false">
+         @click.self="showProfileModal = false"
+         id="profile-modal">
         <div class="bg-white rounded shadow p-3" style="width: 350px;">
             <h6 class="border-bottom pb-2 mb-3 d-flex justify-content-between">
                 {{ __('Edit My Chat Profile') }}
-                <button type="button" class="btn-close btn-close-sm" @click="showProfileModal = false"></button>
+                <button type="button" class="btn-close btn-close-sm" @click="showProfileModal = false" id="btn-cancel-modal-x"></button>
             </h6>
             <form @submit.prevent="updateProfile">
                 <div class="text-center mb-3">
@@ -223,7 +231,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" @click="showProfileModal = false" class="btn btn-sm btn-secondary">{{ __('Cancel') }}</button>
+                    <button type="button" @click="showProfileModal = false" class="btn btn-sm btn-secondary" id="btn-cancel-modal">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-sm btn-primary">{{ __('Save Changes') }}</button>
                 </div>
             </form>
@@ -233,6 +241,7 @@
 </div>
 
 <style>
+    [x-cloak] { display: none !important; }
     .chat-floating-btn:hover {
         transform: scale(1.05);
         transition: transform 0.2s;
