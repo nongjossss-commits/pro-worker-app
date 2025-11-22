@@ -5,7 +5,10 @@
 
 @section('content')
 {{-- Initialize Alpine.js Component (V2.4-S11 Update) --}}
-<div class="content-section" x-data="hybridAttachmentManager({ employerId: @json(optional(Auth::user()->employer)->id) })">
+<div class="content-section" x-data="hybridAttachmentManager({
+    employerId: @json(optional(Auth::user()->employer)->id),
+    preselectedEmployeeIds: @json(session('preselected_employee_ids', []))
+})">
 
     <h2 class="mb-4">{{ __('Create New Request (Smart Ticket)') }}</h2>
 

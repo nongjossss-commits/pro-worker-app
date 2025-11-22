@@ -113,6 +113,9 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');
     // Bulk Employee Transfer Route
     Route::post('employees/bulk-transfer', [EmployeeController::class, 'bulkTransfer'])->name('employees.bulkTransfer');
+
+    // Bulk Send Data to Ticket
+    Route::post('employees/bulk-to-ticket', [App\Http\Controllers\TicketRedirectController::class, 'bulkToTicket'])->name('employees.bulk_to_ticket');
 });
 
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
