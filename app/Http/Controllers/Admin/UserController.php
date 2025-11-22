@@ -35,6 +35,7 @@ class UserController extends Controller
         if ($search && $users->isNotEmpty()) {
             $counts = [
                 'admin' => $users->filter(fn($u) => $u->roles->contains('name', 'admin'))->count(),
+                'caretaker' => $users->filter(fn($u) => $u->roles->contains('name', 'caretaker'))->count(),
                 'staff' => $users->filter(fn($u) => $u->roles->contains('name', 'staff'))->count(),
                 'employer' => $users->filter(fn($u) => $u->roles->contains('name', 'employer'))->count(),
             ];
