@@ -130,8 +130,18 @@ class AdminJobTicketController extends Controller
                 // V2.5-PATCH: $validated['attachments']['new_employees'] คือ array of arrays (ไม่ใช่ JSON string)
                 foreach ($attachments['new_employees'] as $newEmployeeData) {
                     
-                    // $data คือ array อยู่แล้ว
-                    $data = $newEmployeeData; 
+                    // V2.5-FIX: Double check if data is string (defensive coding against request modification failure)
+                    if (is_string($newEmployeeData)) {
+                        $decoded = json_decode($newEmployeeData, true);
+                        $data = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : [];
+                    } else {
+                        $data = $newEmployeeData;
+                    }
+
+                    // Skip if data is invalid
+                    if (empty($data) || !is_array($data)) {
+                        continue;
+                    }
 
                     foreach ($fileFields as $field) {
                         if (isset($data[$field]) && $data[$field] && str_starts_with($data[$field], 'temp_uploads/')) {

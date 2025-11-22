@@ -261,10 +261,13 @@ function hybridAttachmentManager(config = {}) {
 
         confirmSelection() {
             this.selectedEmployeeIds.forEach(id => {
+                // V2.5-FIX: Use loose comparison for ID finding (String vs Int)
                 const employee = this.availableEmployees.find(e => e.id == id);
                 // Prevent duplicates
-                if (employee && !this.basket.existing_employees.some(e => e.id == id)) {
-                    this.basket.existing_employees.push(employee);
+                if (employee && !this.basket.existing_employees.some(e => e.id == employee.id)) {
+                    // V2.5-FIX: Deep clone the object to prevent reference issues when availableEmployees is cleared
+                    const employeeClone = JSON.parse(JSON.stringify(employee));
+                    this.basket.existing_employees.push(employeeClone);
                 }
             });
             this.selectedEmployeeIds = []; // Reset selection
