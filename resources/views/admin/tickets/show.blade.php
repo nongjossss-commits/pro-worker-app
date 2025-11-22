@@ -424,6 +424,21 @@
                                             <input type="hidden" :name="'attachments[existing_employees][' + index + ']'" :value="item.id">
                                         </div>
                                     </template>
+                                    {{-- 1.5 Display External Employees --}}
+                                    <template x-for="(item, index) in basket.external_employees" :key="'ext-' + item.id">
+                                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 border-warning bg-light">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
+                                                <span>
+                                                    <i class="bi bi-search me-1 text-warning"></i>
+                                                    <span x-text="item.employeeNameTh"></span>
+                                                    <span class="text-muted" x-text="'(Ext)'"></span>
+                                                </span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('external_employees', index, item.employeeNameTh)">ลบ</button>
+                                            <input type="hidden" :name="'attachments[external_employees][' + index + ']'" :value="item.id">
+                                        </div>
+                                    </template>
                                     {{-- 2. Display New Employees --}}
                                     <template x-for="(item, index) in basket.new_employees" :key="'n-' + index">
                                         <div class="list-group-item d-flex justify-content-between align-items-center py-2">
@@ -459,6 +474,7 @@
                                  @error('attachments.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                  @error('attachments.files.*.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                  @error('attachments.existing_employees.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                 @error('attachments.external_employees.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                  @error('attachments.new_employees.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
 
@@ -467,6 +483,10 @@
                                 <div class="btn-group" role="group" aria-label="Attachment options">
                                     <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading">
                                         <i class="bi bi-person-check"></i> แนบลูกจ้าง
+                                    </button>
+                                    {{-- V2.5-S17: New Button for External Employees --}}
+                                    <button type="button" class="btn btn-outline-warning text-dark" @click="openGlobalEmployeeSearch" :disabled="isUploading">
+                                        <i class="bi bi-search"></i> แนบลูกจ้างภายนอก
                                     </button>
                                     <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
                                         <i class="bi bi-person-plus"></i> แจ้งเข้า

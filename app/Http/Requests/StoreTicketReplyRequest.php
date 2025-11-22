@@ -79,7 +79,7 @@ class StoreTicketReplyRequest extends FormRequest
         ];
 
         // V2.4-S11: Define the required_without_all condition
-        $allAttachments = 'attachments.files,attachments.existing_employees,attachments.new_employees';
+        $allAttachments = 'attachments.files,attachments.existing_employees,attachments.new_employees,attachments.external_employees';
 
         return [
             // Message is required ONLY IF NO attachments of ANY type are present.
@@ -105,6 +105,10 @@ class StoreTicketReplyRequest extends FormRequest
             'attachments.existing_employees' => ['nullable', 'array'],
             // Validate existence in the DB.
             'attachments.existing_employees.*' => ['required', 'integer', 'distinct', Rule::exists('employees', 'id')],
+
+            // --- V2.5-S17: External Employees (Global Search) ---
+            'attachments.external_employees' => ['nullable', 'array'],
+            'attachments.external_employees.*' => ['required', 'integer', 'distinct', Rule::exists('employees', 'id')],
 
             // --- V2.4-S11: 3. New Employees (New Logic) ---
             'attachments.new_employees' => ['nullable', 'array'],

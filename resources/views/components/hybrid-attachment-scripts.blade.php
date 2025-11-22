@@ -15,7 +15,7 @@ function hybridAttachmentManager(config = {}) {
         contextEmployerId: null,
         isContextAdminCreate: false,
 
-        // V2.5-S16: Global Search State
+        // V2.5-S16: Global Search State (Updated for V2.5-S17)
         isGlobalSearch: false,
 
         // --- V2.5-S3: Expanded Default Form State ---
