@@ -32,6 +32,10 @@
     <form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
+        {{-- Hidden inputs for basket items --}}
+        {{-- Separated from display templates to ensure reliable form submission --}}
+        @include('tickets.partials._basket_form_inputs')
+
         {{-- V2.4-S7: Hidden File Input (Triggered by the button) --}}
         <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
 

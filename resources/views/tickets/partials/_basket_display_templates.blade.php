@@ -15,8 +15,7 @@
             </span>
         </div>
         <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
-        {{-- Hidden input for form submission --}}
-        <input type="hidden" :name="'attachments[existing_employees][' + index + ']'" :value="item.id">
+        {{-- Hidden inputs have been moved to _basket_form_inputs.blade.php to ensure reliable form submission --}}
     </div>
 </template>
 
@@ -31,8 +30,7 @@
             </span>
         </div>
         <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">ลบ</button>
-        {{-- Hidden input sends the whole object as a JSON string --}}
-        <input type="hidden" :name="'attachments[new_employees][' + index + ']'" :value="JSON.stringify(item)">
+        {{-- Hidden inputs have been moved to _basket_form_inputs.blade.php to ensure reliable form submission --}}
     </div>
 </template>
 
@@ -47,9 +45,6 @@
             </span>
         </div>
         <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">ลบ</button>
-        {{-- Hidden inputs for file metadata --}}
-        <input type="hidden" :name="'attachments[files][' + index + '][path]'" :value="item.path">
-        <input type="hidden" :name="'attachments[files][' + index + '][name]'" :value="item.name">
-        <input type="hidden" :name="'attachments[files][' + index + '][size]'" :value="item.size">
+        {{-- Hidden inputs have been moved to _basket_form_inputs.blade.php to ensure reliable form submission --}}
     </div>
 </template>
