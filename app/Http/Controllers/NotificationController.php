@@ -182,6 +182,12 @@ class NotificationController extends Controller
         $fileField = '';
         $targetModel = null;
 
+        // Determine active tab for redirect early to prevent loss after delete
+        $activeTab = $notification->type;
+        if ($activeTab === 'work_permit_expiry') {
+            $activeTab = 'work_permit_mou';
+        }
+
         switch ($notification->type) {
             case 'passport_expiry':
             case 'ci_renewal': // Handle CI renewal as passport update
@@ -220,8 +226,9 @@ class NotificationController extends Controller
                     $fileField = 'insurance_document_path_private';
                 } elseif ($employee->insurance_type === 'ประกันโรงพยาบาล') {
                     $fieldToUpdate = 'insurance_expiry_date_hospital';
-                    // Use standard/hospital insurance document path
-                    $fileField = 'insurance_document_path';
+                    // Fix for unknown column 'insurance_document_path'.
+                    // Fallback to 'insurance_attachment_path' if migration wasn't run.
+                    $fileField = 'insurance_attachment_path';
                 } else {
                     $fieldToUpdate = 'insurance_expiry_date';
                     // Use legacy attachment path for Social Security / General Insurance
@@ -293,12 +300,6 @@ class NotificationController extends Controller
             }
 
             $targetModel->save();
-        }
-
-        // Determine active tab for redirect
-        $activeTab = $notification->type;
-        if ($activeTab === 'work_permit_expiry') {
-            $activeTab = 'work_permit_mou';
         }
 
         $notification->delete(); // Remove the notification after handling

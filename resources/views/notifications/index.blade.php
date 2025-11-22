@@ -83,7 +83,7 @@
             </label>
         </div>
 
-        <div class="dropdown w-100 w-md-auto" style="max-width: 300px;">
+        <div class="dropdown w-100 w-md-auto" style="max-width: 300px; position: relative; z-index: 1000;">
             <button class="btn btn-primary btn-sm dropdown-toggle w-100" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 {{ __('Action on selected items') }}
             </button>
@@ -198,12 +198,12 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const notificationExportBtn = document.getElementById('notification-bulk-advanced-export-btn');
-        const container = document.querySelector('.tab-content');
+        const container = document.querySelector('.tab-content'); // Defined once here at top level scope if needed, but safer in specific functions
 
         if (notificationExportBtn) {
             notificationExportBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const activePane = container.querySelector('.tab-pane.active');
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
 
                 const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
@@ -241,7 +241,6 @@
         }
 
         // --- Bulk Action Script ---
-        const container = document.querySelector('.tab-content'); // Target tab content for notifications
         const actionBar = document.getElementById('bulk-action-bar-notifications');
         const selectAllCheckbox = document.getElementById('select-all-checkbox-notifications');
         const selectAllCheckboxStd = document.getElementById('select-all-checkbox-notifications-std');
@@ -252,8 +251,7 @@
         const downloadBtn = document.getElementById('notification-bulk-download-btn');
 
         function updateActionBar() {
-            // Only select checkboxes in the currently active tab pane
-            const activePane = container.querySelector('.tab-pane.active');
+            const activePane = document.querySelector('.tab-content .tab-pane.active');
             if (!activePane) return;
 
             const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
@@ -275,15 +273,19 @@
             if (selectAllCheckboxStd) selectAllCheckboxStd.checked = allChecked;
         }
 
-        container.addEventListener('change', function(e) {
-            if (e.target.classList.contains('bulk-action-checkbox')) {
-                updateActionBar();
-            }
-        });
+        // Use the previously defined 'container' if available or query it
+        const tabContentContainer = document.querySelector('.tab-content');
+        if (tabContentContainer) {
+            tabContentContainer.addEventListener('change', function(e) {
+                if (e.target.classList.contains('bulk-action-checkbox')) {
+                    updateActionBar();
+                }
+            });
+        }
 
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', function() {
-                const activePane = container.querySelector('.tab-pane.active');
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
                 const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
                 itemCheckboxes.forEach(checkbox => {
@@ -319,7 +321,7 @@
 
         if (selectAllCheckboxStd) {
             selectAllCheckboxStd.addEventListener('change', function() {
-                const activePane = container.querySelector('.tab-pane.active');
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
                 const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
                 itemCheckboxes.forEach(checkbox => {
@@ -330,20 +332,22 @@
         }
 
         // Download Handler
-        downloadBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const activePane = container.querySelector('.tab-pane.active');
-            if (!activePane) return;
+        if (downloadBtn) {
+             downloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
+                if (!activePane) return;
 
-            const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
-            if (selected.length === 0) return;
+                const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
+                if (selected.length === 0) return;
 
-            if (window.openBulkDownloadModal) {
-                window.openBulkDownloadModal(selected);
-            } else {
-                alert('{{ __('Download function not ready.') }}');
-            }
-        });
+                if (window.openBulkDownloadModal) {
+                    window.openBulkDownloadModal(selected);
+                } else {
+                    alert('{{ __('Download function not ready.') }}');
+                }
+            });
+        }
 
         // Listen for tab changes to reset the selection
         document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
