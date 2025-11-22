@@ -5,12 +5,12 @@
      @keydown.escape.window="isExpanded = false"
      class="chat-wrapper"
      :class="{'chat-hidden': isHidden}"
-     style="z-index: 9999;">
+     style="z-index: 1040;">
 
     <!-- Hidden Tab (Top Right) -->
     <div x-show="isHidden"
          class="position-fixed top-0 end-0 mt-2 me-2 p-2 bg-primary text-white rounded-start shadow cursor-pointer d-flex align-items-center justify-content-center"
-         style="width: 40px; height: 40px; z-index: 10000; transition: all 0.3s ease;"
+         style="width: 40px; height: 40px; z-index: 1041; transition: all 0.3s ease;"
          @click="toggleHide()"
          title="{{ __('Show Chat') }}">
          <i class="bi bi-chat-dots-fill fs-5"></i>
@@ -22,7 +22,7 @@
          x-ref="chatWindow"
          class="position-fixed shadow-lg bg-white"
          :class="isExpanded ? 'rounded-3' : 'rounded-circle chat-floating-btn'"
-         :style="`top: ${y}px; left: ${x}px; width: ${isExpanded ? '350px' : '60px'}; height: ${isExpanded ? 'auto' : '60px'}; transition: width 0.2s, height 0.2s;`"
+         :style="`top: ${y}px; left: ${x}px; width: ${isExpanded ? '350px' : '60px'}; height: ${isExpanded ? 'auto' : '60px'}; z-index: 1042; transition: width 0.2s, height 0.2s;`"
          @mousedown="startDrag"
          @touchstart="startDrag">
 
@@ -190,7 +190,7 @@
     <!-- Profile Modal (Overlay) -->
     <div x-show="showProfileModal"
          class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-black bg-opacity-50"
-         style="z-index: 10001;"
+         style="z-index: 1045;"
          x-transition.opacity
          @click.self="showProfileModal = false">
         <div class="bg-white rounded shadow p-3" style="width: 350px;">
@@ -511,6 +511,12 @@
                             text: '{{ __('Your chat profile has been updated successfully.') }}',
                             timer: 2000,
                             showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ __('Update failed') }}',
+                            text: data.message || '{{ __('An error occurred while updating your profile.') }}',
                         });
                     }
                 })
