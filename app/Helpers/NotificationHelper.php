@@ -27,6 +27,21 @@ class NotificationHelper
             }
         }
 
+        // Fix: Ensure we only count notifications where the related model still exists.
+        // This matches the logic in NotificationController::getFilteredQuery.
+        $query->where(function($q) {
+            // Case 1: Employer Document Expiry - Must have valid Employer
+            $q->where(function($sub) {
+                $sub->where('type', 'employer_document_expiry')
+                    ->whereHas('employer');
+            })
+            // Case 2: All other types - Must have valid Employee
+            ->orWhere(function($sub) {
+                $sub->where('type', '!=', 'employer_document_expiry')
+                    ->whereHas('employee');
+            });
+        });
+
         // Count only active notifications (not cancelled)
         $query->where('status', '!=', 'cancelled');
 
