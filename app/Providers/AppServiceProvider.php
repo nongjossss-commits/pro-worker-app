@@ -9,6 +9,11 @@ use App\Models\Employer;
 use App\Models\JobTicket;
 use App\Observers\EmployeeObserver;
 use App\Observers\EmployerObserver;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use App\Listeners\LogSuccessfulLogin;
+use App\Listeners\LogSuccessfulLogout;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
         Employee::observe(EmployeeObserver::class);
         Employer::observe(EmployerObserver::class);
+
+        Event::listen(Login::class, LogSuccessfulLogin::class);
+        Event::listen(Logout::class, LogSuccessfulLogout::class);
 
         // Share incomplete employee count with specific views (layout)
         view()->composer('layouts.app', function ($view) {

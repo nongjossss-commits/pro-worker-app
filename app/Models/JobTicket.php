@@ -10,11 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Employee;
+use App\Traits\LogActivity;
 
 
 class JobTicket extends Model
 {
-    use HasFactory;
+    use HasFactory, LogActivity;
 
     // Corrected $fillable
     protected $fillable = [

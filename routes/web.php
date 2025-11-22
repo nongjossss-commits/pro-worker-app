@@ -140,8 +140,17 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
 });
 
 use App\Http\Controllers\Admin\NotificationSettingController;
+use App\Http\Controllers\Admin\ActivityLogController;
+
 // === Existing Admin Routes (role:admin) ===
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Activity Log Routes
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('/activity-logs/search', [ActivityLogController::class, 'search'])->name('activity-logs.search');
+    Route::get('/activity-logs/{year}', [ActivityLogController::class, 'showYear'])->name('activity-logs.year');
+    Route::get('/activity-logs/{year}/{month}', [ActivityLogController::class, 'showMonth'])->name('activity-logs.month');
+    Route::get('/activity-logs/{year}/{month}/{day}', [ActivityLogController::class, 'showDay'])->name('activity-logs.day');
+
     Route::get('/notification-settings', [NotificationSettingController::class, 'index'])->name('notification_settings.index');
     Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');
     Route::resource('users', UserController::class);
