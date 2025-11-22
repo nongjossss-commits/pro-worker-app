@@ -16,6 +16,9 @@ function hybridAttachmentManager(config = {}) {
         contextEmployerId: null,
         isContextAdminCreate: false,
 
+        // V2.5-S16: Global Search State
+        isGlobalSearch: false,
+
         // --- V2.5-S3: Expanded Default Form State ---
         defaultNewEmployeeForm: {
             employeeTitleTh: 'นาย', employeeNameTh: '', employeeTitleEn: 'Mr.',
@@ -37,9 +40,8 @@ function hybridAttachmentManager(config = {}) {
             employee_doc_1: null, employee_doc_2: null, employee_doc_3: null,
             employee_doc_4: null, employee_doc_5: null, employee_doc_6: null,
             employee_doc_7: null, employee_doc_8: null, employee_doc_9: null,
-            other_doc_1_desc: '', employee_doc_10: null, other_doc_2_desc: '',
-            employee_doc_11: null, other_doc_3_desc: '', employee_doc_12: null,
-            other_doc_4_desc: '',
+            employee_doc_10: null, employee_doc_11: null, employee_doc_12: null,
+            other_doc_1_desc: '', other_doc_2_desc: '', other_doc_3_desc: '', other_doc_4_desc: '',
             // Internal state for photo preview
             photo_preview_url: null
         },
@@ -64,6 +66,29 @@ function hybridAttachmentManager(config = {}) {
             this.$watch('newEmployeeForm.employeeTitleTh', (newVal) => this.syncTitleAndGender('th', newVal));
             this.$watch('newEmployeeForm.employeeTitleEn', (newVal) => this.syncTitleAndGender('en', newVal));
             this.$watch('newEmployeeForm.employeeDob', () => this.calculateAge());
+
+            // V2.5-S16: Watch search query for Global Search
+            this.$watch('searchQuery', (value) => {
+                if (this.isGlobalSearch) {
+                    // Debounce handled by x-model in the view, but here we just call the fetcher
+                    // However, x-model.debounce delays the variable update, so this runs after delay.
+                    if (value.length > 1) { // Min 2 chars for global search
+                        this.fetchEmployees();
+                    } else {
+                        this.availableEmployees = [];
+                    }
+                }
+            });
+
+            // Watch global search toggle
+            this.$watch('isGlobalSearch', (value) => {
+                this.searchQuery = '';
+                this.availableEmployees = [];
+                if (!value && this.contextEmployerId) {
+                    // If switching back to local, re-fetch local list
+                    this.fetchEmployees();
+                }
+            });
 
             if (this.isContextAdminCreate && this.contextEmployerId) {
                 this.fetchEmployees();
@@ -200,23 +225,37 @@ function hybridAttachmentManager(config = {}) {
         },
 
         async fetchEmployees() {
-            if (!this.contextEmployerId) return;
+            // V2.5-S16: Allow fetch if Global Search is active, even without contextEmployerId
+            if (!this.contextEmployerId && !this.isGlobalSearch) return;
+
             this.isLoading = true;
             try {
                 // Determine which parameter to send based on context
                 const params = new URLSearchParams();
-                if (this.isContextAdminCreate) {
-                    params.append('employer_user_id', this.contextEmployerId);
+
+                if (this.isGlobalSearch) {
+                    // Global Search Mode
+                    params.append('global_search', '1');
+                    params.append('search', this.searchQuery);
                 } else {
-                    params.append('employer_id', this.contextEmployerId);
+                    // Standard Mode
+                    if (this.isContextAdminCreate) {
+                        params.append('employer_user_id', this.contextEmployerId);
+                    } else {
+                        params.append('employer_id', this.contextEmployerId);
+                    }
                 }
+
                 const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 this.availableEmployees = await response.json();
             } catch (error) {
                 console.error('Failed to fetch employees:', error);
                 this.availableEmployees = [];
-                 Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลลูกจ้างได้', 'error');
+                // Only show error if not global search (where empty is common on start)
+                if (!this.isGlobalSearch) {
+                    Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลลูกจ้างได้', 'error');
+                }
             } finally {
                 this.isLoading = false;
             }
@@ -224,36 +263,43 @@ function hybridAttachmentManager(config = {}) {
 
         openExistingEmployeeModal() {
              if (this.isContextAdminCreate && !this.contextEmployerId) {
-                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างก่อนทำการแนบลูกจ้าง' });
+                // V2.5-S16: Allow opening if intended for global search?
+                // Actually, user can start with global search immediately.
+                // But default behavior is still valid. Let's allow opening but check later.
+                // If we want to FORCE selecting employer first, we keep the check.
+                // But for "Attach External Employee", maybe we don't need an employer selected first?
+                // The controller store method REQUIRES an employer_user_id.
+                // So we should enforce employer selection first, then allow searching others.
+                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างหลักสำหรับตั๋วก่อนทำการแนบลูกจ้าง' });
                 return;
             }
-            this.fetchEmployees();
+
+            // If not global search, fetch defaults. If global, wait for input.
+            if (!this.isGlobalSearch) {
+                this.fetchEmployees();
+            }
+
             if (this.modalInstances.existing) this.modalInstances.existing.show();
         },
 
         handleEmployerChange(newEmployerId) {
             this.contextEmployerId = newEmployerId;
-            // If user selects a new employer, we generally clear the basket to avoid confusion.
-            // BUT for "Send Data" logic where admins might want to attach employees from other employers,
-            // clearing blindly might annoy them if they added preselected ones.
-            // However, standard behavior is to clear when context changes.
-            // We will clear availableEmployees but keep the basket if it's already populated from preselection?
-            // No, let's clear to be safe and consistent, unless we want to support cross-employer attachments (which we do now).
-
             // V2.5-FIX: Do NOT clear basket.existing_employees if they were pre-selected or added.
             // Only clear availableEmployees (the list in the modal).
             this.availableEmployees = [];
 
-            // If you want to enforce "basket only contains employees of selected employer", you would clear it.
-            // But the requirement is specifically to allow attaching employees from other employers.
-            // So we do NOT clear basket.existing_employees here.
-
-            if (newEmployerId) {
+            if (newEmployerId && !this.isGlobalSearch) {
                 this.fetchEmployees(); // Pre-fetch for the new employer
             }
         },
 
         filteredEmployees() {
+            // V2.5-S16: For Global Search, filtering is done server-side.
+            if (this.isGlobalSearch) {
+                return this.availableEmployees;
+            }
+
+            // Local filtering for specific employer
             if (!this.searchQuery) return this.availableEmployees;
             const query = this.searchQuery.toLowerCase();
             return this.availableEmployees.filter(emp =>

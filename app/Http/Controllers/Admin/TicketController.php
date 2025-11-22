@@ -27,13 +27,28 @@ class TicketController extends Controller
         // V2.5: Check if filtering by employer
         $employerId = request('employer_id');
 
+        // V2.5-S15: Determine if the current user is an "Admin" or a "Caretaker/Staff"
+        // If user does not have 'admin' role, we assume they are Staff/Caretaker and apply visibility scope.
+        $currentUser = Auth::user();
+        $isSuperAdmin = $currentUser->hasRole('admin');
+
         if ($employerId) {
             // Show tickets list for a specific employer
             $perPage = request('per_page', 25);
-            $tickets = JobTicket::with(['employerUser.employer', 'assignedStaff'])
+            $ticketsQuery = JobTicket::with(['employerUser.employer', 'assignedStaff'])
                 ->where('employer_user_id', $employerId)
-                ->latest()
-                ->paginate($perPage);
+                ->latest();
+
+            // Apply Caretaker Scope if not Admin
+            if (!$isSuperAdmin) {
+                // Check if this employer is assigned to the current staff
+                // We do this via the employerUser relationship
+                 $ticketsQuery->whereHas('employerUser.employer', function ($q) use ($currentUser) {
+                    $q->where('assigned_staff_id', $currentUser->id);
+                });
+            }
+
+            $tickets = $ticketsQuery->paginate($perPage);
 
             // Get Employer Name for the header
             $employerUser = User::with('employer')->find($employerId);
@@ -52,6 +67,14 @@ class TicketController extends Controller
         // Query Users who have submitted tickets
         $query = User::whereHas('submittedTickets')
             ->with('employer'); // Eager load employer profile
+
+        // V2.5-S15: Apply Caretaker Visibility Scope for non-admins
+        if (!$isSuperAdmin) {
+             // Restrict to users whose Employer profile is assigned to the current staff
+            $query->whereHas('employer', function ($q) use ($currentUser) {
+                $q->where('assigned_staff_id', $currentUser->id);
+            });
+        }
 
         // Add Search Filter
         if ($search) {

@@ -9,9 +9,17 @@
         <div class="d-flex align-items-center gap-3">
             <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
             <span>
-                <i class="bi bi-person-check me-1 text-primary"></i>
-                <span x-text="item.employeeNameTh"></span>
-                <span class="text-muted" x-text="item.employeeNameEn ? '(' + item.employeeNameEn + ')' : ''"></span>
+                <div class="d-flex align-items-center">
+                     <i class="bi bi-person-check me-1 text-primary"></i>
+                     <span x-text="item.employeeNameTh"></span>
+                     <span class="text-muted ms-1" x-text="item.employeeNameEn ? '(' + item.employeeNameEn + ')' : ''"></span>
+                </div>
+                {{-- V2.5-S16: Show External Tag/Employer Name if available and possibly external --}}
+                <template x-if="item.employer_name">
+                    <small class="d-block text-info" style="font-size: 0.8rem;">
+                        <i class="bi bi-building me-1"></i> <span x-text="item.employer_name"></span>
+                    </small>
+                </template>
             </span>
         </div>
         <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
