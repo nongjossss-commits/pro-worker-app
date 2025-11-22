@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget Verification</title>
+    <meta name="csrf-token" content="mock-token">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { background-color: #f8fafc; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Chat Widget Mock Verification</h1>
+    <p>This page mocks the chat widget environment.</p>
+
+    <!-- PASTE WIDGET CODE HERE (ADAPTED FOR MOCK) -->
+    <div x-data="chatWidget()"
+         x-init="initChat()"
+         @click.away="isExpanded = false"
+         :class="isExpanded ? 'chat-expanded' : 'chat-minimized'"
+         class="chat-widget shadow-lg border rounded-3 bg-white">
+
+        <!-- Minimized / Header -->
+        <div class="chat-header d-flex justify-content-between align-items-center p-2"
+             :class="{'bg-primary text-white rounded-3': !isExpanded, 'bg-primary text-white rounded-top-3': isExpanded}"
+             @click="toggleChat()">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-chat-dots-fill"></i>
+                <span x-show="isExpanded || unreadCount > 0" class="fw-bold">
+                    Team Chat
+                    <span x-show="unreadCount > 0" class="badge bg-danger rounded-pill ms-1" x-text="unreadCount"></span>
+                </span>
+            </div>
+            <div x-show="isExpanded">
+                <i class="bi bi-chevron-down"></i>
+            </div>
+        </div>
+
+        <!-- Expanded Body -->
+        <div x-show="isExpanded" class="chat-body bg-white d-flex flex-column" style="height: 400px; width: 350px; display: none;">
+
+            <!-- View: Contacts List -->
+            <div x-show="view === 'contacts'" class="flex-grow-1 overflow-auto p-0">
+                <div class="p-2 border-bottom bg-light d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Contacts</small>
+                    <button @click="showProfileModal = true" class="btn btn-sm btn-link text-decoration-none p-0">
+                        <i class="bi bi-person-circle me-1"></i>My Profile
+                    </button>
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    <template x-for="user in contacts" :key="user.id">
+                        <li class="list-group-item list-group-item-action d-flex align-items-center gap-2 cursor-pointer" @click="selectUser(user)">
+                            <div class="position-relative">
+                                <img :src="user.avatar_url" class="rounded-circle" width="32" height="32">
+                                <span x-show="user.is_online" class="position-absolute bottom-0 end-0 p-1 bg-success border border-light rounded-circle"></span>
+                            </div>
+                            <div class="flex-grow-1 lh-sm">
+                                <div class="d-flex justify-content-between">
+                                    <strong x-text="user.name" class="fs-6"></strong>
+                                    <span x-show="user.unread_count > 0" class="badge bg-danger rounded-pill" x-text="user.unread_count"></span>
+                                </div>
+                                <small class="text-muted d-block text-truncate" style="max-width: 180px;" x-text="user.position_title || 'No Position'"></small>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            <!-- View: Conversation -->
+            <div x-show="view === 'conversation'" class="flex-grow-1 d-flex flex-column h-100">
+                <div class="p-2 border-bottom bg-light d-flex align-items-center">
+                    <button @click="view = 'contacts'" class="btn btn-sm btn-link text-dark me-2"><i class="bi bi-arrow-left"></i></button>
+                    <div class="d-flex align-items-center gap-2" x-show="activeUser">
+                        <img :src="activeUser?.avatar_url" class="rounded-circle" width="24" height="24">
+                        <span class="fw-bold small" x-text="activeUser?.name"></span>
+                    </div>
+                </div>
+
+                <div class="flex-grow-1 overflow-auto p-3 bg-light" id="chatMessagesContainer">
+                    <template x-for="msg in messages" :key="msg.id">
+                        <div class="mb-2 d-flex" :class="msg.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                            <div class="p-2 rounded shadow-sm"
+                                 :class="msg.sender_id == currentUserId ? 'bg-primary text-white' : 'bg-white text-dark'"
+                                 style="max-width: 80%; word-wrap: break-word;">
+                                <div x-text="msg.message"></div>
+                                <small class="d-block text-end opacity-50" style="font-size: 0.65rem;" x-text="msg.created_at"></small>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-2 border-top bg-white">
+                    <form @submit.prevent="sendMessage" class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"><i class="bi bi-paperclip"></i></button>
+                        <input type="text" x-model="newMessage" class="form-control form-control-sm" placeholder="Type a message...">
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send-fill"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .chat-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            transition: all 0.3s ease;
+            max-width: 350px;
+            width: 100%;
+        }
+        .chat-minimized { width: auto; cursor: pointer; }
+        .chat-expanded { width: 350px; }
+    </style>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('chatWidget', () => ({
+                isExpanded: true, // Open by default for test
+                view: 'contacts',
+                contacts: [],
+                messages: [],
+                currentUserId: 1,
+                activeUser: null,
+                newMessage: '',
+                unreadCount: 2,
+
+                initChat() {
+                    // Mock Data
+                    this.contacts = [
+                        { id: 2, name: 'Admin User', avatar_url: 'https://ui-avatars.com/api/?name=Admin+User', position_title: 'System Admin', is_online: true, unread_count: 2 },
+                        { id: 3, name: 'Staff Member', avatar_url: 'https://ui-avatars.com/api/?name=Staff+Member', position_title: 'Support Staff', is_online: false, unread_count: 0 }
+                    ];
+                },
+                toggleChat() { this.isExpanded = !this.isExpanded; },
+                selectUser(user) {
+                    this.activeUser = user;
+                    this.view = 'conversation';
+                    this.messages = [
+                        { id: 1, sender_id: 2, message: 'Hello there!', created_at: '10:00 AM' },
+                        { id: 2, sender_id: 1, message: 'Hi Admin, how are you?', created_at: '10:05 AM' }
+                    ];
+                    this.unreadCount = 0;
+                },
+                sendMessage() {
+                    if (!this.newMessage) return;
+                    this.messages.push({
+                        id: Date.now(),
+                        sender_id: this.currentUserId,
+                        message: this.newMessage,
+                        created_at: new Date().toLocaleTimeString()
+                    });
+                    this.newMessage = '';
+                    this.$nextTick(() => {
+                        const container = document.getElementById('chatMessagesContainer');
+                        if(container) container.scrollTop = container.scrollHeight;
+                    });
+                }
+            }));
+        });
+    </script>
+</body>
+</html>

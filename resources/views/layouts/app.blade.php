@@ -19,6 +19,9 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <style>
         :root {
             --bs-primary: #F97316;
@@ -276,25 +279,6 @@
                     </a>
                 @endcan
             </div>
-            <div class="mt-auto">
-                <hr>
-                <div class="d-flex align-items-center">
-                    <div class="me-3">
-                        <i class="bi bi-person-circle fs-2"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0">{{ Auth::user()->name ?? __('User Name') }}</h6>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <a href="{{ route('logout') }}"
-                               onclick="event.preventDefault(); this.closest('form').submit();"
-                               class="text-muted small">
-                                {{ __('Logout') }}
-                            </a>
-                        </form>
-                    </div>
-                </div>
-            </div>
             </div>
         </aside>
 
@@ -312,6 +296,24 @@
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">
+                    <!-- User Dropdown (Top Right) -->
+                    <div class="dropdown me-2">
+                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="d-none d-md-inline">{{ Auth::user()->name ?? __('User') }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline" id="logout-form">
+                                    @csrf
+                                    <a href="{{ route('logout') }}" class="dropdown-item text-danger" id="btn-logout">
+                                        <i class="bi bi-box-arrow-right me-2"></i>{{ __('Logout') }}
+                                    </a>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-translate me-1"></i>
@@ -464,6 +466,9 @@
                 </div>
         </div>
     </div>
+
+    {{-- Chat Widget Component --}}
+    @include('components.chat-widget')
 
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
 
@@ -1072,6 +1077,32 @@ document.addEventListener('DOMContentLoaded', function () {
     scrollToTopLeft.addEventListener('click', scrollToTop);
     scrollToTopRight.addEventListener('click', scrollToTop);
 });
+</script>
+
+<script>
+    // Global Logout Handler for SweetAlert
+    document.addEventListener('DOMContentLoaded', function() {
+        const logoutBtn = document.getElementById('btn-logout');
+        if(logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: '{{ __('Ready to Leave?') }}',
+                    text: "{{ __('Select "Logout" below if you are ready to end your current session.') }}",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#F97316',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '{{ __('Logout') }}',
+                    cancelButtonText: '{{ __('Cancel') }}'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('logout-form').submit();
+                    }
+                });
+            });
+        }
+    });
 </script>
 
 </body>

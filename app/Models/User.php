@@ -2,15 +2,14 @@
 
 namespace App\Models;
 
-// ... (Existing imports)
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Traits\LogActivity;
-// Ensure these relationship imports exist or add them
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -26,6 +25,10 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        'avatar_path',
+        'position_title',
+        'bio',
+        'last_active_at',
     ];
 
     /**
@@ -48,9 +51,21 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_active_at' => 'datetime',
         ];
     }
 
+    /**
+     * Get the user's avatar URL.
+     */
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar_path) {
+            return Storage::disk('public')->url($this->avatar_path);
+        }
+        // Return a default placeholder or a generated avatar service URL
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
+    }
 
     // Ensure return type hinting is applied
     public function employer(): HasOne
@@ -59,7 +74,6 @@ class User extends Authenticatable
     }
 
     // --- START: V2.4 Corrected Relationships ---
-    // CRITICAL: Remove the incorrect `jobTickets()` method if it exists in the file.
     /**
      * Get the tickets submitted by this user (if they are an Employer).
      */
@@ -86,4 +100,15 @@ class User extends Authenticatable
         return $this->hasMany(TicketMessage::class);
     }
     // --- END: V2.4 Corrected Relationships ---
+
+    // --- Chat Relationships ---
+    public function sentChatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class, 'sender_id');
+    }
+
+    public function receivedChatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class, 'receiver_id');
+    }
 }
