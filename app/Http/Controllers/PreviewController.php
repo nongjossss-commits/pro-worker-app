@@ -26,7 +26,9 @@ class PreviewController extends Controller
             switch ($type) {
                 case 'employee':
                     $user = $request->user();
-                    $employee = Employee::with(['employer'])->withTrashed()->findOrFail($id);
+                    // Use withoutGlobalScope to allow finding employees that don't belong to the current employer
+                    // (e.g. external employees attached to a ticket by admin)
+                    $employee = Employee::withoutGlobalScope('employerTenancy')->with(['employer'])->withTrashed()->findOrFail($id);
 
                     // Security Check: Verify if user has permission to view this employee
                     $canView = false;
@@ -40,14 +42,17 @@ class PreviewController extends Controller
                         $canView = true;
                     }
                     // 3. "Security Rule": Context-aware access via JobTicket
-                    // Even if the employee is not yours, if it is attached to a ticket you can see, you can view it.
+                    // Even if the employee is not yours (and we bypassed the global scope to find it),
+                    // we explicitly check if it is attached to a ticket the user has access to.
                     else {
                          // Check if this employee is attached to any ticket where the user is a participant
                          $hasAccessViaTicket = \App\Models\JobTicket::where(function($q) use ($user) {
+                                 // User must be the ticket owner (employer) or the assigned staff
                                  $q->where('employer_user_id', $user->id)
                                    ->orWhere('assigned_staff_id', $user->id);
                               })
                               ->whereHas('messages', function($q) use ($id) {
+                                 // The employee ID must exist in a 'attachment_employee' message within that ticket
                                  $q->where('message_type', 'attachment_employee')
                                    ->where('body', (string)$id);
                               })
