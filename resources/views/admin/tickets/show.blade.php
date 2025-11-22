@@ -116,7 +116,8 @@
                                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}">
                                             <i class="bi bi-search"></i>
                                         </button>
-                                        @if(!$isClosed && (auth()->id() === $ticket->employer_user_id || auth()->user()->can('manage-tickets')))
+                                        {{-- Only Admin/Staff can delete external employees --}}
+                                        @if(!$isClosed && auth()->user()->can('manage-tickets'))
                                         <form action="{{ route('admin.tickets.messages.destroy', $item->message_id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
