@@ -87,6 +87,18 @@ $ticket->messages()->create([
 }
 }
 
+// V2.5-S17: Process External Employees (attachment_employee)
+// Similar to existing employees, but these come from global search
+if (!empty($attachments['external_employees'])) {
+foreach ($attachments['external_employees'] as $employeeId) {
+$ticket->messages()->create([
+'user_id' => $user->id,
+'message_type' => 'attachment_employee', // Same type as affiliated employees
+'body' => $employeeId,
+]);
+}
+}
+
 // V2.4-S11: 4. Process New Employees (attachment_new_employee) (New Logic)
 if (!empty($attachments['new_employees'])) {
 // Data is already decoded arrays thanks to StoreTicketReplyRequest preparation.
