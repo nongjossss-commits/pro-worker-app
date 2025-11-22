@@ -30,6 +30,12 @@
     </div>
     <div class="row mb-3">
         <div class="col-md-6">
+            <label class="form-label fw-bold">ผู้ดูแล (Admin)</label>
+            <p class="form-control-plaintext">{{ $employer->assignedStaff?->name ?? 'N/A' }}</p>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
             <label class="form-label fw-bold">เลขประจำตัวนายจ้าง</label>
             <p class="form-control-plaintext">{{ $employer->employerTaxId ?? 'N/A' }}</p>
         </div>
