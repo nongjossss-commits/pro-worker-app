@@ -77,6 +77,29 @@ class RoleAndPermissionSeeder extends Seeder
         // FIX: Corrected all $this.command typos to $this->command
         $this->command->info('Staff role created/verified and permissions synced.');
 
+        // --- START: Create Caretaker Role (NEW) ---
+        $caretakerRole = Role::firstOrCreate(['name' => 'caretaker']);
+        $caretakerPermissions = [
+            // Base permissions
+            'view-dashboard',
+            'view-notifications',
+            // Employer permissions (Scoped by Controller/Model)
+            'view-employers',
+            'edit-employers',
+            'create-employers', // Allows adding but they might not see it unless assigned
+            // Employee permissions (Scoped by Controller/Model)
+            'view-employees',
+            'create-employees',
+            'edit-employees',
+            'terminate-employees',
+            'restore-employees',
+            // Explicitly EXCLUDED:
+            // view-importers, view-agents, view-delegates, view-trash, manage-users, etc.
+        ];
+        $caretakerRole->syncPermissions($caretakerPermissions);
+        $this->command->info('Caretaker role created/verified and permissions synced.');
+        // --- END: Create Caretaker Role (NEW) ---
+
         // Create Admin Role and assign all permissions
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $adminRole->givePermissionTo(Permission::all());
