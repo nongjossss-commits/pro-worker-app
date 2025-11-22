@@ -86,6 +86,7 @@ class EmployeeObserver
                     'due_date' => null, // Not applicable
                     'status' => 'unread',
                     'days_remaining' => 0, // Not applicable, but useful for sorting if needed
+                    'message' => 'ข้อมูลบัตรชมพูไม่ครบถ้วน', // Default message
                 ]
             );
         } else {
@@ -119,6 +120,7 @@ class EmployeeObserver
                     'due_date' => null,
                     'status' => 'unread',
                     'days_remaining' => 0,
+                    'message' => 'เอกสารแจ้งที่พักอาศัยไม่ครบถ้วน', // Default message
                 ]
             );
         } else {
