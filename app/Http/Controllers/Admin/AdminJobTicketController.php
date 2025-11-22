@@ -113,7 +113,24 @@ class AdminJobTicketController extends Controller
                 TicketMessage::insert($messagesToInsert);
             }
 
-            // 5. Process New Employees (attachment_new_employee)
+            // 5. Process External Employees (attachment_employee - V2.5-S17)
+            // Stored as regular employee attachments, categorization happens in the Model/View
+            if (!empty($attachments['external_employees'])) {
+                $messagesToInsert = [];
+                foreach ($attachments['external_employees'] as $employeeId) {
+                    $messagesToInsert[] = [
+                        'job_ticket_id' => $ticket->id,
+                        'user_id' => $adminUser->id, // Admin is attacher
+                        'message_type' => 'attachment_employee', // Same type
+                        'body' => $employeeId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                TicketMessage::insert($messagesToInsert);
+            }
+
+            // 6. Process New Employees (attachment_new_employee)
             if (!empty($attachments['new_employees'])) {
                 // Define all possible file fields that need to be processed
                 $fileFields = [

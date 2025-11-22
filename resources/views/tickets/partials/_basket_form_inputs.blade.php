@@ -11,6 +11,11 @@
     <input type="hidden" :name="'attachments[existing_employees][' + index + ']'" :value="item.id">
 </template>
 
+<!-- External Employees Inputs (V2.5-S17) -->
+<template x-for="(item, index) in basket.external_employees" :key="'input-ext-' + item.id">
+    <input type="hidden" :name="'attachments[external_employees][' + index + ']'" :value="item.id">
+</template>
+
 <!-- New Employees Inputs -->
 <template x-for="(item, index) in basket.new_employees" :key="'input-n-' + index">
     <input type="hidden" :name="'attachments[new_employees][' + index + ']'" :value="JSON.stringify(item)">

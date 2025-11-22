@@ -138,6 +138,8 @@ class EmployerEmployeeController extends Controller
 
             return [
                 'id' => $employee->id,
+                // V2.5-S17 FIX: Include employer_id for frontend affiliation checks
+                'employer_id' => $employee->employer_id,
                 'employer_name' => $employee->employer->employerNameTh ?? 'N/A', // Useful for admins to see owner
                 'employeeNameTh' => $employee->employeeNameTh,
                 'employeeNameEn' => $employee->employeeNameEn,

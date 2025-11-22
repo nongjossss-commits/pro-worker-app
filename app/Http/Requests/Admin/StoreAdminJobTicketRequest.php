@@ -58,7 +58,7 @@ class StoreAdminJobTicketRequest extends FormRequest
                 },
             ],
 
-            // 2. Existing Employees
+            // 2. Existing Employees (Strict Affiliation Check)
             'attachments.existing_employees' => ['nullable', 'array'],
             'attachments.existing_employees.*' => [
                 'required',
@@ -77,7 +77,16 @@ class StoreAdminJobTicketRequest extends FormRequest
                 }),
             ],
 
-            // 3. New Employees (JSON data from modal)
+            // 3. External Employees (V2.5-S17: Exception for Admin/Staff - No Affiliation Check)
+            'attachments.external_employees' => ['nullable', 'array'],
+            'attachments.external_employees.*' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:employees,id', // Just check existence, ignore employer
+            ],
+
+            // 4. New Employees (JSON data from modal)
             'attachments.new_employees' => ['nullable', 'array'],
             'attachments.new_employees.*' => ['required', 'array'], // ตรวจสอบว่าเป็น array ที่ถูก decode แล้ว
 
@@ -138,6 +147,7 @@ class StoreAdminJobTicketRequest extends FormRequest
         return [
             'employer_user_id.required' => 'กรุณาเลือกนายจ้าง',
             'attachments.existing_employees.*.exists' => 'ลูกจ้างที่เลือกไม่ถูกต้อง หรือไม่ได้อยู่ในสังกัดของนายจ้างที่เลือก',
+            'attachments.external_employees.*.exists' => 'ลูกจ้างภายนอกที่เลือกไม่ถูกต้อง (ไม่พบในระบบ)',
             'attachments.new_employees.*.employeeNameTh.required' => 'กรุณากรอกชื่อ-สกุล (ภาษาไทย) สำหรับลูกจ้างใหม่',
             'attachments.new_employees.*.employeePassport.required' => 'กรุณากรอก Passport สำหรับลูกจ้างใหม่',
             'attachments.new_employees.*.employeeNationality.required' => 'กรุณาเลือกสัญชาติสำหรับลูกจ้างใหม่',

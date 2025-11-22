@@ -119,6 +119,12 @@
                             <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading || !contextEmployerId" title="กรุณาเลือกนายจ้างก่อน">
                                 <i class="bi bi-person-check me-2"></i> แนบลูกจ้างที่มีอยู่
                             </button>
+
+                            {{-- V2.5-S17: New Button for External Employees --}}
+                            <button type="button" class="btn btn-outline-warning text-dark" @click="openGlobalEmployeeSearch" :disabled="isUploading" title="ค้นหาลูกจ้างทั้งระบบ">
+                                <i class="bi bi-search me-2"></i> แนบลูกจ้างภายนอก
+                            </button>
+
                             <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading || !contextEmployerId" title="กรุณาเลือกนายจ้างก่อน">
                                 <i class="bi bi-person-plus me-2"></i> แจ้งเข้าลูกจ้างใหม่
                             </button>
@@ -134,7 +140,7 @@
                             <template x-if="totalItemsCount() === 0">
                                 <div class="text-muted fst-italic text-center py-3">ยังไม่มีรายการที่แนบ</div>
                             </template>
-                            {{-- Templates for existing_employees, new_employees, and files are identical to the employer view --}}
+                            {{-- Templates for existing_employees, external_employees, new_employees, and files --}}
                             @include('tickets.partials._basket_display_templates')
                         </div>
                         <hr>
