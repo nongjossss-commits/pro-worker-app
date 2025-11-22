@@ -3,7 +3,7 @@
 {{-- This partial contains the x-template definitions for displaying items in the attachment basket. --}}
 {{-- It's used by both resources/views/tickets/create.blade.php and resources/views/admin/tickets/create.blade.php --}}
 
-<!-- 1. Template for Existing Employees -->
+<!-- 1. Template for Existing Employees (Affiliated) -->
 <template x-for="(item, index) in basket.existing_employees" :key="'e-' + item.id">
     <div class="list-group-item d-flex justify-content-between align-items-center py-2">
         <div class="d-flex align-items-center gap-3">
@@ -14,16 +14,35 @@
                      <span x-text="item.employeeNameTh"></span>
                      <span class="text-muted ms-1" x-text="item.employeeNameEn ? '(' + item.employeeNameEn + ')' : ''"></span>
                 </div>
-                {{-- V2.5-S16: Show External Tag/Employer Name if available and possibly external --}}
-                <template x-if="item.employer_name">
-                    <small class="d-block text-info" style="font-size: 0.8rem;">
-                        <i class="bi bi-building me-1"></i> <span x-text="item.employer_name"></span>
-                    </small>
-                </template>
             </span>
         </div>
         <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
-        {{-- Hidden inputs have been moved to _basket_form_inputs.blade.php to ensure reliable form submission --}}
+    </div>
+</template>
+
+<!-- 1.5 Template for External Employees (Non-Affiliated) -->
+<template x-for="(item, index) in basket.external_employees" :key="'ext-' + item.id">
+    <div class="list-group-item d-flex justify-content-between align-items-center py-2 bg-light border-warning">
+        <div class="d-flex align-items-center gap-3">
+             <div class="position-relative">
+                <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">
+                    Ext
+                </span>
+            </div>
+            <span>
+                <div class="d-flex align-items-center">
+                     <i class="bi bi-person-exclamation me-1 text-warning"></i>
+                     <span class="fw-bold text-dark" x-text="item.employeeNameTh"></span>
+                     <span class="text-muted ms-1" x-text="item.employeeNameEn ? '(' + item.employeeNameEn + ')' : ''"></span>
+                </div>
+                {{-- Show Employer Name --}}
+                <small class="d-block text-muted" style="font-size: 0.8rem;">
+                    <i class="bi bi-building me-1"></i> <span x-text="item.employer_name || 'ไม่ทราบสังกัด'"></span>
+                </small>
+            </span>
+        </div>
+        <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('external_employees', index, item.employeeNameTh)">ลบ</button>
     </div>
 </template>
 
@@ -38,7 +57,6 @@
             </span>
         </div>
         <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">ลบ</button>
-        {{-- Hidden inputs have been moved to _basket_form_inputs.blade.php to ensure reliable form submission --}}
     </div>
 </template>
 
@@ -53,6 +71,5 @@
             </span>
         </div>
         <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">ลบ</button>
-        {{-- Hidden inputs have been moved to _basket_form_inputs.blade.php to ensure reliable form submission --}}
     </div>
 </template>

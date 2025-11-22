@@ -68,14 +68,14 @@
         <div class="col-lg-8">
 
             {{-- Section 1: Triage (Attachments Summary) --}}
-            @if($attachments->existing_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->isNotEmpty())
+            @if($attachments->existing_employees->isNotEmpty() || $attachments->external_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->isNotEmpty())
             <div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>สิ่งที่แนบมา (Attachments Triage)</h5>
                 </div>
                 <div class="card-body">
 
-                    {{-- 1.1 Existing Employees --}}
+                    {{-- 1.1 Existing Employees (Affiliated) --}}
                     @if($attachments->existing_employees->isNotEmpty())
                         <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
 
@@ -112,6 +112,50 @@
                                     @if($employee->trashed())
                                         <span class="badge bg-danger me-2">ลบ/จำหน่ายแล้ว</span>
                                     @endif
+                                    <div class="ms-auto btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                        @if(!$isClosed && (auth()->id() === $ticket->employer_user_id || auth()->user()->can('manage-tickets')))
+                                        <form action="{{ route('admin.tickets.messages.destroy', $item->message_id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
+                                                    data-swal-title="ยืนยันการลบ"
+                                                    data-swal-text="ต้องการลบ '{{ $employee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
+                                                    data-swal-icon="warning"
+                                                    data-swal-confirm-text="ใช่, ลบเลย">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    {{-- 1.1.5 External Employees (Non-Affiliated) --}}
+                    @if($attachments->external_employees->isNotEmpty())
+                        <h6 class="text-warning text-dark mt-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>ลูกจ้างภายนอก (External) ({{ $attachments->external_employees->count() }} คน)</h6>
+                        <div class="list-group mb-3 border border-warning rounded">
+                            @foreach($attachments->external_employees as $item)
+                                @php $employee = $item->employee; @endphp
+                                <div class="list-group-item d-flex align-items-center gap-3 py-2 bg-light">
+                                    {{-- External employees don't have bulk actions for now --}}
+                                    <div class="position-relative">
+                                        <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">Ext</span>
+                                    </div>
+                                    <span class="flex-grow-1">
+                                        <strong class="text-dark">{{ $employee->employeeNameTh }}</strong>
+                                        <small class="text-muted d-block">Passport: {{ $employee->employeePassport }}</small>
+                                        <small class="text-info d-block" style="font-size: 0.8rem;">
+                                            <i class="bi bi-building me-1"></i>
+                                            {{ optional($employee->employer)->employerNameTh ?? 'ไม่ทราบสังกัด' }}
+                                        </small>
+                                    </span>
+
                                     <div class="ms-auto btn-group">
                                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}">
                                             <i class="bi bi-search"></i>

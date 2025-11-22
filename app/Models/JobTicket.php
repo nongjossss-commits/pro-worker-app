@@ -100,9 +100,10 @@ class JobTicket extends Model
         return Attribute::make(
             get: function () {
                 $attachments = [
-                    'existing_employees' => collect(), // Will hold objects { employee: Employee, message_id: int }
-                    'new_employees' => collect(),      // Will hold objects { data: object, message_id: int }
-                    'files' => collect(),              // Will hold objects { data: object, message_id: int }
+                    'existing_employees' => collect(), // Affiliated employees
+                    'external_employees' => collect(), // V2.5-S17: Non-affiliated employees (Exception for Admin/Staff)
+                    'new_employees' => collect(),
+                    'files' => collect(),
                 ];
 
                 $employeeMessageMap = []; // [employee_id => [message_id1, message_id2, ...]]
@@ -172,11 +173,22 @@ class JobTicket extends Model
                         ->append('photo_url')
                         ->keyBy('id');
 
+                    // V2.5-S17: Determine affiliation
+                    // Get the ticket's employer ID
+                    $ticketEmployerId = $this->employerUser?->employer?->id;
+
                     foreach ($employeeMessageMap as $employeeId => $messageIds) {
                         if (isset($employeeModels[$employeeId])) {
+                            $emp = $employeeModels[$employeeId];
+
+                            // Check affiliation (Handle case where ticket employer might be null/deleted)
+                            $isAffiliated = $ticketEmployerId && ($emp->employer_id === $ticketEmployerId);
+
+                            $targetCollection = $isAffiliated ? 'existing_employees' : 'external_employees';
+
                             foreach ($messageIds as $messageId) {
-                                $attachments['existing_employees']->push((object)[
-                                    'employee' => $employeeModels[$employeeId],
+                                $attachments[$targetCollection]->push((object)[
+                                    'employee' => $emp,
                                     'message_id' => $messageId
                                 ]);
                             }

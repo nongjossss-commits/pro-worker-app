@@ -1,9 +1,8 @@
-{{-- resources/views/components/hybrid-attachment-scripts.blade.php --}}
 <script>
 function hybridAttachmentManager(config = {}) {
     return {
         // --- Core States ---
-        basket: { existing_employees: [], new_employees: [], files: [] },
+        basket: { existing_employees: [], external_employees: [], new_employees: [], files: [] },
         isUploading: false,
         uploadProgress: 0,
         filesToUploadCount: 0,
@@ -136,6 +135,8 @@ function hybridAttachmentManager(config = {}) {
             if (oldAttachments) {
                 this.basket.files = oldAttachments.files || [];
                 this.basket.existing_employees = oldAttachments.existing_employees || [];
+                // V2.5-S17: Restore external employees
+                this.basket.external_employees = oldAttachments.external_employees || [];
 
                 if (oldAttachments.new_employees) {
                     this.basket.new_employees = oldAttachments.new_employees.map(item => {
@@ -153,6 +154,7 @@ function hybridAttachmentManager(config = {}) {
 
         totalItemsCount() {
             return (this.basket.existing_employees?.length || 0) +
+                   (this.basket.external_employees?.length || 0) +
                    (this.basket.new_employees?.length || 0) +
                    (this.basket.files?.length || 0);
         },
@@ -208,8 +210,17 @@ function hybridAttachmentManager(config = {}) {
 
                 // Add them to basket immediately
                 employees.forEach(emp => {
-                     if (!this.basket.existing_employees.some(e => e.id == emp.id)) {
-                        this.basket.existing_employees.push(emp);
+                     // Check if already in either basket
+                     const inExisting = this.basket.existing_employees.some(e => e.id == emp.id);
+                     const inExternal = this.basket.external_employees.some(e => e.id == emp.id);
+
+                     if (!inExisting && !inExternal) {
+                        // Determine where to put it
+                        if (this.contextEmployerId && emp.employer_id == this.contextEmployerId) {
+                            this.basket.existing_employees.push(emp);
+                        } else {
+                            this.basket.external_employees.push(emp);
+                        }
                     }
                 });
 
@@ -261,24 +272,26 @@ function hybridAttachmentManager(config = {}) {
             }
         },
 
+        // Open Modal for Existing Employees (Affiliated)
         openExistingEmployeeModal() {
              if (this.isContextAdminCreate && !this.contextEmployerId) {
-                // V2.5-S16: Allow opening if intended for global search?
-                // Actually, user can start with global search immediately.
-                // But default behavior is still valid. Let's allow opening but check later.
-                // If we want to FORCE selecting employer first, we keep the check.
-                // But for "Attach External Employee", maybe we don't need an employer selected first?
-                // The controller store method REQUIRES an employer_user_id.
-                // So we should enforce employer selection first, then allow searching others.
                 Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างหลักสำหรับตั๋วก่อนทำการแนบลูกจ้าง' });
                 return;
             }
 
-            // If not global search, fetch defaults. If global, wait for input.
-            if (!this.isGlobalSearch) {
-                this.fetchEmployees();
-            }
+            // Switch to Local Mode
+            this.isGlobalSearch = false;
+            this.searchQuery = '';
 
+            this.fetchEmployees();
+            if (this.modalInstances.existing) this.modalInstances.existing.show();
+        },
+
+        // V2.5-S17: Open Modal for Global Search (External Employees)
+        openGlobalEmployeeSearch() {
+            this.isGlobalSearch = true;
+            this.searchQuery = ''; // Clear query
+            this.availableEmployees = []; // Clear list until typed
             if (this.modalInstances.existing) this.modalInstances.existing.show();
         },
 
@@ -313,11 +326,22 @@ function hybridAttachmentManager(config = {}) {
             this.selectedEmployeeIds.forEach(id => {
                 // V2.5-FIX: Use loose comparison for ID finding (String vs Int)
                 const employee = this.availableEmployees.find(e => e.id == id);
-                // Prevent duplicates
-                if (employee && !this.basket.existing_employees.some(e => e.id == employee.id)) {
-                    // V2.5-FIX: Deep clone the object to prevent reference issues when availableEmployees is cleared
+                if (!employee) return;
+
+                // V2.5-S17: Determine destination basket (Existing vs External) based on Affiliation
+                // We use weak comparison for IDs just in case
+                const isAffiliated = this.contextEmployerId && (employee.employer_id == this.contextEmployerId);
+                const targetBasket = isAffiliated ? this.basket.existing_employees : this.basket.external_employees;
+
+                // Prevent duplicates in the target basket
+                if (!targetBasket.some(e => e.id == employee.id)) {
+                    // Also check if it's in the OTHER basket (e.g. moved?) - Optional, but let's allow it to move if logic dictates
+                    // If it was in External but now is Affiliated (e.g. employer changed context?), we should probably handle that,
+                    // but for now, simple add is enough.
+
+                    // Deep clone
                     const employeeClone = JSON.parse(JSON.stringify(employee));
-                    this.basket.existing_employees.push(employeeClone);
+                    targetBasket.push(employeeClone);
                 }
             });
             this.selectedEmployeeIds = []; // Reset selection
