@@ -20,7 +20,7 @@
                 <div class="row g-3">
                     @foreach($months as $month)
                     @php
-                        $monthName = \Carbon\Carbon::create()->month($month)->locale('th')->translatedFormat('F');
+                        $monthName = \Carbon\Carbon::create()->month((int)$month)->locale('th')->translatedFormat('F');
                     @endphp
                     <div class="col-6 col-md-4 col-lg-3">
                         <a href="{{ route('admin.activity-logs.month', ['year' => $year, 'month' => $month]) }}" class="text-decoration-none">
