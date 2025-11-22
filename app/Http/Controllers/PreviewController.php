@@ -25,7 +25,43 @@ class PreviewController extends Controller
         try {
             switch ($type) {
                 case 'employee':
+                    $user = $request->user();
                     $employee = Employee::with(['employer'])->withTrashed()->findOrFail($id);
+
+                    // Security Check: Verify if user has permission to view this employee
+                    $canView = false;
+
+                    // 1. Admin/Staff (manage-tickets) can view everything
+                    if ($user->can('manage-tickets')) {
+                        $canView = true;
+                    }
+                    // 2. Employer owns the employee
+                    elseif ($employee->employer && $user->id === $employee->employer->user_id) {
+                        $canView = true;
+                    }
+                    // 3. "Security Rule": Context-aware access via JobTicket
+                    // Even if the employee is not yours, if it is attached to a ticket you can see, you can view it.
+                    else {
+                         // Check if this employee is attached to any ticket where the user is a participant
+                         $hasAccessViaTicket = \App\Models\JobTicket::where(function($q) use ($user) {
+                                 $q->where('employer_user_id', $user->id)
+                                   ->orWhere('assigned_staff_id', $user->id);
+                              })
+                              ->whereHas('messages', function($q) use ($id) {
+                                 $q->where('message_type', 'attachment_employee')
+                                   ->where('body', (string)$id);
+                              })
+                              ->exists();
+
+                         if ($hasAccessViaTicket) {
+                             $canView = true;
+                         }
+                    }
+
+                    if (!$canView) {
+                        abort(403, 'Unauthorized access to this employee record.');
+                    }
+
                     return view('previews._employee_data', ['employee' => $employee]);
 
                 case 'employer':

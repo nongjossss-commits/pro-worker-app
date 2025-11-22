@@ -72,13 +72,7 @@ function hybridAttachmentManager(config = {}) {
             // Check for preselected IDs from session (injected via config)
             if (config.preselectedEmployeeIds && config.preselectedEmployeeIds.length > 0) {
                 this.selectedEmployeeIds = config.preselectedEmployeeIds;
-                // We need to wait for employees to be fetched if they haven't been already
-                // Or trigger a fetch if we have contextEmployerId
-                if (this.contextEmployerId) {
-                    this.fetchEmployees().then(() => {
-                        this.confirmSelection();
-                    });
-                }
+                this.fetchPreselectedEmployees();
             }
         },
 
@@ -170,6 +164,37 @@ function hybridAttachmentManager(config = {}) {
             });
         },
 
+        // --- V2.5-FIX: Fetch Preselected Employees by IDs ---
+        async fetchPreselectedEmployees() {
+            this.isLoading = true;
+            try {
+                const params = new URLSearchParams();
+                // Pass the IDs as array
+                this.selectedEmployeeIds.forEach(id => params.append('ids[]', id));
+
+                const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const employees = await response.json();
+
+                // Add them to basket immediately
+                employees.forEach(emp => {
+                     if (!this.basket.existing_employees.some(e => e.id == emp.id)) {
+                        this.basket.existing_employees.push(emp);
+                    }
+                });
+
+                // Clear selection after adding
+                this.selectedEmployeeIds = [];
+
+            } catch (error) {
+                console.error('Failed to fetch preselected employees:', error);
+                Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลลูกจ้างที่เลือกไว้ได้', 'error');
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
         async fetchEmployees() {
             if (!this.contextEmployerId) return;
             this.isLoading = true;
@@ -204,10 +229,21 @@ function hybridAttachmentManager(config = {}) {
 
         handleEmployerChange(newEmployerId) {
             this.contextEmployerId = newEmployerId;
-            // Clear everything related to the previous employer
-            this.basket.existing_employees = [];
+            // If user selects a new employer, we generally clear the basket to avoid confusion.
+            // BUT for "Send Data" logic where admins might want to attach employees from other employers,
+            // clearing blindly might annoy them if they added preselected ones.
+            // However, standard behavior is to clear when context changes.
+            // We will clear availableEmployees but keep the basket if it's already populated from preselection?
+            // No, let's clear to be safe and consistent, unless we want to support cross-employer attachments (which we do now).
+
+            // V2.5-FIX: Do NOT clear basket.existing_employees if they were pre-selected or added.
+            // Only clear availableEmployees (the list in the modal).
             this.availableEmployees = [];
-            this.selectedEmployeeIds = [];
+
+            // If you want to enforce "basket only contains employees of selected employer", you would clear it.
+            // But the requirement is specifically to allow attaching employees from other employers.
+            // So we do NOT clear basket.existing_employees here.
+
             if (newEmployerId) {
                 this.fetchEmployees(); // Pre-fetch for the new employer
             }
