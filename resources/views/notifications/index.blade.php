@@ -141,6 +141,88 @@
                     @else
                         @include('notifications._work_permit_mou_pane', ['notifications' => $notifications])
                     @endif
+                @elseif($type === 'employer_document_expiry')
+                     {{-- Custom View for Employer Document Expiry --}}
+                     @if($currentView == 'table')
+                         <div class="table-responsive">
+                            <table class="table table-hover table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-employer"></th>
+                                        <th style="width: 1%;">#</th>
+                                        <th>{{ __('Employer Name') }}</th>
+                                        <th>{{ __('Document') }}</th>
+                                        <th>{{ __('Expiry Date') }}</th>
+                                        <th>{{ __('Status / Days Remaining') }}</th>
+                                        <th class="text-center">{{ __('Manage') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($notifications as $notification)
+                                        @php
+                                            $itemNumber = $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1));
+                                        @endphp
+                                        <tr>
+                                            <td><input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $notification->id }}"></td>
+                                            <td>{{ $itemNumber }}</td>
+                                            <td>{{ optional($notification->employer)->employerNameTh ?? '-' }}</td>
+                                            <td>{{ __('Company Certificate / ID Card') }}</td>
+                                            <td>{{ $notification->due_date ? \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') : '-' }}</td>
+                                            <td>
+                                                 @if($notification->days_remaining <= 0)
+                                                    <span class="badge bg-danger">{{ __('Expired') }}</span>
+                                                 @else
+                                                    <span class="badge bg-warning text-dark">{{ __('Expires in') }} {{ $notification->days_remaining }} {{ __('days') }}</span>
+                                                 @endif
+                                            </td>
+                                            <td class="text-center">
+                                                {{-- Reuse the standard notification action buttons or simplified ones --}}
+                                                 <div class="dropdown">
+                                                    <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bi bi-three-dots-vertical"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li>
+                                                            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#renewModal-{{ $notification->id }}">
+                                                                <i class="bi bi-arrow-repeat text-success me-2"></i> {{ __('Renew') }}
+                                                            </button>
+                                                        </li>
+                                                         <li>
+                                                            <form action="{{ route('notifications.cancel', $notification->id) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                <button type="submit" class="dropdown-item text-warning" onclick="return confirm('{{ __('Are you sure you want to cancel this notification?') }}')">
+                                                                    <i class="bi bi-x-circle me-2"></i> {{ __('Cancel') }}
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                @include('notifications._renew_modal', ['notification' => $notification])
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="7" class="text-center text-muted py-4">{{ __('No data found') }}</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                         </div>
+                     @else
+                        {{-- Reusing Card View logic but might need tweaking if it expects Employee data --}}
+                        @forelse($notifications as $notification)
+                            @php
+                                $itemNumber = $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1));
+                            @endphp
+                            @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $itemNumber])
+                        @empty
+                            <p class="text-center text-muted py-4">{{ __('No data found') }}</p>
+                        @endforelse
+                     @endif
+                     <div class="mt-4">
+                        @if($notifications->hasPages())
+                            {{ $notifications->links() }}
+                        @endif
+                    </div>
+
                 @else
                     {{-- Standard rendering for all other tabs --}}
                     @if($currentView == 'table')
@@ -244,6 +326,7 @@
         const actionBar = document.getElementById('bulk-action-bar-notifications');
         const selectAllCheckbox = document.getElementById('select-all-checkbox-notifications');
         const selectAllCheckboxStd = document.getElementById('select-all-checkbox-notifications-std');
+        const selectAllCheckboxEmployer = document.getElementById('select-all-checkbox-notifications-employer');
         const selectAllCheckboxMOU1 = document.getElementById('select-all-checkbox-notifications-mou1');
         const selectAllCheckboxMOU2 = document.getElementById('select-all-checkbox-notifications-mou2');
         const selectedCountSpan = document.getElementById('selected-count-notifications');
@@ -271,6 +354,7 @@
             const allChecked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
             if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
             if (selectAllCheckboxStd) selectAllCheckboxStd.checked = allChecked;
+            if (selectAllCheckboxEmployer) selectAllCheckboxEmployer.checked = allChecked;
         }
 
         // Use the previously defined 'container' if available or query it
@@ -331,6 +415,18 @@
             });
         }
 
+        if (selectAllCheckboxEmployer) {
+            selectAllCheckboxEmployer.addEventListener('change', function() {
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
+                if (!activePane) return;
+                const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
+                itemCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateActionBar();
+            });
+        }
+
         // Download Handler
         if (downloadBtn) {
              downloadBtn.addEventListener('click', function(e) {
@@ -354,6 +450,7 @@
             tab.addEventListener('shown.bs.tab', function() {
                 if(selectAllCheckbox) selectAllCheckbox.checked = false;
                 if(selectAllCheckboxStd) selectAllCheckboxStd.checked = false;
+                if(selectAllCheckboxEmployer) selectAllCheckboxEmployer.checked = false;
                 if(selectAllCheckboxMOU1) selectAllCheckboxMOU1.checked = false;
                 if(selectAllCheckboxMOU2) selectAllCheckboxMOU2.checked = false;
                 updateActionBar();
