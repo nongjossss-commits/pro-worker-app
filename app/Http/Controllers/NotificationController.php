@@ -233,13 +233,12 @@ class NotificationController extends Controller
                     $fileField = 'insurance_document_path_private';
                 } elseif ($employee->insurance_type === 'ประกันโรงพยาบาล') {
                     $fieldToUpdate = 'insurance_expiry_date_hospital';
-                    // Fix: Use 'insurance_document_path' instead of invalid 'insurance_attachment_path'
-                    $fileField = 'insurance_document_path';
+                    // Fix: Reverted to 'insurance_attachment_path' as 'insurance_document_path' column is missing in some environments
+                    $fileField = 'insurance_attachment_path';
                 } else {
                     $fieldToUpdate = 'insurance_expiry_date';
-                    // Fix: Use 'insurance_document_path' for Social Security as well (or general insurance)
-                    // assuming this is the main column for it.
-                    $fileField = 'insurance_document_path';
+                    // Fix: Reverted to 'insurance_attachment_path' as 'insurance_document_path' column is missing in some environments
+                    $fileField = 'insurance_attachment_path';
                 }
                 break;
             case 'employer_document_expiry':
