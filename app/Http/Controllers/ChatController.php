@@ -28,9 +28,27 @@ class ChatController extends Controller
         $query = User::where('id', '!=', $currentUser->id);
 
         // --- Access Control Logic ---
-        if ($currentUser->hasRole('admin')) {
-            // Admin sees EVERYONE.
-            // No filters applied.
+        if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
+            // Admin, Staff, and Caretaker can ALWAYS see each other.
+            // They can also see Employers assigned to them (if applicable).
+
+            $assignedStaffId = null;
+            // Note: Staff/Caretaker might have 'employer' relationship if they are hybrid,
+            // but usually Employers have 'assigned_staff_id'.
+            // Here we look for users (Employers) assigned TO this staff member.
+
+            $query->where(function($q) use ($currentUser) {
+                // 1. See Colleagues (Admin, Staff, Caretaker) - MUTUAL VISIBILITY
+                $q->whereHas('roles', function($r) {
+                    $r->whereIn('name', ['admin', 'staff', 'caretaker']);
+                });
+
+                // 2. See Employers assigned to this user (if this user is staff/caretaker)
+                $q->orWhereHas('employer', function($e) use ($currentUser) {
+                    $e->where('assigned_staff_id', $currentUser->id);
+                });
+            });
+
         } elseif ($currentUser->hasRole('employer')) {
             // Employer sees:
             // 1. Admins
@@ -56,27 +74,6 @@ class ChatController extends Controller
                 }
             });
 
-        } elseif ($currentUser->hasRole(['staff', 'caretaker'])) {
-            // Staff/Caretaker sees:
-            // 1. Colleagues (Admin, Staff, Caretaker)
-            // 2. Employers assigned SPECIFICALLY to them.
-            // 3. IF they are 'staff' (not just caretaker), maybe they see ALL employers?
-            //    The requirement says: "Staff and Caretaker... visible to each other".
-            //    "Employers won't be able to use this chat channel if Admin doesn't allow it... if allowed... Employer sees Admin and Staff and Caretaker that matches rights."
-
-            // Let's assume Staff can see ALL Colleagues.
-            $query->where(function($q) use ($currentUser) {
-                // 1. See Colleagues (Admin, Staff, Caretaker)
-                $q->whereHas('roles', function($r) {
-                    $r->whereIn('name', ['admin', 'staff', 'caretaker']);
-                });
-
-                // 2. See Employers assigned to this user
-                // We check users who have an 'employer' record where assigned_staff_id matches current user.
-                $q->orWhereHas('employer', function($e) use ($currentUser) {
-                    $e->where('assigned_staff_id', $currentUser->id);
-                });
-            });
         } else {
             // Fallback for any other role: See nobody
             return response()->json([]);
@@ -119,9 +116,6 @@ class ChatController extends Controller
         }
 
         // --- Security Check: Validate relationship logic again ---
-        // We reuse the logic: Can I see this user in my contacts?
-        // This prevents users from manually hitting the API for users they shouldn't see.
-
         $canChat = false;
         $targetUser = User::with(['roles', 'employer'])->find($userId);
 
@@ -129,23 +123,27 @@ class ChatController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
-        if ($currentUser->hasRole('admin')) {
-            $canChat = true;
-        } elseif ($currentUser->hasRole('employer')) {
+        // Expanded Logic for Admin/Staff/Caretaker
+        if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
+            // Can chat with any Admin/Staff/Caretaker
+            if ($targetUser->hasRole(['admin', 'staff', 'caretaker'])) {
+                $canChat = true;
+            }
+            // Can chat with assigned Employers
+            elseif ($targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUserId) {
+                $canChat = true;
+            }
+            // Admin can chat with anyone (Superuser override)
+            elseif ($currentUser->hasRole('admin')) {
+                 $canChat = true;
+            }
+        }
+        elseif ($currentUser->hasRole('employer')) {
              // Target must be Admin, Staff, or Assigned Staff
              $isSystem = $targetUser->hasRole(['admin', 'staff']);
              $isAssigned = $currentUser->employer && $currentUser->employer->assigned_staff_id == $userId;
 
              if ($isSystem || $isAssigned) {
-                 $canChat = true;
-             }
-        } elseif ($currentUser->hasRole(['staff', 'caretaker'])) {
-             // Target must be Colleague OR Assigned Employer
-             $isColleague = $targetUser->hasRole(['admin', 'staff', 'caretaker']);
-             // Check if target is an employer assigned to me
-             $isAssignedEmployer = $targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUserId;
-
-             if ($isColleague || $isAssignedEmployer) {
                  $canChat = true;
              }
         }
@@ -191,22 +189,24 @@ class ChatController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Re-verify permission (same logic as fetchMessages)
+        // Re-verify permission
         $userId = $request->receiver_id;
         $canChat = false;
         $targetUser = User::with(['roles', 'employer'])->find($userId);
 
         if ($targetUser) {
-            if ($currentUser->hasRole('admin')) {
-                $canChat = true;
+            if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
+                if ($targetUser->hasRole(['admin', 'staff', 'caretaker'])) {
+                    $canChat = true;
+                } elseif ($targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUser->id) {
+                    $canChat = true;
+                } elseif ($currentUser->hasRole('admin')) {
+                    $canChat = true;
+                }
             } elseif ($currentUser->hasRole('employer')) {
                 $isSystem = $targetUser->hasRole(['admin', 'staff']);
                 $isAssigned = $currentUser->employer && $currentUser->employer->assigned_staff_id == $userId;
                 if ($isSystem || $isAssigned) $canChat = true;
-            } elseif ($currentUser->hasRole(['staff', 'caretaker'])) {
-                $isColleague = $targetUser->hasRole(['admin', 'staff', 'caretaker']);
-                $isAssignedEmployer = $targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUser->id;
-                if ($isColleague || $isAssignedEmployer) $canChat = true;
             }
         }
 
