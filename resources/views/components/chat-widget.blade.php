@@ -6,10 +6,11 @@
      class="chat-system-overlay"
      style="position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 1040;">
 
-    <!-- 1. Main Launcher Button (Floating) -->
+    <!-- 1. Main Launcher Button (Floating & Draggable) -->
     <div class="position-fixed shadow-lg rounded-circle bg-primary text-white d-flex align-items-center justify-content-center cursor-pointer chat-launcher-btn"
-         :style="`width: 60px; height: 60px; bottom: 20px; right: 20px; z-index: 2000; transition: transform 0.2s;`"
-         @click="toggleContactList()"
+         :style="`width: 60px; height: 60px; left: ${launcher.x}px; top: ${launcher.y}px; z-index: 2000; cursor: move;`"
+         @mousedown="startDrag($event, 'launcher')"
+         @click="if(!isDragging) toggleContactList()"
          title="{{ __('Open Chat') }}">
         <i class="bi bi-chat-dots-fill fs-3"></i>
         <span x-show="totalUnread > 0"
@@ -17,11 +18,12 @@
               x-text="totalUnread"></span>
     </div>
 
-    <!-- 2. Contact List Window -->
-    <div x-show="isContactListOpen"
+    <!-- 2. Contact List Window (Draggable & Minimizable) -->
+    <!-- Expanded View -->
+    <div x-show="isContactListOpen && !isContactListMinimized"
          x-transition
          class="chat-window shadow-lg bg-white rounded-3 flex-column border"
-         :class="{ 'd-flex': isContactListOpen, 'd-none': !isContactListOpen }"
+         :class="{ 'd-flex': isContactListOpen && !isContactListMinimized }"
          :style="`position: fixed; left: ${contactList.x}px; top: ${contactList.y}px; width: ${contactList.w}px; height: ${contactList.h}px; z-index: ${contactList.zIndex};`"
          @mousedown="bringToFront('contactList')">
 
@@ -36,12 +38,12 @@
                 <button type="button" class="btn btn-sm btn-link text-white p-0" @click.stop="showProfileModal = true" title="{{ __('My Profile') }}">
                     <i class="bi bi-person-circle"></i>
                 </button>
-                {{-- Added Minimize Button for Contact List --}}
-                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" @click.stop="isContactListOpen = false">
+                {{-- Minimize Button --}}
+                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" @click.stop="isContactListMinimized = true; saveState()">
                     <i class="bi bi-dash-lg"></i>
                 </button>
                 {{-- Close Button --}}
-                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-1" @click.stop="isContactListOpen = false">
+                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-1" @click.stop="isContactListOpen = false; saveState()">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
@@ -50,11 +52,14 @@
         <!-- Body -->
         <div class="chat-body flex-grow-1 overflow-hidden d-flex flex-column bg-light">
             <!-- Search -->
-            <div class="p-2 border-bottom bg-white">
-                <div class="input-group input-group-sm">
+            <div class="p-2 border-bottom bg-white d-flex gap-2">
+                <div class="input-group input-group-sm flex-grow-1">
                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" class="form-control border-start-0 bg-light" placeholder="{{ __('Search contacts...') }}" x-model="searchQuery">
                 </div>
+                 <button class="btn btn-sm btn-outline-secondary" @click="fetchContacts()" title="{{ __('Refresh') }}">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
             </div>
 
             <!-- List -->
@@ -83,6 +88,9 @@
                     <template x-if="filteredContacts.length === 0">
                         <div class="text-center p-4 text-muted">
                             <small>{{ __('No contacts found') }}</small>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-link" @click="fetchContacts()">{{ __('Try Refreshing') }}</button>
+                            </div>
                         </div>
                     </template>
                 </ul>
@@ -94,6 +102,19 @@
         <div class="resize-handle-b" @mousedown.stop.prevent="startResize($event, 'contactList', 'b')"></div>
         <div class="resize-handle-rb" @mousedown.stop.prevent="startResize($event, 'contactList', 'rb')"></div>
     </div>
+
+    <!-- Minimized Contact List (Top Right Pill) -->
+    <div x-show="isContactListOpen && isContactListMinimized"
+         class="position-fixed top-0 end-0 mt-5 me-2 shadow rounded-pill bg-white border d-flex align-items-center p-2 gap-2 cursor-pointer"
+         style="z-index: 2000; min-width: 120px;"
+         @click="isContactListMinimized = false; bringToFront('contactList'); saveState()">
+         <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+             <i class="bi bi-people-fill"></i>
+         </div>
+         <span class="fw-bold small text-truncate" style="max-width: 100px;">{{ __('Contacts') }}</span>
+         <span x-show="totalUnread > 0" class="badge bg-danger rounded-pill ms-auto" x-text="totalUnread"></span>
+    </div>
+
 
     <!-- 3. Individual Chat Windows -->
     <template x-for="chat in openChats" :key="chat.id">
@@ -205,16 +226,17 @@
         </div>
     </template>
 
-    <!-- 4. Minimized Chat Dock (Bottom Left/Center) -->
-    <div class="position-fixed bottom-0 start-50 translate-middle-x mb-3 d-flex gap-2" style="z-index: 2000; pointer-events: none;">
+    <!-- 4. Minimized Chat Stack (Top Right, Vertical Stack) -->
+    <div class="position-fixed top-0 end-0 mt-5 pt-5 me-2 d-flex flex-column gap-2" style="z-index: 1990; pointer-events: none;">
         <template x-for="chat in openChats" :key="chat.id">
             <div x-show="chat.minimized"
-                 class="position-relative rounded-circle shadow cursor-pointer border border-2 border-white"
-                 style="width: 50px; height: 50px; pointer-events: auto;"
+                 class="position-relative shadow rounded-pill bg-white border d-flex align-items-center p-1 gap-2 cursor-pointer slide-in-right"
+                 style="pointer-events: auto; max-width: 150px; background-color: rgba(255,255,255,0.95) !important;"
                  @click="chat.minimized = false; saveState(); bringToFront(chat.id)"
                  :title="chat.user.name">
-                <img :src="chat.user.avatar_url" class="rounded-circle object-fit-cover w-100 h-100"
+                <img :src="chat.user.avatar_url" class="rounded-circle object-fit-cover" width="30" height="30"
                      onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
+                <span class="text-truncate small fw-bold" style="max-width: 80px;" x-text="chat.user.name"></span>
                 <span x-show="chat.unreadCount > 0"
                       class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white p-1"
                       style="font-size: 0.6rem;"
@@ -270,10 +292,17 @@
 
 <style>
     [x-cloak] { display: none !important; }
-    .chat-launcher-btn:hover { transform: scale(1.1); }
+    .chat-launcher-btn:hover { transform: scale(1.05); }
     .cursor-pointer { cursor: pointer; }
     .cursor-grab { cursor: grab; }
     .cursor-grab:active { cursor: grabbing; }
+
+    /* Animations */
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .slide-in-right { animation: slideInRight 0.3s ease-out; }
 
     /* Resize Handles */
     .resize-handle-r { position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: e-resize; z-index: 10; }
@@ -290,9 +319,13 @@
             searchQuery: '',
             openChats: [], // { id: userId, user: obj, messages: [], x, y, w, h, minimized, zIndex, newMessage, isUploading, contextToAttach }
             isContactListOpen: false,
-            contactList: { x: window.innerWidth - 400, y: 100, w: 320, h: 500, zIndex: 1050 },
+            isContactListMinimized: false,
+            // Main launcher position
+            launcher: { x: window.innerWidth - 80, y: window.innerHeight - 80 },
+            contactList: { x: window.innerWidth - 340, y: 100, w: 320, h: 500, zIndex: 1050 },
             activeZIndex: 1050,
-            dragData: null, // { type: 'move'|'resize', targetId: 'contactList'|userId, startX, startY, initialX, initialY, initialW, initialH, direction }
+            dragData: null, // { type: 'move'|'resize', targetId: 'contactList'|'launcher'|userId, startX, startY, initialX, initialY, initialW, initialH, direction }
+            isDragging: false, // Flag to distinguish click vs drag
             pollingInterval: null,
             showProfileModal: false,
             profileForm: {
@@ -318,7 +351,8 @@
             initManager() {
                 this.loadState();
                 this.fetchContacts();
-                this.pollingInterval = setInterval(() => this.checkNewMessages(), 5000);
+                // Polling optimized: 10 seconds
+                this.pollingInterval = setInterval(() => this.checkNewMessages(), 10000);
 
                 // Global event listeners for Drag/Resize
                 window.addEventListener('mousemove', (e) => this.onMouseMove(e));
@@ -330,6 +364,7 @@
             // --- Actions ---
             toggleContactList() {
                 this.isContactListOpen = !this.isContactListOpen;
+                this.isContactListMinimized = false; // Always expand on toggle
                 if(this.isContactListOpen) {
                     this.bringToFront('contactList');
                     this.fetchContacts();
@@ -392,8 +427,12 @@
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
                 // Get current target object
-                let targetObj = (targetId === 'contactList') ? this.contactList : this.openChats.find(c => c.id === targetId);
+                let targetObj;
+                if (targetId === 'launcher') targetObj = this.launcher;
+                else if (targetId === 'contactList') targetObj = this.contactList;
+                else targetObj = this.openChats.find(c => c.id === targetId);
 
+                this.isDragging = false;
                 this.dragData = {
                     type: 'move',
                     targetId: targetId,
@@ -402,7 +441,7 @@
                     initialX: targetObj.x,
                     initialY: targetObj.y
                 };
-                this.bringToFront(targetId);
+                if(targetId !== 'launcher') this.bringToFront(targetId);
             },
 
             startResize(e, targetId, direction) {
@@ -425,12 +464,18 @@
             onMouseMove(e) {
                 if (!this.dragData) return;
                 e.preventDefault(); // Prevent scroll
+                this.isDragging = true; // Mark as dragging
+
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 const deltaX = clientX - this.dragData.startX;
                 const deltaY = clientY - this.dragData.startY;
 
-                let targetObj = (this.dragData.targetId === 'contactList') ? this.contactList : this.openChats.find(c => c.id === this.dragData.targetId);
+                let targetObj;
+                if (this.dragData.targetId === 'launcher') targetObj = this.launcher;
+                else if (this.dragData.targetId === 'contactList') targetObj = this.contactList;
+                else targetObj = this.openChats.find(c => c.id === this.dragData.targetId);
+
                 if (!targetObj) return;
 
                 if (this.dragData.type === 'move') {
@@ -449,6 +494,7 @@
             onMouseUp() {
                 if (this.dragData) {
                     this.dragData = null;
+                    setTimeout(() => this.isDragging = false, 100); // Slight delay to prevent click trigger
                     this.saveState();
                 }
             },
@@ -480,6 +526,7 @@
             },
 
             checkNewMessages() {
+                // Poll check new messages
                 fetch('{{ route('chat.check_new') }}')
                     .then(res => res.json())
                     .then(data => {
@@ -497,10 +544,10 @@
                                     hasUpdates = true;
                                 }
                             });
+                            // If new messages from people we aren't talking to, refresh contacts to show unread badge
                             if(hasUpdates) this.fetchContacts();
                         }
-                        // Also refresh contacts occasionally to update online status
-                        if(Math.random() < 0.2) this.fetchContacts();
+                        // Removed the random fetchContacts() to reduce load
                     });
             },
 
@@ -602,6 +649,8 @@
             saveState() {
                 const state = {
                     isContactListOpen: this.isContactListOpen,
+                    isContactListMinimized: this.isContactListMinimized,
+                    launcher: this.launcher,
                     contactList: this.contactList,
                     openChats: this.openChats.map(c => ({
                         id: c.id,
@@ -620,6 +669,8 @@
                     try {
                         const parsed = JSON.parse(saved);
                         this.isContactListOpen = parsed.isContactListOpen;
+                        if(parsed.isContactListMinimized !== undefined) this.isContactListMinimized = parsed.isContactListMinimized;
+                        if(parsed.launcher) this.launcher = {...this.launcher, ...parsed.launcher};
                         if(parsed.contactList) this.contactList = {...this.contactList, ...parsed.contactList};
                         if(parsed.openChats) {
                             this.openChats = parsed.openChats.map(c => ({
