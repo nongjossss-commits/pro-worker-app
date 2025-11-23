@@ -5,7 +5,7 @@
 <div id="employee-card-{{ $employee->id }}" class="employee-card card mb-3">
     <div class="card-body d-flex align-items-center">
         <div class="me-3">
-            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}">
+            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}">
         </div>
 
         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}"

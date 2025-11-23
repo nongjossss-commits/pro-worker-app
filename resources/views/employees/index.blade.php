@@ -123,7 +123,7 @@
                 <tbody>
                     @forelse($employees as $employee)
                     <tr>
-                        <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
+                        <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}"></td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">
@@ -172,6 +172,7 @@
 
 @include('partials._employee_action_modals')
 @include('employees.modals.advanced_export')
+@include('employees.modals.select_target_employer_modal')
 
 @push('scripts')
 <script>
@@ -261,35 +262,39 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bulkSendDataBtn) {
         bulkSendDataBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+            const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+            const selected = Array.from(checkboxes).map(cb => cb.value);
 
             if (selected.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');
                 return;
             }
 
-            // Create a form dynamically and submit POST to new route
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '{{ route('employees.bulk_to_ticket') }}';
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '_token';
-            csrfInput.value = csrfToken;
-            form.appendChild(csrfInput);
-
-            selected.forEach(id => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'employee_ids[]';
-                input.value = id;
-                form.appendChild(input);
+            // Step 1: Check if all selected employees belong to the same employer (based on current view context)
+            // Note: In table view, we added data-employer-id to the checkbox.
+            // If checking fails, we alert the user.
+            let employerIds = new Set();
+            checkboxes.forEach(cb => {
+                const empId = cb.getAttribute('data-employer-id');
+                if (empId) employerIds.add(empId);
             });
 
-            document.body.appendChild(form);
-            form.submit();
+            if (employerIds.size > 1) {
+                 Swal.fire({
+                    icon: 'warning',
+                    title: '{{ __('Multiple Employers Selected') }}',
+                    text: '{{ __('You selected employees from different employers. Please select employees from the same employer for one transaction.') }}'
+                });
+                return;
+            }
+
+            // Step 2: Store selected IDs in a global variable
+            window.pendingTicketEmployeeIds = selected;
+
+            // Step 3: Open Modal to Select Target Employer
+            const modalEl = document.getElementById('selectTargetEmployerModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
         });
     }
 });

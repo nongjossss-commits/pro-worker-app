@@ -12,7 +12,8 @@
 <div class="content-section" x-data="hybridAttachmentManager({
     is_admin_create_view: true,
     employerId: {{ old('employer_user_id', 'null') }},
-    preselectedEmployeeIds: @json(session('preselected_employee_ids', []))
+    preselectedEmployeeIds: @json(session('preselected_employee_ids', [])),
+    preselectedExternalEmployeeIds: @json(session('preselected_external_employee_ids', []))
 })">
 
     <h2 class="mb-4">สร้างตั๋วงานใหม่ (Admin/Staff)</h2>
