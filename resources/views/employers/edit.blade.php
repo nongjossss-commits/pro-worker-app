@@ -504,6 +504,7 @@
     @include('partials._address_management')
     @include('partials._employee_action_modals')
     @include('employees.modals.advanced_export')
+    @include('employees.modals.select_target_employer_modal')
 @endsection
 
 @push('scripts')
@@ -531,34 +532,37 @@
         if (bulkSendDataBtn) {
             bulkSendDataBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+                const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+                const selected = Array.from(checkboxes).map(cb => cb.value);
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
                     return;
                 }
 
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '{{ route('employees.bulk_to_ticket') }}';
-
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = csrfToken;
-                form.appendChild(csrfInput);
-
-                selected.forEach(id => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'employee_ids[]';
-                    input.value = id;
-                    form.appendChild(input);
+                // Step 1: Check if all selected employees belong to the same employer (based on current view context)
+                let employerIds = new Set();
+                checkboxes.forEach(cb => {
+                    const empId = cb.getAttribute('data-employer-id');
+                    if (empId) employerIds.add(empId);
                 });
 
-                document.body.appendChild(form);
-                form.submit();
+                if (employerIds.size > 1) {
+                     Swal.fire({
+                        icon: 'warning',
+                        title: '{{ __('Multiple Employers Selected') }}',
+                        text: '{{ __('You selected employees from different employers. Please select employees from the same employer for one transaction.') }}'
+                    });
+                    return;
+                }
+
+                // Step 2: Store selected IDs
+                window.pendingTicketEmployeeIds = selected;
+
+                // Step 3: Open Modal to Select Target Employer
+                const modalEl = document.getElementById('selectTargetEmployerModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
             });
         }
 

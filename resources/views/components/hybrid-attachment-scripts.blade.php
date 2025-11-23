@@ -96,7 +96,13 @@ function hybridAttachmentManager(config = {}) {
             // Check for preselected IDs from session (injected via config)
             if (config.preselectedEmployeeIds && config.preselectedEmployeeIds.length > 0) {
                 this.selectedEmployeeIds = config.preselectedEmployeeIds;
-                this.fetchPreselectedEmployees();
+                this.fetchPreselectedEmployees(true); // true = addToExisting
+            }
+
+            // Check for preselected External IDs from session
+            if (config.preselectedExternalEmployeeIds && config.preselectedExternalEmployeeIds.length > 0) {
+                // We handle these separately to ensure they go to external basket
+                this.fetchPreselectedExternalEmployees(config.preselectedExternalEmployeeIds);
             }
         },
 
@@ -192,7 +198,7 @@ function hybridAttachmentManager(config = {}) {
         },
 
         // --- V2.5-FIX: Fetch Preselected Employees by IDs ---
-        async fetchPreselectedEmployees() {
+        async fetchPreselectedEmployees(forceToExisting = false) {
             if (!this.selectedEmployeeIds || this.selectedEmployeeIds.length === 0) {
                 return;
             }
@@ -215,11 +221,16 @@ function hybridAttachmentManager(config = {}) {
                      const inExternal = this.basket.external_employees.some(e => e.id == emp.id);
 
                      if (!inExisting && !inExternal) {
-                        // Determine where to put it
-                        if (this.contextEmployerId && emp.employer_id == this.contextEmployerId) {
+                        // If forceToExisting is true (from matching employer logic), put in existing
+                        if (forceToExisting) {
                             this.basket.existing_employees.push(emp);
                         } else {
-                            this.basket.external_employees.push(emp);
+                            // Otherwise check context
+                            if (this.contextEmployerId && emp.employer_id == this.contextEmployerId) {
+                                this.basket.existing_employees.push(emp);
+                            } else {
+                                this.basket.external_employees.push(emp);
+                            }
                         }
                     }
                 });
@@ -230,6 +241,34 @@ function hybridAttachmentManager(config = {}) {
             } catch (error) {
                 console.error('Failed to fetch preselected employees:', error);
                 Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลลูกจ้างที่เลือกไว้ได้', 'error');
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        async fetchPreselectedExternalEmployees(ids) {
+            if (!ids || ids.length === 0) return;
+
+            this.isLoading = true;
+            try {
+                const params = new URLSearchParams();
+                ids.forEach(id => params.append('ids[]', id));
+
+                const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const employees = await response.json();
+
+                employees.forEach(emp => {
+                    const inExisting = this.basket.existing_employees.some(e => e.id == emp.id);
+                    const inExternal = this.basket.external_employees.some(e => e.id == emp.id);
+
+                    if (!inExisting && !inExternal) {
+                        this.basket.external_employees.push(emp);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to fetch external employees:', error);
             } finally {
                 this.isLoading = false;
             }
