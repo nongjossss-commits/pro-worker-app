@@ -379,6 +379,25 @@
                                 @enderror
                             </div>
 
+                            {{-- Action Buttons (Moved Above Basket) --}}
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-primary w-100" @click="openExistingEmployeeModal" :disabled="isUploading">
+                                        <i class="bi bi-person-check me-2"></i> {{ __('Attach Existing Employee') }}
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-success w-100" @click="openNewEmployeeModal" :disabled="isUploading">
+                                        <i class="bi bi-person-plus me-2"></i> {{ __('Attach New Employee/Register') }}
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100" @click="triggerFileInput" :disabled="isUploading">
+                                        <i class="bi bi-file-earmark-arrow-up me-2"></i> {{ __('Attach File/Image') }}
+                                    </button>
+                                </div>
+                            </div>
+
                             {{-- Attachment Basket --}}
                             <div class="mb-3">
                                 <label class="form-label">{{ __('Attached Items') }} (<span x-text="totalItemsCount()"></span> รายการ):</label>
@@ -405,19 +424,8 @@
                                  @error('attachments.new_employees.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Action Buttons --}}
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <div class="btn-group" role="group" aria-label="Attachment options">
-                                    <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-check"></i> {{ __('Attach Existing Employee') }}
-                                    </button>
-                                    <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-plus"></i> {{ __('Attach New Employee/Register') }}
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" @click="triggerFileInput" :disabled="isUploading">
-                                        <i class="bi bi-paperclip"></i> {{ __('Attach File/Image') }}
-                                    </button>
-                                </div>
+                            {{-- Submit Button --}}
+                            <div class="d-flex justify-content-end">
                                 <button type="submit" class="btn btn-primary" :disabled="isUploading">
                                     <template x-if="isUploading">
                                         <span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> {{ __('Loading...') }}</span>
