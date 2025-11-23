@@ -3,7 +3,7 @@
 {{-- Determine the correct context and prepare data --}}
 @php
     $isAdminView = request()->routeIs('admin.tickets.*');
-    $viewTitle = $isAdminView ? 'จัดการต๋วงาน' : 'รายละเอียดคำขอ';
+    $viewTitle = $isAdminView ? 'จัดการตั๋วงาน' : 'รายละเอียดคำขอ';
 
     // Helper function for file size formatting (defined here as it's not globally available)
     if (!function_exists('formatBytes')) {
@@ -393,6 +393,24 @@
                                 @enderror
                             </div>
 
+                            {{-- Action Buttons --}}
+                            <div class="d-grid gap-2 mb-3" :class="{ 'opacity-50': isUploading }">
+                                <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading">
+                                    <i class="bi bi-person-check me-2"></i> {{ __('Attach Existing Employee') }}
+                                </button>
+                                @if(auth()->user()->can('manage-tickets'))
+                                <button type="button" class="btn btn-outline-warning text-dark" @click="openGlobalEmployeeSearch" :disabled="isUploading">
+                                    <i class="bi bi-search"></i> แนบลูกจ้างภายนอก
+                                </button>
+                                @endif
+                                <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
+                                    <i class="bi bi-person-plus me-2"></i> {{ __('Attach New Employee/Register') }}
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" @click="triggerFileInput" :disabled="isUploading">
+                                    <i class="bi bi-file-earmark-arrow-up me-2"></i> {{ __('Attach File/Image') }}
+                                </button>
+                            </div>
+
                             {{-- Attachment Basket --}}
                             <div class="mb-3">
                                 <label class="form-label">สิ่งที่แนบมา (<span x-text="totalItemsCount()"></span> รายการ):</label>
@@ -479,29 +497,14 @@
                                  @error('attachments.new_employees.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Action Buttons --}}
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <div class="btn-group" role="group" aria-label="Attachment options">
-                                    <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-check"></i> แนบลูกจ้าง
-                                    </button>
-                                    {{-- V2.5-S17: New Button for External Employees --}}
-                                    <button type="button" class="btn btn-outline-warning text-dark" @click="openGlobalEmployeeSearch" :disabled="isUploading">
-                                        <i class="bi bi-search"></i> แนบลูกจ้างภายนอก
-                                    </button>
-                                    <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
-                                        <i class="bi bi-person-plus"></i> แจ้งเข้า
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" @click="triggerFileInput" :disabled="isUploading">
-                                        <i class="bi bi-paperclip"></i> แนบไฟล์
-                                    </button>
-                                </div>
+                            {{-- Submit Button --}}
+                            <div class="d-flex justify-content-end">
                                 <button type="submit" class="btn btn-primary" :disabled="isUploading">
                                     <template x-if="isUploading">
-                                        <span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังดำเนินการ...</span>
+                                        <span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> {{ __('Loading...') }}</span>
                                     </template>
                                     <template x-if="!isUploading">
-                                        <span><i class="bi bi-send-fill me-2"></i> ส่งข้อความ</span>
+                                        <span><i class="bi bi-send-fill me-2"></i> {{ __('Send Message') }}</span>
                                     </template>
                                 </button>
                             </div>
@@ -628,7 +631,7 @@
                         <label for="assigned_to_user_id" class="form-label">Assign to New Staff:</label>
                         <select class="form-select" id="assigned_to_user_id" name="assigned_to_user_id" required>
                             <option value="">-- Select Staff --</option>
-                            @foreach($staffAndAdmins as $user)
+                            @foreach($staffAndAdmins ?? [] as $user)
                                 <option value="{{ $user->id }}" {{ $ticket->assigned_to_user_id == $user->id ? 'selected' : '' }}>
                                     {{ $user->name }}
                                 </option>
