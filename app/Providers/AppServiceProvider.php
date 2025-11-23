@@ -14,6 +14,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
+use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -45,7 +46,20 @@ class AppServiceProvider extends ServiceProvider
                     $incompleteCount = \App\Helpers\CompletenessHelper::getIncompleteCount();
                     $view->with('incompleteCount', $incompleteCount);
 
-                    $adminTicketUnreadCount = JobTicket::sum('admin_unread_count');
+                    // Logic update: "adminTicketUnreadCount" should respect visibility scope.
+                    $currentUser = auth()->user();
+                    $canViewAllTickets = $currentUser->hasRole(['admin', 'staff']);
+
+                    $unreadQuery = JobTicket::query();
+
+                    // Apply Caretaker Scope if not Admin/Staff
+                    if (!$canViewAllTickets) {
+                        $unreadQuery->whereHas('employerUser.employer', function ($q) use ($currentUser) {
+                            $q->where('assigned_staff_id', $currentUser->id);
+                        });
+                    }
+
+                    $adminTicketUnreadCount = $unreadQuery->sum('admin_unread_count');
                     $view->with('adminTicketUnreadCount', $adminTicketUnreadCount);
                 }
                 // 2. Employer Ticket Unread (Employer only, if not Admin/Staff)
