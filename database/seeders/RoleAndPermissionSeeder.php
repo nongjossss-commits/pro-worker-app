@@ -46,7 +46,8 @@ class RoleAndPermissionSeeder extends Seeder
             'restore-delegates', 'force-delete-delegates',
 
             'delete-addresses', 'restore-addresses', 'force-delete-addresses',
-            'manage-tickets'
+            'manage-tickets',
+            'use-chat'
             // END: Add new permissions
         ];
 
@@ -70,7 +71,8 @@ class RoleAndPermissionSeeder extends Seeder
             'view-importers', 'edit-importers',
             'view-agents', 'edit-agents',
             'view-delegates', 'edit-delegates',
-            'manage-tickets'
+            'manage-tickets',
+            'use-chat'
         ];
 
         $staffRole->syncPermissions($staffPermissions);
@@ -94,6 +96,7 @@ class RoleAndPermissionSeeder extends Seeder
             'edit-employees',
             'terminate-employees',
             'restore-employees',
+            'use-chat'
             // Explicitly EXCLUDED:
             // view-importers, view-agents, view-delegates, view-trash, manage-users, etc.
         ];

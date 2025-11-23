@@ -20,7 +20,8 @@
     <!-- 2. Contact List Window -->
     <div x-show="isContactListOpen"
          x-transition
-         class="chat-window shadow-lg bg-white rounded-3 d-flex flex-column border"
+         class="chat-window shadow-lg bg-white rounded-3 flex-column border"
+         :class="{ 'd-flex': isContactListOpen, 'd-none': !isContactListOpen }"
          :style="`position: fixed; left: ${contactList.x}px; top: ${contactList.y}px; width: ${contactList.w}px; height: ${contactList.h}px; z-index: ${contactList.zIndex};`"
          @mousedown="bringToFront('contactList')">
 
@@ -35,7 +36,12 @@
                 <button type="button" class="btn btn-sm btn-link text-white p-0" @click.stop="showProfileModal = true" title="{{ __('My Profile') }}">
                     <i class="bi bi-person-circle"></i>
                 </button>
+                {{-- Added Minimize Button for Contact List --}}
                 <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" @click.stop="isContactListOpen = false">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                {{-- Close Button --}}
+                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-1" @click.stop="isContactListOpen = false">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
@@ -92,7 +98,8 @@
     <!-- 3. Individual Chat Windows -->
     <template x-for="chat in openChats" :key="chat.id">
         <div x-show="!chat.minimized"
-             class="chat-window shadow rounded-3 d-flex flex-column border bg-white"
+             class="chat-window shadow rounded-3 flex-column border bg-white"
+             :class="{ 'd-flex': !chat.minimized, 'd-none': chat.minimized }"
              :style="`position: fixed; left: ${chat.x}px; top: ${chat.y}px; width: ${chat.w}px; height: ${chat.h}px; z-index: ${chat.zIndex};`"
              @mousedown="bringToFront(chat.id)">
 
