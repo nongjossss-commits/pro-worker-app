@@ -27,10 +27,11 @@ class TicketController extends Controller
         // V2.5: Check if filtering by employer
         $employerId = request('employer_id');
 
-        // V2.5-S15: Determine if the current user is an "Admin" or a "Caretaker/Staff"
-        // If user does not have 'admin' role, we assume they are Staff/Caretaker and apply visibility scope.
+        // V2.5-S15: Determine visibility
+        // Admin and Staff can see ALL tickets.
+        // Other roles (like 'caretaker') are restricted to assigned employers.
         $currentUser = Auth::user();
-        $isSuperAdmin = $currentUser->hasRole('admin');
+        $canViewAllTickets = $currentUser->hasRole(['admin', 'staff']);
 
         if ($employerId) {
             // Show tickets list for a specific employer
@@ -39,9 +40,9 @@ class TicketController extends Controller
                 ->where('employer_user_id', $employerId)
                 ->latest();
 
-            // Apply Caretaker Scope if not Admin
-            if (!$isSuperAdmin) {
-                // Check if this employer is assigned to the current staff
+            // Apply Caretaker Scope if not Admin/Staff
+            if (!$canViewAllTickets) {
+                // Check if this employer is assigned to the current restricted user
                 // We do this via the employerUser relationship
                  $ticketsQuery->whereHas('employerUser.employer', function ($q) use ($currentUser) {
                     $q->where('assigned_staff_id', $currentUser->id);
@@ -68,9 +69,9 @@ class TicketController extends Controller
         $query = User::whereHas('submittedTickets')
             ->with('employer'); // Eager load employer profile
 
-        // V2.5-S15: Apply Caretaker Visibility Scope for non-admins
-        if (!$isSuperAdmin) {
-             // Restrict to users whose Employer profile is assigned to the current staff
+        // V2.5-S15: Apply Caretaker Visibility Scope for non-admins/staff
+        if (!$canViewAllTickets) {
+             // Restrict to users whose Employer profile is assigned to the current restricted user
             $query->whereHas('employer', function ($q) use ($currentUser) {
                 $q->where('assigned_staff_id', $currentUser->id);
             });
@@ -114,6 +115,21 @@ class TicketController extends Controller
      */
     public function show(JobTicket $ticket): View
     {
+        // Authorization Check for Caretakers
+        // Admin/Staff can view all. Caretakers can only view if assigned to the employer.
+        $currentUser = Auth::user();
+        $canViewAllTickets = $currentUser->hasRole(['admin', 'staff']);
+
+        if (!$canViewAllTickets) {
+            // Check assignment
+            // Note: $ticket->employerUser is the User model of the employer.
+            // We need to check $ticket->employerUser->employer->assigned_staff_id
+            $employer = $ticket->employerUser->employer;
+            if (!$employer || $employer->assigned_staff_id !== $currentUser->id) {
+                abort(403, 'Unauthorized access to this ticket.');
+            }
+        }
+
         // Reset Unread Count for Admin
         if ($ticket->admin_unread_count > 0) {
             $ticket->update(['admin_unread_count' => 0]);
