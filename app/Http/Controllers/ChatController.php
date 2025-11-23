@@ -24,21 +24,18 @@ class ChatController extends Controller
             return response()->json([], 403);
         }
 
-        // Base Query: Exclude current user
-        $query = User::where('id', '!=', $currentUser->id);
+        // Base Query: Exclude current user and ensure active status
+        $query = User::where('id', '!=', $currentUser->id)
+                     ->where('status', 'active');
 
         // --- Access Control Logic ---
         if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
             // Admin, Staff, and Caretaker can ALWAYS see each other.
-            // They can also see Employers assigned to them (if applicable).
-
-            $assignedStaffId = null;
-            // Note: Staff/Caretaker might have 'employer' relationship if they are hybrid,
-            // but usually Employers have 'assigned_staff_id'.
-            // Here we look for users (Employers) assigned TO this staff member.
+            // They can also see Employers assigned to them.
+            // AND Admin can see everyone.
 
             $query->where(function($q) use ($currentUser) {
-                // 1. See Colleagues (Admin, Staff, Caretaker) - MUTUAL VISIBILITY
+                // 1. Mutual Visibility: Admin, Staff, Caretaker see each other
                 $q->whereHas('roles', function($r) {
                     $r->whereIn('name', ['admin', 'staff', 'caretaker']);
                 });
@@ -47,6 +44,13 @@ class ChatController extends Controller
                 $q->orWhereHas('employer', function($e) use ($currentUser) {
                     $e->where('assigned_staff_id', $currentUser->id);
                 });
+
+                // 3. Admin sees ALL Employers as well (Optional but good for support)
+                if ($currentUser->hasRole('admin')) {
+                     $q->orWhereHas('roles', function($r) {
+                        $r->where('name', 'employer');
+                    });
+                }
             });
 
         } elseif ($currentUser->hasRole('employer')) {
@@ -63,12 +67,17 @@ class ChatController extends Controller
             }
 
             $query->where(function($q) use ($assignedStaffId) {
-                // 1. See System Users (Admin, Staff)
+                // 1. See System Users (Admin, Staff, Caretaker) - Generally support team
+                // Note: User said "Admin, Staff and Caretaker codes must see each other".
+                // Does Employer see Caretaker? Usually yes if assigned.
+                // Assuming Employer sees 'admin', 'staff' generally, and specific 'caretaker' if assigned?
+                // Or maybe sees all staff/caretakers?
+                // Let's stick to: See Admins and Staff generally.
                 $q->whereHas('roles', function($r) {
                     $r->whereIn('name', ['admin', 'staff']);
                 });
 
-                // 2. See their specific assigned staff
+                // 2. See their specific assigned staff (who might be a caretaker role)
                 if ($assignedStaffId) {
                     $q->orWhere('id', $assignedStaffId);
                 }
@@ -140,7 +149,7 @@ class ChatController extends Controller
         }
         elseif ($currentUser->hasRole('employer')) {
              // Target must be Admin, Staff, or Assigned Staff
-             $isSystem = $targetUser->hasRole(['admin', 'staff']);
+             $isSystem = $targetUser->hasRole(['admin', 'staff']); // General support
              $isAssigned = $currentUser->employer && $currentUser->employer->assigned_staff_id == $userId;
 
              if ($isSystem || $isAssigned) {
