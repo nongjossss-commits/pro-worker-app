@@ -74,7 +74,7 @@
                 <button type="button" class="btn btn-sm btn-link text-white p-0" @click="showProfileModal = true" title="{{ __('My Profile') }}">
                     <i class="bi bi-person-circle fs-5"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" @click="isContactListOpen = false; if(!isLauncherDocked) dockLauncher(true)" title="{{ __('Close') }}">
+                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" @click="isContactListOpen = false" title="{{ __('Close') }}">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
@@ -393,9 +393,8 @@
 
             dockLauncher(shouldDock) {
                 this.isLauncherDocked = shouldDock;
-                if(shouldDock) {
-                    this.isContactListOpen = false; // Close list when hiding
-                } else {
+                this.isContactListOpen = false; // Always close list when toggling dock state
+                if(!shouldDock) {
                     // When undocking, ensure launcher is visible within bounds
                     this.launcher.x = Math.max(0, Math.min(window.innerWidth - 60, this.launcher.x));
                     this.launcher.y = Math.max(0, Math.min(window.innerHeight - 60, this.launcher.y));
