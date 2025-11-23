@@ -16,13 +16,53 @@ class ChatController extends Controller
      */
     public function fetchContacts()
     {
-        $currentUserId = Auth::id();
+        $currentUser = Auth::user();
+
+        // Permission Check: User must have 'use-chat' permission (Admin, Staff, or allowed Employer)
+        if (!$currentUser->can('use-chat')) {
+            return response()->json([], 403);
+        }
 
         // Optimized Query: Fetch users and count unread messages in one go
-        $contacts = User::where('id', '!=', $currentUserId)
-            ->select('id', 'name', 'avatar_path', 'position_title', 'last_active_at')
-            ->withCount(['sentChatMessages as unread_count' => function ($query) use ($currentUserId) {
-                $query->where('receiver_id', $currentUserId)
+        $query = User::where('id', '!=', $currentUser->id);
+
+        // --- Access Control Logic ---
+        if ($currentUser->hasRole('employer')) {
+            // Employer sees: Admins, Staff, and their specific Assigned Staff (who might have caretaker role)
+            // They do NOT see other Employers.
+            // They do NOT see random Caretakers unless assigned.
+            $assignedStaffId = $currentUser->employer ? $currentUser->employer->assigned_staff_id : null;
+
+            $query->where(function($q) use ($assignedStaffId) {
+                // 1. See System Users (Admin, Staff) - But exclude 'caretaker' from general view
+                $q->whereHas('roles', function($r) {
+                    $r->whereIn('name', ['admin', 'staff']);
+                });
+                // 2. See their specific assigned staff (could be admin, staff, or caretaker)
+                if ($assignedStaffId) {
+                    $q->orWhere('id', $assignedStaffId);
+                }
+            });
+
+        } elseif ($currentUser->hasRole(['staff', 'caretaker']) && !$currentUser->hasRole('admin')) {
+            // Staff/Caretaker sees: Admins, Staff, Caretakers (Colleagues)
+            // AND Employers assigned SPECIFICALLY to them.
+            $query->where(function($q) use ($currentUser) {
+                // 1. See Colleagues (Admin, Staff, Caretaker)
+                $q->whereHas('roles', function($r) {
+                    $r->whereIn('name', ['admin', 'staff', 'caretaker']);
+                });
+                // 2. See Employers assigned to this user
+                $q->orWhereHas('employer', function($e) use ($currentUser) {
+                    $e->where('assigned_staff_id', $currentUser->id);
+                });
+            });
+        }
+        // Admin sees everyone (no filter added)
+
+        $contacts = $query->select('id', 'name', 'avatar_path', 'position_title', 'last_active_at')
+            ->withCount(['sentChatMessages as unread_count' => function ($query) use ($currentUser) {
+                $query->where('receiver_id', $currentUser->id)
                       ->where('is_read', false);
             }])
             ->get()
@@ -46,6 +86,46 @@ class ChatController extends Controller
     public function fetchMessages($userId)
     {
         $currentUserId = Auth::id();
+        $currentUser = Auth::user();
+
+        if (!$currentUser->can('use-chat')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Security Check: Validate relationship
+        // We reuse the logic: Can I see this user in my contacts?
+        // For efficiency, we'll do a direct check instead of fetching all contacts.
+
+        $canChat = false;
+        if ($currentUser->hasRole('admin')) {
+            $canChat = true;
+        } elseif ($currentUser->hasRole('employer')) {
+             // Target must be Admin, Staff, or Assigned Staff
+             $targetUser = User::with('roles')->find($userId);
+             if ($targetUser) {
+                 $isSystem = $targetUser->hasRole(['admin', 'staff']);
+                 $isAssigned = $currentUser->employer && $currentUser->employer->assigned_staff_id == $userId;
+                 if ($isSystem || $isAssigned) {
+                     $canChat = true;
+                 }
+             }
+        } elseif ($currentUser->hasRole(['staff', 'caretaker'])) {
+             // Target must be Colleague OR Assigned Employer
+             $targetUser = User::with(['roles', 'employer'])->find($userId);
+             if ($targetUser) {
+                 $isColleague = $targetUser->hasRole(['admin', 'staff', 'caretaker']);
+                 $isAssignedEmployer = $targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUserId;
+                 if ($isColleague || $isAssignedEmployer) {
+                     $canChat = true;
+                 }
+             }
+        }
+
+        if (!$canChat) {
+             // Alternatively, if they already have chat history, maybe allow?
+             // But requirements say "no right to see". So we block.
+             return response()->json(['error' => 'Access Denied'], 403);
+        }
 
         $messages = ChatMessage::where(function ($q) use ($currentUserId, $userId) {
                 $q->where('sender_id', $currentUserId)
@@ -78,6 +158,36 @@ class ChatController extends Controller
             'message' => 'nullable|string', // Make message nullable if sending file only
             'context_data' => 'nullable|array'
         ]);
+
+        $currentUser = Auth::user();
+         if (!$currentUser->can('use-chat')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Re-verify permission to chat (same logic as fetchMessages)
+        $userId = $request->receiver_id;
+        $canChat = false;
+        if ($currentUser->hasRole('admin')) {
+            $canChat = true;
+        } elseif ($currentUser->hasRole('employer')) {
+             $targetUser = User::with('roles')->find($userId);
+             if ($targetUser) {
+                 $isSystem = $targetUser->hasRole(['admin', 'staff']);
+                 $isAssigned = $currentUser->employer && $currentUser->employer->assigned_staff_id == $userId;
+                 if ($isSystem || $isAssigned) $canChat = true;
+             }
+        } elseif ($currentUser->hasRole(['staff', 'caretaker'])) {
+             $targetUser = User::with(['roles', 'employer'])->find($userId);
+             if ($targetUser) {
+                 $isColleague = $targetUser->hasRole(['admin', 'staff', 'caretaker']);
+                 $isAssignedEmployer = $targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUser->id;
+                 if ($isColleague || $isAssignedEmployer) $canChat = true;
+             }
+        }
+
+        if (!$canChat) {
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
 
         if (empty($request->message) && empty($request->context_data)) {
              return response()->json(['error' => 'Message or attachment required'], 422);
