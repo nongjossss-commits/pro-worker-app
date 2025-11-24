@@ -18,6 +18,11 @@ class ChatController extends Controller
     {
         $currentUser = Auth::user();
 
+        // 1. STRICT BLOCK: Employers cannot access chat at all
+        if ($currentUser->hasRole('employer')) {
+            return response()->json([], 403);
+        }
+
         // Permission Check: User must have 'use-chat' permission OR be Admin/Staff explicitly
         if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
             return response()->json([], 403);
@@ -29,52 +34,14 @@ class ChatController extends Controller
 
         // --- Access Control Logic ---
         if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
-            // Admin, Staff, and Caretaker can ALWAYS see each other.
-            // They can also see Employers assigned to them.
-            // AND Admin can see everyone.
+            // Admin, Staff, and Caretaker can see each other.
+            // Employers are now BLOCKED, so they are removed from visibility.
 
-            $query->where(function($q) use ($currentUser) {
-                // 1. Mutual Visibility: Admin, Staff, Caretaker see each other
+            $query->where(function($q) {
+                // Mutual Visibility: Admin, Staff, Caretaker see each other
                 $q->whereHas('roles', function($r) {
                     $r->whereIn('name', ['admin', 'staff', 'caretaker']);
                 });
-
-                // 2. See Employers assigned to this user (if this user is staff/caretaker)
-                $q->orWhereHas('employer', function($e) use ($currentUser) {
-                    $e->where('assigned_staff_id', $currentUser->id);
-                });
-
-                // 3. Admin sees ALL Employers as well (Optional but good for support)
-                if ($currentUser->hasRole('admin')) {
-                     $q->orWhereHas('roles', function($r) {
-                        $r->where('name', 'employer');
-                    });
-                }
-            });
-
-        } elseif ($currentUser->hasRole('employer')) {
-            // Employer sees:
-            // 1. Admins
-            // 2. Staff
-            // 3. THEIR Assigned Staff (Caretaker)
-            // They do NOT see other Employers.
-
-            // Get the assigned staff ID if it exists
-            $assignedStaffId = null;
-            if ($currentUser->employer) {
-                $assignedStaffId = $currentUser->employer->assigned_staff_id;
-            }
-
-            $query->where(function($q) use ($assignedStaffId) {
-                // 1. See System Users (Admin, Staff, Caretaker) - Generally support team
-                $q->whereHas('roles', function($r) {
-                    $r->whereIn('name', ['admin', 'staff']);
-                });
-
-                // 2. See their specific assigned staff (who might be a caretaker role)
-                if ($assignedStaffId) {
-                    $q->orWhere('id', $assignedStaffId);
-                }
             });
 
         } else {
@@ -113,6 +80,11 @@ class ChatController extends Controller
         $currentUserId = Auth::id();
         $currentUser = Auth::user();
 
+        // 1. STRICT BLOCK: Employers cannot access chat
+        if ($currentUser->hasRole('employer')) {
+            return response()->json(['error' => 'Access Denied: Employers are blocked from chat'], 403);
+        }
+
         // Basic Permission Check
         if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -126,29 +98,17 @@ class ChatController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
-        // Expanded Logic for Admin/Staff/Caretaker
+        // Prevent chatting with blocked employers
+        if ($targetUser->hasRole('employer')) {
+            return response()->json(['error' => 'Cannot chat with employer (Blocked)'], 403);
+        }
+
+        // Logic for Admin/Staff/Caretaker
         if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
             // Can chat with any Admin/Staff/Caretaker
             if ($targetUser->hasRole(['admin', 'staff', 'caretaker'])) {
                 $canChat = true;
             }
-            // Can chat with assigned Employers
-            elseif ($targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUserId) {
-                $canChat = true;
-            }
-            // Admin can chat with anyone (Superuser override)
-            elseif ($currentUser->hasRole('admin')) {
-                 $canChat = true;
-            }
-        }
-        elseif ($currentUser->hasRole('employer')) {
-             // Target must be Admin, Staff, or Assigned Staff
-             $isSystem = $targetUser->hasRole(['admin', 'staff']); // General support
-             $isAssigned = $currentUser->employer && $currentUser->employer->assigned_staff_id == $userId;
-
-             if ($isSystem || $isAssigned) {
-                 $canChat = true;
-             }
         }
 
         if (!$canChat) {
@@ -188,6 +148,12 @@ class ChatController extends Controller
         ]);
 
         $currentUser = Auth::user();
+
+        // 1. STRICT BLOCK: Employers cannot access chat
+        if ($currentUser->hasRole('employer')) {
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
+
         if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -198,18 +164,15 @@ class ChatController extends Controller
         $targetUser = User::with(['roles', 'employer'])->find($userId);
 
         if ($targetUser) {
+            // Prevent chatting with blocked employers
+            if ($targetUser->hasRole('employer')) {
+                 return response()->json(['error' => 'Access Denied: Target is blocked'], 403);
+            }
+
             if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
                 if ($targetUser->hasRole(['admin', 'staff', 'caretaker'])) {
                     $canChat = true;
-                } elseif ($targetUser->employer && $targetUser->employer->assigned_staff_id == $currentUser->id) {
-                    $canChat = true;
-                } elseif ($currentUser->hasRole('admin')) {
-                    $canChat = true;
                 }
-            } elseif ($currentUser->hasRole('employer')) {
-                $isSystem = $targetUser->hasRole(['admin', 'staff']);
-                $isAssigned = $currentUser->employer && $currentUser->employer->assigned_staff_id == $userId;
-                if ($isSystem || $isAssigned) $canChat = true;
             }
         }
 
