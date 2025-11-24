@@ -540,6 +540,16 @@
                     else if (data.type === 'employer') {
                         contextType = 'employer';
                     }
+                    else if (data.type === 'ticket') {
+                        contextType = 'link';
+                        attachmentName = `Ticket #${data.id}`;
+                        attachmentText = `[TICKET] ${data.title}`;
+                    }
+                    else if (data.type === 'notification') {
+                        contextType = 'link';
+                        attachmentName = `Notification: ${data.title}`;
+                        attachmentText = `[ALERT] ${data.title}`;
+                    }
 
                     chat.contextToAttach = {
                         type: contextType,

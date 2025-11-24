@@ -385,7 +385,7 @@
 
             {{-- Section 3: Reply Box --}}
             @if(!$isClosed)
-                <div class="card mb-4" id="reply-box">
+                <div class="card mb-4" id="reply-box" @dragover.prevent @drop.prevent="handleDrop($event)">
                     <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> {{ __('Reply / Send Message') }}</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
