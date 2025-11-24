@@ -77,7 +77,7 @@
         </div>
         <div class="col-md-4 d-flex flex-column align-items-center justify-content-center">
             <a href="{{ $employee->photo_url }}" target="_blank" rel="noopener noreferrer">
-                <img src="{{ $employee->photo_url }}" class="img-thumbnail mb-2" style="width: 250px; height: 250px; object-fit: cover;" alt="Employee Photo">
+                <img src="{{ $employee->photo_url }}" class="img-thumbnail mb-2" style="width: 250px; height: 250px; object-fit: contain;" alt="Employee Photo">
             </a>
         </div>
     </div>
