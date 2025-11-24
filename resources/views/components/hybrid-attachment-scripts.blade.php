@@ -539,6 +539,64 @@ function hybridAttachmentManager(config = {}) {
             event.target.value = '';
             this.isUploading = false;
         },
+
+        // --- Drag & Drop Handler (V2.5-S18) ---
+        handleDrop(e) {
+            const rawData = e.dataTransfer.getData('application/json');
+            if (!rawData) return;
+
+            let data;
+            try {
+                data = JSON.parse(rawData);
+            } catch (err) {
+                console.error('Invalid drop data', err);
+                return;
+            }
+
+            // 1. Handle Employee Drop -> Add to Basket
+            if (data.type === 'employee') {
+                // Check if already in either basket
+                const inExisting = this.basket.existing_employees.some(emp => emp.id == data.id);
+                const inExternal = this.basket.external_employees.some(emp => emp.id == data.id);
+
+                if (inExisting || inExternal) {
+                    Swal.fire({
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+                        icon: 'info', title: 'ลูกจ้างนี้ถูกเลือกแล้ว'
+                    });
+                    return;
+                }
+
+                // Add to selection and fetch details
+                this.selectedEmployeeIds = [data.id];
+                this.fetchPreselectedEmployees(); // Auto determines destination based on context
+                return;
+            }
+
+            // 2. Handle Other Types -> Append Link to Message
+            // We need to find the textarea. Since it's standard DOM inside the x-data scope:
+            const messageBox = document.getElementById('message');
+            if (messageBox) {
+                let textToAppend = '';
+                if (data.type === 'employer') {
+                    textToAppend = `[Employer: ${data.title}](${data.url}) `;
+                } else if (data.type === 'ticket') {
+                     textToAppend = `[Ticket #${data.id}: ${data.title}](${data.url}) `;
+                } else if (data.type === 'notification') {
+                     textToAppend = `[Notification: ${data.title}](${data.url}) `;
+                } else {
+                    // Default / Link / File
+                    textToAppend = `[${data.title}](${data.url}) `;
+                }
+
+                // Append text
+                const currentVal = messageBox.value;
+                messageBox.value = currentVal + (currentVal ? '\n' : '') + textToAppend;
+
+                // Trigger input event for any auto-resize listeners
+                messageBox.dispatchEvent(new Event('input'));
+            }
+        },
     }
 }
 </script>

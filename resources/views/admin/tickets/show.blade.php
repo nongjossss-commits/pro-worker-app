@@ -403,7 +403,7 @@
 
             {{-- Section 3: Reply Box (V2.4-S11 Implementation - Major Overhaul) --}}
             @if(!$isClosed)
-                <div class="card mb-4" id="reply-box">
+                <div class="card mb-4" id="reply-box" @dragover.prevent @drop.prevent="handleDrop($event)">
                     <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> ตอบกลับ / ส่งข้อความ</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
