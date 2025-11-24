@@ -23,9 +23,8 @@ class GroupTeamController extends Controller
 
         if ($search) {
             $employers = Employer::query()
-                ->where('name_th', 'like', "%{$search}%")
-                ->orWhere('name_en', 'like', "%{$search}%")
-                ->orWhere('company_name', 'like', "%{$search}%")
+                ->where('employerNameTh', 'like', "%{$search}%")
+                ->orWhere('employerNameEn', 'like', "%{$search}%")
                 ->limit(20)
                 ->get();
         }
