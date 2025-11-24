@@ -190,6 +190,51 @@
                                                 </a>
                                             </template>
 
+                                            <!-- Ticket Type -->
+                                            <template x-if="msg.context_data.type === 'ticket'">
+                                                <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-secondary bg-white bg-opacity-75 rounded-end text-dark">
+                                                     <div class="d-flex align-items-center justify-content-between">
+                                                        <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                             <i class="bi bi-ticket-detailed-fill text-secondary"></i>
+                                                             <span x-text="msg.context_data.name"></span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                                        <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Notification Type -->
+                                            <template x-if="msg.context_data.type === 'notification'">
+                                                <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-danger bg-white bg-opacity-75 rounded-end text-dark">
+                                                     <div class="d-flex align-items-center justify-content-between">
+                                                        <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                             <i class="bi bi-bell-fill text-danger"></i>
+                                                             <span x-text="msg.context_data.name"></span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                                        <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- New Employee Draft Type -->
+                                            <template x-if="msg.context_data.type === 'new_employee_draft'">
+                                                <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-success bg-white bg-opacity-75 rounded-end text-dark">
+                                                     <div class="d-flex align-items-center justify-content-between">
+                                                        <div class="fw-bold text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                             <i class="bi bi-person-plus-fill text-success"></i>
+                                                             <span x-text="msg.context_data.name"></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                                        <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
+                                                    </div>
+                                                </div>
+                                            </template>
+
                                             <!-- Employee Type -->
                                             <template x-if="msg.context_data.type === 'employee'">
                                                 <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-warning bg-white bg-opacity-75 rounded-end text-dark">
@@ -534,21 +579,35 @@
                     }
                     else if (data.type === 'employee') {
                         contextType = 'employee';
-                         // Special logic: Use "Locate" URL for employee highlighting
-                         contextUrl = `/employees/${data.id}/locate`;
+                         // Only use locate URL if data.url is NOT provided (fallback)
+                         if (!contextUrl || contextUrl === window.location.href) {
+                             contextUrl = `/employees/${data.id}/locate`;
+                         }
                     }
                     else if (data.type === 'employer') {
                         contextType = 'employer';
                     }
                     else if (data.type === 'ticket') {
-                        contextType = 'link';
+                        contextType = 'ticket';
                         attachmentName = `Ticket #${data.id}`;
                         attachmentText = `[TICKET] ${data.title}`;
                     }
                     else if (data.type === 'notification') {
-                        contextType = 'link';
+                        contextType = 'notification';
                         attachmentName = `Notification: ${data.title}`;
                         attachmentText = `[ALERT] ${data.title}`;
+                    }
+                    else if (data.type === 'new_employee_draft') {
+                        contextType = 'new_employee_draft';
+                        attachmentName = `${data.title}`;
+                        attachmentText = `[NEW EMPLOYEE] ${data.title}`;
+                        // No URL for drafts usually
+                    }
+                     else if (data.type === 'file') {
+                        contextType = 'file';
+                        attachmentName = data.title; // File name
+                        attachmentText = `[FILE] ${data.title}`;
+                        // URL should already be in data.url
                     }
 
                     chat.contextToAttach = {
@@ -911,6 +970,9 @@
                 if (type === 'image') return 'bi-file-image';
                 if (type === 'employee') return 'bi-person-badge-fill';
                 if (type === 'employer') return 'bi-building-fill';
+                if (type === 'ticket') return 'bi-ticket-detailed-fill';
+                if (type === 'notification') return 'bi-bell-fill';
+                if (type === 'new_employee_draft') return 'bi-person-plus-fill';
                 return 'bi-file-earmark';
             },
             attachContext(chatId) {
