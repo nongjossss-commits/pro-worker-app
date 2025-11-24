@@ -299,24 +299,6 @@
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">
-                    <!-- User Dropdown (Top Right) -->
-                    <div class="dropdown me-2">
-                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i>
-                            <span class="d-none d-md-inline">{{ Auth::user()->name ?? __('User') }}</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <form method="POST" action="{{ route('logout') }}" class="d-inline" id="logout-form">
-                                    @csrf
-                                    <a href="{{ route('logout') }}" class="dropdown-item text-danger" id="btn-logout">
-                                        <i class="bi bi-box-arrow-right me-2"></i>{{ __('Logout') }}
-                                    </a>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-translate me-1"></i>
@@ -330,6 +312,24 @@
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">🇹🇭 ไทย (Thai)</a></li>
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'en') }}">🇺🇸 English</a></li>
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- User Dropdown (Top Right) -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="d-none d-md-inline">{{ Auth::user()->name ?? __('User') }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline" id="logout-form">
+                                    @csrf
+                                    <a href="{{ route('logout') }}" class="dropdown-item text-danger" id="btn-logout">
+                                        <i class="bi bi-box-arrow-right me-2"></i>{{ __('Logout') }}
+                                    </a>
+                                </form>
+                            </li>
                         </ul>
                     </div>
                 </div>
