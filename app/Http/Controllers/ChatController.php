@@ -19,12 +19,13 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // 1. STRICT BLOCK: Employers cannot access chat at all
-        if ($currentUser->hasRole('employer')) {
+        // UNLESS they also hold a privileged role (Admin, Staff, Caretaker, Delegate)
+        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json([], 403);
         }
 
-        // Permission Check: User must have 'use-chat' permission OR be Admin/Staff explicitly
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
+        // Permission Check: User must have 'use-chat' permission OR be in a privileged role explicitly
+        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json([], 403);
         }
 
@@ -33,14 +34,15 @@ class ChatController extends Controller
                      ->where('status', 'active');
 
         // --- Access Control Logic ---
-        if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
-            // Admin, Staff, and Caretaker can see each other.
-            // Employers are now BLOCKED, so they are removed from visibility.
+        // Allow Admin, Staff, Caretaker, and Delegate to chat with each other
+        if ($currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+            // Admin, Staff, Caretaker, Delegate can see each other.
+            // Pure Employers are BLOCKED, so they are removed from visibility.
 
             $query->where(function($q) {
-                // Mutual Visibility: Admin, Staff, Caretaker see each other
+                // Mutual Visibility: Admin, Staff, Caretaker, Delegate see each other
                 $q->whereHas('roles', function($r) {
-                    $r->whereIn('name', ['admin', 'staff', 'caretaker']);
+                    $r->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
                 });
             });
 
@@ -81,12 +83,13 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // 1. STRICT BLOCK: Employers cannot access chat
-        if ($currentUser->hasRole('employer')) {
+        // UNLESS they also hold a privileged role
+        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json(['error' => 'Access Denied: Employers are blocked from chat'], 403);
         }
 
         // Basic Permission Check
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
+        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -98,15 +101,15 @@ class ChatController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
-        // Prevent chatting with blocked employers
-        if ($targetUser->hasRole('employer')) {
+        // Prevent chatting with blocked employers (pure employers)
+        if ($targetUser->hasRole('employer') && !$targetUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json(['error' => 'Cannot chat with employer (Blocked)'], 403);
         }
 
-        // Logic for Admin/Staff/Caretaker
-        if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
-            // Can chat with any Admin/Staff/Caretaker
-            if ($targetUser->hasRole(['admin', 'staff', 'caretaker'])) {
+        // Logic for Admin/Staff/Caretaker/Delegate
+        if ($currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+            // Can chat with any Admin/Staff/Caretaker/Delegate
+            if ($targetUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
                 $canChat = true;
             }
         }
@@ -150,11 +153,12 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // 1. STRICT BLOCK: Employers cannot access chat
-        if ($currentUser->hasRole('employer')) {
+        // UNLESS they also hold a privileged role
+        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
+        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -164,13 +168,13 @@ class ChatController extends Controller
         $targetUser = User::with(['roles', 'employer'])->find($userId);
 
         if ($targetUser) {
-            // Prevent chatting with blocked employers
-            if ($targetUser->hasRole('employer')) {
+            // Prevent chatting with blocked employers (pure employers)
+            if ($targetUser->hasRole('employer') && !$targetUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
                  return response()->json(['error' => 'Access Denied: Target is blocked'], 403);
             }
 
-            if ($currentUser->hasRole(['admin', 'staff', 'caretaker'])) {
-                if ($targetUser->hasRole(['admin', 'staff', 'caretaker'])) {
+            if ($currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+                if ($targetUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
                     $canChat = true;
                 }
             }
