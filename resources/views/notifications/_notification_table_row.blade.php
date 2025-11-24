@@ -14,12 +14,13 @@
 @endphp
 
 <tr draggable="true"
-    @dragstart="startDragGlobal($event, 'notification', {
-        id: {{ $notification->id }},
-        title: '{{ $notification->type }}',
-        subtitle: '{{ $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? '') }}',
-        url: '{{ route('notifications.index') }}' // Ideally link to specific item
-    })">
+    data-drag-payload="{{ json_encode([
+        'id' => $notification->id,
+        'title' => $notification->type,
+        'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
+        'url' => route('notifications.index')
+    ]) }}"
+    ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <td>
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)

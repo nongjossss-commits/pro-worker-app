@@ -486,7 +486,9 @@
             ...data
         };
         e.dataTransfer.effectAllowed = 'copy';
-        e.dataTransfer.setData('application/json', JSON.stringify(payload));
+        const jsonPayload = JSON.stringify(payload);
+        e.dataTransfer.setData('application/json', jsonPayload);
+        e.dataTransfer.setData('text/plain', jsonPayload); // Fallback for broader compatibility
     }
     </script>
 

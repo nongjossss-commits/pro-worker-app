@@ -27,12 +27,13 @@
 @endphp
 
 <div class="alert {{ $card_class }} notification-item" draggable="true"
-     @dragstart="startDragGlobal($event, 'notification', {
-        id: {{ $notification->id }},
-        title: '{{ $notification->type }}',
-        subtitle: '{{ $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? '') }}',
-        url: '{{ route('notifications.index') }}'
-    })">
+     data-drag-payload="{{ json_encode([
+        'id' => $notification->id,
+        'title' => $notification->type,
+        'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
+        'url' => route('notifications.index')
+     ]) }}"
+     ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <div class="d-flex align-items-center gap-3">
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)

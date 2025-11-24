@@ -5,7 +5,15 @@
     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
 @endphp
 
-<div id="history-row-{{ $employee->id }}" class="list-group-item list-group-item-action">
+<div id="history-row-{{ $employee->id }}" class="list-group-item list-group-item-action"
+    draggable="true"
+    data-drag-payload="{{ json_encode([
+        'id' => $employee->id,
+        'title' => $employeeFullNameEn,
+        'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
+        'url' => route('employees.show', $employee->id)
+    ]) }}"
+    ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
     <div class="d-flex w-100">
         {{-- Checkbox --}}
         <div class="me-3 d-flex align-items-center">
