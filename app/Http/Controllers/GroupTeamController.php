@@ -153,6 +153,20 @@ class GroupTeamController extends Controller
         return back()->with('success', 'Group created successfully.');
     }
 
+    public function updateGroup(Request $request, EmployeeGroup $group)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        // Explicitly only update the name, ensuring employer_id is not changed
+        $group->update([
+            'name' => $request->name,
+        ]);
+
+        return back()->with('success', 'Group updated successfully.');
+    }
+
     public function storeTeam(Request $request, EmployeeGroup $group)
     {
         $request->validate([
@@ -164,6 +178,19 @@ class GroupTeamController extends Controller
         ]);
 
         return back()->with('success', 'Team created successfully.');
+    }
+
+    public function updateTeam(Request $request, EmployeeTeam $team)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $team->update([
+            'name' => $request->name,
+        ]);
+
+        return back()->with('success', 'Team updated successfully.');
     }
 
     public function searchEmployees(Request $request)
