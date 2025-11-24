@@ -649,7 +649,10 @@
 
                 modalEl.addEventListener('hidden.bs.modal', () => {
                     if (this.hasChanges) {
-                        window.location.reload();
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('active_group', this.selectedGroupId);
+                        url.searchParams.set('active_team', this.selectedTeamId);
+                        window.location.href = url.toString();
                     }
                 }, { once: true });
 
