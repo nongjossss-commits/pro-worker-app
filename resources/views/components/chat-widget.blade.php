@@ -241,7 +241,7 @@
                                     <template x-if="msg.context_data.type === 'employee'">
                                         <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-warning bg-white bg-opacity-75 rounded-end text-dark">
                                             <div class="d-flex align-items-center justify-content-between">
-                                                <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                <a :href="'/employees/' + msg.context_data.id + '/locate'" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
                                                      <i class="bi bi-person-badge-fill text-warning"></i>
                                                      <span x-text="msg.context_data.name"></span>
                                                 </a>
@@ -593,10 +593,7 @@
                     }
                     else if (data.type === 'employee') {
                         contextType = 'employee';
-                         // Only use locate URL if data.url is NOT provided (fallback)
-                         if (!contextUrl || contextUrl === window.location.href) {
-                             contextUrl = `/employees/${data.id}/locate`;
-                         }
+                        contextUrl = `/employees/${data.id}/locate`;
                     }
                     else if (data.type === 'employer') {
                         contextType = 'employer';

@@ -11,7 +11,7 @@
             id: item.id,
             title: item.employeeNameTh || item.employeeNameEn,
             subtitle: item.employeeNameEn ? item.employeeNameEn : item.employeeCode,
-            url: item.url || '#'
+            url: '/employees/' + item.id + '/locate'
          })">
         <div class="d-flex align-items-center gap-3">
             <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
@@ -35,7 +35,7 @@
             id: item.id,
             title: item.employeeNameTh || item.employeeNameEn,
             subtitle: (item.employer_name || 'Ext') + (item.employeeNameEn ? ' - ' + item.employeeNameEn : ''),
-            url: item.url || '#'
+            url: '/employees/' + item.id + '/locate'
          })">
         <div class="d-flex align-items-center gap-3">
              <div class="position-relative">
