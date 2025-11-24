@@ -6,8 +6,7 @@
      style="position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 1040;">
 
     <!-- 1. Main Launcher Button (Floating & Draggable) -->
-    <!-- Always visible unless docked. Toggles the entire system (Contact List + Open Chats). -->
-    <div x-show="!isLauncherDocked"
+    <div x-show="!isContactListOpen"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 scale-90"
          x-transition:enter-end="opacity-100 scale-100"
@@ -24,49 +23,21 @@
         <span x-show="totalUnread > 0"
               class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light"
               x-text="totalUnread"></span>
-
-        <!-- Hide/Dock Button (Appears on Hover or Logic) -->
-        <!-- BUTTON tag to prevent drag interference, positioned top-left -->
-        <button type="button"
-             class="position-absolute bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center border border-0 p-0"
-             style="top: -8px; left: -8px; width: 28px; height: 28px; cursor: pointer; z-index: 2001;"
-             @click.stop="dockLauncher(true)"
-             title="{{ __('Hide to Side') }}">
-            <i class="bi bi-chevron-right text-dark" style="font-size: 14px;"></i>
-        </button>
     </div>
 
-    <!-- 1.1 Docked Bracket (Side Toggle) -->
-    <div x-show="isLauncherDocked"
-         x-transition:enter="slide-in-right"
-         class="position-fixed d-flex align-items-center justify-content-center shadow bg-primary text-white cursor-pointer"
-         style="right: 0; top: 50%; transform: translateY(-50%); width: 20px; height: 80px; border-top-left-radius: 10px; border-bottom-left-radius: 10px; z-index: 2000;"
-         @mouseenter="isContactListOpen = true"
-         @click="dockLauncher(false)"
-         title="{{ __('Show Chat') }}">
-         <i class="bi bi-chevron-left"></i>
-         <span x-show="totalUnread > 0"
-              class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger border border-light"
-              style="font-size: 0.6rem;"
-              x-text="totalUnread"></span>
-    </div>
-
-    <!-- 2. Contact List (Right Sidebar) -->
-    <!-- Changed from Draggable Window to Fixed Sidebar -->
+    <!-- 2. Contact List (Now Floating Window) -->
     <div x-show="isContactListOpen"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="translate-x-full"
-         x-transition:enter-end="translate-x-0"
-         x-transition:leave="transition ease-in duration-300"
-         x-transition:leave-start="translate-x-0"
-         x-transition:leave-end="translate-x-full"
-         class="position-fixed top-0 end-0 h-100 bg-white shadow-lg border-start d-flex flex-column"
-         style="width: 320px; z-index: 2050;"
-         @mousedown.outside="if(isLauncherDocked) isContactListOpen = false"
-         @mouseleave="if(isLauncherDocked) isContactListOpen = false">
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         class="chat-window shadow-lg rounded-3 flex-column border bg-white"
+         :class="{ 'd-flex': isContactListOpen, 'd-none': !isContactListOpen }"
+         :style="`position: fixed; left: ${contactList.x}px; top: ${contactList.y}px; width: ${contactList.w}px; height: ${contactList.h}px; z-index: ${contactList.zIndex};`"
+         @mousedown="bringToFront('contactList')">
 
         <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center p-3 bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center p-3 bg-primary text-white cursor-grab"
+             @mousedown="startDrag($event, 'contactList')">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-people-fill"></i>
                 <span class="fw-bold">{{ __('Contacts') }}</span>
@@ -75,8 +46,8 @@
                 <button type="button" class="btn btn-sm btn-link text-white p-0" @click="showProfileModal = true" title="{{ __('My Profile') }}">
                     <i class="bi bi-person-circle fs-5"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" @click="isContactListOpen = false" title="{{ __('Close') }}">
-                    <i class="bi bi-x-lg"></i>
+                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" @click="toggleContactList()" title="{{ __('Minimize') }}">
+                    <i class="bi bi-dash-lg"></i>
                 </button>
             </div>
         </div>
@@ -127,14 +98,12 @@
                     </template>
                 </ul>
             </div>
-
-            <!-- Footer: Restore Floating Button -->
-            <div class="p-2 border-top bg-white text-center" x-show="isLauncherDocked">
-                <button class="btn btn-sm btn-outline-primary w-100" @click="dockLauncher(false)">
-                    <i class="bi bi-box-arrow-in-left me-1"></i> {{ __('Restore Floating Button') }}
-                </button>
-            </div>
         </div>
+
+        <!-- Resize Handles -->
+        <div class="resize-handle-r" @mousedown.stop.prevent="startResize($event, 'contactList', 'r')"></div>
+        <div class="resize-handle-b" @mousedown.stop.prevent="startResize($event, 'contactList', 'b')"></div>
+        <div class="resize-handle-rb" @mousedown.stop.prevent="startResize($event, 'contactList', 'rb')"></div>
     </div>
 
     <!-- CHAT SYSTEM CONTAINER: Visible only when Contact List (Main System) is Open -->
@@ -353,10 +322,12 @@
             searchQuery: '',
             openChats: [], // { id, user, messages, x, y, w, h, minimized, zIndex, ... }
             isContactListOpen: false,
-            isLauncherDocked: false, // New Dock State
+            // Contact List Window State
+            contactList: { x: window.innerWidth - 350, y: 80, w: 320, h: 600, zIndex: 2050 },
+
             // Main launcher position
             launcher: { x: window.innerWidth - 80, y: window.innerHeight - 80 },
-            activeZIndex: 1050,
+            activeZIndex: 2050,
             dragData: null,
             isDragging: false,
             pollingInterval: null,
@@ -396,18 +367,8 @@
             toggleContactList() {
                 this.isContactListOpen = !this.isContactListOpen;
                 if(this.isContactListOpen) {
+                    this.bringToFront('contactList');
                     this.fetchContacts();
-                }
-                this.saveState();
-            },
-
-            dockLauncher(shouldDock) {
-                this.isLauncherDocked = shouldDock;
-                this.isContactListOpen = false; // Always close list when toggling dock state
-                if(!shouldDock) {
-                    // When undocking, ensure launcher is visible within bounds
-                    this.launcher.x = Math.max(0, Math.min(window.innerWidth - 60, this.launcher.x));
-                    this.launcher.y = Math.max(0, Math.min(window.innerHeight - 60, this.launcher.y));
                 }
                 this.saveState();
             },
@@ -452,8 +413,12 @@
 
             bringToFront(targetId) {
                 this.activeZIndex++;
-                const chat = this.openChats.find(c => c.id === targetId);
-                if (chat) chat.zIndex = this.activeZIndex;
+                if (targetId === 'contactList') {
+                    this.contactList.zIndex = this.activeZIndex;
+                } else {
+                    const chat = this.openChats.find(c => c.id === targetId);
+                    if (chat) chat.zIndex = this.activeZIndex;
+                }
             },
 
             // --- Drag & Resize Logic ---
@@ -464,6 +429,7 @@
 
                 let targetObj;
                 if (targetId === 'launcher') targetObj = this.launcher;
+                else if (targetId === 'contactList') targetObj = this.contactList;
                 else targetObj = this.openChats.find(c => c.id === targetId);
 
                 if (!targetObj) return;
@@ -483,7 +449,12 @@
             startResize(e, targetId, direction) {
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                let targetObj = this.openChats.find(c => c.id === targetId);
+
+                let targetObj;
+                if (targetId === 'contactList') targetObj = this.contactList;
+                else targetObj = this.openChats.find(c => c.id === targetId);
+
+                if (!targetObj) return;
 
                 this.dragData = {
                     type: 'resize',
@@ -518,6 +489,10 @@
                     targetObj = this.launcher;
                     width = 60;
                     height = 60;
+                } else if (this.dragData.targetId === 'contactList') {
+                    targetObj = this.contactList;
+                    width = targetObj.w;
+                    height = targetObj.h;
                 } else {
                     targetObj = this.openChats.find(c => c.id === this.dragData.targetId);
                     if(targetObj) {
@@ -702,9 +677,13 @@
             saveState() {
                 const state = {
                     isContactListOpen: this.isContactListOpen,
-                    isLauncherDocked: this.isLauncherDocked,
                     launcher: this.launcher,
-                    // No need to save contactList position anymore as it is fixed
+                    contactList: {
+                        x: this.contactList.x,
+                        y: this.contactList.y,
+                        w: this.contactList.w,
+                        h: this.contactList.h
+                    },
                     openChats: this.openChats.map(c => ({
                         id: c.id,
                         user: c.user,
@@ -722,12 +701,17 @@
                     try {
                         const parsed = JSON.parse(saved);
                         this.isContactListOpen = parsed.isContactListOpen;
-                        if(parsed.isLauncherDocked !== undefined) this.isLauncherDocked = parsed.isLauncherDocked;
                         if(parsed.launcher) {
                             this.launcher = {...this.launcher, ...parsed.launcher};
                             // Safety Check on Load
                             this.launcher.x = Math.max(0, Math.min(window.innerWidth - 60, this.launcher.x));
                             this.launcher.y = Math.max(0, Math.min(window.innerHeight - 60, this.launcher.y));
+                        }
+                        if(parsed.contactList) {
+                            this.contactList = {...this.contactList, ...parsed.contactList};
+                            // Basic bounds check for contact list
+                            this.contactList.x = Math.max(0, Math.min(window.innerWidth - 100, this.contactList.x));
+                            this.contactList.y = Math.max(0, Math.min(window.innerHeight - 100, this.contactList.y));
                         }
                         if(parsed.openChats) {
                             this.openChats = parsed.openChats.map(c => ({
