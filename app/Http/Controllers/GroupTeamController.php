@@ -148,9 +148,18 @@ class GroupTeamController extends Controller
             'employer_id' => 'required_if:type,affiliated|nullable|exists:employers,id',
         ]);
 
-        EmployeeGroup::create($request->all());
+        $group = EmployeeGroup::create($request->all());
 
-        return back()->with('success', 'Group created successfully.');
+        if ($group->type === 'affiliated') {
+            return redirect()->route('groups.affiliated.manage', [
+                'employer' => $group->employer_id,
+                'active_group' => $group->id
+            ])->with('success', 'Group created successfully.');
+        } else {
+            return redirect()->route('groups.independent.manage', [
+                'active_group' => $group->id
+            ])->with('success', 'Group created successfully.');
+        }
     }
 
     public function storeTeam(Request $request, EmployeeGroup $group)
@@ -159,11 +168,22 @@ class GroupTeamController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        $group->teams()->create([
+        $team = $group->teams()->create([
             'name' => $request->name,
         ]);
 
-        return back()->with('success', 'Team created successfully.');
+        if ($group->type === 'affiliated') {
+            return redirect()->route('groups.affiliated.manage', [
+                'employer' => $group->employer_id,
+                'active_group' => $group->id,
+                'active_team' => $team->id
+            ])->with('success', 'Team created successfully.');
+        } else {
+            return redirect()->route('groups.independent.manage', [
+                'active_group' => $group->id,
+                'active_team' => $team->id
+            ])->with('success', 'Team created successfully.');
+        }
     }
 
     public function searchEmployees(Request $request)
@@ -230,7 +250,21 @@ class GroupTeamController extends Controller
     public function removeMember(EmployeeTeam $team, Employee $employee)
     {
         $team->employees()->detach($employee->id);
-        return back()->with('success', 'Member removed.');
+
+        $group = $team->group;
+
+        if ($group->type === 'affiliated') {
+            return redirect()->route('groups.affiliated.manage', [
+                'employer' => $group->employer_id,
+                'active_group' => $group->id,
+                'active_team' => $team->id
+            ])->with('success', 'Member removed.');
+        } else {
+             return redirect()->route('groups.independent.manage', [
+                'active_group' => $group->id,
+                'active_team' => $team->id
+            ])->with('success', 'Member removed.');
+        }
     }
 
     // For navigation via Tags - Fixed argument order to match route {group}/{employee}
