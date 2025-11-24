@@ -12,7 +12,7 @@
             </a>
             <h1 class="h3 mt-2 text-gray-800">
                 @if($type === 'affiliated')
-                    <span class="text-muted">{{ __('Employer') }}:</span> {{ $employer->name_th }} ({{ $employer->company_name }})
+                    <span class="text-muted">{{ __('Employer') }}:</span> {{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})
                 @else
                     {{ __('Independent Groups Management') }}
                 @endif
@@ -81,8 +81,7 @@
                     </h2>
                     <div id="collapseTeam{{ $team->id }}"
                          class="accordion-collapse collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
-                         aria-labelledby="headingTeam{{ $team->id }}"
-                         data-bs-parent="#accordionGroup{{ $group->id }}">
+                         aria-labelledby="headingTeam{{ $team->id }}">
                         <div class="accordion-body">
                             <!-- Team Actions -->
                             <div class="d-flex justify-content-end mb-3">

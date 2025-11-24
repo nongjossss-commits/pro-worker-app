@@ -34,10 +34,9 @@
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-0 bg-white">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold text-primary">{{ $employer->name_th }}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">{{ $employer->company_name }}</h6>
+                    <h5 class="card-title fw-bold text-primary">{{ $employer->employerNameTh }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ $employer->employerNameEn }}</h6>
                     <p class="card-text small text-muted">
-                        {{ $employer->name_en }} <br>
                         {{ __('Employees') }}: {{ $employer->employees()->count() }}
                     </p>
                     <a href="{{ route('groups.affiliated.manage', $employer->id) }}" class="btn btn-outline-primary w-100 stretched-link">
