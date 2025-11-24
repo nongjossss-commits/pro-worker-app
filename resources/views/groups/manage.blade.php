@@ -80,7 +80,7 @@
                         </button>
                     </h2>
                     <div id="collapseTeam{{ $team->id }}"
-                         class="accordion-collapse collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
+                         class="accordion-collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
                          aria-labelledby="headingTeam{{ $team->id }}">
                         <div class="accordion-body">
                             <!-- Team Actions -->

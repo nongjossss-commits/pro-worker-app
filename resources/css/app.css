@@ -99,3 +99,7 @@ select:disabled, input:disabled, textarea:disabled, input:read-only, textarea:re
 }
 
 /* END: Custom Form Styles */
+
+.collapse {
+    visibility: unset !important;
+}
