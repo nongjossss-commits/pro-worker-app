@@ -370,6 +370,10 @@
                         @endphp
                         <form x-ref="replyForm" action="{{ route($replyRoute, $ticket->id) }}" method="POST">
                             @csrf
+
+                            {{-- Hidden inputs for basket items --}}
+                            @include('tickets.partials._basket_form_inputs')
+
                             {{-- Text Area --}}
                             <div class="mb-3">
                                 <label for="message" class="form-label">ข้อความ:</label>
