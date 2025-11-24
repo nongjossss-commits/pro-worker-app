@@ -33,13 +33,13 @@
          x-transition:enter-start="opacity-0 scale-95"
          x-transition:enter-end="opacity-100 scale-100"
          class="chat-window shadow-lg rounded-3 flex-column border bg-white"
-         :class="{ 'd-flex': isContactListOpen, 'd-none': !isContactListOpen }"
-         :style="`position: fixed; left: ${contactList.x}px; top: ${contactList.y}px; width: ${contactList.w}px; height: ${contactList.h}px; z-index: ${contactList.zIndex};`"
+         :class="{ 'd-flex': isContactListOpen, 'd-none': !isContactListOpen, 'w-100 h-100 top-0 start-0': isMobile }"
+         :style="isMobile ? 'position: fixed; z-index: 2100;' : `position: fixed; left: ${contactList.x}px; top: ${contactList.y}px; width: ${contactList.w}px; height: ${contactList.h}px; z-index: ${contactList.zIndex};`"
          @mousedown="bringToFront('contactList')">
 
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center p-3 bg-primary text-white cursor-grab"
-             @mousedown="startDrag($event, 'contactList')">
+             @mousedown="!isMobile && startDrag($event, 'contactList')">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-people-fill"></i>
                 <span class="fw-bold">{{ __('Contacts') }}</span>
@@ -105,9 +105,13 @@
         </div>
 
         <!-- Resize Handles -->
-        <div class="resize-handle-r" @mousedown.stop.prevent="startResize($event, 'contactList', 'r')"></div>
-        <div class="resize-handle-b" @mousedown.stop.prevent="startResize($event, 'contactList', 'b')"></div>
-        <div class="resize-handle-rb" @mousedown.stop.prevent="startResize($event, 'contactList', 'rb')"></div>
+        <template x-if="!isMobile">
+            <div>
+                <div class="resize-handle-r" @mousedown.stop.prevent="startResize($event, 'contactList', 'r')"></div>
+                <div class="resize-handle-b" @mousedown.stop.prevent="startResize($event, 'contactList', 'b')"></div>
+                <div class="resize-handle-rb" @mousedown.stop.prevent="startResize($event, 'contactList', 'rb')"></div>
+            </div>
+        </template>
     </div>
 
     <!-- CHAT SYSTEM CONTAINER: Visible only when Contact List (Main System) is Open -->
@@ -117,16 +121,21 @@
             <template x-for="chat in openChats" :key="chat.id">
                 <div x-show="!chat.minimized"
                      class="chat-window shadow rounded-3 flex-column border bg-white"
-                     :class="{ 'd-flex': !chat.minimized, 'd-none': chat.minimized }"
-                     :style="`position: fixed; left: ${chat.x}px; top: ${chat.y}px; width: ${chat.w}px; height: ${chat.h}px; z-index: ${chat.zIndex};`"
+                     :class="{ 'd-flex': !chat.minimized, 'd-none': chat.minimized, 'w-100 h-100 top-0 start-0': isMobile }"
+                     :style="isMobile ? 'position: fixed; z-index: 2150;' : `position: fixed; left: ${chat.x}px; top: ${chat.y}px; width: ${chat.w}px; height: ${chat.h}px; z-index: ${chat.zIndex};`"
                      @mousedown="bringToFront(chat.id)"
                      @dragover.prevent
                      @drop.prevent="handleDrop($event, 'chat_window', chat.id)">
 
                     <!-- Header -->
                     <div class="chat-header d-flex justify-content-between align-items-center p-2 bg-white border-bottom cursor-grab"
-                         @mousedown="startDrag($event, chat.id)">
+                         @mousedown="!isMobile && startDrag($event, chat.id)">
                         <div class="d-flex align-items-center gap-2 overflow-hidden">
+                            <!-- Mobile Back Button -->
+                            <button x-show="isMobile" type="button" class="btn btn-sm btn-link text-dark p-0 me-1" @click="closeChat(chat.id)">
+                                <i class="bi bi-arrow-left"></i>
+                            </button>
+
                             <img :src="chat.user.avatar_url" class="rounded-circle object-fit-cover" width="32" height="32"
                                  onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
                             <div class="lh-1">
@@ -151,25 +160,76 @@
                         <template x-for="msg in chat.messages" :key="msg.id">
                             <div class="mb-2 d-flex" :class="msg.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                  <!-- Message Bubble -->
-                                 <div class="p-2 rounded shadow-sm"
+                                 <div class="p-2 rounded shadow-sm position-relative group-hover-actions"
                                       :class="msg.sender_id == currentUserId ? 'bg-primary text-white' : 'bg-white text-dark'"
-                                      style="max-width: 85%; word-wrap: break-word;">
+                                      style="max-width: 85%; word-wrap: break-word;"
+                                      draggable="true"
+                                      @dragstart="startDragMessage($event, msg)">
 
                                     <!-- Attachments/Context -->
                                     <template x-if="msg.context_data">
                                         <div class="mb-1 p-1 rounded bg-opacity-10" :class="msg.sender_id == currentUserId ? 'bg-black' : 'bg-secondary'">
+                                            <!-- Link Type -->
                                             <template x-if="msg.context_data.type === 'link'">
                                                 <a :href="msg.context_data.url" target="_blank" class="d-flex align-items-center text-decoration-none small" :class="msg.sender_id == currentUserId ? 'text-white' : 'text-primary'">
                                                     <i class="bi bi-link-45deg me-1"></i><span x-text="msg.context_data.text || 'Link'"></span>
                                                 </a>
                                             </template>
+
+                                            <!-- Image Type -->
                                             <template x-if="msg.context_data.type === 'image'">
                                                 <a :href="msg.context_data.url" target="_blank"><img :src="msg.context_data.url" class="img-fluid rounded" style="max-height: 120px;"></a>
                                             </template>
+
+                                            <!-- File Type -->
                                             <template x-if="msg.context_data.type === 'file'">
                                                 <a :href="msg.context_data.url" target="_blank" class="d-flex align-items-center text-decoration-none small" :class="msg.sender_id == currentUserId ? 'text-white' : 'text-primary'">
                                                     <i class="bi bi-file-earmark-text me-1"></i><span x-text="msg.context_data.name || 'File'"></span>
                                                 </a>
+                                            </template>
+
+                                            <!-- Employee Type -->
+                                            <template x-if="msg.context_data.type === 'employee'">
+                                                <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-warning bg-white bg-opacity-75 rounded-end text-dark">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                             <i class="bi bi-person-badge-fill text-warning"></i>
+                                                             <span x-text="msg.context_data.name"></span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                                        <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
+                                                        <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
+                                                                style="font-size: 0.7rem;"
+                                                                :data-model-id="msg.context_data.id"
+                                                                data-model-type="employee"
+                                                                title="{{ __('Preview') }}">
+                                                            <i class="bi bi-eye"></i> {{ __('Preview') }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Employer Type -->
+                                            <template x-if="msg.context_data.type === 'employer'">
+                                                <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-info bg-white bg-opacity-75 rounded-end text-dark">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                             <i class="bi bi-building-fill text-info"></i>
+                                                             <span x-text="msg.context_data.name"></span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                                        <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
+                                                        <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
+                                                                style="font-size: 0.7rem;"
+                                                                :data-model-id="msg.context_data.id"
+                                                                data-model-type="employer"
+                                                                title="{{ __('Preview') }}">
+                                                            <i class="bi bi-eye"></i> {{ __('Preview') }}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </template>
                                         </div>
                                     </template>
@@ -221,9 +281,13 @@
                     </div>
 
                     <!-- Resize Handles -->
-                    <div class="resize-handle-r" @mousedown.stop.prevent="startResize($event, chat.id, 'r')"></div>
-                    <div class="resize-handle-b" @mousedown.stop.prevent="startResize($event, chat.id, 'b')"></div>
-                    <div class="resize-handle-rb" @mousedown.stop.prevent="startResize($event, chat.id, 'rb')"></div>
+                    <template x-if="!isMobile">
+                        <div>
+                            <div class="resize-handle-r" @mousedown.stop.prevent="startResize($event, chat.id, 'r')"></div>
+                            <div class="resize-handle-b" @mousedown.stop.prevent="startResize($event, chat.id, 'b')"></div>
+                            <div class="resize-handle-rb" @mousedown.stop.prevent="startResize($event, chat.id, 'rb')"></div>
+                        </div>
+                    </template>
                 </div>
             </template>
 
@@ -348,6 +412,7 @@
                 original_avatar_url: @json(auth()->user()->avatar_url)
             },
             profilePreviewUrl: null,
+            isMobile: window.innerWidth < 768,
 
             // --- Computed ---
             get totalUnread() {
@@ -369,6 +434,7 @@
                 window.addEventListener('touchmove', (e) => this.onMouseMove(e));
                 window.addEventListener('mouseup', () => this.onMouseUp());
                 window.addEventListener('touchend', () => this.onMouseUp());
+                window.addEventListener('resize', () => { this.isMobile = window.innerWidth < 768; });
             },
 
             // --- Actions ---
@@ -457,17 +523,29 @@
                 if (chat) {
                     let attachmentName = data.title;
                     let attachmentText = `[${data.type.toUpperCase()}] ${data.title}`;
+                    let contextType = 'link'; // Default type
+                    let contextUrl = data.url;
 
                     if (data.type === 'employees_bulk') {
                          attachmentName = `${data.count} Employees`;
                          attachmentText = `[BULK] ${data.count} Employees Selected`;
                     }
+                    else if (data.type === 'employee') {
+                        contextType = 'employee';
+                         // Special logic: Use "Locate" URL for employee highlighting
+                         contextUrl = `/employees/${data.id}/locate`;
+                    }
+                    else if (data.type === 'employer') {
+                        contextType = 'employer';
+                    }
 
                     chat.contextToAttach = {
-                        type: 'link',
-                        url: data.url,
+                        type: contextType,
+                        id: data.id, // Important for preview triggers
+                        url: contextUrl,
                         text: attachmentText,
-                        name: attachmentName
+                        name: attachmentName,
+                        subtitle: data.subtitle || data.code || ''
                     };
 
                     this.bringToFront(chat.id);
@@ -478,6 +556,31 @@
                     });
                 }
             },
+
+            // --- Drag Message to Forward ---
+            startDragMessage(e, msg) {
+                // Allows dragging a message bubble to another chat to forward it
+                let payload = {
+                    type: 'message',
+                    title: msg.message || 'Forwarded Message',
+                    url: window.location.href // Fallback
+                };
+
+                // If message has context, forward that context
+                if (msg.context_data) {
+                     payload = {
+                        ...msg.context_data,
+                        title: msg.context_data.name || msg.context_data.text
+                     };
+                } else {
+                    // Text only message
+                    payload.subtitle = msg.message;
+                }
+
+                e.dataTransfer.effectAllowed = 'copy';
+                e.dataTransfer.setData('application/json', JSON.stringify(payload));
+            },
+
 
             // --- Drag & Resize Logic ---
             startDrag(e, targetId) {
@@ -794,6 +897,8 @@
             getAttachmentIcon(type) {
                 if (type === 'link') return 'bi-link-45deg';
                 if (type === 'image') return 'bi-file-image';
+                if (type === 'employee') return 'bi-person-badge-fill';
+                if (type === 'employer') return 'bi-building-fill';
                 return 'bi-file-earmark';
             },
             attachContext(chatId) {
