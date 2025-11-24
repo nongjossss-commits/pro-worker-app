@@ -23,12 +23,13 @@
 
 {{-- Employer Info Form --}}
 <div class="content-section" draggable="true"
-     @dragstart="startDragGlobal($event, 'employer', {
-        id: {{ $employer->id }},
-        title: '{{ $employer->employerNameTh }}',
-        subtitle: '{{ $employer->employerNameEn }}',
-        url: '{{ route('employers.edit', $employer->id) }}'
-     })">
+     data-drag-payload="{{ json_encode([
+        'id' => $employer->id,
+        'title' => $employer->employerNameTh,
+        'subtitle' => $employer->employerNameEn,
+        'url' => route('employers.edit', $employer->id)
+     ]) }}"
+     ondragstart="window.startDragGlobal(event, 'employer', JSON.parse(this.dataset.dragPayload))">
     <h2 class="mb-4">{{ __('Edit Employer') }}</h2>
     <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
@@ -420,12 +421,13 @@
             <div class="list-group">
             @forelse($employees as $employee)
                 <div class="position-relative" draggable="true"
-                     @dragstart="startDragGlobal($event, 'employee', {
-                        id: {{ $employee->id }},
-                        title: '{{ $employee->employeeFullName }}',
-                        subtitle: '{{ $employer->employerNameTh }}',
-                        url: '{{ route('employees.show', $employee->id) }}'
-                     })">
+                     data-drag-payload="{{ json_encode([
+                        'id' => $employee->id,
+                        'title' => $employee->employeeFullName,
+                        'subtitle' => $employer->employerNameTh,
+                        'url' => route('employees.show', $employee->id)
+                     ]) }}"
+                     ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                     {{-- DEFINITIVE FIX: Use the single, unified partial --}}
                     @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
                 </div>
@@ -451,12 +453,13 @@
                     <tbody>
                         @forelse($employees as $employee)
                             <tr id="employee-row-{{ $employee->id }}" draggable="true"
-                                @dragstart="startDragGlobal($event, 'employee', {
-                                    id: {{ $employee->id }},
-                                    title: '{{ $employee->employeeFullName }}',
-                                    subtitle: '{{ $employer->employerNameTh }}',
-                                    url: '{{ route('employees.show', $employee->id) }}'
-                                })">
+                                data-drag-payload="{{ json_encode([
+                                    'id' => $employee->id,
+                                    'title' => $employee->employeeFullName,
+                                    'subtitle' => $employer->employerNameTh,
+                                    'url' => route('employees.show', $employee->id)
+                                ]) }}"
+                                ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                                 {{-- DEFINITIVE FIX: Add checkbox for bulk actions --}}
                                 <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
                                 <td>{{ $employees->firstItem() + $loop->index }}</td>

@@ -52,12 +52,13 @@
                 @forelse ($tickets as $ticket)
                 <tr class="{{ $ticket->admin_unread_count > 0 ? 'table-info' : '' }}"
                     draggable="true"
-                    ondragstart="window.startDragGlobal(event, 'ticket', {
-                        id: {{ $ticket->id }},
-                        title: @json($ticket->subject),
-                        subtitle: 'Ticket #{{ $ticket->id }}',
-                        url: '{{ route('admin.tickets.show', $ticket) }}'
-                    })"
+                    data-drag-payload="{{ json_encode([
+                        'id' => $ticket->id,
+                        'title' => $ticket->subject,
+                        'subtitle' => 'Ticket #' . $ticket->id,
+                        'url' => route('admin.tickets.show', $ticket)
+                    ]) }}"
+                    ondragstart="window.startDragGlobal(event, 'ticket', JSON.parse(this.dataset.dragPayload))"
                     style="cursor: grab;">
                     <td>{{ $ticket->id }}</td>
                     <td>

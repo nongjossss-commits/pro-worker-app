@@ -545,7 +545,12 @@
             // --- Drag & Drop for Data Sharing ---
             handleDrop(e, targetType, targetId) {
                 e.preventDefault();
-                const rawData = e.dataTransfer.getData('application/json');
+                // Try to get data from application/json, fallback to text/plain
+                let rawData = e.dataTransfer.getData('application/json');
+                if (!rawData) {
+                    rawData = e.dataTransfer.getData('text/plain');
+                }
+
                 if (!rawData) return;
 
                 let data;
