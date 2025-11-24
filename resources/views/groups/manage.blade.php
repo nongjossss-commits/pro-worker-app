@@ -3,6 +3,28 @@
 @section('title', 'Manage Groups & Teams')
 
 @section('content')
+{{-- CSS Fix for Tailwind + Bootstrap Collapse Conflict & Enhanced UI --}}
+<style>
+    /* Fix for Tailwind's .collapse { visibility: collapse } conflicting with Bootstrap */
+    /* Scope to .teams-accordion to prevent side effects on other accordions */
+    .teams-accordion .accordion-collapse.collapse {
+        visibility: visible !important;
+    }
+    .teams-accordion .accordion-collapse.collapsing {
+        visibility: visible !important;
+    }
+
+    /* Enhanced UI Styles */
+    .teams-accordion .accordion-button:not(.collapsed) {
+        background-color: var(--bs-primary-light);
+        color: white;
+        box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+    }
+    .teams-accordion .accordion-button:not(.collapsed)::after {
+        filter: brightness(0) invert(1);
+    }
+</style>
+
 <div class="container-fluid" x-data="groupTeamManager()">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -123,7 +145,7 @@
 
             <!-- Teams List (Accordion) -->
             <!-- Removing 'data-bs-parent' from items to allow independent expansion -->
-            <div class="accordion" id="accordionGroup{{ $group->id }}">
+            <div class="accordion shadow-sm teams-accordion" id="accordionGroup{{ $group->id }}">
                 @forelse($group->teams as $team)
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingTeam{{ $team->id }}">
@@ -133,14 +155,16 @@
                                 data-bs-target="#collapseTeam{{ $team->id }}"
                                 aria-expanded="{{ request('active_team') == $team->id ? 'true' : 'false' }}"
                                 aria-controls="collapseTeam{{ $team->id }}">
-                            <span class="fw-bold">{{ $team->name }}</span>
-                            <span class="badge bg-secondary ms-2 rounded-pill">{{ $team->employees->count() }} {{ __('Members') }}</span>
+                            <div class="d-flex align-items-center w-100">
+                                <span class="fw-bold me-auto">{{ $team->name }}</span>
+                                <span class="badge bg-light text-dark border me-3">{{ $team->employees->count() }} {{ __('Members') }}</span>
+                            </div>
                         </button>
                     </h2>
                     <div id="collapseTeam{{ $team->id }}"
                          class="accordion-collapse collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
                          aria-labelledby="headingTeam{{ $team->id }}">
-                        <div class="accordion-body">
+                        <div class="accordion-body bg-white">
                             <!-- Team Actions -->
                             <div class="d-flex justify-content-end mb-3">
                                 <button class="btn btn-sm btn-success"
