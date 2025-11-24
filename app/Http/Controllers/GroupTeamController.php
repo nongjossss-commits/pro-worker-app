@@ -274,12 +274,14 @@ class GroupTeamController extends Controller
             return redirect()->route('groups.affiliated.manage', [
                 'employer' => $group->employer_id,
                 'active_group' => $group->id,
-                'active_team' => $team->id
+                'active_team' => $team->id,
+                'highlight_employee' => $employee->id
             ]);
         } else {
              return redirect()->route('groups.independent.manage', [
                 'active_group' => $group->id,
-                'active_team' => $team->id
+                'active_team' => $team->id,
+                'highlight_employee' => $employee->id
             ]);
         }
     }
