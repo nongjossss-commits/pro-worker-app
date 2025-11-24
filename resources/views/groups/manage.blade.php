@@ -23,6 +23,35 @@
     .teams-accordion .accordion-button:not(.collapsed)::after {
         filter: brightness(0) invert(1);
     }
+
+    /* Highlight Animation for Employee Card */
+    @keyframes highlightPulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+            border-color: #f97316;
+            background-color: #fff7ed;
+            transform: scale(1.02);
+        }
+        50% {
+            box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+            border-color: #f97316;
+            background-color: #fff7ed;
+            transform: scale(1.02);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+            border-color: #f97316; /* Keep border color */
+            background-color: #fff7ed; /* Keep background color */
+            transform: scale(1.02);
+        }
+    }
+
+    .employee-card.highlighted {
+        animation: highlightPulse 2s ease-out infinite;
+        border: 2px solid #f97316 !important; /* Orange border */
+        background-color: #fff7ed !important; /* Light orange background */
+        z-index: 10; /* Ensure it stays on top */
+    }
 </style>
 
 <div class="container-fluid" x-data="groupTeamManager()">
@@ -460,6 +489,34 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Handle Highlighted Employee
+        const highlightEmployeeId = "{{ request('highlight_employee') }}";
+        const activeTeamId = "{{ request('active_team') }}";
+
+        if (highlightEmployeeId && activeTeamId) {
+            // Construct the ID based on the logic in manage.blade.php and _employee_card.blade.php
+            // idPrefix is 'team-' . $team->id . '-'
+            // cardId is 'employee-card-' . $idPrefix . $employee->id
+            const cardId = `employee-card-team-${activeTeamId}-${highlightEmployeeId}`;
+            const card = document.getElementById(cardId);
+
+            if (card) {
+                // Wait a brief moment for accordions/tabs to fully render if needed
+                setTimeout(() => {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('highlighted');
+
+                    // Optional: Remove animation after some time, but keep style?
+                    // User requested "prominently ... to avoid confusion", so keeping it highlighted is safer.
+                    // We can stop the pulse animation after a while but keep the border.
+                    setTimeout(() => {
+                        card.style.animation = 'none'; // Stop pulsing
+                        // The border and background defined in .employee-card.highlighted will remain
+                    }, 6000);
+                }, 500);
+            }
+        }
+
         // Handle Delete Member Confirmation
         document.body.addEventListener('submit', function(e) {
             if (e.target.matches('.delete-member-form')) {
