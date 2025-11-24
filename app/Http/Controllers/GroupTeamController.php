@@ -43,43 +43,56 @@ class GroupTeamController extends Controller
         // Fetch distinct nationalities for dropdown
         $nationalities = Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
 
-        $groups = EmployeeGroup::where('employer_id', $employer->id)
+        // 1. Get all groups for tabs (lightweight)
+        $allGroups = EmployeeGroup::where('employer_id', $employer->id)
             ->where('type', 'affiliated')
-            ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard) {
-                if ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('employeeNameTh', 'like', "%{$search}%")
-                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                          ->orWhere('employeePassport', 'like', "%{$search}%")
-                          ->orWhere('pinkCardNo', 'like', "%{$search}%");
-                    });
-                }
-                if ($nationality) {
-                    $query->where('employeeNationality', $nationality);
-                }
-                if ($passportTypeMyanmar) {
-                    $query->where('passportType', $passportTypeMyanmar);
-                }
-                if ($passportTypeCambodia) {
-                    $query->where('passport_type_cambodia', $passportTypeCambodia);
-                }
-                if ($pinkCard) {
-                    if ($pinkCard === 'has_card') {
-                        $query->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
-                    } elseif ($pinkCard === 'no_card') {
-                        $query->where(function($q) {
-                            $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '');
+            ->get(['id', 'name']);
+
+        // 2. Determine active group
+        $activeGroupId = $request->input('active_group') ?? ($allGroups->first()->id ?? null);
+        $activeGroup = null;
+
+        if ($activeGroupId) {
+             $activeGroup = EmployeeGroup::where('id', $activeGroupId)
+                ->where('employer_id', $employer->id) // Ensure belongs to this employer
+                ->where('type', 'affiliated')
+                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard) {
+                    if ($search) {
+                        $query->where(function($q) use ($search) {
+                            $q->where('employeeNameTh', 'like', "%{$search}%")
+                              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhere('pinkCardNo', 'like', "%{$search}%");
                         });
                     }
-                }
-                $query->with('employer');
-            }])
-            ->get();
+                    if ($nationality) {
+                        $query->where('employeeNationality', $nationality);
+                    }
+                    if ($passportTypeMyanmar) {
+                        $query->where('passportType', $passportTypeMyanmar);
+                    }
+                    if ($passportTypeCambodia) {
+                        $query->where('passport_type_cambodia', $passportTypeCambodia);
+                    }
+                    if ($pinkCard) {
+                        if ($pinkCard === 'has_card') {
+                            $query->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+                        } elseif ($pinkCard === 'no_card') {
+                            $query->where(function($q) {
+                                $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '');
+                            });
+                        }
+                    }
+                    $query->with('employer');
+                }])
+                ->first();
+        }
 
         return view('groups.manage', [
             'type' => 'affiliated',
             'employer' => $employer,
-            'groups' => $groups,
+            'allGroups' => $allGroups,
+            'activeGroup' => $activeGroup,
             'nationalities' => $nationalities,
             'filters' => $request->all()
         ]);
@@ -96,45 +109,56 @@ class GroupTeamController extends Controller
         // Fetch distinct nationalities for dropdown
         $nationalities = Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
 
-        $groups = EmployeeGroup::where('type', 'independent')
-            ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard) {
-                if ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('employeeNameTh', 'like', "%{$search}%")
-                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                          ->orWhere('employeePassport', 'like', "%{$search}%")
-                          ->orWhere('pinkCardNo', 'like', "%{$search}%");
-                    });
-                }
-                if ($nationality) {
-                    $query->where('employeeNationality', $nationality);
-                }
-                if ($passportTypeMyanmar) {
-                    $query->where('passportType', $passportTypeMyanmar);
-                }
-                if ($passportTypeCambodia) {
-                    $query->where('passport_type_cambodia', $passportTypeCambodia);
-                }
-                if ($pinkCard) {
-                    if ($pinkCard === 'has_card') {
-                        $query->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
-                    } elseif ($pinkCard === 'no_card') {
-                        $query->where(function($q) {
-                            $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '');
+        // 1. Get all groups for tabs (lightweight)
+        $allGroups = EmployeeGroup::where('type', 'independent')->get(['id', 'name']);
+
+        // 2. Determine active group
+        $activeGroupId = $request->input('active_group') ?? ($allGroups->first()->id ?? null);
+        $activeGroup = null;
+
+        if ($activeGroupId) {
+             $activeGroup = EmployeeGroup::where('id', $activeGroupId)
+                ->where('type', 'independent')
+                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard) {
+                    if ($search) {
+                        $query->where(function($q) use ($search) {
+                            $q->where('employeeNameTh', 'like', "%{$search}%")
+                              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhere('pinkCardNo', 'like', "%{$search}%");
                         });
                     }
-                }
+                    if ($nationality) {
+                        $query->where('employeeNationality', $nationality);
+                    }
+                    if ($passportTypeMyanmar) {
+                        $query->where('passportType', $passportTypeMyanmar);
+                    }
+                    if ($passportTypeCambodia) {
+                        $query->where('passport_type_cambodia', $passportTypeCambodia);
+                    }
+                    if ($pinkCard) {
+                        if ($pinkCard === 'has_card') {
+                            $query->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+                        } elseif ($pinkCard === 'no_card') {
+                            $query->where(function($q) {
+                                $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '');
+                            });
+                        }
+                    }
 
-                // Load employer and sort by it for the grouping requirement
-                $query->with('employer')
-                      ->orderBy('employer_id');
-            }])
-            ->get();
+                    // Load employer and sort by it for the grouping requirement
+                    $query->with('employer')
+                          ->orderBy('employer_id');
+                }])
+                ->first();
+        }
 
         return view('groups.manage', [
             'type' => 'independent',
             'employer' => null,
-            'groups' => $groups,
+            'allGroups' => $allGroups,
+            'activeGroup' => $activeGroup,
             'nationalities' => $nationalities,
             'filters' => $request->all()
         ]);

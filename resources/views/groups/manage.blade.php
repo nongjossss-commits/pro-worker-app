@@ -50,7 +50,9 @@
         <div class="card-body">
             <form method="GET" action="{{ url()->current() }}" class="row g-2 align-items-end">
                 <!-- Preserve active group/team if needed -->
-                <input type="hidden" name="active_group" value="{{ request('active_group') }}">
+                @if($activeGroup)
+                    <input type="hidden" name="active_group" value="{{ $activeGroup->id }}">
+                @endif
                 <input type="hidden" name="active_team" value="{{ request('active_team') }}">
 
                 <div class="col-md-3">
@@ -90,7 +92,7 @@
                 </div>
                 <div class="col-md-auto">
                     <button type="submit" class="btn btn-primary">{{ __('Filter') }}</button>
-                    <a href="{{ url()->current() }}" class="btn btn-secondary">{{ __('Clear') }}</a>
+                    <a href="{{ url()->current() }}{{ $activeGroup ? '?active_group=' . $activeGroup->id : '' }}" class="btn btn-secondary">{{ __('Clear') }}</a>
                 </div>
             </form>
         </div>
@@ -103,194 +105,182 @@
         <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
     </x-bulk-action-bar>
 
-    <!-- Groups Tabs -->
-    <ul class="nav nav-tabs mb-3" id="groupTabs" role="tablist">
-        @foreach($groups as $index => $group)
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ $index === 0 || request('active_group') == $group->id ? 'active' : '' }}"
-                    id="group-tab-{{ $group->id }}"
-                    data-bs-toggle="tab"
-                    data-bs-target="#group-content-{{ $group->id }}"
-                    type="button"
-                    role="tab"
-                    aria-controls="group-content-{{ $group->id }}"
-                    aria-selected="{{ $index === 0 ? 'true' : 'false' }}"
-                    draggable="true"
-                    @dragstart="startDragGlobal($event, 'link', {
-                        title: '{{ $group->name }}',
-                        subtitle: 'Group',
-                        url: '{{ request()->fullUrlWithQuery(['active_group' => $group->id]) }}'
-                    })">
+    <!-- Groups Tabs (Server Side) -->
+    <ul class="nav nav-tabs mb-3">
+        @foreach($allGroups as $group)
+        <li class="nav-item">
+            {{-- Using <a> instead of button for server-side switching --}}
+            <a class="nav-link {{ ($activeGroup && $activeGroup->id == $group->id) ? 'active' : '' }}"
+               href="{{ request()->fullUrlWithQuery(['active_group' => $group->id]) }}"
+               draggable="true"
+               @dragstart="startDragGlobal($event, 'link', {
+                   title: '{{ $group->name }}',
+                   subtitle: 'Group',
+                   url: '{{ request()->fullUrlWithQuery(['active_group' => $group->id]) }}'
+               })">
                 {{ $group->name }}
-            </button>
+            </a>
         </li>
         @endforeach
-        @if($groups->isEmpty())
+        @if($allGroups->isEmpty())
         <li class="nav-item">
             <span class="nav-link disabled">{{ __('No Groups Created Yet') }}</span>
         </li>
         @endif
     </ul>
 
-    <!-- Groups Content -->
-    <div class="tab-content" id="groupTabsContent">
-        @forelse($groups as $index => $group)
-        <div class="tab-pane fade {{ $index === 0 || request('active_group') == $group->id ? 'show active' : '' }}"
-             id="group-content-{{ $group->id }}"
-             role="tabpanel"
-             aria-labelledby="group-tab-{{ $group->id }}">
-
-            <div class="d-flex justify-content-between align-items-center my-3 bg-light p-3 rounded">
-                <div class="d-flex align-items-center gap-2">
-                    <h4 class="mb-0">{{ $group->name }} <span class="text-muted fs-6">({{ __('Group') }})</span></h4>
-                    <button class="btn btn-sm btn-outline-secondary"
-                            @click="openEditGroupModal({{ $group->id }}, '{{ $group->name }}')">
-                        <i class="bi bi-pencil"></i>
+    <!-- Groups Content (Only Active Group Rendered) -->
+    <div class="tab-content bg-white border border-top-0 p-3 rounded-bottom shadow-sm">
+        @if($activeGroup)
+            <div class="tab-pane fade show active">
+                <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-3 rounded">
+                    <div class="d-flex align-items-center gap-2">
+                        <h4 class="mb-0">{{ $activeGroup->name }} <span class="text-muted fs-6">({{ __('Group') }})</span></h4>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @click="openEditGroupModal({{ $activeGroup->id }}, '{{ $activeGroup->name }}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#createTeamModal"
+                            @click="setGroupId({{ $activeGroup->id }})">
+                        <i class="bi bi-plus-circle"></i> {{ __('Create Team') }}
                     </button>
                 </div>
-                <button class="btn btn-outline-primary btn-sm"
-                        data-bs-toggle="modal"
-                        data-bs-target="#createTeamModal"
-                        @click="setGroupId({{ $group->id }})">
-                    <i class="bi bi-plus-circle"></i> {{ __('Create Team') }}
-                </button>
-            </div>
 
-            <!-- Teams List (Accordion) -->
-            <!-- Removing 'data-bs-parent' from items to allow independent expansion -->
-            <div class="accordion shadow-sm teams-accordion" id="accordionGroup{{ $group->id }}">
-                @forelse($group->teams as $team)
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingTeam{{ $team->id }}"
-                        draggable="true"
-                        @dragstart="startDragGlobal($event, 'link', {
-                            title: '{{ $team->name }}',
-                            subtitle: 'Team in {{ $group->name }}',
-                            url: '{{ request()->fullUrlWithQuery(['active_group' => $group->id, 'active_team' => $team->id]) }}'
-                        })">
-                        <button class="accordion-button {{ request('active_team') == $team->id ? '' : 'collapsed' }}"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#collapseTeam{{ $team->id }}"
-                                aria-expanded="{{ request('active_team') == $team->id ? 'true' : 'false' }}"
-                                aria-controls="collapseTeam{{ $team->id }}">
-                            <div class="d-flex align-items-center w-100">
-                                <span class="fw-bold me-auto">{{ $team->name }}</span>
-                                <span class="badge bg-light text-dark border me-3">{{ $team->employees->count() }} {{ __('Members') }}</span>
-                            </div>
-                        </button>
-                    </h2>
-                    <div id="collapseTeam{{ $team->id }}"
-                         class="accordion-collapse collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
-                         aria-labelledby="headingTeam{{ $team->id }}">
-                        <div class="accordion-body bg-white">
-                            <!-- Team Actions -->
-                            <div class="d-flex justify-content-end mb-3 gap-2">
-                                <button class="btn btn-sm btn-outline-warning"
-                                        @click="openEditTeamModal({{ $team->id }}, '{{ $team->name }}')">
-                                    <i class="bi bi-pencil"></i> {{ __('Edit Team') }}
-                                </button>
-                                <button class="btn btn-sm btn-success"
-                                        @click="openAddMemberModal({{ $group->id }}, {{ $team->id }}, '{{ $team->name }}')">
-                                    <i class="bi bi-person-plus-fill"></i> {{ __('Add Member') }}
-                                </button>
-                            </div>
+                <!-- Teams List (Accordion) -->
+                <div class="accordion shadow-sm teams-accordion" id="accordionGroup{{ $activeGroup->id }}">
+                    @forelse($activeGroup->teams as $team)
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTeam{{ $team->id }}"
+                            draggable="true"
+                            @dragstart="startDragGlobal($event, 'link', {
+                                title: '{{ $team->name }}',
+                                subtitle: 'Team in {{ $activeGroup->name }}',
+                                url: '{{ request()->fullUrlWithQuery(['active_group' => $activeGroup->id, 'active_team' => $team->id]) }}'
+                            })">
+                            <button class="accordion-button {{ request('active_team') == $team->id ? '' : 'collapsed' }}"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#collapseTeam{{ $team->id }}"
+                                    aria-expanded="{{ request('active_team') == $team->id ? 'true' : 'false' }}"
+                                    aria-controls="collapseTeam{{ $team->id }}">
+                                <div class="d-flex align-items-center w-100">
+                                    <span class="fw-bold me-auto">{{ $team->name }}</span>
+                                    <span class="badge bg-light text-dark border me-3">{{ $team->employees->count() }} {{ __('Members') }}</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapseTeam{{ $team->id }}"
+                             class="accordion-collapse collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
+                             aria-labelledby="headingTeam{{ $team->id }}">
+                            <div class="accordion-body bg-white">
+                                <!-- Team Actions -->
+                                <div class="d-flex justify-content-end mb-3 gap-2">
+                                    <button class="btn btn-sm btn-outline-warning"
+                                            @click="openEditTeamModal({{ $team->id }}, '{{ $team->name }}')">
+                                        <i class="bi bi-pencil"></i> {{ __('Edit Team') }}
+                                    </button>
+                                    <button class="btn btn-sm btn-success"
+                                            @click="openAddMemberModal({{ $activeGroup->id }}, {{ $team->id }}, '{{ $team->name }}')">
+                                        <i class="bi bi-person-plus-fill"></i> {{ __('Add Member') }}
+                                    </button>
+                                </div>
 
-                            <!-- Members Cards -->
-                            <div class="employee-list" x-ignore>
-                                @if($type === 'independent')
-                                    {{-- Group by Employer --}}
-                                    @php
-                                        $groupedEmployees = $team->employees->groupBy('employer_id');
-                                    @endphp
-                                    @forelse($groupedEmployees as $employerId => $members)
+                                <!-- Members Cards -->
+                                <div class="employee-list" x-ignore>
+                                    @if($type === 'independent')
+                                        {{-- Group by Employer --}}
                                         @php
-                                            $firstMember = $members->first();
-                                            $employerName = $firstMember->employer ? ($firstMember->employer->employerNameTh . ' (' . $firstMember->employer->employerNameEn . ')') : __('Unknown Employer');
+                                            $groupedEmployees = $team->employees->groupBy('employer_id');
                                         @endphp
-                                        <div class="mb-3">
-                                            <h5 class="bg-light p-2 rounded border-start border-4 border-primary"
-                                                draggable="true"
-                                                @dragstart="startDragGlobal($event, 'employees_bulk', {
-                                                    title: '{{ $employerName }} - {{ $team->name }}',
-                                                    count: {{ $members->count() }},
-                                                    subtitle: '{{ $members->count() }} members',
-                                                    // In a real scenario, we might need a specific URL or data structure to handle a group of employees
-                                                    url: '#'
-                                                })">
-                                                <i class="bi bi-building me-2"></i>{{ $employerName }}
-                                            </h5>
-                                            <div class="list-group">
-                                                @foreach($members as $member)
-                                                    <div draggable="true"
-                                                         @dragstart="startDragGlobal($event, 'employee', {
-                                                            id: {{ $member->id }},
-                                                            title: '{{ $member->employeeFullName }}',
-                                                            subtitle: '{{ $team->name }}',
-                                                            url: '{{ route('employees.show', $member->id) }}'
-                                                         })">
-                                                        @include('partials._employee_card', [
-                                                            'employee' => $member,
-                                                            'loop' => $loop,
-                                                            'showLocateButton' => true,
-                                                            'hideTeamTags' => true,
-                                                            'currentTeamId' => $team->id,
-                                                            'idPrefix' => 'team-' . $team->id . '-'
-                                                        ])
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @empty
-                                        <div class="text-center text-muted py-4 border rounded bg-light">
-                                            {{ __('No members in this team yet.') }}
-                                        </div>
-                                    @endforelse
-                                @else
-                                    {{-- No Grouping --}}
-                                    <div class="list-group">
-                                        @forelse($team->employees as $member)
-                                            <div draggable="true"
-                                                 @dragstart="startDragGlobal($event, 'employee', {
-                                                    id: {{ $member->id }},
-                                                    title: '{{ $member->employeeFullName }}',
-                                                    subtitle: '{{ $team->name }}',
-                                                    url: '{{ route('employees.show', $member->id) }}'
-                                                 })">
-                                                @include('partials._employee_card', [
-                                                    'employee' => $member,
-                                                    'loop' => $loop,
-                                                    'showLocateButton' => true,
-                                                    'hideTeamTags' => true,
-                                                    'currentTeamId' => $team->id,
-                                                    'idPrefix' => 'team-' . $team->id . '-'
-                                                ])
+                                        @forelse($groupedEmployees as $employerId => $members)
+                                            @php
+                                                $firstMember = $members->first();
+                                                $employerName = $firstMember->employer ? ($firstMember->employer->employerNameTh . ' (' . $firstMember->employer->employerNameEn . ')') : __('Unknown Employer');
+                                            @endphp
+                                            <div class="mb-3">
+                                                <h5 class="bg-light p-2 rounded border-start border-4 border-primary"
+                                                    draggable="true"
+                                                    @dragstart="startDragGlobal($event, 'employees_bulk', {
+                                                        title: '{{ $employerName }} - {{ $team->name }}',
+                                                        count: {{ $members->count() }},
+                                                        subtitle: '{{ $members->count() }} members',
+                                                        url: '#'
+                                                    })">
+                                                    <i class="bi bi-building me-2"></i>{{ $employerName }}
+                                                </h5>
+                                                <div class="list-group">
+                                                    @foreach($members as $member)
+                                                        <div draggable="true"
+                                                             @dragstart="startDragGlobal($event, 'employee', {
+                                                                id: {{ $member->id }},
+                                                                title: '{{ $member->employeeFullName }}',
+                                                                subtitle: '{{ $team->name }}',
+                                                                url: '{{ route('employees.show', $member->id) }}'
+                                                             })">
+                                                            @include('partials._employee_card', [
+                                                                'employee' => $member,
+                                                                'loop' => $loop,
+                                                                'showLocateButton' => true,
+                                                                'hideTeamTags' => true,
+                                                                'currentTeamId' => $team->id,
+                                                                'idPrefix' => 'team-' . $team->id . '-'
+                                                            ])
+                                                        </div>
+                                                    @endforeach
+                                                </div>
                                             </div>
                                         @empty
                                             <div class="text-center text-muted py-4 border rounded bg-light">
                                                 {{ __('No members in this team yet.') }}
                                             </div>
                                         @endforelse
-                                    </div>
-                                @endif
+                                    @else
+                                        {{-- No Grouping --}}
+                                        <div class="list-group">
+                                            @forelse($team->employees as $member)
+                                                <div draggable="true"
+                                                     @dragstart="startDragGlobal($event, 'employee', {
+                                                        id: {{ $member->id }},
+                                                        title: '{{ $member->employeeFullName }}',
+                                                        subtitle: '{{ $team->name }}',
+                                                        url: '{{ route('employees.show', $member->id) }}'
+                                                     })">
+                                                    @include('partials._employee_card', [
+                                                        'employee' => $member,
+                                                        'loop' => $loop,
+                                                        'showLocateButton' => true,
+                                                        'hideTeamTags' => true,
+                                                        'currentTeamId' => $team->id,
+                                                        'idPrefix' => 'team-' . $team->id . '-'
+                                                    ])
+                                                </div>
+                                            @empty
+                                                <div class="text-center text-muted py-4 border rounded bg-light">
+                                                    {{ __('No members in this team yet.') }}
+                                                </div>
+                                            @endforelse
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
+                    @empty
+                    <div class="alert alert-secondary text-center">
+                        {{ __('No teams created in this group yet.') }}
+                    </div>
+                    @endforelse
                 </div>
-                @empty
-                <div class="alert alert-secondary text-center">
-                    {{ __('No teams created in this group yet.') }}
-                </div>
-                @endforelse
             </div>
-
-        </div>
-        @empty
-        <div class="text-center py-5 text-muted">
-            <i class="bi bi-collection fs-1 d-block mb-3"></i>
-            <p>{{ __('Get started by creating a new Group tab above.') }}</p>
-        </div>
-        @endforelse
+        @else
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-collection fs-1 d-block mb-3"></i>
+                <p>{{ __('Get started by creating a new Group tab above.') }}</p>
+            </div>
+        @endif
     </div>
 
     <!-- Modals -->
