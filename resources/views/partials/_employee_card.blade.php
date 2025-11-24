@@ -1,8 +1,10 @@
 @php
     $employerName = $employee->employer->employerNameTh ?? 'N/A';
+    // Fix for duplicate IDs in list views
+    $cardId = 'employee-card-' . ($idPrefix ?? '') . $employee->id;
 @endphp
 
-<div id="employee-card-{{ $employee->id }}" class="employee-card card mb-3">
+<div id="{{ $cardId }}" class="employee-card card mb-3">
     <div class="card-body d-flex align-items-center">
         <div class="me-3">
             <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}">

@@ -172,7 +172,8 @@
                                                         'loop' => $loop,
                                                         'showLocateButton' => true,
                                                         'hideTeamTags' => true,
-                                                        'currentTeamId' => $team->id
+                                                        'currentTeamId' => $team->id,
+                                                        'idPrefix' => 'team-' . $team->id . '-'
                                                     ])
                                                 @endforeach
                                             </div>
@@ -191,7 +192,8 @@
                                                 'loop' => $loop,
                                                 'showLocateButton' => true,
                                                 'hideTeamTags' => true,
-                                                'currentTeamId' => $team->id
+                                                'currentTeamId' => $team->id,
+                                                'idPrefix' => 'team-' . $team->id . '-'
                                             ])
                                         @empty
                                             <div class="text-center text-muted py-4 border rounded bg-light">
