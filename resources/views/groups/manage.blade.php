@@ -140,7 +140,13 @@
              aria-labelledby="group-tab-{{ $group->id }}">
 
             <div class="d-flex justify-content-between align-items-center my-3 bg-light p-3 rounded">
-                <h4 class="mb-0">{{ $group->name }} <span class="text-muted fs-6">({{ __('Group') }})</span></h4>
+                <div class="d-flex align-items-center gap-2">
+                    <h4 class="mb-0">{{ $group->name }} <span class="text-muted fs-6">({{ __('Group') }})</span></h4>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            @click="openEditGroupModal({{ $group->id }}, '{{ $group->name }}')">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
                 <button class="btn btn-outline-primary btn-sm"
                         data-bs-toggle="modal"
                         data-bs-target="#createTeamModal"
@@ -178,7 +184,11 @@
                          aria-labelledby="headingTeam{{ $team->id }}">
                         <div class="accordion-body bg-white">
                             <!-- Team Actions -->
-                            <div class="d-flex justify-content-end mb-3">
+                            <div class="d-flex justify-content-end mb-3 gap-2">
+                                <button class="btn btn-sm btn-outline-warning"
+                                        @click="openEditTeamModal({{ $team->id }}, '{{ $team->name }}')">
+                                    <i class="bi bi-pencil"></i> {{ __('Edit Team') }}
+                                </button>
                                 <button class="btn btn-sm btn-success"
                                         @click="openAddMemberModal({{ $group->id }}, {{ $team->id }}, '{{ $team->name }}')">
                                     <i class="bi bi-person-plus-fill"></i> {{ __('Add Member') }}
@@ -306,6 +316,55 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-primary">{{ __('Create') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Group Modal -->
+    <div class="modal fade" id="editGroupModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form :action="`/groups/${selectedGroupId}`" method="POST" class="modal-content">
+                @csrf
+                @method('PUT')
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Edit Group') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Group Name') }}</label>
+                        <input type="text" name="name" class="form-control" x-model="selectedGroupName" required>
+                    </div>
+                    <!-- Employer ID is intentionally omitted to prevent editing -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Team Modal -->
+    <div class="modal fade" id="editTeamModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form :action="`/groups/teams/${selectedTeamId}`" method="POST" class="modal-content">
+                @csrf
+                @method('PUT')
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Edit Team') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Team Name') }}</label>
+                        <input type="text" name="name" class="form-control" x-model="selectedTeamName" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
                 </div>
             </form>
         </div>
@@ -490,6 +549,7 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('groupTeamManager', () => ({
             selectedGroupId: null,
+            selectedGroupName: '',
             selectedTeamId: null,
             selectedTeamName: '',
             searchTerm: '',
@@ -501,6 +561,18 @@
 
             setGroupId(id) {
                 this.selectedGroupId = id;
+            },
+
+            openEditGroupModal(id, name) {
+                this.selectedGroupId = id;
+                this.selectedGroupName = name;
+                new bootstrap.Modal(document.getElementById('editGroupModal')).show();
+            },
+
+            openEditTeamModal(id, name) {
+                this.selectedTeamId = id;
+                this.selectedTeamName = name;
+                new bootstrap.Modal(document.getElementById('editTeamModal')).show();
             },
 
             openAddMemberModal(groupId, teamId, teamName) {
