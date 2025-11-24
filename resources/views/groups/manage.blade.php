@@ -91,7 +91,13 @@
                     type="button"
                     role="tab"
                     aria-controls="group-content-{{ $group->id }}"
-                    aria-selected="{{ $index === 0 ? 'true' : 'false' }}">
+                    aria-selected="{{ $index === 0 ? 'true' : 'false' }}"
+                    draggable="true"
+                    @dragstart="startDragGlobal($event, 'link', {
+                        title: '{{ $group->name }}',
+                        subtitle: 'Group',
+                        url: '{{ request()->fullUrlWithQuery(['active_group' => $group->id]) }}'
+                    })">
                 {{ $group->name }}
             </button>
         </li>
@@ -126,7 +132,13 @@
             <div class="accordion" id="accordionGroup{{ $group->id }}">
                 @forelse($group->teams as $team)
                 <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingTeam{{ $team->id }}">
+                    <h2 class="accordion-header" id="headingTeam{{ $team->id }}"
+                        draggable="true"
+                        @dragstart="startDragGlobal($event, 'link', {
+                            title: '{{ $team->name }}',
+                            subtitle: 'Team in {{ $group->name }}',
+                            url: '{{ request()->fullUrlWithQuery(['active_group' => $group->id, 'active_team' => $team->id]) }}'
+                        })">
                         <button class="accordion-button {{ request('active_team') == $team->id ? '' : 'collapsed' }}"
                                 type="button"
                                 data-bs-toggle="collapse"
@@ -162,19 +174,35 @@
                                             $employerName = $firstMember->employer ? ($firstMember->employer->employerNameTh . ' (' . $firstMember->employer->employerNameEn . ')') : __('Unknown Employer');
                                         @endphp
                                         <div class="mb-3">
-                                            <h5 class="bg-light p-2 rounded border-start border-4 border-primary">
+                                            <h5 class="bg-light p-2 rounded border-start border-4 border-primary"
+                                                draggable="true"
+                                                @dragstart="startDragGlobal($event, 'employees_bulk', {
+                                                    title: '{{ $employerName }} - {{ $team->name }}',
+                                                    count: {{ $members->count() }},
+                                                    subtitle: '{{ $members->count() }} members',
+                                                    // In a real scenario, we might need a specific URL or data structure to handle a group of employees
+                                                    url: '#'
+                                                })">
                                                 <i class="bi bi-building me-2"></i>{{ $employerName }}
                                             </h5>
                                             <div class="list-group">
                                                 @foreach($members as $member)
-                                                    @include('partials._employee_card', [
-                                                        'employee' => $member,
-                                                        'loop' => $loop,
-                                                        'showLocateButton' => true,
-                                                        'hideTeamTags' => true,
-                                                        'currentTeamId' => $team->id,
-                                                        'idPrefix' => 'team-' . $team->id . '-'
-                                                    ])
+                                                    <div draggable="true"
+                                                         @dragstart="startDragGlobal($event, 'employee', {
+                                                            id: {{ $member->id }},
+                                                            title: '{{ $member->employeeFullName }}',
+                                                            subtitle: '{{ $team->name }}',
+                                                            url: '{{ route('employees.show', $member->id) }}'
+                                                         })">
+                                                        @include('partials._employee_card', [
+                                                            'employee' => $member,
+                                                            'loop' => $loop,
+                                                            'showLocateButton' => true,
+                                                            'hideTeamTags' => true,
+                                                            'currentTeamId' => $team->id,
+                                                            'idPrefix' => 'team-' . $team->id . '-'
+                                                        ])
+                                                    </div>
                                                 @endforeach
                                             </div>
                                         </div>
@@ -187,14 +215,22 @@
                                     {{-- No Grouping --}}
                                     <div class="list-group">
                                         @forelse($team->employees as $member)
-                                            @include('partials._employee_card', [
-                                                'employee' => $member,
-                                                'loop' => $loop,
-                                                'showLocateButton' => true,
-                                                'hideTeamTags' => true,
-                                                'currentTeamId' => $team->id,
-                                                'idPrefix' => 'team-' . $team->id . '-'
-                                            ])
+                                            <div draggable="true"
+                                                 @dragstart="startDragGlobal($event, 'employee', {
+                                                    id: {{ $member->id }},
+                                                    title: '{{ $member->employeeFullName }}',
+                                                    subtitle: '{{ $team->name }}',
+                                                    url: '{{ route('employees.show', $member->id) }}'
+                                                 })">
+                                                @include('partials._employee_card', [
+                                                    'employee' => $member,
+                                                    'loop' => $loop,
+                                                    'showLocateButton' => true,
+                                                    'hideTeamTags' => true,
+                                                    'currentTeamId' => $team->id,
+                                                    'idPrefix' => 'team-' . $team->id . '-'
+                                                ])
+                                            </div>
                                         @empty
                                             <div class="text-center text-muted py-4 border rounded bg-light">
                                                 {{ __('No members in this team yet.') }}
@@ -304,7 +340,14 @@
                         </template>
 
                         <template x-for="employee in searchResults" :key="employee.id">
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="list-group-item d-flex justify-content-between align-items-center"
+                                 draggable="true"
+                                 @dragstart="startDragGlobal($event, 'employee', {
+                                    id: employee.id,
+                                    title: employee.name,
+                                    subtitle: employee.passport,
+                                    url: '#'
+                                 })">
                                 <div class="d-flex align-items-center">
                                     <img :src="employee.photo" class="rounded-circle me-3" width="40" height="40">
                                     <div>

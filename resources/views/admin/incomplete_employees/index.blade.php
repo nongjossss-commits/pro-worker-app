@@ -92,7 +92,13 @@
         @if($currentView === 'card')
             <div class="row g-3">
                 @foreach($employees as $employee)
-                    <div class="col-12 col-md-6 col-xl-4 position-relative">
+                    <div class="col-12 col-md-6 col-xl-4 position-relative" draggable="true"
+                         @dragstart="startDragGlobal($event, 'employee', {
+                            id: {{ $employee->id }},
+                            title: '{{ $employee->employeeNameEn }}',
+                            subtitle: '{{ optional($employee->employer)->employerNameTh }}',
+                            url: '{{ route('employees.show', $employee->id) }}'
+                         })">
                         @include('employees._employee_card', ['employee' => $employee, 'is_incomplete_view' => true])
                     </div>
                 @endforeach
@@ -116,7 +122,13 @@
                         </thead>
                         <tbody>
                             @foreach($employees as $employee)
-                            <tr>
+                            <tr draggable="true"
+                                @dragstart="startDragGlobal($event, 'employee', {
+                                    id: {{ $employee->id }},
+                                    title: '{{ $employee->employeeNameEn }}',
+                                    subtitle: '{{ optional($employee->employer)->employerNameTh }}',
+                                    url: '{{ route('employees.show', $employee->id) }}'
+                                })">
                                 <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
                                 <td>
                                     <div class="d-flex align-items-center">

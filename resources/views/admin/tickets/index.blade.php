@@ -54,7 +54,7 @@
                     draggable="true"
                     ondragstart="window.startDragGlobal(event, 'ticket', {
                         id: {{ $ticket->id }},
-                        title: '{{ addslashes($ticket->subject) }}',
+                        title: @json($ticket->subject),
                         subtitle: 'Ticket #{{ $ticket->id }}',
                         url: '{{ route('admin.tickets.show', $ticket) }}'
                     })"

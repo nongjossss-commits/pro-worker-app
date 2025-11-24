@@ -39,7 +39,15 @@
             </thead>
             <tbody>
                 @forelse ($tickets as $ticket)
-                <tr class="{{ $ticket->employer_unread_count > 0 ? 'table-warning' : '' }}">
+                <tr class="{{ $ticket->employer_unread_count > 0 ? 'table-warning' : '' }}"
+                    draggable="true"
+                    ondragstart="window.startDragGlobal(event, 'ticket', {
+                        id: {{ $ticket->id }},
+                        title: @json($ticket->subject),
+                        subtitle: 'Ticket #{{ $ticket->id }}',
+                        url: '{{ route('tickets.show', $ticket) }}'
+                    })"
+                    style="cursor: grab;">
                     <td>{{ $ticket->id }}</td>
                     <td>
                         {{ Str::limit($ticket->subject, 70) }}
