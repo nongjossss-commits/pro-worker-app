@@ -115,6 +115,19 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');
     Route::post('employees/bulk-transfer', [EmployeeController::class, 'bulkTransfer'])->name('employees.bulkTransfer');
     Route::post('employees/bulk-to-ticket', [App\Http\Controllers\TicketRedirectController::class, 'bulkToTicket'])->name('employees.bulk_to_ticket');
+
+    // === Group & Team Routes ===
+    Route::get('/groups', [App\Http\Controllers\GroupTeamController::class, 'index'])->name('groups.index');
+    Route::get('/groups/affiliated', [App\Http\Controllers\GroupTeamController::class, 'indexAffiliated'])->name('groups.affiliated.index');
+    Route::get('/groups/affiliated/{employer}/manage', [App\Http\Controllers\GroupTeamController::class, 'manageAffiliated'])->name('groups.affiliated.manage');
+    Route::get('/groups/independent/manage', [App\Http\Controllers\GroupTeamController::class, 'manageIndependent'])->name('groups.independent.manage');
+    Route::post('/groups', [App\Http\Controllers\GroupTeamController::class, 'storeGroup'])->name('groups.store');
+    Route::post('/groups/{group}/teams', [App\Http\Controllers\GroupTeamController::class, 'storeTeam'])->name('groups.teams.store');
+    Route::get('/api-web/groups/employees/search', [App\Http\Controllers\GroupTeamController::class, 'searchEmployees'])->name('api-web.groups.employees.search');
+    Route::post('/groups/teams/{team}/members', [App\Http\Controllers\GroupTeamController::class, 'addMember'])->name('groups.teams.members.add');
+    Route::delete('/groups/teams/{team}/members/{employee}', [App\Http\Controllers\GroupTeamController::class, 'removeMember'])->name('groups.teams.members.remove');
+    // Route for "Tag" click
+    Route::get('/groups/{group}/locate/{employee}', [App\Http\Controllers\GroupTeamController::class, 'locateMember'])->name('groups.locate_member');
 });
 
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===

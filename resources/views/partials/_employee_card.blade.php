@@ -11,7 +11,24 @@
         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}"
             alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
 
-        <div class="employee-info flex-grow-1">
+        <div class="employee-info flex-grow-1 position-relative">
+            {{-- Group & Team Tags --}}
+            @if($employee->teams && $employee->teams->count() > 0)
+                <div class="position-absolute top-0 end-0 mt-0 me-2 d-flex flex-wrap justify-content-end gap-1" style="max-width: 250px;">
+                    @foreach($employee->teams as $team)
+                        @if($team->group)
+                        <a href="{{ route('groups.locate_member', ['group' => $team->group->id, 'employee' => $employee->id]) }}"
+                           class="badge text-decoration-none"
+                           style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: normal; font-size: 0.75rem;"
+                           title="{{ __('Group') }}: {{ $team->group->name }} | {{ __('Team') }}: {{ $team->name }}"
+                           onclick="return confirm('{{ __('Go to group') }}: {{ $team->group->name }}?')">
+                            <i class="bi bi-tag-fill me-1"></i>{{ $team->group->name }}
+                        </a>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
             <span class="employee-name-en">
                 @if(isset($pagination) && $pagination instanceof \Illuminate\Pagination\LengthAwarePaginator)
                     {{ ($pagination->currentPage() - 1) * $pagination->perPage() + $loop->iteration }}.

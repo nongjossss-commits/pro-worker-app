@@ -221,6 +221,12 @@ class Employee extends Model
         return $this->hasMany(Notification::class);
     }
 
+    public function teams()
+    {
+        return $this->belongsToMany(EmployeeTeam::class, 'employee_team_members', 'employee_id', 'employee_team_id')
+                    ->withTimestamps();
+    }
+
     /**
      * Get the number of days since the employee was terminated.
      * Usage in Blade/API: $employee->days_since_termination

@@ -141,7 +141,7 @@ public function reinstate(Employee $employee)
     $perPageOptions = [25, 50, 100]; // Defined options here
     $currentPerPage = $request->input('per_page', 25);
 
-    $employees = $query->with('employer')->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
+    $employees = $query->with(['employer', 'teams.group'])->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
 
     return view('employees.index', compact(
         'employees',
