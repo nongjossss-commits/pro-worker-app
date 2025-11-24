@@ -476,6 +476,21 @@
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
 
     <script>
+    // Global Drag Helper
+    window.startDragGlobal = function(e, type, data) {
+        const payload = {
+            type: type,
+            title: data.name || data.title || 'Item',
+            subtitle: data.subtitle || data.code || '',
+            url: data.url || window.location.href,
+            ...data
+        };
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('application/json', JSON.stringify(payload));
+    }
+    </script>
+
+    <script>
         document.addEventListener('DOMContentLoaded', function () {
             const renewModal = document.getElementById('renewNotificationModal');
             if (renewModal) {

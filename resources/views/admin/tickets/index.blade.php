@@ -50,7 +50,15 @@
             </thead>
             <tbody>
                 @forelse ($tickets as $ticket)
-                <tr class="{{ $ticket->admin_unread_count > 0 ? 'table-info' : '' }}">
+                <tr class="{{ $ticket->admin_unread_count > 0 ? 'table-info' : '' }}"
+                    draggable="true"
+                    ondragstart="window.startDragGlobal(event, 'ticket', {
+                        id: {{ $ticket->id }},
+                        title: '{{ addslashes($ticket->subject) }}',
+                        subtitle: 'Ticket #{{ $ticket->id }}',
+                        url: '{{ route('admin.tickets.show', $ticket) }}'
+                    })"
+                    style="cursor: grab;">
                     <td>{{ $ticket->id }}</td>
                     <td>
                         {{ Str::limit($ticket->subject, 50) }}

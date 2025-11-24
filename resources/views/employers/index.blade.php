@@ -48,7 +48,14 @@
             </thead>
             <tbody id="employer-table-body">
                 @forelse ($employers as $employer)
-                    <tr>
+                    <tr draggable="true"
+                        ondragstart="window.startDragGlobal(event, 'employer', {
+                            id: {{ $employer->id }},
+                            name: '{{ addslashes($employer->employerNameTh) }}',
+                            code: '{{ $employer->employerId }}',
+                            url: '{{ route('employers.edit', $employer->id) }}'
+                        })"
+                        style="cursor: grab;">
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $employer->employerNameTh }}</td>
                         <td>{{ $employer->employerId }}</td>
@@ -73,7 +80,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted">{{ __('No employers found') }}</td>
+                        <td colspan="7" class="text-center text-muted">{{ __('No employers found') }}</td>
                     </tr>
                 @endforelse
             </tbody>
