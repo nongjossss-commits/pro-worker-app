@@ -13,7 +13,7 @@
 
         <div class="employee-info flex-grow-1 position-relative">
             {{-- Group & Team Tags --}}
-            @if($employee->teams && $employee->teams->count() > 0)
+            @if($employee->teams && $employee->teams->count() > 0 && !($hideTeamTags ?? false))
                 <div class="position-absolute top-0 end-0 mt-0 me-2 d-flex flex-wrap justify-content-end gap-1" style="max-width: 250px;">
                     @foreach($employee->teams as $team)
                         @if($team->group)
@@ -85,7 +85,18 @@
             @if(isset($isTrashView) && $isTrashView)
                 @include('admin.trash._action_buttons', ['modelName' => 'employees', 'item' => $employee])
             @else
-                <x-employee-action-buttons :employee="$employee" :show-locate-button="($showLocateButton ?? false)" />
+                <div class="d-flex align-items-center gap-2">
+                    <x-employee-action-buttons :employee="$employee" :show-locate-button="($showLocateButton ?? false)" />
+                    @if(isset($currentTeamId))
+                        <form action="{{ route('groups.teams.members.remove', ['team' => $currentTeamId, 'employee' => $employee->id]) }}" method="POST" class="d-inline delete-member-form">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Remove from Team') }}">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </form>
+                    @endif
+                </div>
             @endif
         </div>
     </div>

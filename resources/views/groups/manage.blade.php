@@ -27,7 +27,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" action="{{ url()->current() }}" class="row g-2 align-items-end">
-                <!-- Preserve active group/team if needed, though filtering usually resets view logic, we try to keep context -->
+                <!-- Preserve active group/team if needed -->
                 <input type="hidden" name="active_group" value="{{ request('active_group') }}">
                 <input type="hidden" name="active_team" value="{{ request('active_team') }}">
 
@@ -74,6 +74,12 @@
         </div>
     </div>
 
+    <!-- Bulk Action Bar -->
+    <x-bulk-action-bar id="group-manage-bulk-bar">
+        <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+        <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
+    </x-bulk-action-bar>
+
     <!-- Groups Tabs -->
     <ul class="nav nav-tabs mb-3" id="groupTabs" role="tablist">
         @foreach($groups as $index => $group)
@@ -116,6 +122,7 @@
             </div>
 
             <!-- Teams List (Accordion) -->
+            <!-- Removing 'data-bs-parent' from items to allow independent expansion -->
             <div class="accordion" id="accordionGroup{{ $group->id }}">
                 @forelse($group->teams as $team)
                 <div class="accordion-item">
@@ -131,7 +138,7 @@
                         </button>
                     </h2>
                     <div id="collapseTeam{{ $team->id }}"
-                         class="accordion-collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
+                         class="accordion-collapse collapse {{ request('active_team') == $team->id ? 'show' : '' }}"
                          aria-labelledby="headingTeam{{ $team->id }}">
                         <div class="accordion-body">
                             <!-- Team Actions -->
@@ -142,57 +149,57 @@
                                 </button>
                             </div>
 
-                            <!-- Members Table -->
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>{{ __('Photo') }}</th>
-                                            <th>{{ __('Name') }}</th>
-                                            <th>{{ __('Passport') }}</th>
-                                            <th class="text-end">{{ __('Actions') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if($type === 'independent')
-                                            {{-- Group by Employer --}}
-                                            @php
-                                                $groupedEmployees = $team->employees->groupBy('employer_id');
-                                            @endphp
-                                            @forelse($groupedEmployees as $employerId => $members)
-                                                @php
-                                                    $firstMember = $members->first();
-                                                    $employerName = $firstMember->employer ? ($firstMember->employer->employerNameTh . ' (' . $firstMember->employer->employerNameEn . ')') : __('Unknown Employer');
-                                                @endphp
-                                                <tr class="table-secondary">
-                                                    <td colspan="4" class="fw-bold text-dark ps-3 py-2">
-                                                        <i class="bi bi-building me-2"></i>{{ $employerName }}
-                                                    </td>
-                                                </tr>
+                            <!-- Members Cards -->
+                            <div class="employee-list">
+                                @if($type === 'independent')
+                                    {{-- Group by Employer --}}
+                                    @php
+                                        $groupedEmployees = $team->employees->groupBy('employer_id');
+                                    @endphp
+                                    @forelse($groupedEmployees as $employerId => $members)
+                                        @php
+                                            $firstMember = $members->first();
+                                            $employerName = $firstMember->employer ? ($firstMember->employer->employerNameTh . ' (' . $firstMember->employer->employerNameEn . ')') : __('Unknown Employer');
+                                        @endphp
+                                        <div class="mb-3">
+                                            <h5 class="bg-light p-2 rounded border-start border-4 border-primary">
+                                                <i class="bi bi-building me-2"></i>{{ $employerName }}
+                                            </h5>
+                                            <div class="list-group">
                                                 @foreach($members as $member)
-                                                    @include('groups.partials.member_row', ['member' => $member, 'team' => $team])
+                                                    @include('partials._employee_card', [
+                                                        'employee' => $member,
+                                                        'loop' => $loop,
+                                                        'showLocateButton' => true,
+                                                        'hideTeamTags' => true,
+                                                        'currentTeamId' => $team->id
+                                                    ])
                                                 @endforeach
-                                            @empty
-                                                 <tr>
-                                                    <td colspan="4" class="text-center text-muted py-4">
-                                                        {{ __('No members in this team yet.') }}
-                                                    </td>
-                                                </tr>
-                                            @endforelse
-                                        @else
-                                            {{-- No Grouping --}}
-                                            @forelse($team->employees as $member)
-                                                @include('groups.partials.member_row', ['member' => $member, 'team' => $team])
-                                            @empty
-                                            <tr>
-                                                <td colspan="4" class="text-center text-muted py-4">
-                                                    {{ __('No members in this team yet.') }}
-                                                </td>
-                                            </tr>
-                                            @endforelse
-                                        @endif
-                                    </tbody>
-                                </table>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <div class="text-center text-muted py-4 border rounded bg-light">
+                                            {{ __('No members in this team yet.') }}
+                                        </div>
+                                    @endforelse
+                                @else
+                                    {{-- No Grouping --}}
+                                    <div class="list-group">
+                                        @forelse($team->employees as $member)
+                                            @include('partials._employee_card', [
+                                                'employee' => $member,
+                                                'loop' => $loop,
+                                                'showLocateButton' => true,
+                                                'hideTeamTags' => true,
+                                                'currentTeamId' => $team->id
+                                            ])
+                                        @empty
+                                            <div class="text-center text-muted py-4 border rounded bg-light">
+                                                {{ __('No members in this team yet.') }}
+                                            </div>
+                                        @endforelse
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -327,6 +334,10 @@
 
 </div>
 
+@include('partials._employee_action_modals')
+@include('employees.modals.advanced_export')
+@include('employees.modals.select_target_employer_modal')
+
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -352,6 +363,59 @@
                 });
             }
         });
+
+        // Bulk Actions Handlers
+        const bulkExportBtn = document.getElementById('bulk-advanced-export-btn');
+        if (bulkExportBtn) {
+            bulkExportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                const modalEl = document.getElementById('advancedExportModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+        }
+
+        const bulkSendDataBtn = document.getElementById('bulk-send-data-btn');
+        if (bulkSendDataBtn) {
+            bulkSendDataBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+                const selected = Array.from(checkboxes).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                let employerIds = new Set();
+                checkboxes.forEach(cb => {
+                    const empId = cb.getAttribute('data-employer-id');
+                    if (empId) employerIds.add(empId);
+                });
+
+                if (employerIds.size > 1) {
+                     Swal.fire({
+                        icon: 'warning',
+                        title: '{{ __('Multiple Employers Selected') }}',
+                        text: '{{ __('You selected employees from different employers. Please select employees from the same employer for one transaction.') }}'
+                    });
+                    return;
+                }
+
+                window.pendingTicketEmployeeIds = selected;
+                const modalEl = document.getElementById('selectTargetEmployerModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+        }
     });
 
     document.addEventListener('alpine:init', () => {
@@ -364,7 +428,7 @@
             isLoading: false,
             addingMemberId: null,
             employerId: {{ $employer ? $employer->id : 'null' }},
-            hasChanges: false, // Track if members were added
+            hasChanges: false,
 
             setGroupId(id) {
                 this.selectedGroupId = id;
@@ -382,14 +446,12 @@
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
 
-                // Reload page on close if changes were made
                 modalEl.addEventListener('hidden.bs.modal', () => {
                     if (this.hasChanges) {
                         window.location.reload();
                     }
                 }, { once: true });
 
-                // Load initial suggestions (optional)
                 this.searchEmployees();
             },
 
@@ -428,9 +490,7 @@
                 .then(data => {
                     if (data.success) {
                         showToast('Member added successfully', 'success');
-                        // Remove from search results to prevent double add
                         this.searchResults = this.searchResults.filter(e => e.id !== employeeId);
-                        // Mark that changes were made so we reload on close
                         this.hasChanges = true;
                     } else {
                         showToast(data.message, 'danger');
