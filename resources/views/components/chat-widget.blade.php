@@ -5,6 +5,11 @@
      class="chat-system-overlay"
      style="position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 1040;">
 
+    <!-- Notification Sound -->
+    <audio id="chatNotificationSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRuQSAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcASAAAAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQ=" type="audio/wav">
+    </audio>
+
     <!-- 1. Main Launcher Button (Floating & Draggable) -->
     <div x-show="!isContactListOpen"
          x-transition:enter="transition ease-out duration-300"
@@ -471,12 +476,20 @@
                 this.loadState();
                 this.fetchContacts();
                 this.pollingInterval = setInterval(() => this.checkNewMessages(), 10000);
+                this.requestNotificationPermission();
 
                 window.addEventListener('mousemove', (e) => this.onMouseMove(e));
                 window.addEventListener('touchmove', (e) => this.onMouseMove(e));
                 window.addEventListener('mouseup', () => this.onMouseUp());
                 window.addEventListener('touchend', () => this.onMouseUp());
                 window.addEventListener('resize', () => { this.isMobile = window.innerWidth < 768; });
+            },
+
+            requestNotificationPermission() {
+                if (!("Notification" in window)) return;
+                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
             },
 
             // --- Actions ---
@@ -788,6 +801,8 @@
                             chat.messages = data;
                             this.$nextTick(() => this.scrollToBottom(userId));
                         }
+                        // Refresh contacts to update unread counts (Backend marks as read)
+                        this.fetchContacts();
                     });
             },
 
@@ -797,7 +812,16 @@
                     .then(data => {
                          if (data.messages && data.messages.length > 0) {
                             let hasUpdates = false;
+                            let shouldNotify = false;
+                            let notificationMsg = null;
+
                             data.messages.forEach(msg => {
+                                // Only process incoming messages for notification
+                                if(msg.sender_id !== this.currentUserId) {
+                                    shouldNotify = true;
+                                    notificationMsg = msg;
+                                }
+
                                 const chat = this.openChats.find(c => c.id === (msg.sender_id === this.currentUserId ? msg.receiver_id : msg.sender_id));
                                 if (chat) {
                                     if (!chat.messages.find(m => m.id === msg.id)) {
@@ -813,9 +837,39 @@
                                     hasUpdates = true;
                                 }
                             });
-                            if(hasUpdates) this.fetchContacts();
+
+                            if (shouldNotify) {
+                                this.playNotificationSound();
+                                if(notificationMsg) {
+                                    this.showDesktopNotification(notificationMsg);
+                                }
+                            }
+
+                            if(hasUpdates || shouldNotify) this.fetchContacts();
                         }
                     });
+            },
+
+            playNotificationSound() {
+                const audio = document.getElementById('chatNotificationSound');
+                if (audio) {
+                    audio.play().catch(e => console.log('Audio play failed:', e));
+                }
+            },
+
+            showDesktopNotification(msg) {
+                if (!("Notification" in window)) return;
+
+                if (Notification.permission === "granted") {
+                    const n = new Notification(msg.sender.name || 'New Message', {
+                        body: msg.message || 'You have a new message attachment.',
+                        icon: msg.sender.avatar_path ? `/storage/${msg.sender.avatar_path}` : '/images/logo.jpg'
+                    });
+                    n.onclick = () => {
+                        window.focus();
+                        this.openChat({ id: msg.sender_id, name: msg.sender.name, avatar_url: msg.sender.avatar_path ? `/storage/${msg.sender.avatar_path}` : null });
+                    };
+                }
             },
 
             sendMessage(chatId) {
