@@ -111,7 +111,7 @@
                                         id: {{ $employee->id }},
                                         title: '{{ $employee->employeeNameTh }}',
                                         subtitle: '{{ $employee->employeeNameEn }}',
-                                        url: '{{ route('employees.show', $employee->id) }}'
+                                        url: '{{ route('employees.locate', $employee->id) }}'
                                      })">
                                     <div class="form-check mb-0">
                                         <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
@@ -160,7 +160,7 @@
                                         id: {{ $employee->id }},
                                         title: '{{ $employee->employeeNameTh }}',
                                         subtitle: '{{ $employee->employeeNameEn }}',
-                                        url: '{{ route('employees.show', $employee->id) }}'
+                                        url: '{{ route('employees.locate', $employee->id) }}'
                                      })">
                                     {{-- External employees don't have bulk actions for now --}}
                                     <div class="position-relative">
@@ -473,7 +473,7 @@
                                                 id: item.id,
                                                 title: item.employeeNameTh || item.employeeNameEn,
                                                 subtitle: item.employeeNameEn ? item.employeeNameEn : item.employeeCode,
-                                                url: item.url || '#'
+                                                url: '/employees/' + item.id + '/locate'
                                              })">
                                             <div class="d-flex align-items-center gap-3">
                                                 <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
@@ -495,7 +495,7 @@
                                                 id: item.id,
                                                 title: item.employeeNameTh || item.employeeNameEn,
                                                 subtitle: (item.employer_name || 'Ext') + (item.employeeNameEn ? ' - ' + item.employeeNameEn : ''),
-                                                url: item.url || '#'
+                                                url: '/employees/' + item.id + '/locate'
                                              })">
                                             <div class="d-flex align-items-center gap-3">
                                                 <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
