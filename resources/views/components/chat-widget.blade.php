@@ -500,12 +500,16 @@
             onMouseMove(e) {
                 if (!this.dragData) return;
                 e.preventDefault();
-                this.isDragging = true;
 
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 const deltaX = clientX - this.dragData.startX;
                 const deltaY = clientY - this.dragData.startY;
+
+                // Add drag threshold to prevent accidental drags when clicking
+                if (Math.abs(deltaX) < 5 && Math.abs(deltaY) < 5) return;
+
+                this.isDragging = true;
 
                 let targetObj;
                 let width = 0, height = 0;
