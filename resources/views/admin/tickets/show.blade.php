@@ -56,7 +56,14 @@
     @endif
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ $ticket->subject }}</h2>
+        <h2 draggable="true"
+            ondragstart="window.startDragGlobal(event, 'ticket', {
+                id: {{ $ticket->id }},
+                title: '{{ addslashes($ticket->subject) }}',
+                subtitle: 'Ticket #{{ $ticket->id }}',
+                url: '{{ route('admin.tickets.show', $ticket) }}'
+            })"
+            style="cursor: grab;">{{ $ticket->subject }}</h2>
         {{-- Display Status Badge --}}
         <span class="badge bg-{{ $ticket->status_color }} fs-5">
             {{ $ticket->status_name }}
@@ -100,7 +107,13 @@
 
                             @foreach($attachments->existing_employees as $item)
                                 @php $employee = $item->employee; @endphp
-                                <div class="list-group-item d-flex align-items-center gap-3 py-2">
+                                <div class="list-group-item d-flex align-items-center gap-3 py-2"
+                                     draggable="true"
+                                     ondragstart="window.startDragGlobal(event, 'employee', {
+                                        id: {{ $employee->id }},
+                                        title: '{{ addslashes($employee->employeeNameTh) }}',
+                                        subtitle: '{{ addslashes($employee->employeeNameEn) }}'
+                                     })">
                                     <div class="form-check mb-0">
                                         <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
                                     </div>

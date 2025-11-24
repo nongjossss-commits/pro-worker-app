@@ -13,7 +13,12 @@
     }
 @endphp
 
-<tr>
+<tr draggable="true"
+    ondragstart="window.startDragGlobal(event, 'notification', {
+        id: {{ $notification->id }},
+        title: '{{ addslashes($notification->type) }}',
+        subtitle: '{{ addslashes($employee ? $employee->employeeNameTh : ($employer->employerNameTh ?? '')) }}'
+    })">
     <td>
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)

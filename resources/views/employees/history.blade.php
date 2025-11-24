@@ -95,7 +95,13 @@
                 </thead>
                 <tbody id="historyTableBody">
                     @forelse($employees as $employee)
-                    <tr id="history-row-{{ $employee->id }}">
+                    <tr id="history-row-{{ $employee->id }}"
+                        draggable="true"
+                        ondragstart="window.startDragGlobal(event, 'employee', {
+                            id: {{ $employee->id }},
+                            title: '{{ addslashes($employee->employeeNameTh) }}',
+                            subtitle: '{{ addslashes($employee->employeeNameEn) }}'
+                        })">
                         <td><input class="form-check-input history-employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
                         <td>
                             <div class="d-flex align-items-center">

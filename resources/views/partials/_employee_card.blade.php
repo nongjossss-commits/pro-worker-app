@@ -2,7 +2,13 @@
     $employerName = $employee->employer->employerNameTh ?? 'N/A';
 @endphp
 
-<div id="employee-card-{{ $employee->id }}" class="employee-card card mb-3">
+<div id="employee-card-{{ $employee->id }}" class="employee-card card mb-3"
+     draggable="true"
+     ondragstart="window.startDragGlobal(event, 'employee', {
+        id: {{ $employee->id }},
+        title: '{{ addslashes($employee->employeeNameTh) }}',
+        subtitle: '{{ addslashes($employee->employeeNameEn) }}'
+     })">
     <div class="card-body d-flex align-items-center">
         <div class="me-3">
             <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}">

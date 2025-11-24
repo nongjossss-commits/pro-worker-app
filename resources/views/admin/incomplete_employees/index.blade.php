@@ -116,7 +116,12 @@
                         </thead>
                         <tbody>
                             @foreach($employees as $employee)
-                            <tr>
+                            <tr draggable="true"
+                                ondragstart="window.startDragGlobal(event, 'employee', {
+                                    id: {{ $employee->id }},
+                                    title: '{{ addslashes($employee->employeeNameTh) }}',
+                                    subtitle: '{{ addslashes($employee->employeeNameEn) }}'
+                                })">
                                 <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
                                 <td>
                                     <div class="d-flex align-items-center">

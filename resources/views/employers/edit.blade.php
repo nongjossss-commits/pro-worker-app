@@ -23,7 +23,16 @@
 
 {{-- Employer Info Form --}}
 <div class="content-section">
-    <h2 class="mb-4">{{ __('Edit Employer') }}</h2>
+    <h2 class="mb-4"
+        draggable="true"
+        ondragstart="window.startDragGlobal(event, 'employer', {
+            id: {{ $employer->id }},
+            title: '{{ addslashes($employer->employerNameTh) }}',
+            subtitle: '{{ addslashes($employer->employerNameEn) }}'
+        })"
+        style="cursor: grab; display: inline-block;">
+        {{ __('Edit Employer') }}
+    </h2>
     <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')

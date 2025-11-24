@@ -11,7 +11,12 @@
     <div class="row g-4">
         <!-- Affiliated with Employer -->
         <div class="col-md-6">
-            <div class="card h-100 shadow-sm hover-shadow transition-all">
+            <div class="card h-100 shadow-sm hover-shadow transition-all"
+                 draggable="true"
+                 ondragstart="window.startDragGlobal(event, 'link', {
+                    title: '{{ __('สังกัดภายใต้นายจ้าง') }}',
+                    url: '{{ route('groups.affiliated.index') }}'
+                 })">
                 <div class="card-body text-center p-5">
                     <div class="mb-4">
                         <i class="bi bi-building-fill text-primary" style="font-size: 4rem;"></i>
@@ -29,7 +34,12 @@
 
         <!-- Independent / No Employer -->
         <div class="col-md-6">
-            <div class="card h-100 shadow-sm hover-shadow transition-all">
+            <div class="card h-100 shadow-sm hover-shadow transition-all"
+                 draggable="true"
+                 ondragstart="window.startDragGlobal(event, 'link', {
+                    title: '{{ __('ไม่สังกัดนายจ้าง') }}',
+                    url: '{{ route('groups.independent.manage') }}'
+                 })">
                 <div class="card-body text-center p-5">
                     <div class="mb-4">
                         <i class="bi bi-diagram-3-fill text-success" style="font-size: 4rem;"></i>

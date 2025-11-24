@@ -5,7 +5,13 @@
     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
 @endphp
 
-<div id="history-row-{{ $employee->id }}" class="list-group-item list-group-item-action">
+<div id="history-row-{{ $employee->id }}" class="list-group-item list-group-item-action"
+     draggable="true"
+     ondragstart="window.startDragGlobal(event, 'employee', {
+        id: {{ $employee->id }},
+        title: '{{ addslashes($employee->employeeNameTh) }}',
+        subtitle: '{{ addslashes($employee->employeeNameEn) }}'
+     })">
     <div class="d-flex w-100">
         {{-- Checkbox --}}
         <div class="me-3 d-flex align-items-center">
