@@ -13,14 +13,30 @@
     }
 @endphp
 
-<tr draggable="true"
+@php
+    $dragType = 'notification';
+    $dragUrl = route('notifications.index', ['highlight_notification_id' => $notification->id]);
+    $hidePreview = false;
+
+    if ($employee) {
+        $dragType = 'employee';
+        $hidePreview = true;
+        if (in_array($notification->type, ['pink_card_missing', 'residence_permit_missing'])) {
+            // Incomplete info -> Go to Employer Edit
+            $dragUrl = route('employees.locate', $employee->id);
+        }
+    }
+@endphp
+<tr id="notification-row-{{ $notification->id }}" draggable="true"
     data-drag-payload="{{ json_encode([
-        'id' => $notification->id,
-        'title' => $notification->type,
-        'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index')
+        'id' => $employee ? $employee->id : $notification->id, // If employee, use employee ID for card logic
+        'title' => $employee ? $employee->employeeFullName : $notification->type,
+        'subtitle' => $employee ? ($employer->employerNameTh ?? '') : ($employer->employerNameTh ?? ''),
+        'url' => $dragUrl,
+        'hide_preview' => $hidePreview,
+        'photo_url' => $employee ? $employee->photo_url : null // Ensure photo is passed for employee card
     ]) }}"
-    ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
+    ondragstart="window.startDragGlobal(event, '{{ $dragType }}', JSON.parse(this.dataset.dragPayload))">
     <td>
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)

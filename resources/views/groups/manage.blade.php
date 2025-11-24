@@ -116,11 +116,12 @@
                     aria-controls="group-content-{{ $group->id }}"
                     aria-selected="{{ $index === 0 ? 'true' : 'false' }}"
                     draggable="true"
-                    @dragstart="startDragGlobal($event, 'link', {
-                        title: '{{ $group->name }}',
-                        subtitle: 'Group',
-                        url: '{{ request()->fullUrlWithQuery(['active_group' => $group->id]) }}'
-                    })">
+                    data-drag-payload="{{ json_encode([
+                        'title' => $group->name,
+                        'subtitle' => 'Group',
+                        'url' => request()->fullUrlWithQuery(['active_group' => $group->id])
+                    ]) }}"
+                    ondragstart="window.startDragGlobal(event, 'link', JSON.parse(this.dataset.dragPayload))">
                 {{ $group->name }}
             </button>
         </li>
@@ -163,11 +164,12 @@
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingTeam{{ $team->id }}"
                         draggable="true"
-                        @dragstart="startDragGlobal($event, 'link', {
-                            title: '{{ $team->name }}',
-                            subtitle: 'Team in {{ $group->name }}',
-                            url: '{{ request()->fullUrlWithQuery(['active_group' => $group->id, 'active_team' => $team->id]) }}'
-                        })">
+                        data-drag-payload="{{ json_encode([
+                            'title' => $team->name,
+                            'subtitle' => 'Team in ' . $group->name,
+                            'url' => request()->fullUrlWithQuery(['active_group' => $group->id, 'active_team' => $team->id])
+                        ]) }}"
+                        ondragstart="window.startDragGlobal(event, 'link', JSON.parse(this.dataset.dragPayload))">
                         <button class="accordion-button {{ request('active_team') == $team->id ? '' : 'collapsed' }}"
                                 type="button"
                                 data-bs-toggle="collapse"
@@ -211,24 +213,26 @@
                                         <div class="mb-3">
                                             <h5 class="bg-light p-2 rounded border-start border-4 border-primary"
                                                 draggable="true"
-                                                @dragstart="startDragGlobal($event, 'employees_bulk', {
-                                                    title: '{{ $employerName }} - {{ $team->name }}',
-                                                    count: {{ $members->count() }},
-                                                    subtitle: '{{ $members->count() }} members',
-                                                    // In a real scenario, we might need a specific URL or data structure to handle a group of employees
-                                                    url: '#'
-                                                })">
+                                                data-drag-payload="{{ json_encode([
+                                                    'title' => $employerName . ' - ' . $team->name,
+                                                    'count' => $members->count(),
+                                                    'subtitle' => $members->count() . ' members',
+                                                    'url' => '#'
+                                                ]) }}"
+                                                ondragstart="window.startDragGlobal(event, 'employees_bulk', JSON.parse(this.dataset.dragPayload))">
                                                 <i class="bi bi-building me-2"></i>{{ $employerName }}
                                             </h5>
                                             <div class="list-group">
                                                 @foreach($members as $member)
                                                     <div draggable="true"
-                                                         @dragstart="startDragGlobal($event, 'employee', {
-                                                            id: {{ $member->id }},
-                                                            title: '{{ $member->employeeFullName }}',
-                                                            subtitle: '{{ $team->name }}',
-                                                            url: '{{ route('employees.show', $member->id) }}'
-                                                         })">
+                                                         data-drag-payload="{{ json_encode([
+                                                            'id' => $member->id,
+                                                            'title' => $member->employeeFullName,
+                                                            'subtitle' => $team->name,
+                                                            'url' => route('employees.show', $member->id),
+                                                            'photo_url' => $member->photo_url
+                                                         ]) }}"
+                                                         ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                                                         @include('partials._employee_card', [
                                                             'employee' => $member,
                                                             'loop' => $loop,
@@ -251,12 +255,14 @@
                                     <div class="list-group">
                                         @forelse($team->employees as $member)
                                             <div draggable="true"
-                                                 @dragstart="startDragGlobal($event, 'employee', {
-                                                    id: {{ $member->id }},
-                                                    title: '{{ $member->employeeFullName }}',
-                                                    subtitle: '{{ $team->name }}',
-                                                    url: '{{ route('employees.show', $member->id) }}'
-                                                 })">
+                                                 data-drag-payload="{{ json_encode([
+                                                    'id' => $member->id,
+                                                    'title' => $member->employeeFullName,
+                                                    'subtitle' => $team->name,
+                                                    'url' => route('employees.show', $member->id),
+                                                    'photo_url' => $member->photo_url
+                                                 ]) }}"
+                                                 ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                                                 @include('partials._employee_card', [
                                                     'employee' => $member,
                                                     'loop' => $loop,

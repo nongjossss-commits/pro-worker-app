@@ -24,16 +24,30 @@
         $card_class = 'alert-warning';
         $badge_class = 'bg-warning text-dark';
     }
+
+    $dragType = 'notification';
+    $dragUrl = route('notifications.index', ['highlight_notification_id' => $notification->id]);
+    $hidePreview = false;
+
+    if ($employee) {
+        $dragType = 'employee';
+        $hidePreview = true;
+        if ($isMissingDataType) {
+             $dragUrl = route('employees.locate', $employee->id);
+        }
+    }
 @endphp
 
-<div class="alert {{ $card_class }} notification-item" draggable="true"
+<div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item" draggable="true"
      data-drag-payload="{{ json_encode([
-        'id' => $notification->id,
-        'title' => $notification->type,
-        'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index')
+        'id' => $employee ? $employee->id : $notification->id,
+        'title' => $employee ? $employee->employeeFullName : $notification->type,
+        'subtitle' => $employee ? ($employer->employerNameTh ?? '') : ($employer->employerNameTh ?? ''),
+        'url' => $dragUrl,
+        'hide_preview' => $hidePreview,
+        'photo_url' => $employee ? $employee->photo_url : null
      ]) }}"
-     ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
+     ondragstart="window.startDragGlobal(event, '{{ $dragType }}', JSON.parse(this.dataset.dragPayload))">
     <div class="d-flex align-items-center gap-3">
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)

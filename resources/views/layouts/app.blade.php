@@ -490,6 +490,63 @@
         e.dataTransfer.setData('application/json', jsonPayload);
         e.dataTransfer.setData('text/plain', jsonPayload); // Fallback for broader compatibility
     }
+
+    // Global Highlight Helper
+    document.addEventListener('DOMContentLoaded', function() {
+        const highlightElement = (id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('highlight');
+                // Remove highlight after 5 seconds if desired, or keep it. User asked to "highlight", usually implies keeping it or long duration.
+                // We'll keep it or let CSS handle it.
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // 1. Check for Notification Highlight
+        const notifId = urlParams.get('highlight_notification_id');
+        if (notifId) {
+            // Try both row and item IDs
+            if (document.getElementById('notification-row-' + notifId)) {
+                highlightElement('notification-row-' + notifId);
+            } else if (document.getElementById('notification-item-' + notifId)) {
+                highlightElement('notification-item-' + notifId);
+            }
+        }
+
+        // 2. Check for Employee Highlight (Query Param)
+        const empId = urlParams.get('highlight_employee_id');
+        if (empId) {
+             if (document.getElementById('history-row-' + empId)) {
+                highlightElement('history-row-' + empId);
+            } else if (document.getElementById('history-card-' + empId)) {
+                 highlightElement('history-card-' + empId);
+            } else if (document.getElementById('employee-card-' + empId)) { // Standard card
+                 highlightElement('employee-card-' + empId);
+            }
+        }
+
+        // 3. Check for Session Flash (Existing Controller Logic)
+        @if(session('highlight_employee'))
+            const sessionEmpId = "{{ session('highlight_employee') }}";
+            // Check prefix scenarios if necessary, but usually standard ID
+            // Partial _employee_card uses 'employee-card-' + id
+            // But sometimes prefix is empty.
+            // Let's try standard ID first.
+             if (document.getElementById('employee-card-' + sessionEmpId)) {
+                 highlightElement('employee-card-' + sessionEmpId);
+            } else {
+                 // Try looking for any element with data-employee-id that matches
+                 const card = document.querySelector(`.employee-card [data-employee-id="${sessionEmpId}"]`)?.closest('.employee-card');
+                 if(card) {
+                     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                     card.classList.add('highlight');
+                 }
+            }
+        @endif
+    });
     </script>
 
     <script>

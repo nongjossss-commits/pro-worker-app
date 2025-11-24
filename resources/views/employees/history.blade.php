@@ -78,7 +78,8 @@
                         'id' => $employee->id,
                         'title' => $employee->employeeFullName,
                         'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
-                        'url' => route('employees.show', $employee->id)
+                        'url' => route('employees.history', ['highlight_employee_id' => $employee->id]),
+                        'photo_url' => $employee->photo_url
                      ]) }}"
                      ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
@@ -107,7 +108,8 @@
                             'id' => $employee->id,
                             'title' => $employee->employeeFullName,
                             'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
-                            'url' => route('employees.show', $employee->id)
+                            'url' => route('employees.history', ['highlight_employee_id' => $employee->id]),
+                            'photo_url' => $employee->photo_url
                         ]) }}"
                         ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                         <td><input class="form-check-input history-employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>

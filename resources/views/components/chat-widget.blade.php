@@ -243,13 +243,15 @@
                                             </div>
                                             <div class="d-flex align-items-center justify-content-between mt-1">
                                                 <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
-                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
-                                                        style="font-size: 0.7rem;"
-                                                        :data-model-id="msg.context_data.id"
-                                                        data-model-type="employee"
-                                                        title="{{ __('Preview') }}">
-                                                    <i class="bi bi-eye"></i> {{ __('Preview') }}
-                                                </button>
+                                                <template x-if="!msg.context_data.hide_preview">
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
+                                                            style="font-size: 0.7rem;"
+                                                            :data-model-id="msg.context_data.id"
+                                                            data-model-type="employee"
+                                                            title="{{ __('Preview') }}">
+                                                        <i class="bi bi-eye"></i> {{ __('Preview') }}
+                                                    </button>
+                                                </template>
                                             </div>
                                         </div>
                                     </template>
