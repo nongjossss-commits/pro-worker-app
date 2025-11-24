@@ -18,9 +18,8 @@ class ChatController extends Controller
     {
         $currentUser = Auth::user();
 
-        // Permission Check: User must have 'use-chat' permission (Admin, Staff, or allowed Employer)
-        // If Admin, bypass specific permission check if they are superadmin, but standard is 'use-chat'
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole('admin')) {
+        // Permission Check: User must have 'use-chat' permission OR be Admin/Staff explicitly
+        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
             return response()->json([], 403);
         }
 
@@ -68,11 +67,6 @@ class ChatController extends Controller
 
             $query->where(function($q) use ($assignedStaffId) {
                 // 1. See System Users (Admin, Staff, Caretaker) - Generally support team
-                // Note: User said "Admin, Staff and Caretaker codes must see each other".
-                // Does Employer see Caretaker? Usually yes if assigned.
-                // Assuming Employer sees 'admin', 'staff' generally, and specific 'caretaker' if assigned?
-                // Or maybe sees all staff/caretakers?
-                // Let's stick to: See Admins and Staff generally.
                 $q->whereHas('roles', function($r) {
                     $r->whereIn('name', ['admin', 'staff']);
                 });
@@ -120,7 +114,7 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // Basic Permission Check
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole('admin')) {
+        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -194,7 +188,7 @@ class ChatController extends Controller
         ]);
 
         $currentUser = Auth::user();
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole('admin')) {
+        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
