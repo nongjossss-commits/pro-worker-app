@@ -13,6 +13,8 @@
          class="position-fixed shadow-lg rounded-circle bg-primary text-white d-flex flex-column align-items-center justify-content-center cursor-pointer chat-launcher-btn"
          :style="`width: 60px; height: 60px; left: ${launcher.x}px; top: ${launcher.y}px; z-index: 2100; cursor: move;`"
          @mousedown="startDrag($event, 'launcher')"
+         @touchstart.prevent="startDrag($event, 'launcher')"
+         @touchend="if(!isDragging) toggleContactList()"
          @click="if(!isDragging) toggleContactList()"
          @dragover.prevent
          @drop.prevent="handleDrop($event, 'launcher')"
@@ -585,8 +587,8 @@
             // --- Drag & Resize Logic ---
             startDrag(e, targetId) {
                 if (e.target.closest('button') || e.target.closest('input')) return;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+                const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
 
                 let targetObj;
                 if (targetId === 'launcher') targetObj = this.launcher;
@@ -608,8 +610,8 @@
             },
 
             startResize(e, targetId, direction) {
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+                const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
 
                 let targetObj;
                 if (targetId === 'contactList') targetObj = this.contactList;
@@ -633,8 +635,8 @@
                 if (!this.dragData) return;
                 e.preventDefault();
 
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+                const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
                 const deltaX = clientX - this.dragData.startX;
                 const deltaY = clientY - this.dragData.startY;
 
