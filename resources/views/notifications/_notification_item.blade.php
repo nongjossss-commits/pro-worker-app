@@ -26,7 +26,13 @@
     }
 @endphp
 
-<div class="alert {{ $card_class }} notification-item">
+<div class="alert {{ $card_class }} notification-item" draggable="true"
+     @dragstart="startDragGlobal($event, 'notification', {
+        id: {{ $notification->id }},
+        title: '{{ $notification->type }}',
+        subtitle: '{{ $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? '') }}',
+        url: '{{ route('notifications.index') }}'
+    })">
     <div class="d-flex align-items-center gap-3">
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)

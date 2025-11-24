@@ -31,7 +31,14 @@
     @if($employers->count() > 0)
     <div class="row g-3">
         @foreach($employers as $employer)
-        <div class="col-md-4">
+        <div class="col-md-4"
+             draggable="true"
+             @dragstart="startDragGlobal($event, 'employer', {
+                id: {{ $employer->id }},
+                title: '{{ $employer->employerNameTh }}',
+                subtitle: '{{ $employer->employerNameEn }}',
+                url: '{{ route('groups.affiliated.manage', $employer->id) }}'
+             })">
             <div class="card h-100 shadow-sm border-0 bg-white">
                 <div class="card-body">
                     <h5 class="card-title fw-bold text-primary">{{ $employer->employerNameTh }}</h5>

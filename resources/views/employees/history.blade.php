@@ -73,7 +73,13 @@
     @if($currentView === 'card')
         <div class="list-group">
             @forelse($employees as $employee)
-                <div class="position-relative">
+                <div class="position-relative" draggable="true"
+                     @dragstart="startDragGlobal($event, 'employee', {
+                        id: {{ $employee->id }},
+                        title: '{{ $employee->employeeFullName }}',
+                        subtitle: 'Terminated: {{ $employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : '' }}',
+                        url: '{{ route('employees.show', $employee->id) }}'
+                     })">
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
                 </div>
             @empty
@@ -95,7 +101,13 @@
                 </thead>
                 <tbody id="historyTableBody">
                     @forelse($employees as $employee)
-                    <tr id="history-row-{{ $employee->id }}">
+                    <tr id="history-row-{{ $employee->id }}" draggable="true"
+                        @dragstart="startDragGlobal($event, 'employee', {
+                            id: {{ $employee->id }},
+                            title: '{{ $employee->employeeFullName }}',
+                            subtitle: 'Terminated: {{ $employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : '' }}',
+                            url: '{{ route('employees.show', $employee->id) }}'
+                        })">
                         <td><input class="form-check-input history-employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
                         <td>
                             <div class="d-flex align-items-center">
