@@ -23,13 +23,13 @@
             @foreach($fieldGroups as $groupName => $fields)
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
-                        <div class="card-header fw-bold">{{ $groupName }}</div>
+                        <div class="card-header fw-bold">{{ __($groupName) }}</div>
                         <div class="card-body">
                             @foreach($fields as $key => $label)
                                 <div class="form-check mb-2">
                                     <input class="form-check-input field-checkbox" type="checkbox" name="selected_fields[]" value="{{ $key }}" id="field_{{ $key }}">
                                     <label class="form-check-label" for="field_{{ $key }}">
-                                        {{ $label }}
+                                        {{ __($label) }}
                                     </label>
                                 </div>
                             @endforeach
