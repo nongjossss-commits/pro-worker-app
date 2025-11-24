@@ -174,14 +174,14 @@
         <aside id="sidebar" class="offcanvas offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title d-flex align-items-center gap-2" id="sidebarLabel">
-                    <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
+                    <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> {{ __('Proworker labour') }}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column p-0">
             <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="#">
                 <img src="{{ asset('images/logo_new.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
-                <span style="line-height: 1.2;">Proworker labour</span>
+                <span style="line-height: 1.2;">{{ __('Proworker labour') }}</span>
             </a>
             <div class="list-group" id="main-nav">
                 @can('view-dashboard')
@@ -294,13 +294,29 @@
 
                     {{-- Download Center Button (Fixed for better visibility) --}}
                     <button class="btn btn-outline-secondary d-none d-md-block" onclick="openDownloadCenter()">
-                        <i class="bi bi-cloud-download-fill me-1"></i> Download Center
+                        <i class="bi bi-cloud-download-fill me-1"></i> {{ __('Download Center') }}
                     </button>
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">
-                    <!-- User Dropdown (Top Right) -->
                     <div class="dropdown me-2">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-translate me-1"></i>
+                            @switch(app()->getLocale())
+                                @case('th') 🇹🇭 ไทย @break
+                                @case('zh') 🇨🇳 中文 @break
+                                @default 🇺🇸 English
+                            @endswitch
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">🇹🇭 ไทย (Thai)</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'en') }}">🇺🇸 English</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- User Dropdown (Top Right) -->
+                    <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i>
                             <span class="d-none d-md-inline">{{ Auth::user()->name ?? __('User') }}</span>
@@ -314,22 +330,6 @@
                                     </a>
                                 </form>
                             </li>
-                        </ul>
-                    </div>
-
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-translate me-1"></i>
-                            @switch(app()->getLocale())
-                                @case('th') 🇹🇭 ไทย @break
-                                @case('zh') 🇨🇳 中文 @break
-                                @default 🇺🇸 English
-                            @endswitch
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">🇹🇭 ไทย (Thai)</a></li>
-                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'en') }}">🇺🇸 English</a></li>
-                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
                         </ul>
                     </div>
                 </div>
