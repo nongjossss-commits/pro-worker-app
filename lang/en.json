@@ -329,5 +329,14 @@
     "Manage independent groups. Add any employee from the system regardless of their employer.": "Manage independent groups. Add any employee from the system regardless of their employer.",
     "e.g. Passport Work, Start Date Group": "e.g. Passport Work, Start Date Group",
     "e.g. Team A, Start Nov 12": "e.g. Team A, Start Nov 12",
-    "Search...": "Search..."
+    "Search...": "Search...",
+    "Back to Selection": "Back to Selection",
+    "Select Employer for Group Management": "Select Employer for Group Management",
+    "Search by Employer Name or Company Name...": "Search by Employer Name or Company Name...",
+    "Manage Groups": "Manage Groups",
+    "No employers found matching your search.": "No employers found matching your search.",
+    "Affiliated Groups": "Affiliated Groups",
+    "Manage groups under specific employers": "Manage groups under specific employers",
+    "Independent Groups": "Independent Groups",
+    "Manage groups without employer restrictions": "Manage groups without employer restrictions"
 }
