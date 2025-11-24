@@ -26,12 +26,12 @@
     }
 @endphp
 
-<div class="alert {{ $card_class }} notification-item" draggable="true"
+<div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item" draggable="true"
      data-drag-payload="{{ json_encode([
         'id' => $notification->id,
         'title' => $notification->type,
         'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index')
+        'url' => route('notifications.index') . '?highlight=' . $notification->id
      ]) }}"
      ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <div class="d-flex align-items-center gap-3">

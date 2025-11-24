@@ -13,12 +13,12 @@
     }
 @endphp
 
-<tr draggable="true"
+<tr id="notification-row-{{ $notification->id }}" draggable="true"
     data-drag-payload="{{ json_encode([
         'id' => $notification->id,
         'title' => $notification->type,
         'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index')
+        'url' => route('notifications.index') . '?highlight=' . $notification->id
     ]) }}"
     ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <td>

@@ -78,7 +78,7 @@
                         'id' => $employee->id,
                         'title' => $employee->employeeFullName,
                         'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
-                        'url' => route('employees.show', $employee->id)
+                        'url' => route('employees.history') . '?highlight_employee=' . $employee->id
                      ]) }}"
                      ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
@@ -107,7 +107,7 @@
                             'id' => $employee->id,
                             'title' => $employee->employeeFullName,
                             'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
-                            'url' => route('employees.show', $employee->id)
+                            'url' => route('employees.history') . '?highlight_employee=' . $employee->id
                         ]) }}"
                         ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                         <td><input class="form-check-input history-employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
@@ -154,6 +154,38 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Highlight Logic
+    const highlightEmployeeId = "{{ request('highlight_employee') }}";
+    if (highlightEmployeeId) {
+        let target = document.getElementById(`history-row-${highlightEmployeeId}`);
+        if (target) {
+            setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add highlight style or class
+                target.classList.add('table-primary'); // Using bootstrap class for table row
+                target.style.transition = 'background-color 0.5s ease';
+
+                // If it's a card view, it might need different styling
+                if (!target.classList.contains('list-group-item')) {
+                     // Table row logic
+                     // Maybe add border
+                     target.style.outline = '2px solid #F97316';
+                } else {
+                     // Card view logic
+                     target.style.border = '2px solid #F97316';
+                     target.style.backgroundColor = '#fff7ed';
+                }
+
+                // Remove highlight after some time? User usually prefers persistence until click
+                // setTimeout(() => {
+                //    target.classList.remove('table-primary');
+                //    target.style.outline = '';
+                //    target.style.backgroundColor = '';
+                // }, 5000);
+            }, 500);
+        }
+    }
+
     const bulkExportBtn = document.getElementById('history-bulk-advanced-export-btn');
     if (bulkExportBtn) {
         bulkExportBtn.addEventListener('click', function(e) {
