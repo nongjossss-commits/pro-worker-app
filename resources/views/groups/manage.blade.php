@@ -276,7 +276,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ __('Group Name') }}</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g. Passport Work, Start Date Group" required>
+                        <input type="text" name="name" class="form-control" placeholder="{{ __('e.g. Passport Work, Start Date Group') }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -299,7 +299,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ __('Team Name') }}</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g. Team A, Start Nov 12" required>
+                        <input type="text" name="name" class="form-control" placeholder="{{ __('e.g. Team A, Start Nov 12') }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">

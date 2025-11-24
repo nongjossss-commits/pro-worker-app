@@ -22,7 +22,7 @@
                     <div class="mb-4">
                         <i class="bi bi-building-fill text-primary" style="font-size: 4rem;"></i>
                     </div>
-                    <h3 class="card-title fw-bold mb-3">{{ __('สังกัดภายใต้นายจ้าง') }}</h3>
+                    <h3 class="card-title fw-bold mb-3">{{ __('Affiliated with Employer') }}</h3>
                     <p class="card-text text-muted mb-4">
                         {{ __('Manage groups and teams specific to an employer. Employees must belong to the selected employer.') }}
                     </p>
@@ -46,7 +46,7 @@
                     <div class="mb-4">
                         <i class="bi bi-diagram-3-fill text-success" style="font-size: 4rem;"></i>
                     </div>
-                    <h3 class="card-title fw-bold mb-3">{{ __('ไม่สังกัดนายจ้าง') }}</h3>
+                    <h3 class="card-title fw-bold mb-3">{{ __('Independent / No Employer') }}</h3>
                     <p class="card-text text-muted mb-4">
                         {{ __('Manage independent groups. Add any employee from the system regardless of their employer.') }}
                     </p>
