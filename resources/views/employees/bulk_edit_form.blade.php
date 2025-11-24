@@ -173,7 +173,7 @@
                                                     'visa_file'          => 'employee_doc_2',
                                                     'work_permit_file'   => 'employee_doc_3',
                                                     'pink_card_file'     => 'employee_doc_4',
-                                                    'insurance_attachment' => 'insurance_document_path',
+                                                    'insurance_attachment' => 'insurance_document_path_private',
                                                 ];
                                                 $dbColumn = $fieldMapping[$field] ?? $field;
                                                 $filePath = $employee->$dbColumn;

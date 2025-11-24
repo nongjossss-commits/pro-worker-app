@@ -858,12 +858,17 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'insurance_expiry_date_private' => 'Private Insurance Expiry',
                 'insurance_attachment' => 'Insurance File (Upload)',
             ],
+             'Specific Documents' => [
+                'employee_doc_5' => 'Tor Ror 38 (ทร.38)',
+                'employee_doc_6' => '90-Day Report (รายงานตัว 90 วัน)',
+                'employee_doc_7' => 'Residence Notification (แจ้งที่พักอาศัย)',
+                'employee_doc_8' => 'Hometown Document (เอกสารบ้านเกิด)',
+            ],
              'Other Documents' => [
-                'employee_doc_1' => 'Document 1',
-                'employee_doc_2' => 'Document 2',
-                'employee_doc_3' => 'Document 3',
-                'employee_doc_4' => 'Document 4',
-                // Add more if needed
+                'employee_doc_9' => 'Document 1',
+                'employee_doc_10' => 'Document 2',
+                'employee_doc_11' => 'Document 3',
+                'employee_doc_12' => 'Document 4',
             ],
         ];
 
@@ -886,7 +891,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Define metadata for fields to render correct inputs
         $fileFields = [
             'passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment',
-            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4'
+            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
         ];
 
         $dateFields = [
@@ -912,11 +918,49 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Ideally this should be a shared constant or helper.
         $fieldLabels = [
             'employeeNameTh' => 'Name (TH)',
+            'employeeNameEn' => 'Name (EN)',
+            'employeeTitleTh' => 'Title (TH)',
+            'employeeTitleEn' => 'Title (EN)',
+            'father_name' => 'Father Name',
+            'mother_name' => 'Mother Name',
+            'employeeGender' => 'Gender',
+            'employeeDob' => 'Date of Birth',
+            'employeePhone' => 'Phone',
+            'employeeNationality' => 'Nationality',
             'employeePassport' => 'Passport No.',
+            'passport_issue_date' => 'Passport Issue Date',
             'passportExpiryDate' => 'Passport Expiry',
+            'passportType' => 'Passport Type',
+            'passport_type_cambodia' => 'Passport Type (Cambodia)',
+            'visaType' => 'Visa Type',
+            'visaExpiryDate' => 'Visa Expiry Date',
             'employeeWorkPermit' => 'Work Permit No.',
+            'workPermitExpiryDate' => 'Work Permit Expiry',
+            'workPermitType' => 'Work Permit Type',
+            'workPermitMOUGroup' => 'MOU Group',
             'pinkCardNo' => 'Pink Card No.',
-             // ... Add others for display
+            'job_title' => 'Job Title',
+            'job_description' => 'Job Description',
+            'startDate' => 'Start Date',
+            'insurance_type' => 'Insurance Type',
+            'social_security_number' => 'Social Security Number',
+            'insurance_detail_hospital' => 'Hospital Name',
+            'insurance_expiry_date_hospital' => 'Hospital Expiry',
+            'insurance_detail_private' => 'Private Insurance Company',
+            'insurance_expiry_date_private' => 'Private Insurance Expiry',
+            'insurance_attachment' => 'Insurance File (Upload)',
+            'passport_file' => 'Passport File (Upload)',
+            'visa_file' => 'Visa File (Upload)',
+            'work_permit_file' => 'Work Permit File (Upload)',
+            'pink_card_file' => 'Pink Card File (Upload)',
+            'employee_doc_5' => 'Tor Ror 38 (ทร.38)',
+            'employee_doc_6' => '90-Day Report (รายงานตัว 90 วัน)',
+            'employee_doc_7' => 'Residence Notification (แจ้งที่พักอาศัย)',
+            'employee_doc_8' => 'Hometown Document (เอกสารบ้านเกิด)',
+            'employee_doc_9' => 'Document 1',
+            'employee_doc_10' => 'Document 2',
+            'employee_doc_11' => 'Document 3',
+            'employee_doc_12' => 'Document 4',
         ];
 
         return view('employees.bulk_edit_form', compact('employees', 'selectedFields', 'fileFields', 'dateFields', 'options', 'fieldLabels'));
@@ -945,7 +989,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'visa_file'          => 'employee_doc_2',
             'work_permit_file'   => 'employee_doc_3',
             'pink_card_file'     => 'employee_doc_4',
-            'insurance_attachment' => 'insurance_document_path',
+            'insurance_attachment' => 'insurance_document_path_private',
         ];
 
         foreach ($employeeIds as $id) {
