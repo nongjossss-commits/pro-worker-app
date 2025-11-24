@@ -21,7 +21,14 @@
                            class="badge text-decoration-none"
                            style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: normal; font-size: 0.75rem;"
                            title="{{ __('Group') }}: {{ $team->group->name }} | {{ __('Team') }}: {{ $team->name }}"
-                           onclick="return confirm('{{ __('Go to group') }}: {{ $team->group->name }}?')">
+                           onclick="event.preventDefault(); Swal.fire({
+                               title: '{{ __('Go to group') }}',
+                               text: '{{ __('Do you want to go to group') }}: {{ $team->group->name }}?',
+                               icon: 'question',
+                               showCancelButton: true,
+                               confirmButtonText: '{{ __('Go') }}',
+                               cancelButtonText: '{{ __('Cancel') }}'
+                           }).then((result) => { if(result.isConfirmed) window.location.href = this.href; })">
                             <i class="bi bi-tag-fill me-1"></i>{{ $team->group->name }}
                         </a>
                         @endif
