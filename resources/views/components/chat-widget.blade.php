@@ -307,9 +307,9 @@
                         <img :src="chat.user.avatar_url" class="w-100 h-100 object-fit-cover"
                              onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
                         <span x-show="chat.unreadCount > 0"
-                              class="position-absolute top-0 end-0 translate-middle p-1 badge rounded-circle bg-danger border border-white"
-                              style="width: 12px; height: 12px; transform: translate(25%, -25%) !important;">
-                            <span class="visually-hidden">New messages</span>
+                              class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger border border-white"
+                              style="font-size: 0.7rem; padding: 0.25em 0.5em !important; transform: translate(25%, -25%) !important;"
+                              x-text="chat.unreadCount">
                         </span>
                     </div>
                 </template>
@@ -453,6 +453,7 @@
                 let chat = this.openChats.find(c => c.id === user.id);
                 if (chat) {
                     chat.minimized = false;
+                    chat.unreadCount = 0;
                     this.bringToFront(chat.id);
                 } else {
                     // Default Position (Center)
@@ -743,6 +744,11 @@
                                     if (!chat.messages.find(m => m.id === msg.id)) {
                                         chat.messages.push(msg);
                                         this.$nextTick(() => this.scrollToBottom(chat.id));
+
+                                        if (chat.minimized) {
+                                            chat.unreadCount = (chat.unreadCount || 0) + 1;
+                                            this.saveState();
+                                        }
                                     }
                                 } else {
                                     hasUpdates = true;
@@ -862,7 +868,8 @@
                         user: c.user,
                         x: c.x, y: c.y, w: c.w, h: c.h,
                         minimized: c.minimized,
-                        zIndex: c.zIndex
+                        zIndex: c.zIndex,
+                        unreadCount: c.unreadCount
                     }))
                 };
                 localStorage.setItem('chatState_' + this.currentUserId, JSON.stringify(state));
@@ -892,7 +899,8 @@
                                 messages: [],
                                 newMessage: '',
                                 isUploading: false,
-                                contextToAttach: null
+                                contextToAttach: null,
+                                unreadCount: c.unreadCount || 0
                             }));
                             this.openChats.forEach(c => this.fetchMessages(c.id));
                         }
