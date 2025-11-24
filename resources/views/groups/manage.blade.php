@@ -150,7 +150,7 @@
                             </div>
 
                             <!-- Members Cards -->
-                            <div class="employee-list">
+                            <div class="employee-list" x-ignore>
                                 @if($type === 'independent')
                                     {{-- Group by Employer --}}
                                     @php
