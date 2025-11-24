@@ -14,6 +14,8 @@
          :style="`width: 60px; height: 60px; left: ${launcher.x}px; top: ${launcher.y}px; z-index: 2100; cursor: move;`"
          @mousedown="startDrag($event, 'launcher')"
          @click="if(!isDragging) toggleContactList()"
+         @dragover.prevent
+         @drop.prevent="handleDrop($event, 'launcher')"
          title="{{ __('Open Chat') }}">
 
         <!-- Icon -->
@@ -70,7 +72,9 @@
                 <ul class="list-group list-group-flush">
                     <template x-for="user in filteredContacts" :key="user.id">
                         <li class="list-group-item list-group-item-action d-flex align-items-center gap-2 cursor-pointer p-2"
-                            @click="openChat(user)">
+                            @click="openChat(user)"
+                            @dragover.prevent
+                            @drop.prevent="handleDrop($event, 'contact', user)">
                             <div class="position-relative">
                                 <img :src="user.avatar_url" class="rounded-circle object-fit-cover border" width="40" height="40"
                                      onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
@@ -115,7 +119,9 @@
                      class="chat-window shadow rounded-3 flex-column border bg-white"
                      :class="{ 'd-flex': !chat.minimized, 'd-none': chat.minimized }"
                      :style="`position: fixed; left: ${chat.x}px; top: ${chat.y}px; width: ${chat.w}px; height: ${chat.h}px; z-index: ${chat.zIndex};`"
-                     @mousedown="bringToFront(chat.id)">
+                     @mousedown="bringToFront(chat.id)"
+                     @dragover.prevent
+                     @drop.prevent="handleDrop($event, 'chat_window', chat.id)">
 
                     <!-- Header -->
                     <div class="chat-header d-flex justify-content-between align-items-center p-2 bg-white border-bottom cursor-grab"
@@ -229,6 +235,8 @@
                          class="position-relative shadow rounded-circle bg-white border d-flex align-items-center justify-content-center cursor-pointer slide-in-right overflow-hidden"
                          style="pointer-events: auto; width: 50px; height: 50px; background-color: rgba(255,255,255,0.95) !important;"
                          @click="chat.minimized = false; saveState(); bringToFront(chat.id)"
+                         @dragover.prevent
+                         @drop.prevent="handleDrop($event, 'chat_window', chat.id)"
                          :title="chat.user.name">
                         <img :src="chat.user.avatar_url" class="w-100 h-100 object-fit-cover"
                              onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
@@ -418,6 +426,56 @@
                 } else {
                     const chat = this.openChats.find(c => c.id === targetId);
                     if (chat) chat.zIndex = this.activeZIndex;
+                }
+            },
+
+            // --- Drag & Drop for Data Sharing ---
+            handleDrop(e, targetType, targetId) {
+                e.preventDefault();
+                const rawData = e.dataTransfer.getData('application/json');
+                if (!rawData) return;
+
+                let data;
+                try {
+                    data = JSON.parse(rawData);
+                } catch (err) { console.error('Invalid drop data', err); return; }
+
+                if (targetType === 'launcher') {
+                    if (!this.isContactListOpen) this.toggleContactList();
+                    return;
+                }
+
+                let chat = null;
+                if (targetType === 'contact') {
+                    // targetId is the user object in the loop
+                    this.openChat(targetId);
+                    chat = this.openChats.find(c => c.id === targetId.id);
+                } else if (targetType === 'chat_window') {
+                    chat = this.openChats.find(c => c.id === targetId);
+                }
+
+                if (chat) {
+                    let attachmentName = data.title;
+                    let attachmentText = `[${data.type.toUpperCase()}] ${data.title}`;
+
+                    if (data.type === 'employees_bulk') {
+                         attachmentName = `${data.count} Employees`;
+                         attachmentText = `[BULK] ${data.count} Employees Selected`;
+                    }
+
+                    chat.contextToAttach = {
+                        type: 'link',
+                        url: data.url,
+                        text: attachmentText,
+                        name: attachmentName
+                    };
+
+                    this.bringToFront(chat.id);
+                    // Attempt to focus input
+                    this.$nextTick(() => {
+                        const input = document.querySelector(`#msg-container-${chat.id} + div textarea`);
+                        if(input) input.focus();
+                    });
                 }
             },
 

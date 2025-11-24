@@ -72,7 +72,11 @@
     </div>
 </div>
 
-<div class="bulk-action-bar mb-3 align-items-center gap-2" style="display: none;">
+<div class="bulk-action-bar mb-3 align-items-center gap-2"
+     style="display: none;"
+     id="bulkActionBar"
+     draggable="true"
+     ondragstart="window.startDragBulk(event)">
     <div class="form-check mb-0">
         <input class="form-check-input" type="checkbox" id="select-all-checkbox">
         <label class="form-check-label" for="select-all-checkbox">
@@ -93,13 +97,24 @@
             <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
         </ul>
     </div>
+    <div class="ms-auto text-muted small d-none d-md-block">
+        <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
+    </div>
 </div>
 
 <div id="employeeListContainer">
     @if($currentView === 'card')
         <div class="list-group">
             @forelse($employees as $employee)
+                <div draggable="true"
+                     ondragstart="window.startDragGlobal(event, 'employee', {
+                        id: {{ $employee->id }},
+                        name: '{{ addslashes($employee->employeeNameTh) }} ({{ addslashes($employee->employeeNameEn) }})',
+                        subtitle: '{{ $employee->employeeNationality }}',
+                        url: '{{ route('employees.show', $employee->id) }}'
+                     })">
                 @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => true])
+                </div>
             @empty
                 <p class="text-center text-muted">{{ __('No employees found') }}</p>
             @endforelse
@@ -122,7 +137,14 @@
                 </thead>
                 <tbody>
                     @forelse($employees as $employee)
-                    <tr>
+                    <tr draggable="true"
+                        ondragstart="window.startDragGlobal(event, 'employee', {
+                            id: {{ $employee->id }},
+                            name: '{{ addslashes($employee->employeeNameTh) }} ({{ addslashes($employee->employeeNameEn) }})',
+                            subtitle: '{{ $employee->employeeNationality }}',
+                            url: '{{ route('employees.show', $employee->id) }}'
+                        })"
+                        style="cursor: grab;">
                         <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}"></td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -175,6 +197,28 @@
 @include('employees.modals.select_target_employer_modal')
 
 @push('scripts')
+<script>
+    // Special handler for bulk drag
+    window.startDragBulk = function(e) {
+        const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+        const count = checkboxes.length;
+        if (count === 0) {
+            e.preventDefault();
+            return;
+        }
+
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+        const payload = {
+            type: 'employees_bulk',
+            title: count + ' Employees',
+            count: count,
+            ids: ids,
+            url: window.location.href // Or a specific bulk action URL
+        };
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('application/json', JSON.stringify(payload));
+    }
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // This script is superseded by the global listener in layouts/app.blade.php
