@@ -531,6 +531,36 @@
         // Initial check in case of page reload with an active tab
         // Use a small timeout to ensure tab activation script has run
         setTimeout(updateActionBar, 100);
+
+        // Highlight Notification
+        const highlightId = "{{ request('highlight') }}";
+        if (highlightId) {
+            // Check for card view item
+            let target = document.getElementById(`notification-item-${highlightId}`);
+            // If not found, check for table row
+            if (!target) {
+                target = document.getElementById(`notification-row-${highlightId}`);
+            }
+
+            if (target) {
+                setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.classList.add('highlight-pulse');
+                    // Define keyframes if not exists or rely on class
+                    // We'll add inline style for the pulse or use standard class if available.
+                    // Let's add a temporary style block for this page if global style is missing
+                    target.style.transition = 'box-shadow 0.5s ease-in-out';
+                    target.style.boxShadow = '0 0 15px rgba(249, 115, 22, 0.8)';
+                    target.style.border = '2px solid #F97316';
+
+                    setTimeout(() => {
+                        target.style.boxShadow = '';
+                        // Keep border to show selection? Or remove it?
+                        // User usually likes persistent highlight until clicked elsewhere
+                    }, 5000);
+                }, 500);
+            }
+        }
     });
 </script>
 @endpush

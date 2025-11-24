@@ -11,7 +11,7 @@
         'id' => $employee->id,
         'title' => $employeeFullNameEn,
         'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
-        'url' => route('employees.show', $employee->id)
+        'url' => route('employees.history') . '?highlight_employee=' . $employee->id
     ]) }}"
     ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
     <div class="d-flex w-100">

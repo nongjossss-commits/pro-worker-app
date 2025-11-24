@@ -99,7 +99,7 @@
                             'id' => $employee->id,
                             'title' => $employee->employeeNameEn,
                             'subtitle' => optional($employee->employer)->employerNameTh,
-                            'url' => route('employees.show', $employee->id)
+                            'url' => route('employers.edit', $employee->employer_id) . '?highlight_employee=' . $employee->id
                          ]) }}"
                          ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                         @include('employees._employee_card', ['employee' => $employee, 'is_incomplete_view' => true])
@@ -130,7 +130,7 @@
                                     'id' => $employee->id,
                                     'title' => $employee->employeeNameEn,
                                     'subtitle' => optional($employee->employer)->employerNameTh,
-                                    'url' => route('employees.show', $employee->id)
+                                    'url' => route('employers.edit', $employee->employer_id) . '?highlight_employee=' . $employee->id
                                 ]) }}"
                                 ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                                 <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
