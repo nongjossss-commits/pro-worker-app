@@ -88,7 +88,6 @@
         <x-bulk-action-bar id="incomplete-bulk-bar">
             <li><a class="dropdown-item" href="#" id="incomplete-bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
             <li><a class="dropdown-item" href="#" id="incomplete-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
-            <li><a class="dropdown-item" href="#" id="incomplete-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
             <li><a class="dropdown-item" href="#" id="incomplete-bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
         </x-bulk-action-bar>
 
@@ -255,25 +254,6 @@
                 const modalEl = document.getElementById('advancedExportModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
-            });
-        }
-
-        // Download Files
-        const bulkDownloadBtn = document.getElementById('incomplete-bulk-download-btn');
-        if (bulkDownloadBtn) {
-            bulkDownloadBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
-                if (selected.length === 0) {
-                    showToast('{{ __('Please select employees first.') }}', 'danger');
-                    return;
-                }
-
-                if (window.openBulkDownloadModal) {
-                    window.openBulkDownloadModal(selected);
-                } else {
-                    console.error('Download modal function not found.');
-                }
             });
         }
 

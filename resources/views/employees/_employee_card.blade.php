@@ -31,7 +31,15 @@
         <div class="flex-grow-1">
             <div class="d-flex w-100 justify-content-between">
                 <h5 class="mb-1">
-                    {{ $employee->employeeNameEn ?? 'N/A' }}
+                    {{ trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->employeeNameEn ?? '')) ?: 'N/A' }}
+                    <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                            data-model-type="employee"
+                            data-model-id="{{ $employee->id }}"
+                            @click.stop
+                            title="{{ __('Preview Employee') }}">
+                        <i class="bi bi-search"></i>
+                    </button>
+
                     @if($employee->employeeNationality)
                         @php $flagCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality); @endphp
                         @if($flagCode)
@@ -39,9 +47,20 @@
                         @endif
                     @endif
                 </h5>
-                <small class="text-muted" title="นายจ้าง">{{ $employerName }}</small>
+                <small class="text-muted" title="นายจ้าง">
+                    {{ $employerName }}
+                    @if($employee->employer)
+                        <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                data-model-type="employer"
+                                data-model-id="{{ $employee->employer->id }}"
+                                @click.stop
+                                title="{{ __('Preview Employer') }}">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    @endif
+                </small>
             </div>
-            <p class="mb-1">{{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})</p>
+            <p class="mb-1">{{ trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})</p>
             <small class="text-muted d-block">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ optional($employee->passportExpiryDate)->format('d/m/Y') ?? '-' }})</small>
             <small class="text-muted d-block">Work Permit: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> (หมดอายุ: {{ optional($employee->workPermitExpiryDate)->format('d/m/Y') ?? '-' }})</small>
             <small class="text-muted d-block">Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ optional($employee->ninetyDayReportDate)->format('d/m/Y') ?? '-' }}</small>
