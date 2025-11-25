@@ -7,7 +7,6 @@ use Illuminate\Pagination\Paginator;
 use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\JobTicket;
-use App\Observers\EmployeeObserver;
 use App\Observers\EmployerObserver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Login;
@@ -32,7 +31,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
-        Employee::observe(EmployeeObserver::class);
         Employer::observe(EmployerObserver::class);
 
         Event::listen(Login::class, LogSuccessfulLogin::class);
