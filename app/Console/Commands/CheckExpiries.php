@@ -26,9 +26,9 @@ class CheckExpiries extends Command
         $this->info('Cleaning up old notifications...');
         Notification::where('due_date', '<', $today->copy()->subYear())->delete();
 
-        // Use a clean slate approach: remove all active notifications and recreate them based on current settings
-        $this->info('Resetting active notifications...');
-        Notification::where('status', '!=', 'cancelled')->delete();
+        // This clean slate approach is inefficient for large datasets.
+        // It's being replaced by more targeted checks.
+        // Notification::where('status', '!=', 'cancelled')->delete();
 
         $documentChecks = [
             'passportExpiryDate'   => 'passport_expiry',
@@ -220,35 +220,56 @@ class CheckExpiries extends Command
         $setting = $settings->get($notificationType);
 
         if (!$setting || !$setting->is_enabled) {
-            $this->info("Skipping {$notificationType} (disabled or settings missing).");
+            $this->info("Deleting disabled notification type: {$notificationType}...");
+            Notification::where('type', $notificationType)->delete();
             return;
         }
 
-        // Pink Card is missing if pinkCardNo is null or empty string
-        // And employee is not terminated
-        $employees = Employee::where(function($query) {
-                $query->whereNull('pinkCardNo')
-                      ->orWhere('pinkCardNo', '=', '');
-            })
-            ->whereNull('terminated_at')
-            ->get();
+        $this->info("Processing: {$notificationType}");
 
-        $this->info("Found {$employees->count()} employees with missing Pink Card.");
+        // Get IDs of employees who are missing the pink card and are not terminated
+        $employeeIdsWithMissingDoc = Employee::where(function ($query) {
+            $query->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+        })
+        ->whereNull('terminated_at')
+        ->pluck('id');
 
-        foreach ($employees as $employee) {
-            Notification::updateOrCreate(
-                [
-                    'employee_id' => $employee->id,
+        // Get IDs of employees who already have a notification for this type
+        $employeeIdsWithNotification = Notification::where('type', $notificationType)->pluck('employee_id');
+
+        // Determine who needs a notification (in the first list, but not the second)
+        $idsToCreate = $employeeIdsWithMissingDoc->diff($employeeIdsWithNotification);
+
+        // Determine which notifications are outdated and should be removed
+        $idsToDelete = $employeeIdsWithNotification->diff($employeeIdsWithMissingDoc);
+
+        if ($idsToDelete->isNotEmpty()) {
+            $this->info("Deleting {$idsToDelete->count()} outdated '{$notificationType}' notifications.");
+            Notification::where('type', $notificationType)->whereIn('employee_id', $idsToDelete)->delete();
+        }
+
+        if ($idsToCreate->isNotEmpty()) {
+            $this->info("Creating {$idsToCreate->count()} new '{$notificationType}' notifications.");
+            $newNotifications = [];
+            $now = now();
+            foreach ($idsToCreate as $employeeId) {
+                $newNotifications[] = [
+                    'employee_id' => $employeeId,
+                    'employer_id' => null,
                     'type' => $notificationType,
-                ],
-                [
                     'due_date' => $today,
                     'days_remaining' => 0,
                     'status' => 'unread',
                     'message' => "ยังไม่มีข้อมูลบัตรชมพู",
-                ]
-            );
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            // Use insert for bulk creation
+            Notification::insert($newNotifications);
         }
+
+        $this->info("Finished processing for {$notificationType}.");
     }
 
     protected function checkResidencePermitMissing($today, $settings)
@@ -257,31 +278,52 @@ class CheckExpiries extends Command
         $setting = $settings->get($notificationType);
 
         if (!$setting || !$setting->is_enabled) {
-            $this->info("Skipping {$notificationType} (disabled or settings missing).");
+            $this->info("Deleting disabled notification type: {$notificationType}...");
+            Notification::where('type', $notificationType)->delete();
             return;
         }
 
-        // Residence Notification is missing if employee_doc_7 is null
-        // And employee is not terminated
-        $employees = Employee::whereNull('employee_doc_7')
+        $this->info("Processing: {$notificationType}");
+
+        // Get IDs of employees who are missing the residence permit and are not terminated
+        $employeeIdsWithMissingDoc = Employee::whereNull('employee_doc_7')
             ->whereNull('terminated_at')
-            ->get();
+            ->pluck('id');
 
-        $this->info("Found {$employees->count()} employees with missing Residence Notification.");
+        // Get IDs of employees who already have a notification for this type
+        $employeeIdsWithNotification = Notification::where('type', $notificationType)->pluck('employee_id');
 
-        foreach ($employees as $employee) {
-            Notification::updateOrCreate(
-                [
-                    'employee_id' => $employee->id,
+        // Determine who needs a notification
+        $idsToCreate = $employeeIdsWithMissingDoc->diff($employeeIdsWithNotification);
+
+        // Determine which notifications to remove
+        $idsToDelete = $employeeIdsWithNotification->diff($employeeIdsWithMissingDoc);
+
+        if ($idsToDelete->isNotEmpty()) {
+            $this->info("Deleting {$idsToDelete->count()} outdated '{$notificationType}' notifications.");
+            Notification::where('type', $notificationType)->whereIn('employee_id', $idsToDelete)->delete();
+        }
+
+        if ($idsToCreate->isNotEmpty()) {
+            $this->info("Creating {$idsToCreate->count()} new '{$notificationType}' notifications.");
+            $newNotifications = [];
+            $now = now();
+            foreach ($idsToCreate as $employeeId) {
+                $newNotifications[] = [
+                    'employee_id' => $employeeId,
+                    'employer_id' => null,
                     'type' => $notificationType,
-                ],
-                [
                     'due_date' => $today,
                     'days_remaining' => 0,
                     'status' => 'unread',
                     'message' => "ยังไม่มีเอกสารแจ้งที่พักอาศัย",
-                ]
-            );
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            Notification::insert($newNotifications);
         }
+
+        $this->info("Finished processing for {$notificationType}.");
     }
 }
