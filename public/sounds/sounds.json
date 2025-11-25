@@ -1,0 +1,23 @@
+[
+  { "name": "Access Denied", "file": "access_denied.mp3" },
+  { "name": "Access Granted", "file": "access_granted.mp3" },
+  { "name": "Timpani Roll", "file": "announcement_timpani_roll.mp3" },
+  { "name": "Applause", "file": "applause.mp3" },
+  { "name": "Boing", "file": "boing_cartoon.mp3" },
+  { "name": "Ding Bell", "file": "ding_bell.mp3" },
+  { "name": "Doorbell", "file": "doorbell.mp3" },
+  { "name": "Orchestral Hit", "file": "drama_inception_braam_orchestral_hit_1.mp3" },
+  { "name": "Drum Roll", "file": "drum_roll.mp3" },
+  { "name": "Fail", "file": "fail_game_over_wah_wah_sad_trombone.mp3" },
+  { "name": "Hallelujah", "file": "hallelujah.mp3" },
+  { "name": "Bicycle Horn", "file": "horn_bicycle.mp3" },
+  { "name": "Knock Door", "file": "knock_door.mp3" },
+  { "name": "Cute Laughter", "file": "laughter_cute.mp3" },
+  { "name": "Cash Register", "file": "money_cash_register_purchase.mp3" },
+  { "name": "Nope", "file": "nope.mp3" },
+  { "name": "Duck Quack", "file": "quack_duck.mp3" },
+  { "name": "Police Siren", "file": "siren_police_short.mp3" },
+  { "name": "What", "file": "what_short.mp3" },
+  { "name": "Winning Jingle", "file": "winning_jingle.mp3" },
+  { "name": "Wow", "file": "wow.mp3" }
+]

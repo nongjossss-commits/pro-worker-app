@@ -7,7 +7,7 @@
 
     <!-- Notification Sound -->
     <audio id="chatNotificationSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRuQSAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcASAAAAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQ=" type="audio/wav">
+        <source src="data:audio/wav;base64,UklGRuQSAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcASAAAAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQ=" type="audio/wav">
     </audio>
 
     <!-- 1. Main Launcher Button (Floating & Draggable) -->
@@ -417,14 +417,49 @@
                     <label class="form-label small">{{ __('Bio') }}</label>
                     <textarea x-model="profileForm.bio" class="form-control form-control-sm" rows="2"></textarea>
                 </div>
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" @click="showProfileModal = false" class="btn btn-sm btn-secondary">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
+                <div class="d-flex justify-content-between gap-2 mt-3">
+                    <button type="button" @click="showSoundSettingsModal = true; showProfileModal = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-bell"></i> {{ __('Sounds') }}</button>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" @click="showProfileModal = false" class="btn btn-sm btn-secondary">{{ __('Cancel') }}</button>
+                        <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Sound Settings Modal -->
+    <div x-show="showSoundSettingsModal"
+         x-cloak
+         class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-black bg-opacity-50"
+         :class="{ 'd-flex': showSoundSettingsModal }"
+         style="z-index: 2101;"
+         x-transition.opacity
+         @click.self="showSoundSettingsModal = false">
+        <div class="bg-white rounded shadow p-3" style="width: 400px; max-height: 80vh; display: flex; flex-direction: column;">
+             <h6 class="border-bottom pb-2 mb-3 d-flex justify-content-between">
+                {{ __('Notification Sounds') }}
+                <button type="button" class="btn-close btn-close-sm" @click="showSoundSettingsModal = false"></button>
+            </h6>
+            <div class="flex-grow-1 overflow-auto">
+                <ul class="list-group list-group-flush">
+                    <template x-for="sound in availableSounds" :key="sound.file">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="soundOption" :id="'sound_'+sound.file" :value="sound.file" x-model="selectedSound">
+                                <label class="form-check-label" :for="'sound_'+sound.file" x-text="sound.name"></label>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" @click="playSound(sound.file)"><i class="bi bi-play-fill"></i></button>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-3 border-top pt-3">
+                <button type="button" @click="showSoundSettingsModal = false; showProfileModal = true" class="btn btn-sm btn-secondary">{{ __('Back') }}</button>
+                <button type="button" @click="saveSoundSettings()" class="btn btn-sm btn-primary">{{ __('Save & Close') }}</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -470,6 +505,9 @@
             isDragging: false,
             pollingInterval: null,
             showProfileModal: false,
+            showSoundSettingsModal: false,
+            availableSounds: [],
+            selectedSound: 'access_granted.mp3', // A default sound
             profileForm: {
                 name: @json(auth()->user()->name),
                 position_title: @json(auth()->user()->position_title ?? ''),
@@ -494,6 +532,7 @@
             initManager() {
                 this.loadState();
                 this.fetchContacts();
+                this.fetchSounds();
                 this.pollingInterval = setInterval(() => this.checkNewMessages(), 10000);
                 this.requestNotificationPermission();
 
@@ -801,6 +840,15 @@
             },
 
             // --- API & Data ---
+            fetchSounds() {
+                fetch('/sounds/sounds.json')
+                    .then(res => res.json())
+                    .then(data => {
+                        this.availableSounds = data;
+                    })
+                    .catch(e => console.error('Could not load sound list:', e));
+            },
+
             fetchContacts() {
                 fetch('{{ route('chat.contacts') }}')
                     .then(res => res.json())
@@ -874,8 +922,16 @@
             playNotificationSound() {
                 const audio = document.getElementById('chatNotificationSound');
                 if (audio) {
+                    const soundFile = this.selectedSound || 'access_granted.mp3';
+                    audio.src = `/sounds/${soundFile}`;
                     audio.play().catch(e => console.log('Audio play failed:', e));
                 }
+            },
+
+            // Method to preview a sound from the settings modal
+            playSound(soundFile) {
+                const audio = new Audio(`/sounds/${soundFile}`);
+                audio.play().catch(e => console.log('Preview audio play failed:', e));
             },
 
             showDesktopNotification(msg) {
@@ -1004,9 +1060,15 @@
                         minimized: c.minimized,
                         zIndex: c.zIndex,
                         unreadCount: c.unreadCount
-                    }))
+                    })),
+                    selectedSound: this.selectedSound
                 };
                 localStorage.setItem('chatState_' + this.currentUserId, JSON.stringify(state));
+            },
+
+            saveSoundSettings() {
+                this.saveState();
+                this.showSoundSettingsModal = false;
             },
 
             loadState() {
@@ -1037,6 +1099,9 @@
                                 unreadCount: c.unreadCount || 0
                             }));
                             this.openChats.forEach(c => this.fetchMessages(c.id));
+                        }
+                        if (parsed.selectedSound) {
+                            this.selectedSound = parsed.selectedSound;
                         }
                     } catch(e) { console.error(e); }
                 }
