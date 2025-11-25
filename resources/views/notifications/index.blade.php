@@ -256,14 +256,14 @@
                 const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
 
                 if (selected.length === 0) {
-                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    showToast('{{ __('Please select items first.') }}', 'danger');
                     return;
                 }
 
                 // Create a form dynamically and submit POST
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = '{{ route('employees.bulk_edit.select_fields') }}';
+                form.action = '{{ route('notifications.bulk_edit.select_fields') }}';
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 const csrfInput = document.createElement('input');
@@ -275,7 +275,7 @@
                 selected.forEach(id => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
-                    input.name = 'employee_ids[]';
+                    input.name = 'notification_ids[]';
                     input.value = id;
                     form.appendChild(input);
                 });

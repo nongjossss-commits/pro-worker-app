@@ -74,6 +74,11 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/bulk-edit/form', [EmployeeController::class, 'bulkEditForm'])->name('employees.bulk_edit.form');
     Route::put('employees/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('employees.bulk_update');
 
+    // Notification Bulk Edit Routes
+    Route::post('notifications/bulk-edit/select-fields', [EmployeeController::class, 'bulkEditSelectFields'])->name('notifications.bulk_edit.select_fields');
+    Route::post('notifications/bulk-edit/form', [EmployeeController::class, 'bulkEditForm'])->name('notifications.bulk_edit.form');
+    Route::put('notifications/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('notifications.bulk_update');
+
     Route::resource('employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);

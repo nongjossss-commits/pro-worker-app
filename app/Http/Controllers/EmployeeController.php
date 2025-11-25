@@ -804,11 +804,19 @@ public function create(Request $request) // เพิ่ม Request $request เ
     public function bulkEditSelectFields(Request $request)
     {
         $request->validate([
-            'employee_ids' => 'required|array',
+            'employee_ids' => 'sometimes|required|array',
             'employee_ids.*' => 'exists:employees,id',
+            'notification_ids' => 'sometimes|required|array',
+            'notification_ids.*' => 'exists:notifications,id',
         ]);
 
-        $employeeIds = $request->input('employee_ids');
+        if ($request->has('notification_ids')) {
+            $notificationIds = $request->input('notification_ids');
+            $employeeIds = \App\Models\Notification::whereIn('id', $notificationIds)->pluck('employee_id')->unique()->toArray();
+            session(['notification_ids_for_bulk_edit' => $notificationIds]);
+        } else {
+            $employeeIds = $request->input('employee_ids');
+        }
 
         // Define all available fields grouped by category
         $fieldGroups = [
@@ -1043,6 +1051,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $employee->update($updateData);
                 $updatedCount++;
             }
+        }
+
+        if (session()->has('notification_ids_for_bulk_edit')) {
+            $notificationIds = session('notification_ids_for_bulk_edit');
+            \App\Models\Notification::whereIn('id', $notificationIds)->delete();
+            session()->forget('notification_ids_for_bulk_edit');
+            return redirect()->route('notifications.index')->with('success', "Bulk updated {$updatedCount} employees successfully and notifications cleared.");
         }
 
         return redirect()->route('employees.index')->with('success', "Bulk updated {$updatedCount} employees successfully.");
