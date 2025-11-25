@@ -517,6 +517,7 @@
             },
             profilePreviewUrl: null,
             isMobile: window.innerWidth < 768,
+            notifiedMessageIds: [],
 
             // --- Computed ---
             get totalUnread() {
@@ -533,8 +534,29 @@
                 this.loadState();
                 this.fetchContacts();
                 this.fetchSounds();
-                this.pollingInterval = setInterval(() => this.checkNewMessages(), 10000);
                 this.requestNotificationPermission();
+
+                // Listen for new messages on private channel
+                window.Echo.private(`chat.${this.currentUserId}`)
+                    .listen('NewChatMessage', (e) => {
+                        this.handleNewMessage(e.message);
+                    });
+
+                // Listen for presence channel for online status
+                window.Echo.join('chat.presence')
+                    .here((users) => {
+                        this.contacts.forEach(c => {
+                            c.is_online = users.some(u => u.id === c.id);
+                        });
+                    })
+                    .joining((user) => {
+                        const contact = this.contacts.find(c => c.id === user.id);
+                        if (contact) contact.is_online = true;
+                    })
+                    .leaving((user) => {
+                        const contact = this.contacts.find(c => c.id === user.id);
+                        if (contact) contact.is_online = false;
+                    });
 
                 window.addEventListener('mousemove', (e) => this.onMouseMove(e));
                 window.addEventListener('touchmove', (e) => this.onMouseMove(e));
@@ -564,8 +586,10 @@
                 let chat = this.openChats.find(c => c.id === user.id);
                 if (chat) {
                     chat.minimized = false;
-                    chat.unreadCount = 0;
+                    chat.unreadCount = 0; // Clear unread count immediately on open
                     this.bringToFront(chat.id);
+                    // Also explicitly mark messages as read on the backend
+                    this.fetchMessages(chat.id);
                 } else {
                     // Default Position (Center)
                     const offset = (this.openChats.length * 20) % 200;
@@ -899,48 +923,62 @@
                     });
             },
 
-            checkNewMessages() {
-                fetch('{{ route('chat.check_new') }}')
-                    .then(res => res.json())
-                    .then(data => {
-                         if (data.messages && data.messages.length > 0) {
-                            let hasUpdates = false;
-                            let shouldNotify = false;
-                            let notificationMsg = null;
+            markAsRead(userId) {
+                fetch(`/chat/messages/${userId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                }).then(() => {
+                    // Refetch contacts to ensure unread counts are globally synced after marking as read.
+                    this.fetchContacts();
+                });
+            },
 
-                            data.messages.forEach(msg => {
-                                // Only process incoming messages for notification
-                                if(msg.sender_id !== this.currentUserId) {
-                                    shouldNotify = true;
-                                    notificationMsg = msg;
-                                }
+            handleNewMessage(msg) {
+                let hasUpdates = false;
+                let shouldPlaySound = false;
 
-                                const chat = this.openChats.find(c => c.id === (msg.sender_id === this.currentUserId ? msg.receiver_id : msg.sender_id));
-                                if (chat) {
-                                    if (!chat.messages.find(m => m.id === msg.id)) {
-                                        chat.messages.push(msg);
-                                        this.$nextTick(() => this.scrollToBottom(chat.id));
+                const isNewMessage = !this.notifiedMessageIds.includes(msg.id);
+                const isIncoming = msg.sender_id !== this.currentUserId;
 
-                                        if (chat.minimized) {
-                                            chat.unreadCount = (chat.unreadCount || 0) + 1;
-                                            this.saveState();
-                                        }
-                                    }
-                                } else {
-                                    hasUpdates = true;
-                                }
-                            });
+                if (isIncoming && isNewMessage) {
+                    const chat = this.openChats.find(c => c.id === msg.sender_id);
+                    const isChatOpenAndFocused = chat && !chat.minimized && document.hasFocus();
 
-                            if (shouldNotify) {
-                                this.playNotificationSound();
-                                if(notificationMsg) {
-                                    this.showDesktopNotification(notificationMsg);
-                                }
+                    if (!isChatOpenAndFocused) {
+                        shouldPlaySound = true;
+                        this.notifiedMessageIds.push(msg.id); // Mark as notified
+                    }
+                }
+
+                const chatWindow = this.openChats.find(c => c.id === (isIncoming ? msg.sender_id : msg.receiver_id));
+                if (chatWindow) {
+                    if (!chatWindow.messages.find(m => m.id === msg.id)) {
+                        chatWindow.messages.push(msg);
+                        this.$nextTick(() => this.scrollToBottom(chatWindow.id));
+
+                        if (isIncoming) {
+                            if(chatWindow.minimized) {
+                                chatWindow.unreadCount = (chatWindow.unreadCount || 0) + 1;
+                            } else if (document.hasFocus()) {
+                                this.markAsRead(chatWindow.id);
                             }
-
-                            if(hasUpdates || shouldNotify) this.fetchContacts();
+                            this.saveState();
                         }
-                    });
+                    }
+                } else {
+                    hasUpdates = true; // For contacts not yet open
+                }
+
+                if (shouldPlaySound) {
+                    this.playNotificationSound();
+                    this.showDesktopNotification(msg);
+                }
+
+                if (hasUpdates || shouldPlaySound) {
+                    this.fetchContacts();
+                }
             },
 
             playNotificationSound() {

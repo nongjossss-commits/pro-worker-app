@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewChatMessage;
 use App\Models\User;
 use App\Models\ChatMessage;
 use Illuminate\Http\Request;
@@ -199,44 +200,11 @@ class ChatController extends Controller
         // Update sender's last active
         User::where('id', Auth::id())->update(['last_active_at' => now()]);
 
-        return response()->json($message->load('sender:id,name,avatar_path'));
-    }
+        $message->load('sender:id,name,avatar_path');
 
-    /**
-     * Poll for new messages.
-     * Optimized to reduce load.
-     */
-    public function checkNewMessages(Request $request)
-    {
-        // Don't validate strict timestamp, just use what's sent or default to recent
-        $lastCheck = $request->input('last_check');
-        $currentUserId = Auth::id();
+        broadcast(new NewChatMessage($message))->toOthers();
 
-        // Update activity - But maybe not on EVERY poll if it's too frequent?
-        // Let's do it only if > 1 minute has passed since last update in session?
-        // For now, keep it but the frontend polling will be slower (10-15s).
-        // To save DB writes, we can check if last_active_at is old enough.
-        $user = Auth::user();
-        if ($user && (!$user->last_active_at || $user->last_active_at->diffInMinutes(now()) >= 5)) {
-            $user->update(['last_active_at' => now()]);
-        }
-
-        $query = ChatMessage::where('receiver_id', $currentUserId)
-            ->where('is_read', false);
-
-        if ($lastCheck) {
-            $query->where('created_at', '>', $lastCheck);
-        }
-
-        // Limit the check to prevent massive dumps if something goes wrong
-        $newMessages = $query->with('sender:id,name,avatar_path')
-            ->limit(20)
-            ->get();
-
-        return response()->json([
-            'messages' => $newMessages,
-            'timestamp' => now()->toDateTimeString()
-        ]);
+        return response()->json($message);
     }
 
     /**
@@ -301,5 +269,20 @@ class ChatController extends Controller
             'type' => str_starts_with($mime, 'image/') ? 'image' : 'file',
             'mime' => $mime
         ]);
+    }
+
+    /**
+     * Mark messages from a user as read.
+     */
+    public function markAsRead($userId)
+    {
+        $currentUserId = Auth::id();
+
+        ChatMessage::where('sender_id', $userId)
+            ->where('receiver_id', $currentUserId)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json(['success' => true]);
     }
 }
