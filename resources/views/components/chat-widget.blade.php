@@ -237,6 +237,16 @@
                                             </div>
                                             <div class="d-flex align-items-center justify-content-between mt-1">
                                                 <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
+                                                <!-- V2.5-S18-FIX: Add Preview Button for Notifications with Employees -->
+                                                <template x-if="msg.context_data.employee_id">
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
+                                                            style="font-size: 0.7rem;"
+                                                            :data-model-id="msg.context_data.employee_id"
+                                                            data-model-type="employee"
+                                                            title="{{ __('Preview') }}">
+                                                        <i class="bi bi-eye"></i> {{ __('Preview') }}
+                                                    </button>
+                                                </template>
                                             </div>
                                         </div>
                                     </template>
