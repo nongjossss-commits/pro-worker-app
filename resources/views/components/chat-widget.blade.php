@@ -268,16 +268,19 @@
 
                                     <!-- Employee Type -->
                                     <template x-if="msg.context_data.type === 'employee'">
-                                        <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-warning bg-white bg-opacity-75 rounded-end text-dark">
+                                        <div class="d-flex flex-column gap-1 p-2 border-start border-4 border-warning bg-white bg-opacity-75 rounded-end text-dark shadow-sm" style="min-width: 220px;">
                                             <div class="d-flex align-items-center justify-content-between">
-                                                <a :href="'/employees/' + msg.context_data.id + '/locate'" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                <a href="#" @click.prevent="scrollToEmployee(msg.context_data.id)" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
                                                      <i class="bi bi-person-badge-fill text-warning"></i>
                                                      <span x-text="msg.context_data.name"></span>
                                                 </a>
                                             </div>
                                             <div class="d-flex align-items-center justify-content-between mt-1">
-                                                <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
-                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
+                                                <span class="badge bg-light text-dark d-inline-flex align-items-center">
+                                                    <img :src="getFlagUrl(msg.context_data.nationality)" class="me-1" style="width: 16px; height: auto;"/>
+                                                    <span x-text="msg.context_data.nationality || '{{ __('N/A') }}'"></span>
+                                                </span>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-preview py-0 px-1 ms-2"
                                                         style="font-size: 0.7rem;"
                                                         :data-model-id="msg.context_data.id"
                                                         data-model-type="employee"
@@ -725,7 +728,8 @@
                         name: attachmentName,
                         subtitle: data.subtitle || data.code || '',
                         employee_id: data.employee_id || null,
-                        employer_id: data.employer_id || null
+                        employer_id: data.employer_id || null,
+                        nationality: data.nationality || null
                     };
 
                     this.bringToFront(chat.id);
@@ -1124,6 +1128,24 @@
                 this.showSoundSettingsModal = false;
             },
 
+            scrollToEmployee(employeeId) {
+                // Try to find card or row
+                const element = document.getElementById(`employee-card-${employeeId}`) || document.getElementById(`employee-row-${employeeId}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('highlight');
+                    setTimeout(() => {
+                        element.classList.remove('highlight');
+                    }, 3000); // Highlight for 3 seconds
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: '{{ __('Employee Not Found') }}',
+                        text: '{{ __('The employee might be on a different page.') }}'
+                    });
+                }
+            },
+
             loadState() {
                 const saved = localStorage.getItem('chatState_' + this.currentUserId);
                 if (saved) {
@@ -1166,6 +1188,17 @@
             },
             formatTime(date) { return new Date(date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); },
             formatTimeShort(date) { return new Date(date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); },
+            getFlagUrl(nationality) {
+                const flagMap = {
+                    'เมียนมา': 'mm',
+                    'ไทย': 'th',
+                    'ลาว': 'la',
+                    'กัมพูชา': 'kh',
+                    'เวียดนาม': 'vn',
+                };
+                const code = flagMap[nationality] || 'xx'; // 'xx' for unknown
+                return `/images/flags/${code}.png`;
+            },
             getAttachmentIcon(type) {
                 if (type === 'link') return 'bi-link-45deg';
                 if (type === 'image') return 'bi-file-image';

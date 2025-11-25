@@ -425,6 +425,7 @@
                         'id' => $employee->id,
                         'title' => $employee->employeeFullName,
                         'subtitle' => $employer->employerNameTh,
+                        'nationality' => $employee->employeeNationality,
                         'url' => route('employees.show', $employee->id)
                      ]) }}"
                      ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
@@ -457,6 +458,7 @@
                                     'id' => $employee->id,
                                     'title' => $employee->employeeFullName,
                                     'subtitle' => $employer->employerNameTh,
+                                    'nationality' => $employee->employeeNationality,
                                     'url' => route('employees.show', $employee->id)
                                 ]) }}"
                                 ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
