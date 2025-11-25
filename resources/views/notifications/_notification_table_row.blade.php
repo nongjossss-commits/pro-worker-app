@@ -18,7 +18,9 @@
         'id' => $notification->id,
         'title' => $notification->type,
         'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index') . '?highlight=' . $notification->id
+        'url' => route('notifications.index') . '?highlight=' . $notification->id,
+        'employee_id' => $employee ? $employee->id : null,
+        'employer_id' => $employer ? $employer->id : null
     ]) }}"
     ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <td>
@@ -36,7 +38,9 @@
                 <img src="{{ $employee->photo_url }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
                 <div>
                     <div>
-                        {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
+                        <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
+                            {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
+                        </a>
                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
                     </div>
                     <div class="small text-muted">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }}</div>
