@@ -11,17 +11,21 @@
     } elseif ($days_remaining <= 30) {
         $text_class = 'text-warning';
     }
+
+    // NEW PAYLOAD STRUCTURE - Mirrored from _notification_item
+    $payload = [
+        'id' => $notification->id,
+        'type' => 'notification',
+        'render_as' => $employee ? 'employee_card' : 'simple_text',
+        'title' => $notification->type,
+        'employee_name' => $employee ? ($employee->employeeNameTh ?? $employee->employeeNameEn) : null,
+        'employee_id' => $employee ? $employee->id : null,
+        'url' => route('notifications.view-employee', $notification->id),
+    ];
 @endphp
 
 <tr id="notification-row-{{ $notification->id }}" draggable="true"
-    data-drag-payload="{{ json_encode([
-        'id' => $notification->id,
-        'title' => $notification->type,
-        'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index') . '?highlight=' . $notification->id,
-        'employee_id' => $employee ? $employee->id : null,
-        'employer_id' => $employer ? $employer->id : null
-    ]) }}"
+    data-drag-payload="{{ json_encode($payload) }}"
     ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <td>
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
