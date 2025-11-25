@@ -661,13 +661,37 @@
                         attachmentName = `Ticket #${data.id}`;
                         attachmentText = `[TICKET] ${data.title}`;
                     }
+                    // First, set up the basic context object
+                    chat.contextToAttach = {
+                        type: 'link', // Default
+                        id: data.id,
+                        url: data.url,
+                        text: `[${data.type.toUpperCase()}] ${data.title}`,
+                        name: data.title,
+                        subtitle: data.subtitle || data.code || '',
+                        employee_id: data.employee_id || null,
+                        employer_id: data.employer_id || null
+                    };
+
+                    // Then, customize it based on the type
+                    if (data.type === 'employees_bulk') {
+                         chat.contextToAttach.name = `${data.count} Employees`;
+                         chat.contextToAttach.text = `[BULK] ${data.count} Employees Selected`;
+                    }
+                    else if (data.type === 'employee') {
+                        chat.contextToAttach.type = 'employee';
+                        chat.contextToAttach.url = `/employees/${data.id}/locate`;
+                    }
+                    else if (data.type === 'employer') {
+                        chat.contextToAttach.type = 'employer';
+                    }
+                    else if (data.type === 'ticket') {
+                        chat.contextToAttach.type = 'ticket';
+                        chat.contextToAttach.name = `Ticket #${data.id}`;
+                    }
                     else if (data.type === 'notification') {
-                        contextType = 'notification';
-                        attachmentName = `Notification: ${data.title}`;
-                        attachmentText = `[ALERT] ${data.title}`;
-                        // Add extra data for preview
-                        if(data.employee_id) chat.contextToAttach.employee_id = data.employee_id;
-                        if(data.employer_id) chat.contextToAttach.employer_id = data.employer_id;
+                        chat.contextToAttach.type = 'notification';
+                        chat.contextToAttach.name = `Notification: ${data.title}`;
                     }
                     else if (data.type === 'new_employee_draft') {
                         contextType = 'new_employee_draft';
