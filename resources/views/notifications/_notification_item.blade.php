@@ -25,15 +25,33 @@
         $badge_class = 'bg-warning text-dark';
     }
 
-    // NEW PAYLOAD STRUCTURE
+    // V2.5-S20: Enhanced payload for rich chat messages
+    $notificationTypeLabels = [
+        'ninety_day_report' => 'ครบกำหนดรายงานตัว 90 วัน',
+        'work_permit_expiry' => 'ใบอนุญาตทำงานหมดอายุ',
+        'visa_expiry' => 'วีซ่าหมดอายุ',
+        'passport_expiry' => 'หนังสือเดินทางหมดอายุ',
+        'pink_card_missing' => 'ไม่มีข้อมูลบัตรชมพู',
+        'residence_permit_missing' => 'ไม่มีข้อมูลใบอนุญาตพำนัก',
+        'work_permit_mou' => 'Work Permit (MOU)',
+        'employer_document_expiry' => 'เอกสารนายจ้างหมดอายุ',
+        'insurance_expiry' => 'ประกันหมดอายุ'
+    ];
+    $notification_title_th = $notificationTypeLabels[$notification->type] ?? ucfirst(str_replace('_', ' ', $notification->type));
+
     $payload = [
         'id' => $notification->id,
-        'type' => 'notification', // Keep a consistent main type
-        'render_as' => $employee ? 'employee_card' : 'simple_text', // Add a hint for the chat UI
-        'title' => $notification->type, // The raw notification type
-        'employee_name' => $employee ? ($employee->employeeNameTh ?? $employee->employeeNameEn) : null,
-        'employee_id' => $employee ? $employee->id : null,
-        'url' => route('notifications.index', ['highlight' => $notification->id]),
+        'type' => 'notification',
+        'render_as' => $employee ? 'employee_card' : 'simple_text',
+        'title' => $notification->type, // raw type
+        'notification_title_th' => $notification_title_th,
+        'employee_id' => optional($employee)->id,
+        'employee_name_th' => optional($employee)->employeeNameTh,
+        'employee_name_en' => optional($employee)->employeeNameEn,
+        'employee_photo_url' => optional($employee)->photo_url,
+        'employee_nationality' => optional($employee)->employeeNationality,
+        'employer_name_th' => optional($employer)->employerNameTh,
+        'url' => route('notifications.index', ['highlight' => $notification->id, 'active_tab' => $notification->status]),
     ];
 @endphp
 
