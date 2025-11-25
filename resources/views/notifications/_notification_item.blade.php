@@ -24,17 +24,21 @@
         $card_class = 'alert-warning';
         $badge_class = 'bg-warning text-dark';
     }
+
+    // NEW PAYLOAD STRUCTURE
+    $payload = [
+        'id' => $notification->id,
+        'type' => 'notification', // Keep a consistent main type
+        'render_as' => $employee ? 'employee_card' : 'simple_text', // Add a hint for the chat UI
+        'title' => $notification->type, // The raw notification type
+        'employee_name' => $employee ? ($employee->employeeNameTh ?? $employee->employeeNameEn) : null,
+        'employee_id' => $employee ? $employee->id : null,
+        'url' => route('notifications.view-employee', $notification->id), // Direct link for GPS/Locate
+    ];
 @endphp
 
 <div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item" draggable="true"
-     data-drag-payload="{{ json_encode([
-        'id' => $notification->id,
-        'title' => $notification->type,
-        'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index') . '?highlight=' . $notification->id,
-        'employee_id' => $employee ? $employee->id : null,
-        'employer_id' => $employer ? $employer->id : null
-     ]) }}"
+     data-drag-payload="{{ json_encode($payload) }}"
      ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <div class="d-flex align-items-center gap-3">
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
