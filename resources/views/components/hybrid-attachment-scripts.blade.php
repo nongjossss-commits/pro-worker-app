@@ -548,7 +548,7 @@ function hybridAttachmentManager(config = {}) {
             this.isUploading = false;
         },
 
-        // --- Drag & Drop Handler (V2.5-S18) ---
+        // --- Drag & Drop Handler (V2.5-S18 & V2.5-S20) ---
         handleDrop(e) {
             const rawData = e.dataTransfer.getData('application/json');
             if (!rawData) return;
@@ -561,52 +561,62 @@ function hybridAttachmentManager(config = {}) {
                 return;
             }
 
-            // 1. Handle Employee Drop (from anywhere) -> Add to Basket
-            // This now also handles notifications that represent an employee
-            if (data.type === 'employee' || (data.type === 'notification' && data.render_as === 'employee_card' && data.employee_id)) {
-                const employeeId = data.type === 'employee' ? data.id : data.employee_id;
-                const sourceUrl = data.url || null; // V2.5-S18-FIX: Capture the source URL
+            const messageBox = document.getElementById('message');
 
-                // Check if already in either basket
+            // 1. SPECIAL CASE: Notification Card dropped into message box
+            if (data.type === 'notification' && data.render_as === 'employee_card' && messageBox) {
+                // Create a special formatted string with the rich payload
+                const textToAppend = `[[--NOTIFICATION_CARD--]]${JSON.stringify(data)}[[--/NOTIFICATION_CARD--]]`;
+
+                // Append it to the message box
+                const currentVal = messageBox.value;
+                messageBox.value = currentVal + (currentVal ? '\n' : '') + textToAppend;
+                messageBox.dispatchEvent(new Event('input')); // for auto-resize
+                return; // Done
+            }
+
+            // 2. Handle Employee Drop (from anywhere) -> Add to Basket
+            if (data.type === 'employee') {
+                const employeeId = data.id;
+                const sourceUrl = data.url || null;
+
                 const inExisting = this.basket.existing_employees.some(emp => emp.id == employeeId);
                 const inExternal = this.basket.external_employees.some(emp => emp.id == employeeId);
 
                 if (inExisting || inExternal) {
-                    Swal.fire({
-                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-                        icon: 'info', title: 'ลูกจ้างนี้ถูกเลือกแล้ว'
-                    });
+                    Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, icon: 'info', title: 'ลูกจ้างนี้ถูกเลือกแล้ว' });
                     return;
                 }
 
-                // Add to selection and fetch details, passing the URL along
                 this.selectedEmployeeIds = [{ id: employeeId, url: sourceUrl }];
-                this.fetchPreselectedEmployees(); // Auto determines destination based on context
+                this.fetchPreselectedEmployees();
                 return;
             }
 
-            // 2. Handle Other Types -> Append Link to Message
-            // (This includes notifications that are not employee-cards)
-            const messageBox = document.getElementById('message');
+            // 3. Handle Other Types -> Append as a simple link to Message
             if (messageBox) {
                 let textToAppend = '';
                 if (data.type === 'employer') {
-                    textToAppend = `[Employer: ${data.title}](${data.url}) `;
+                    textToAppend = `[นายจ้าง: ${data.title}](${data.url}) `;
                 } else if (data.type === 'ticket') {
-                     textToAppend = `[Ticket #${data.id}: ${data.title}](${data.url}) `;
-                } else if (data.type === 'notification') {
-                     // This will now only catch non-employee notifications
-                     textToAppend = `[Notification: ${data.title}](${data.url}) `;
+                     textToAppend = `[ตั๋วงาน #${data.id}: ${data.title}](${data.url}) `;
+                } else if (data.type === 'notification') { // This now only catches non-employee (simple_text) notifications
+                     textToAppend = `[การแจ้งเตือน: ${data.title}](${data.url}) `;
+                } else if (data.type === 'file' && data.url) {
+                    textToAppend = `[ไฟล์: ${data.title}](${data.url}) `;
+                } else if (data.type === 'new_employee_draft') {
+                    textToAppend = `[ลูกจ้างใหม่ (ร่าง): ${data.title}] `;
                 } else {
-                    // Default / Link / File
-                    textToAppend = `[${data.title}](${data.url}) `;
+                    // Default / Link / Other draggable items without a specific handler
+                    if (data.url && data.title) {
+                        textToAppend = `[${data.title}](${data.url}) `;
+                    } else {
+                        textToAppend = `${data.title || 'Attached Item'} `;
+                    }
                 }
 
-                // Append text
                 const currentVal = messageBox.value;
                 messageBox.value = currentVal + (currentVal ? '\n' : '') + textToAppend;
-
-                // Trigger input event for any auto-resize listeners
                 messageBox.dispatchEvent(new Event('input'));
             }
         },

@@ -377,8 +377,27 @@
                                         </div>
                                     </div>
                                     <div class="p-3 rounded" style="background-color: #f1f5f9;">
-                                        {{-- Use nl2br to respect line breaks in the message body --}}
-                                        {!! nl2br(e($message->body)) !!}
+                                        @php
+                                            $body = $message->body;
+                                            // V2.5-S20: Regex to find the special notification card format
+                                            $pattern = '/\[\[--NOTIFICATION_CARD--\]\](.*?)\[\[--\/NOTIFICATION_CARD--\]\]/s';
+
+                                            // Replace all occurrences of the pattern with the rendered partial
+                                            $formattedBody = preg_replace_callback($pattern, function ($matches) {
+                                                $jsonData = $matches[1];
+                                                $notificationData = json_decode($jsonData);
+
+                                                if (json_last_error() === JSON_ERROR_NONE) {
+                                                    return view('tickets.partials._chat_notification_card', ['notification' => $notificationData])->render();
+                                                }
+                                                // If JSON is invalid, return a placeholder or the raw content
+                                                return '<div class="alert alert-danger">ไม่สามารถแสดงข้อมูลการแจ้งเตือนได้</div>';
+                                            }, $body);
+
+                                            // Convert remaining text line breaks to <br> tags, ensuring HTML is not escaped
+                                            echo nl2br(e(preg_replace($pattern, '', $body))); // Display non-matching text safely
+                                            echo $formattedBody; // Display the rendered cards
+                                        @endphp
                                     </div>
                                 </div>
                             </div>
