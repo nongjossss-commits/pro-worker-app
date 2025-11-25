@@ -26,97 +26,8 @@ class CheckExpiries extends Command
         $this->info('Cleaning up old notifications...');
         Notification::where('due_date', '<', $today->copy()->subYear())->delete();
 
-        $documentChecks = [
-            'passportExpiryDate'   => 'passport_expiry',
-            'workPermitExpiryDate' => 'work_permit_expiry',
-            'visaExpiryDate'       => 'visa_expiry',
-            'ninetyDayReportDate'  => 'ninety_day_report',
-        ];
-
-        foreach ($documentChecks as $dateField => $notificationType) {
-            $this->info("Checking: {$notificationType}...");
-
-            // Determine the maximum look-ahead period for the initial database query
-            $maxDays = 0;
-            if ($notificationType === 'passport_expiry') {
-                $maxDays = max(
-                    $settings->get('passport_expiry')->days_before_expiry ?? 60,
-                    $settings->get('ci_renewal')->days_before_expiry ?? 60
-                );
-            } elseif ($notificationType === 'work_permit_expiry') {
-                $maxDays = max(
-                    $settings->get('work_permit_mou')->days_before_expiry ?? 60,
-                    $settings->get('resolution_renewal')->days_before_expiry ?? 60,
-                    $settings->get('new_registration_renewal')->days_before_expiry ?? 60
-                );
-            } else {
-                $maxDays = $settings->get($notificationType)->days_before_expiry ?? 60;
-            }
-
-            $pastThreshold = $today->copy()->subDays(365);
-            $futureThreshold = $today->copy()->addDays($maxDays);
-
-            $employees = Employee::whereNotNull($dateField)
-                ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
-                ->get();
-
-            $this->info("Found {$employees->count()} employees for field [{$dateField}] within a {$maxDays}-day threshold.");
-
-            foreach ($employees as $employee) {
-                if ($employee->is_cancelled ?? false) {
-                    continue;
-                }
-
-                $expiryDate = Carbon::parse($employee->{$dateField});
-                $daysRemaining = $today->diffInDays($expiryDate, false);
-                $currentNotificationType = $notificationType;
-
-                // Determine the specific notification type based on employee data
-                if ($notificationType === 'work_permit_expiry') {
-                     if ($employee->workPermitMOUGroup === 'MOU') {
-                        $currentNotificationType = 'work_permit_mou';
-                    } elseif ($employee->workPermitMOUGroup === 'มติต่ออายุในประเทศ') {
-                        $currentNotificationType = 'resolution_renewal';
-                    } elseif ($employee->workPermitMOUGroup === 'มติขึ้นทะเบียน') {
-                        $currentNotificationType = 'new_registration_renewal';
-                    }
-                }
-
-                if ($notificationType === 'passport_expiry' && $employee->passportType === 'CI') {
-                    $currentNotificationType = 'ci_renewal';
-                }
-
-                // Get the specific threshold for the determined notification type
-                $setting = $settings->get($currentNotificationType);
-                $shouldHaveNotification = $setting &&
-                    $setting->is_enabled &&
-                    $setting->days_before_expiry !== null &&
-                    $daysRemaining <= $setting->days_before_expiry &&
-                    $daysRemaining >= -365; // Don't notify for things that expired a year ago
-
-                if ($shouldHaveNotification) {
-                    Notification::updateOrCreate(
-                        [
-                            'employee_id' => $employee->id,
-                            'type' => $currentNotificationType,
-                        ],
-                        [
-                            'due_date' => $expiryDate,
-                            'days_remaining' => $daysRemaining,
-                            'status' => 'unread', // Reset status to unread on update
-                            'message' => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$setting->days_before_expiry} วัน)",
-                        ]
-                    );
-                } else {
-                    // If the employee should NOT have a notification (e.g., date was changed, setting disabled),
-                    // ensure any existing one is removed.
-                    Notification::where('employee_id', $employee->id)
-                                  ->where('type', $currentNotificationType)
-                                  ->delete();
-                }
-            }
-        }
-
+        $this->info('Checking for expiring documents...');
+        $this->checkDocumentExpiries($today, $settings);
         $this->info('Finished checking for expiring documents.');
 
         $this->info('Checking for expiring employer documents...');
@@ -345,5 +256,92 @@ class CheckExpiries extends Command
         }
 
         $this->info("Finished processing for {$notificationType}.");
+    }
+
+    protected function checkDocumentExpiries($today, $settings)
+    {
+        $documentChecks = [
+            'passport_expiry' => ['dateField' => 'passportExpiryDate', 'subTypes' => ['ci_renewal']],
+            'work_permit_expiry' => ['dateField' => 'workPermitExpiryDate', 'subTypes' => ['work_permit_mou', 'resolution_renewal', 'new_registration_renewal']],
+            'visa_expiry' => ['dateField' => 'visaExpiryDate', 'subTypes' => []],
+            'ninety_day_report' => ['dateField' => 'ninetyDayReportDate', 'subTypes' => []],
+        ];
+
+        foreach ($documentChecks as $baseType => $details) {
+            $allSubTypes = array_merge([$baseType], $details['subTypes']);
+            $this->info("Processing document types: " . implode(', ', $allSubTypes));
+
+            $allEmployeeIdsInScope = collect();
+
+            foreach ($allSubTypes as $notificationType) {
+                $setting = $settings->get($notificationType);
+
+                if (!$setting || !$setting->is_enabled || $setting->days_before_expiry === null) {
+                    $this->info("Skipping {$notificationType} (disabled or settings missing).");
+                    Notification::where('type', $notificationType)->delete();
+                    continue;
+                }
+
+                $threshold = $setting->days_before_expiry;
+                $pastThreshold = $today->copy()->subDays(365);
+                $futureThreshold = $today->copy()->addDays($threshold);
+
+                $employeesQuery = Employee::whereNotNull($details['dateField'])
+                    ->whereBetween($details['dateField'], [$pastThreshold, $futureThreshold])
+                    ->where(function ($query) use ($today, $details, $threshold) {
+                        $query->whereRaw('DATEDIFF(?, ?)', [$details['dateField'], $today])
+                            ->where('DATEDIFF(?, ?)', [$details['dateField'], $today], '<=', $threshold);
+                    });
+
+                // Add specific conditions for subtypes
+                if ($notificationType === 'ci_renewal') {
+                    $employeesQuery->where('passportType', 'CI');
+                } elseif ($notificationType === 'passport_expiry') {
+                    $employeesQuery->where(function ($q) {
+                        $q->where('passportType', '!=', 'CI')->orWhereNull('passportType');
+                    });
+                } elseif ($notificationType === 'work_permit_mou') {
+                    $employeesQuery->where('workPermitMOUGroup', 'MOU');
+                } elseif ($notificationType === 'resolution_renewal') {
+                    $employeesQuery->where('workPermitMOUGroup', 'มติต่ออายุในประเทศ');
+                } elseif ($notificationType === 'new_registration_renewal') {
+                    $employeesQuery->where('workPermitMOUGroup', 'มติขึ้นทะเบียน');
+                }
+
+                $employees = $employeesQuery->get();
+                $employeeIdsInScope = $employees->pluck('id');
+                $allEmployeeIdsInScope = $allEmployeeIdsInScope->merge($employeeIdsInScope);
+
+                $this->info("Found {$employees->count()} employees for [{$notificationType}] within a {$threshold}-day threshold.");
+
+                foreach ($employees as $employee) {
+                    if ($employee->is_cancelled ?? false) {
+                        continue;
+                    }
+                    $expiryDate = Carbon::parse($employee->{$details['dateField']});
+                    $daysRemaining = $today->diffInDays($expiryDate, false);
+
+                    Notification::updateOrCreate(
+                        [
+                            'employee_id' => $employee->id,
+                            'type' => $notificationType,
+                        ],
+                        [
+                            'due_date' => $expiryDate,
+                            'days_remaining' => $daysRemaining,
+                            'status' => 'unread',
+                            'message' => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$setting->days_before_expiry} วัน)",
+                        ]
+                    );
+                }
+            }
+
+            // Delete notifications for the base type and all its subtypes that are no longer in scope
+            Notification::whereIn('type', $allSubTypes)
+                ->whereNotIn('employee_id', $allEmployeeIdsInScope->unique())
+                ->delete();
+
+            $this->info("Finished cleanup for document base type: {$baseType}.");
+        }
     }
 }
