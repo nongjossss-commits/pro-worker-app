@@ -31,7 +31,9 @@
         'id' => $notification->id,
         'title' => $notification->type,
         'subtitle' => $employee ? $employee->employeeNameEn : ($employer->employerNameTh ?? ''),
-        'url' => route('notifications.index') . '?highlight=' . $notification->id
+        'url' => route('notifications.index') . '?highlight=' . $notification->id,
+        'employee_id' => $employee ? $employee->id : null,
+        'employer_id' => $employer ? $employer->id : null
      ]) }}"
      ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
     <div class="d-flex align-items-center gap-3">
@@ -54,7 +56,9 @@
                     {{ $itemNumber }}.
                     {{-- Display Employee Name or Employer Document Type --}}
                     @if($employee)
-                        {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
+                        <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
+                            {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
+                        </a>
                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
                         @if(optional($employee)->employeeNationality)
                             @php

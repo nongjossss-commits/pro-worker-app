@@ -203,6 +203,25 @@
                                             </div>
                                             <div class="d-flex align-items-center justify-content-between mt-1">
                                                 <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
+                                                <!-- Add Preview Button for Employees/Employers -->
+                                                <template x-if="msg.context_data.employee_id">
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
+                                                            style="font-size: 0.7rem;"
+                                                            :data-model-id="msg.context_data.employee_id"
+                                                            data-model-type="employee"
+                                                            title="{{ __('Preview') }}">
+                                                        <i class="bi bi-eye"></i> {{ __('Preview') }}
+                                                    </button>
+                                                </template>
+                                                <template x-if="!msg.context_data.employee_id && msg.context_data.employer_id">
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
+                                                            style="font-size: 0.7rem;"
+                                                            :data-model-id="msg.context_data.employer_id"
+                                                            data-model-type="employer"
+                                                            title="{{ __('Preview') }}">
+                                                        <i class="bi bi-eye"></i> {{ __('Preview') }}
+                                                    </button>
+                                                </template>
                                             </div>
                                         </div>
                                     </template>
@@ -607,6 +626,9 @@
                         contextType = 'notification';
                         attachmentName = `Notification: ${data.title}`;
                         attachmentText = `[ALERT] ${data.title}`;
+                        // Add extra data for preview
+                        if(data.employee_id) chat.contextToAttach.employee_id = data.employee_id;
+                        if(data.employer_id) chat.contextToAttach.employer_id = data.employer_id;
                     }
                     else if (data.type === 'new_employee_draft') {
                         contextType = 'new_employee_draft';
@@ -627,7 +649,9 @@
                         url: contextUrl,
                         text: attachmentText,
                         name: attachmentName,
-                        subtitle: data.subtitle || data.code || ''
+                        subtitle: data.subtitle || data.code || '',
+                        employee_id: data.employee_id || null,
+                        employer_id: data.employer_id || null
                     };
 
                     this.bringToFront(chat.id);
