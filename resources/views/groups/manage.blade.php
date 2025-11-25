@@ -169,6 +169,13 @@
                                 @click="openEditGroupModal({{ $activeGroup->id }}, '{{ $activeGroup->name }}')">
                             <i class="bi bi-pencil"></i>
                         </button>
+                        <form action="{{ route('groups.destroy', $activeGroup->id) }}" method="POST" class="d-inline delete-group-form">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
                     </div>
                     <button class="btn btn-outline-primary btn-sm"
                             data-bs-toggle="modal"
@@ -211,6 +218,13 @@
                                             @click="openEditTeamModal({{ $team->id }}, '{{ $team->name }}')">
                                         <i class="bi bi-pencil"></i> {{ __('Edit Team') }}
                                     </button>
+                                    <form action="{{ route('groups.teams.destroy', $team->id) }}" method="POST" class="d-inline delete-team-form">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i> {{ __('Delete Team') }}
+                                        </button>
+                                    </form>
                                     <button class="btn btn-sm btn-success"
                                             @click="openAddMemberModal({{ $activeGroup->id }}, {{ $team->id }}, '{{ $team->name }}')">
                                         <i class="bi bi-person-plus-fill"></i> {{ __('Add Member') }}
@@ -520,12 +534,44 @@
             }
         }
 
-        // Handle Delete Member Confirmation
+        // V4: Final refactored and consolidated delegated event listener for all delete forms
         document.body.addEventListener('submit', function(e) {
-            if (e.target.matches('.delete-member-form')) {
-                e.preventDefault();
-                const form = e.target;
+            const form = e.target;
 
+            if (form.matches('.delete-group-form')) {
+                e.preventDefault();
+                Swal.fire({
+                    title: '{{ __('Are you sure?') }}',
+                    text: "{{ __('This will delete the entire group and all teams inside it. This action cannot be undone!') }}",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '{{ __('Yes, delete group!') }}',
+                    cancelButtonText: '{{ __('Cancel') }}'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            } else if (form.matches('.delete-team-form')) {
+                e.preventDefault();
+                Swal.fire({
+                    title: '{{ __('Are you sure?') }}',
+                    text: "{{ __('Do you want to delete this team? This action cannot be undone.') }}",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '{{ __('Yes, delete team!') }}',
+                    cancelButtonText: '{{ __('Cancel') }}'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            } else if (form.matches('.delete-member-form')) {
+                e.preventDefault();
                 Swal.fire({
                     title: '{{ __('Are you sure?') }}',
                     text: "{{ __('Do you want to remove this member from the team?') }}",
@@ -542,6 +588,7 @@
                 });
             }
         });
+
 
         // Bulk Actions Handlers
 
