@@ -42,20 +42,20 @@
             <div class="col-md-8">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="employeeTitleTh" class="form-label">คำนำหน้าชื่อ (ไทย) <span class="text-danger">*</span>
+                        <label for="employeeTitleTh" class="form-label">คำนำหน้าชื่อ (ไทย)
                             @if(isset($missingFields) && in_array('employeeTitleTh', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
                         </label>
-                        <select class="form-select" id="employeeTitleTh" name="employeeTitleTh" required>
+                        <select class="form-select" id="employeeTitleTh" name="employeeTitleTh">
                             <option value="นาย" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาย')>นาย</option>
                             <option value="นางสาว" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นางสาว')>นางสาว</option>
                             <option value="นาง" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาง')>นาง</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="employeeNameTh" class="form-label">ชื่อ-สกุล (ไทย) <span class="text-danger">*</span>
+                        <label for="employeeNameTh" class="form-label">ชื่อ-สกุล (ไทย)
                             @if(isset($missingFields) && in_array('employeeNameTh', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
                         </label>
-                        <input type="text" class="form-control" id="employeeNameTh" name="employeeNameTh" value="{{ old('employeeNameTh', $employee->employeeNameTh) }}" required>
+                        <input type="text" class="form-control" id="employeeNameTh" name="employeeNameTh" value="{{ old('employeeNameTh', $employee->employeeNameTh) }}">
                     </div>
                 </div>
 
@@ -71,10 +71,10 @@
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="employeeNameEn" class="form-label">Full Name (EN)
+                        <label for="employeeNameEn" class="form-label">Full Name (EN) <span class="text-danger">*</span>
                             @if(isset($missingFields) && in_array('employeeNameEn', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
                         </label>
-                        <input type="text" class="form-control" id="employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn', $employee->employeeNameEn) }}">
+                        <input type="text" class="form-control" id="employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn', $employee->employeeNameEn) }}" required>
                     </div>
                 </div>
 

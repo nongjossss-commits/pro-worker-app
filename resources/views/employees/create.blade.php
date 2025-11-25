@@ -53,16 +53,16 @@
             <div class="col-md-8">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="employeeTitleTh" class="form-label">คำนำหน้าชื่อ (ไทย) <span class="text-danger">*</span></label>
-                        <select class="form-select" id="employeeTitleTh" name="employeeTitleTh" required>
+                        <label for="employeeTitleTh" class="form-label">คำนำหน้าชื่อ (ไทย)</label>
+                        <select class="form-select" id="employeeTitleTh" name="employeeTitleTh">
                             <option value="นาย" {{ old('employeeTitleTh') == 'นาย' ? 'selected' : '' }}>นาย</option>
                             <option value="นางสาว" {{ old('employeeTitleTh') == 'นางสาว' ? 'selected' : '' }}>นางสาว</option>
                             <option value="นาง" {{ old('employeeTitleTh') == 'นาง' ? 'selected' : '' }}>นาง</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="employeeNameTh" class="form-label">ชื่อ-สกุล (ไทย) <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="employeeNameTh" name="employeeNameTh" value="{{ old('employeeNameTh') }}" required>
+                        <label for="employeeNameTh" class="form-label">ชื่อ-สกุล (ไทย)</label>
+                        <input type="text" class="form-control" id="employeeNameTh" name="employeeNameTh" value="{{ old('employeeNameTh') }}">
                     </div>
                 </div>
 
@@ -76,8 +76,8 @@
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="employeeNameEn" class="form-label">Full Name (EN)</label>
-                        <input type="text" class="form-control" id="employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn') }}">
+                        <label for="employeeNameEn" class="form-label">Full Name (EN) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn') }}" required>
                     </div>
                 </div>
 
