@@ -91,10 +91,10 @@ class CheckExpiries extends Command
                 }
 
                 // Get the specific threshold for the determined notification type
-                $specificThreshold = $settings->get($currentNotificationType)->days_before_expiry ?? null;
+                $setting = $settings->get($currentNotificationType);
 
-                // Only create a notification if the expiry is within the specific threshold
-                if ($specificThreshold !== null && $daysRemaining <= $specificThreshold) {
+                // Only create a notification if the setting is enabled and the expiry is within the specific threshold
+                if ($setting && $setting->is_enabled && $setting->days_before_expiry !== null && $daysRemaining <= $setting->days_before_expiry) {
                     Notification::updateOrCreate(
                         [
                             'employee_id' => $employee->id,
@@ -104,7 +104,7 @@ class CheckExpiries extends Command
                             'due_date'       => $expiryDate,
                             'days_remaining' => $daysRemaining,
                             'status'         => 'unread',
-                            'message'        => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$specificThreshold} วัน)",
+                            'message'        => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$setting->days_before_expiry} วัน)",
                         ]
                     );
                 }
@@ -133,8 +133,9 @@ class CheckExpiries extends Command
     {
         $notificationType = 'employer_document_expiry';
         $setting = $settings->get($notificationType);
-        if (!$setting) {
-            $this->warn("Setting for {$notificationType} not found. Skipping.");
+
+        if (!$setting || !$setting->is_enabled) {
+            $this->info("Skipping {$notificationType} (disabled or settings missing).");
             return;
         }
 
@@ -173,8 +174,9 @@ class CheckExpiries extends Command
     {
         $notificationType = 'employee_insurance_expiry';
         $setting = $settings->get($notificationType);
-        if (!$setting) {
-            $this->warn("Setting for {$notificationType} not found. Skipping.");
+
+        if (!$setting || !$setting->is_enabled) {
+            $this->info("Skipping {$notificationType} (disabled or settings missing).");
             return;
         }
 
