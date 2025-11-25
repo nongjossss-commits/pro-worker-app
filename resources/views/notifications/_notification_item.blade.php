@@ -33,7 +33,7 @@
         'title' => $notification->type, // The raw notification type
         'employee_name' => $employee ? ($employee->employeeNameTh ?? $employee->employeeNameEn) : null,
         'employee_id' => $employee ? $employee->id : null,
-        'url' => route('notifications.index') . '#notification-item-' . $notification->id, // V2.5-S18-FIX: Link back to the specific notification card
+        'url' => route('notifications.index', ['highlight' => $notification->id]),
     ];
 @endphp
 
