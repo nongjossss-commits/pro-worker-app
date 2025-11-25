@@ -206,8 +206,13 @@ function hybridAttachmentManager(config = {}) {
             this.isLoading = true;
             try {
                 const params = new URLSearchParams();
-                // Pass the IDs as array
-                this.selectedEmployeeIds.forEach(id => params.append('ids[]', id));
+                // V2.5-S18-FIX: Handle both simple IDs and {id, url} objects
+                const idMap = new Map(this.selectedEmployeeIds.map(item => [
+                    (typeof item === 'object' ? item.id : item),
+                    (typeof item === 'object' ? item.url : null)
+                ]));
+                idMap.forEach((_, id) => params.append('ids[]', id));
+
 
                 const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
                 if (!response.ok) throw new Error('Network response was not ok');
@@ -221,15 +226,18 @@ function hybridAttachmentManager(config = {}) {
                      const inExternal = this.basket.external_employees.some(e => e.id == emp.id);
 
                      if (!inExisting && !inExternal) {
+                        const sourceUrl = idMap.get(emp.id); // V2.5-S18-FIX: Get the URL from our map
+                        const employeeWithUrl = { ...emp, url: sourceUrl }; // Attach the URL
+
                         // If forceToExisting is true (from matching employer logic), put in existing
                         if (forceToExisting) {
-                            this.basket.existing_employees.push(emp);
+                            this.basket.existing_employees.push(employeeWithUrl);
                         } else {
                             // Otherwise check context
                             if (this.contextEmployerId && emp.employer_id == this.contextEmployerId) {
-                                this.basket.existing_employees.push(emp);
+                                this.basket.existing_employees.push(employeeWithUrl);
                             } else {
-                                this.basket.external_employees.push(emp);
+                                this.basket.external_employees.push(employeeWithUrl);
                             }
                         }
                     }
@@ -553,11 +561,15 @@ function hybridAttachmentManager(config = {}) {
                 return;
             }
 
-            // 1. Handle Employee Drop -> Add to Basket
-            if (data.type === 'employee') {
+            // 1. Handle Employee Drop (from anywhere) -> Add to Basket
+            // This now also handles notifications that represent an employee
+            if (data.type === 'employee' || (data.type === 'notification' && data.render_as === 'employee_card' && data.employee_id)) {
+                const employeeId = data.type === 'employee' ? data.id : data.employee_id;
+                const sourceUrl = data.url || null; // V2.5-S18-FIX: Capture the source URL
+
                 // Check if already in either basket
-                const inExisting = this.basket.existing_employees.some(emp => emp.id == data.id);
-                const inExternal = this.basket.external_employees.some(emp => emp.id == data.id);
+                const inExisting = this.basket.existing_employees.some(emp => emp.id == employeeId);
+                const inExternal = this.basket.external_employees.some(emp => emp.id == employeeId);
 
                 if (inExisting || inExternal) {
                     Swal.fire({
@@ -567,14 +579,14 @@ function hybridAttachmentManager(config = {}) {
                     return;
                 }
 
-                // Add to selection and fetch details
-                this.selectedEmployeeIds = [data.id];
+                // Add to selection and fetch details, passing the URL along
+                this.selectedEmployeeIds = [{ id: employeeId, url: sourceUrl }];
                 this.fetchPreselectedEmployees(); // Auto determines destination based on context
                 return;
             }
 
             // 2. Handle Other Types -> Append Link to Message
-            // We need to find the textarea. Since it's standard DOM inside the x-data scope:
+            // (This includes notifications that are not employee-cards)
             const messageBox = document.getElementById('message');
             if (messageBox) {
                 let textToAppend = '';
@@ -583,6 +595,7 @@ function hybridAttachmentManager(config = {}) {
                 } else if (data.type === 'ticket') {
                      textToAppend = `[Ticket #${data.id}: ${data.title}](${data.url}) `;
                 } else if (data.type === 'notification') {
+                     // This will now only catch non-employee notifications
                      textToAppend = `[Notification: ${data.title}](${data.url}) `;
                 } else {
                     // Default / Link / File

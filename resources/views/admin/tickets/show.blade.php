@@ -473,18 +473,20 @@
                                                 id: item.id,
                                                 title: item.employeeNameTh || item.employeeNameEn,
                                                 subtitle: item.employeeNameEn ? item.employeeNameEn : item.employeeCode,
-                                                url: '/employees/' + item.id + '/locate'
+                                                url: item.url || ('/employees/' + item.id + '/locate')
                                              })">
                                             <div class="d-flex align-items-center gap-3">
                                                 <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
                                                 <span>
                                                     <i class="bi bi-person-check me-1 text-primary"></i>
-                                                    <span x-text="item.employeeNameTh"></span>
+                                                    <a :href="item.url || '#'" x-text="item.employeeNameTh" :target="item.url ? '_blank' : '_self'" class="text-decoration-none text-dark fw-bold"></a>
                                                     <span class="text-muted" x-text="item.employeeNameEn ? '(' + item.employeeNameEn + ')' : ''"></span>
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-id="item.id" data-model-type="employee">Preview</button>
                                                 </span>
                                             </div>
                                             <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
-                                            <input type="hidden" :name="'attachments[existing_employees][' + index + ']'" :value="item.id">
+                                            <input type="hidden" :name="'attachments[existing_employees][' + index + '][id]'" :value="item.id">
+                                            <input type="hidden" :name="'attachments[existing_employees][' + index + '][url]'" :value="item.url || ''">
                                         </div>
                                     </template>
                                     {{-- 1.5 Display External Employees --}}
@@ -495,18 +497,20 @@
                                                 id: item.id,
                                                 title: item.employeeNameTh || item.employeeNameEn,
                                                 subtitle: (item.employer_name || 'Ext') + (item.employeeNameEn ? ' - ' + item.employeeNameEn : ''),
-                                                url: '/employees/' + item.id + '/locate'
+                                                url: item.url || ('/employees/' + item.id + '/locate')
                                              })">
                                             <div class="d-flex align-items-center gap-3">
                                                 <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
                                                 <span>
                                                     <i class="bi bi-search me-1 text-warning"></i>
-                                                    <span x-text="item.employeeNameTh"></span>
+                                                    <a :href="item.url || '#'" x-text="item.employeeNameTh" :target="item.url ? '_blank' : '_self'" class="text-decoration-none text-dark fw-bold"></a>
                                                     <span class="text-muted" x-text="'(Ext)'"></span>
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-id="item.id" data-model-type="employee">Preview</button>
                                                 </span>
                                             </div>
                                             <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('external_employees', index, item.employeeNameTh)">ลบ</button>
-                                            <input type="hidden" :name="'attachments[external_employees][' + index + ']'" :value="item.id">
+                                            <input type="hidden" :name="'attachments[external_employees][' + index + '][id]'" :value="item.id">
+                                            <input type="hidden" :name="'attachments[external_employees][' + index + '][url]'" :value="item.url || ''">
                                         </div>
                                     </template>
                                     {{-- 2. Display New Employees --}}
