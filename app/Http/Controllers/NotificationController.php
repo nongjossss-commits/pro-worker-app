@@ -143,8 +143,10 @@ class NotificationController extends Controller
                         $q_employee->where('employeeNameTh', 'like', "%{$search}%")
                                    ->orWhere('employeeNameEn', 'like', "%{$search}%")
                                    ->orWhere('employeePassport', 'like', "%{$search}%")
+                                   ->orWhere('companyWorkerId', 'like', "%{$search}%") // Added companyWorkerId
                                    ->orWhereHas('employer', function ($q_employer) use ($search) {
-                                       $q_employer->where('employerNameTh', 'like', "%{$search}%");
+                                       $q_employer->where('employerNameTh', 'like', "%{$search}%")
+                                                  ->orWhere('employerNameEn', 'like', "%{$search}%"); // Added employerNameEn
                                    });
                     });
                 }
