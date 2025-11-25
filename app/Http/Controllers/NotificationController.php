@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use App\Models\Employee;
+use App\Models\NotificationSetting;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +19,10 @@ class NotificationController extends Controller
         $perPageOptions = ($currentView === 'card') ? [10, 15, 20] : [25, 50, 100];
         $perPage = $request->input('per_page', $perPageOptions[0]);
 
-        $tabs = [
+        // Fetch all settings once
+        $allSettings = NotificationSetting::all()->keyBy('notification_type');
+
+        $allPossibleTabs = [
             'ninety_day_report' => 'รายงานตัว 90 วัน',
             'passport_expiry' => 'Passport',
             'work_permit_mou' => 'ใบอนุญาตทำงาน (MOU)',
@@ -28,9 +32,21 @@ class NotificationController extends Controller
             'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
             'employer_document_expiry' => 'เอกสารนายจ้าง',
             'employee_insurance_expiry' => 'ประกันลูกจ้าง',
-            'pink_card_missing' => 'บัตรชมพู', // New Tab
-            'residence_permit_missing' => 'แจ้งที่พักอาศัย', // New Tab
+            'pink_card_missing' => 'บัตรชมพู',
+            'residence_permit_missing' => 'แจ้งที่พักอาศัย',
         ];
+
+        // Filter tabs based on whether they are enabled in settings.
+        $tabs = [];
+        foreach ($allPossibleTabs as $type => $title) {
+            $setting = $allSettings->get($type);
+            // If a setting doesn't exist for a tab, default to showing it for backward compatibility.
+            // Only hide if the setting exists AND is_enabled is explicitly false (or 0).
+            if (!$setting || $setting->is_enabled) {
+                $tabs[$type] = $title;
+            }
+        }
+
 
         $notificationsData = [];
         $counts = [];
