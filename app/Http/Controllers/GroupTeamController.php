@@ -343,4 +343,72 @@ class GroupTeamController extends Controller
             ]);
         }
     }
+
+    public function destroyGroup(EmployeeGroup $group)
+    {
+        $user = auth()->user();
+        if ($group->type === 'affiliated') {
+            if (!$user->can('manage-tickets') && ($user->employer?->id !== $group->employer_id)) {
+                abort(403, 'Unauthorized action.');
+            }
+        } else { // independent
+            if (!$user->can('manage-tickets')) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        DB::transaction(function () use ($group) {
+            // Detach all employees from all teams within this group
+            foreach ($group->teams as $team) {
+                $team->employees()->detach();
+            }
+            // Delete all teams in the group
+            $group->teams()->delete();
+            // Delete the group itself
+            $group->delete();
+        });
+
+        if ($group->type === 'affiliated') {
+            return redirect()->route('groups.affiliated.manage', [
+                'employer' => $group->employer_id,
+            ])->with('success', 'Group and all its teams have been deleted.');
+        } else {
+            return redirect()->route('groups.independent.manage')
+                           ->with('success', 'Group and all its teams have been deleted.');
+        }
+    }
+
+    public function destroyTeam(EmployeeTeam $team)
+    {
+        $user = auth()->user();
+        $group = $team->group;
+
+        if ($group->type === 'affiliated') {
+            if (!$user->can('manage-tickets') && ($user->employer?->id !== $group->employer_id)) {
+                abort(403, 'Unauthorized action.');
+            }
+        } else { // independent
+            if (!$user->can('manage-tickets')) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        DB::transaction(function () use ($team) {
+            // Detach all employees from this team
+            $team->employees()->detach();
+            // Delete the team
+            $team->delete();
+        });
+
+        if ($group->type === 'affiliated') {
+            return redirect()->route('groups.affiliated.manage', [
+                'employer' => $group->employer_id,
+                'active_group' => $group->id
+            ])->with('success', 'Team has been deleted.');
+        } else {
+            return redirect()->route('groups.independent.manage', [
+                'active_group' => $group->id
+            ])->with('success', 'Team has been deleted.');
+        }
+    }
 }
