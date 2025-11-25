@@ -63,8 +63,9 @@ class NotificationSettingController extends Controller
                 $data['days_before_expiry'] = $settingData['days_before_expiry'];
             }
 
-            // Handle the checkbox (if unchecked, it won't be in the request, so default to 0/false)
-            $data['is_enabled'] = isset($settingData['is_enabled']) ? 1 : 0;
+            // The hidden input ensures 'is_enabled' is always present.
+            // We check its actual value ('1' for checked, '0' for unchecked).
+            $data['is_enabled'] = $settingData['is_enabled'] == '1';
 
             NotificationSetting::updateOrCreate(
                 ['notification_type' => $type],
