@@ -517,6 +517,7 @@
             },
             profilePreviewUrl: null,
             isMobile: window.innerWidth < 768,
+            lastNotifiedMessageId: 0,
 
             // --- Computed ---
             get totalUnread() {
@@ -903,42 +904,60 @@
                 fetch('{{ route('chat.check_new') }}')
                     .then(res => res.json())
                     .then(data => {
-                         if (data.messages && data.messages.length > 0) {
-                            let hasUpdates = false;
-                            let shouldNotify = false;
-                            let notificationMsg = null;
+                        if (data.messages && data.messages.length > 0) {
+                            let hasUpdatesToContacts = false; // Flag to check if we need to refresh the contact list
+                            let shouldPlaySound = false; // Flag to play sound only once per batch
+                            let latestMessageForNotification = null;
+
+                            // Find the newest message ID in this batch
+                            const latestMessageIdInBatch = Math.max(...data.messages.map(m => m.id));
+
+                            // Determine if we should play a sound
+                            if (latestMessageIdInBatch > this.lastNotifiedMessageId) {
+                                shouldPlaySound = true;
+                                this.lastNotifiedMessageId = latestMessageIdInBatch;
+                                // Find the specific message to show in the desktop notification
+                                latestMessageForNotification = data.messages.find(m => m.id === latestMessageIdInBatch && m.sender_id !== this.currentUserId);
+                            }
 
                             data.messages.forEach(msg => {
-                                // Only process incoming messages for notification
-                                if(msg.sender_id !== this.currentUserId) {
-                                    shouldNotify = true;
-                                    notificationMsg = msg;
-                                }
+                                const chatPartnerId = (msg.sender_id === this.currentUserId) ? msg.receiver_id : msg.sender_id;
+                                const chat = this.openChats.find(c => c.id === chatPartnerId);
 
-                                const chat = this.openChats.find(c => c.id === (msg.sender_id === this.currentUserId ? msg.receiver_id : msg.sender_id));
                                 if (chat) {
-                                    if (!chat.messages.find(m => m.id === msg.id)) {
-                                        chat.messages.push(msg);
-                                        this.$nextTick(() => this.scrollToBottom(chat.id));
-
-                                        if (chat.minimized) {
+                                    // Chat window is open for this message
+                                    if (chat.minimized) {
+                                        // If minimized, just increment unread count and flag for contact list update
+                                        if (!chat.messages.find(m => m.id === msg.id)) {
+                                            chat.messages.push(msg); // Add message so it's there when un-minimized
                                             chat.unreadCount = (chat.unreadCount || 0) + 1;
-                                            this.saveState();
                                         }
+                                        hasUpdatesToContacts = true;
+                                    } else {
+                                        // THE FIX: If chat is open and active, fetch all messages.
+                                        // This marks them as read on the backend and syncs everything.
+                                        this.fetchMessages(chat.id); // This will also call fetchContacts() internally
+                                        // We don't need to do anything else for this message.
+                                        // fetchMessages will handle appending, scrolling, and syncing the contact list.
                                     }
                                 } else {
-                                    hasUpdates = true;
+                                    // Chat window is not open at all, so we need to refresh contacts for the badge to appear.
+                                    hasUpdatesToContacts = true;
                                 }
                             });
 
-                            if (shouldNotify) {
+                            // Play sound and show notification if determined earlier
+                            if (shouldPlaySound && latestMessageForNotification) {
                                 this.playNotificationSound();
-                                if(notificationMsg) {
-                                    this.showDesktopNotification(notificationMsg);
-                                }
+                                this.showDesktopNotification(latestMessageForNotification);
                             }
 
-                            if(hasUpdates || shouldNotify) this.fetchContacts();
+                            // If any updates require a contact list refresh, do it now.
+                            // This is for chats that are minimized or not open.
+                            if (hasUpdatesToContacts) {
+                                this.fetchContacts();
+                            }
+                            this.saveState();
                         }
                     });
             },
