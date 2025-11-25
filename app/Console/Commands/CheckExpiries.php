@@ -26,10 +26,6 @@ class CheckExpiries extends Command
         $this->info('Cleaning up old notifications...');
         Notification::where('due_date', '<', $today->copy()->subYear())->delete();
 
-        // This clean slate approach is inefficient for large datasets.
-        // It's being replaced by more targeted checks.
-        // Notification::where('status', '!=', 'cancelled')->delete();
-
         $documentChecks = [
             'passportExpiryDate'   => 'passport_expiry',
             'workPermitExpiryDate' => 'work_permit_expiry',
@@ -92,21 +88,31 @@ class CheckExpiries extends Command
 
                 // Get the specific threshold for the determined notification type
                 $setting = $settings->get($currentNotificationType);
+                $shouldHaveNotification = $setting &&
+                    $setting->is_enabled &&
+                    $setting->days_before_expiry !== null &&
+                    $daysRemaining <= $setting->days_before_expiry &&
+                    $daysRemaining >= -365; // Don't notify for things that expired a year ago
 
-                // Only create a notification if the setting is enabled and the expiry is within the specific threshold
-                if ($setting && $setting->is_enabled && $setting->days_before_expiry !== null && $daysRemaining <= $setting->days_before_expiry) {
+                if ($shouldHaveNotification) {
                     Notification::updateOrCreate(
                         [
                             'employee_id' => $employee->id,
-                            'type'        => $currentNotificationType,
+                            'type' => $currentNotificationType,
                         ],
                         [
-                            'due_date'       => $expiryDate,
+                            'due_date' => $expiryDate,
                             'days_remaining' => $daysRemaining,
-                            'status'         => 'unread',
-                            'message'        => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$setting->days_before_expiry} วัน)",
+                            'status' => 'unread', // Reset status to unread on update
+                            'message' => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$setting->days_before_expiry} วัน)",
                         ]
                     );
+                } else {
+                    // If the employee should NOT have a notification (e.g., date was changed, setting disabled),
+                    // ensure any existing one is removed.
+                    Notification::where('employee_id', $employee->id)
+                                  ->where('type', $currentNotificationType)
+                                  ->delete();
                 }
             }
         }
@@ -148,25 +154,32 @@ class CheckExpiries extends Command
 
         $this->info("Found {$employers->count()} employers with expiring documents within a {$threshold}-day threshold.");
 
+        // Get all employer IDs that are within the threshold
+        $employerIdsInScope = $employers->pluck('id');
+
+        // Delete notifications for employers who are no longer in the notification scope
+        Notification::where('type', $notificationType)
+            ->whereNotIn('employer_id', $employerIdsInScope)
+            ->delete();
+
+
         foreach ($employers as $employer) {
             $expiryDate = Carbon::parse($employer->employer_doc_company_expiry);
             $daysRemaining = $today->diffInDays($expiryDate, false);
 
-            if ($daysRemaining <= $threshold) {
-                Notification::updateOrCreate(
-                    [
-                        'employer_id' => $employer->id,
-                        'type' => $notificationType,
-                    ],
-                    [
-                        'employee_id' => null, // Explicitly set employee_id to null
-                        'due_date' => $expiryDate,
-                        'days_remaining' => $daysRemaining,
-                        'status' => 'unread',
-                        'message' => "เอกสารบริษัทของนายจ้างจะหมดอายุใน {$daysRemaining} วัน",
-                    ]
-                );
-            }
+            Notification::updateOrCreate(
+                [
+                    'employer_id' => $employer->id,
+                    'type' => $notificationType,
+                ],
+                [
+                    'employee_id' => null, // Explicitly set employee_id to null
+                    'due_date' => $expiryDate,
+                    'days_remaining' => $daysRemaining,
+                    'status' => 'unread',
+                    'message' => "เอกสารบริษัทของนายจ้างจะหมดอายุใน {$daysRemaining} วัน",
+                ]
+            );
         }
     }
 
@@ -184,11 +197,15 @@ class CheckExpiries extends Command
         $futureThreshold = $today->copy()->addDays($threshold);
         $insuranceFields = ['insurance_expiry_date', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'];
 
+        $allEmployeeIdsInScope = collect();
+
         foreach ($insuranceFields as $field) {
             $employees = Employee::whereNotNull($field)
                 ->where('insurance_type', '!=', 'ประกันสังคม')
                 ->whereBetween($field, [$today, $futureThreshold])
                 ->get();
+
+            $allEmployeeIdsInScope = $allEmployeeIdsInScope->merge($employees->pluck('id'));
 
             $this->info("Found {$employees->count()} employees with expiring insurance (field: {$field}) within a {$threshold}-day threshold.");
 
@@ -196,22 +213,25 @@ class CheckExpiries extends Command
                 $expiryDate = Carbon::parse($employee->{$field});
                 $daysRemaining = $today->diffInDays($expiryDate, false);
 
-                if ($daysRemaining <= $threshold) {
-                    Notification::updateOrCreate(
-                        [
-                            'employee_id' => $employee->id,
-                            'type' => $notificationType,
-                        ],
-                        [
-                            'due_date' => $expiryDate,
-                            'days_remaining' => $daysRemaining,
-                            'status' => 'unread',
-                            'message' => "ประกันของลูกจ้างจะหมดอายุใน {$daysRemaining} วัน",
-                        ]
-                    );
-                }
+                Notification::updateOrCreate(
+                    [
+                        'employee_id' => $employee->id,
+                        'type' => $notificationType,
+                    ],
+                    [
+                        'due_date' => $expiryDate,
+                        'days_remaining' => $daysRemaining,
+                        'status' => 'unread',
+                        'message' => "ประกันของลูกจ้างจะหมดอายุใน {$daysRemaining} วัน",
+                    ]
+                );
             }
         }
+
+        // Delete notifications for employees who no longer have expiring insurance
+        Notification::where('type', $notificationType)
+            ->whereNotIn('employee_id', $allEmployeeIdsInScope->unique())
+            ->delete();
     }
 
     protected function checkPinkCardMissing($today, $settings)
