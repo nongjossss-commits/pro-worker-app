@@ -861,6 +861,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
              'Specific Documents' => [
                 'employee_doc_5' => 'Tor Ror 38 (ทร.38)',
                 'employee_doc_6' => '90-Day Report (รายงานตัว 90 วัน)',
+                'ninetyDayReportDate' => '90-Day Report Date',
                 'employee_doc_7' => 'Residence Notification (แจ้งที่พักอาศัย)',
                 'employee_doc_8' => 'Hometown Document (เอกสารบ้านเกิด)',
             ],
@@ -898,7 +899,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $dateFields = [
             'employeeDob', 'passport_issue_date', 'passportExpiryDate',
             'visaExpiryDate', 'workPermitExpiryDate', 'startDate',
-            'insurance_expiry_date_hospital', 'insurance_expiry_date_private'
+            'insurance_expiry_date_hospital', 'insurance_expiry_date_private',
+            'ninetyDayReportDate'
         ];
 
         $options = [
@@ -955,6 +957,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'pink_card_file' => 'Pink Card File (Upload)',
             'employee_doc_5' => 'Tor Ror 38 (ทร.38)',
             'employee_doc_6' => '90-Day Report (รายงานตัว 90 วัน)',
+            'ninetyDayReportDate' => '90-Day Report Date',
             'employee_doc_7' => 'Residence Notification (แจ้งที่พักอาศัย)',
             'employee_doc_8' => 'Hometown Document (เอกสารบ้านเกิด)',
             'employee_doc_9' => 'Document 1',
