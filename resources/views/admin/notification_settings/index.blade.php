@@ -46,6 +46,7 @@
                                             @if ($isMissingDataType)
                                                 {{-- Toggle Switch for New Types --}}
                                                 <div class="form-check form-switch">
+                                                    <input type="hidden" name="settings[{{ $type }}][is_enabled]" value="0">
                                                     <input class="form-check-input" type="checkbox"
                                                            id="switch_{{ $type }}"
                                                            name="settings[{{ $type }}][is_enabled]"
