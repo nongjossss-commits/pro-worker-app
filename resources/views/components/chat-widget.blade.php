@@ -260,7 +260,7 @@
                                     <template x-if="msg.context_data.type === 'employee'">
                                         <div class="d-flex flex-column gap-1 p-1 border-start border-3 border-warning bg-white bg-opacity-75 rounded-end text-dark">
                                             <div class="d-flex align-items-center justify-content-between">
-                                                <a :href="'/employees/' + msg.context_data.id + '/locate'" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
+                                                <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2 text-truncate" style="font-size: 0.9rem;">
                                                      <i class="bi bi-person-badge-fill text-warning"></i>
                                                      <span x-text="msg.context_data.name"></span>
                                                 </a>
@@ -269,7 +269,7 @@
                                                 <small class="text-muted text-truncate" style="max-width: 100px;" x-text="msg.context_data.subtitle"></small>
                                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview py-0 px-1 ms-2"
                                                         style="font-size: 0.7rem;"
-                                                        :data-model-id="msg.context_data.id"
+                                                        :data-model-id="msg.context_data.employee_id || msg.context_data.id"
                                                         data-model-type="employee"
                                                         title="{{ __('Preview') }}">
                                                     <i class="bi bi-eye"></i> {{ __('Preview') }}
@@ -661,37 +661,42 @@
                         attachmentName = `Ticket #${data.id}`;
                         attachmentText = `[TICKET] ${data.title}`;
                     }
-                    // First, set up the basic context object
-                    chat.contextToAttach = {
-                        type: 'link', // Default
-                        id: data.id,
-                        url: data.url,
-                        text: `[${data.type.toUpperCase()}] ${data.title}`,
-                        name: data.title,
-                        subtitle: data.subtitle || data.code || '',
-                        employee_id: data.employee_id || null,
-                        employer_id: data.employer_id || null
-                    };
+                    let attachmentName = data.title;
+                    let attachmentText = `[${data.type.toUpperCase()}] ${data.title}`;
+                    let contextType = 'link'; // Default type
+                    let contextUrl = data.url;
+                    let contextId = data.id;
+                    let contextSubtitle = data.subtitle || data.code || '';
 
-                    // Then, customize it based on the type
                     if (data.type === 'employees_bulk') {
-                         chat.contextToAttach.name = `${data.count} Employees`;
-                         chat.contextToAttach.text = `[BULK] ${data.count} Employees Selected`;
+                         attachmentName = `${data.count} Employees`;
+                         attachmentText = `[BULK] ${data.count} Employees Selected`;
                     }
                     else if (data.type === 'employee') {
-                        chat.contextToAttach.type = 'employee';
-                        chat.contextToAttach.url = `/employees/${data.id}/locate`;
+                        contextType = 'employee';
+                        contextUrl = `/employees/${data.id}/locate`;
                     }
                     else if (data.type === 'employer') {
-                        chat.contextToAttach.type = 'employer';
+                        contextType = 'employer';
                     }
                     else if (data.type === 'ticket') {
-                        chat.contextToAttach.type = 'ticket';
-                        chat.contextToAttach.name = `Ticket #${data.id}`;
+                        contextType = 'ticket';
+                        attachmentName = `Ticket #${data.id}`;
+                        attachmentText = `[TICKET] ${data.title}`;
                     }
                     else if (data.type === 'notification') {
-                        chat.contextToAttach.type = 'notification';
-                        chat.contextToAttach.name = `Notification: ${data.title}`;
+                        // Handle notifications that should render as employee cards
+                        if (data.render_as === 'employee_card' && data.employee_id) {
+                            contextType = 'employee';
+                            contextId = data.employee_id;
+                            attachmentName = data.employee_name;
+                            contextSubtitle = data.title; // e.g., ninety_day_report
+                            contextUrl = data.url; // The specific URL to the notification item
+                        } else {
+                            contextType = 'notification';
+                            attachmentName = `Notification: ${data.title}`;
+                        }
+                        attachmentText = `[NOTIFICATION] ${attachmentName}`;
                     }
                     else if (data.type === 'new_employee_draft') {
                         contextType = 'new_employee_draft';
@@ -708,11 +713,11 @@
 
                     chat.contextToAttach = {
                         type: contextType,
-                        id: data.id, // Important for preview triggers
+                        id: contextId, // Important for preview triggers
                         url: contextUrl,
                         text: attachmentText,
                         name: attachmentName,
-                        subtitle: data.subtitle || data.code || '',
+                        subtitle: contextSubtitle,
                         employee_id: data.employee_id || null,
                         employer_id: data.employer_id || null
                     };
