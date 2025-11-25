@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/messages/{userId}', [ChatController::class, 'fetchMessages'])->name('messages');
         Route::get('/check-new', [ChatController::class, 'checkNewMessages'])->name('check_new');
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
+        Route::post('/mark-as-read', [ChatController::class, 'markAsRead'])->name('mark_as_read');
         Route::post('/profile/update', [ChatController::class, 'updateProfile'])->name('profile.update_info');
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
     });

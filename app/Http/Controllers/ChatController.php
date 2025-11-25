@@ -302,4 +302,21 @@ class ChatController extends Controller
             'mime' => $mime
         ]);
     }
+
+    /**
+     * Mark messages from a user as read.
+     */
+    public function markAsRead(Request $request)
+    {
+        $request->validate([
+            'sender_id' => 'required|exists:users,id',
+        ]);
+
+        ChatMessage::where('sender_id', $request->sender_id)
+            ->where('receiver_id', Auth::id())
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json(['success' => true]);
+    }
 }
