@@ -740,8 +740,6 @@
     }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
-    <script src="https://unpkg.com/@giphy/js-sdk-core/dist/sdk-core.js"></script>
     @include('components.download-modals')
     @stack('scripts')
 

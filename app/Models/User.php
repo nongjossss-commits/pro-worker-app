@@ -111,12 +111,4 @@ class User extends Authenticatable
     {
         return $this->hasMany(ChatMessage::class, 'receiver_id');
     }
-
-    /**
-     * The chat rooms that the user belongs to.
-     */
-    public function chatRooms(): BelongsToMany
-    {
-        return $this->belongsToMany(ChatRoom::class, 'chat_room_user');
-    }
 }
