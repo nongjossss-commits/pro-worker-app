@@ -438,6 +438,27 @@
         </div>
     </form>
 </div>
+
+<!-- Cropper Modal -->
+<div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cropperModalLabel">ครอบตัดรูปภาพ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="img-container">
+                    <img id="imageToCrop" src="" alt="Picture" style="max-width: 100%;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="cropImageBtn">ครอบตัดและบันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -544,15 +565,83 @@ document.addEventListener('DOMContentLoaded', function () {
     insuranceSelect.addEventListener('change', toggleInsuranceVisibility);
 
 
-    // --- Logic Block 6: Photo Preview ---
-    function handlePhotoPreview(event) {
-        const [file] = event.target.files;
-        if (file) {
-            employeePhotoPreview.src = URL.createObjectURL(file);
-        }
+    // --- Logic Block 6: Photo Cropping ---
+    const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+    const imageToCrop = document.getElementById('imageToCrop');
+    const cropImageBtn = document.getElementById('cropImageBtn');
+    let cropper;
+    let originalFile;
+
+    function handleFileSelect(event) {
+        originalFile = event.target.files[0];
+        if (!originalFile) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            imageToCrop.src = e.target.result;
+            cropperModal.show();
+        };
+        reader.readAsDataURL(originalFile);
+        // Clear the input value to allow re-selecting the same file
+        event.target.value = '';
     }
-    employeePhotoFileInput.addEventListener('change', handlePhotoPreview);
-    employeePhotoCameraInput.addEventListener('change', handlePhotoPreview);
+
+    document.getElementById('cropperModal').addEventListener('shown.bs.modal', function () {
+        cropper = new Cropper(imageToCrop, {
+            aspectRatio: 150 / 180,
+            viewMode: 1,
+            dragMode: 'move',
+            background: false,
+            autoCropArea: 0.8,
+            movable: true,
+            zoomable: true,
+            rotatable: true,
+            scalable: true,
+            cropBoxMovable: false,
+            cropBoxResizable: false,
+        });
+    });
+
+    document.getElementById('cropperModal').addEventListener('hidden.bs.modal', function () {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    });
+
+    cropImageBtn.addEventListener('click', function () {
+        if (!cropper) return;
+
+        const canvas = cropper.getCroppedCanvas({
+            width: 300,
+            height: 360,
+            imageSmoothingQuality: 'high',
+        });
+
+        canvas.toBlob(function (blob) {
+            const croppedImageUrl = URL.createObjectURL(blob);
+            employeePhotoPreview.src = croppedImageUrl;
+
+            // Create a new File object
+            const croppedFile = new File([blob], originalFile.name, {
+                type: originalFile.type,
+                lastModified: Date.now()
+            });
+
+            // Use a DataTransfer to create a FileList
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(croppedFile);
+
+            // Assign the FileList to the original file input
+            employeePhotoFileInput.files = dataTransfer.files;
+
+            cropperModal.hide();
+
+        }, originalFile.type);
+    });
+
+    employeePhotoFileInput.addEventListener('change', handleFileSelect);
+    employeePhotoCameraInput.addEventListener('change', handleFileSelect);
 
 
     // --- Initial State Setup on Page Load ---

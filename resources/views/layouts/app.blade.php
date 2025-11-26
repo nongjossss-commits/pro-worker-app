@@ -19,6 +19,8 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" integrity="sha512-hvNR0F/e2Jb1MjSXOTwXlnJQRdBiGAvjEaZqwaiTTRPF+3sKDxC83rKBIl8Tvc6SmsG/s8mLzKPooSSgtTAnHQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -740,6 +742,7 @@
     }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" integrity="sha512-9KkIqdfN7ipEW6B6k+Aq20PV31bjODg4AA52W+tYtAE0jE0kMx49bjJ3FgvS56wzmyfMUbQzxRdlnNAFZ6NRgg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     @include('components.download-modals')
     @stack('scripts')
 
