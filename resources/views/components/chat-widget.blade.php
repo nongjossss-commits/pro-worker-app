@@ -1082,7 +1082,7 @@
 
             searchGifs(chatId) {
                 const query = new URLSearchParams({ query: this.gifSearchQuery }).toString();
-                fetch(`{{ route('giphy.proxy') }}?${query}`)
+                fetch(`{{ route('chat.giphy.proxy') }}?${query}`)
                     .then(res => res.json())
                     .then(data => {
                         this.gifs = data.data;
