@@ -13,6 +13,7 @@ class ChatMessage extends Model
     protected $fillable = [
         'sender_id',
         'receiver_id',
+        'chat_room_id',
         'message',
         'is_read',
         'context_data',
@@ -31,5 +32,10 @@ class ChatMessage extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    public function room(): BelongsTo
+    {
+        return $this->belongsTo(ChatRoom::class, 'chat_room_id');
     }
 }
