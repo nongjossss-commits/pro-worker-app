@@ -25,6 +25,7 @@ class JobTicket extends Model
         'assigned_staff_id',
         'admin_unread_count',
         'employer_unread_count',
+        'hidden_at',
     ];
 
     // Ensure $casts array is either absent or empty if it was added. We don't need it for DB Enums.

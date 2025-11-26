@@ -7,7 +7,9 @@ use Illuminate\Pagination\Paginator;
 use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\JobTicket;
+use App\Models\TicketMessage;
 use App\Observers\EmployerObserver;
+use App\Observers\TicketMessageObserver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
         Employer::observe(EmployerObserver::class);
+        TicketMessage::observe(TicketMessageObserver::class);
 
         Event::listen(Login::class, LogSuccessfulLogin::class);
         Event::listen(Logout::class, LogSuccessfulLogout::class);

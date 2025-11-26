@@ -42,18 +42,19 @@
         <div class="row g-4">
             @forelse ($employersWithTickets as $user)
                 <div class="col-12 col-md-6 col-xl-4">
-                    <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="text-decoration-none">
-                        <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                            <div class="card-body d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
-                                            <i class="bi bi-building text-primary fs-4"></i>
-                                        </div>
-                                        <div>
-                                            <h5 class="card-title text-dark mb-1 fw-bold">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                        <i class="bi bi-building text-primary fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title text-dark mb-1 fw-bold">
+                                            <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="text-decoration-none stretched-link text-dark">
                                                 {{ $user->employer->employerNameTh ?? $user->name }}
-                                            </h5>
+                                            </a>
+                                        </h5>
                                             <p class="card-text text-muted small">
                                                 <i class="bi bi-clock me-1"></i> อัปเดตล่าสุด: {{ \Carbon\Carbon::parse($user->last_activity)->diffForHumans() }}
                                             </p>
@@ -66,6 +67,13 @@
                                     @endif
                                 </div>
 
+                                <form action="{{ route('admin.tickets.employer.hide', $user) }}" method="POST" class="hide-employer-form position-absolute top-0 end-0 p-2" style="z-index: 10;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 30px; height: 30px;" title="ซ่อนกล่องตั๋วงานนี้">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+
                                 <div class="mt-auto pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="text-muted small">ตั๋วงานทั้งหมด</span>
@@ -74,7 +82,6 @@
                                 </div>
                             </div>
                         </div>
-                    </a>
                 </div>
             @empty
                 <div class="col-12">
@@ -133,9 +140,17 @@
                                     ({{ \Carbon\Carbon::parse($user->last_activity)->diffForHumans() }})
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
-                                    </a>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <form action="{{ route('admin.tickets.employer.hide', $user) }}" method="POST" class="hide-employer-form">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="ซ่อนกล่องตั๋วงานนี้">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -184,3 +199,30 @@
     }
 </style>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.hide-employer-form').forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            Swal.fire({
+                title: 'ยืนยันการซ่อน?',
+                text: "คุณต้องการซ่อนกล่องตั๋วงานนี้ใช่หรือไม่?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ใช่, ซ่อนเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            })
+        });
+    });
+});
+</script>
+@endpush

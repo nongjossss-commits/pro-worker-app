@@ -10,6 +10,8 @@ use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
+use Carbon\Carbon;
 
 class TicketController extends Controller
 {
@@ -65,9 +67,10 @@ class TicketController extends Controller
         $view = request('view', 'card');
         $search = request('search');
 
-        // Query Users who have submitted tickets
-        $query = User::whereHas('submittedTickets')
-            ->with('employer'); // Eager load employer profile
+        // Query Users who have submitted tickets that are not hidden
+        $query = User::whereHas('submittedTickets', function ($q) {
+            $q->whereNull('hidden_at');
+        })->with('employer'); // Eager load employer profile
 
         // V2.5-S15: Apply Caretaker Visibility Scope for non-admins/staff
         if (!$canViewAllTickets) {
@@ -89,17 +92,20 @@ class TicketController extends Controller
         }
 
         // Add Counts and Last Activity via Subqueries
-        $query->withCount(['submittedTickets as total_tickets']);
+        $query->withCount(['submittedTickets as total_tickets' => function ($q) {
+            $q->whereNull('hidden_at');
+        }]);
 
         // Count unread tickets (where admin_unread_count > 0)
         $query->withCount(['submittedTickets as unread_tickets_count' => function ($q) {
-            $q->where('admin_unread_count', '>', 0);
+            $q->where('admin_unread_count', '>', 0)->whereNull('hidden_at');
         }]);
 
         // Add Last Activity (Max updated_at of tickets)
         // We use addSelect with a subquery for sorting
         $query->addSelect(['last_activity' => JobTicket::selectRaw('MAX(updated_at)')
             ->whereColumn('employer_user_id', 'users.id')
+            ->whereNull('hidden_at')
         ]);
 
         // Order by Last Activity (Recent first)
@@ -181,5 +187,16 @@ class TicketController extends Controller
         ]);
 
         return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Ticket assignment updated successfully.');
+    }
+
+    /**
+     * Hide all tickets for a specific employer.
+     */
+    public function hide(User $employer_user): RedirectResponse
+    {
+        JobTicket::where('employer_user_id', $employer_user->id)
+            ->update(['hidden_at' => Carbon::now()]);
+
+        return back()->with('success', 'กล่องตั๋วงานของ ' . ($employer_user->employer->employerNameTh ?? $employer_user->name) . ' ถูกซ่อนเรียบร้อยแล้ว');
     }
 }
