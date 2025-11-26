@@ -140,6 +140,8 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::post('tickets', [AdminJobTicketController::class, 'store'])->name('tickets.store');
 
     Route::get('tickets', [AdminTicketController::class, 'index'])->name('tickets.index');
+    // V2.6: Route to hide an employer's ticket box
+    Route::post('users/{user}/hide-tickets', [AdminTicketController::class, 'hideEmployerTickets'])->name('users.hide_tickets');
     Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 

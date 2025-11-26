@@ -20,7 +20,10 @@ class TicketStatusController extends Controller
         }
 
         // 2. อัปเดตสถานะ
-        $ticket->update(['status' => 'resolved']);
+        $ticket->update([
+            'status' => 'resolved',
+            'hidden_by_admin_at' => null
+        ]);
 
         // 3. (ทางเลือก) เพิ่มข้อความ System ลงในแชท (ตามพิมพ์เขียว)
         $ticket->messages()->create([
@@ -43,7 +46,10 @@ class TicketStatusController extends Controller
         }
 
         // 2. อัปเดตสถานะ
-        $ticket->update(['status' => 'rejected']);
+        $ticket->update([
+            'status' => 'rejected',
+            'hidden_by_admin_at' => null
+        ]);
 
         // 3. (ทางเลือก) เพิ่มข้อความ System ลงในแชท
         $ticket->messages()->create([
@@ -65,7 +71,10 @@ class TicketStatusController extends Controller
         }
 
         // 1. อัปเดตสถานะเป็น in_progress
-        $ticket->update(['status' => 'in_progress']);
+        $ticket->update([
+            'status' => 'in_progress',
+            'hidden_by_admin_at' => null
+        ]);
 
         // 2. เพิ่มข้อความ System ลงในแชท
         $ticket->messages()->create([

@@ -61,6 +61,11 @@ class AdminJobTicketController extends Controller
                 'employer_unread_count' => 1, // Admin creates -> Employer has 1 unread message
             ]);
 
+            // V2.6: Un-hide any previously hidden tickets for this employer
+            JobTicket::where('employer_user_id', $validated['employer_user_id'])
+                ->whereNotNull('hidden_by_admin_at')
+                ->update(['hidden_by_admin_at' => null]);
+
             // Define the permanent storage directory for this ticket
             $permanentBasePath = "ticket_attachments/{$ticket->id}";
 

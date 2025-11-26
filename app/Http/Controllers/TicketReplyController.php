@@ -151,7 +151,11 @@ $ticket->messages()->create([
 // 5. Workflow Automation: Update Ticket Status & Unread Counts
 $newStatus = $isStaff ? 'pending_employer' : 'pending_staff';
 
-$updateData = ['status' => $newStatus];
+// V2.6: Any reply should un-hide the ticket.
+$updateData = [
+    'status' => $newStatus,
+    'hidden_by_admin_at' => null
+];
 
 if ($isStaff) {
     // Staff replied -> Increment Employer's unread count

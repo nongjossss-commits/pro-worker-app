@@ -42,8 +42,34 @@
         <div class="row g-4">
             @forelse ($employersWithTickets as $user)
                 <div class="col-12 col-md-6 col-xl-4">
-                    <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="text-decoration-none">
-                        <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow transition-all position-relative">
+                        {{-- Action Dropdown --}}
+                        <div class="position-absolute top-0 end-0 p-2">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light" type="button" id="dropdownMenuButton-{{ $user->id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $user->id }}">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}">
+                                            <i class="bi bi-folder2-open me-2"></i> ดูตั๋วงานทั้งหมด
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="{{ route('admin.users.hide_tickets', $user) }}" method="POST" class="hide-ticket-box-form d-inline">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item text-warning">
+                                                <i class="bi bi-eye-slash me-2"></i> ซ่อนกล่องตั๋วงาน
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {{-- Card Body (wrapped in a link) --}}
+                        <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="text-decoration-none text-dark d-flex flex-column flex-grow-1">
                             <div class="card-body d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <div class="d-flex align-items-center gap-3">
@@ -65,7 +91,6 @@
                                         </span>
                                     @endif
                                 </div>
-
                                 <div class="mt-auto pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="text-muted small">ตั๋วงานทั้งหมด</span>
@@ -73,8 +98,8 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </a>
+                        </a>
+                    </div>
                 </div>
             @empty
                 <div class="col-12">
@@ -133,9 +158,27 @@
                                     ({{ \Carbon\Carbon::parse($user->last_activity)->diffForHumans() }})
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
-                                    </a>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}">
+                                                    <i class="bi bi-folder2-open me-2"></i> ดูตั๋วงานทั้งหมด
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form action="{{ route('admin.users.hide_tickets', $user) }}" method="POST" class="hide-ticket-box-form d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="dropdown-item text-warning">
+                                                        <i class="bi bi-eye-slash me-2"></i> ซ่อนกล่องตั๋วงาน
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -184,3 +227,30 @@
     }
 </style>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.hide-ticket-box-form').forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            Swal.fire({
+                title: 'คุณแน่ใจหรือไม่?',
+                text: "คุณต้องการซ่อนกล่องตั๋วงานนี้ใช่ไหม? การดำเนินการนี้สามารถยกเลิกได้เมื่อมีการอัปเดตใหม่",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'ใช่, ซ่อนเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            })
+        });
+    });
+});
+</script>
+@endpush

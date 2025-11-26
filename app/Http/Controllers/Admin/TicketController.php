@@ -38,6 +38,8 @@ class TicketController extends Controller
             $perPage = request('per_page', 25);
             $ticketsQuery = JobTicket::with(['employerUser.employer', 'assignedStaff'])
                 ->where('employer_user_id', $employerId)
+                // V2.6: Also hide individual tickets from this list
+                ->whereNull('hidden_by_admin_at')
                 ->latest();
 
             // Apply Caretaker Scope if not Admin/Staff
@@ -66,7 +68,10 @@ class TicketController extends Controller
         $search = request('search');
 
         // Query Users who have submitted tickets
-        $query = User::whereHas('submittedTickets')
+        // V2.6: We only want to show employers who have VISIBLE tickets.
+        $query = User::whereHas('submittedTickets', function ($q) {
+                $q->whereNull('hidden_by_admin_at');
+            })
             ->with('employer'); // Eager load employer profile
 
         // V2.5-S15: Apply Caretaker Visibility Scope for non-admins/staff
@@ -181,5 +186,21 @@ class TicketController extends Controller
         ]);
 
         return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Ticket assignment updated successfully.');
+    }
+
+    /**
+     * V2.6: Hide all tickets from an employer from the main inbox view.
+     */
+    public function hideEmployerTickets(User $user)
+    {
+        if (!Auth::user()->can('manage-tickets')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        JobTicket::where('employer_user_id', $user->id)
+            ->whereNull('hidden_by_admin_at') // Avoid re-hiding already hidden ones
+            ->update(['hidden_by_admin_at' => now()]);
+
+        return redirect()->route('admin.tickets.index')->with('success', 'กล่องตั๋วงานของ ' . ($user->employer->employerNameTh ?? $user->name) . ' ถูกซ่อนแล้ว');
     }
 }
