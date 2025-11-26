@@ -838,7 +838,6 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'Work Permit & Pink Card' => [
                 'employeeWorkPermit' => 'Work Permit Number',
                 'workPermitExpiryDate' => 'Work Permit Expiry',
-                'workPermitType' => 'Work Permit Type',
                 'workPermitMOUGroup' => 'MOU Group',
                 'pinkCardNo' => 'Pink Card Number',
                 'work_permit_file' => 'Work Permit File (Upload)',
@@ -912,7 +911,6 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'passport_type_cambodia' => ['เล่ม TD' => 'เล่ม TD', 'เล่มอินเตอร์' => 'เล่มอินเตอร์'],
             'insurance_type' => ['ประกันสังคม' => 'ประกันสังคม', 'ประกันโรงพยาบาล' => 'ประกันโรงพยาบาล', 'ประกันเอกชน' => 'ประกันเอกชน'],
             // Note: 'workPermitType' in bulk selection often maps to the MOU Group dropdown in Create/Edit forms
-            'workPermitType' => ['MOU' => 'MOU', 'มติต่ออายุในประเทศ' => 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน' => 'มติขึ้นทะเบียน', 'อื่นๆ' => 'อื่นๆ'],
             'workPermitMOUGroup' => ['MOU' => 'MOU', 'มติต่ออายุในประเทศ' => 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน' => 'มติขึ้นทะเบียน', 'อื่นๆ' => 'อื่นๆ'],
         ];
 
@@ -938,7 +936,6 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'visaExpiryDate' => 'Visa Expiry Date',
             'employeeWorkPermit' => 'Work Permit No.',
             'workPermitExpiryDate' => 'Work Permit Expiry',
-            'workPermitType' => 'Work Permit Type',
             'workPermitMOUGroup' => 'MOU Group',
             'pinkCardNo' => 'Pink Card No.',
             'job_title' => 'Job Title',
