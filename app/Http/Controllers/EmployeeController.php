@@ -1111,6 +1111,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_detail_private' => 'Private Company',
             'insurance_expiry_date_private' => 'Private Expiry',
             'email' => 'Email',
+            'password' => 'Password',
         ];
 
         // Handle Photo Column Logic: Must be first if selected
