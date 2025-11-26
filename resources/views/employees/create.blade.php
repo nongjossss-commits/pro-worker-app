@@ -109,9 +109,15 @@
             </div>
             {{-- Right Column --}}
             <div class="col-md-4 d-flex flex-column justify-content-center align-items-center">
-                <label for="employeePhoto" class="form-label">รูปภาพพนักงาน</label>
-                <img id="employeePhotoPreview" src="https://placehold.co/150x180/f8fafc/6c757d?text=Photo" class="img-thumbnail mb-2" style="width: 150px; height: 180px; object-fit: cover;">
-                <input type="file" class="form-control form-control-sm w-75" id="employeePhoto" name="employeePhoto" accept="image/*" capture="environment">
+                <label class="form-label">รูปภาพพนักงาน</label>
+                <img id="employeePhotoPreview" src="https://placehold.co/150x180/f8fafc/6c757d?text=Photo" class="img-thumbnail mb-3" style="width: 150px; height: 180px; object-fit: cover;">
+                <div class="d-grid gap-2 w-75">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('employeePhotoFile').click();"><i class="bi bi-file-earmark-image me-1"></i> เลือกจากไฟล์</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('employeePhotoCamera').click();"><i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ</button>
+                </div>
+                {{-- Hidden file inputs --}}
+                <input type="file" class="d-none" id="employeePhotoFile" name="employeePhoto" accept="image/*">
+                <input type="file" class="d-none" id="employeePhotoCamera" name="employeePhoto" accept="image/*" capture="environment">
             </div>
         </div>
 
@@ -375,7 +381,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const ageInput = document.getElementById('employeeAge');
     const nationalitySelect = document.getElementById('employeeNationality');
     const mouGroupSelect = document.getElementById('workPermitMOUGroup');
-    const employeePhotoInput = document.getElementById('employeePhoto');
+    const employeePhotoFileInput = document.getElementById('employeePhotoFile');
+    const employeePhotoCameraInput = document.getElementById('employeePhotoCamera');
     const employeePhotoPreview = document.getElementById('employeePhotoPreview');
 
     // Containers for conditional logic
@@ -468,12 +475,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- Logic Block 6: Photo Preview ---
-    employeePhotoInput.addEventListener('change', function(event) {
+    function handlePhotoPreview(event) {
         const [file] = event.target.files;
         if (file) {
             employeePhotoPreview.src = URL.createObjectURL(file);
         }
-    });
+    }
+    employeePhotoFileInput.addEventListener('change', handlePhotoPreview);
+    employeePhotoCameraInput.addEventListener('change', handlePhotoPreview);
+
 
     // --- Initial State Setup on Page Load ---
     updateGender();

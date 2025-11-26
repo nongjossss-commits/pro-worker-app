@@ -307,6 +307,12 @@
                                         <label class="form-check-label" for="col_email">{{ __('Email') }}</label>
                                     </div>
                                 </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="password" id="col_password">
+                                        <label class="form-check-label" for="col_password">{{ __('Password') }}</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
