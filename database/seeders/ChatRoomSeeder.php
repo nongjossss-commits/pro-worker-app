@@ -5,34 +5,31 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\ChatRoom;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 
 class ChatRoomSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * @return void
      */
-    public function run(): void
+    public function run()
     {
-        // 1. Create the main community chat room
+        // Create the main community chat room if it doesn't exist
         $communityRoom = ChatRoom::firstOrCreate(
             ['type' => 'community'],
             [
-                'name' => 'Community Chat',
-                'description' => 'A central place for all staff and admins to communicate.'
+                'name' => 'Community',
+                'description' => 'Central community chat for all users.',
+                'created_by' => User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->first()->id ?? 1,
             ]
         );
 
-        // 2. Get all admin and staff users
-        $adminRole = Role::where('name', 'admin')->first();
-        $staffRole = Role::where('name', 'staff')->first();
+        // Ensure all relevant users are in the community room
+        $users = User::whereHas('roles', function ($query) {
+            $query->whereIn('name', ['admin', 'staff', 'employer']);
+        })->pluck('id');
 
-        $users = User::whereHas('roles', function ($query) use ($adminRole, $staffRole) {
-            $query->where('role_id', $adminRole->id)
-                  ->orWhere('role_id', $staffRole->id);
-        })->get();
-
-        // 3. Attach all these users to the community room
-        $communityRoom->users()->syncWithoutDetaching($users->pluck('id'));
+        $communityRoom->users()->sync($users);
     }
 }

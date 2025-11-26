@@ -19,15 +19,10 @@ class ChatController extends Controller
     {
         $currentUser = Auth::user();
 
-        // 1. STRICT BLOCK: Employers cannot access chat at all
-        // UNLESS they also hold a privileged role (Admin, Staff, Caretaker, Delegate)
-        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
-            return response()->json([], 403);
-        }
-
-        // Permission Check: User must have 'use-chat' permission OR be in a privileged role explicitly
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
-            return response()->json([], 403);
+        // Permission Check: User must have 'use-chat' permission
+        if (!$currentUser->can('use-chat')) {
+            // Return a specific error code or message for the frontend to handle gracefully
+            return response()->json(['error' => 'Chat access denied.'], 403);
         }
 
         // Base Query: Exclude current user and ensure active status
@@ -74,7 +69,7 @@ class ChatController extends Controller
 
         // --- V3: Add Community Room ---
         $communityRoom = ChatRoom::where('type', 'community')->first();
-        if ($communityRoom && $currentUser->hasAnyRole(['admin', 'staff'])) {
+        if ($communityRoom && $currentUser->hasAnyRole(['admin', 'staff', 'employer'])) {
              $communityContact = [
                 'id' => 'room_' . $communityRoom->id,
                 'name' => $communityRoom->name,

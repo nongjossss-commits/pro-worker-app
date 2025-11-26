@@ -119,7 +119,8 @@ class RoleAndPermissionSeeder extends Seeder
         // [PATCH 3.2] Force Ground Truth Permissions (IDs 1, 5, 9)
         $employerPermissions = [
             'view-employers', // ID 5 (Confirmed)
-            'view-employees' // ID 9 (Confirmed)
+            'view-employees', // ID 9 (Confirmed)
+            'use-chat'
         ];
         // The syncPermissions function will handle overwriting the incorrect permissions
         $employerRole->syncPermissions($employerPermissions);
