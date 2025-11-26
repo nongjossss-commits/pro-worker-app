@@ -31,9 +31,9 @@ class EmployeeObserver
 
         // isDirty() checks if any of the given attributes have changed.
         if ($employee->isDirty($fieldsToMonitor)) {
-            // Queue the command to run asynchronously in the background.
-            // This prevents blocking the user's request and causing timeouts.
-            Artisan::queue('app:check-expiries');
+            // By passing the employee's ID, we can run a much faster, targeted check
+            // instead of re-checking every single employee in the system.
+            Artisan::queue('app:check-expiries', ['employee_id' => $employee->id]);
         }
     }
 }

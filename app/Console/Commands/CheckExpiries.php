@@ -11,20 +11,36 @@ use Carbon\Carbon;
 
 class CheckExpiries extends Command
 {
-    protected $signature = 'app:check-expiries';
-    protected $description = 'Check for expiring/expired employee documents and create/update notifications.';
+    protected $signature = 'app:check-expiries {employee_id? : The ID of a specific employee to check}';
+    protected $description = 'Check for expiring/expired documents and create notifications. Can optionally check for a single employee.';
 
     public function handle()
     {
-        $this->info('Starting expiry check process...');
+        $employeeId = $this->argument('employee_id');
+
+        if ($employeeId) {
+            $this->info("Running targeted expiry check for employee ID: {$employeeId}");
+            // Clear out all previous notifications for this employee to get a clean slate.
+            Notification::where('employee_id', $employeeId)->delete();
+        } else {
+            $this->info('Starting full expiry check process for all entities...');
+        }
+
         $today = now()->startOfDay();
 
         $this->info('Loading notification settings...');
         $settings = NotificationSetting::all()->keyBy('notification_type');
 
-        // Clean up very old notifications (older than 1 year)
-        $this->info('Cleaning up old notifications...');
-        Notification::where('due_date', '<', $today->copy()->subYear())->delete();
+        if (!$employeeId) {
+            // Clean up very old notifications (older than 1 year) only on full runs
+            $this->info('Cleaning up old notifications...');
+            Notification::where('due_date', '<', $today->copy()->subYear())->delete();
+        }
+
+        $baseEmployeeQuery = Employee::query();
+        if ($employeeId) {
+            $baseEmployeeQuery->where('id', $employeeId);
+        }
 
         $documentChecks = [
             'passportExpiryDate'   => 'passport_expiry',
@@ -36,7 +52,6 @@ class CheckExpiries extends Command
         foreach ($documentChecks as $dateField => $notificationType) {
             $this->info("Checking: {$notificationType}...");
 
-            // Determine the maximum look-ahead period for the initial database query
             $maxDays = 0;
             if ($notificationType === 'passport_expiry') {
                 $maxDays = max(
@@ -56,7 +71,8 @@ class CheckExpiries extends Command
             $pastThreshold = $today->copy()->subDays(365);
             $futureThreshold = $today->copy()->addDays($maxDays);
 
-            $employees = Employee::whereNotNull($dateField)
+            $employees = (clone $baseEmployeeQuery)
+                ->whereNotNull($dateField)
                 ->whereBetween($dateField, [$pastThreshold, $futureThreshold])
                 ->get();
 
@@ -71,7 +87,6 @@ class CheckExpiries extends Command
                 $daysRemaining = $today->diffInDays($expiryDate, false);
                 $currentNotificationType = $notificationType;
 
-                // Determine the specific notification type based on employee data
                 if ($notificationType === 'work_permit_expiry') {
                      if ($employee->workPermitMOUGroup === 'MOU') {
                         $currentNotificationType = 'work_permit_mou';
@@ -86,13 +101,12 @@ class CheckExpiries extends Command
                     $currentNotificationType = 'ci_renewal';
                 }
 
-                // Get the specific threshold for the determined notification type
                 $setting = $settings->get($currentNotificationType);
                 $shouldHaveNotification = $setting &&
                     $setting->is_enabled &&
                     $setting->days_before_expiry !== null &&
                     $daysRemaining <= $setting->days_before_expiry &&
-                    $daysRemaining >= -365; // Don't notify for things that expired a year ago
+                    $daysRemaining >= -365;
 
                 if ($shouldHaveNotification) {
                     Notification::updateOrCreate(
@@ -103,13 +117,11 @@ class CheckExpiries extends Command
                         [
                             'due_date' => $expiryDate,
                             'days_remaining' => $daysRemaining,
-                            'status' => 'unread', // Reset status to unread on update
+                            'status' => 'unread',
                             'message' => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$setting->days_before_expiry} วัน)",
                         ]
                     );
                 } else {
-                    // If the employee should NOT have a notification (e.g., date was changed, setting disabled),
-                    // ensure any existing one is removed.
                     Notification::where('employee_id', $employee->id)
                                   ->where('type', $currentNotificationType)
                                   ->delete();
@@ -119,17 +131,19 @@ class CheckExpiries extends Command
 
         $this->info('Finished checking for expiring documents.');
 
-        $this->info('Checking for expiring employer documents...');
-        $this->checkEmployerDocumentExpiries($today, $settings);
+        if (!$employeeId) {
+            $this->info('Checking for expiring employer documents...');
+            $this->checkEmployerDocumentExpiries($today, $settings);
+        }
 
         $this->info('Checking for expiring employee insurances...');
-        $this->checkEmployeeInsuranceExpiries($today, $settings);
+        $this->checkEmployeeInsuranceExpiries($today, $settings, $baseEmployeeQuery);
 
         $this->info('Checking for missing Pink Cards...');
-        $this->checkPinkCardMissing($today, $settings);
+        $this->checkPinkCardMissing($today, $settings, $baseEmployeeQuery);
 
         $this->info('Checking for missing Residence Notifications...');
-        $this->checkResidencePermitMissing($today, $settings);
+        $this->checkResidencePermitMissing($today, $settings, $baseEmployeeQuery);
 
         $this->info('Expiry check process finished.');
         return 0;
@@ -154,14 +168,11 @@ class CheckExpiries extends Command
 
         $this->info("Found {$employers->count()} employers with expiring documents within a {$threshold}-day threshold.");
 
-        // Get all employer IDs that are within the threshold
         $employerIdsInScope = $employers->pluck('id');
 
-        // Delete notifications for employers who are no longer in the notification scope
         Notification::where('type', $notificationType)
             ->whereNotIn('employer_id', $employerIdsInScope)
             ->delete();
-
 
         foreach ($employers as $employer) {
             $expiryDate = Carbon::parse($employer->employer_doc_company_expiry);
@@ -173,7 +184,7 @@ class CheckExpiries extends Command
                     'type' => $notificationType,
                 ],
                 [
-                    'employee_id' => null, // Explicitly set employee_id to null
+                    'employee_id' => null,
                     'due_date' => $expiryDate,
                     'days_remaining' => $daysRemaining,
                     'status' => 'unread',
@@ -183,7 +194,7 @@ class CheckExpiries extends Command
         }
     }
 
-    protected function checkEmployeeInsuranceExpiries($today, $settings)
+    protected function checkEmployeeInsuranceExpiries($today, $settings, $baseEmployeeQuery)
     {
         $notificationType = 'employee_insurance_expiry';
         $setting = $settings->get($notificationType);
@@ -200,7 +211,8 @@ class CheckExpiries extends Command
         $allEmployeeIdsInScope = collect();
 
         foreach ($insuranceFields as $field) {
-            $employees = Employee::whereNotNull($field)
+            $employees = (clone $baseEmployeeQuery)
+                ->whereNotNull($field)
                 ->where('insurance_type', '!=', 'ประกันสังคม')
                 ->whereBetween($field, [$today, $futureThreshold])
                 ->get();
@@ -228,13 +240,12 @@ class CheckExpiries extends Command
             }
         }
 
-        // Delete notifications for employees who no longer have expiring insurance
         Notification::where('type', $notificationType)
             ->whereNotIn('employee_id', $allEmployeeIdsInScope->unique())
             ->delete();
     }
 
-    protected function checkPinkCardMissing($today, $settings)
+    protected function checkPinkCardMissing($today, $settings, $baseEmployeeQuery)
     {
         $notificationType = 'pink_card_missing';
         $setting = $settings->get($notificationType);
@@ -247,20 +258,16 @@ class CheckExpiries extends Command
 
         $this->info("Processing: {$notificationType}");
 
-        // Get IDs of employees who are missing the pink card and are not terminated
-        $employeeIdsWithMissingDoc = Employee::where(function ($query) {
+        $employeeIdsWithMissingDoc = (clone $baseEmployeeQuery)->where(function ($query) {
             $query->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
         })
         ->whereNull('terminated_at')
         ->pluck('id');
 
-        // Get IDs of employees who already have a notification for this type
         $employeeIdsWithNotification = Notification::where('type', $notificationType)->pluck('employee_id');
 
-        // Determine who needs a notification (in the first list, but not the second)
         $idsToCreate = $employeeIdsWithMissingDoc->diff($employeeIdsWithNotification);
 
-        // Determine which notifications are outdated and should be removed
         $idsToDelete = $employeeIdsWithNotification->diff($employeeIdsWithMissingDoc);
 
         if ($idsToDelete->isNotEmpty()) {
@@ -285,14 +292,13 @@ class CheckExpiries extends Command
                     'updated_at' => $now,
                 ];
             }
-            // Use insert for bulk creation
             Notification::insert($newNotifications);
         }
 
         $this->info("Finished processing for {$notificationType}.");
     }
 
-    protected function checkResidencePermitMissing($today, $settings)
+    protected function checkResidencePermitMissing($today, $settings, $baseEmployeeQuery)
     {
         $notificationType = 'residence_permit_missing';
         $setting = $settings->get($notificationType);
@@ -305,18 +311,15 @@ class CheckExpiries extends Command
 
         $this->info("Processing: {$notificationType}");
 
-        // Get IDs of employees who are missing the residence permit and are not terminated
-        $employeeIdsWithMissingDoc = Employee::whereNull('employee_doc_7')
+        $employeeIdsWithMissingDoc = (clone $baseEmployeeQuery)
+            ->whereNull('employee_doc_7')
             ->whereNull('terminated_at')
             ->pluck('id');
 
-        // Get IDs of employees who already have a notification for this type
         $employeeIdsWithNotification = Notification::where('type', $notificationType)->pluck('employee_id');
 
-        // Determine who needs a notification
         $idsToCreate = $employeeIdsWithMissingDoc->diff($employeeIdsWithNotification);
 
-        // Determine which notifications to remove
         $idsToDelete = $employeeIdsWithNotification->diff($employeeIdsWithMissingDoc);
 
         if ($idsToDelete->isNotEmpty()) {
