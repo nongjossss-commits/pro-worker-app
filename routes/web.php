@@ -49,9 +49,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::post('/profile/update', [ChatController::class, 'updateProfile'])->name('profile.update_info');
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
-        Route::post('/rooms', [ChatController::class, 'createRoom'])->name('rooms.create')->middleware('permission:manage-chat-groups');
-        Route::get('/backgrounds', [ChatController::class, 'getBackgrounds'])->name('backgrounds.list');
-        Route::get('/giphy-proxy', [ChatController::class, 'giphyProxy'])->name('giphy.proxy');
     });
 
     // Application routes that require login
