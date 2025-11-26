@@ -47,7 +47,8 @@ class RoleAndPermissionSeeder extends Seeder
 
             'delete-addresses', 'restore-addresses', 'force-delete-addresses',
             'manage-tickets',
-            'use-chat'
+            'use-chat',
+            'manage-chat-groups' // V3 Add-on
             // END: Add new permissions
         ];
 
@@ -72,7 +73,8 @@ class RoleAndPermissionSeeder extends Seeder
             'view-agents', 'edit-agents',
             'view-delegates', 'edit-delegates',
             'manage-tickets',
-            'use-chat'
+            'use-chat',
+            'manage-chat-groups' // V3 Add-on
         ];
 
         $staffRole->syncPermissions($staffPermissions);
@@ -117,7 +119,8 @@ class RoleAndPermissionSeeder extends Seeder
         // [PATCH 3.2] Force Ground Truth Permissions (IDs 1, 5, 9)
         $employerPermissions = [
             'view-employers', // ID 5 (Confirmed)
-            'view-employees' // ID 9 (Confirmed)
+            'view-employees', // ID 9 (Confirmed)
+            'use-chat'
         ];
         // The syncPermissions function will handle overwriting the incorrect permissions
         $employerRole->syncPermissions($employerPermissions);

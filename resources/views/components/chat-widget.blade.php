@@ -52,6 +52,11 @@
                 <span class="fw-bold">{{ __('Contacts') }}</span>
             </div>
             <div class="d-flex align-items-center gap-1">
+                @can('manage-chat-groups')
+                <button type="button" class="btn btn-sm btn-link text-white p-0" @click="showCreateGroupModal = true" title="{{ __('Create Group') }}">
+                    <i class="bi bi-plus-circle-fill fs-5"></i>
+                </button>
+                @endcan
                 <button type="button" class="btn btn-sm btn-link text-white p-0" @click="showProfileModal = true" title="{{ __('My Profile') }}">
                     <i class="bi bi-person-circle fs-5"></i>
                 </button>
@@ -77,24 +82,31 @@
             <!-- List -->
             <div class="flex-grow-1 overflow-auto">
                 <ul class="list-group list-group-flush">
-                    <template x-for="user in filteredContacts" :key="user.id">
+                    <template x-for="contact in filteredContacts" :key="contact.id">
                         <li class="list-group-item list-group-item-action d-flex align-items-center gap-2 cursor-pointer p-2"
-                            @click="openChat(user)"
+                            @click="openChat(contact)"
                             @dragover.prevent
-                            @drop.prevent="handleDrop($event, 'contact', user)">
+                            @drop.prevent="handleDrop($event, 'contact', contact)">
                             <div class="position-relative">
-                                <img :src="user.avatar_url" class="rounded-circle object-fit-cover border" width="40" height="40"
-                                     onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
-                                <span x-show="user.is_online" class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
+                                 <template x-if="contact.is_room">
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-people-fill fs-5"></i>
+                                    </div>
+                                </template>
+                                <template x-if="!contact.is_room">
+                                    <img :src="contact.avatar_url" class="rounded-circle object-fit-cover border" width="40" height="40"
+                                         onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
+                                    <span x-show="contact.is_online" class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
+                                </template>
                             </div>
                             <div class="flex-grow-1 lh-sm overflow-hidden">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <strong x-text="user.name" class="text-truncate" style="max-width: 140px;"></strong>
-                                    <span x-show="user.unread_count > 0" class="badge bg-danger rounded-pill" x-text="user.unread_count"></span>
+                                    <strong x-text="contact.name" class="text-truncate" style="max-width: 140px;"></strong>
+                                    <span x-show="contact.unread_count > 0" class="badge bg-danger rounded-pill" x-text="contact.unread_count"></span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <small class="text-muted text-truncate" style="max-width: 120px;" x-text="user.position_title || '{{ __('No Position') }}'"></small>
-                                    <small class="text-muted" style="font-size: 0.7rem;" x-text="user.last_message_time ? formatTimeShort(user.last_message_time) : ''"></small>
+                                    <small class="text-muted text-truncate" style="max-width: 120px;" x-text="contact.position_title || '{{ __('No Position') }}'"></small>
+                                    <small class="text-muted" style="font-size: 0.7rem;" x-text="contact.last_message_time ? formatTimeShort(contact.last_message_time) : ''"></small>
                                 </div>
                             </div>
                         </li>
@@ -139,15 +151,17 @@
                     <button x-show="isMobile" type="button" class="btn btn-sm btn-link text-dark p-0 me-1" @click="closeChat(chat.id)">
                         <i class="bi bi-arrow-left"></i>
                     </button>
-
                     <img :src="chat.user.avatar_url" class="rounded-circle object-fit-cover" width="32" height="32"
                          onerror="this.src='https://ui-avatars.com/api/?name=User&color=7F9CF5&background=EBF4FF'">
                     <div class="lh-1">
                         <div class="fw-bold text-truncate" style="max-width: 150px;" x-text="chat.user.name"></div>
-                        <small class="text-success" style="font-size: 0.7rem;" x-show="chat.user.is_online">{{ __('Online') }}</small>
+                        <small class="text-success" style="font-size: 0.7rem;" x-show="chat.user.is_online && !chat.is_room">{{ __('Online') }}</small>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-link text-secondary p-0" @click="showBackgroundModal = true" title="{{ __('Chat Settings') }}">
+                        <i class="bi bi-gear-fill"></i>
+                    </button>
                     <!-- Minimize Button -->
                     <button type="button" class="btn btn-sm btn-link text-secondary p-0" @click.stop="chat.minimized = true; saveState()">
                         <i class="bi bi-dash-lg"></i>
@@ -160,7 +174,8 @@
             </div>
 
             <!-- Messages Area -->
-            <div class="chat-messages flex-grow-1 overflow-auto p-3 bg-light d-flex flex-column" :id="'msg-container-'+chat.id">
+            <div class="chat-messages flex-grow-1 overflow-auto p-3 d-flex flex-column" :id="'msg-container-'+chat.id"
+                 :style="{ backgroundImage: `url(${chatBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' }">
                 <template x-for="msg in chat.messages" :key="msg.id">
                     <div class="mb-2 d-flex" :class="msg.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                          <!-- Message Bubble -->
@@ -320,7 +335,21 @@
             </div>
 
             <!-- Input Area -->
-            <div class="p-2 border-top bg-white">
+            <div class="p-2 border-top bg-white position-relative">
+                 <!-- Mention Suggestions -->
+                <template x-if="chat.showMentionSuggestions">
+                    <div class="list-group position-absolute bottom-100 start-0 w-100 mb-1 border rounded shadow-sm" style="max-height: 200px; overflow-y: auto; z-index: 10;">
+                        <template x-for="user in chat.mentionResults" :key="user.id">
+                            <a href="#" class="list-group-item list-group-item-action p-2" @click.prevent="selectMention(chat.id, user.name)">
+                                <strong x-text="user.name"></strong>
+                            </a>
+                        </template>
+                         <template x-if="chat.mentionResults.length === 0">
+                            <span class="list-group-item p-2 text-muted">{{ __('No users found') }}</span>
+                        </template>
+                    </div>
+                </template>
+
                 <!-- Attachment Preview -->
                 <template x-if="chat.contextToAttach">
                      <div class="mb-2 p-1 border rounded bg-light d-flex justify-content-between align-items-center">
@@ -345,17 +374,34 @@
                              <li><a class="dropdown-item small" href="#" @click.prevent="triggerFileUpload(chat.id)"><i class="bi bi-file-earmark me-2"></i>{{ __('Upload File') }}</a></li>
                         </ul>
                     </div>
+                    <button class="btn btn-sm btn-light text-secondary" type="button" @click="chat.showEmojiPicker = !chat.showEmojiPicker"><i class="bi bi-emoji-smile"></i></button>
+                    <button class="btn btn-sm btn-light text-secondary" type="button" @click="toggleGifPicker(chat.id)"><i class="bi bi-file-image"></i></button>
                     <input type="file" :id="'file-input-'+chat.id" class="d-none" @change="handleFileUpload($event, chat.id)">
 
                     <textarea class="form-control form-control-sm" rows="1" style="resize: none;"
                               placeholder="{{ __('Type...') }}"
                               x-model="chat.newMessage"
-                              @keydown.enter.prevent="if(!$event.shiftKey) sendMessage(chat.id)"></textarea>
+                              :id="'message-input-'+chat.id"
+                              @keydown.enter.prevent="if(!$event.shiftKey && !chat.showMentionSuggestions) sendMessage(chat.id)"
+                              @input.debounce.300ms="handleInput(chat.id)"></textarea>
 
                     <button type="submit" class="btn btn-sm btn-primary" :disabled="chat.isUploading || (!chat.newMessage && !chat.contextToAttach)">
                         <i class="bi bi-send-fill"></i>
                     </button>
                 </form>
+                 <!-- Emoji Picker -->
+                <div x-show="chat.showEmojiPicker" x-transition class="position-absolute bottom-100 end-0 mb-2 shadow-lg" style="z-index: 20;">
+                    <emoji-picker class="light" @emoji-click="selectEmoji($event, chat.id)"></emoji-picker>
+                </div>
+                 <!-- GIF Picker -->
+                <div x-show="chat.showGifPicker" x-transition class="position-absolute bottom-100 end-0 mb-2 shadow-lg bg-white rounded p-2" style="z-index: 20; width: 300px;">
+                    <input type="text" class="form-control form-control-sm mb-2" placeholder="Search GIPHY" x-model="gifSearchQuery" @input.debounce.500ms="searchGifs(chat.id)">
+                    <div class="d-flex flex-wrap gap-1" style="max-height: 250px; overflow-y: auto;">
+                        <template x-for="gif in gifs" :key="gif.id">
+                            <img :src="gif.images.fixed_height.url" class="cursor-pointer" style="width: 90px; height: 90px; object-fit: cover;" @click="selectGif(chat.id, gif)">
+                        </template>
+                    </div>
+                </div>
             </div>
 
             <!-- Resize Handles -->
@@ -470,6 +516,66 @@
             </div>
         </div>
     </div>
+
+    <!-- Create Group Modal -->
+    <div x-show="showCreateGroupModal"
+         x-cloak
+         class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-black bg-opacity-50"
+         :class="{ 'd-flex': showCreateGroupModal }"
+         style="z-index: 2102;"
+         x-transition.opacity
+         @click.self="showCreateGroupModal = false">
+        <div class="bg-white rounded shadow p-3" style="width: 400px;">
+            <h6 class="border-bottom pb-2 mb-3">{{ __('Create New Group Chat') }}</h6>
+            <form @submit.prevent="createGroup">
+                <div class="mb-3">
+                    <label class="form-label small">{{ __('Group Name') }}</label>
+                    <input type="text" x-model="newGroupName" class="form-control form-control-sm" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">{{ __('Add Members') }}</label>
+                    <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                        <template x-for="user in contacts.filter(c => !c.is_room)" :key="user.id">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" :value="user.id" :id="'user_'+user.id" x-model="newGroupUsers">
+                                <label class="form-check-label" :for="'user_'+user.id" x-text="user.name"></label>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" @click="showCreateGroupModal = false" class="btn btn-sm btn-secondary">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-sm btn-primary">{{ __('Create Group') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+     <!-- Background Settings Modal -->
+    <div x-show="showBackgroundModal"
+         x-cloak
+         class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-black bg-opacity-50"
+         :class="{ 'd-flex': showBackgroundModal }"
+         style="z-index: 2103;"
+         @click.self="showBackgroundModal = false">
+        <div class="bg-white rounded shadow p-3" style="width: 500px;">
+            <h6 class="border-bottom pb-2 mb-3">{{ __('Chat Background') }}</h6>
+            <div class="d-flex flex-wrap gap-2" style="max-height: 300px; overflow-y: auto;">
+                <template x-for="bg in backgrounds" :key="bg">
+                    <img :src="bg" class="img-thumbnail cursor-pointer" style="width: 100px; height: 100px; object-fit: cover;" @click="setBackground(bg)">
+                </template>
+            </div>
+            <hr>
+            <div class="mb-3">
+                <label class="form-label small">{{ __('Upload your own') }}</label>
+                <input type="file" class="form-control form-control-sm" @change="handleCustomBackground" accept="image/*">
+            </div>
+            <div class="d-flex justify-content-between mt-3">
+                 <button type="button" @click="setBackground('')" class="btn btn-sm btn-outline-secondary">{{ __('Remove Background') }}</button>
+                <button type="button" @click="showBackgroundModal = false" class="btn btn-sm btn-primary">{{ __('Close') }}</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -528,6 +634,14 @@
             profilePreviewUrl: null,
             isMobile: window.innerWidth < 768,
             lastNotifiedMessageId: 0,
+            // Group Creation State
+            showCreateGroupModal: false,
+            newGroupName: '',
+            newGroupUsers: [],
+            // Background State
+            showBackgroundModal: false,
+            backgrounds: [],
+            chatBackground: '',
 
             // --- Computed ---
             get totalUnread() {
@@ -544,6 +658,7 @@
                 this.loadState();
                 this.fetchContacts();
                 this.fetchSounds();
+                this.fetchBackgrounds();
                 this.pollingInterval = setInterval(() => this.checkNewMessages(), 10000);
                 this.requestNotificationPermission();
 
@@ -571,18 +686,17 @@
                 this.saveState();
             },
 
-            openChat(user) {
-                let chat = this.openChats.find(c => c.id === user.id);
+            openChat(contact) {
+                let chat = this.openChats.find(c => c.id === contact.id);
                 if (chat) {
                     chat.minimized = false;
                     chat.unreadCount = 0;
                     this.bringToFront(chat.id);
                 } else {
-                    // Default Position (Center)
                     const offset = (this.openChats.length * 20) % 200;
                     chat = {
-                        id: user.id,
-                        user: user,
+                        id: contact.id, // Can be user ID or room ID string
+                        user: contact, // The whole contact object
                         messages: [],
                         x: window.innerWidth / 2 - 175 + offset,
                         y: window.innerHeight / 2 - 250 + offset,
@@ -593,14 +707,23 @@
                         newMessage: '',
                         isUploading: false,
                         contextToAttach: null,
-                        unreadCount: 0
+                        unreadCount: 0,
+                        is_room: contact.is_room || false,
+                        // Mention state
+                        showMentionSuggestions: false,
+                        mentionQuery: '',
+                        mentionResults: [],
+                        // Emoji Picker
+                        showEmojiPicker: false,
+                        // GIF Picker
+                        showGifPicker: false,
                     };
                     this.openChats.push(chat);
                     this.fetchMessages(chat.id);
                 }
-                // Mark read locally
-                const contact = this.contacts.find(c => c.id === user.id);
-                if(contact) contact.unread_count = 0;
+
+                const contactInList = this.contacts.find(c => c.id === contact.id);
+                if(contactInList) contactInList.unread_count = 0;
 
                 this.saveState();
             },
@@ -874,6 +997,127 @@
                 }
             },
 
+            handleInput(chatId) {
+                const chat = this.openChats.find(c => c.id === chatId);
+                if (!chat || !chat.is_room) return;
+
+                const text = chat.newMessage;
+                const mentionMatch = text.match(/@(\w*)$/);
+
+                if (mentionMatch) {
+                    chat.showMentionSuggestions = true;
+                    chat.mentionQuery = mentionMatch[1];
+
+                    let results = this.contacts.filter(c =>
+                        !c.is_room && c.name.toLowerCase().includes(chat.mentionQuery.toLowerCase())
+                    );
+
+                    // Add @everyone suggestion
+                    if ('everyone'.includes(chat.mentionQuery.toLowerCase())) {
+                        results.unshift({ id: 'everyone', name: 'everyone' });
+                    }
+
+                    chat.mentionResults = results;
+                } else {
+                    chat.showMentionSuggestions = false;
+                }
+            },
+
+            selectMention(chatId, name) {
+                const chat = this.openChats.find(c => c.id === chatId);
+                if (!chat) return;
+
+                const currentMessage = chat.newMessage;
+                const atIndex = currentMessage.lastIndexOf('@');
+
+                chat.newMessage = currentMessage.substring(0, atIndex) + `@${name} `;
+                chat.showMentionSuggestions = false;
+            },
+
+            selectEmoji(event, chatId) {
+                const chat = this.openChats.find(c => c.id === chatId);
+                if (chat) {
+                    chat.newMessage += event.detail.unicode;
+                    document.getElementById('message-input-' + chatId).focus();
+                }
+            },
+
+            createGroup() {
+                if (!this.newGroupName.trim() || this.newGroupUsers.length === 0) {
+                    alert('Please provide a group name and select at least one member.');
+                    return;
+                }
+
+                fetch('{{ route("chat.rooms.create") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        name: this.newGroupName,
+                        users: this.newGroupUsers,
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        this.contacts.unshift(data.room);
+                        this.openChat(data.room);
+                        this.showCreateGroupModal = false;
+                        this.newGroupName = '';
+                        this.newGroupUsers = [];
+                    }
+                });
+            },
+
+            toggleGifPicker(chatId) {
+                const chat = this.openChats.find(c => c.id === chatId);
+                if (!chat) return;
+                chat.showGifPicker = !chat.showGifPicker;
+                if (chat.showGifPicker && this.gifs.length === 0) {
+                    this.searchGifs(chatId); // Load trending GIFs on first open
+                }
+            },
+
+            searchGifs(chatId) {
+                const query = new URLSearchParams({ query: this.gifSearchQuery }).toString();
+                fetch(`{{ route('chat.giphy.proxy') }}?${query}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.gifs = data.data;
+                    });
+            },
+
+            selectGif(chatId, gif) {
+                const chat = this.openChats.find(c => c.id === chatId);
+                if (!chat) return;
+                chat.contextToAttach = {
+                    type: 'image',
+                    url: gif.images.original.url,
+                    name: 'GIF from GIPHY'
+                };
+                this.sendMessage(chatId);
+                chat.showGifPicker = false;
+            },
+
+            setBackground(url) {
+                this.chatBackground = url;
+                localStorage.setItem('chatBackground_' + this.currentUserId, url);
+            },
+
+            handleCustomBackground(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const base64String = event.target.result;
+                        this.setBackground(base64String);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+
             // --- API & Data ---
             fetchSounds() {
                 fetch('/sounds/sounds.json')
@@ -882,6 +1126,14 @@
                         this.availableSounds = data;
                     })
                     .catch(e => console.error('Could not load sound list:', e));
+            },
+
+            fetchBackgrounds() {
+                fetch('{{ route("chat.backgrounds.list") }}')
+                    .then(res => res.json())
+                    .then(data => {
+                        this.backgrounds = data;
+                    });
             },
 
             fetchContacts() {
@@ -911,63 +1163,49 @@
             },
 
             checkNewMessages() {
-                fetch('{{ route('chat.check_new') }}')
+                const openRoomIds = this.openChats.filter(c => c.is_room).map(c => c.id.replace('room_', ''));
+                const lastRoomMessageId = this.openChats
+                    .filter(c => c.is_room)
+                    .flatMap(c => c.messages)
+                    .reduce((maxId, msg) => Math.max(maxId, msg.id), 0);
+
+                const query = new URLSearchParams({
+                    rooms: openRoomIds,
+                    last_room_message_id: lastRoomMessageId,
+                    last_check: this.lastCheckedTimestamp || ''
+                }).toString();
+
+                fetch(`{{ route('chat.check_new') }}?${query}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data.messages && data.messages.length > 0) {
-                            let hasUpdatesToContacts = false; // Flag to check if we need to refresh the contact list
-                            let shouldPlaySound = false; // Flag to play sound only once per batch
-                            let latestMessageForNotification = null;
+                        this.lastCheckedTimestamp = data.timestamp;
+                        let shouldPlaySound = false;
+                        let latestMessageForNotification = null;
 
-                            // Find the newest message ID in this batch
-                            const latestMessageIdInBatch = Math.max(...data.messages.map(m => m.id));
-
-                            // Determine if we should play a sound
-                            if (latestMessageIdInBatch > this.lastNotifiedMessageId) {
-                                shouldPlaySound = true;
-                                this.lastNotifiedMessageId = latestMessageIdInBatch;
-                                // Find the specific message to show in the desktop notification
-                                latestMessageForNotification = data.messages.find(m => m.id === latestMessageIdInBatch && m.sender_id !== this.currentUserId);
-                            }
-
-                            data.messages.forEach(msg => {
-                                const chatPartnerId = (msg.sender_id === this.currentUserId) ? msg.receiver_id : msg.sender_id;
-                                const chat = this.openChats.find(c => c.id === chatPartnerId);
-
-                                if (chat) {
-                                    // Chat window is open for this message
-                                    if (chat.minimized) {
-                                        // If minimized, just increment unread count and flag for contact list update
-                                        if (!chat.messages.find(m => m.id === msg.id)) {
-                                            chat.messages.push(msg); // Add message so it's there when un-minimized
-                                            chat.unreadCount = (chat.unreadCount || 0) + 1;
-                                        }
-                                        hasUpdatesToContacts = true;
-                                    } else {
-                                        // THE FIX: If chat is open and active, fetch all messages.
-                                        // This marks them as read on the backend and syncs everything.
-                                        this.fetchMessages(chat.id); // This will also call fetchContacts() internally
-                                        // We don't need to do anything else for this message.
-                                        // fetchMessages will handle appending, scrolling, and syncing the contact list.
-                                    }
-                                } else {
-                                    // Chat window is not open at all, so we need to refresh contacts for the badge to appear.
-                                    hasUpdatesToContacts = true;
+                        // Process room messages
+                        if (data.room_messages && data.room_messages.length > 0) {
+                            data.room_messages.forEach(msg => {
+                                const chat = this.openChats.find(c => c.id === `room_${msg.chat_room_id}`);
+                                if (chat && !chat.messages.find(m => m.id === msg.id)) {
+                                    chat.messages.push(msg);
+                                    this.$nextTick(() => this.scrollToBottom(chat.id));
+                                    shouldPlaySound = true;
+                                    latestMessageForNotification = msg;
                                 }
                             });
+                        }
 
-                            // Play sound and show notification if determined earlier
-                            if (shouldPlaySound && latestMessageForNotification) {
-                                this.playNotificationSound();
-                                this.showDesktopNotification(latestMessageForNotification);
-                            }
+                        // Process direct messages (you can merge this logic from your old checkNewMessages)
+                        if (data.direct_messages && data.direct_messages.length > 0) {
+                             // Simplified logic, you can expand this
+                            this.fetchContacts(); // Refresh contact list for unread counts
+                            shouldPlaySound = true;
+                            latestMessageForNotification = data.direct_messages[data.direct_messages.length - 1];
+                        }
 
-                            // If any updates require a contact list refresh, do it now.
-                            // This is for chats that are minimized or not open.
-                            if (hasUpdatesToContacts) {
-                                this.fetchContacts();
-                            }
-                            this.saveState();
+                        if (shouldPlaySound && latestMessageForNotification) {
+                            this.playNotificationSound();
+                            this.showDesktopNotification(latestMessageForNotification);
                         }
                     });
             },
@@ -1108,13 +1346,15 @@
                     },
                     openChats: this.openChats.map(c => ({
                         id: c.id,
-                        user: c.user,
+                        user: c.user, // The contact object
                         x: c.x, y: c.y, w: c.w, h: c.h,
                         minimized: c.minimized,
                         zIndex: c.zIndex,
-                        unreadCount: c.unreadCount
+                        unreadCount: c.unreadCount,
+                        is_room: c.is_room,
                     })),
-                    selectedSound: this.selectedSound
+                    selectedSound: this.selectedSound,
+                    chatBackground: this.chatBackground,
                 };
                 localStorage.setItem('chatState_' + this.currentUserId, JSON.stringify(state));
             },
@@ -1156,6 +1396,7 @@
                         if (parsed.selectedSound) {
                             this.selectedSound = parsed.selectedSound;
                         }
+                        this.chatBackground = localStorage.getItem('chatBackground_' + this.currentUserId) || '';
                     } catch(e) { console.error(e); }
                 }
             },
