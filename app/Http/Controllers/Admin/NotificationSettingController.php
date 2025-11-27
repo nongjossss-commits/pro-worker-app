@@ -9,6 +9,21 @@ use Illuminate\Support\Facades\Artisan;
 
 class NotificationSettingController extends Controller
 {
+    // Define the list of all supported notification types
+    protected $typeLabels = [
+        'ninety_day_report' => 'รายงานตัว 90 วัน',
+        'passport_expiry' => 'Passport',
+        'work_permit_mou' => 'ใบอนุญาตทำงาน (MOU)',
+        'visa_expiry' => 'วีซ่า',
+        'ci_renewal' => 'ต่ออายุ CI',
+        'resolution_renewal' => 'ต่ออายุมติ',
+        'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
+        'employer_document_expiry' => 'เอกสารนายจ้าง',
+        'employee_insurance_expiry' => 'ประกันลูกจ้าง',
+        'pink_card_missing' => 'แจ้งเตือนบัตรชมพู',
+        'residence_permit_missing' => 'แจ้งเตือนแจ้งที่พักอาศัย',
+    ];
+
     public function __construct()
     {
         $this->middleware('permission:manage-users');
@@ -17,24 +32,9 @@ class NotificationSettingController extends Controller
     public function index()
     {
         $settings = NotificationSetting::all()->keyBy('notification_type');
+        $typeLabels = $this->typeLabels;
 
-        // A simple mapping for Thai labels in the view
-        $typeLabels = [
-            'ninety_day_report' => 'รายงานตัว 90 วัน',
-            'passport_expiry' => 'Passport',
-            'work_permit_mou' => 'ใบอนุญาตทำงาน (MOU)',
-            'visa_expiry' => 'วีซ่า',
-            'ci_renewal' => 'ต่ออายุ CI',
-            'resolution_renewal' => 'ต่ออายุมติ',
-            'new_registration_renewal' => 'มติขึ้นทะเบียนใหม่',
-            'employer_document_expiry' => 'เอกสารนายจ้าง',
-            'employee_insurance_expiry' => 'ประกันลูกจ้าง',
-            'pink_card_missing' => 'แจ้งเตือนบัตรชมพู', // New Type
-            'residence_permit_missing' => 'แจ้งเตือนแจ้งที่พักอาศัย', // New Type
-        ];
-
-        // Ensure all types are present in the settings collection, even if not in DB yet
-        // (Though migration should have seeded them, this is a fallback for display)
+        // Ensure all types are present in the settings collection for display
         foreach ($typeLabels as $type => $label) {
             if (!$settings->has($type)) {
                 $settings[$type] = new NotificationSetting([
@@ -56,15 +56,31 @@ class NotificationSettingController extends Controller
             'settings.*.is_enabled' => 'nullable|boolean',
         ]);
 
-        foreach ($request->settings as $type => $settingData) {
+        $submittedSettings = $request->input('settings', []);
+
+        // Iterate through ALL known types to ensure we handle unchecked checkboxes (missing keys) correctly
+        foreach ($this->typeLabels as $type => $label) {
+            $settingData = $submittedSettings[$type] ?? null;
+
+            // Prepare data for update
             $data = [];
 
-            if (isset($settingData['days_before_expiry'])) {
-                $data['days_before_expiry'] = $settingData['days_before_expiry'];
-            }
+            if ($settingData) {
+                // If data exists in request, use it.
+                // Checkbox: if present in array, check is_enabled.
+                // Note: If the array key exists but is_enabled is missing inside it, it means unchecked.
+                $data['is_enabled'] = isset($settingData['is_enabled']) ? 1 : 0;
 
-            // Handle the checkbox (if unchecked, it won't be in the request, so default to 0/false)
-            $data['is_enabled'] = isset($settingData['is_enabled']) ? 1 : 0;
+                if (isset($settingData['days_before_expiry'])) {
+                    $data['days_before_expiry'] = $settingData['days_before_expiry'];
+                }
+            } else {
+                // If the entire key is missing from the request but we know it's a valid type.
+                // This usually happens if the form only had a checkbox for this item (no text inputs)
+                // and the checkbox was unchecked.
+                // WE MUST ASSUME IT IS DISABLED.
+                $data['is_enabled'] = 0;
+            }
 
             NotificationSetting::updateOrCreate(
                 ['notification_type' => $type],
@@ -72,7 +88,7 @@ class NotificationSettingController extends Controller
             );
         }
 
-        // Trigger the expiry check command
+        // Trigger the expiry check command to update notifications immediately
         Artisan::call('app:check-expiries');
 
         return back()->with('success', 'ตั้งค่าการแจ้งเตือนถูกบันทึกเรียบร้อยแล้ว และระบบได้ทำการรีเฟรชข้อมูลล่าสุดแล้ว');

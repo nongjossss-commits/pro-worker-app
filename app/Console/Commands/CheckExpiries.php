@@ -35,6 +35,9 @@ class CheckExpiries extends Command
             // Clean up very old notifications (older than 1 year) only on full runs
             $this->info('Cleaning up old notifications...');
             Notification::where('due_date', '<', $today->copy()->subYear())->delete();
+
+            // Strict cleanup: Remove notifications that no longer match the "days_before_expiry" setting
+            $this->cleanupOutdatedNotifications($settings, $today);
         }
 
         $baseEmployeeQuery = Employee::query();
@@ -53,19 +56,20 @@ class CheckExpiries extends Command
             $this->info("Checking: {$notificationType}...");
 
             $maxDays = 0;
+            // Use optional() to safely access settings, defaulting to 60 days if setting or value is missing
             if ($notificationType === 'passport_expiry') {
                 $maxDays = max(
-                    $settings->get('passport_expiry')->days_before_expiry ?? 60,
-                    $settings->get('ci_renewal')->days_before_expiry ?? 60
+                    optional($settings->get('passport_expiry'))->days_before_expiry ?? 60,
+                    optional($settings->get('ci_renewal'))->days_before_expiry ?? 60
                 );
             } elseif ($notificationType === 'work_permit_expiry') {
                 $maxDays = max(
-                    $settings->get('work_permit_mou')->days_before_expiry ?? 60,
-                    $settings->get('resolution_renewal')->days_before_expiry ?? 60,
-                    $settings->get('new_registration_renewal')->days_before_expiry ?? 60
+                    optional($settings->get('work_permit_mou'))->days_before_expiry ?? 60,
+                    optional($settings->get('resolution_renewal'))->days_before_expiry ?? 60,
+                    optional($settings->get('new_registration_renewal'))->days_before_expiry ?? 60
                 );
             } else {
-                $maxDays = $settings->get($notificationType)->days_before_expiry ?? 60;
+                $maxDays = optional($settings->get($notificationType))->days_before_expiry ?? 60;
             }
 
             $pastThreshold = $today->copy()->subDays(365);
@@ -149,6 +153,62 @@ class CheckExpiries extends Command
         return 0;
     }
 
+    protected function cleanupOutdatedNotifications($settings, $today)
+    {
+        $this->info('Performing strict cleanup of outdated notifications...');
+
+        $typesToCheck = [
+            'passport_expiry',
+            'ci_renewal',
+            // 'work_permit_expiry', // Generic type if MOU group is missing
+            'work_permit_mou',
+            'resolution_renewal',
+            'new_registration_renewal',
+            'visa_expiry',
+            'ninety_day_report',
+            'pink_card_missing',      // Added to ensure disabled settings are cleaned up
+            'residence_permit_missing' // Added to ensure disabled settings are cleaned up
+        ];
+
+        foreach ($typesToCheck as $type) {
+            $setting = $settings->get($type);
+
+            // Safety: If setting doesn't exist in DB, skip.
+            // We should NOT assume missing = disabled for these core types, as it risks deleting valid data
+            // if the settings table is incomplete.
+            if (!$setting) {
+                continue;
+            }
+
+            if (!$setting->is_enabled) {
+                Notification::where('type', $type)->delete();
+                continue;
+            }
+
+            // For missing document types, date-based cleanup is irrelevant as due_date is always today.
+            if (in_array($type, ['pink_card_missing', 'residence_permit_missing'])) {
+                continue;
+            }
+
+            $daysBefore = $setting->days_before_expiry ?? 60;
+            $maxDate = $today->copy()->addDays($daysBefore);
+            $minDate = $today->copy()->subDays(365);
+
+            // Delete notifications that are outside the allowed window
+            // i.e. Due date is further in the future than allowed OR older than 1 year
+            $deleted = Notification::where('type', $type)
+                ->where(function ($query) use ($maxDate, $minDate) {
+                    $query->where('due_date', '>', $maxDate)
+                          ->orWhere('due_date', '<', $minDate);
+                })
+                ->delete();
+
+            if ($deleted > 0) {
+                $this->info("Cleaned up {$deleted} outdated notifications for type: {$type} (Max Days: {$daysBefore})");
+            }
+        }
+    }
+
     protected function checkEmployerDocumentExpiries($today, $settings)
     {
         $notificationType = 'employer_document_expiry';
@@ -156,6 +216,8 @@ class CheckExpiries extends Command
 
         if (!$setting || !$setting->is_enabled) {
             $this->info("Skipping {$notificationType} (disabled or settings missing).");
+            // Ensure strictly cleaned up if disabled
+            Notification::where('type', $notificationType)->delete();
             return;
         }
 
@@ -170,6 +232,7 @@ class CheckExpiries extends Command
 
         $employerIdsInScope = $employers->pluck('id');
 
+        // Strict cleanup: Remove any that are NOT in the current scope
         Notification::where('type', $notificationType)
             ->whereNotIn('employer_id', $employerIdsInScope)
             ->delete();
@@ -201,6 +264,8 @@ class CheckExpiries extends Command
 
         if (!$setting || !$setting->is_enabled) {
             $this->info("Skipping {$notificationType} (disabled or settings missing).");
+            // Ensure strictly cleaned up if disabled
+            Notification::where('type', $notificationType)->delete();
             return;
         }
 
@@ -240,6 +305,7 @@ class CheckExpiries extends Command
             }
         }
 
+        // Strict cleanup
         Notification::where('type', $notificationType)
             ->whereNotIn('employee_id', $allEmployeeIdsInScope->unique())
             ->delete();
