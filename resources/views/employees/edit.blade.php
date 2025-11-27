@@ -450,6 +450,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <style>
+                    .img-container {
+                        max-height: 500px;
+                        display: block;
+                    }
+                    .img-container img {
+                        max-width: 100%;
+                        display: block;
+                    }
+                </style>
                 <div class="img-container">
                     <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
                 </div>
@@ -602,6 +612,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function initCropper() {
+        if (typeof Cropper === 'undefined') {
+            console.error('Cropper.js is not loaded.');
+            return;
+        }
         if (cropper) {
             cropper.destroy();
         }
@@ -615,8 +629,8 @@ document.addEventListener('DOMContentLoaded', function () {
             zoomable: true,
             rotatable: true,
             scalable: true,
-            cropBoxMovable: false,
-            cropBoxResizable: false,
+            cropBoxMovable: true, // Allow moving the crop box
+            cropBoxResizable: true, // Allow resizing the crop box
         });
     }
 
@@ -646,7 +660,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Create a new File object
             const croppedFile = new File([blob], originalFile.name, {
-                type: originalFile.type,
+                type: originalFile.type || 'image/jpeg',
                 lastModified: Date.now()
             });
 
@@ -659,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             cropperModal.hide();
 
-        }, originalFile.type);
+        }, originalFile.type || 'image/jpeg');
     });
 
     if (triggerFileInput) triggerFileInput.addEventListener('change', handleFileSelect);
