@@ -63,6 +63,10 @@
             <input type="hidden" name="selected_fields[]" value="{{ $field }}">
         @endforeach
 
+        @if(isset($redirectTo))
+            <input type="hidden" name="redirect_to" value="{{ $redirectTo }}">
+        @endif
+
         {{-- Master Control Section --}}
         <div class="card mb-4 master-control-card">
             <div class="card-header bg-primary text-white fw-bold d-flex align-items-center">
@@ -227,7 +231,7 @@
                     <i class="bi bi-info-circle"></i> {{ __('Changes are not saved until you click "Save All Changes".') }}
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('employees.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
+                    <a href="{{ $redirectTo ?? route('employees.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
                     <button type="submit" class="btn btn-success btn-lg shadow-sm">
                         <i class="bi bi-save-fill me-2"></i> {{ __('Save All Changes') }}
                     </button>

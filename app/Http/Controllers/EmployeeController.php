@@ -809,6 +809,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         ]);
 
         $employeeIds = $request->input('employee_ids');
+        $redirectTo = $request->input('redirect_to');
 
         // Define all available fields grouped by category
         $fieldGroups = [
@@ -872,7 +873,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             ],
         ];
 
-        return view('employees.bulk_edit_selector', compact('employeeIds', 'fieldGroups'));
+        return view('employees.bulk_edit_selector', compact('employeeIds', 'fieldGroups', 'redirectTo'));
     }
 
     /**
@@ -887,6 +888,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $employees = Employee::whereIn('id', $request->input('employee_ids'))->get();
         $selectedFields = $request->input('selected_fields');
+        $redirectTo = $request->input('redirect_to');
 
         // Define metadata for fields to render correct inputs
         $fileFields = [
@@ -963,7 +965,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_12' => 'Document 4',
         ];
 
-        return view('employees.bulk_edit_form', compact('employees', 'selectedFields', 'fileFields', 'dateFields', 'options', 'fieldLabels'));
+        return view('employees.bulk_edit_form', compact('employees', 'selectedFields', 'fileFields', 'dateFields', 'options', 'fieldLabels', 'redirectTo'));
     }
 
     /**
@@ -981,6 +983,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $inputData = $request->input('data', []);
         $employeeIds = $request->input('employee_ids');
         $selectedFields = $request->input('selected_fields');
+        $redirectTo = $request->input('redirect_to');
         $updatedCount = 0;
 
         // Define mapping for legacy file fields to actual database columns
@@ -1043,6 +1046,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $employee->update($updateData);
                 $updatedCount++;
             }
+        }
+
+        if ($redirectTo) {
+            return redirect($redirectTo)->with('success', "Bulk updated {$updatedCount} employees successfully.");
         }
 
         return redirect()->route('employees.index')->with('success', "Bulk updated {$updatedCount} employees successfully.");
