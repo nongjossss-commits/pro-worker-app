@@ -61,6 +61,13 @@ class AdminJobTicketController extends Controller
                 'employer_unread_count' => 1, // Admin creates -> Employer has 1 unread message
             ]);
 
+            // V2.5.1: Unhide Employer Ticket Box if Hidden
+            // When Admin manually creates a ticket for an employer, the box should be visible.
+            $employerUser = User::find($validated['employer_user_id']);
+            if ($employerUser && $employerUser->is_ticket_hidden) {
+                $employerUser->update(['is_ticket_hidden' => false]);
+            }
+
             // Define the permanent storage directory for this ticket
             $permanentBasePath = "ticket_attachments/{$ticket->id}";
 

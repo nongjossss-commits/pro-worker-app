@@ -161,6 +161,13 @@ if ($isStaff) {
     $updateData['admin_unread_count'] = DB::raw('admin_unread_count + 1');
 }
 
+// V2.5.1: Unhide Employer Ticket Box if Hidden (Activity Detected)
+// Whether it's Staff replying (showing interest) or Employer replying (new activity), the box should be visible.
+$employerUser = $ticket->employerUser;
+if ($employerUser && $employerUser->is_ticket_hidden) {
+    $employerUser->update(['is_ticket_hidden' => false]);
+}
+
 $ticket->update($updateData);
 
 DB::commit();

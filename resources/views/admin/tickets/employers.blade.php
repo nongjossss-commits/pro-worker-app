@@ -69,7 +69,16 @@
                                 <div class="mt-auto pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="text-muted small">ตั๋วงานทั้งหมด</span>
-                                        <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
+                                            {{-- V2.5.1: Hide Button --}}
+                                            <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary border-0 p-0" title="ซ่อน">
+                                                    <i class="bi bi-eye-slash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -133,9 +142,18 @@
                                     ({{ \Carbon\Carbon::parse($user->last_activity)->diffForHumans() }})
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
-                                    </a>
+                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                        <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
+                                        </a>
+                                        {{-- V2.5.1: Hide Button --}}
+                                        <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="ซ่อน">
+                                                <i class="bi bi-eye-slash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

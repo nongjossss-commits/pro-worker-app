@@ -147,7 +147,8 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::post('tickets/{ticket}/reject', [TicketStatusController::class, 'reject'])->name('tickets.reject');
     Route::post('tickets/{ticket}/forward', [TicketStatusController::class, 'forward'])->name('tickets.forward');
     Route::post('tickets/{ticket}/update-assignment', [AdminTicketController::class, 'updateAssignment'])->name('tickets.updateAssignment');
-    Route::post('tickets/{ticket}/hide', [AdminTicketController::class, 'hide'])->name('tickets.hide');
+    // Route::post('tickets/{ticket}/hide', [AdminTicketController::class, 'hide'])->name('tickets.hide'); // Deprecated or incorrect context
+    Route::post('tickets/employers/{user}/hide', [AdminTicketController::class, 'hideEmployer'])->name('tickets.hideEmployer'); // V2.5.1 Hide Employer Box
 
     Route::delete('tickets/messages/{message}', [\App\Http\Controllers\TicketMessageController::class, 'destroy'])->name('tickets.messages.destroy');
 });
