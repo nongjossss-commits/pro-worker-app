@@ -244,10 +244,15 @@ class GroupTeamController extends Controller
         $groupId = $request->input('group_id');
 
         $query = Employee::query()
+            ->with('employer')
             ->where(function($q) use ($term) {
                 $q->where('employeeNameTh', 'like', "%{$term}%")
                   ->orWhere('employeeNameEn', 'like', "%{$term}%")
-                  ->orWhere('employeePassport', 'like', "%{$term}%");
+                  ->orWhere('employeePassport', 'like', "%{$term}%")
+                  ->orWhereHas('employer', function($q2) use ($term) {
+                      $q2->where('employerNameTh', 'like', "%{$term}%")
+                         ->orWhere('employerNameEn', 'like', "%{$term}%");
+                  });
             });
 
         // If affiliated, limit to employer
@@ -262,7 +267,7 @@ class GroupTeamController extends Controller
             });
         }
 
-        $employees = $query->limit(50)->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'employeePhoto']);
+        $employees = $query->limit(50)->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'employeePhoto', 'employer_id']);
 
         // Transform for frontend
         $results = $employees->map(function ($emp) {
@@ -271,6 +276,7 @@ class GroupTeamController extends Controller
                 'name' => $emp->employeeNameTh . ' (' . $emp->employeeNameEn . ')',
                 'passport' => $emp->employeePassport,
                 'photo' => $emp->photo_url,
+                'employer_name' => $emp->employer ? ($emp->employer->employerNameTh . ' (' . $emp->employer->employerNameEn . ')') : 'N/A',
             ];
         });
 

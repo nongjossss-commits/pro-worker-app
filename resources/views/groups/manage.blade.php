@@ -446,7 +446,7 @@
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text"
                                class="form-control"
-                               placeholder="{{ __('Search employee by name or passport...') }}"
+                               placeholder="{{ __('Search employee by name, passport, or employer...') }}"
                                x-model="searchTerm"
                                @input.debounce.500ms="searchEmployees()">
                     </div>
@@ -474,6 +474,9 @@
                                         <div class="fw-bold" x-text="employee.name"></div>
                                         <div class="text-muted small">
                                             <i class="bi bi-passport"></i> <span x-text="employee.passport"></span>
+                                        </div>
+                                        <div class="text-muted small">
+                                            <i class="bi bi-building"></i> <span x-text="employee.employer_name"></span>
                                         </div>
                                     </div>
                                 </div>
