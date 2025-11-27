@@ -117,12 +117,14 @@
                 </label>
                 <img id="employeePhotoPreview" src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/150x180/f8fafc/6c757d?text=Photo' }}" class="img-thumbnail mb-3" style="width: 150px; height: 180px; object-fit: cover;">
                 <div class="d-grid gap-2 w-75">
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('employeePhotoFile').click();"><i class="bi bi-file-earmark-image me-1"></i> เลือกจากไฟล์</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('employeePhotoCamera').click();"><i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('triggerFile').click();"><i class="bi bi-file-earmark-image me-1"></i> เลือกจากไฟล์</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('triggerCamera').click();"><i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ</button>
                 </div>
                 {{-- Hidden file inputs --}}
-                <input type="file" class="d-none" id="employeePhotoFile" name="employeePhoto" accept="image/*">
-                <input type="file" class="d-none" id="employeePhotoCamera" name="employeePhoto" accept="image/*" capture="environment">
+                <input type="file" class="d-none" id="triggerFile" accept="image/*">
+                <input type="file" class="d-none" id="triggerCamera" accept="image/*" capture="environment">
+                {{-- Actual Input for Submission --}}
+                <input type="file" class="d-none" id="employeePhotoInput" name="employeePhoto">
             </div>
         </div>
 
@@ -449,7 +451,7 @@
             </div>
             <div class="modal-body">
                 <div class="img-container">
-                    <img id="imageToCrop" src="" alt="Picture" style="max-width: 100%;">
+                    <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
                 </div>
             </div>
             <div class="modal-footer">
@@ -472,8 +474,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const ageInput = document.getElementById('employeeAge');
     const nationalitySelect = document.getElementById('employeeNationality');
     const mouGroupSelect = document.getElementById('workPermitMOUGroup');
-    const employeePhotoFileInput = document.getElementById('employeePhotoFile');
-    const employeePhotoCameraInput = document.getElementById('employeePhotoCamera');
+    const triggerFileInput = document.getElementById('triggerFile');
+    const triggerCameraInput = document.getElementById('triggerCamera');
+    const actualInput = document.getElementById('employeePhotoInput');
     const employeePhotoPreview = document.getElementById('employeePhotoPreview');
 
     // Containers for conditional logic
@@ -573,8 +576,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let originalFile;
 
     function handleFileSelect(event) {
-        originalFile = event.target.files[0];
-        if (!originalFile) return;
+        if (event.target.files && event.target.files.length > 0) {
+            originalFile = event.target.files[0];
+        } else {
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = function (e) {
@@ -587,6 +593,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('cropperModal').addEventListener('shown.bs.modal', function () {
+        // Ensure image is loaded and ready
+        if (imageToCrop.complete) {
+            initCropper();
+        } else {
+            imageToCrop.onload = initCropper;
+        }
+    });
+
+    function initCropper() {
+        if (cropper) {
+            cropper.destroy();
+        }
         cropper = new Cropper(imageToCrop, {
             aspectRatio: 150 / 180,
             viewMode: 1,
@@ -600,13 +618,15 @@ document.addEventListener('DOMContentLoaded', function () {
             cropBoxMovable: false,
             cropBoxResizable: false,
         });
-    });
+    }
 
     document.getElementById('cropperModal').addEventListener('hidden.bs.modal', function () {
         if (cropper) {
             cropper.destroy();
             cropper = null;
         }
+        // Also clear the src to prevent flashing old image
+        imageToCrop.src = '';
     });
 
     cropImageBtn.addEventListener('click', function () {
@@ -619,6 +639,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         canvas.toBlob(function (blob) {
+            if (!blob) return;
+
             const croppedImageUrl = URL.createObjectURL(blob);
             employeePhotoPreview.src = croppedImageUrl;
 
@@ -632,16 +654,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(croppedFile);
 
-            // Assign the FileList to the original file input
-            employeePhotoFileInput.files = dataTransfer.files;
+            // Assign the FileList to the ACTUAL input for submission
+            actualInput.files = dataTransfer.files;
 
             cropperModal.hide();
 
         }, originalFile.type);
     });
 
-    employeePhotoFileInput.addEventListener('change', handleFileSelect);
-    employeePhotoCameraInput.addEventListener('change', handleFileSelect);
+    if (triggerFileInput) triggerFileInput.addEventListener('change', handleFileSelect);
+    if (triggerCameraInput) triggerCameraInput.addEventListener('change', handleFileSelect);
 
 
     // --- Initial State Setup on Page Load ---
