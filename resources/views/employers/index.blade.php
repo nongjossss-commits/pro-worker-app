@@ -48,7 +48,7 @@
             </thead>
             <tbody id="employer-table-body">
                 @forelse ($employers as $employer)
-                    <tr draggable="true"
+                    <tr id="employer-row-{{ $employer->id }}" draggable="true"
                         ondragstart="window.startDragGlobal(event, 'employer', {
                             id: {{ $employer->id }},
                             name: '{{ addslashes($employer->employerNameTh) }}',
@@ -93,8 +93,31 @@
 @endsection
 
 @push('scripts')
+<style>
+    .highlight {
+        animation: highlight-fade 3s ease-out forwards;
+        border: 2px solid #f97316 !important; /* An orange border */
+        background-color: #fff7ed !important; /* Light orange background */
+    }
+    @keyframes highlight-fade {
+        from { background-color: #ffedd5; border-color: #f97316; }
+        to { background-color: transparent; border-color: transparent; }
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    @if (session('highlight_employer'))
+        const employerId = '{{ session('highlight_employer') }}';
+        const row = document.getElementById('employer-row-' + employerId);
+        if (row) {
+            row.classList.add('highlight');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+                row.classList.remove('highlight');
+            }, 5000);
+        }
+    @endif
+
     const deleteForms = document.querySelectorAll('.delete-employer-form');
     deleteForms.forEach(form => {
         form.addEventListener('submit', function (e) {
