@@ -619,6 +619,12 @@
                 csrfInput.value = csrfToken;
                 form.appendChild(csrfInput);
 
+                const redirectInput = document.createElement('input');
+                redirectInput.type = 'hidden';
+                redirectInput.name = 'redirect_to';
+                redirectInput.value = window.location.href;
+                form.appendChild(redirectInput);
+
                 selected.forEach(id => {
                     const input = document.createElement('input');
                     input.type = 'hidden';

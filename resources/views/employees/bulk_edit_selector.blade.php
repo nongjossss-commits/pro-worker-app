@@ -13,6 +13,10 @@
             <input type="hidden" name="employee_ids[]" value="{{ $id }}">
         @endforeach
 
+        @if(isset($redirectTo))
+            <input type="hidden" name="redirect_to" value="{{ $redirectTo }}">
+        @endif
+
         <div class="alert alert-info">
             <i class="bi bi-info-circle-fill me-2"></i>
             {{ __('Please select the fields you want to edit (Maximum 5 fields).') }}
