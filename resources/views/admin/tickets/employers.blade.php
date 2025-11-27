@@ -72,9 +72,13 @@
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
                                             {{-- V2.5.1: Hide Button --}}
-                                            <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)');">
+                                            <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-secondary border-0 p-0" title="ซ่อน">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-0 btn-submit-swal" title="ซ่อน"
+                                                        data-swal-title="ยืนยันการซ่อน"
+                                                        data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
+                                                        data-swal-icon="warning"
+                                                        data-swal-confirm-text="ใช่, ซ่อนเลย">
                                                     <i class="bi bi-eye-slash"></i>
                                                 </button>
                                             </form>
@@ -147,9 +151,13 @@
                                             <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
                                         </a>
                                         {{-- V2.5.1: Hide Button --}}
-                                        <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)');">
+                                        <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
                                             @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="ซ่อน">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-submit-swal" title="ซ่อน"
+                                                    data-swal-title="ยืนยันการซ่อน"
+                                                    data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
+                                                    data-swal-icon="warning"
+                                                    data-swal-confirm-text="ใช่, ซ่อนเลย">
                                                 <i class="bi bi-eye-slash"></i>
                                             </button>
                                         </form>
@@ -202,3 +210,37 @@
     }
 </style>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.btn-submit-swal').forEach(button => {
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            if (!form) return;
+
+            const title = this.dataset.swalTitle;
+            const text = this.dataset.swalText;
+            const icon = this.dataset.swalIcon;
+            const confirmText = this.dataset.swalConfirmText;
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: confirmText,
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush
