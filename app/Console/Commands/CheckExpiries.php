@@ -40,7 +40,9 @@ class CheckExpiries extends Command
             $this->cleanupOutdatedNotifications($settings, $today);
         }
 
-        $baseEmployeeQuery = Employee::query();
+        // Use withoutGlobalScopes to ensure we check ALL employees in the system,
+        // regardless of who triggered the command (e.g. an admin via web interface).
+        $baseEmployeeQuery = Employee::withoutGlobalScopes();
         if ($employeeId) {
             $baseEmployeeQuery->where('id', $employeeId);
         }
@@ -50,6 +52,14 @@ class CheckExpiries extends Command
             'workPermitExpiryDate' => 'work_permit_expiry',
             'visaExpiryDate'       => 'visa_expiry',
             'ninetyDayReportDate'  => 'ninety_day_report',
+        ];
+
+        // Mapping to know which actual notification types belong to which check group
+        $checkTypeToNotificationTypes = [
+            'passport_expiry' => ['passport_expiry', 'ci_renewal'],
+            'work_permit_expiry' => ['work_permit_mou', 'resolution_renewal', 'new_registration_renewal'],
+            'visa_expiry' => ['visa_expiry'],
+            'ninety_day_report' => ['ninety_day_report'],
         ];
 
         foreach ($documentChecks as $dateField => $notificationType) {
@@ -81,6 +91,8 @@ class CheckExpiries extends Command
                 ->get();
 
             $this->info("Found {$employees->count()} employees for field [{$dateField}] within a {$maxDays}-day threshold.");
+
+            $validEmployeeIdsForThisCheck = [];
 
             foreach ($employees as $employee) {
                 if ($employee->is_cancelled ?? false) {
@@ -125,10 +137,39 @@ class CheckExpiries extends Command
                             'message' => "เอกสารจะหมดอายุใน {$daysRemaining} วัน (ตั้งค่าแจ้งเตือน: {$setting->days_before_expiry} วัน)",
                         ]
                     );
+
+                    // Mark this employee as having a valid notification for this group
+                    $validEmployeeIdsForThisCheck[] = $employee->id;
+
+                    // Remove sibling types if they exist (e.g. switched from MOU to Resolution)
+                    $siblingTypes = array_diff($checkTypeToNotificationTypes[$notificationType], [$currentNotificationType]);
+                    if (!empty($siblingTypes)) {
+                        Notification::where('employee_id', $employee->id)
+                                    ->whereIn('type', $siblingTypes)
+                                    ->delete();
+                    }
+
                 } else {
+                    // Explicitly remove if settings imply no notification
                     Notification::where('employee_id', $employee->id)
                                   ->where('type', $currentNotificationType)
                                   ->delete();
+                }
+            }
+
+            // Sync Cleanup:
+            // Delete notifications for any employee that is NOT in the valid list.
+            // This handles cases where dates were updated to be safe (outside threshold),
+            // or the employee was deleted/hidden, or settings changed.
+            if (!$employeeId) {
+                $typesToClean = $checkTypeToNotificationTypes[$notificationType] ?? [$notificationType];
+                if (!empty($typesToClean)) {
+                     $deletedCount = Notification::whereIn('type', $typesToClean)
+                         ->whereNotIn('employee_id', $validEmployeeIdsForThisCheck)
+                         ->delete();
+                     if ($deletedCount > 0) {
+                         $this->info("Cleaned up {$deletedCount} stale notifications for type group: {$notificationType}.");
+                     }
                 }
             }
         }
