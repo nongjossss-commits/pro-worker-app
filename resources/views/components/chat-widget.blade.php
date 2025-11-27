@@ -199,6 +199,38 @@
                                         </a>
                                     </template>
 
+                                    <!-- Employee Card -->
+                                    <template x-if="msg.context_data.type === 'employee'">
+                                        <div class="d-flex align-items-center p-2 rounded bg-white border">
+                                            <div class="me-2">
+                                                <i class="bi bi-person-circle fs-3 text-secondary"></i>
+                                            </div>
+                                            <div class="flex-grow-1 lh-1">
+                                                <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.name"></a>
+                                                <small class="text-muted d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.subtitle || 'Employee'"></small>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-type="'employee'" :data-model-id="msg.context_data.id">
+                                                <i class="bi bi-search"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <!-- Employer Card -->
+                                    <template x-if="msg.context_data.type === 'employer'">
+                                        <div class="d-flex align-items-center p-2 rounded bg-white border">
+                                            <div class="me-2">
+                                                <i class="bi bi-building fs-3 text-secondary"></i>
+                                            </div>
+                                            <div class="flex-grow-1 lh-1">
+                                                <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.name"></a>
+                                                <small class="text-muted d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.subtitle || 'Employer'"></small>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-type="'employer'" :data-model-id="msg.context_data.id">
+                                                <i class="bi bi-search"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+
                                 </div>
                             </template>
 
@@ -1000,7 +1032,15 @@
                      let contextType = 'link';
                     let contextUrl = data.url;
                     let attachmentName = data.title;
-                     if (data.type === 'employee') { contextType = 'employee'; contextUrl = `/employees/${data.id}/locate`; }
+                     let subtitle = data.subtitle || '';
+
+                     if (data.type === 'employee') {
+                         contextType = 'employee';
+                         contextUrl = `/employees/${data.id}/locate`;
+                     } else if (data.type === 'employer') {
+                         contextType = 'employer';
+                         contextUrl = `/employers/${data.id}/locate`;
+                     }
                      // ... other types ...
 
                     chat.contextToAttach = {
@@ -1008,7 +1048,8 @@
                          id: data.id,
                          url: contextUrl,
                          text: `[${data.type.toUpperCase()}] ${data.title}`,
-                         name: attachmentName
+                         name: attachmentName,
+                         subtitle: subtitle
                     };
                     this.bringToFront(chat.uniqueKey);
                 }

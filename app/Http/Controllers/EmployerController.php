@@ -497,4 +497,10 @@ public function edit(Request $request, Employer $employer)
 
         return response()->json($employers);
     }
+
+    public function locate(Employer $employer)
+    {
+        return redirect()->route('employers.index')
+                         ->with('highlight_employer', $employer->id);
+    }
 }
