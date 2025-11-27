@@ -603,35 +603,48 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('cropperModal').addEventListener('shown.bs.modal', function () {
+        // Destroy existing cropper if any to be safe
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+
         // Ensure image is loaded and ready
         if (imageToCrop.complete) {
-            initCropper();
+             // Small delay to ensure modal transition finished rendering
+             setTimeout(initCropper, 200);
         } else {
-            imageToCrop.onload = initCropper;
+            imageToCrop.onload = function() {
+                setTimeout(initCropper, 200);
+            };
         }
     });
 
     function initCropper() {
         if (typeof Cropper === 'undefined') {
-            console.error('Cropper.js is not loaded.');
+            // Fallback: try to load it dynamically? No, just alert.
+            alert('ไม่สามารถโหลดเครื่องมือตัดภาพได้ (Cropper.js) กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
             return;
         }
-        if (cropper) {
-            cropper.destroy();
+
+        try {
+            cropper = new Cropper(imageToCrop, {
+                aspectRatio: 150 / 180,
+                viewMode: 1,
+                dragMode: 'move',
+                background: false,
+                autoCropArea: 0.8,
+                movable: true,
+                zoomable: true,
+                rotatable: true,
+                scalable: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+            });
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาดในการเริ่มทำงาน Cropper: ' + err.message);
         }
-        cropper = new Cropper(imageToCrop, {
-            aspectRatio: 150 / 180,
-            viewMode: 1,
-            dragMode: 'move',
-            background: false,
-            autoCropArea: 0.8,
-            movable: true,
-            zoomable: true,
-            rotatable: true,
-            scalable: true,
-            cropBoxMovable: true, // Allow moving the crop box
-            cropBoxResizable: true, // Allow resizing the crop box
-        });
     }
 
     document.getElementById('cropperModal').addEventListener('hidden.bs.modal', function () {
@@ -644,7 +657,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     cropImageBtn.addEventListener('click', function () {
-        if (!cropper) return;
+        if (!cropper) {
+             alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
+             return;
+        }
 
         const canvas = cropper.getCroppedCanvas({
             width: 300,
