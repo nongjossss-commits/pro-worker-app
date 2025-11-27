@@ -69,6 +69,11 @@ class TicketController extends Controller
         $query = User::whereHas('submittedTickets')
             ->with('employer'); // Eager load employer profile
 
+        // V2.5.1: Exclude hidden employers (unless searched)
+        if (!$search) {
+             $query->where('is_ticket_hidden', false);
+        }
+
         // V2.5-S15: Apply Caretaker Visibility Scope for non-admins/staff
         if (!$canViewAllTickets) {
              // Restrict to users whose Employer profile is assigned to the current restricted user
@@ -181,5 +186,20 @@ class TicketController extends Controller
         ]);
 
         return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Ticket assignment updated successfully.');
+    }
+
+    /**
+     * (V2.5.1) Hide an employer's ticket box from the list.
+     * It will reappear when there is new activity.
+     */
+    public function hideEmployer(User $user)
+    {
+        if (!Auth::user()->can('manage-tickets')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $user->update(['is_ticket_hidden' => true]);
+
+        return back()->with('success', 'Employer ticket box hidden.');
     }
 }

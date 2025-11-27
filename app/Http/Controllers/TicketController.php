@@ -80,6 +80,12 @@ class TicketController extends Controller
                 'admin_unread_count' => 1, // Employer creates -> Admin has 1 unread message
             ]);
 
+            // V2.5.1: Unhide Employer Ticket Box if Hidden (Activity Detected)
+            // When an employer creates a new ticket, they should become visible.
+            if ($user->is_ticket_hidden) {
+                $user->update(['is_ticket_hidden' => false]);
+            }
+
             // Define the permanent storage directory for this ticket
             $permanentBasePath = "ticket_attachments/{$ticket->id}";
 
