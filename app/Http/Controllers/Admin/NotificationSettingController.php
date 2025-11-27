@@ -68,8 +68,8 @@ class NotificationSettingController extends Controller
             if ($settingData) {
                 // If data exists in request, use it.
                 // Checkbox: if present in array, check is_enabled.
-                // Note: If the array key exists but is_enabled is missing inside it, it means unchecked.
-                $data['is_enabled'] = isset($settingData['is_enabled']) ? 1 : 0;
+                // Cast to boolean/integer to handle '0' (hidden input) and '1' (checkbox)
+                $data['is_enabled'] = !empty($settingData['is_enabled']) ? 1 : 0;
 
                 if (isset($settingData['days_before_expiry'])) {
                     $data['days_before_expiry'] = $settingData['days_before_expiry'];

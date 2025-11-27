@@ -39,33 +39,39 @@
                                     @php
                                         $setting = $settings[$type] ?? new \App\Models\NotificationSetting(['days_before_expiry' => 30, 'is_enabled' => true]);
                                         $isMissingDataType = in_array($type, ['pink_card_missing', 'residence_permit_missing']);
+                                        $isEnabled = old('settings.'.$type.'.is_enabled', $setting->is_enabled);
                                     @endphp
-                                    <tr>
+                                    <tr x-data="{ enabled: {{ $isEnabled ? 'true' : 'false' }} }">
                                         <td>{{ $label }}</td>
                                         <td>
-                                            @if ($isMissingDataType)
-                                                {{-- Toggle Switch for New Types --}}
+                                            <div class="d-flex flex-column gap-2">
+                                                {{-- Toggle Switch for ALL Types --}}
                                                 <div class="form-check form-switch">
+                                                    {{-- Hidden input for unchecked state --}}
+                                                    <input type="hidden" name="settings[{{ $type }}][is_enabled]" value="0">
+
                                                     <input class="form-check-input" type="checkbox"
                                                            id="switch_{{ $type }}"
                                                            name="settings[{{ $type }}][is_enabled]"
                                                            value="1"
-                                                           {{ old('settings.'.$type.'.is_enabled', $setting->is_enabled) ? 'checked' : '' }}>
+                                                           x-model="enabled">
                                                     <label class="form-check-label" for="switch_{{ $type }}">เปิดใช้งานการแจ้งเตือน</label>
                                                 </div>
-                                            @else
-                                                {{-- Input for Days --}}
-                                                <div class="input-group" style="max-width: 200px;">
-                                                    <input type="number"
-                                                           name="settings[{{ $type }}][days_before_expiry]"
-                                                           class="form-control"
-                                                           value="{{ old('settings.'.$type.'.days_before_expiry', $setting->days_before_expiry) }}"
-                                                           min="0"
-                                                           required>
-                                                    <span class="input-group-text">วัน</span>
-                                                </div>
-                                                <input type="hidden" name="settings[{{ $type }}][is_enabled]" value="1"> {{-- Always enabled for expiry types for now --}}
-                                            @endif
+
+                                                @if (!$isMissingDataType)
+                                                    {{-- Input for Days --}}
+                                                    <div class="input-group" style="max-width: 200px;">
+                                                        <input type="number"
+                                                               name="settings[{{ $type }}][days_before_expiry]"
+                                                               class="form-control"
+                                                               value="{{ old('settings.'.$type.'.days_before_expiry', $setting->days_before_expiry) }}"
+                                                               min="0"
+                                                               required
+                                                               :disabled="!enabled">
+                                                        <span class="input-group-text">วัน</span>
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
