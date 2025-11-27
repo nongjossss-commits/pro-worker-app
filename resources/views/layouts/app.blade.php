@@ -168,7 +168,9 @@
         }
     </style>
 </head>
-<body>
+<body data-user-id="{{ auth()->id() }}"
+      data-user-name="{{ auth()->user()->name }}"
+      data-user-avatar="{{ auth()->user()->avatar_url }}">
 
     <div class="main-layout">
         <aside id="sidebar" class="offcanvas offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
@@ -187,6 +189,10 @@
                 @can('view-dashboard')
                 <a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Dashboard') }}</a>
                 @endcan
+
+                <a href="{{ route('chat.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('chat.index') ? 'active' : '' }}">
+                    <i class="bi bi-chat-dots-fill me-2"></i>{{ __('Chat') }}
+                </a>
 
                 @role('admin')
                 <a href="{{ route('admin.activity-logs.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">

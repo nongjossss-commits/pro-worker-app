@@ -8,6 +8,8 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/central-delete-handler.js',
+                'resources/css/chat.css',
+                'resources/js/chat.js',
             ],
             refresh: true,
         }),

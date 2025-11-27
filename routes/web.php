@@ -41,16 +41,21 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Chat Routes
-    Route::prefix('chat')->name('chat.')->group(function () {
+    // Chat Page Route
+    Route::get('/chat', function () {
+        return view('chat.index');
+    })->name('chat.index');
+
+    // Chat API Routes
+    Route::prefix('api/chat')->name('chat.api.')->group(function () {
         Route::get('/contacts', [ChatController::class, 'fetchContacts'])->name('contacts');
-        Route::get('/messages/{userId}', [ChatController::class, 'fetchMessages'])->name('messages');
-        Route::get('/check-new', [ChatController::class, 'checkNewMessages'])->name('check_new');
+        Route::get('/messages/{id}', [ChatController::class, 'fetchMessages'])->name('messages');
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
-        Route::post('/profile/update', [ChatController::class, 'updateProfile'])->name('profile.update_info');
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
-        Route::post('/rooms', [ChatController::class, 'createRoom'])->name('rooms.create')->middleware('permission:manage-chat-groups');
-        Route::get('/backgrounds', [ChatController::class, 'getBackgrounds'])->name('backgrounds.list');
+        Route::get('/check-new', [ChatController::class, 'checkNewMessages'])->name('check_new');
+        Route::post('/profile/update', [ChatController::class, 'updateProfile'])->name('profile.update');
+        Route::post('/rooms/create', [ChatController::class, 'createRoom'])->name('rooms.create');
+        Route::get('/backgrounds', [ChatController::class, 'getBackgrounds'])->name('backgrounds');
         Route::get('/giphy-proxy', [ChatController::class, 'giphyProxy'])->name('giphy.proxy');
     });
 
