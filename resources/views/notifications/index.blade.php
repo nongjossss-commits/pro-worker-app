@@ -5,11 +5,21 @@
 <div class="content-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">{{ __('Notification List') }}</h2>
-        @can('manage-users')
-            <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-outline-primary">
-                <i class="bi bi-gear-fill"></i> {{ __('Notification Settings') }}
-            </a>
-        @endcan
+        <div class="d-flex gap-2">
+            {{-- Manual Re-check Button --}}
+            <form action="{{ route('notifications.check-expiries') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-primary" title="{{ __('Manually check for expiring documents immediately') }}">
+                    <i class="bi bi-arrow-clockwise"></i> {{ __('Re-check Expiries') }}
+                </button>
+            </form>
+
+            @can('manage-users')
+                <a href="{{ route('admin.notification_settings.index') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-gear-fill"></i> {{ __('Notification Settings') }}
+                </a>
+            @endcan
+        </div>
     </div>
 
     <div class="card mb-4">

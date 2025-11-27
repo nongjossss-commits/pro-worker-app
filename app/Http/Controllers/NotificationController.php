@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Artisan;
 
 class NotificationController extends Controller
 {
@@ -179,6 +180,15 @@ class NotificationController extends Controller
         ]);
 
         return back()->with('success', 'รายการถูกนำกลับมาเรียบร้อยแล้ว');
+    }
+
+    /**
+     * Manually trigger the document expiry check.
+     */
+    public function checkExpiries()
+    {
+        Artisan::call('app:check-expiries');
+        return back()->with('success', 'ระบบกำลังตรวจสอบเอกสารหมดอายุใหม่อีกครั้ง กรุณารอสักครู่...');
     }
 
     // Add this new method to the controller
