@@ -91,14 +91,22 @@
                     {{-- Format date consistently --}}
                     <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                     <td class="text-center">
-                        <a href="{{ route('admin.tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
-                            <i class="bi bi-eye"></i> {{ __('View Details') }}
-                            @if($ticket->admin_unread_count > 0)
-                                <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
-                                    <span class="visually-hidden">Unread</span>
-                                </span>
-                            @endif
-                        </a>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="{{ route('admin.tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
+                                <i class="bi bi-eye"></i> {{ __('View Details') }}
+                                @if($ticket->admin_unread_count > 0)
+                                    <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
+                                        <span class="visually-hidden">Unread</span>
+                                    </span>
+                                @endif
+                            </a>
+                            <form action="{{ route('admin.tickets.hide', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this job ticket from the view? It will reappear if there is a new response.') }}')">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty
