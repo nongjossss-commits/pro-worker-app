@@ -19,7 +19,7 @@ use App\Http\Controllers\Api\TemporaryUploadController;
 use App\Http\Controllers\TicketReplyController;
 use App\Http\Controllers\Admin\TicketStatusController;
 use App\Http\Controllers\PreviewController;
-use App\Http\Controllers\ChatController; // Added ChatController
+use App\Http\Controllers\ChatController;
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 
@@ -44,11 +44,13 @@ Route::middleware('auth')->group(function () {
     // Chat Routes
     Route::prefix('chat')->name('chat.')->group(function () {
         Route::get('/contacts', [ChatController::class, 'fetchContacts'])->name('contacts');
-        Route::get('/messages/{userId}', [ChatController::class, 'fetchMessages'])->name('messages');
+        Route::get('/messages/{id}', [ChatController::class, 'fetchMessages'])->name('messages'); // Changed {userId} to {id}
         Route::get('/check-new', [ChatController::class, 'checkNewMessages'])->name('check_new');
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::post('/profile/update', [ChatController::class, 'updateProfile'])->name('profile.update_info');
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
+        Route::post('/groups', [ChatController::class, 'createGroup'])->name('groups.create'); // NEW
+        Route::get('/search-users', [ChatController::class, 'searchUsers'])->name('users.search'); // NEW
     });
 
     // Application routes that require login
