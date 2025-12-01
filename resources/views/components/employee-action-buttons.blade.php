@@ -1,4 +1,4 @@
-@props(['employee', 'employer'])
+@props(['employee', 'employer' => null])
 
 @php
     $containerClass = $employer ? "d-grid d-md-flex gap-2 justify-content-md-end" : "d-flex flex-column flex-md-row gap-2 justify-content-end";
