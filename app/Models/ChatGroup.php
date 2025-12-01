@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class ChatGroup extends Model
 {
@@ -16,7 +17,19 @@ class ChatGroup extends Model
         'name',
         'type', // 'community', 'private_group'
         'created_by',
+        'avatar_path',
     ];
+
+    protected $appends = ['avatar_url'];
+
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar_path && Storage::disk('public')->exists($this->avatar_path)) {
+            return Storage::disk('public')->url($this->avatar_path);
+        }
+
+        return $this->type === 'community' ? '/images/community-icon.png' : '/images/group-icon.png';
+    }
 
     public function members(): BelongsToMany
     {
