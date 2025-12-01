@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/profile/update', [ChatController::class, 'updateProfile'])->name('profile.update_info');
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
         Route::post('/groups', [ChatController::class, 'createGroup'])->name('groups.create'); // NEW
+        Route::post('/groups/{id}/update', [ChatController::class, 'updateGroup'])->name('groups.update'); // NEW
         Route::get('/search-users', [ChatController::class, 'searchUsers'])->name('users.search'); // NEW
     });
 
