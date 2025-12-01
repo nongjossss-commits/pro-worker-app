@@ -7,7 +7,7 @@
 
     <!-- Notification Sound -->
     <audio id="chatNotificationSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRuQSAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcASAAAAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQ=" type="audio/wav">
+        <source src="data:audio/wav;base64,UklGRuQSAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcASAAAAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQ=" type="audio/wav">
     </audio>
 
     <!-- 1. Main Launcher Button (Floating & Draggable) -->
@@ -241,7 +241,20 @@
                             </template>
 
                             <div x-html="formatMessage(msg.message)"></div>
-                            <small class="d-block text-end opacity-50" style="font-size: 0.65rem;" x-text="formatTime(msg.created_at)"></small>
+                            <div class="d-flex justify-content-end align-items-center gap-1 mt-1">
+                                <small class="opacity-50" style="font-size: 0.65rem;" x-text="formatTime(msg.created_at)"></small>
+                                <!-- READ RECEIPT -->
+                                <template x-if="msg.sender_id == currentUserId">
+                                    <span class="opacity-75 ms-1" style="font-size: 0.65rem;">
+                                        <template x-if="chat.type === 'group'">
+                                            <span x-show="msg.read_count > 0" x-text="'{{ __('Read') }} ' + msg.read_count"></span>
+                                        </template>
+                                        <template x-if="chat.type !== 'group'">
+                                            <span x-show="msg.is_read">{{ __('Read') }}</span>
+                                        </template>
+                                    </span>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -676,11 +689,24 @@
             },
 
             checkNewMessages() {
-                fetch('{{ route('chat.check_new') }}')
+                // Fetch new messages and read updates
+                // We need to pass the timestamp of the last message we have to optimize?
+                // The backend uses 'last_check'.
+                // Ideally, we should track last_check client side.
+                // But for simplicity, we just poll. The backend defaults to 10s if no param.
+
+                // We can't easily track a single 'last_check' if we want "read updates" for older messages.
+                // But the backend `checkNewMessages` now returns `read_updates`.
+
+                const now = new Date().toISOString();
+
+                fetch('{{ route('chat.check_new') }}?last_check=' + (this.lastCheckTime || ''))
                     .then(res => res.json())
                     .then(data => {
+                        this.lastCheckTime = data.timestamp;
+
+                        // 1. New Messages
                         if (data.messages && data.messages.length > 0) {
-                            // Handle new messages logic (similar to previous but adapted for groups)
                             data.messages.forEach(msg => {
                                 let uniqueKey;
                                 if (msg.chat_group_id) {
@@ -699,22 +725,55 @@
                                             chat.unreadCount = (chat.unreadCount || 0) + 1;
                                         }
                                     } else {
-                                        this.fetchMessages(uniqueKey);
+                                        // If open, just append if not exists
+                                         if (!chat.messages.find(m => m.id === msg.id)) {
+                                            chat.messages.push(msg);
+                                            this.$nextTick(() => this.scrollToBottom(uniqueKey));
+
+                                            // Mark as read immediately if window is open
+                                            this.markAsRead([msg.id]);
+                                        }
                                     }
                                 } else {
-                                    // Chat closed, refresh contacts to show badge
                                     this.fetchContacts();
                                 }
                             });
 
-                            // Simple sound logic (play if new msg ID > last)
+                            // Sound
                             const maxId = Math.max(...data.messages.map(m => m.id));
                             if (maxId > this.lastNotifiedMessageId) {
                                 this.playNotificationSound();
                                 this.lastNotifiedMessageId = maxId;
                             }
                         }
+
+                        // 2. Read Updates
+                        if (data.read_updates && data.read_updates.length > 0) {
+                            data.read_updates.forEach(update => {
+                                // Update read status in open chats
+                                this.openChats.forEach(chat => {
+                                    const msg = chat.messages.find(m => m.id === update.id);
+                                    if (msg) {
+                                        msg.is_read = update.is_read;
+                                        msg.read_count = update.read_count;
+                                    }
+                                });
+                            });
+                        }
                     });
+            },
+
+            markAsRead(messageIds) {
+                if (messageIds.length === 0) return;
+
+                fetch('{{ route('chat.mark_as_read') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ message_ids: messageIds })
+                });
             },
 
             // --- Mentions Logic ---
