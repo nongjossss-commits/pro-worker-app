@@ -168,6 +168,11 @@ if ($employerUser && $employerUser->is_ticket_hidden) {
     $employerUser->update(['is_ticket_hidden' => false]);
 }
 
+// Unhide the specific ticket if hidden
+if ($ticket->hidden_for_admin_at) {
+    $updateData['hidden_for_admin_at'] = null;
+}
+
 $ticket->update($updateData);
 
 DB::commit();
