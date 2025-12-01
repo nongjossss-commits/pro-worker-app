@@ -17,6 +17,14 @@
                     <input type="text" name="search" class="form-control border-start-0" placeholder="ค้นหานายจ้าง..." value="{{ $search }}">
                 </div>
 
+                {{-- Hidden Toggle Button (New) --}}
+                <a href="{{ route('admin.tickets.index', array_merge(request()->query(), ['hidden' => request('hidden') ? null : 1, 'page' => 1])) }}"
+                   class="btn btn-sm {{ request('hidden') ? 'btn-secondary' : 'btn-outline-secondary' }}"
+                   title="{{ request('hidden') ? 'แสดงกล่องตั๋วงานปกติ' : 'แสดงกล่องตั๋วงานที่ถูกซ่อน' }}">
+                   <i class="bi {{ request('hidden') ? 'bi-eye' : 'bi-eye-slash' }}"></i>
+                   {{ request('hidden') ? 'กลับไปหน้าหลัก' : 'กล่องที่ถูกซ่อน' }}
+                </a>
+
                 {{-- View Toggle Buttons --}}
                 <div class="btn-group btn-group-sm">
                     <a href="{{ route('admin.tickets.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $view == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}" title="Card View">
@@ -71,17 +79,30 @@
                                         <span class="text-muted small">ตั๋วงานทั้งหมด</span>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
-                                            {{-- V2.5.1: Hide Button --}}
-                                            <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-0 btn-submit-swal" title="ซ่อน"
-                                                        data-swal-title="ยืนยันการซ่อน"
-                                                        data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
-                                                        data-swal-icon="warning"
-                                                        data-swal-confirm-text="ใช่, ซ่อนเลย">
-                                                    <i class="bi bi-eye-slash"></i>
-                                                </button>
-                                            </form>
+                                            {{-- V2.5.1: Hide/Unhide Button --}}
+                                            @if($user->is_ticket_hidden)
+                                                <form action="{{ route('admin.tickets.unhideEmployer', $user->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="button" class="btn btn-sm btn-outline-success border-0 p-0 btn-submit-swal" title="ยกเลิกการซ่อน"
+                                                            data-swal-title="ยืนยันการยกเลิก"
+                                                            data-swal-text="ต้องการนำกล่องตั๋วงานนี้กลับมาแสดงในรายการหลัก?"
+                                                            data-swal-icon="question"
+                                                            data-swal-confirm-text="ใช่, นำกลับมา">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-0 btn-submit-swal" title="ซ่อน"
+                                                            data-swal-title="ยืนยันการซ่อน"
+                                                            data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
+                                                            data-swal-icon="warning"
+                                                            data-swal-confirm-text="ใช่, ซ่อนเลย">
+                                                        <i class="bi bi-eye-slash"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -150,17 +171,30 @@
                                         <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
                                             <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
                                         </a>
-                                        {{-- V2.5.1: Hide Button --}}
-                                        <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-submit-swal" title="ซ่อน"
-                                                    data-swal-title="ยืนยันการซ่อน"
-                                                    data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
-                                                    data-swal-icon="warning"
-                                                    data-swal-confirm-text="ใช่, ซ่อนเลย">
-                                                <i class="bi bi-eye-slash"></i>
-                                            </button>
-                                        </form>
+                                        {{-- V2.5.1: Hide/Unhide Button --}}
+                                        @if($user->is_ticket_hidden)
+                                            <form action="{{ route('admin.tickets.unhideEmployer', $user->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="button" class="btn btn-sm btn-outline-success btn-submit-swal" title="ยกเลิกการซ่อน"
+                                                        data-swal-title="ยืนยันการยกเลิก"
+                                                        data-swal-text="ต้องการนำกล่องตั๋วงานนี้กลับมาแสดงในรายการหลัก?"
+                                                        data-swal-icon="question"
+                                                        data-swal-confirm-text="ใช่, นำกลับมา">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-submit-swal" title="ซ่อน"
+                                                        data-swal-title="ยืนยันการซ่อน"
+                                                        data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
+                                                        data-swal-icon="warning"
+                                                        data-swal-confirm-text="ใช่, ซ่อนเลย">
+                                                    <i class="bi bi-eye-slash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

@@ -69,8 +69,12 @@ class TicketController extends Controller
         $query = User::whereHas('submittedTickets')
             ->with('employer'); // Eager load employer profile
 
-        // V2.5.1: Exclude hidden employers (unless searched)
-        if (!$search) {
+        // V2.5.1: Handle Hidden Filter
+        $showHidden = request('hidden');
+
+        if ($showHidden) {
+             $query->where('is_ticket_hidden', true);
+        } elseif (!$search) {
              $query->where('is_ticket_hidden', false);
         }
 
@@ -201,5 +205,19 @@ class TicketController extends Controller
         $user->update(['is_ticket_hidden' => true]);
 
         return back()->with('success', 'Employer ticket box hidden.');
+    }
+
+    /**
+     * (V2.5.2) Unhide an employer's ticket box (restore to main list).
+     */
+    public function unhideEmployer(User $user)
+    {
+        if (!Auth::user()->can('manage-tickets')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $user->update(['is_ticket_hidden' => false]);
+
+        return back()->with('success', 'Employer ticket box restored to view.');
     }
 }
