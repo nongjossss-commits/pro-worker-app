@@ -264,9 +264,11 @@ class CheckExpiries extends Command
 
         $threshold = $setting->days_before_expiry;
         $futureThreshold = $today->copy()->addDays($threshold);
+        // Look back 365 days to ensure we catch expired documents
+        $pastThreshold = $today->copy()->subDays(365);
 
         $employers = Employer::whereNotNull('employer_doc_company_expiry')
-            ->whereBetween('employer_doc_company_expiry', [$today, $futureThreshold])
+            ->whereBetween('employer_doc_company_expiry', [$pastThreshold, $futureThreshold])
             ->get();
 
         $this->info("Found {$employers->count()} employers with expiring documents within a {$threshold}-day threshold.");
@@ -312,6 +314,8 @@ class CheckExpiries extends Command
 
         $threshold = $setting->days_before_expiry;
         $futureThreshold = $today->copy()->addDays($threshold);
+        // Look back 365 days to ensure we catch expired documents
+        $pastThreshold = $today->copy()->subDays(365);
         $insuranceFields = ['insurance_expiry_date', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'];
 
         $allEmployeeIdsInScope = collect();
@@ -320,7 +324,7 @@ class CheckExpiries extends Command
             $employees = (clone $baseEmployeeQuery)
                 ->whereNotNull($field)
                 ->where('insurance_type', '!=', 'ประกันสังคม')
-                ->whereBetween($field, [$today, $futureThreshold])
+                ->whereBetween($field, [$pastThreshold, $futureThreshold])
                 ->get();
 
             $allEmployeeIdsInScope = $allEmployeeIdsInScope->merge($employees->pluck('id'));

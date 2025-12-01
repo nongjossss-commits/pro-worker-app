@@ -25,7 +25,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('app:check-expiries')->daily();
+        $schedule->command('app:check-expiries')->daily()->timezone('Asia/Bangkok');
         $schedule->command('app:prune-soft-deletes')->daily();
     }
 
