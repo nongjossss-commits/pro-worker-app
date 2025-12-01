@@ -66,46 +66,52 @@ class ChatController extends Controller
 
         // --- Groups Logic ---
         // 1. Community Group (Always one, auto-generated if missing)
-        // Check if community group exists, create if not (and if admin/staff)
         $communityGroup = ChatGroup::firstOrCreate(
             ['type' => 'community'],
             ['name' => 'Community Chat', 'created_by' => 1] // Assuming ID 1 is superadmin
         );
 
-        // 2. Fetch Groups user is part of OR is Community
-        // Since we don't strictly enforce membership for Community (everyone has access), we just fetch it.
-        // For custom groups, we check membership.
-
-        $groups = ChatGroup::where('type', 'community')
-            ->orWhereHas('members', function($q) use ($currentUser) {
-                $q->where('user_id', $currentUser->id);
+        // 2. Fetch Groups
+        $groups = ChatGroup::query()
+            ->where(function($q) use ($currentUser) {
+                $q->where('type', 'community');
+                // Admin sees all private groups too
+                if ($currentUser->hasRole('admin')) {
+                     $q->orWhere('type', 'private_group');
+                } else {
+                     $q->orWhereHas('members', function($m) use ($currentUser) {
+                        $m->where('user_id', $currentUser->id);
+                    });
+                }
             })
             ->withCount(['messages as unread_count' => function($q) use ($currentUser) {
-                 // Logic for unread group messages is complex without a read_receipts table.
-                 // For now, we'll return 0 or implement a simple check later.
-                 // A simple way is to check messages created_at > user's last view time (not tracked yet).
-                 // We will skip unread count for groups for now to avoid complexity or set to 0.
-                 // Or we could use the 'is_read' flag on message if we assume it's read by *everyone*? No.
-                 // For this iteration, unread count for groups is omitted.
-                 $q->whereRaw('1=0');
+                 $q->whereRaw('1=0'); // Unread count placeholder
             }])
             ->get()
-            ->map(function($group) {
+            ->map(function($group) use ($currentUser) {
+                // Determine avatar
+                $avatarUrl = $group->avatar_path ? Storage::disk('public')->url($group->avatar_path) : ($group->type === 'community' ? '/images/community-icon.png' : '/images/group-icon.png');
+
+                // Determine if admin (creator or in members pivot with role admin)
+                // Note: Pivot role check requires eager loading members or separate query.
+                // For simplicity, we assume 'created_by' is admin, or we can check pivot if needed for detailed permissions.
+                $isAdmin = $group->created_by == $currentUser->id || $currentUser->hasRole('admin');
+
                 return [
                     'id' => $group->id,
                     'type' => 'group',
-                    'group_type' => $group->type, // 'community' or 'private_group'
+                    'group_type' => $group->type,
                     'name' => $group->name,
-                    'avatar_url' => $group->type === 'community' ? '/images/community-icon.png' : '/images/group-icon.png', // Placeholder
+                    'avatar_url' => $avatarUrl,
                     'position_title' => $group->type === 'community' ? 'Public Channel' : 'Group Chat',
-                    'is_online' => true, // Groups always "online"
-                    'unread_count' => 0, // Placeholder
-                    'last_message_time' => null
+                    'is_online' => true,
+                    'unread_count' => 0,
+                    'last_message_time' => null,
+                    'can_edit' => $isAdmin
                 ];
             });
 
         // Merge Groups and Users
-        // We want Groups at the top, then Users.
         $allContacts = $groups->merge($contacts);
 
         return response()->json($allContacts);
@@ -119,7 +125,7 @@ class ChatController extends Controller
     {
         $currentUserId = Auth::id();
         $currentUser = Auth::user();
-        $type = $request->query('type', 'user'); // Default to user for backward compatibility
+        $type = $request->query('type', 'user');
 
         // Access Checks
         if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
@@ -131,8 +137,6 @@ class ChatController extends Controller
             if (!$group) return response()->json(['error' => 'Group not found'], 404);
 
             // Authorization:
-            // Community: Open to all allowed roles.
-            // Private: Must be member.
             if ($group->type !== 'community') {
                 if (!$group->members()->where('user_id', $currentUserId)->exists() && !$currentUser->hasRole(['admin'])) {
                      return response()->json(['error' => 'Not a member of this group'], 403);
@@ -147,7 +151,7 @@ class ChatController extends Controller
             return response()->json($messages);
 
         } else {
-            // Direct Message Logic (Existing)
+            // Direct Message Logic
             $targetUser = User::find($id);
             if (!$targetUser) return response()->json(['error' => 'User not found'], 404);
 
@@ -161,7 +165,7 @@ class ChatController extends Controller
                 ->with('sender:id,name,avatar_path')
                 ->get();
 
-            // Mark as read (Simple 1-on-1 logic)
+            // Mark as read
             ChatMessage::where('sender_id', $id)
                 ->where('receiver_id', $currentUserId)
                 ->where('is_read', false)
@@ -179,15 +183,13 @@ class ChatController extends Controller
         $request->validate([
             'message' => 'nullable|string',
             'context_data' => 'nullable|array',
-            // receiver_id is optional if group_id is present
             'receiver_id' => 'required_without:chat_group_id',
             'chat_group_id' => 'required_without:receiver_id',
-            'mentions' => 'nullable|array' // Array of user IDs
+            'mentions' => 'nullable|array'
         ]);
 
         $currentUser = Auth::user();
 
-        // Strict Access Check
         if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
              return response()->json(['error' => 'Access Denied'], 403);
         }
@@ -196,7 +198,7 @@ class ChatController extends Controller
             'sender_id' => Auth::id(),
             'message' => $request->message ?? '',
             'context_data' => $request->context_data,
-            'is_read' => false, // Default
+            'is_read' => false,
             'mentions' => $request->mentions,
         ];
 
@@ -204,7 +206,6 @@ class ChatController extends Controller
             $group = ChatGroup::find($request->chat_group_id);
             if (!$group) return response()->json(['error' => 'Group not found'], 404);
 
-            // Check membership for private groups
             if ($group->type !== 'community' && !$group->members()->where('user_id', Auth::id())->exists() && !$currentUser->hasRole('admin')) {
                 return response()->json(['error' => 'Not a member'], 403);
             }
@@ -213,14 +214,12 @@ class ChatController extends Controller
             $data['receiver_id'] = null;
 
         } else {
-            // DM Logic
             $data['receiver_id'] = $request->receiver_id;
             $data['chat_group_id'] = null;
         }
 
         $message = ChatMessage::create($data);
 
-        // Update sender's last active
         User::where('id', Auth::id())->update(['last_active_at' => now()]);
 
         return response()->json($message->load('sender:id,name,avatar_path'));
@@ -232,10 +231,11 @@ class ChatController extends Controller
     public function checkNewMessages(Request $request)
     {
         $lastCheck = $request->input('last_check');
-        $currentUserId = Auth::id();
+        $currentUser = Auth::user();
+        if (!$currentUser) return response()->json([]);
 
         // 1. Direct Messages
-        $dmQuery = ChatMessage::where('receiver_id', $currentUserId)
+        $dmQuery = ChatMessage::where('receiver_id', $currentUser->id)
             ->where('is_read', false);
 
         if ($lastCheck) {
@@ -244,26 +244,26 @@ class ChatController extends Controller
 
         $newDMs = $dmQuery->with('sender:id,name,avatar_path')->get();
 
-        // 2. Group Messages (Community or Joined Groups)
-        // We fetch messages from groups the user has access to, created after last_check
-        // For polling simplicity, we just fetch recent messages from groups the user is in.
-        // Optimization: track "last_read_message_id" per group would be better, but "created_at > last_check" works for now.
+        // 2. Group Messages
+        $groupQuery = ChatMessage::query()
+            ->where('sender_id', '!=', $currentUser->id);
 
-        $communityGroupId = ChatGroup::where('type', 'community')->value('id');
-        $myGroupIds = DB::table('chat_group_members')->where('user_id', $currentUserId)->pluck('chat_group_id')->toArray();
-        if ($communityGroupId) {
-            $myGroupIds[] = $communityGroupId;
+        if ($currentUser->hasRole('admin')) {
+            // Admin sees messages from ALL groups
+            $groupQuery->whereNotNull('chat_group_id');
+        } else {
+            // Non-admin sees messages only from their groups (and community)
+            $communityGroupId = ChatGroup::where('type', 'community')->value('id');
+            $myGroupIds = DB::table('chat_group_members')->where('user_id', $currentUser->id)->pluck('chat_group_id')->toArray();
+            if ($communityGroupId) {
+                $myGroupIds[] = $communityGroupId;
+            }
+            $groupQuery->whereIn('chat_group_id', $myGroupIds);
         }
-
-        $groupQuery = ChatMessage::whereIn('chat_group_id', $myGroupIds)
-            ->where('sender_id', '!=', $currentUserId); // Don't fetch own messages
 
         if ($lastCheck) {
             $groupQuery->where('created_at', '>', $lastCheck);
         } else {
-             // If no last check, maybe don't fetch anything or just very recent?
-             // Logic in frontend usually provides no last_check on first load, but this method is for polling.
-             // If it's a poll, we usually have last_check. If not, default to last 10 seconds?
              $groupQuery->where('created_at', '>', now()->subSeconds(10));
         }
 
@@ -277,7 +277,6 @@ class ChatController extends Controller
         ]);
     }
 
-    // ... existing updateProfile and uploadFile methods ...
     public function updateProfile(Request $request)
     {
         $request->validate([
@@ -317,6 +316,47 @@ class ChatController extends Controller
         ]);
     }
 
+    /**
+     * Update Group Profile (Name/Avatar).
+     */
+    public function updateGroupProfile(Request $request)
+    {
+        $request->validate([
+            'group_id' => 'required|exists:chat_groups,id',
+            'name' => 'required|string|max:255',
+            'avatar' => 'nullable|image|max:2048',
+        ]);
+
+        $group = ChatGroup::find($request->group_id);
+        $currentUser = Auth::user();
+
+        // Permission: Admin or Creator
+        if ($group->created_by != $currentUser->id && !$currentUser->hasRole('admin')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $group->name = $request->name;
+
+        if ($request->hasFile('avatar')) {
+             if ($group->avatar_path && Storage::disk('public')->exists($group->avatar_path)) {
+                Storage::disk('public')->delete($group->avatar_path);
+            }
+            $path = $request->file('avatar')->store('chat_group_avatars', 'public');
+            $group->avatar_path = $path;
+        }
+
+        $group->save();
+
+        return response()->json([
+            'success' => true,
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'avatar_url' => $group->avatar_path ? Storage::disk('public')->url($group->avatar_path) : ($group->type === 'community' ? '/images/community-icon.png' : '/images/group-icon.png')
+            ]
+        ]);
+    }
+
     public function uploadFile(Request $request)
     {
         $request->validate([
@@ -350,7 +390,7 @@ class ChatController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'members' => 'nullable|array', // Array of user IDs to add
+            'members' => 'nullable|array',
             'members.*' => 'exists:users,id'
         ]);
 
@@ -380,24 +420,60 @@ class ChatController extends Controller
     public function searchUsers(Request $request)
     {
         $query = $request->input('q');
+        $chatGroupId = $request->input('chat_group_id');
+        $currentUser = Auth::user();
+
         if (!$query) return response()->json([]);
 
-        // Search Admin, Staff, Caretaker, Delegate
-        $users = User::where(function($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('email', 'like', "%{$query}%");
-            })
-            ->whereHas('roles', function($r) {
-                $r->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
-            })
-            ->limit(10)
-            ->get(['id', 'name', 'avatar_path']);
+        // If chat_group_id is provided, search within group members
+        if ($chatGroupId) {
+            $group = ChatGroup::find($chatGroupId);
+            if (!$group) return response()->json([]);
+
+            // Security Check: Is user allowed to see this group?
+            if ($group->type !== 'community' && !$group->members()->where('user_id', $currentUser->id)->exists() && !$currentUser->hasRole('admin')) {
+                return response()->json([]); // Or 403, but empty list is safer for search
+            }
+
+            if ($group->type === 'community') {
+                // Community searches all eligible staff users (admin, staff, etc)
+                $users = User::where(function($q) use ($query) {
+                        $q->where('name', 'like', "%{$query}%")
+                          ->orWhere('email', 'like', "%{$query}%");
+                    })
+                    ->whereHas('roles', function($r) {
+                        $r->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
+                    })
+                    ->limit(20)
+                    ->get(['id', 'name', 'avatar_path']);
+            } else {
+                // Private group: search members
+                $users = $group->members()
+                    ->where(function($q) use ($query) {
+                        $q->where('name', 'like', "%{$query}%")
+                          ->orWhere('email', 'like', "%{$query}%");
+                    })
+                    ->limit(20)
+                    ->get(['users.id', 'users.name', 'users.avatar_path']);
+            }
+        } else {
+             // Fallback to global search (existing behavior)
+            $users = User::where(function($q) use ($query) {
+                    $q->where('name', 'like', "%{$query}%")
+                      ->orWhere('email', 'like', "%{$query}%");
+                })
+                ->whereHas('roles', function($r) {
+                    $r->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
+                })
+                ->limit(10)
+                ->get(['id', 'name', 'avatar_path']);
+        }
 
         // Transform for frontend
         $results = $users->map(function($u) {
             return [
                 'id' => $u->id,
-                'value' => $u->name, // For autocomplete
+                'value' => $u->name,
                 'avatar_url' => $u->avatar_url
             ];
         });
