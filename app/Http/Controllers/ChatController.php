@@ -587,4 +587,106 @@ class ChatController extends Controller
 
         return response()->json($results);
     }
+
+    /**
+     * Delete a group.
+     */
+    public function destroyGroup($id)
+    {
+        $currentUser = Auth::user();
+        $group = ChatGroup::findOrFail($id);
+
+        if ($group->type === 'community') {
+            return response()->json(['error' => 'Cannot delete Community group'], 403);
+        }
+
+        // Check permission (Admin role or Group Owner)
+        // Group Owner check: Assuming 'created_by' or admin role in pivot
+        $isGroupOwner = $group->created_by == $currentUser->id;
+
+        if (!$currentUser->hasRole(['admin', 'staff']) && !$isGroupOwner) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Optional: Detach all members
+        $group->members()->detach();
+        $group->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get Group Details including members.
+     */
+    public function getGroupDetails($id)
+    {
+        $currentUser = Auth::user();
+        $group = ChatGroup::with(['members' => function($q) {
+            $q->select('users.id', 'users.name', 'users.avatar_path', 'chat_group_members.role as group_role');
+        }])->findOrFail($id);
+
+        if ($group->type !== 'community' && !$group->members()->where('user_id', $currentUser->id)->exists() && !$currentUser->hasRole('admin')) {
+             return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'avatar_url' => $group->avatar_url,
+                'members' => $group->members->map(function($m) {
+                    return [
+                        'id' => $m->id,
+                        'name' => $m->name,
+                        'avatar_url' => $m->avatar_url,
+                        'role' => $m->group_role // 'admin' or 'member'
+                    ];
+                })
+            ]
+        ]);
+    }
+
+    /**
+     * Add member to group.
+     */
+    public function addMember(Request $request, $id)
+    {
+        $currentUser = Auth::user();
+        $group = ChatGroup::findOrFail($id);
+
+        // Check permissions
+        $isGroupAdmin = $group->members()->where('user_id', $currentUser->id)->wherePivot('role', 'admin')->exists();
+        if (!$currentUser->hasRole(['admin', 'staff']) && !$isGroupAdmin) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $userId = $request->input('user_id');
+        if (!$group->members()->where('user_id', $userId)->exists()) {
+            $group->members()->attach($userId, ['role' => 'member']);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Remove member from group.
+     */
+    public function removeMember($id, $userId)
+    {
+        $currentUser = Auth::user();
+        $group = ChatGroup::findOrFail($id);
+
+        // Check permissions
+        $isGroupAdmin = $group->members()->where('user_id', $currentUser->id)->wherePivot('role', 'admin')->exists();
+        // Allow user to leave (remove themselves)
+        $isSelf = $currentUser->id == $userId;
+
+        if (!$currentUser->hasRole(['admin', 'staff']) && !$isGroupAdmin && !$isSelf) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $group->members()->detach($userId);
+
+        return response()->json(['success' => true]);
+    }
 }

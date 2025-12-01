@@ -396,23 +396,81 @@
          :class="{ 'd-flex': showEditGroupModal }"
          style="z-index: 2200;"
          @click.self="showEditGroupModal = false">
-         <div class="bg-white rounded shadow p-4" style="width: 400px;">
-             <h5 class="mb-3">{{ __('Edit Group') }}</h5>
+         <div class="bg-white rounded shadow p-4" style="width: 450px; max-height: 80vh; overflow-y: auto;">
+             <h5 class="mb-3 border-bottom pb-2">{{ __('Edit Group') }}</h5>
              <form @submit.prevent="updateGroup">
-                <div class="mb-3 text-center">
+                <!-- Avatar & Name -->
+                <div class="mb-4 text-center">
                     <label class="cursor-pointer">
-                         <img :src="editGroupPreviewUrl || editGroupForm.original_avatar_url" class="rounded-circle border" width="80" height="80">
+                         <img :src="editGroupPreviewUrl || editGroupForm.original_avatar_url" class="rounded-circle border" width="80" height="80"
+                              onerror="this.src='https://ui-avatars.com/api/?name=G&color=7F9CF5&background=EBF4FF'">
                          <input type="file" @change="handleEditGroupAvatar" class="d-none" accept="image/*">
-                         <div class="small text-muted mt-1">{{ __('Click to change icon') }}</div>
+                         <div class="small text-muted mt-1">{{ __('Change Icon') }}</div>
                     </label>
+                    <div class="mt-2">
+                        <input type="text" class="form-control form-control-sm text-center" x-model="editGroupForm.name" placeholder="Group Name" required>
+                    </div>
                 </div>
-                 <div class="mb-3">
-                     <label class="form-label">{{ __('Group Name') }}</label>
-                     <input type="text" class="form-control" x-model="editGroupForm.name" required>
-                 </div>
-                 <div class="d-flex justify-content-end gap-2">
-                     <button type="button" class="btn btn-secondary" @click="showEditGroupModal = false">{{ __('Cancel') }}</button>
-                     <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
+
+                <!-- Manage Members -->
+                <div class="mb-4">
+                    <h6 class="small text-muted text-uppercase mb-2">{{ __('Members') }} (<span x-text="editGroupForm.members.length"></span>)</h6>
+
+                    <!-- Add Member -->
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" class="form-control" placeholder="{{ __('Search users to add...') }}"
+                               x-model="editGroupForm.memberSearchQuery"
+                               @input="searchUsersToAdd()">
+                        <button class="btn btn-outline-secondary" type="button" disabled>
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <!-- Search Results -->
+                    <div x-show="editGroupForm.memberSearchResults.length > 0" class="border rounded mb-2 shadow-sm" style="max-height: 150px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush small">
+                            <template x-for="user in editGroupForm.memberSearchResults" :key="user.id">
+                                <li class="list-group-item list-group-item-action cursor-pointer d-flex align-items-center justify-content-between p-2"
+                                    @click="addMemberToGroup(user)">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img :src="user.avatar_url" width="24" height="24" class="rounded-circle">
+                                        <span x-text="user.value"></span>
+                                    </div>
+                                    <i class="bi bi-plus-circle-fill text-primary"></i>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+
+                    <!-- Member List -->
+                    <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                        <template x-for="member in editGroupForm.members" :key="member.id">
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                <div class="d-flex align-items-center gap-2">
+                                    <img :src="member.avatar_url" class="rounded-circle" width="30" height="30"
+                                         onerror="this.src='https://ui-avatars.com/api/?name=' + member.name">
+                                    <div class="lh-1">
+                                        <div class="small fw-bold" x-text="member.name"></div>
+                                        <div class="text-muted" style="font-size: 0.7rem;" x-text="member.role === 'admin' ? 'Admin' : 'Member'"></div>
+                                    </div>
+                                </div>
+                                <template x-if="member.id != currentUserId"> <!-- Can't remove self here, use Leave -->
+                                    <button type="button" class="btn btn-sm text-danger p-0" @click="removeMemberFromGroup(member.id)" title="Remove">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                     <button type="button" class="btn btn-sm btn-danger" @click="deleteGroup()">
+                        <i class="bi bi-trash"></i> {{ __('Delete Group') }}
+                     </button>
+                     <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-secondary" @click="showEditGroupModal = false">{{ __('Cancel') }}</button>
+                        <button type="submit" class="btn btn-sm btn-primary">{{ __('Save Info') }}</button>
+                     </div>
                  </div>
              </form>
          </div>
@@ -464,8 +522,32 @@
         </div>
     </div>
 
-    <!-- Sound Settings Modal (Omitted for brevity, assumed existing) -->
-    <!-- ... -->
+    <!-- Sound Settings Modal -->
+    <div x-show="showSoundSettingsModal"
+         x-cloak
+         class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-black bg-opacity-50"
+         :class="{ 'd-flex': showSoundSettingsModal }"
+         style="z-index: 2300;"
+         x-transition.opacity
+         @click.self="showSoundSettingsModal = false">
+        <div class="bg-white rounded shadow p-4" style="width: 400px; max-height: 80vh; overflow-y: auto;">
+             <h5 class="mb-3 border-bottom pb-2">{{ __('Notification Sound') }}</h5>
+             <div class="d-flex flex-column gap-2 mb-4">
+                 <template x-for="sound in availableSounds" :key="sound">
+                     <div class="form-check d-flex align-items-center gap-2 p-2 border rounded hover-bg-light cursor-pointer"
+                          :class="{'bg-light border-primary': selectedSound === sound}"
+                          @click="selectedSound = sound; playSound(sound); saveState()">
+                         <input class="form-check-input mt-0" type="radio" name="notifSound" :value="sound" x-model="selectedSound">
+                         <label class="form-check-label flex-grow-1 cursor-pointer" x-text="sound.replace('.mp3', '').replace(/_/g, ' ')"></label>
+                         <button type="button" class="btn btn-sm btn-link text-secondary p-0" @click.stop="playSound(sound)"><i class="bi bi-play-fill"></i></button>
+                     </div>
+                 </template>
+             </div>
+             <div class="d-flex justify-content-end">
+                 <button type="button" class="btn btn-primary" @click="showSoundSettingsModal = false">{{ __('Done') }}</button>
+             </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -515,8 +597,14 @@
             showCreateGroupModal: false,
             showEditGroupModal: false, // New
             showSoundSettingsModal: false,
-            availableSounds: [],
-            selectedSound: 'access_granted.mp3', // A default sound
+            availableSounds: [
+                'access_denied.mp3', 'access_granted.mp3', 'announcement_timpani_roll.mp3', 'applause.mp3',
+                'boing_cartoon.mp3', 'ding_bell.mp3', 'doorbell.mp3', 'drama_inception_braam_orchestral_hit_1.mp3',
+                'drum_roll.mp3', 'fail_game_over_wah_wah_sad_trombone.mp3', 'hallelujah.mp3', 'horn_bicycle.mp3',
+                'knock_door.mp3', 'laughter_cute.mp3', 'money_cash_register_purchase.mp3', 'nope.mp3',
+                'quack_duck.mp3', 'siren_police_short.mp3', 'what_short.mp3', 'winning_jingle.mp3', 'wow.mp3'
+            ],
+            selectedSound: 'access_granted.mp3',
             profileForm: {
                 name: @json(auth()->user()->name),
                 position_title: @json(auth()->user()->position_title ?? ''),
@@ -534,7 +622,10 @@
                 id: null,
                 name: '',
                 avatar: null,
-                original_avatar_url: null
+                original_avatar_url: null,
+                members: [],
+                memberSearchQuery: '',
+                memberSearchResults: []
             },
             editGroupPreviewUrl: null,
 
@@ -921,10 +1012,20 @@
                     id: chat.id,
                     name: chat.name,
                     avatar: null,
-                    original_avatar_url: chat.avatar_url
+                    original_avatar_url: chat.avatar_url,
+                    members: [],
+                    memberSearchQuery: '',
+                    memberSearchResults: []
                 };
                 this.editGroupPreviewUrl = null;
                 this.showEditGroupModal = true;
+
+                // Fetch group details including members
+                fetch(`/chat/groups/${chat.id}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.editGroupForm.members = data.group.members;
+                    });
             },
             handleEditGroupAvatar(e) {
                  const file = e.target.files[0];
@@ -937,9 +1038,8 @@
                 const formData = new FormData();
                 formData.append('name', this.editGroupForm.name);
                 if(this.editGroupForm.avatar) formData.append('avatar', this.editGroupForm.avatar);
-                formData.append('_method', 'POST'); // Laravel workaround for PUT/PATCH with files if needed, but here we use a dedicated route
+                formData.append('_method', 'POST');
 
-                // We need a route for updating group: POST /chat/groups/{id}/update
                 fetch(`/chat/groups/${this.editGroupForm.id}/update`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
@@ -957,6 +1057,85 @@
                          }
                          this.fetchContacts();
                          Swal.fire({ icon: 'success', title: 'Group Updated', timer: 1500, showConfirmButton: false });
+                    }
+                });
+            },
+            deleteGroup() {
+                Swal.fire({
+                    title: '{{ __('Are you sure?') }}',
+                    text: "{{ __('You will not be able to recover this group!') }}",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: '{{ __('Yes, delete it!') }}'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`/chat/groups/${this.editGroupForm.id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if(data.success) {
+                                this.showEditGroupModal = false;
+                                this.closeChat('group-' + this.editGroupForm.id);
+                                this.fetchContacts();
+                                Swal.fire('Deleted!', 'Group has been deleted.', 'success');
+                            } else {
+                                Swal.fire('Error', data.error || 'Failed', 'error');
+                            }
+                        });
+                    }
+                })
+            },
+            // Member Management for Edit Group
+            searchUsersToAdd() {
+                const query = this.editGroupForm.memberSearchQuery;
+                if(!query || query.length < 2) {
+                    this.editGroupForm.memberSearchResults = [];
+                    return;
+                }
+
+                fetch(`/chat/search-users?q=${query}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        // Filter out existing members
+                        const existingIds = this.editGroupForm.members.map(m => m.id);
+                        this.editGroupForm.memberSearchResults = data.filter(u => u.id !== 'all' && !existingIds.includes(u.id));
+                    });
+            },
+            addMemberToGroup(user) {
+                fetch(`/chat/groups/${this.editGroupForm.id}/members`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ user_id: user.id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        this.editGroupForm.members.push({
+                            id: user.id,
+                            name: user.value,
+                            avatar_url: user.avatar_url,
+                            role: 'member'
+                        });
+                        this.editGroupForm.memberSearchQuery = '';
+                        this.editGroupForm.memberSearchResults = [];
+                    }
+                });
+            },
+            removeMemberFromGroup(userId) {
+                fetch(`/chat/groups/${this.editGroupForm.id}/members/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                         this.editGroupForm.members = this.editGroupForm.members.filter(m => m.id !== userId);
                     }
                 });
             },
