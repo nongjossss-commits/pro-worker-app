@@ -14,10 +14,14 @@ return new class extends Migration
         Schema::create('chat_messages', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('sender_id');
-            $table->unsignedBigInteger('receiver_id')->nullable(); // Nullable for group chats if needed later, or just direct
+            $table->unsignedBigInteger('receiver_id')->nullable(); // Nullable for group chats
+            // Added columns that were incorrectly placed in 2024 migration
+            $table->foreignId('chat_group_id')->nullable()->constrained('chat_groups')->onDelete('cascade');
+
             $table->text('message');
             $table->boolean('is_read')->default(false);
             $table->json('context_data')->nullable(); // For tags: { "type": "employee", "id": 123, "url": "..." }
+            $table->json('mentions')->nullable(); // Added
             $table->timestamps();
 
             $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
