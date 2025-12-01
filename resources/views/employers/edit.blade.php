@@ -589,18 +589,19 @@
 
         @if (session('highlight_employee'))
             const employeeId = '{{ session('highlight_employee') }}';
-            const employeeCard = document.getElementById('employee-card-' + employeeId);
+            // Try both card ID (Card View) and row ID (Table View)
+            const targetElement = document.getElementById('employee-card-' + employeeId) || document.getElementById('employee-row-' + employeeId);
 
-            if (employeeCard) {
+            if (targetElement) {
                 // Add a highlight class
-                employeeCard.classList.add('highlight');
+                targetElement.classList.add('highlight');
 
                 // Scroll to the element
-                employeeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                 // Optional: Remove the highlight after a few seconds
                 setTimeout(() => {
-                    employeeCard.classList.remove('highlight');
+                    targetElement.classList.remove('highlight');
                 }, 5000); // Highlight for 5 seconds
             }
         @endif

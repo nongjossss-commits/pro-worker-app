@@ -52,6 +52,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
         Route::post('/groups', [ChatController::class, 'createGroup'])->name('groups.create'); // NEW
         Route::post('/groups/{id}/update', [ChatController::class, 'updateGroup'])->name('groups.update'); // NEW
+        Route::delete('/groups/{id}', [ChatController::class, 'destroyGroup'])->name('groups.destroy'); // NEW
+        Route::get('/groups/{id}', [ChatController::class, 'getGroupDetails'])->name('groups.details'); // NEW
+        Route::post('/groups/{id}/members', [ChatController::class, 'addMember'])->name('groups.members.add'); // NEW
+        Route::delete('/groups/{id}/members/{userId}', [ChatController::class, 'removeMember'])->name('groups.members.remove'); // NEW
         Route::get('/search-users', [ChatController::class, 'searchUsers'])->name('users.search'); // NEW
     });
 
