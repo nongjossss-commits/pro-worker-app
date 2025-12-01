@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\ChatMessage;
+use App\Models\ChatMessageRead; // Added
 use App\Models\ChatGroup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,11 +21,6 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // 1. STRICT BLOCK: Employers cannot access chat at all
-        // The previous logic blocked employers completely unless they had admin/staff roles.
-        // However, the user request says "admin code can see context but not open chat".
-        // This implies the admin MIGHT be using an account that has 'employer' role attached?
-        // Or maybe just a UI bug.
-        // But for "Manager Code", they should have 'admin' role.
         if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json([], 403);
         }
@@ -71,50 +67,43 @@ class ChatController extends Controller
 
         // --- Groups Logic ---
         // 1. Community Group (Always one, auto-generated if missing)
-        // Check if community group exists, create if not (and if admin/staff)
         $communityGroup = ChatGroup::firstOrCreate(
             ['type' => 'community'],
             ['name' => 'Community Chat', 'created_by' => 1] // Assuming ID 1 is superadmin
         );
 
         // 2. Fetch Groups user is part of OR is Community
-        // Admin always sees Community.
-        // For private groups, must be member or admin.
-
         $groups = ChatGroup::query()
             ->where(function($q) use ($currentUser) {
                 $q->where('type', 'community'); // Everyone (who has access to chat) sees community
-                // OR is a member
                 $q->orWhereHas('members', function($m) use ($currentUser) {
                     $m->where('user_id', $currentUser->id);
                 });
-                // OR is admin (can see all private groups? Usually yes for management, but for chat list maybe only if joined?
-                // Let's assume admins should see all groups to manage them, or at least be able to join.
-                // For now, let's stick to "Member OR Community". Admins can create/join groups separately.
             })
             ->withCount(['messages as unread_count' => function($q) use ($currentUser) {
-                 // Logic for unread group messages is complex without a read_receipts table.
-                 // For now, we'll return 0 or implement a simple check later.
-                 $q->whereRaw('1=0');
+                 // UPDATED Logic for unread group messages:
+                 // Count messages NOT read by this user
+                 $q->whereDoesntHave('reads', function($r) use ($currentUser) {
+                     $r->where('user_id', $currentUser->id);
+                 })->where('sender_id', '!=', $currentUser->id);
             }])
             ->get()
             ->map(function($group) use ($currentUser) {
                 return [
                     'id' => $group->id,
                     'type' => 'group',
-                    'group_type' => $group->type, // 'community' or 'private_group'
+                    'group_type' => $group->type,
                     'name' => $group->name,
                     'avatar_url' => $group->avatar_url,
                     'position_title' => $group->type === 'community' ? 'Public Channel' : 'Group Chat',
-                    'is_online' => true, // Groups always "online"
-                    'unread_count' => 0, // Placeholder
+                    'is_online' => true,
+                    'unread_count' => $group->unread_count, // Now accurate
                     'last_message_time' => null,
                     'is_admin' => $currentUser->hasRole('admin') || $group->members()->where('user_id', $currentUser->id)->where('role', 'admin')->exists()
                 ];
             });
 
         // Merge Groups and Users
-        // We want Groups at the top, then Users.
         $allContacts = $groups->merge($contacts);
 
         return response()->json($allContacts);
@@ -139,19 +128,39 @@ class ChatController extends Controller
             $group = ChatGroup::find($id);
             if (!$group) return response()->json(['error' => 'Group not found'], 404);
 
-            // Authorization:
-            // Community: Open to all allowed roles.
-            // Private: Must be member OR Admin.
+            // Authorization
             if ($group->type !== 'community') {
                 if (!$group->members()->where('user_id', $currentUserId)->exists() && !$currentUser->hasRole(['admin'])) {
                      return response()->json(['error' => 'Not a member of this group'], 403);
                 }
             }
 
+            // Mark unread messages as read (excluding own messages)
+            $unreadMessages = ChatMessage::where('chat_group_id', $id)
+                ->where('sender_id', '!=', $currentUserId)
+                ->whereDoesntHave('reads', function($q) use ($currentUserId) {
+                    $q->where('user_id', $currentUserId);
+                })
+                ->pluck('id');
+
+            foreach ($unreadMessages as $msgId) {
+                ChatMessageRead::firstOrCreate([
+                    'chat_message_id' => $msgId,
+                    'user_id' => $currentUserId
+                ]);
+            }
+
             $messages = ChatMessage::where('chat_group_id', $id)
                 ->orderBy('created_at', 'asc')
                 ->with('sender:id,name,avatar_path')
+                ->withCount('reads') // Get count of reads
                 ->get();
+
+            // Transform to include read info for UI
+            $messages = $messages->map(function($msg) {
+                $msg->read_count = $msg->reads_count; // "Read X"
+                return $msg;
+            });
 
             return response()->json($messages);
 
@@ -159,6 +168,12 @@ class ChatController extends Controller
             // Direct Message Logic (Existing)
             $targetUser = User::find($id);
             if (!$targetUser) return response()->json(['error' => 'User not found'], 404);
+
+            // Mark as read (Simple 1-on-1 logic)
+            ChatMessage::where('sender_id', $id)
+                ->where('receiver_id', $currentUserId)
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
 
             $messages = ChatMessage::where(function ($q) use ($currentUserId, $id) {
                     $q->where('sender_id', $currentUserId)->where('receiver_id', $id);
@@ -169,12 +184,6 @@ class ChatController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->with('sender:id,name,avatar_path')
                 ->get();
-
-            // Mark as read (Simple 1-on-1 logic)
-            ChatMessage::where('sender_id', $id)
-                ->where('receiver_id', $currentUserId)
-                ->where('is_read', false)
-                ->update(['is_read' => true]);
 
             return response()->json($messages);
         }
@@ -229,10 +238,16 @@ class ChatController extends Controller
 
         $message = ChatMessage::create($data);
 
+        // If it's a group message, we can automatically mark it as read by sender?
+        // Not really needed, as they don't count towards their own unread count.
+
         // Update sender's last active
         User::where('id', Auth::id())->update(['last_active_at' => now()]);
 
-        return response()->json($message->load('sender:id,name,avatar_path'));
+        $message->load('sender:id,name,avatar_path');
+        $message->read_count = 0; // Initial read count
+
+        return response()->json($message);
     }
 
     /**
@@ -254,13 +269,10 @@ class ChatController extends Controller
         $newDMs = $dmQuery->with('sender:id,name,avatar_path')->get();
 
         // 2. Group Messages (Community or Joined Groups)
-        // We fetch messages from groups the user has access to, created after last_check
-
         // Groups user is in
         $myGroupIds = DB::table('chat_group_members')->where('user_id', $currentUserId)->pluck('chat_group_id')->toArray();
         // Plus Community Groups
         $communityGroupIds = ChatGroup::where('type', 'community')->pluck('id')->toArray();
-
         $allGroupIds = array_unique(array_merge($myGroupIds, $communityGroupIds));
 
         $groupQuery = ChatMessage::whereIn('chat_group_id', $allGroupIds)
@@ -272,14 +284,98 @@ class ChatController extends Controller
              $groupQuery->where('created_at', '>', now()->subSeconds(10));
         }
 
-        $newGroupMsgs = $groupQuery->with('sender:id,name,avatar_path')->get();
+        $newGroupMsgs = $groupQuery->with('sender:id,name,avatar_path')
+            ->withCount('reads')
+            ->get();
+
+        // Add read_count to all new group messages
+        $newGroupMsgs->transform(function ($msg) {
+            $msg->read_count = $msg->reads_count;
+            return $msg;
+        });
 
         $allMessages = $newDMs->merge($newGroupMsgs);
 
+        // --- NEW: Fetch Read Updates for recent messages ---
+        // We need to know if "Read X" count updated for messages we see.
+        // For simplicity, let's fetch read counts for messages sent by ME or in my groups in the last 1 hour.
+        // Or better: Let the frontend handle calling 'fetchMessages' periodically? No, that's heavy.
+
+        // Let's just return a list of {id, read_count, is_read} for messages updated recently.
+        // This is getting complex for simple polling.
+        // Alternative: The user just asked for "Read X" label.
+        // If we only send new messages, the "Read X" on OLD messages won't update until refresh.
+        // Let's include a separate list of "read_updates".
+
+        $readUpdates = [];
+        if ($lastCheck) {
+             // Find messages where a read occurred since last_check
+             // For Groups:
+             $updatedGroupMessages = ChatMessage::whereIn('chat_group_id', $allGroupIds)
+                ->whereHas('reads', function($q) use ($lastCheck) {
+                    $q->where('read_at', '>', $lastCheck);
+                })
+                ->withCount('reads')
+                ->limit(50) // Limit to avoid massive payloads
+                ->get();
+
+             foreach($updatedGroupMessages as $msg) {
+                 $readUpdates[] = [
+                     'id' => $msg->id,
+                     'read_count' => $msg->reads_count,
+                     'is_read' => true // irrelevant for group usually, but consistent structure
+                 ];
+             }
+
+             // For DMs sent by ME:
+             $updatedDMs = ChatMessage::where('sender_id', $currentUserId)
+                ->where('is_read', true)
+                ->where('updated_at', '>', $lastCheck) // approximate
+                ->get();
+
+             foreach($updatedDMs as $msg) {
+                 $readUpdates[] = [
+                     'id' => $msg->id,
+                     'read_count' => 0,
+                     'is_read' => true
+                 ];
+             }
+        }
+
         return response()->json([
             'messages' => $allMessages,
+            'read_updates' => $readUpdates,
             'timestamp' => now()->toDateTimeString()
         ]);
+    }
+
+    /**
+     * Mark specific messages as read (e.g., when a new message arrives in an open window)
+     */
+    public function markAsRead(Request $request)
+    {
+        $currentUserId = Auth::id();
+        $messageIds = $request->input('message_ids', []);
+
+        if (empty($messageIds)) return response()->json(['success' => true]);
+
+        // Filter messages that are group messages vs DMs
+        $messages = ChatMessage::whereIn('id', $messageIds)->get();
+
+        foreach($messages as $msg) {
+            if ($msg->receiver_id == $currentUserId) {
+                // DM
+                $msg->update(['is_read' => true]);
+            } elseif ($msg->chat_group_id) {
+                // Group Message
+                ChatMessageRead::firstOrCreate([
+                    'chat_message_id' => $msg->id,
+                    'user_id' => $currentUserId
+                ]);
+            }
+        }
+
+        return response()->json(['success' => true]);
     }
 
     // ... existing updateProfile and uploadFile methods ...
