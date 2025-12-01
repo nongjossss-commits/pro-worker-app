@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
         Route::post('/groups', [ChatController::class, 'createGroup'])->name('groups.create'); // NEW
         Route::get('/search-users', [ChatController::class, 'searchUsers'])->name('users.search'); // NEW
+        Route::post('/settings', [App\Http\Controllers\ChatSettingsController::class, 'update'])->name('settings.update');
     });
 
     // Application routes that require login

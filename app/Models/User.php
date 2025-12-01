@@ -30,6 +30,7 @@ class User extends Authenticatable
         'bio',
         'last_active_at',
         'is_ticket_hidden', // V2.5.1: For hiding employer job box
+        'chat_background',
     ];
 
     /**
