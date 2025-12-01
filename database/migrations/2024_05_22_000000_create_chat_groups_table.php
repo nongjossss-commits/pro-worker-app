@@ -25,22 +25,10 @@ return new class extends Migration
 
             $table->unique(['chat_group_id', 'user_id']);
         });
-
-        Schema::table('chat_messages', function (Blueprint $table) {
-            $table->foreignId('chat_group_id')->nullable()->after('receiver_id')->constrained('chat_groups')->onDelete('cascade');
-            $table->unsignedBigInteger('receiver_id')->nullable()->change();
-            $table->json('mentions')->nullable()->after('context_data');
-        });
     }
 
     public function down(): void
     {
-        Schema::table('chat_messages', function (Blueprint $table) {
-            $table->dropForeign(['chat_group_id']);
-            $table->dropColumn(['chat_group_id', 'mentions']);
-            $table->unsignedBigInteger('receiver_id')->nullable(false)->change();
-        });
-
         Schema::dropIfExists('chat_group_members');
         Schema::dropIfExists('chat_groups');
     }
