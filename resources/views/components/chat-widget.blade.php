@@ -7,7 +7,7 @@
 
     <!-- Notification Sound -->
     <audio id="chatNotificationSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRuQSAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcASAAAAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQ=" type="audio/wav">
+        <source src="data:audio/wav;base64,UklGRuQSAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcASAAAAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQAADtLu3m7eTtLAADFtEWGRYbFtAAAO0u7ebt5O0sAAMW0RYZFhsW0AAA7S7t5u3k7SwAAxbRFhkWGxbQ=" type="audio/wav">
     </audio>
 
     <!-- 1. Main Launcher Button (Floating & Draggable) -->
@@ -154,6 +154,12 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-1">
+                    <!-- Edit Group Button -->
+                    <template x-if="chat.type === 'group' && chat.can_edit">
+                        <button type="button" class="btn btn-sm btn-link text-secondary p-0 me-1" @click.stop="openGroupSettings(chat)" title="{{ __('Group Settings') }}">
+                            <i class="bi bi-gear-fill"></i>
+                        </button>
+                    </template>
                     <!-- Minimize Button -->
                     <button type="button" class="btn btn-sm btn-link text-secondary p-0" @click.stop="chat.minimized = true; saveState()">
                         <i class="bi bi-dash-lg"></i>
@@ -409,6 +415,40 @@
         </div>
     </div>
 
+    <!-- Group Settings Modal (New) -->
+    <div x-show="showGroupSettingsModal"
+         x-cloak
+         class="position-fixed top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-black bg-opacity-50"
+         :class="{ 'd-flex': showGroupSettingsModal }"
+         style="z-index: 2250;"
+         @click.self="showGroupSettingsModal = false">
+        <div class="bg-white rounded shadow p-3" style="width: 350px;">
+             <h6 class="border-bottom pb-2 mb-3 d-flex justify-content-between">
+                {{ __('Group Settings') }}
+                <button type="button" class="btn-close btn-close-sm" @click="showGroupSettingsModal = false"></button>
+            </h6>
+            <form @submit.prevent="updateGroupProfile">
+                <div class="text-center mb-3">
+                     <div class="position-relative d-inline-block">
+                        <img :src="groupSettingsForm.previewUrl || groupSettingsForm.avatar_url" class="rounded-circle object-fit-cover border" width="80" height="80">
+                        <label class="position-absolute bottom-0 end-0 bg-light rounded-circle border p-1 cursor-pointer shadow-sm">
+                            <i class="bi bi-camera-fill text-primary"></i>
+                            <input type="file" @change="handleGroupAvatarUpload" class="d-none" accept="image/*">
+                        </label>
+                     </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">{{ __('Group Name') }}</label>
+                    <input type="text" x-model="groupSettingsForm.name" class="form-control form-control-sm" required>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" @click="showGroupSettingsModal = false" class="btn btn-sm btn-secondary">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Sound Settings Modal (Omitted for brevity, assumed existing) -->
     <!-- ... -->
 </div>
@@ -458,6 +498,7 @@
             pollingInterval: null,
             showProfileModal: false,
             showCreateGroupModal: false,
+            showGroupSettingsModal: false,
             showSoundSettingsModal: false,
             availableSounds: [],
             selectedSound: 'access_granted.mp3', // A default sound
@@ -471,6 +512,13 @@
             newGroupForm: {
                 name: '',
                 members: []
+            },
+            groupSettingsForm: {
+                id: null,
+                name: '',
+                avatar: null,
+                avatar_url: '',
+                previewUrl: null
             },
             profilePreviewUrl: null,
             isMobile: window.innerWidth < 768,
@@ -554,7 +602,8 @@
                         // Mentions
                         showMentions: false,
                         mentionResults: [],
-                        mentions: []
+                        mentions: [],
+                        can_edit: item.can_edit // Group perm
                     };
                     this.openChats.push(chat);
                     this.fetchMessages(chat.uniqueKey);
@@ -684,11 +733,17 @@
             },
 
             searchUsers(query, chat) {
+                // Build Query String
+                let url = `/chat/search-users?q=${query}`;
+                if (chat.type === 'group') {
+                    url += `&chat_group_id=${chat.id}`;
+                }
+
                 // Fetch users from API for autocomplete
-                fetch(`/chat/search-users?q=${query}`)
+                fetch(url)
                     .then(res => res.json())
                     .then(data => {
-                        // Add "All" option if searching
+                        // Add "All" option if searching and not in private group context (optional logic)
                         if (query === '' || 'all'.includes(query.toLowerCase())) {
                             data.unshift({ id: 'all', value: 'All (Everyone)', avatar_url: null });
                         }
@@ -726,7 +781,7 @@
                 // Highlight mentions
                 // Simple regex replacement for demo
                 // Ideally backend sends parsed segments
-                return msg.replace(/@([a-zA-Z0-9_ ]+)/g, '<span class="text-primary fw-bold">@$1</span>');
+                return msg.replace(/@([a-zA-Z0-9_\u0E00-\u0E7F ]+)/g, '<span class="text-primary fw-bold">@$1</span>');
             },
 
             sendMessage(uniqueKey) {
@@ -804,7 +859,8 @@
                         x: c.x, y: c.y, w: c.w, h: c.h,
                         minimized: c.minimized,
                         zIndex: c.zIndex,
-                        unreadCount: c.unreadCount
+                        unreadCount: c.unreadCount,
+                        can_edit: c.can_edit
                     })),
                     selectedSound: this.selectedSound
                 };
@@ -830,7 +886,8 @@
                                 unreadCount: c.unreadCount || 0,
                                 showMentions: false,
                                 mentionResults: [],
-                                mentions: []
+                                mentions: [],
+                                can_edit: c.can_edit || false
                             }));
                             this.openChats.forEach(c => this.fetchMessages(c.uniqueKey));
                         }
@@ -1106,6 +1163,56 @@
                         type: 'link'
                     };
                 }
+            },
+            // Group Profile
+            openGroupSettings(chat) {
+                this.groupSettingsForm.id = chat.id;
+                this.groupSettingsForm.name = chat.name;
+                this.groupSettingsForm.avatar_url = chat.avatar_url;
+                this.groupSettingsForm.previewUrl = null;
+                this.groupSettingsForm.avatar = null;
+                this.showGroupSettingsModal = true;
+            },
+            handleGroupAvatarUpload(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.groupSettingsForm.avatar = file;
+                    this.groupSettingsForm.previewUrl = URL.createObjectURL(file);
+                }
+            },
+            updateGroupProfile() {
+                const formData = new FormData();
+                formData.append('group_id', this.groupSettingsForm.id);
+                formData.append('name', this.groupSettingsForm.name);
+                if (this.groupSettingsForm.avatar) formData.append('avatar', this.groupSettingsForm.avatar);
+
+                fetch('{{ route('chat.profile.update_group') }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        this.showGroupSettingsModal = false;
+
+                        // Update in memory list
+                        const group = this.contacts.find(c => c.type === 'group' && c.id == data.group.id);
+                        if(group) {
+                            group.name = data.group.name;
+                            group.avatar_url = data.group.avatar_url;
+                        }
+                        // Update in open chats
+                        const chat = this.openChats.find(c => c.type === 'group' && c.id == data.group.id);
+                        if(chat) {
+                            chat.name = data.group.name;
+                            chat.avatar_url = data.group.avatar_url;
+                        }
+
+                        this.saveState();
+                        Swal.fire({ icon: 'success', title: '{{ __('Updated') }}', timer: 1500, showConfirmButton: false });
+                    }
+                });
             }
         }));
     });

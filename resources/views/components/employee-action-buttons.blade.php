@@ -1,51 +1,60 @@
-@props(['employee', 'showLocateButton' => false])
+@props(['employee', 'employer'])
 
-<div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-start gap-2">
-    {{-- Create Job Button (Green) - Placeholder --}}
-    <a href="#" class="btn btn-sm btn-outline-success" title="{{ __('Create Job (Coming Soon)') }}">
-        <i class="bi bi-briefcase-fill"></i>
+@php
+    $containerClass = $employer ? "d-grid d-md-flex gap-2 justify-content-md-end" : "d-flex flex-column flex-md-row gap-2 justify-content-end";
+@endphp
+
+<div class="{{ $containerClass }} employee-action-buttons">
+    {{-- Locate Button --}}
+    <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-outline-info" title="{{ __('Locate Employee') }}">
+        <i class="bi bi-geo-alt-fill"></i> <span class="d-none d-md-inline">{{ __('Locate') }}</span>
     </a>
-    
-    {{-- Edit Button (Yellow) --}}
-    @can('edit-employees')
-        <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning" title="{{ __('Edit Employee') }}">
-            <i class="bi bi-pencil-fill"></i>
-        </a>
-    @endcan
 
-    {{-- Locate Button (Blue) - Conditional --}}
-    @if($showLocateButton)
-        <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-primary" title="{{ __('Locate in Employer List') }}">
-            <i class="bi bi-geo-alt-fill"></i>
-        </a>
-    @endif
-
-    {{-- Download Button (Teal) --}}
-    <button type="button" class="btn btn-sm btn-info text-white btn-download-single" title="{{ __('Download Files') }}" data-employee-id="{{ $employee->id }}">
-        <i class="bi bi-download"></i>
+    {{-- View Documents (Updated for Drag & Drop) --}}
+    <button type="button"
+            class="btn btn-sm btn-outline-primary btn-preview"
+            data-model-type="employee"
+            data-model-id="{{ $employee->id }}"
+            title="{{ __('View Details') }}"
+            draggable="true"
+            ondragstart="startDragGlobal(event, 'employee', { id: {{ $employee->id }}, name: '{{ $employee->employeeNameTh }}', subtitle: '{{ $employee->employeeCode }}' })">
+        <i class="bi bi-eye-fill"></i> <span class="d-none d-md-inline">{{ __('View') }}</span>
     </button>
 
-    {{-- Terminate Button (Dark Grey) --}}
-    @can('terminate-employees')
-        <button type="button"
-                class="btn btn-sm btn-secondary btn-terminate"
-                title="{{ __('Terminate Employment') }}"
-                data-bs-toggle="modal"
-                data-bs-target="#terminateEmployeeModal"
-                data-employee-id="{{ $employee->id }}"
-                data-employee-name="{{ $employee->employeeNameTh }}">
-            <i class="bi bi-person-x-fill"></i>
-        </button>
-    @endcan
+    {{-- Edit Button --}}
+    <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-warning" title="{{ __('Edit') }}">
+        <i class="bi bi-pencil-fill"></i> <span class="d-none d-md-inline">{{ __('Edit') }}</span>
+    </a>
 
-    {{-- Standard Delete (Soft Delete to Trash) Button --}}
-    @can('delete-employees')
-        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" class="d-grid d-md-inline delete-employee-form">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete Employee (to Trash)') }}">
-                <i class="bi bi-trash-fill"></i>
-            </button>
-        </form>
-    @endcan
+    {{-- Terminate Button (Triggers Modal) --}}
+    @if(!$employee->terminated_at)
+    <button type="button" class="btn btn-sm btn-outline-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#terminateModal-{{ $employee->id }}"
+            title="{{ __('Terminate') }}">
+        <i class="bi bi-person-x-fill"></i> <span class="d-none d-md-inline">{{ __('Terminate') }}</span>
+    </button>
+    @else
+        {{-- Reinstate Button --}}
+        <form action="{{ route('employees.reinstate', $employee->id) }}" method="POST" class="d-grid d-md-inline">
+        @csrf
+        <button type="submit" class="btn btn-sm btn-outline-success" title="{{ __('Reinstate') }}">
+            <i class="bi bi-person-check-fill"></i> <span class="d-none d-md-inline">{{ __('Reinstate') }}</span>
+        </button>
+    </form>
+    @endif
+
+    {{-- Delete Form (Standard Soft Delete) --}}
+    <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" class="d-grid d-md-inline delete-employee-form">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
+            <i class="bi bi-trash-fill"></i> <span class="d-none d-md-inline">{{ __('Delete') }}</span>
+        </button>
+    </form>
 </div>
+
+{{-- Terminate Modal --}}
+@if(!$employee->terminated_at)
+    @include('employees.partials._employee_action_modals', ['employee' => $employee])
+@endif

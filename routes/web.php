@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/check-new', [ChatController::class, 'checkNewMessages'])->name('check_new');
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::post('/profile/update', [ChatController::class, 'updateProfile'])->name('profile.update_info');
+        Route::post('/profile/update-group', [ChatController::class, 'updateGroupProfile'])->name('profile.update_group'); // NEW
         Route::post('/upload', [ChatController::class, 'uploadFile'])->name('upload');
         Route::post('/groups', [ChatController::class, 'createGroup'])->name('groups.create'); // NEW
         Route::get('/search-users', [ChatController::class, 'searchUsers'])->name('users.search'); // NEW
