@@ -27,6 +27,15 @@
     $attachments = $ticket->categorized_attachments;
     // V2.4-S10: Check if the ticket is closed
     $isClosed = in_array($ticket->status, ['resolved', 'rejected']);
+
+    // Chat Background Settings
+    $bg = auth()->user()->chat_background;
+    $chatBgStyle = '';
+    if (str_starts_with($bg, 'preset-')) {
+        // Define simple CSS gradients for presets in PHP or handle in JS. Let's do it in JS for dynamic preview.
+    } elseif ($bg) {
+        $chatBgStyle = "background-image: url('" . asset($bg) . "'); background-size: cover; background-position: center;";
+    }
 @endphp
 
 @section('title', $viewTitle . ' #' . $ticket->id)
@@ -74,7 +83,7 @@
                     <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>สิ่งที่แนบมา (Attachments Triage)</h5>
                 </div>
                 <div class="card-body">
-
+                    {{-- (Attachments content preserved...) --}}
                     {{-- 1.1 Existing Employees (Affiliated) --}}
                     @if($attachments->existing_employees->isNotEmpty())
                         <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
@@ -341,10 +350,15 @@
 
             {{-- Section 2: Communication History (Chat View) --}}
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>ประวัติการสนทนา</h5>
+                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#chatSettingsModal">
+                        <i class="bi bi-palette"></i> ตกแต่งแชท
+                    </button>
                 </div>
-                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {{-- Added id="chat-container" and style binding --}}
+                <div class="card-body" id="chat-container" style="max-height: 500px; overflow-y: auto; {{ $chatBgStyle }}"
+                     data-preset="{{ str_starts_with($bg, 'preset-') ? $bg : '' }}">
                     @php $hasConversation = false; @endphp
                     {{-- Messages are already sorted chronologically by the Controller --}}
                     @foreach($ticket->messages as $message)
@@ -358,9 +372,10 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <strong>{{ $message->user->name ?? 'ผู้ใช้งาน (ลบแล้ว)' }}</strong>
+                                        {{-- Add background wrapper for text readability if custom bg --}}
+                                        <strong class="{{ $bg ? 'bg-light bg-opacity-75 px-1 rounded' : '' }}">{{ $message->user->name ?? 'ผู้ใช้งาน (ลบแล้ว)' }}</strong>
                                         <div class="d-flex align-items-center">
-                                            <small class="text-muted me-2">{{ $message->created_at->format('d M Y H:i') }}</small>
+                                            <small class="{{ $bg ? 'bg-light bg-opacity-75 px-1 rounded text-dark' : 'text-muted' }} me-2">{{ $message->created_at->format('d M Y H:i') }}</small>
                                             @if(!$isClosed && (auth()->id() === $message->user_id || auth()->user()->can('manage-tickets')))
                                                 <form action="{{ route('admin.tickets.messages.destroy', $message->id) }}" method="POST" class="d-inline">
                                                     @csrf
@@ -376,7 +391,7 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <div class="p-3 rounded" style="background-color: #f1f5f9;">
+                                    <div class="p-3 rounded chat-bubble" style="background-color: {{ $bg ? 'rgba(255,255,255,0.9)' : '#f1f5f9' }};">
                                         @php
                                             $body = $message->body;
                                             // V2.5-S20: Regex to find the special notification card format
@@ -413,7 +428,7 @@
                     @endforeach
 
                     @if(!$hasConversation)
-                        <p class="text-center text-muted py-4">ยังไม่มีการสนทนา</p>
+                        <p class="text-center {{ $bg ? 'bg-light bg-opacity-75 rounded py-2' : 'text-muted py-4' }}">ยังไม่มีการสนทนา</p>
                     @endif
                 </div>
             </div>
@@ -423,6 +438,7 @@
             {{-- Section 3: Reply Box (V2.4-S11 Implementation - Major Overhaul) --}}
             @if(!$isClosed)
                 <div class="card mb-4" id="reply-box" @dragover.prevent @drop.prevent="handleDrop($event)">
+                    {{-- ... (Reply box content preserved) ... --}}
                     <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> ตอบกลับ / ส่งข้อความ</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
@@ -480,11 +496,6 @@
                                         <div class="list-group-item text-muted fst-italic">ยังไม่มีรายการที่แนบ</div>
                                     </template>
                                     {{-- 1. Display Existing Employees --}}
-                                    {{-- NOTE: This part is for the REPLY box, using JS templates from hybrid-attachment-scripts. Using drag there is tricky but can be done if templates support it. --}}
-                                    {{-- The separate partials/_basket_display_templates.blade.php handles the Basket Display templates for Create forms. --}}
-                                    {{-- For Show/Reply, we use inline templates here or rely on the same partial if it was included. --}}
-                                    {{-- It seems _basket_display_templates is NOT included here. Let's rely on the inline templates below. --}}
-
                                     <template x-for="(item, index) in basket.existing_employees" :key="'e-' + item.id">
                                         <div class="list-group-item d-flex justify-content-between align-items-center py-2"
                                              draggable="true"
@@ -609,6 +620,7 @@
 
         {{-- Column 2: Metadata Sidebar --}}
         <div class="col-lg-4">
+            {{-- ... (Sidebar content preserved) ... --}}
             <div class="card sticky-top" style="top: 20px;">
                 <div class="card-header">
                     <h5 class="mb-0">ข้อมูลตั๋วงาน</h5>
@@ -641,7 +653,7 @@
                         {{ $ticket->assignedStaff->name ?? ($isAdminView ? 'ยังไม่ได้มอบหมาย' : 'รอเจ้าหน้าที่รับเรื่อง') }}
                     </li>
                 </ul>
-                {{-- Admin Action Buttons (Placeholder for V2.4-S11) --}}
+                {{-- Admin Action Buttons --}}
                 @if($isAdminView)
                     <div class="card-body d-grid gap-2">
                          <h5 class="mb-3">การจัดการ (Admin/Staff)</h5>
@@ -702,7 +714,66 @@
 @include('tickets.partials._new_employee_preview_modal')
 @include('employees.modals.advanced_export')
 
-{{-- (S11.4) Change Assignment Modal --}}
+{{-- Chat Settings Modal --}}
+<div class="modal fade" id="chatSettingsModal" tabindex="-1" aria-labelledby="chatSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chatSettingsModalLabel">ปรับแต่งธีมแชทของคุณ (My Chat Theme)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" id="chatThemeTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="preset-tab" data-bs-toggle="tab" data-bs-target="#preset" type="button" role="tab">ภาพพื้นหลังสำเร็จรูป</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom" type="button" role="tab">อัปโหลดภาพเอง</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="chatThemeTabContent">
+                    {{-- Tab 1: Presets --}}
+                    <div class="tab-pane fade show active" id="preset" role="tabpanel">
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <div class="card h-100 cursor-pointer preset-option border-primary" onclick="selectPreset('')" style="border-width: 2px;">
+                                    <div class="card-body d-flex align-items-center justify-content-center bg-white" style="height: 100px;">
+                                        <span class="text-muted">ค่าเริ่มต้น</span>
+                                    </div>
+                                    <div class="card-footer text-center small">Default</div>
+                                </div>
+                            </div>
+                            @for ($i = 1; $i <= 10; $i++)
+                            <div class="col-6 col-md-3">
+                                <div class="card h-100 cursor-pointer preset-option" onclick="selectPreset('preset-{{ $i }}')">
+                                    <div class="card-body preset-preview" style="height: 100px;" data-preset="preset-{{ $i }}"></div>
+                                    <div class="card-footer text-center small">แบบที่ {{ $i }}</div>
+                                </div>
+                            </div>
+                            @endfor
+                        </div>
+                    </div>
+
+                    {{-- Tab 2: Custom Upload --}}
+                    <div class="tab-pane fade" id="custom" role="tabpanel">
+                         <form id="custom-bg-form" enctype="multipart/form-data">
+                             <div class="mb-3">
+                                 <label for="chat_background_file" class="form-label">เลือกรูปภาพ (jpg, png)</label>
+                                 <input type="file" class="form-control" id="chat_background_file" name="chat_background_file" accept="image/*">
+                             </div>
+                             <div class="d-flex justify-content-end">
+                                 <button type="button" class="btn btn-primary" onclick="uploadCustomBg()">อัปโหลดและใช้งาน</button>
+                             </div>
+                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Change Assignment Modal --}}
 <div class="modal fade" id="changeAssignmentModal" tabindex="-1" aria-labelledby="changeAssignmentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -742,8 +813,26 @@
 {{-- Load the unified script component --}}
 @include('components.hybrid-attachment-scripts')
 
+<style>
+/* Preset Gradients */
+[data-preset="preset-1"] { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
+[data-preset="preset-2"] { background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%); }
+[data-preset="preset-3"] { background: linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%); }
+[data-preset="preset-4"] { background: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%); }
+[data-preset="preset-5"] { background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%); }
+[data-preset="preset-6"] { background: linear-gradient(to top, #fff1eb 0%, #ace0f9 100%); }
+[data-preset="preset-7"] { background: linear-gradient(to top, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); }
+[data-preset="preset-8"] { background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%); }
+[data-preset="preset-9"] { background: linear-gradient(to top, #fcc5e4 0%, #fda34b 15%, #ff7882 35%, #c8699e 52%, #7046aa 71%, #0c1db8 87%, #020f75 100%); }
+[data-preset="preset-10"] { background: #1e1e2f; } /* Dark Modeish */
+
+.cursor-pointer { cursor: pointer; }
+.preset-option.selected { border: 3px solid #0d6efd; }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // ... (Existing Scripts) ...
     // Logic for Ticket Existing Employees Bulk Actions
     const ticketSelectAll = document.getElementById('ticket-existing-select-all');
     const ticketCheckboxes = document.querySelectorAll('.employee-checkbox');
@@ -841,6 +930,50 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    // Chat Theme Logic
+    window.selectPreset = function(preset) {
+        // Send AJAX to update
+        fetch('{{ route("chat.settings.update") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ chat_background: preset })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload or Update UI
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    };
+
+    window.uploadCustomBg = function() {
+        const fileInput = document.getElementById('chat_background_file');
+        if (!fileInput.files.length) return;
+
+        const formData = new FormData();
+        formData.append('chat_background_file', fileInput.files[0]);
+
+        fetch('{{ route("chat.settings.update") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    };
 });
 </script>
 @endpush
