@@ -43,7 +43,8 @@ class ChatController extends Controller
                 });
             });
         } else {
-            return response()->json([]);
+            // Allow fetching groups even if no user contacts are visible
+            $userQuery->whereRaw('1 = 0');
         }
 
         $contacts = $userQuery->select('id', 'name', 'avatar_path', 'position_title', 'last_active_at')
