@@ -1,4 +1,5 @@
 <!-- Chat System Manager -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 <div x-data="chatManager()"
      x-init="initManager()"
      x-cloak
@@ -187,6 +188,14 @@
 
                             <!-- Attachments/Context -->
                             <template x-if="msg.context_data">
+                                <div>
+                                <template x-if="msg.context_data.type === 'sticker'">
+                                    <div class="mb-1">
+                                        <img :src="msg.context_data.url" class="hover-scale" style="max-height: 120px; width: auto; max-width: 150px;">
+                                    </div>
+                                </template>
+
+                                <template x-if="msg.context_data.type !== 'sticker'">
                                 <div class="mb-1 p-1 rounded bg-opacity-10" :class="msg.sender_id == currentUserId ? 'bg-black' : 'bg-secondary'">
                                     <!-- Link Type -->
                                     <template x-if="msg.context_data.type === 'link'">
@@ -236,7 +245,8 @@
                                             </button>
                                         </div>
                                     </template>
-
+                                </div>
+                                </template>
                                 </div>
                             </template>
 
@@ -249,6 +259,27 @@
 
             <!-- Input Area -->
             <div class="p-2 border-top bg-white position-relative">
+                <!-- Emoji Picker -->
+                <div x-show="chat.showEmojiPicker"
+                     @click.outside="chat.showEmojiPicker = false"
+                     class="position-absolute bottom-100 start-0 mb-2 shadow-lg border rounded"
+                     style="z-index: 20; width: 300px;">
+                    <emoji-picker @emoji-click="addEmoji($event, chat.uniqueKey)"></emoji-picker>
+                </div>
+
+                <!-- Sticker Picker -->
+                <div x-show="chat.showStickerPicker"
+                     @click.outside="chat.showStickerPicker = false"
+                     class="position-absolute bottom-100 start-0 mb-2 shadow-lg bg-white rounded border p-2"
+                     style="z-index: 20; width: 320px; height: 300px; overflow-y: auto;">
+                     <h6 class="text-muted small mb-2 border-bottom pb-1">{{ __('Select a Sticker') }}</h6>
+                     <div class="sticker-grid">
+                         <template x-for="sticker in stickers">
+                             <img :src="sticker" class="cursor-pointer hover-scale border rounded p-1" width="64" height="64" @click="sendSticker(chat.uniqueKey, sticker)">
+                         </template>
+                     </div>
+                </div>
+
                 <!-- Mentions Suggestions -->
                 <div x-show="chat.showMentions && chat.mentionResults.length > 0"
                      class="position-absolute bottom-100 start-0 w-100 bg-white shadow-lg border rounded-top"
@@ -280,7 +311,8 @@
                     <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
                 </div>
 
-                <form @submit.prevent="sendMessage(chat.uniqueKey)" class="d-flex gap-2 align-items-end">
+                <form @submit.prevent="sendMessage(chat.uniqueKey)" class="d-flex gap-1 align-items-end">
+                    <!-- Attachment Menu -->
                     <div class="dropup">
                         <button class="btn btn-sm btn-light text-secondary" type="button" data-bs-toggle="dropdown"><i class="bi bi-paperclip"></i></button>
                         <ul class="dropdown-menu">
@@ -288,6 +320,15 @@
                              <li><a class="dropdown-item small" href="#" @click.prevent="triggerFileUpload(chat.uniqueKey)"><i class="bi bi-file-earmark me-2"></i>{{ __('Upload File') }}</a></li>
                         </ul>
                     </div>
+                    <!-- Emoji Button -->
+                    <button type="button" class="btn btn-sm btn-light text-secondary" @click="toggleEmojiPicker(chat.uniqueKey)" :class="{'text-primary': chat.showEmojiPicker}">
+                        <i class="bi bi-emoji-smile"></i>
+                    </button>
+                    <!-- Sticker Button -->
+                    <button type="button" class="btn btn-sm btn-light text-secondary" @click="toggleStickerPicker(chat.uniqueKey)" :class="{'text-primary': chat.showStickerPicker}">
+                        <i class="bi bi-sticky"></i>
+                    </button>
+
                     <input type="file" :id="'file-input-'+chat.uniqueKey" class="d-none" @change="handleFileUpload($event, chat.uniqueKey)">
 
                     <textarea class="form-control form-control-sm" rows="1" style="resize: none;"
@@ -475,6 +516,22 @@
     .resize-handle-r { position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: e-resize; z-index: 10; }
     .resize-handle-b { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; cursor: s-resize; z-index: 10; }
     .resize-handle-rb { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; cursor: se-resize; z-index: 11; }
+
+    /* Emoji Picker Styles */
+    emoji-picker {
+        width: 100%;
+        height: 300px;
+        --num-columns: 8;
+        --emoji-size: 1.5rem;
+        --background: #ffffff;
+    }
+    .sticker-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+    .hover-scale { transition: transform 0.1s; }
+    .hover-scale:hover { transform: scale(1.1); }
 </style>
 
 <script>
@@ -485,6 +542,16 @@
             isAdminOrStaff: {{ auth()->user()->hasRole(['admin', 'staff']) ? 'true' : 'false' }},
             contacts: [], // Mixed array of users and groups
             searchQuery: '',
+            stickers: [
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=Hello',
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=Thanks',
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=Ok',
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=Love',
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=Bye',
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=Yes',
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=No',
+                'https://placehold.co/150x150/FAFAFA/F97316/png?text=Haha',
+            ],
             openChats: [], // { uniqueKey: 'user-1' | 'group-5', id, type, name, messages, ... }
             isContactListOpen: false,
             // Contact List Window State
@@ -603,6 +670,9 @@
                         showMentions: false,
                         mentionResults: [],
                         mentions: [],
+                        // Stickers & Emojis
+                        showEmojiPicker: false,
+                        showStickerPicker: false,
                         can_edit: item.can_edit // Group perm
                     };
                     this.openChats.push(chat);
@@ -794,6 +864,29 @@
                     mentions: chat.mentions
                 };
 
+                this.performSend(chat, payload);
+            },
+
+            sendSticker(uniqueKey, stickerUrl) {
+                const chat = this.openChats.find(c => c.uniqueKey === uniqueKey);
+                if (!chat) return;
+
+                const payload = {
+                    message: '',
+                    context_data: {
+                        type: 'sticker',
+                        url: stickerUrl,
+                        text: 'Sticker',
+                        name: 'Sticker'
+                    },
+                    mentions: []
+                };
+
+                this.performSend(chat, payload);
+                chat.showStickerPicker = false;
+            },
+
+            performSend(chat, payload) {
                 if (chat.type === 'group') {
                     payload.chat_group_id = chat.id;
                 } else {
@@ -811,11 +904,37 @@
                 .then(res => res.json())
                 .then(msg => {
                     chat.messages.push(msg);
-                    chat.newMessage = '';
-                    chat.contextToAttach = null;
-                    chat.mentions = [];
-                    this.$nextTick(() => this.scrollToBottom(uniqueKey));
+                    // Only clear input if it was a standard message, not sticker
+                    if(payload.message || payload.context_data === chat.contextToAttach) {
+                        chat.newMessage = '';
+                        chat.contextToAttach = null;
+                        chat.mentions = [];
+                    }
+                    this.$nextTick(() => this.scrollToBottom(chat.uniqueKey));
                 });
+            },
+
+            toggleEmojiPicker(uniqueKey) {
+                const chat = this.openChats.find(c => c.uniqueKey === uniqueKey);
+                if(chat) {
+                    chat.showEmojiPicker = !chat.showEmojiPicker;
+                    chat.showStickerPicker = false;
+                }
+            },
+
+            toggleStickerPicker(uniqueKey) {
+                const chat = this.openChats.find(c => c.uniqueKey === uniqueKey);
+                if(chat) {
+                    chat.showStickerPicker = !chat.showStickerPicker;
+                    chat.showEmojiPicker = false;
+                }
+            },
+
+            addEmoji(event, uniqueKey) {
+                const chat = this.openChats.find(c => c.uniqueKey === uniqueKey);
+                if(chat) {
+                    chat.newMessage += event.detail.unicode;
+                }
             },
 
             createGroup() {
@@ -887,6 +1006,8 @@
                                 showMentions: false,
                                 mentionResults: [],
                                 mentions: [],
+                                showEmojiPicker: false,
+                                showStickerPicker: false,
                                 can_edit: c.can_edit || false
                             }));
                             this.openChats.forEach(c => this.fetchMessages(c.uniqueKey));
