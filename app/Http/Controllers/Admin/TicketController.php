@@ -38,6 +38,7 @@ class TicketController extends Controller
             $perPage = request('per_page', 25);
             $ticketsQuery = JobTicket::with(['employerUser.employer', 'assignedStaff'])
                 ->where('employer_user_id', $employerId)
+                ->whereNull('hidden_for_admin_at')
                 ->latest();
 
             // Apply Caretaker Scope if not Admin/Staff
@@ -190,6 +191,21 @@ class TicketController extends Controller
         ]);
 
         return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Ticket assignment updated successfully.');
+    }
+
+    /**
+     * Hide a specific job ticket from the view.
+     * It will reappear if there is a new response.
+     */
+    public function hide(JobTicket $ticket)
+    {
+        if (!Auth::user()->can('manage-tickets')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $ticket->update(['hidden_for_admin_at' => now()]);
+
+        return back()->with('success', __('Job ticket hidden from view.'));
     }
 
     /**
