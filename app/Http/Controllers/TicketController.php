@@ -34,7 +34,8 @@ class TicketController extends Controller
         $perPage = request('per_page', 25);
 
         // Enforce Tenancy
-        $tickets = JobTicket::where('employer_user_id', Auth::id())
+        $tickets = JobTicket::withTrashed()
+            ->where('employer_user_id', Auth::id())
             ->latest()
             ->paginate($perPage);
 
@@ -230,8 +231,11 @@ class TicketController extends Controller
     /**
      * Display the specified ticket (User View).
      */
-    public function show(JobTicket $ticket): View | RedirectResponse
+    public function show(string $ticketId): View | RedirectResponse
     {
+        // Find ticket including trashed ones (to allow employers to see tickets hidden by admin)
+        $ticket = JobTicket::withTrashed()->findOrFail($ticketId);
+
         // Interface Enforcement: If the user can manage tickets, redirect to the admin view of the ticket.
         if (Auth::user()->can('manage-tickets')) {
             return redirect()->route('admin.tickets.show', $ticket);

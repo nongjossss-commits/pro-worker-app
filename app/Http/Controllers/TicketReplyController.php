@@ -168,6 +168,11 @@ if ($employerUser && $employerUser->is_ticket_hidden) {
     $employerUser->update(['is_ticket_hidden' => false]);
 }
 
+    // Restore ticket if it was hidden (soft deleted)
+    if ($ticket->trashed()) {
+        $ticket->restore();
+    }
+
 $ticket->update($updateData);
 
 DB::commit();

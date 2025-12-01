@@ -193,6 +193,21 @@ class TicketController extends Controller
     }
 
     /**
+     * Remove a job ticket from view (Soft Delete).
+     * It will reappear if there is a new response.
+     */
+    public function hide(JobTicket $ticket): \Illuminate\Http\RedirectResponse
+    {
+        if (!Auth::user()->can('manage-tickets')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $ticket->delete();
+
+        return back()->with('success', 'Job ticket removed from view.');
+    }
+
+    /**
      * (V2.5.1) Hide an employer's ticket box from the list.
      * It will reappear when there is new activity.
      */
