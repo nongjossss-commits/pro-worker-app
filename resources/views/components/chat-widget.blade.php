@@ -334,7 +334,7 @@
             <div x-show="chat.minimized"
                  class="position-relative shadow rounded-circle bg-white border d-flex align-items-center justify-content-center cursor-pointer slide-in-right"
                  style="pointer-events: auto; width: 50px; height: 50px; background-color: rgba(255,255,255,0.95) !important;"
-                 @click="chat.minimized = false; saveState(); bringToFront(chat.uniqueKey)"
+                 @click="openChat(chat)"
                  @dragover.prevent
                  @drop.prevent="handleDrop($event, 'chat_window', chat.uniqueKey)"
                  :title="chat.name">
@@ -681,11 +681,27 @@
 
             openChat(item) {
                 const uniqueKey = this.getUniqueKey(item);
-                let chat = this.openChats.find(c => c.uniqueKey === uniqueKey);
 
-                if (chat) {
+                // Deduplicate: Check if chat already exists
+                // Use a filter to find ALL matching chats (including potential duplicates)
+                const existingChats = this.openChats.filter(c => c.uniqueKey === uniqueKey);
+                let chat;
+
+                if (existingChats.length > 0) {
+                    // Use the first one found
+                    chat = existingChats[0];
+
+                    // If there are duplicates, remove them, keeping only the primary one
+                    if (existingChats.length > 1) {
+                         this.openChats = this.openChats.filter(c => c.uniqueKey !== uniqueKey || c === chat);
+                    }
+
                     chat.minimized = false;
                     chat.unreadCount = 0;
+                    // Update latest info if available
+                    if(item.name) chat.name = item.name;
+                    if(item.avatar_url) chat.avatar_url = item.avatar_url;
+
                     this.bringToFront(uniqueKey);
                 } else {
                     // Default Position (Center)
@@ -1177,7 +1193,17 @@
                         if(parsed.contactList) this.contactList = {...this.contactList, ...parsed.contactList};
 
                         if(parsed.openChats) {
-                            this.openChats = parsed.openChats.map(c => ({
+                            // Deduplicate openChats to prevent multiple instances of same chat
+                            const uniqueChats = [];
+                            const seenKeys = new Set();
+                            parsed.openChats.forEach(c => {
+                                if (!seenKeys.has(c.uniqueKey)) {
+                                    seenKeys.add(c.uniqueKey);
+                                    uniqueChats.push(c);
+                                }
+                            });
+
+                            this.openChats = uniqueChats.map(c => ({
                                 ...c,
                                 messages: [],
                                 newMessage: '',
