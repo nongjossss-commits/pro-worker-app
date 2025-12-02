@@ -1126,6 +1126,24 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     });
+
+    // Global Highlight & Scroll Handler
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.location.hash) {
+            // Decouple from execution flow to ensure DOM is fully ready
+            setTimeout(() => {
+                const id = window.location.hash.substring(1);
+                const el = document.getElementById(id);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('highlight');
+                    setTimeout(() => {
+                        el.classList.remove('highlight');
+                    }, 5000);
+                }
+            }, 300);
+        }
+    });
 </script>
 
 </body>

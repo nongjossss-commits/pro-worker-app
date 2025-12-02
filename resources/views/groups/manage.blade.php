@@ -257,23 +257,22 @@
                                                 </h5>
                                                 <div class="list-group">
                                                     @foreach($members as $member)
-                                                        <div draggable="true"
-                                                             data-drag-payload="{{ json_encode([
-                                                                'id' => $member->id,
-                                                                'title' => $member->employeeFullName,
-                                                                'subtitle' => $team->name,
-                                                                'url' => route('employees.show', $member->id)
-                                                             ]) }}"
-                                                             ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
-                                                            @include('partials._employee_card', [
-                                                                'employee' => $member,
-                                                                'loop' => $loop,
-                                                                'showLocateButton' => true,
-                                                                'hideTeamTags' => true,
-                                                                'currentTeamId' => $team->id,
-                                                                'idPrefix' => 'team-' . $team->id . '-'
-                                                            ])
-                                                        </div>
+                                                        @php
+                                                            $currentUrl = request()->fullUrlWithQuery([
+                                                                'active_group' => $activeGroup->id,
+                                                                'active_team' => $team->id,
+                                                                'highlight_employee' => $member->id
+                                                            ]);
+                                                        @endphp
+                                                        @include('partials._employee_card', [
+                                                            'employee' => $member,
+                                                            'loop' => $loop,
+                                                            'showLocateButton' => true,
+                                                            'hideTeamTags' => true,
+                                                            'currentTeamId' => $team->id,
+                                                            'elementId' => 'employee-card-team-' . $team->id . '-' . $member->id,
+                                                            'dragUrl' => $currentUrl . '#employee-card-team-' . $team->id . '-' . $member->id
+                                                        ])
                                                     @endforeach
                                                 </div>
                                             </div>
@@ -286,23 +285,22 @@
                                         {{-- No Grouping --}}
                                         <div class="list-group">
                                             @forelse($team->employees as $member)
-                                                <div draggable="true"
-                                                     data-drag-payload="{{ json_encode([
-                                                        'id' => $member->id,
-                                                        'title' => $member->employeeFullName,
-                                                        'subtitle' => $team->name,
-                                                        'url' => route('employees.show', $member->id)
-                                                     ]) }}"
-                                                     ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
-                                                    @include('partials._employee_card', [
-                                                        'employee' => $member,
-                                                        'loop' => $loop,
-                                                        'showLocateButton' => true,
-                                                        'hideTeamTags' => true,
-                                                        'currentTeamId' => $team->id,
-                                                        'idPrefix' => 'team-' . $team->id . '-'
-                                                    ])
-                                                </div>
+                                                @php
+                                                    $currentUrl = request()->fullUrlWithQuery([
+                                                        'active_group' => $activeGroup->id,
+                                                        'active_team' => $team->id,
+                                                        'highlight_employee' => $member->id
+                                                    ]);
+                                                @endphp
+                                                @include('partials._employee_card', [
+                                                    'employee' => $member,
+                                                    'loop' => $loop,
+                                                    'showLocateButton' => true,
+                                                    'hideTeamTags' => true,
+                                                    'currentTeamId' => $team->id,
+                                                    'elementId' => 'employee-card-team-' . $team->id . '-' . $member->id,
+                                                    'dragUrl' => $currentUrl . '#employee-card-team-' . $team->id . '-' . $member->id
+                                                ])
                                             @empty
                                                 <div class="text-center text-muted py-4 border rounded bg-light">
                                                     {{ __('No members in this team yet.') }}
@@ -466,6 +464,8 @@
                                     id: employee.id,
                                     title: employee.name,
                                     subtitle: employee.passport,
+                                    photo_url: employee.photo,
+                                    employer_name: employee.employer_name,
                                     url: '#'
                                  })">
                                 <div class="d-flex align-items-center">

@@ -51,7 +51,7 @@
         'employee_photo_url' => optional($employee)->photo_url,
         'employee_nationality' => optional($employee)->employeeNationality,
         'employer_name_th' => optional($employer)->employerNameTh,
-        'url' => route('notifications.index', ['highlight' => $notification->id, 'active_tab' => $notification->status]),
+        'url' => request()->fullUrl() . '#notification-item-' . $notification->id,
     ];
 @endphp
 

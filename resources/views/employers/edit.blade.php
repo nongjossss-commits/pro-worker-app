@@ -27,7 +27,7 @@
         'id' => $employer->id,
         'title' => $employer->employerNameTh,
         'subtitle' => $employer->employerNameEn,
-        'url' => route('employers.edit', $employer->id)
+        'url' => request()->fullUrl()
      ]) }}"
      ondragstart="window.startDragGlobal(event, 'employer', JSON.parse(this.dataset.dragPayload))">
     <h2 class="mb-4">{{ __('Edit Employer') }}</h2>
@@ -420,16 +420,15 @@
         @if($currentView === 'card')
             <div class="list-group">
             @forelse($employees as $employee)
-                <div class="position-relative" draggable="true"
-                     data-drag-payload="{{ json_encode([
-                        'id' => $employee->id,
-                        'title' => $employee->employeeFullName,
-                        'subtitle' => $employer->employerNameTh,
-                        'url' => route('employees.show', $employee->id)
-                     ]) }}"
-                     ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
-                    {{-- DEFINITIVE FIX: Use the single, unified partial --}}
-                    @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => false])
+                <div class="position-relative">
+                    @include('partials._employee_card', [
+                        'employee' => $employee,
+                        'loop' => $loop,
+                        'pagination' => $employees,
+                        'showLocateButton' => false,
+                        'elementId' => 'employee-card-' . $employee->id,
+                        'dragUrl' => request()->fullUrl() . '#employee-card-' . $employee->id
+                    ])
                 </div>
             @empty
                 <p class="text-center text-muted">{{ __('No employees found matching criteria') }}</p>
@@ -457,7 +456,10 @@
                                     'id' => $employee->id,
                                     'title' => $employee->employeeFullName,
                                     'subtitle' => $employer->employerNameTh,
-                                    'url' => route('employees.show', $employee->id)
+                                    'photo_url' => $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC',
+                                    'url' => request()->fullUrl() . '#employee-row-' . $employee->id,
+                                    'employer_name' => $employer->employerNameTh,
+                                    'nationality' => $employee->employeeNationality
                                 ]) }}"
                                 ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
                                 {{-- DEFINITIVE FIX: Add checkbox for bulk actions --}}

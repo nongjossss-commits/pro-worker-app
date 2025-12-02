@@ -1,6 +1,12 @@
 @php
     // Helper to prevent errors if employer relationship is not loaded
     $employerName = $employee->employer->employerNameTh ?? 'N/A';
+
+    // V2.5: Allow overriding the DOM ID and the Drag URL from parent views
+    // This is crucial for views like Groups/Teams where the same employee appears multiple times
+    // or where we need query parameters (active_tab) in the URL.
+    $elementId = $elementId ?? 'employee-card-' . $employee->id;
+    $dragUrl = $dragUrl ?? (request()->fullUrl() . '#' . $elementId);
 @endphp
 @php
     // V2.5: Check completeness for badge display (Only in Incomplete View)
@@ -10,7 +16,20 @@
     }
 @endphp
 
-<div id="employee-card-{{ $employee->id }}" class="list-group-item list-group-item-action position-relative">
+<div id="{{ $elementId }}"
+     class="list-group-item list-group-item-action position-relative"
+     draggable="true"
+     data-drag-payload="{{ json_encode([
+        'id' => $employee->id,
+        'title' => $employee->employeeNameTh,
+        'subtitle' => $employee->employeeNameEn,
+        'photo_url' => $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC',
+        'url' => $dragUrl,
+        'employer_name' => $employerName,
+        'nationality' => $employee->employeeNationality
+     ]) }}"
+     ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
+
     @if($missingCount > 0)
         <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-warning text-dark border border-light shadow-sm" style="z-index: 10; margin-left: 15px; margin-top: 15px; font-size: 0.8rem;">
             {{ $missingCount }}
