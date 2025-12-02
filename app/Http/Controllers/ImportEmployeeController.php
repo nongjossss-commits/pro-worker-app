@@ -7,8 +7,14 @@ use App\Models\Employer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class ImportEmployeeController extends Controller
 {
@@ -17,14 +23,10 @@ class ImportEmployeeController extends Controller
      */
     public function index()
     {
-        // For admin/staff, they can select any employer.
-        // For employer role, they are locked to their own employer record (if enforced by policy/middleware, but here we just pass the list).
-
         $employers = collect();
         if (auth()->user()->can('view-employers')) {
              $employers = Employer::orderBy('employerNameTh')->get(['id', 'employerNameTh', 'employerNameEn']);
         } else {
-             // If user is employer, get their employer record
              $user = auth()->user();
              if ($user->employer) {
                  $employers = collect([$user->employer]);
@@ -35,36 +37,34 @@ class ImportEmployeeController extends Controller
     }
 
     /**
-     * Download a CSV template for importing employees.
+     * Download an Excel template for importing employees.
      */
     public function downloadTemplate()
     {
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="employee_import_template.csv"',
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0',
-        ];
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-        // Column Headers (Snake case preferred for mapping, or readable english)
-        // Matching the prompt requirements + system fields.
         $columns = [
-            'Title (TH)', // Name Title TH (Mr/Mrs/Miss or Thai)
+            'Title (TH)',
             'Name (TH)',
             'Name (EN)',
-            'Gender', // Male/Female
+            'Gender',
             'Date of Birth (YYYY-MM-DD)',
             'Nationality',
             'Passport Number',
             'Work Permit Number',
             'Work Permit Type',
-            // Optional/System fields
             'Pink Card Number',
-            'CI/PJ/TD/Inter' // Book Type
+            'CI/PJ/TD/Inter',
+            'Photo (Insert Image in Cell)'
         ];
 
-        // Sample Row
+        // Set Headers
+        foreach ($columns as $index => $header) {
+            $sheet->setCellValueByColumnAndRow($index + 1, 1, $header);
+        }
+
+        // Sample Data
         $sample = [
             'นาย',
             'สมชาย ใจดี',
@@ -79,159 +79,207 @@ class ImportEmployeeController extends Controller
             'CI'
         ];
 
-        $callback = function() use ($columns, $sample) {
-            $file = fopen('php://output', 'w');
-            // Write BOM for Excel UTF-8 compatibility
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+        foreach ($sample as $index => $value) {
+            $sheet->setCellValueByColumnAndRow($index + 1, 2, $value);
+        }
 
-            fputcsv($file, $columns);
-            fputcsv($file, $sample);
+        // Auto-size columns
+        foreach (range('A', 'L') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
 
-            fclose($file);
+        // Set Photo column width larger to encourage image placement
+        $sheet->getColumnDimension('L')->setAutoSize(false);
+        $sheet->getColumnDimension('L')->setWidth(30);
+        $sheet->getRowDimension(2)->setRowHeight(50); // Make the sample row taller for image space
+
+        $writer = new Xlsx($spreadsheet);
+
+        $callback = function() use ($writer) {
+            $writer->save('php://output');
         };
 
-        return response()->stream($callback, 200, $headers);
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="employee_import_template.xlsx"',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     /**
-     * Handle the CSV import.
+     * Handle the Excel import.
      */
     public function store(Request $request)
     {
         $request->validate([
             'employer_id' => 'required|exists:employers,id',
-            'file' => 'required|file|mimes:csv,txt|max:5120', // 5MB limit
+            'file' => 'required|file|mimes:xlsx,xls|max:10240', // 10MB limit
         ]);
 
         $employerId = $request->input('employer_id');
         $file = $request->file('file');
 
-        // Check if user has permission to add to this employer
         if (!auth()->user()->can('create-employees')) {
             // Check ownership if strict
         }
 
-        $path = $file->getRealPath();
-        $handle = fopen($path, 'r');
-
-        // Skip BOM if present
-        $bom = fread($handle, 3);
-        if ($bom !== chr(0xEF).chr(0xBB).chr(0xBF)) {
-            rewind($handle);
-        }
-
-        $header = fgetcsv($handle); // Read header
-
-        // We expect specific order or we can map by name.
-        // For simplicity in this v1, assuming template order.
-        // 0: Title, 1: NameTH, 2: NameEN, 3: Gender, 4: DOB, 5: Nationality, 6: Passport, 7: WP, 8: WPType, 9: PinkCard, 10: BookType
+        $path = $file->getPathname();
 
         $count = 0;
         $errors = [];
-        $rowNumber = 1; // Header is 1
 
         DB::beginTransaction();
         try {
-            while (($row = fgetcsv($handle)) !== false) {
-                $rowNumber++;
+            $spreadsheet = IOFactory::load($path);
+            $sheet = $spreadsheet->getActiveSheet();
 
-                // Skip empty rows
-                if (count($row) < 5 || empty($row[1])) {
+            // Extract Images first to map them to rows
+            $images = [];
+            foreach ($sheet->getDrawingCollection() as $drawing) {
+                // Check if it's in the Photo column (Column L = 12)
+                $coordinates = $drawing->getCoordinates(); // e.g. "L2"
+                $column = preg_replace('/[0-9]+/', '', $coordinates);
+                $row = (int) preg_replace('/[A-Z]+/', '', $coordinates);
+
+                if ($column === 'L') {
+                    $images[$row] = $drawing;
+                }
+            }
+
+            // Iterate rows starting from 2
+            $highestRow = $sheet->getHighestRow();
+
+            for ($rowIdx = 2; $rowIdx <= $highestRow; $rowIdx++) {
+                // Get cell values
+                $row = [];
+                for ($colIdx = 1; $colIdx <= 11; $colIdx++) {
+                    $val = $sheet->getCellByColumnAndRow($colIdx, $rowIdx)->getValue();
+                    $row[] = trim((string)$val);
+                }
+
+                // Check if empty row (skip if NameTH and NameEN are empty)
+                if (empty($row[1]) && empty($row[2])) {
                     continue;
                 }
 
                 // Parse Data
-                $titleTh = trim($row[0] ?? '');
-                $nameTh = trim($row[1] ?? '');
-                $nameEn = trim($row[2] ?? '');
-                $gender = trim($row[3] ?? ''); // Map Male/Female to standard if needed
-                $dobRaw = trim($row[4] ?? '');
-                $nationality = trim($row[5] ?? '');
-                $passport = trim($row[6] ?? '');
-                $wp = trim($row[7] ?? '');
-                $wpType = trim($row[8] ?? '');
-                $pinkCard = trim($row[9] ?? '');
-                $bookType = trim($row[10] ?? '');
+                $titleTh = $row[0];
+                $nameTh = $row[1];
+                $nameEn = $row[2];
+                // $gender = $row[3];
+                $dobRaw = $row[4];
+                $nationality = $row[5];
+                $passport = $row[6];
+                $wp = $row[7];
+                $wpType = $row[8];
+                $pinkCard = $row[9];
+                $bookType = $row[10];
 
-                // Basic Validation
-                if (empty($nameTh) && empty($nameEn)) {
-                    $errors[] = "Row $rowNumber: Name is missing.";
-                    continue;
-                }
-
-                // Format Date
+                 // Format Date
                 $dob = null;
                 if (!empty($dobRaw)) {
-                    try {
-                        // Attempt to parse YYYY-MM-DD
-                        $dob = Carbon::parse($dobRaw)->format('Y-m-d');
-                    } catch (\Exception $e) {
-                         $errors[] = "Row $rowNumber: Invalid Date format ($dobRaw). Use YYYY-MM-DD.";
-                         continue;
+                    if (Date::isDateTime($sheet->getCellByColumnAndRow(5, $rowIdx))) {
+                         $dob = Carbon::instance(Date::excelToDateTimeObject($dobRaw))->format('Y-m-d');
+                    } else {
+                         try {
+                            $dob = Carbon::parse($dobRaw)->format('Y-m-d');
+                         } catch (\Exception $e) {
+                             $errors[] = "Row $rowIdx: Invalid Date format ($dobRaw).";
+                         }
                     }
                 }
 
-                // Create Employee
-                // Mapping logic similar to EmployeeController::store
+                // Process Image
+                $photoPath = null;
+                if (isset($images[$rowIdx])) {
+                    $drawing = $images[$rowIdx];
+                    $imageContent = null;
+                    $extension = 'jpg';
 
-                // Determine passport type column based on nationality
-                $passportTypeKey = 'passportType'; // default/Myanmar
+                    try {
+                        if ($drawing instanceof MemoryDrawing) {
+                            ob_start();
+                            call_user_func(
+                                $drawing->getRenderingFunction(),
+                                $drawing->getImageResource()
+                            );
+                            $imageContent = ob_get_contents();
+                            ob_end_clean();
+
+                            switch ($drawing->getMimeType()) {
+                                case MemoryDrawing::MIMETYPE_PNG :
+                                    $extension = 'png'; break;
+                                case MemoryDrawing::MIMETYPE_GIF:
+                                    $extension = 'gif'; break;
+                                case MemoryDrawing::MIMETYPE_JPEG :
+                                    $extension = 'jpg'; break;
+                            }
+                        } elseif ($drawing instanceof Drawing) {
+                            // Helper to get image contents safely
+                            $imagePath = $drawing->getPath();
+                            if ($imagePath && file_exists($imagePath)) {
+                                 $imageContent = file_get_contents($imagePath);
+                                 $info = pathinfo($imagePath);
+                                 $extension = $info['extension'] ?? 'jpg';
+                            }
+                        }
+
+                        if ($imageContent) {
+                            $filename = 'import_' . uniqid() . '.' . $extension;
+                            $storagePath = 'employee_photos/' . $filename;
+                            Storage::disk('public')->put($storagePath, $imageContent);
+                            $photoPath = $storagePath;
+                        }
+                    } catch (\Exception $imgEx) {
+                        Log::warning("Failed to process image for row $rowIdx: " . $imgEx->getMessage());
+                    }
+                }
+
+                // Determine passport type
+                $passportTypeKey = 'passportType';
                 if ($nationality === 'กัมพูชา') {
                     $passportTypeKey = 'passport_type_cambodia';
                 }
 
-                // Note: Employee model has many camelCase fields.
                 $employeeData = [
                     'employer_id' => $employerId,
                     'employeeTitleTh' => $titleTh,
                     'employeeNameTh' => $nameTh,
                     'employeeNameEn' => $nameEn,
-                    // 'employeeGender' => $gender, // Often computed or stored differently? Memory says "gender accessor from title".
-                    // But if we have explicit gender input, we might store it if column exists?
-                    // Checked memory: "gender accessor (from employeeTitleTh)".
-                    // So we don't need to store gender if title is correct.
-                    // But Title is free text? Usually "นาย", "นาง", "นางสาว".
-
                     'employeeDob' => $dob,
                     'employeeNationality' => $nationality,
                     'employeePassport' => $passport,
                     'employeeWorkPermit' => $wp,
                     'workPermitType' => $wpType,
                     'pinkCardNo' => $pinkCard,
-
-                    // Defaults
+                    'employeePhoto' => $photoPath,
                     'status' => 'active',
                 ];
 
-                // Handle Book Type map to specific column
                 if ($nationality === 'กัมพูชา') {
                     $employeeData['passport_type_cambodia'] = $bookType;
                 } else {
-                     $employeeData['passportType'] = $bookType; // For Myanmar
+                     $employeeData['passportType'] = $bookType;
                 }
 
                 Employee::create($employeeData);
                 $count++;
             }
 
-            if (count($errors) > 0) {
-                // If we want partial success, commit transaction and show errors?
-                // Or fail all? "If user fills 100... system creates 100".
-                // I'll rollback if any critical error, but for individual row errors usually we might want to skip.
-                // But simple approach: Commit successful ones.
-                DB::commit();
-                return redirect()->route('employees.index')->with('success', "Imported $count employees successfully. " . count($errors) . " rows failed.")->with('import_errors', $errors);
+            DB::commit();
+
+            $msg = "Successfully imported $count employees.";
+            if (count($errors)) {
+                $msg .= " With " . count($errors) . " errors.";
+                return redirect()->route('employees.index')->with('success', $msg)->with('import_errors', $errors);
             }
 
-            DB::commit();
-            return redirect()->route('employees.index')->with('success', "Successfully imported $count employees.");
+            return redirect()->route('employees.index')->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e);
             return back()->with('error', 'Import failed: ' . $e->getMessage());
-        } finally {
-            fclose($handle);
         }
     }
 }
