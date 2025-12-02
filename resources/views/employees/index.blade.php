@@ -12,9 +12,18 @@
         {{ __('Employee List (Total: :total)', ['total' => $totalEmployees]) }}
     </h4>
     @can('create-employees')
-        <a href="{{ route('employees.create') }}" class="btn btn-success">
-            <i class="bi bi-plus-circle me-2"></i>{{ __('Add New') }}
-        </a>
+        <div class="btn-group">
+            <a href="{{ route('employees.create') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle me-2"></i>{{ __('Add New') }}
+            </a>
+            <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ route('employees.create') }}"><i class="bi bi-person-plus me-2"></i>{{ __('Create Manually') }}</a></li>
+                <li><a class="dropdown-item" href="{{ route('employees.import_view') }}"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Import from Excel/CSV') }}</a></li>
+            </ul>
+        </div>
     @endcan
 </div>
 
