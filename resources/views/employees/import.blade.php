@@ -12,10 +12,12 @@
                 </div>
                 <div class="card-body p-4">
 
-                    @if(session('import_errors'))
-                        <div class="alert alert-warning">
-                            <strong>{{ __('Import completed with some errors:') }}</strong>
-                            <ul class="mb-0 mt-2">
+                    @if(session('import_errors') && is_array(session('import_errors')) && count(session('import_errors')) > 0)
+                        <div class="alert alert-danger">
+                            <h5 class="alert-heading">{{ __('Import Failed') }}</h5>
+                            <p>{{ __('The import process was stopped due to the following errors:') }}</p>
+                            <hr>
+                            <ul class="mb-0">
                                 @foreach(session('import_errors') as $error)
                                     <li>{{ $error }}</li>
                                 @endforeach
@@ -26,16 +28,16 @@
                     <div class="alert alert-info d-flex align-items-center mb-4">
                         <i class="bi bi-info-circle-fill me-3 fs-4"></i>
                         <div>
-                            {{ __('Use this feature to create multiple employees at once by uploading a CSV file.') }}<br>
+                            {{ __('Use this feature to create multiple employees at once by uploading an Excel file.') }}<br>
                             {{ __('Please download the template below, fill in the data, and upload it back.') }}
-                            <br>
-                            <small class="text-muted">{{ __('Note: Photos cannot be imported via Excel. You can update them individually later.') }}</small>
+                             <br>
+                            <small class="text-muted">{{ __('Note: Ensure data format is correct. Photos can be inserted directly into the designated cell in the Excel file.') }}</small>
                         </div>
                     </div>
 
                     <div class="mb-4 text-center">
                         <a href="{{ route('employees.template') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-download me-2"></i>{{ __('Download Excel Template (CSV)') }}
+                            <i class="bi bi-download me-2"></i>{{ __('Download Excel Template') }}
                         </a>
                     </div>
 
@@ -57,8 +59,8 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="file" class="form-label fw-bold required">{{ __('Upload File (CSV)') }}</label>
-                            <input type="file" name="file" id="file" class="form-control @error('file') is-invalid @enderror" accept=".csv, .txt" required>
+                            <label for="file" class="form-label fw-bold required">{{ __('Upload Excel File') }}</label>
+                            <input type="file" name="file" id="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx, .xls" required>
                             @error('file')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

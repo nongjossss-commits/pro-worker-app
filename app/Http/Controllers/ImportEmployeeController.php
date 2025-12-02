@@ -118,109 +118,121 @@ class ImportEmployeeController extends Controller
 
         $employerId = $request->input('employer_id');
         $file = $request->file('file');
-
-        if (!auth()->user()->can('create-employees')) {
-            // Check ownership if strict
-        }
-
         $path = $file->getPathname();
 
-        $count = 0;
         $errors = [];
+        $employeesToCreate = [];
 
-        DB::beginTransaction();
         try {
             $spreadsheet = IOFactory::load($path);
             $sheet = $spreadsheet->getActiveSheet();
+            $highestRow = $sheet->getHighestRow();
 
-            // Extract Images first to map them to rows
+            // Extract images first to map them to rows
             $images = [];
             foreach ($sheet->getDrawingCollection() as $drawing) {
-                // Check if it's in the Photo column (Column L = 12)
-                $coordinates = $drawing->getCoordinates(); // e.g. "L2"
+                $coordinates = $drawing->getCoordinates();
                 $column = preg_replace('/[0-9]+/', '', $coordinates);
                 $row = (int) preg_replace('/[A-Z]+/', '', $coordinates);
-
                 if ($column === 'L') {
                     $images[$row] = $drawing;
                 }
             }
 
-            // Iterate rows starting from 2
-            $highestRow = $sheet->getHighestRow();
-
+            // Phase 1: Validate all rows before collecting data for import
             for ($rowIdx = 2; $rowIdx <= $highestRow; $rowIdx++) {
-                // Get cell values
-                $row = [];
+                $rowValues = [];
                 for ($colIdx = 1; $colIdx <= 11; $colIdx++) {
                     $val = $sheet->getCellByColumnAndRow($colIdx, $rowIdx)->getValue();
-                    $row[] = trim((string)$val);
+                    $rowValues[] = trim((string)$val);
                 }
 
-                // Check if empty row (skip if NameTH and NameEN are empty)
-                if (empty($row[1]) && empty($row[2])) {
+                if (empty($rowValues[1]) && empty($rowValues[2])) { // Skip empty rows
                     continue;
                 }
 
-                // Parse Data
-                $titleTh = $row[0];
-                $nameTh = $row[1];
-                $nameEn = $row[2];
-                // $gender = $row[3];
-                $dobRaw = $row[4];
-                $nationality = $row[5];
-                $passport = $row[6];
-                $wp = $row[7];
-                $wpType = $row[8];
-                $pinkCard = $row[9];
-                $bookType = $row[10];
-
-                 // Format Date
+                $rowErrors = []; // Store errors for the current row
+                $nameTh = $rowValues[1];
+                $dobRaw = $rowValues[4];
                 $dob = null;
+
+                // ** Per-Row Validation Logic **
+                if (empty($nameTh)) {
+                    $rowErrors[] = "Row $rowIdx: Name (TH) is a required field.";
+                }
+
                 if (!empty($dobRaw)) {
                     if (Date::isDateTime($sheet->getCellByColumnAndRow(5, $rowIdx))) {
-                         $dob = Carbon::instance(Date::excelToDateTimeObject($dobRaw))->format('Y-m-d');
+                        $dob = Carbon::instance(Date::excelToDateTimeObject($dobRaw))->format('Y-m-d');
                     } else {
-                         try {
+                        try {
                             $dob = Carbon::parse($dobRaw)->format('Y-m-d');
-                         } catch (\Exception $e) {
-                             $errors[] = "Row $rowIdx: Invalid Date format ($dobRaw).";
-                         }
+                        } catch (\Exception $e) {
+                            $rowErrors[] = "Row $rowIdx: Invalid Date of Birth format ('$dobRaw'). Please use YYYY-MM-DD.";
+                        }
                     }
                 }
 
-                // Process Image
-                $photoPath = null;
-                if (isset($images[$rowIdx])) {
-                    $drawing = $images[$rowIdx];
-                    $imageContent = null;
-                    $extension = 'jpg';
+                // If this row has errors, add them to the main error list and continue
+                if (count($rowErrors) > 0) {
+                    $errors = array_merge($errors, $rowErrors);
+                    continue;
+                }
 
+                // If validation for this row passed, prepare its data for import
+                $employeesToCreate[] = [
+                    'rowIdx' => $rowIdx,
+                    'data' => [
+                        'employer_id' => $employerId,
+                        'employeeTitleTh' => $rowValues[0],
+                        'employeeNameTh' => $nameTh,
+                        'employeeNameEn' => $rowValues[2],
+                        'employeeDob' => $dob,
+                        'employeeNationality' => $rowValues[5],
+                        'employeePassport' => $rowValues[6],
+                        'employeeWorkPermit' => $rowValues[7],
+                        'workPermitType' => $rowValues[8],
+                        'pinkCardNo' => $rowValues[9],
+                        'passportType' => $rowValues[10], // Generic passport type
+                        'status' => 'active',
+                    ],
+                    'drawing' => $images[$rowIdx] ?? null
+                ];
+            }
+
+            // Phase 2: If validation fails, redirect back with errors
+            if (!empty($errors)) {
+                return back()->with('import_errors', $errors)->withInput();
+            }
+
+            // Phase 3: If validation succeeds, proceed with database transaction
+            DB::beginTransaction();
+
+            $count = 0;
+            foreach ($employeesToCreate as $employee) {
+                $employeeData = $employee['data'];
+                $drawing = $employee['drawing'];
+                $photoPath = null;
+
+                if ($drawing) {
                     try {
+                        $imageContent = null;
+                        $extension = 'jpg';
                         if ($drawing instanceof MemoryDrawing) {
                             ob_start();
-                            call_user_func(
-                                $drawing->getRenderingFunction(),
-                                $drawing->getImageResource()
-                            );
+                            call_user_func($drawing->getRenderingFunction(), $drawing->getImageResource());
                             $imageContent = ob_get_contents();
                             ob_end_clean();
-
                             switch ($drawing->getMimeType()) {
-                                case MemoryDrawing::MIMETYPE_PNG :
-                                    $extension = 'png'; break;
-                                case MemoryDrawing::MIMETYPE_GIF:
-                                    $extension = 'gif'; break;
-                                case MemoryDrawing::MIMETYPE_JPEG :
-                                    $extension = 'jpg'; break;
+                                case MemoryDrawing::MIMETYPE_PNG: $extension = 'png'; break;
+                                case MemoryDrawing::MIMETYPE_GIF: $extension = 'gif'; break;
+                                case MemoryDrawing::MIMETYPE_JPEG: $extension = 'jpg'; break;
                             }
                         } elseif ($drawing instanceof Drawing) {
-                            // Helper to get image contents safely
                             $imagePath = $drawing->getPath();
                             if ($imagePath && file_exists($imagePath)) {
-                                 $imageContent = file_get_contents($imagePath);
-                                 $info = pathinfo($imagePath);
-                                 $extension = $info['extension'] ?? 'jpg';
+                                $imageContent = file_get_contents($imagePath);
+                                $extension = pathinfo($imagePath, PATHINFO_EXTENSION) ?? 'jpg';
                             }
                         }
 
@@ -231,35 +243,15 @@ class ImportEmployeeController extends Controller
                             $photoPath = $storagePath;
                         }
                     } catch (\Exception $imgEx) {
-                        Log::warning("Failed to process image for row $rowIdx: " . $imgEx->getMessage());
+                        Log::warning("Failed to process image for row {$employee['rowIdx']}: " . $imgEx->getMessage());
                     }
                 }
+                $employeeData['employeePhoto'] = $photoPath;
 
-                // Determine passport type
-                $passportTypeKey = 'passportType';
-                if ($nationality === 'กัมพูชา') {
-                    $passportTypeKey = 'passport_type_cambodia';
-                }
-
-                $employeeData = [
-                    'employer_id' => $employerId,
-                    'employeeTitleTh' => $titleTh,
-                    'employeeNameTh' => $nameTh,
-                    'employeeNameEn' => $nameEn,
-                    'employeeDob' => $dob,
-                    'employeeNationality' => $nationality,
-                    'employeePassport' => $passport,
-                    'employeeWorkPermit' => $wp,
-                    'workPermitType' => $wpType,
-                    'pinkCardNo' => $pinkCard,
-                    'employeePhoto' => $photoPath,
-                    'status' => 'active',
-                ];
-
-                if ($nationality === 'กัมพูชา') {
-                    $employeeData['passport_type_cambodia'] = $bookType;
-                } else {
-                     $employeeData['passportType'] = $bookType;
+                // Handle nationality-specific logic
+                if ($employeeData['employeeNationality'] === 'กัมพูชา') {
+                    $employeeData['passport_type_cambodia'] = $employeeData['passportType'];
+                    unset($employeeData['passportType']);
                 }
 
                 Employee::create($employeeData);
@@ -268,18 +260,12 @@ class ImportEmployeeController extends Controller
 
             DB::commit();
 
-            $msg = "Successfully imported $count employees.";
-            if (count($errors)) {
-                $msg .= " With " . count($errors) . " errors.";
-                return redirect()->route('employees.index')->with('success', $msg)->with('import_errors', $errors);
-            }
-
-            return redirect()->route('employees.index')->with('success', $msg);
+            return redirect()->route('employees.index')->with('success', "Successfully imported $count employees.");
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e);
-            return back()->with('error', 'Import failed: ' . $e->getMessage());
+            return back()->with('error', 'An unexpected error occurred during import: ' . $e->getMessage());
         }
     }
 }
