@@ -106,12 +106,16 @@
                             @foreach($attachments->existing_employees as $item)
                                 @php $employee = $item->employee; @endphp
                                 <div class="list-group-item d-flex align-items-center gap-3 py-2"
+                                     id="employee-card-{{ $employee->id }}"
                                      draggable="true"
                                      @dragstart="startDragGlobal($event, 'employee', {
                                         id: {{ $employee->id }},
-                                        title: '{{ $employee->employeeNameTh }}',
-                                        subtitle: '{{ $employee->employeeNameEn }}',
-                                        url: '{{ route('employees.locate', $employee->id) }}'
+                                        title: @json($employee->employeeNameTh),
+                                        subtitle: @json($employee->employeeNameEn),
+                                        photo_url: '{{ $employee->photo_url }}',
+                                        url: window.location.href.split('#')[0] + '#employee-card-{{ $employee->id }}',
+                                        employer_name: @json(optional($employee->employer)->employerNameTh ?? 'N/A'),
+                                        nationality: '{{ $employee->employeeNationality }}'
                                      })">
                                     <div class="form-check mb-0">
                                         <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
@@ -155,12 +159,16 @@
                             @foreach($attachments->external_employees as $item)
                                 @php $employee = $item->employee; @endphp
                                 <div class="list-group-item d-flex align-items-center gap-3 py-2 bg-light"
+                                     id="employee-card-{{ $employee->id }}"
                                      draggable="true"
                                      @dragstart="startDragGlobal($event, 'employee', {
                                         id: {{ $employee->id }},
-                                        title: '{{ $employee->employeeNameTh }}',
-                                        subtitle: '{{ $employee->employeeNameEn }}',
-                                        url: '{{ route('employees.locate', $employee->id) }}'
+                                        title: @json($employee->employeeNameTh),
+                                        subtitle: @json($employee->employeeNameEn),
+                                        photo_url: '{{ $employee->photo_url }}',
+                                        url: window.location.href.split('#')[0] + '#employee-card-{{ $employee->id }}',
+                                        employer_name: @json(optional($employee->employer)->employerNameTh ?? 'N/A'),
+                                        nationality: '{{ $employee->employeeNationality }}'
                                      })">
                                     {{-- External employees don't have bulk actions for now --}}
                                     <div class="position-relative">
