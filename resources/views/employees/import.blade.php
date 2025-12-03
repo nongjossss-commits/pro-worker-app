@@ -8,7 +8,7 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Import Employees from Excel/CSV') }}</h5>
+                    <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Import Employees from Excel') }}</h5>
                 </div>
                 <div class="card-body p-4">
 
@@ -26,16 +26,16 @@
                     <div class="alert alert-info d-flex align-items-center mb-4">
                         <i class="bi bi-info-circle-fill me-3 fs-4"></i>
                         <div>
-                            {{ __('Use this feature to create multiple employees at once by uploading a CSV file.') }}<br>
+                            {{ __('Use this feature to create multiple employees at once by uploading an Excel file (.xlsx, .xlsm).') }}<br>
                             {{ __('Please download the template below, fill in the data, and upload it back.') }}
                             <br>
-                            <small class="text-muted">{{ __('Note: Photos cannot be imported via Excel. You can update them individually later.') }}</small>
+                            <small class="text-muted">{{ __('Note: You can import photos by inserting them into the "Photo" column in the Excel file.') }}</small>
                         </div>
                     </div>
 
                     <div class="mb-4 text-center">
                         <a href="{{ route('employees.template') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-download me-2"></i>{{ __('Download Excel Template (CSV)') }}
+                            <i class="bi bi-download me-2"></i>{{ __('Download Excel Template') }}
                         </a>
                     </div>
 
@@ -57,8 +57,8 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="file" class="form-label fw-bold required">{{ __('Upload File (CSV)') }}</label>
-                            <input type="file" name="file" id="file" class="form-control @error('file') is-invalid @enderror" accept=".csv, .txt" required>
+                            <label for="file" class="form-label fw-bold required">{{ __('Upload File (Excel)') }}</label>
+                            <input type="file" name="file" id="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx, .xls, .xlsm" required>
                             @error('file')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
