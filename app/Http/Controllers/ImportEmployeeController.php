@@ -41,6 +41,14 @@ class ImportEmployeeController extends Controller
      */
     public function downloadTemplate()
     {
+        // Check for required extensions
+        if (!extension_loaded('gd')) {
+            return back()->with('error', 'The PHP GD extension is required to generate the template with image support. Please enable it in your server configuration (php.ini).');
+        }
+        if (!extension_loaded('zip')) {
+            return back()->with('error', 'The PHP Zip extension is required to generate Excel files. Please enable it in your server configuration (php.ini).');
+        }
+
         // Prevent any output buffering from corrupting the Excel file
         if (ob_get_length()) ob_end_clean();
 
@@ -127,6 +135,14 @@ class ImportEmployeeController extends Controller
      */
     public function store(Request $request)
     {
+        // Check for required extensions
+        if (!extension_loaded('gd')) {
+            return back()->with('error', 'The PHP GD extension is required to process images in the import file. Please enable it in your server configuration (php.ini).');
+        }
+        if (!extension_loaded('zip')) {
+            return back()->with('error', 'The PHP Zip extension is required to read Excel files. Please enable it in your server configuration (php.ini).');
+        }
+
         $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'file' => 'required|file|mimes:xlsx,xls,xlsm|max:20480', // 20MB limit
