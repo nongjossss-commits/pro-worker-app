@@ -41,8 +41,16 @@ class ImportEmployeeController extends Controller
      */
     public function downloadTemplate()
     {
+        // Prevent any output buffering from corrupting the Excel file
+        if (ob_get_length()) ob_end_clean();
+
         $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        // Remove the default sheet to ensure we start clean
+        $spreadsheet->removeSheetByIndex(0);
+
+        // Create a new sheet with a specific name
+        $sheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'Employees');
+        $spreadsheet->addSheet($sheet, 0);
 
         $columns = [
             'Title (TH)',
@@ -62,7 +70,17 @@ class ImportEmployeeController extends Controller
         // Set Headers
         foreach ($columns as $index => $header) {
             $sheet->setCellValueByColumnAndRow($index + 1, 1, $header);
+            // Style header
+            $sheet->getStyleByColumnAndRow($index + 1, 1)->getFont()->setBold(true);
+            $sheet->getStyleByColumnAndRow($index + 1, 1)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFF0F0F0');
         }
+
+        // Add instructions in a comment or separate row?
+        // Let's add a note above headers (Row 1) and headers at Row 2?
+        // No, let's keep headers at Row 1 for simplicity, but add a comment to the Photo header.
+        $sheet->getComment('L1')->getText()->createTextRun('Insert your employee photos into this column. Ensure the image fits within the cell boundaries.');
 
         // Sample Data
         $sample = [
@@ -84,26 +102,24 @@ class ImportEmployeeController extends Controller
         }
 
         // Auto-size columns
-        foreach (range('A', 'L') as $col) {
+        foreach (range('A', 'K') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         // Set Photo column width larger to encourage image placement
         $sheet->getColumnDimension('L')->setAutoSize(false);
         $sheet->getColumnDimension('L')->setWidth(30);
-        $sheet->getRowDimension(2)->setRowHeight(50); // Make the sample row taller for image space
+        $sheet->getRowDimension(2)->setRowHeight(80); // Make the sample row taller for image space
 
         $writer = new Xlsx($spreadsheet);
 
-        $callback = function() use ($writer) {
-            $writer->save('php://output');
-        };
+        $filename = 'employee_import_template.xlsx';
 
-        return response()->stream($callback, 200, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="employee_import_template.xlsx"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return response()->streamDownload(function() use ($writer) {
+             // Ensure clean buffer again inside the callback
+             if (ob_get_length()) ob_end_clean();
+             $writer->save('php://output');
+        }, $filename);
     }
 
     /**
@@ -131,20 +147,32 @@ class ImportEmployeeController extends Controller
         DB::beginTransaction();
         try {
             $spreadsheet = IOFactory::load($path);
-            $sheet = $spreadsheet->getActiveSheet();
+
+            // Robustly get the first sheet.
+            // This fixes "Sheet not found" if 'getActiveSheet' relies on internal state that might be empty or invalid.
+            try {
+                $sheet = $spreadsheet->getSheet(0);
+            } catch (\Exception $e) {
+                // Fallback to active sheet if getSheet(0) somehow fails (unlikely)
+                $sheet = $spreadsheet->getActiveSheet();
+            }
 
             // Extract Images first to map them to rows
-            // We use a separate array to store drawings indexed by their row number
             $images = [];
             foreach ($sheet->getDrawingCollection() as $drawing) {
-                // Check if it's in the Photo column (Column L = 12)
-                $coords = $drawing->getCoordinates(); // e.g. "L2"
-                $column = preg_replace('/[0-9]+/', '', $coords);
-                $row = (int) preg_replace('/[A-Z]+/', '', $coords);
+                // Get coordinates (e.g. "L2")
+                $coords = $drawing->getCoordinates();
 
-                // We strictly look for images anchored in Column L
-                if ($column === 'L') {
-                    $images[$row] = $drawing;
+                // Parse column and row
+                // The regex captures the column letter(s) and the row number
+                if (preg_match('/^([A-Z]+)(\d+)$/', $coords, $matches)) {
+                    $column = $matches[1];
+                    $row = (int)$matches[2];
+
+                    // We strictly look for images anchored in Column L (Photo column)
+                    if ($column === 'L') {
+                        $images[$row] = $drawing;
+                    }
                 }
             }
 
@@ -159,6 +187,7 @@ class ImportEmployeeController extends Controller
                 // Get cell values
                 $row = [];
                 for ($colIdx = 1; $colIdx <= 11; $colIdx++) {
+                    // Use format value or raw value? GetValue is raw.
                     $val = $sheet->getCellByColumnAndRow($colIdx, $rowIdx)->getValue();
                     $row[] = trim((string)$val);
                 }
@@ -204,6 +233,9 @@ class ImportEmployeeController extends Controller
 
                     try {
                         if ($drawing instanceof MemoryDrawing) {
+                            // Ensure buffer is clean before starting specific image capture
+                            if (ob_get_length()) ob_end_clean();
+
                             ob_start();
                             call_user_func(
                                 $drawing->getRenderingFunction(),
