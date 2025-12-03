@@ -113,7 +113,7 @@ class ImportEmployeeController extends Controller
     {
         $request->validate([
             'employer_id' => 'required|exists:employers,id',
-            'file' => 'required|file|mimes:xlsx,xls|max:10240', // 10MB limit
+            'file' => 'required|file|mimes:xlsx,xls,xlsm|max:20480', // 20MB limit
         ]);
 
         $employerId = $request->input('employer_id');
@@ -134,16 +134,22 @@ class ImportEmployeeController extends Controller
             $sheet = $spreadsheet->getActiveSheet();
 
             // Extract Images first to map them to rows
+            // We use a separate array to store drawings indexed by their row number
             $images = [];
             foreach ($sheet->getDrawingCollection() as $drawing) {
                 // Check if it's in the Photo column (Column L = 12)
-                $coordinates = $drawing->getCoordinates(); // e.g. "L2"
-                $column = preg_replace('/[0-9]+/', '', $coordinates);
-                $row = (int) preg_replace('/[A-Z]+/', '', $coordinates);
+                $coords = $drawing->getCoordinates(); // e.g. "L2"
+                $column = preg_replace('/[0-9]+/', '', $coords);
+                $row = (int) preg_replace('/[A-Z]+/', '', $coords);
 
+                // We strictly look for images anchored in Column L
                 if ($column === 'L') {
                     $images[$row] = $drawing;
                 }
+            }
+
+            if (!empty($images)) {
+                Log::info("Found " . count($images) . " images in import file.");
             }
 
             // Iterate rows starting from 2
@@ -227,6 +233,12 @@ class ImportEmployeeController extends Controller
                         if ($imageContent) {
                             $filename = 'import_' . uniqid() . '.' . $extension;
                             $storagePath = 'employee_photos/' . $filename;
+
+                            // Ensure directory exists
+                            if (!Storage::disk('public')->exists('employee_photos')) {
+                                Storage::disk('public')->makeDirectory('employee_photos');
+                            }
+
                             Storage::disk('public')->put($storagePath, $imageContent);
                             $photoPath = $storagePath;
                         }
