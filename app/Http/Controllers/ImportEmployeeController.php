@@ -15,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class ImportEmployeeController extends Controller
 {
@@ -77,10 +78,11 @@ class ImportEmployeeController extends Controller
 
         // Set Headers
         foreach ($columns as $index => $header) {
-            $sheet->setCellValueByColumnAndRow($index + 1, 1, $header);
+            $columnLetter = Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->setCellValue($columnLetter . '1', $header);
             // Style header
-            $sheet->getStyleByColumnAndRow($index + 1, 1)->getFont()->setBold(true);
-            $sheet->getStyleByColumnAndRow($index + 1, 1)->getFill()
+            $sheet->getStyle($columnLetter . '1')->getFont()->setBold(true);
+            $sheet->getStyle($columnLetter . '1')->getFill()
                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                 ->getStartColor()->setARGB('FFF0F0F0');
         }
@@ -106,7 +108,7 @@ class ImportEmployeeController extends Controller
         ];
 
         foreach ($sample as $index => $value) {
-            $sheet->setCellValueByColumnAndRow($index + 1, 2, $value);
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($index + 1) . '2', $value);
         }
 
         // Auto-size columns
@@ -204,7 +206,8 @@ class ImportEmployeeController extends Controller
                 $row = [];
                 for ($colIdx = 1; $colIdx <= 11; $colIdx++) {
                     // Use format value or raw value? GetValue is raw.
-                    $val = $sheet->getCellByColumnAndRow($colIdx, $rowIdx)->getValue();
+                    $colLetter = Coordinate::stringFromColumnIndex($colIdx);
+                    $val = $sheet->getCell($colLetter . $rowIdx)->getValue();
                     $row[] = trim((string)$val);
                 }
 
@@ -229,7 +232,8 @@ class ImportEmployeeController extends Controller
                  // Format Date
                 $dob = null;
                 if (!empty($dobRaw)) {
-                    if (Date::isDateTime($sheet->getCellByColumnAndRow(5, $rowIdx))) {
+                    $dobColLetter = Coordinate::stringFromColumnIndex(5);
+                    if (Date::isDateTime($sheet->getCell($dobColLetter . $rowIdx))) {
                          $dob = Carbon::instance(Date::excelToDateTimeObject($dobRaw))->format('Y-m-d');
                     } else {
                          try {
