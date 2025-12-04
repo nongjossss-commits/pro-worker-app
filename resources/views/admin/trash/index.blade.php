@@ -16,6 +16,23 @@
                 {{-- Search Form --}}
                 <form action="{{ route('admin.trash.index') }}" method="GET" class="d-flex flex-column flex-md-row gap-2">
                     <input type="hidden" name="view" value="{{ $currentView ?? 'table' }}">
+                    {{-- Hidden input to preserve active tab on search --}}
+                    @php
+                        // Determine active tab for initial hidden input value, logic duplicated from below for availability here
+                        $initRequestedTab = request('tab');
+                        $initActiveTab = null;
+                         if ($initRequestedTab && isset($trashedData[$initRequestedTab]) && $trashedData[$initRequestedTab]->isNotEmpty()) {
+                            $initActiveTab = $initRequestedTab;
+                        } else {
+                            foreach ($trashedData as $key => $items) {
+                                if ($items->isNotEmpty()) {
+                                    $initActiveTab = $key;
+                                    break;
+                                }
+                            }
+                        }
+                    @endphp
+                    <input type="hidden" name="tab" id="active-tab-input" value="{{ $initActiveTab }}">
                     <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
                     <button type="submit" class="btn btn-primary">Search</button>
                     <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">Export</a>
@@ -40,11 +57,34 @@
                     <i class="bi bi-trash3 me-2"></i> The trash is currently empty{{ $search ? ' for your search query' : '' }}.
                 </div>
             @else
+                @php
+                    // Determine which tab should be active.
+                    // Priority:
+                    // 1. Explicit 'tab' query parameter (if that tab exists and has data)
+                    // 2. The first non-empty tab found
+
+                    $requestedTab = request('tab');
+                    $activeTab = null;
+
+                    // Check if requested tab is valid and has data
+                    if ($requestedTab && isset($trashedData[$requestedTab]) && $trashedData[$requestedTab]->isNotEmpty()) {
+                        $activeTab = $requestedTab;
+                    } else {
+                        // Fallback to first non-empty tab
+                        foreach ($trashedData as $key => $items) {
+                            if ($items->isNotEmpty()) {
+                                $activeTab = $key;
+                                break;
+                            }
+                        }
+                    }
+                @endphp
+
                 <ul class="nav nav-tabs" id="trashTabs" role="tablist">
                     @foreach($trashedData as $modelName => $items)
                         @if($items->isNotEmpty())
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $modelName }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $modelName }}-pane" type="button" role="tab" aria-controls="{{ $modelName }}-pane" aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                                <button class="nav-link {{ $modelName === $activeTab ? 'active' : '' }}" id="{{ $modelName }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $modelName }}-pane" type="button" role="tab" aria-controls="{{ $modelName }}-pane" aria-selected="{{ $modelName === $activeTab ? 'true' : 'false' }}">
                                     {{ Str::plural(ucfirst(str_replace('_', ' ', $modelName))) }} ({{ $items->count() }})
                                 </button>
                             </li>
@@ -55,7 +95,7 @@
                 <div class="tab-content pt-3" id="trashTabsContent">
                     @foreach($trashedData as $modelName => $items)
                         @if($items->isNotEmpty())
-                            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $modelName }}-pane" role="tabpanel" aria-labelledby="{{ $modelName }}-tab" tabindex="0">
+                            <div class="tab-pane fade {{ $modelName === $activeTab ? 'show active' : '' }}" id="{{ $modelName }}-pane" role="tabpanel" aria-labelledby="{{ $modelName }}-tab" tabindex="0">
 
                                 {{-- CARD VIEW --}}
                                 @if($currentView === 'card')
@@ -215,7 +255,23 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     trashTabs.forEach(tab => {
-        tab.addEventListener('shown.bs.tab', updateExportLink);
+        tab.addEventListener('shown.bs.tab', function (event) {
+            updateExportLink();
+
+            // Update the URL to include the active tab parameter
+            // This ensures that if the page reloads (e.g. after a delete/restore action),
+            // the user stays on the same tab.
+            const activeTabId = event.target.id.replace('-tab', '');
+            const url = new URL(window.location);
+            url.searchParams.set('tab', activeTabId);
+            window.history.replaceState({}, '', url);
+
+            // Also update the hidden input in the search form if it exists
+            const tabInput = document.getElementById('active-tab-input');
+            if (tabInput) {
+                tabInput.value = activeTabId;
+            }
+        });
     });
 
     // Initial setup on page load

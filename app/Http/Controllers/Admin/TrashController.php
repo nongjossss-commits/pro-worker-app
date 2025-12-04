@@ -74,7 +74,9 @@ class TrashController extends Controller
                 });
             }
 
-            $trashedData[$modelName] = $query->paginate(10, ['*'], $modelName . '_page')->withQueryString();
+            $trashedData[$modelName] = $query->paginate(10, ['*'], $modelName . '_page')
+                ->withQueryString()
+                ->appends(['tab' => $modelName]);
 
             // Fetch retention settings for the view
             $retentionSettings[$modelName] = SystemConfig::where('key', "trash_retention_days_{$modelName}")->value('value');
