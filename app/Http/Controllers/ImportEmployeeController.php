@@ -240,6 +240,7 @@ class ImportEmployeeController extends Controller
 
         $count = 0;
         $errors = [];
+        $importedEmployees = [];
 
         DB::beginTransaction();
         try {
@@ -259,10 +260,11 @@ class ImportEmployeeController extends Controller
             // Extract Images first to map them to rows
             $images = [];
             foreach ($sheet->getDrawingCollection() as $drawing) {
-                // Get coordinates (e.g. "A13")
+                // Get coordinates (e.g. "A13" or "A13:B14")
                 $coords = $drawing->getCoordinates();
 
-                if (preg_match('/^([A-Z]+)(\d+)$/', $coords, $matches)) {
+                // Extract top-left cell coordinate
+                if (preg_match('/^([A-Z]+)(\d+)/', $coords, $matches)) {
                     $column = $matches[1];
                     $row = (int)$matches[2];
 
@@ -420,7 +422,8 @@ class ImportEmployeeController extends Controller
                      $employeeData['passportType'] = $bookType;
                 }
 
-                Employee::create($employeeData);
+                $employee = Employee::create($employeeData);
+                $importedEmployees[] = $employee;
                 $count++;
             }
 
@@ -429,10 +432,11 @@ class ImportEmployeeController extends Controller
             $msg = "Successfully imported $count employees.";
             if (count($errors)) {
                 $msg .= " With " . count($errors) . " errors.";
-                return redirect()->route('employees.index')->with('success', $msg)->with('import_errors', $errors);
             }
 
-            return redirect()->route('employees.index')->with('success', $msg);
+            return back()->with('success', $msg)
+                         ->with('import_errors', $errors)
+                         ->with('imported_employees', $importedEmployees);
 
         } catch (\Exception $e) {
             DB::rollBack();

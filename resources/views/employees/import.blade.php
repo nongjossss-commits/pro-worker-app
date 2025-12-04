@@ -76,4 +76,84 @@
         </div>
     </div>
 </div>
+
+{{-- Imported Employees Summary Modal --}}
+@if(session('imported_employees'))
+<div class="modal fade" id="importedEmployeesModal" tabindex="-1" aria-labelledby="importedEmployeesModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="importedEmployeesModalLabel">
+                    <i class="bi bi-check-circle-fill me-2"></i>{{ __('Import Successful') }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-success">
+                    {{ __('Successfully imported') }} <strong>{{ count(session('imported_employees')) }}</strong> {{ __('employees.') }}
+                    {{ __('Please review the list below. You can edit any missing or incorrect information.') }}
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th style="width: 80px;">{{ __('Photo') }}</th>
+                                <th>{{ __('Name') }}</th>
+                                <th>{{ __('Nationality') }}</th>
+                                <th>{{ __('Passport No.') }}</th>
+                                <th>{{ __('Work Permit') }}</th>
+                                <th style="width: 100px;">{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(session('imported_employees') as $employee)
+                                <tr>
+                                    <td class="text-center">
+                                        <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" width="50" height="50" style="object-fit: cover;">
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ $employee->employeeNameTh }}</div>
+                                        <div class="text-muted small">{{ $employee->employeeNameEn }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        @php
+                                            $flag = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                                        @endphp
+                                        @if($flag)
+                                            <img src="{{ asset('images/flags/'.strtolower($flag).'.png') }}" alt="{{ $employee->employeeNationality }}" width="24" class="me-1">
+                                        @endif
+                                        {{ $employee->employeeNationality }}
+                                    </td>
+                                    <td class="text-center">{{ $employee->employeePassport ?? '-' }}</td>
+                                    <td class="text-center">{{ $employee->employeeWorkPermit ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('employees.edit', $employee->id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil-square"></i> {{ __('Edit') }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <a href="{{ route('employees.index') }}" class="btn btn-primary">{{ __('Go to Employee List') }}</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var myModal = new bootstrap.Modal(document.getElementById('importedEmployeesModal'));
+        myModal.show();
+    });
+</script>
+@endpush
+@endif
+
 @endsection
