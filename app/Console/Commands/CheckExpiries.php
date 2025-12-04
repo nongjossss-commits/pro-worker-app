@@ -8,6 +8,7 @@ use App\Models\Employer;
 use App\Models\Notification;
 use App\Models\NotificationSetting;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class CheckExpiries extends Command
 {
@@ -189,6 +190,12 @@ class CheckExpiries extends Command
 
         $this->info('Checking for missing Residence Notifications...');
         $this->checkResidencePermitMissing($today, $settings, $baseEmployeeQuery);
+
+        // If this is a full run (not targeted at a specific employee), update the cache
+        if (!$employeeId) {
+            Cache::put('last_expiry_check_date', now()->toDateString(), now()->addDay());
+            $this->info('Updated last_expiry_check_date cache.');
+        }
 
         $this->info('Expiry check process finished.');
         return 0;
