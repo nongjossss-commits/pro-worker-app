@@ -82,11 +82,14 @@ Route::middleware('auth')->group(function () {
     Route::get('employees/import', [App\Http\Controllers\ImportEmployeeController::class, 'index'])->name('employees.import_view');
     Route::post('employees/import', [App\Http\Controllers\ImportEmployeeController::class, 'store'])->name('employees.import');
     Route::get('employees/template', [App\Http\Controllers\ImportEmployeeController::class, 'downloadTemplate'])->name('employees.template');
+    Route::post('employees/fetch-batch', [App\Http\Controllers\ImportEmployeeController::class, 'fetchBatch'])->name('employees.fetch_batch');
 
     // Advanced Bulk Edit Routes (Must come BEFORE resource route)
     Route::post('employees/bulk-edit/select-fields', [EmployeeController::class, 'bulkEditSelectFields'])->name('employees.bulk_edit.select_fields');
     Route::post('employees/bulk-edit/form', [EmployeeController::class, 'bulkEditForm'])->name('employees.bulk_edit.form');
     Route::put('employees/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('employees.bulk_update');
+    // Also allow POST for AJAX bulk update if needed, though PUT is standard resource
+    Route::post('employees/bulk-update', [EmployeeController::class, 'bulkUpdate']);
 
     Route::resource('employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);

@@ -79,25 +79,40 @@
 
 {{-- Imported Employees Summary Modal --}}
 @if(session('imported_employees'))
+@php
+    $importedIds = session('imported_employee_ids', collect(session('imported_employees'))->pluck('id')->toArray());
+@endphp
 <div class="modal fade" id="importedEmployeesModal" tabindex="-1" aria-labelledby="importedEmployeesModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="importedEmployeesModalLabel">
                     <i class="bi bi-check-circle-fill me-2"></i>{{ __('Import Successful') }}
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                {{-- Disable close button to force explicit action --}}
             </div>
             <div class="modal-body">
                 <div class="alert alert-success">
                     {{ __('Successfully imported') }} <strong>{{ count(session('imported_employees')) }}</strong> {{ __('employees.') }}
-                    {{ __('Please review the list below. You can edit any missing or incorrect information.') }}
+                    {{ __('Please review the list below. You can edit individual records or use Advanced Edit for bulk changes.') }}
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="fw-bold text-secondary">
+                        <span id="selected-count">0</span> {{ __('Selected') }}
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary" id="btn-advanced-edit" disabled>
+                            <i class="bi bi-ui-checks-grid me-1"></i> {{ __('Advanced Edit (Bulk)') }}
+                        </button>
+                    </div>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle">
+                    <table class="table table-bordered table-hover align-middle" id="import-table">
                         <thead class="table-light text-center">
                             <tr>
+                                <th style="width: 40px;"><input type="checkbox" class="form-check-input" id="select-all-import"></th>
                                 <th style="width: 80px;">{{ __('Photo') }}</th>
                                 <th>{{ __('Name') }}</th>
                                 <th>{{ __('Nationality') }}</th>
@@ -106,52 +121,355 @@
                                 <th style="width: 100px;">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="import-table-body">
                             @foreach(session('imported_employees') as $employee)
-                                <tr>
-                                    <td class="text-center">
-                                        <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" width="50" height="50" style="object-fit: cover;">
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">{{ $employee->employeeNameTh }}</div>
-                                        <div class="text-muted small">{{ $employee->employeeNameEn }}</div>
-                                    </td>
-                                    <td class="text-center">
-                                        @php
-                                            $flag = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
-                                        @endphp
-                                        @if($flag)
-                                            <img src="{{ asset('images/flags/'.strtolower($flag).'.png') }}" alt="{{ $employee->employeeNationality }}" width="24" class="me-1">
-                                        @endif
-                                        {{ $employee->employeeNationality }}
-                                    </td>
-                                    <td class="text-center">{{ $employee->employeePassport ?? '-' }}</td>
-                                    <td class="text-center">{{ $employee->employeeWorkPermit ?? '-' }}</td>
-                                    <td class="text-center">
-                                        <a href="{{ route('employees.edit', $employee->id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-pencil-square"></i> {{ __('Edit') }}
-                                        </a>
-                                    </td>
-                                </tr>
+                                @include('employees.partials._import_table_row', ['employee' => $employee])
                             @endforeach
                         </tbody>
                     </table>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <a href="{{ route('employees.index') }}" class="btn btn-primary">{{ __('Go to Employee List') }}</a>
+                <a href="{{ route('employees.index') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
             </div>
         </div>
     </div>
 </div>
 
+{{-- Generic Action Modal (Nested) --}}
+<div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalTitle">Edit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="actionModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Store IDs for JS usage
+    window.importedEmployeeIds = @json($importedIds);
+</script>
+
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var myModal = new bootstrap.Modal(document.getElementById('importedEmployeesModal'));
-        myModal.show();
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Initialize Main Modal
+    var importedModalEl = document.getElementById('importedEmployeesModal');
+    var importedModal = new bootstrap.Modal(importedModalEl);
+    importedModal.show();
+
+    // 2. Variable Definitions
+    const selectAllCheckbox = document.getElementById('select-all-import');
+    const tableBody = document.getElementById('import-table-body');
+    const advancedEditBtn = document.getElementById('btn-advanced-edit');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const actionModalEl = document.getElementById('actionModal');
+    const actionModal = new bootstrap.Modal(actionModalEl);
+    const actionModalBody = document.getElementById('actionModalBody');
+    const actionModalTitle = document.getElementById('actionModalTitle');
+
+    // 3. Selection Logic
+    function updateSelectionState() {
+        const checkboxes = document.querySelectorAll('.import-checkbox');
+        const checked = document.querySelectorAll('.import-checkbox:checked');
+        selectedCountSpan.textContent = checked.length;
+        advancedEditBtn.disabled = checked.length === 0;
+
+        const allChecked = checkboxes.length > 0 && checked.length === checkboxes.length;
+        selectAllCheckbox.checked = allChecked;
+        selectAllCheckbox.indeterminate = checked.length > 0 && !allChecked;
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.import-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectionState();
+        });
+    }
+
+    tableBody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('import-checkbox')) {
+            updateSelectionState();
+        }
     });
+
+    // 4. Refresh Table Function
+    window.refreshImportTable = function() {
+        if (!window.importedEmployeeIds || window.importedEmployeeIds.length === 0) return;
+
+        fetch('{{ route("employees.fetch_batch") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ ids: window.importedEmployeeIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update rows
+            for (const [id, html] of Object.entries(data.rows)) {
+                const row = document.getElementById(`row-${id}`);
+                if (row) {
+                    row.outerHTML = html;
+                }
+            }
+            // Re-bind listeners? Handled by delegation or re-query.
+            // Restore selection if possible, or just clear it.
+            // For simplicity, we might clear selection to avoid stale state.
+            updateSelectionState();
+        })
+        .catch(error => console.error('Error refreshing table:', error));
+    };
+
+    // 5. Individual Edit Logic
+    tableBody.addEventListener('click', function(e) {
+        // Find closest button
+        const btn = e.target.closest('.btn-edit-individual');
+        if (!btn) return;
+
+        const employeeId = btn.dataset.id;
+        actionModalTitle.textContent = '{{ __("Edit Employee") }}';
+        actionModalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        actionModal.show();
+
+        // Z-Index fix for nested modal
+        // importedModalEl.style.zIndex = 1040; // Default is 1055, keep it behind
+        // actionModalEl.style.zIndex = 1060;
+
+        fetch(`/employees/${employeeId}/edit`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.text())
+        .then(html => {
+            // Extract content-section if possible, or just dump html.
+            // Since we need to strip layout, we might need a DOMParser
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.content-section') || doc.body;
+
+            // Remove back buttons and adjust styling
+            const backBtns = content.querySelectorAll('a.btn-secondary, button[onclick="history.back();"]');
+            backBtns.forEach(b => b.remove());
+
+            actionModalBody.innerHTML = '';
+            actionModalBody.appendChild(content);
+
+            // Re-initialize scripts (datepicker, etc) if needed
+            // NOTE: AlpineJS or inline scripts in the fetched view won't run automatically via innerHTML.
+            // We might need to manually execute scripts.
+            const scripts = content.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                actionModalBody.appendChild(newScript);
+            });
+        });
+    });
+
+    // 6. Advanced Edit (Bulk) Logic
+    advancedEditBtn.addEventListener('click', function() {
+        const checked = document.querySelectorAll('.import-checkbox:checked');
+        const ids = Array.from(checked).map(cb => cb.value);
+
+        actionModalTitle.textContent = '{{ __("Advanced Edit (Select Fields)") }}';
+        actionModalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        actionModal.show();
+
+        // Step 1: Get Field Selector
+        fetch('{{ route("employees.bulk_edit_select") }}', { // We use POST for this usually?
+            method: 'POST', // Check route definition, usually GET or POST.
+            // Wait, bulkEditSelectFields in controller takes Request.
+            // Route usually: Route::match(['get', 'post'], ...)
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ employee_ids: ids })
+        })
+        .then(response => response.text())
+        .then(html => {
+             const parser = new DOMParser();
+             const doc = parser.parseFromString(html, 'text/html');
+             const content = doc.querySelector('.container-fluid') || doc.body;
+
+             // Hijack form submit
+             const form = content.querySelector('form');
+             if(form) {
+                 form.addEventListener('submit', function(e) {
+                     e.preventDefault();
+                     loadBulkEditForm(new FormData(form));
+                 });
+             }
+
+             actionModalBody.innerHTML = '';
+             actionModalBody.appendChild(content);
+        });
+    });
+
+    function loadBulkEditForm(formData) {
+        actionModalTitle.textContent = '{{ __("Advanced Edit (Bulk Form)") }}';
+        actionModalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+
+        // Convert FormData to JSON or URLSearchParams?
+        // Controller expects standard request inputs.
+        // We can send JSON.
+        const object = {};
+        formData.forEach((value, key) => {
+            // Handle array inputs like selected_fields[]
+            if(key.endsWith('[]')) {
+                const k = key.slice(0, -2);
+                if(!object[k]) object[k] = [];
+                object[k].push(value);
+            } else {
+                object[key] = value;
+            }
+        });
+
+        fetch('{{ route("employees.bulk_edit_form") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(object)
+        })
+        .then(response => response.text())
+        .then(html => {
+             const parser = new DOMParser();
+             const doc = parser.parseFromString(html, 'text/html');
+             const content = doc.querySelector('.container-fluid') || doc.body;
+
+             // Remove layout clutter (like Fixed Bottom bar wrapper if it causes issues in modal)
+             // The view has `fixed-bottom`. In a modal, this might be weird.
+             // We can change its class to `sticky-bottom` or just static.
+             const bottomBar = content.querySelector('.fixed-bottom');
+             if(bottomBar) {
+                 bottomBar.classList.remove('fixed-bottom');
+                 bottomBar.classList.add('mt-4', 'border-top', 'pt-3');
+             }
+
+             const form = content.querySelector('form');
+             if(form) {
+                 form.addEventListener('submit', function(e) {
+                     e.preventDefault();
+                     submitBulkUpdate(new FormData(form));
+                 });
+             }
+
+             actionModalBody.innerHTML = '';
+             actionModalBody.appendChild(content);
+
+             // Re-run scripts (for master controls)
+             const scripts = content.querySelectorAll('script');
+             scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                actionModalBody.appendChild(newScript);
+             });
+        });
+    }
+
+    function submitBulkUpdate(formData) {
+        actionModalBody.innerHTML += '<div class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75 d-flex justify-content-center align-items-center"><div class="spinner-border text-primary"></div></div>';
+
+        fetch('{{ route("employees.bulk_update") }}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: formData // Send as FormData to handle files if any
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                actionModal.hide();
+                refreshImportTable();
+
+                // Show toast or alert
+                // Assuming showToast exists globally
+                if(typeof showToast === 'function') {
+                    showToast('Bulk update successful', 'success');
+                } else {
+                    alert('Bulk update successful');
+                }
+            } else {
+                alert('Update failed');
+                // Remove spinner overlay
+                 const overlay = actionModalBody.lastElementChild;
+                 if(overlay) overlay.remove();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('An error occurred');
+             const overlay = actionModalBody.lastElementChild;
+             if(overlay) overlay.remove();
+        });
+    }
+
+    // 7. Intercept Individual Edit Form Submit
+    actionModalEl.addEventListener('submit', function(e) {
+        if(e.target.tagName === 'FORM' && e.target.getAttribute('action').includes('/employees/')) {
+            // Check if it's the bulk form (already handled) or individual
+            if(!e.target.action.includes('bulk_update') && !e.target.action.includes('bulk_edit')) {
+                e.preventDefault();
+
+                const form = e.target;
+                const formData = new FormData(form);
+
+                // Add loading
+                 // Find submit button
+                const btn = form.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json().catch(() => ({ success: true })); // Handle empty JSON or redirect
+                    }
+                    throw new Error('Network response was not ok');
+                })
+                .then(data => {
+                    actionModal.hide();
+                    refreshImportTable();
+                     if(typeof showToast === 'function') {
+                        showToast('Employee updated successfully', 'success');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Error saving data. Please check required fields.');
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
+            }
+        }
+    });
+});
 </script>
 @endpush
 @endif
