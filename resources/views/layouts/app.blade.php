@@ -113,10 +113,33 @@
             letter-spacing: 0.05em;
             font-weight: 600;
         }
+        /* Highlight Animation for Employee Card */
+        @keyframes highlightPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+                border-color: #f97316;
+                background-color: #fff7ed;
+                transform: scale(1.02);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+                border-color: #f97316;
+                background-color: #fff7ed;
+                transform: scale(1.02);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+                border-color: #f97316;
+                background-color: #fff7ed;
+                transform: scale(1.02);
+            }
+        }
+
         .employee-card.highlight {
-            border: 2px solid var(--bs-primary-dark);
-            box-shadow: 0 0 12px rgba(var(--bs-primary-rgb), 0.4);
-            background-color: #fffbeb;
+            animation: highlightPulse 2s ease-out infinite;
+            border: 2px solid #f97316 !important;
+            background-color: #fff7ed !important;
+            z-index: 10;
         }
         .modal-backdrop.fade.show{
             display: none;
@@ -485,6 +508,7 @@
             title: data.name || data.title || 'Item',
             subtitle: data.subtitle || data.code || '',
             url: data.url || window.location.href,
+            source_menu: data.source_menu || document.title, // Default to page title if not provided
             ...data
         };
         e.dataTransfer.effectAllowed = 'copy';

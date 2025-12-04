@@ -575,21 +575,46 @@ function hybridAttachmentManager(config = {}) {
                 return; // Done
             }
 
-            // 2. Handle Employee Drop (from anywhere) -> Add to Basket
+            // 2. Handle Employee Drop (from anywhere)
             if (data.type === 'employee') {
+                // PART A: Always add a Rich Card to the Chat Message Box
+                // This payload structure mimics the Notification Card structure which the PHP controller/view already knows how to render.
+                // We map our standard employee drag data to the expected notification format.
+                const richCardPayload = {
+                    notification_title_th: 'ข้อมูลจาก: ' + (data.source_menu || 'ระบบ'),
+                    employee_id: data.id,
+                    employee_name_th: data.title_th || data.title,
+                    employee_name_en: data.title_en || '',
+                    employee_nationality: data.nationality || '',
+                    employee_photo_url: data.photo_url || '',
+                    employer_name_th: data.employer_name || '',
+                    url: data.url // The source URL for highlighting
+                };
+
+                const textToAppend = `[[--NOTIFICATION_CARD--]]${JSON.stringify(richCardPayload)}[[--/NOTIFICATION_CARD--]]`;
+
+                // Append it to the message box if it exists
+                if (messageBox) {
+                    const currentVal = messageBox.value;
+                    messageBox.value = currentVal + (currentVal ? '\n' : '') + textToAppend;
+                    messageBox.dispatchEvent(new Event('input'));
+                }
+
+                // PART B: Add to Attachment Basket (Standard Logic)
                 const employeeId = data.id;
                 const sourceUrl = data.url || null;
 
                 const inExisting = this.basket.existing_employees.some(emp => emp.id == employeeId);
                 const inExternal = this.basket.external_employees.some(emp => emp.id == employeeId);
 
-                if (inExisting || inExternal) {
-                    Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, icon: 'info', title: 'ลูกจ้างนี้ถูกเลือกแล้ว' });
-                    return;
+                if (!inExisting && !inExternal) {
+                     this.selectedEmployeeIds = [{ id: employeeId, url: sourceUrl }];
+                     this.fetchPreselectedEmployees();
+                } else {
+                    // Optional: Toast saying "Already attached" but we still allow the card paste above
+                    // Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, icon: 'info', title: 'ลูกจ้างนี้ถูกเลือกแล้ว' });
                 }
 
-                this.selectedEmployeeIds = [{ id: employeeId, url: sourceUrl }];
-                this.fetchPreselectedEmployees();
                 return;
             }
 

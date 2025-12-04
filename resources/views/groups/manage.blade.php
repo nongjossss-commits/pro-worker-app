@@ -271,7 +271,8 @@
                                                             'hideTeamTags' => true,
                                                             'currentTeamId' => $team->id,
                                                             'elementId' => 'employee-card-team-' . $team->id . '-' . $member->id,
-                                                            'dragUrl' => $currentUrl . '#employee-card-team-' . $team->id . '-' . $member->id
+                                                            'dragUrl' => $currentUrl . '#employee-card-team-' . $team->id . '-' . $member->id,
+                                                            'source_menu' => __('Group & Team')
                                                         ])
                                                     @endforeach
                                                 </div>
@@ -299,7 +300,8 @@
                                                     'hideTeamTags' => true,
                                                     'currentTeamId' => $team->id,
                                                     'elementId' => 'employee-card-team-' . $team->id . '-' . $member->id,
-                                                    'dragUrl' => $currentUrl . '#employee-card-team-' . $team->id . '-' . $member->id
+                                                    'dragUrl' => $currentUrl . '#employee-card-team-' . $team->id . '-' . $member->id,
+                                                    'source_menu' => __('Group & Team')
                                                 ])
                                             @empty
                                                 <div class="text-center text-muted py-4 border rounded bg-light">

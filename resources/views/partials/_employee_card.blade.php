@@ -2,9 +2,27 @@
     $employerName = $employee->employer->employerNameTh ?? 'N/A';
     // Fix for duplicate IDs in list views
     $cardId = 'employee-card-' . ($idPrefix ?? '') . $employee->id;
+    // Determine the source menu name if passed, otherwise try to infer or default
+    $sourceMenu = $source_menu ?? __('Employee List');
+    // Generate the drag source URL. Use the 'dragUrl' prop if provided (for custom anchors like in Groups),
+    // otherwise fallback to a standard hash link on the current page.
+    $dragSourceUrl = $dragUrl ?? (request()->fullUrlWithQuery(['highlight_employee' => $employee->id]) . '#' . $cardId);
 @endphp
 
-<div id="{{ $cardId }}" class="employee-card card mb-3">
+<div id="{{ $cardId }}" class="employee-card card mb-3"
+     draggable="true"
+     ondragstart="startDragGlobal(event, 'employee', {
+        id: {{ $employee->id }},
+        title: '{{ $employee->employeeNameEn ?? $employee->employeeNameTh }}',
+        title_th: '{{ $employee->employeeNameTh }}',
+        title_en: '{{ $employee->employeeNameEn }}',
+        subtitle: '{{ $employee->job_title ?? 'N/A' }}',
+        photo_url: '{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}',
+        url: '{{ $dragSourceUrl }}',
+        source_menu: '{{ $sourceMenu }}',
+        employer_name: '{{ $employerName }}',
+        nationality: '{{ $employee->employeeNationality }}'
+     })">
     <div class="card-body d-flex align-items-center">
         <div class="me-3">
             <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}">
