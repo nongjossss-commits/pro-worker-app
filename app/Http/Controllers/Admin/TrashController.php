@@ -14,6 +14,7 @@ use App\Models\Agent;
 use App\Models\Importer;
 use App\Models\Delegate;
 use App\Models\Address;
+use App\Models\JobTicket;
 use App\Models\SystemConfig;
 
 class TrashController extends Controller
@@ -67,6 +68,9 @@ class TrashController extends Controller
                         case 'delegates':
                             $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
                                 ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
+                            break;
+                        case 'tickets':
+                            $q->where('subject', 'like', "%{$searchTerm}%");
                             break;
                         // No default case: if a model has no specific search, we don't apply a search filter.
                         // This prevents errors on models like 'Address' that don't have a standard searchable name field.
@@ -175,6 +179,9 @@ class TrashController extends Controller
                         $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
                             ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
                         break;
+                    case 'tickets':
+                        $q->where('subject', 'like', "%{$searchTerm}%");
+                        break;
                 }
             });
         }
@@ -220,6 +227,10 @@ class TrashController extends Controller
                         $identifierTh = "Address ID: " . $item->id;
                         $identifierEn = $item->addressLine1;
                         break;
+                    case 'tickets':
+                        $identifierTh = "Ticket ID: " . $item->id;
+                        $identifierEn = $item->subject;
+                        break;
                 }
 
                 fputcsv($handle, [
@@ -245,7 +256,13 @@ class TrashController extends Controller
         // Correctly generate permission name, e.g., 'restore-employees'
         $permission = 'restore-' . Str::plural(strtolower(class_basename($modelClass)));
 
-        if (Gate::denies($permission)) {
+        // V2.5.4: Fallback for Tickets - Allow 'manage-tickets' permission
+        $authorized = Gate::allows($permission);
+        if ($model === 'tickets' && Gate::allows('manage-tickets')) {
+            $authorized = true;
+        }
+
+        if (!$authorized) {
             return response()->json(['error' => 'You do not have permission to restore this item.'], 403);
         }
 
@@ -264,7 +281,13 @@ class TrashController extends Controller
         // Correctly generate permission name, e.g., 'force-delete-employees'
         $permission = 'force-delete-' . Str::plural(strtolower(class_basename($modelClass)));
 
-        if (Gate::denies($permission)) {
+        // V2.5.4: Fallback for Tickets - Allow 'manage-tickets' permission
+        $authorized = Gate::allows($permission);
+        if ($model === 'tickets' && Gate::allows('manage-tickets')) {
+            $authorized = true;
+        }
+
+        if (!$authorized) {
             return response()->json(['error' => 'You do not have permission to permanently delete this item.'], 403);
         }
 
@@ -287,6 +310,7 @@ class TrashController extends Controller
             'importers' => Importer::class,
             'delegates' => Delegate::class,
             'addresses' => Address::class,
+            'tickets'   => JobTicket::class,
         ];
     }
 

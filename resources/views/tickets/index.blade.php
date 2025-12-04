@@ -64,14 +64,27 @@
                     {{-- Format date consistently --}}
                     <td>{{ $ticket->created_at->format('d M Y H:i') }}</td>
                     <td class="text-center">
-                        <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
-                            <i class="bi bi-eye"></i> {{ __('View Details') }}
-                            @if($ticket->employer_unread_count > 0)
-                                <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
-                                    <span class="visually-hidden">Unread</span>
-                                </span>
-                            @endif
-                        </a>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary position-relative">
+                                <i class="bi bi-eye"></i> {{ __('View Details') }}
+                                @if($ticket->employer_unread_count > 0)
+                                    <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
+                                        <span class="visually-hidden">Unread</span>
+                                    </span>
+                                @endif
+                            </a>
+                            <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
+                                    data-swal-title="{{ __('Confirm Delete') }}"
+                                    data-swal-text="{{ __('Are you sure you want to delete this ticket?') }}"
+                                    data-swal-icon="warning"
+                                    data-swal-confirm-text="{{ __('Yes, delete it') }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

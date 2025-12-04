@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 // Import Attribute for Accessors
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +16,7 @@ use App\Traits\LogActivity;
 
 class JobTicket extends Model
 {
-    use HasFactory, LogActivity;
+    use HasFactory, LogActivity, SoftDeletes;
 
     // Corrected $fillable
     protected $fillable = [

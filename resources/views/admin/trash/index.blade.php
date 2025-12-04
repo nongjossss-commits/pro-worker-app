@@ -121,6 +121,9 @@
                                                         @elseif($modelName === 'delegates')
                                                             {{ $item->delegateNameTh }}
                                                             <small class="d-block text-muted">{{ $item->delegateNameEn }}</small>
+                                                        @elseif($modelName === 'tickets')
+                                                            {{ $item->subject }}
+                                                            <small class="d-block text-muted">Ticket ID: {{ $item->id }}</small>
                                                         @else
                                                             {{ $item->employerNameTh ?? $item->name ?? $item->address_line_1 ?? 'Item ID: ' . $item->id }}
                                                             <small class="d-block text-muted">ID: {{ $item->id }}</small>
@@ -147,16 +150,16 @@
                                                                  <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
                                                             @endif
                                                             {{-- RESTORE BUTTON (Permission-Protected) --}}
-                                                            @can('restore-' . $modelName)
+                                                            @if(($modelName === 'tickets' && auth()->user()->can('manage-tickets')) || auth()->user()->can('restore-' . $modelName))
                                                                 {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
                                                                 <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-grid d-md-inline restore-form">
                                                                     @csrf
                                                                     <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
                                                                 </form>
-                                                            @endcan
+                                                            @endif
 
                                                             {{-- FORCE DELETE BUTTON (Permission-Protected) --}}
-                                                            @can('force-delete-' . $modelName)
+                                                            @if(($modelName === 'tickets' && auth()->user()->can('manage-tickets')) || auth()->user()->can('force-delete-' . $modelName))
                                                                 <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-grid d-md-inline delete-form">
                                                                     @csrf
                                                                     @method('DELETE')
@@ -164,7 +167,7 @@
                                                                         Force Delete
                                                                     </button>
                                                                 </form>
-                                                            @endcan
+                                                            @endif
                                                         </div>
                                                     </td>
                                                 </tr>

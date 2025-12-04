@@ -255,4 +255,23 @@ class TicketController extends Controller
         // The categorized_attachments accessor will handle the rest of the data loading.
         return view('tickets.show', compact('ticket'));
     }
+
+    /**
+     * Remove the specified ticket from storage (Soft Delete).
+     *
+     * @param  \App\Models\JobTicket  $ticket
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy(JobTicket $ticket): RedirectResponse
+    {
+        // Enforce Tenancy: Only the owner (employer) can delete their ticket.
+        if ($ticket->employer_user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action. You do not own this ticket.');
+        }
+
+        // Perform Soft Delete
+        $ticket->delete();
+
+        return redirect()->route('tickets.index')->with('success', 'Ticket deleted successfully.');
+    }
 }
