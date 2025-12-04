@@ -94,15 +94,12 @@
         @if($currentView === 'card')
             <div class="row g-3">
                 @foreach($employees as $employee)
-                    <div class="col-12 col-md-6 col-xl-4 position-relative" draggable="true"
-                         data-drag-payload="{{ json_encode([
-                            'id' => $employee->id,
-                            'title' => $employee->employeeNameEn,
-                            'subtitle' => optional($employee->employer)->employerNameTh,
-                            'url' => route('employers.edit', $employee->employer_id) . '?highlight_employee=' . $employee->id
-                         ]) }}"
-                         ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
-                        @include('employees._employee_card', ['employee' => $employee, 'is_incomplete_view' => true])
+                    <div class="col-12 col-md-6 col-xl-4 position-relative">
+                        @include('employees._employee_card', [
+                            'employee' => $employee,
+                            'is_incomplete_view' => true,
+                            'source_menu' => __('Incomplete Data')
+                        ])
                     </div>
                 @endforeach
             </div>
@@ -126,13 +123,18 @@
                         <tbody>
                             @foreach($employees as $employee)
                             <tr draggable="true"
-                                data-drag-payload="{{ json_encode([
-                                    'id' => $employee->id,
-                                    'title' => $employee->employeeNameEn,
-                                    'subtitle' => optional($employee->employer)->employerNameTh,
-                                    'url' => route('employers.edit', $employee->employer_id) . '?highlight_employee=' . $employee->id
-                                ]) }}"
-                                ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
+                                ondragstart="window.startDragGlobal(event, 'employee', {
+                                    id: {{ $employee->id }},
+                                    title: '{{ $employee->employeeNameEn ?? $employee->employeeNameTh }}',
+                                    title_th: '{{ $employee->employeeNameTh }}',
+                                    title_en: '{{ $employee->employeeNameEn }}',
+                                    subtitle: '{{ $employee->job_title ?? 'N/A' }}',
+                                    photo_url: '{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}',
+                                    url: '{{ route('employers.edit', $employee->employer_id) . '?highlight_employee=' . $employee->id . '#employee-card-' . $employee->id }}',
+                                    source_menu: '{{ __('Incomplete Data') }}',
+                                    employer_name: '{{ optional($employee->employer)->employerNameTh }}',
+                                    nationality: '{{ $employee->employeeNationality }}'
+                                })">
                                 <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
                                 <td>
                                     <div class="d-flex align-items-center">
