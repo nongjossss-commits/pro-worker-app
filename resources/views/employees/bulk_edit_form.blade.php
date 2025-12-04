@@ -246,70 +246,68 @@
     </form>
 </div>
 
-@push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle Master Field Sync
-    const applyButtons = document.querySelectorAll('.apply-master-btn');
+    (function() {
+        // Handle Master Field Sync
+        const applyButtons = document.querySelectorAll('.apply-master-btn');
 
-    applyButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const field = this.dataset.field;
-            const masterInput = document.querySelector(`.master-input[data-field="${field}"]`);
-            const individualInputs = document.querySelectorAll(`.individual-input[data-field="${field}"]`);
+        applyButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const field = this.dataset.field;
+                const masterInput = document.querySelector(`.master-input[data-field="${field}"]`);
+                const individualInputs = document.querySelectorAll(`.individual-input[data-field="${field}"]`);
 
-            if (!masterInput) return;
+                if (!masterInput) return;
 
-            // Safety check for file inputs, though button should be disabled
-            if (masterInput.type === 'file') {
-                return;
-            }
+                // Safety check for file inputs, though button should be disabled
+                if (masterInput.type === 'file') {
+                    return;
+                }
 
-            const value = masterInput.value;
-            individualInputs.forEach(input => {
-                input.value = value;
-                // Trigger change event so any other listeners know it updated
-                input.dispatchEvent(new Event('change'));
+                const value = masterInput.value;
+                individualInputs.forEach(input => {
+                    input.value = value;
+                    // Trigger change event so any other listeners know it updated
+                    input.dispatchEvent(new Event('change'));
 
-                // Visual highlight effect
-                input.classList.add('bg-success-subtle');
-                setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
-            });
+                    // Visual highlight effect
+                    input.classList.add('bg-success-subtle');
+                    setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
+                });
 
-            // Button Visual feedback
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check-lg"></i> {{ __("Applied!") }}';
-            btn.classList.replace('btn-outline-primary', 'btn-success');
+                // Button Visual feedback
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> {{ __("Applied!") }}';
+                btn.classList.replace('btn-outline-primary', 'btn-success');
 
-            setTimeout(() => {
-                btn.innerHTML = originalHtml;
-                btn.classList.replace('btn-success', 'btn-outline-primary');
-            }, 1500);
-        });
-    });
-
-    // Expand/Collapse All
-    const expandAllBtn = document.getElementById('btn-expand-all');
-    const collapseAllBtn = document.getElementById('btn-collapse-all');
-    const accordionCollapses = document.querySelectorAll('.accordion-collapse');
-
-    if(expandAllBtn && collapseAllBtn) {
-        expandAllBtn.addEventListener('click', () => {
-            accordionCollapses.forEach(el => {
-                // Use Bootstrap 5 API if available, or fallback to class manipulation
-                const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
-                bsCollapse.show();
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.replace('btn-success', 'btn-outline-primary');
+                }, 1500);
             });
         });
 
-        collapseAllBtn.addEventListener('click', () => {
-            accordionCollapses.forEach(el => {
-                const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
-                bsCollapse.hide();
+        // Expand/Collapse All
+        const expandAllBtn = document.getElementById('btn-expand-all');
+        const collapseAllBtn = document.getElementById('btn-collapse-all');
+        const accordionCollapses = document.querySelectorAll('.accordion-collapse');
+
+        if(expandAllBtn && collapseAllBtn) {
+            expandAllBtn.addEventListener('click', () => {
+                accordionCollapses.forEach(el => {
+                    // Use Bootstrap 5 API if available, or fallback to class manipulation
+                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+                    bsCollapse.show();
+                });
             });
-        });
-    }
-});
+
+            collapseAllBtn.addEventListener('click', () => {
+                accordionCollapses.forEach(el => {
+                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+                    bsCollapse.hide();
+                });
+            });
+        }
+    })();
 </script>
-@endpush
 @endsection
