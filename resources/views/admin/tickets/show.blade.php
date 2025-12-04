@@ -678,6 +678,20 @@
                                 <i class="bi bi-x-octagon-fill me-2"></i> Reject Ticket
                             </button>
                         </form>
+                        {{-- Accept Job / In Progress Button (New) --}}
+                        <form id="in-progress-form" action="{{ route('admin.tickets.in_progress', $ticket) }}" method="POST" class="d-grid">
+                            @csrf
+                            <button type="button" class="btn btn-outline-warning text-dark btn-submit-swal"
+                                    data-swal-title="ยืนยันรับงาน (กำลังดำเนินการ)"
+                                    data-swal-text="คุณต้องการเปลี่ยนสถานะเป็น 'กำลังดำเนินการ' เพื่อแจ้งให้นายจ้างทราบใช่หรือไม่?"
+                                    data-swal-icon="info"
+                                    data-swal-confirm-text="ใช่, ดำเนินการ"
+                                    {{ $isClosed ? 'disabled' : '' }}>
+                                <i class="bi bi-hourglass-split me-2"></i>
+                                กำลังดำเนินการ (In Progress)
+                            </button>
+                        </form>
+
                         {{-- Forward to P-Workflow Button --}}
                         <form id="forward-form" action="{{ route('admin.tickets.forward', $ticket) }}" method="POST" class="d-grid">
                             @csrf
