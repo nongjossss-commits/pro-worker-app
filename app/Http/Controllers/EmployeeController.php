@@ -498,6 +498,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // --- V6: Step 6: Update Employee ---
         $employee->update($validated);
 
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+
         return redirect($request->input('_previous', route('employees.index')))
             ->with('success', 'Employee updated successfully.');
     }
@@ -1046,6 +1050,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $employee->update($updateData);
                 $updatedCount++;
             }
+        }
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
         }
 
         if ($redirectTo) {

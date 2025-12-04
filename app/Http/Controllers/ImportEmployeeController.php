@@ -292,7 +292,8 @@ class ImportEmployeeController extends Controller
                     $row = (int)$matches[2];
 
                     // Look for images in Column A
-                    if ($column === 'A' && $row >= $START_ROW) {
+                    // Use a looser check: if it's in Column A, and row >= START_ROW - 1 (to catch images slightly above first row)
+                    if ($column === 'A' && $row >= ($START_ROW - 1)) {
                         $images[$row] = $drawing;
                     }
                 }
@@ -304,6 +305,7 @@ class ImportEmployeeController extends Controller
 
             // Iterate rows starting from START_ROW
             $highestRow = $sheet->getHighestRow();
+            $usedImageIndices = [];
 
             for ($rowIdx = $START_ROW; $rowIdx <= $highestRow; $rowIdx++) {
                 // Get cell values
@@ -379,8 +381,27 @@ class ImportEmployeeController extends Controller
 
                 // Process Image from Column A
                 $photoPath = null;
-                if (isset($images[$rowIdx])) {
+
+                // Heuristic Image Matching
+                $drawing = null;
+
+                // 1. Try exact match
+                if (isset($images[$rowIdx]) && !in_array($rowIdx, $usedImageIndices)) {
                     $drawing = $images[$rowIdx];
+                    $usedImageIndices[] = $rowIdx;
+                }
+                // 2. Try previous row (floating up) - e.g. Image anchored to header (A12) for first data row (A13)
+                elseif (isset($images[$rowIdx - 1]) && !in_array($rowIdx - 1, $usedImageIndices)) {
+                    $drawing = $images[$rowIdx - 1];
+                    $usedImageIndices[] = $rowIdx - 1;
+                }
+                // 3. Try next row (floating down) - less common but possible
+                elseif (isset($images[$rowIdx + 1]) && !in_array($rowIdx + 1, $usedImageIndices)) {
+                    $drawing = $images[$rowIdx + 1];
+                    $usedImageIndices[] = $rowIdx + 1;
+                }
+
+                if ($drawing) {
                     $imageContent = null;
                     $extension = 'jpg';
 
@@ -464,6 +485,8 @@ class ImportEmployeeController extends Controller
 
             DB::commit();
 
+            $importedEmployeeIds = collect($importedEmployees)->pluck('id')->toArray();
+
             $msg = "Successfully imported $count employees.";
             if (count($errors)) {
                 $msg .= " With " . count($errors) . " errors.";
@@ -471,12 +494,33 @@ class ImportEmployeeController extends Controller
 
             return back()->with('success', $msg)
                          ->with('import_errors', $errors)
-                         ->with('imported_employees', $importedEmployees);
+                         ->with('imported_employees', $importedEmployees)
+                         ->with('imported_employee_ids', $importedEmployeeIds);
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e);
             return back()->with('error', 'Import failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Fetch a batch of employees by ID for AJAX updates.
+     */
+    public function fetchBatch(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:employees,id',
+        ]);
+
+        $employees = Employee::whereIn('id', $request->input('ids'))->get();
+
+        $rows = [];
+        foreach ($employees as $employee) {
+            $rows[$employee->id] = view('employees.partials._import_table_row', compact('employee'))->render();
+        }
+
+        return response()->json(['rows' => $rows]);
     }
 }
