@@ -818,6 +818,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Define all available fields grouped by category
         $fieldGroups = [
             'Personal Information' => [
+                'employeePhoto' => 'Photo (Upload)',
                 'employeeTitleTh' => 'Title (TH)',
                 'employeeNameTh' => 'Name (TH)',
                 'employeeTitleEn' => 'Title (EN)',
@@ -896,6 +897,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // Define metadata for fields to render correct inputs
         $fileFields = [
+            'employeePhoto',
             'passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
             'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
@@ -923,6 +925,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Map keys to labels (simplified version of what was in selectFields)
         // Ideally this should be a shared constant or helper.
         $fieldLabels = [
+            'employeePhoto' => 'Photo (Upload)',
             'employeeNameTh' => 'Name (TH)',
             'employeeNameEn' => 'Name (EN)',
             'employeeTitleTh' => 'Title (TH)',
@@ -992,6 +995,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // Define mapping for legacy file fields to actual database columns
         $fieldMapping = [
+            'employeePhoto'      => 'employeePhoto',
             'passport_file'      => 'employee_doc_1',
             'visa_file'          => 'employee_doc_2',
             'work_permit_file'   => 'employee_doc_3',

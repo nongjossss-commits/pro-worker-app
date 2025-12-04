@@ -173,6 +173,7 @@
                                             @php
                                                 // Define mapping for legacy file fields to actual database columns
                                                 $fieldMapping = [
+                                                    'employeePhoto'      => 'employeePhoto',
                                                     'passport_file'      => 'employee_doc_1',
                                                     'visa_file'          => 'employee_doc_2',
                                                     'work_permit_file'   => 'employee_doc_3',
@@ -192,6 +193,8 @@
 
                                                     @if($isSensitive)
                                                          <a href="{{ route('employees.documents.serve', ['employee' => $employee->id, 'field' => $dbColumn]) }}" target="_blank" class="text-decoration-none ms-1">({{ __('View') }})</a>
+                                                    @elseif($field === 'employeePhoto')
+                                                        <a href="{{ Storage::disk('public')->url($filePath) }}" target="_blank" class="text-decoration-none ms-1">({{ __('View') }})</a>
                                                     @else
                                                         <a href="{{ Storage::disk('public')->url($filePath) }}" target="_blank" class="text-decoration-none ms-1">({{ __('View') }})</a>
                                                     @endif
