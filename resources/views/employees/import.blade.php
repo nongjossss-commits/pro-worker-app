@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
         actionModal.show();
 
         // Step 1: Get Field Selector
-        fetch('{{ route("employees.bulk_edit_select") }}', { // We use POST for this usually?
+        fetch('{{ route("employees.bulk_edit.select_fields") }}', { // We use POST for this usually?
             method: 'POST', // Check route definition, usually GET or POST.
             // Wait, bulkEditSelectFields in controller takes Request.
             // Route usually: Route::match(['get', 'post'], ...)
