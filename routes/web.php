@@ -117,7 +117,7 @@ Route::middleware('auth')->group(function () {
 
     // --- V2.4: Employer Ticket Routes ---
     Route::resource('tickets', TicketController::class)->only([
-        'index', 'create', 'store', 'show'
+        'index', 'create', 'store', 'show', 'destroy'
     ]);
 
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
