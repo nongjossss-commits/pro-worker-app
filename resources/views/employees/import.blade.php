@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        fetch('{{ route("employees.bulk_edit_form") }}', {
+        fetch('{{ route("employees.bulk_edit.form") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
