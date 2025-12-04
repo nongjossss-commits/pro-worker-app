@@ -316,6 +316,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
              actionModalBody.innerHTML = '';
              actionModalBody.appendChild(content);
+
+             // Re-run scripts from the fetched content to initialize event listeners (e.g., enable/disable Proceed button)
+             const scripts = content.querySelectorAll('script');
+             scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                actionModalBody.appendChild(newScript);
+             });
         });
     });
 

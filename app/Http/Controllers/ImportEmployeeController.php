@@ -293,7 +293,8 @@ class ImportEmployeeController extends Controller
 
                     // Look for images in Column A
                     // Use a looser check: if it's in Column A, and row >= START_ROW - 1 (to catch images slightly above first row)
-                    if ($column === 'A' && $row >= ($START_ROW - 1)) {
+                    // Also accept images anchored to B if the user slightly missed the cell
+                    if (($column === 'A' || $column === 'B') && $row >= ($START_ROW - 1)) {
                         $images[$row] = $drawing;
                     }
                 }
