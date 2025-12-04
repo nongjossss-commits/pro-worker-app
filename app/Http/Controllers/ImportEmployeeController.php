@@ -149,17 +149,17 @@ class ImportEmployeeController extends Controller
         // UPDATED COLUMNS based on User Request
         $columns = [
             'Photo (Insert Image)', // A
-            'Title (TH)',           // B - Dropdown
-            'Name (TH)',            // C
-            'Title (EN)',           // D - New Dropdown
-            'Name (EN)',            // E
-            'Date of Birth (YYYY-MM-DD)', // F - Gender removed
-            'Nationality',          // G - Dropdown
+            'Title (EN)',           // B - Swapped
+            'Name (EN)',            // C - Swapped
+            'Title (TH)',           // D - Swapped
+            'Name (TH)',            // E - Swapped
+            'Date of Birth (YYYY-MM-DD)', // F
+            'Nationality',          // G
             'Passport Number',      // H
             'Work Permit Number',   // I
-            'Work Permit Type',     // J - Dropdown (MOU Group)
+            'Work Permit Type',     // J
             'Pink Card Number',     // K
-            'CI/PJ/TD/Inter'        // L - Dropdown
+            'CI/PJ/TD/Inter'        // L
         ];
 
         foreach ($columns as $index => $header) {
@@ -196,8 +196,8 @@ class ImportEmployeeController extends Controller
 
         // --- DATA VALIDATION CONFIGURATION ---
         $validations = [
-            'B' => '"นาย,นางสาว,นาง"', // Title TH
-            'D' => '"Mr.,Miss.,Mrs."', // Title EN
+            'B' => '"Mr.,Miss.,Mrs."', // Title EN (Swapped)
+            'D' => '"นาย,นางสาว,นาง"', // Title TH (Swapped)
             'G' => '"ลาว,เมียนมา,กัมพูชา,เวียดนาม"', // Nationality (Using 'เมียนมา' to match DB)
             'J' => '"MOU,มติต่ออายุในประเทศ,มติขึ้นทะเบียนใหม่,อื่นๆ ระบุ"', // WP Type
             'L' => '"CI,PJ,TD,เล่มอินเตอร์"', // Passport Type
@@ -309,13 +309,13 @@ class ImportEmployeeController extends Controller
 
             for ($rowIdx = $START_ROW; $rowIdx <= $highestRow; $rowIdx++) {
                 // Get cell values
-                // Updated Mapping:
+                // Updated Mapping for New Template:
                 // A (1) = Photo
-                // B (2) = Title (TH)
-                // C (3) = Name (TH)
-                // D (4) = Title (EN) <-- NEW
-                // E (5) = Name (EN)
-                // F (6) = DOB        <-- Shifted (Gender Removed)
+                // B (2) = Title (EN) <-- Swapped
+                // C (3) = Name (EN)  <-- Swapped
+                // D (4) = Title (TH) <-- Swapped
+                // E (5) = Name (TH)  <-- Swapped
+                // F (6) = DOB
                 // G (7) = Nationality
                 // H (8) = Passport
                 // I (9) = WP
@@ -332,10 +332,10 @@ class ImportEmployeeController extends Controller
                 }
 
                 // $row array is 0-indexed relative to the loop.
-                // $row[0] = B (Title TH)
-                // $row[1] = C (Name TH)
-                // $row[2] = D (Title EN)
-                // $row[3] = E (Name EN)
+                // $row[0] = B (Title EN)
+                // $row[1] = C (Name EN)
+                // $row[2] = D (Title TH)
+                // $row[3] = E (Name TH)
                 // $row[4] = F (DOB)
                 // $row[5] = G (Nationality)
                 // $row[6] = H (Passport)
@@ -344,17 +344,18 @@ class ImportEmployeeController extends Controller
                 // $row[9] = K (Pink Card)
                 // $row[10]= L (Book Type)
 
-                // Check if empty row (TitleTH, NameTH, NameEN are in indices 0, 1, 3 of $row array)
+                // Check if empty row (TitleEN, NameEN, NameTH are in indices 0, 1, 3 of $row array)
+                // Checking standard name fields to determine emptiness
                 if (empty($row[0]) && empty($row[1]) && empty($row[3])) {
                     // It might be one of the pre-formatted empty rows.
                     continue;
                 }
 
                 // Parse Data
-                $titleTh = $row[0];
-                $nameTh = $row[1];
-                $titleEn = $row[2];
-                $nameEn = $row[3];
+                $titleEn = $row[0];
+                $nameEn = $row[1];
+                $titleTh = $row[2];
+                $nameTh = $row[3];
                 $dobRaw = $row[4];
                 $nationality = $row[5];
                 $passport = $row[6];
@@ -460,13 +461,13 @@ class ImportEmployeeController extends Controller
                     'employer_id' => $employerId,
                     'employeeTitleTh' => $titleTh,
                     'employeeNameTh' => $nameTh,
-                    'employeeTitleEn' => $titleEn, // Mapped new field
+                    'employeeTitleEn' => $titleEn,
                     'employeeNameEn' => $nameEn,
                     'employeeDob' => $dob,
                     'employeeNationality' => $nationality,
                     'employeePassport' => $passport,
                     'employeeWorkPermit' => $wp,
-                    'workPermitMOUGroup' => $wpType, // Mapped to correct DB column
+                    'workPermitMOUGroup' => $wpType,
                     'pinkCardNo' => $pinkCard,
                     'employeePhoto' => $photoPath,
                     'status' => 'active',
