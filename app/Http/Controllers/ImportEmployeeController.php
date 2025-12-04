@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
@@ -145,19 +146,20 @@ class ImportEmployeeController extends Controller
 
         // --- DATA TABLE HEADERS (Row 12) ---
         $headerRow = 12;
+        // UPDATED COLUMNS based on User Request
         $columns = [
             'Photo (Insert Image)', // A
-            'Title (TH)',           // B
+            'Title (TH)',           // B - Dropdown
             'Name (TH)',            // C
-            'Name (EN)',            // D
-            'Gender',               // E
-            'Date of Birth (YYYY-MM-DD)', // F
-            'Nationality',          // G
+            'Title (EN)',           // D - New Dropdown
+            'Name (EN)',            // E
+            'Date of Birth (YYYY-MM-DD)', // F - Gender removed
+            'Nationality',          // G - Dropdown
             'Passport Number',      // H
             'Work Permit Number',   // I
-            'Work Permit Type',     // J
+            'Work Permit Type',     // J - Dropdown (MOU Group)
             'Pink Card Number',     // K
-            'CI/PJ/TD/Inter'        // L
+            'CI/PJ/TD/Inter'        // L - Dropdown
         ];
 
         foreach ($columns as $index => $header) {
@@ -192,7 +194,16 @@ class ImportEmployeeController extends Controller
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Set Row Height for data rows to accommodate photos (e.g., 60-80 points)
+        // --- DATA VALIDATION CONFIGURATION ---
+        $validations = [
+            'B' => '"นาย,นางสาว,นาง"', // Title TH
+            'D' => '"Mr.,Miss.,Mrs."', // Title EN
+            'G' => '"ลาว,เมียนมา,กัมพูชา,เวียดนาม"', // Nationality (Using 'เมียนมา' to match DB)
+            'J' => '"MOU,มติต่ออายุในประเทศ,มติขึ้นทะเบียนใหม่,อื่นๆ ระบุ"', // WP Type
+            'L' => '"CI,PJ,TD,เล่มอินเตอร์"', // Passport Type
+        ];
+
+        // Apply row formatting and validation
         for ($r = $startDataRow; $r <= $endDataRow; $r++) {
             $sheet->getRowDimension($r)->setRowHeight(80);
 
@@ -200,6 +211,18 @@ class ImportEmployeeController extends Controller
             $rowRange = "A{$r}:L{$r}";
             $sheet->getStyle($rowRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             $sheet->getStyle($rowRange)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+
+            // Apply Data Validations
+            foreach ($validations as $colLetter => $formula) {
+                $validation = $sheet->getCell($colLetter . $r)->getDataValidation();
+                $validation->setType(DataValidation::TYPE_LIST);
+                $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+                $validation->setAllowBlank(true);
+                $validation->setShowInputMessage(true);
+                $validation->setShowErrorMessage(true);
+                $validation->setShowDropDown(true);
+                $validation->setFormula1($formula);
+            }
         }
 
         $writer = new Xlsx($spreadsheet);
@@ -284,17 +307,17 @@ class ImportEmployeeController extends Controller
 
             for ($rowIdx = $START_ROW; $rowIdx <= $highestRow; $rowIdx++) {
                 // Get cell values
-                // Mapped Columns:
+                // Updated Mapping:
                 // A (1) = Photo
                 // B (2) = Title (TH)
                 // C (3) = Name (TH)
-                // D (4) = Name (EN)
-                // E (5) = Gender
-                // F (6) = DOB
+                // D (4) = Title (EN) <-- NEW
+                // E (5) = Name (EN)
+                // F (6) = DOB        <-- Shifted (Gender Removed)
                 // G (7) = Nationality
                 // H (8) = Passport
                 // I (9) = WP
-                // J (10) = WP Type
+                // J (10) = WP Type (MOU Group)
                 // K (11) = Pink Card
                 // L (12) = Book Type
 
@@ -306,26 +329,37 @@ class ImportEmployeeController extends Controller
                     $row[] = trim((string)$val);
                 }
 
-                // Check if empty row (Title, NameTH, NameEN are in indices 0, 1, 2 of $row array)
                 // $row array is 0-indexed relative to the loop.
-                // Loop starts at col 2 (B), so $row[0] is Col B, $row[1] is Col C.
-                if (empty($row[0]) && empty($row[1])) {
+                // $row[0] = B (Title TH)
+                // $row[1] = C (Name TH)
+                // $row[2] = D (Title EN)
+                // $row[3] = E (Name EN)
+                // $row[4] = F (DOB)
+                // $row[5] = G (Nationality)
+                // $row[6] = H (Passport)
+                // $row[7] = I (WP)
+                // $row[8] = J (WP Type)
+                // $row[9] = K (Pink Card)
+                // $row[10]= L (Book Type)
+
+                // Check if empty row (TitleTH, NameTH, NameEN are in indices 0, 1, 3 of $row array)
+                if (empty($row[0]) && empty($row[1]) && empty($row[3])) {
                     // It might be one of the pre-formatted empty rows.
                     continue;
                 }
 
                 // Parse Data
-                $titleTh = $row[0]; // B
-                $nameTh = $row[1];  // C
-                $nameEn = $row[2];  // D
-                // $gender = $row[3]; // E
-                $dobRaw = $row[4];  // F
-                $nationality = $row[5]; // G
-                $passport = $row[6];    // H
-                $wp = $row[7];          // I
-                $wpType = $row[8];      // J
-                $pinkCard = $row[9];    // K
-                $bookType = $row[10];   // L
+                $titleTh = $row[0];
+                $nameTh = $row[1];
+                $titleEn = $row[2];
+                $nameEn = $row[3];
+                $dobRaw = $row[4];
+                $nationality = $row[5];
+                $passport = $row[6];
+                $wp = $row[7];
+                $wpType = $row[8];
+                $pinkCard = $row[9];
+                $bookType = $row[10];
 
                  // Format Date
                 $dob = null;
@@ -405,12 +439,13 @@ class ImportEmployeeController extends Controller
                     'employer_id' => $employerId,
                     'employeeTitleTh' => $titleTh,
                     'employeeNameTh' => $nameTh,
+                    'employeeTitleEn' => $titleEn, // Mapped new field
                     'employeeNameEn' => $nameEn,
                     'employeeDob' => $dob,
                     'employeeNationality' => $nationality,
                     'employeePassport' => $passport,
                     'employeeWorkPermit' => $wp,
-                    'workPermitType' => $wpType,
+                    'workPermitMOUGroup' => $wpType, // Mapped to correct DB column
                     'pinkCardNo' => $pinkCard,
                     'employeePhoto' => $photoPath,
                     'status' => 'active',
