@@ -76,4 +76,26 @@ class TicketStatusController extends Controller
 
         return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Ticket forwarded to workflow.');
     }
+
+    /**
+     * Mark the specified ticket as In Progress (Accept Job).
+     */
+    public function inProgress(JobTicket $ticket)
+    {
+        if (!Auth::user()->can('manage-tickets')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // 1. อัปเดตสถานะเป็น in_progress
+        $ticket->update(['status' => 'in_progress']);
+
+        // 2. เพิ่มข้อความ System ลงในแชท
+        $ticket->messages()->create([
+            'user_id' => Auth::id(),
+            'message_type' => 'system_activity',
+            'body' => 'Ticket accepted (In Progress) by ' . Auth::user()->name,
+        ]);
+
+        return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Ticket status changed to In Progress.');
+    }
 }

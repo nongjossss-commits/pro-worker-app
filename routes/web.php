@@ -164,6 +164,7 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::post('tickets/{ticket}/resolve', [TicketStatusController::class, 'resolve'])->name('tickets.resolve');
     Route::post('tickets/{ticket}/reject', [TicketStatusController::class, 'reject'])->name('tickets.reject');
     Route::post('tickets/{ticket}/forward', [TicketStatusController::class, 'forward'])->name('tickets.forward');
+    Route::post('tickets/{ticket}/in-progress', [TicketStatusController::class, 'inProgress'])->name('tickets.in_progress');
     Route::post('tickets/{ticket}/update-assignment', [AdminTicketController::class, 'updateAssignment'])->name('tickets.updateAssignment');
     Route::post('tickets/{ticket}/hide', [AdminTicketController::class, 'hide'])->name('tickets.hide'); // Re-enabled for individual ticket hiding
     Route::post('tickets/employers/{user}/hide', [AdminTicketController::class, 'hideEmployer'])->name('tickets.hideEmployer'); // V2.5.1 Hide Employer Box
