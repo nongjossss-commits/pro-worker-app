@@ -55,12 +55,25 @@
         </div>
     @endif
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ $ticket->subject }}</h2>
-        {{-- Display Status Badge --}}
-        <span class="badge bg-{{ $ticket->status_color }} fs-5">
-            {{ $ticket->status_name }}
-        </span>
+    {{-- V2.5-S21: Enhanced Ticket Header Box --}}
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(to right, #f8f9fa, #e9ecef); border-left: 5px solid #0d6efd !important;">
+        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center p-4">
+            <div class="mb-3 mb-md-0">
+                <small class="text-uppercase text-muted fw-bold mb-2 d-block" style="letter-spacing: 0.5px;">
+                    <i class="bi bi-chat-square-quote-fill text-primary me-2"></i>หัวข้อตั๋วงาน (Ticket Subject)
+                </small>
+                <h1 class="mb-0 fw-bold text-dark display-6">
+                    {{ $ticket->subject }}
+                </h1>
+            </div>
+            {{-- Display Status Badge --}}
+            <div class="text-md-end">
+                <div class="text-muted small mb-1">สถานะ (Status)</div>
+                <span class="badge bg-{{ $ticket->status_color }} fs-5 px-4 py-2 rounded-pill shadow-sm">
+                    {{ $ticket->status_name }}
+                </span>
+            </div>
+        </div>
     </div>
 
     <div class="row">
