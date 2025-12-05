@@ -347,7 +347,8 @@
         <main id="main-content" style="position: relative; z-index: 1;">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                    {{-- Modified sidebar toggle: Removed data-bs-toggle to prevent double-triggering/bouncing on PC --}}
+                    <button class="btn btn-primary" type="button" id="top-sidebar-toggle" aria-controls="sidebar">
                         <i class="bi bi-list"></i>
                     </button>
 
@@ -1164,37 +1165,48 @@ document.addEventListener('DOMContentLoaded', function () {
     scrollToTopLeft.addEventListener('click', scrollToTop);
     scrollToTopRight.addEventListener('click', scrollToTop);
 
-    // --- Drawer Handle Logic ---
+    // --- Drawer Handle Logic & Sidebar Toggle ---
     const drawerHandle = document.getElementById('drawer-handle');
+    const topSidebarToggle = document.getElementById('top-sidebar-toggle');
     const sidebarElement = document.getElementById('sidebar');
 
-    if (drawerHandle && sidebarElement) {
-        // Show handle when scrolled down
-        window.addEventListener('scroll', function() {
-            // Check if sidebar is currently open to avoid showing handle over it (though CSS z-index/transform handles visibility mostly)
-            const isSidebarOpen = sidebarElement.classList.contains('show');
-
-            if (window.scrollY > 100 && !isSidebarOpen) {
-                drawerHandle.classList.add('show');
-            } else {
-                drawerHandle.classList.remove('show');
-            }
-        });
-
-        // Open sidebar on click
-        drawerHandle.addEventListener('click', function() {
+    if (sidebarElement) {
+        // Shared function to safely toggle sidebar without bouncing
+        const safeToggleSidebar = (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop event bubbling
             const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(sidebarElement);
-            bsOffcanvas.show();
-        });
+            bsOffcanvas.toggle();
+        };
+
+        if (drawerHandle) {
+            // Show handle when scrolled down
+            window.addEventListener('scroll', function() {
+                const isSidebarOpen = sidebarElement.classList.contains('show');
+                if (window.scrollY > 100 && !isSidebarOpen) {
+                    drawerHandle.classList.add('show');
+                } else {
+                    drawerHandle.classList.remove('show');
+                }
+            });
+
+            // Manual toggle for drawer handle
+            drawerHandle.addEventListener('click', safeToggleSidebar);
+        }
+
+        if (topSidebarToggle) {
+            // Manual toggle for top button
+            topSidebarToggle.addEventListener('click', safeToggleSidebar);
+        }
 
         // Hide handle when sidebar is open
         sidebarElement.addEventListener('show.bs.offcanvas', function () {
-            drawerHandle.classList.remove('show');
+            if (drawerHandle) drawerHandle.classList.remove('show');
         });
 
         // Re-check scroll position when sidebar closes
         sidebarElement.addEventListener('hidden.bs.offcanvas', function () {
-            if (window.scrollY > 100) {
+            if (drawerHandle && window.scrollY > 100) {
                 drawerHandle.classList.add('show');
             }
         });
