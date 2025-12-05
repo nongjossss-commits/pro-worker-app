@@ -191,6 +191,38 @@
         .scroll-to-top:hover {
             background-color: var(--bs-primary-dark);
         }
+
+        /* Drawer Handle */
+        .drawer-handle {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%) translateX(-100%); /* Initially hidden off-screen */
+            width: 12px;
+            height: 50vh;
+            background-color: var(--bs-primary);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            cursor: pointer;
+            z-index: 999;
+            transition: transform 0.3s ease, width 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            opacity: 0.8;
+        }
+        .drawer-handle.show {
+            transform: translateY(-50%) translateX(0); /* Slide in */
+        }
+        .drawer-handle:hover {
+            width: 16px;
+            opacity: 1;
+        }
+        .drawer-handle i {
+            color: white;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -198,13 +230,15 @@
     <div class="main-layout">
         <aside id="sidebar" class="offcanvas offcanvas-start" tabindex="-1" aria-labelledby="sidebarLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title d-flex align-items-center gap-2" id="sidebarLabel">
-                    <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
+                <h5 class="offcanvas-title" id="sidebarLabel">
+                    <a href="{{ route('dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none text-reset">
+                        <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
+                    </a>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column p-0">
-            <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="#">
+            <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="{{ route('dashboard') }}">
                 <img src="{{ asset('images/logo_new.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
                 <span style="line-height: 1.2;">Proworker labour</span>
             </a>
@@ -1098,8 +1132,14 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="scroll-to-top left" id="scrollToTopLeft"><i class="bi bi-chevron-up"></i></div>
 <div class="scroll-to-top right" id="scrollToTopRight"><i class="bi bi-chevron-up"></i></div>
 
+<!-- Side Drawer Handle -->
+<div id="drawer-handle" class="drawer-handle" title="Open Menu">
+    <i class="bi bi-chevron-right"></i>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // --- Scroll to Top Logic ---
     const scrollToTopLeft = document.getElementById('scrollToTopLeft');
     const scrollToTopRight = document.getElementById('scrollToTopRight');
 
@@ -1123,6 +1163,42 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('scroll', checkScroll);
     scrollToTopLeft.addEventListener('click', scrollToTop);
     scrollToTopRight.addEventListener('click', scrollToTop);
+
+    // --- Drawer Handle Logic ---
+    const drawerHandle = document.getElementById('drawer-handle');
+    const sidebarElement = document.getElementById('sidebar');
+
+    if (drawerHandle && sidebarElement) {
+        // Show handle when scrolled down
+        window.addEventListener('scroll', function() {
+            // Check if sidebar is currently open to avoid showing handle over it (though CSS z-index/transform handles visibility mostly)
+            const isSidebarOpen = sidebarElement.classList.contains('show');
+
+            if (window.scrollY > 100 && !isSidebarOpen) {
+                drawerHandle.classList.add('show');
+            } else {
+                drawerHandle.classList.remove('show');
+            }
+        });
+
+        // Open sidebar on click
+        drawerHandle.addEventListener('click', function() {
+            const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(sidebarElement);
+            bsOffcanvas.show();
+        });
+
+        // Hide handle when sidebar is open
+        sidebarElement.addEventListener('show.bs.offcanvas', function () {
+            drawerHandle.classList.remove('show');
+        });
+
+        // Re-check scroll position when sidebar closes
+        sidebarElement.addEventListener('hidden.bs.offcanvas', function () {
+            if (window.scrollY > 100) {
+                drawerHandle.classList.add('show');
+            }
+        });
+    }
 });
 </script>
 
