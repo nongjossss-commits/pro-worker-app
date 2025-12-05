@@ -291,10 +291,13 @@ class ImportEmployeeController extends Controller
                     $column = $matches[1];
                     $row = (int)$matches[2];
 
-                    // Look for images in Column A
-                    // Use a looser check: if it's in Column A, and row >= START_ROW - 1 (to catch images slightly above first row)
-                    // Also accept images anchored to B if the user slightly missed the cell
-                    if (($column === 'A' || $column === 'B') && $row >= ($START_ROW - 1)) {
+                    // Broadened Search Logic:
+                    // 1. Allow columns A, B, or C (A=1, B=2, C=3) in case the user pasted carelessly.
+                    // 2. Allow rows starting from 2 (Header usually ends at 11 or 12).
+                    //    This helps catch images that are "floating" well above the data row but visually aligned.
+                    if (in_array($column, ['A', 'B', 'C']) && $row >= 2) {
+                        // Store image by its anchor row.
+                        // If multiple images map to same row, this overwrites. Usually 1 photo per row.
                         $images[$row] = $drawing;
                     }
                 }
@@ -386,21 +389,32 @@ class ImportEmployeeController extends Controller
 
                 // Heuristic Image Matching
                 $drawing = null;
+                $matchedRowIndex = null;
 
-                // 1. Try exact match
+                // Priority 1: Exact Match (Row = Row)
                 if (isset($images[$rowIdx]) && !in_array($rowIdx, $usedImageIndices)) {
                     $drawing = $images[$rowIdx];
-                    $usedImageIndices[] = $rowIdx;
+                    $matchedRowIndex = $rowIdx;
                 }
-                // 2. Try previous row (floating up) - e.g. Image anchored to header (A12) for first data row (A13)
+                // Priority 2: Floating Up (Image anchored to previous row, e.g., Row 12 for Data Row 13)
                 elseif (isset($images[$rowIdx - 1]) && !in_array($rowIdx - 1, $usedImageIndices)) {
                     $drawing = $images[$rowIdx - 1];
-                    $usedImageIndices[] = $rowIdx - 1;
+                    $matchedRowIndex = $rowIdx - 1;
                 }
-                // 3. Try next row (floating down) - less common but possible
+                // Priority 3: Floating Up (Image anchored even higher, e.g., Row 11)
+                // Useful if the row height is large and image is top-aligned
+                elseif (isset($images[$rowIdx - 2]) && !in_array($rowIdx - 2, $usedImageIndices)) {
+                    $drawing = $images[$rowIdx - 2];
+                    $matchedRowIndex = $rowIdx - 2;
+                }
+                // Priority 4: Floating Down (Image anchored to next row, e.g. Row 14)
                 elseif (isset($images[$rowIdx + 1]) && !in_array($rowIdx + 1, $usedImageIndices)) {
                     $drawing = $images[$rowIdx + 1];
-                    $usedImageIndices[] = $rowIdx + 1;
+                    $matchedRowIndex = $rowIdx + 1;
+                }
+
+                if ($matchedRowIndex !== null) {
+                    $usedImageIndices[] = $matchedRowIndex;
                 }
 
                 if ($drawing) {

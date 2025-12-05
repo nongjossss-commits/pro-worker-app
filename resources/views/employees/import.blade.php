@@ -276,6 +276,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
                 actionModalBody.appendChild(newScript);
             });
+
+            // Re-initialize the Edit Form interactive logic
+            if (typeof window.initEmployeeEditForm === 'function') {
+                window.initEmployeeEditForm();
+            }
         });
     });
 
