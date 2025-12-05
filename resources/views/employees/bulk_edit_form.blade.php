@@ -166,10 +166,6 @@
                                         <label class="form-label text-secondary small text-uppercase fw-bold">{{ $fieldLabels[$field] ?? $field }}</label>
 
                                         @if(in_array($field, $fileFields))
-                                            {{-- File Upload --}}
-                                            <div class="input-group">
-                                                <input type="file" class="form-control individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}">
-                                            </div>
                                             @php
                                                 // Define mapping for legacy file fields to actual database columns
                                                 $fieldMapping = [
@@ -183,6 +179,28 @@
                                                 $dbColumn = $fieldMapping[$field] ?? $field;
                                                 $filePath = $employee->$dbColumn;
                                             @endphp
+
+                                            @if($field === 'employeePhoto')
+                                                {{-- Special Cropper UI for Employee Photo --}}
+                                                <div class="d-flex flex-column align-items-center border rounded p-2">
+                                                    <img id="preview-img-{{ $employee->id }}" src="{{ $filePath ? asset('storage/' . $filePath) : 'https://placehold.co/100x120/f8fafc/6c757d?text=Photo' }}" class="img-thumbnail mb-2" style="width: 100px; height: 120px; object-fit: cover;">
+                                                    <div class="d-grid gap-2 w-100">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary btn-crop-trigger" data-employee-id="{{ $employee->id }}" data-action="file">
+                                                            <i class="bi bi-file-earmark-image me-1"></i> {{ __('Select File') }}
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary btn-crop-trigger" data-employee-id="{{ $employee->id }}" data-action="camera">
+                                                            <i class="bi bi-camera-fill me-1"></i> {{ __('Camera') }}
+                                                        </button>
+                                                    </div>
+                                                    {{-- The actual input that will be submitted --}}
+                                                    <input type="file" class="d-none individual-input" name="data[{{ $employee->id }}][{{ $field }}]" id="photo-input-{{ $employee->id }}">
+                                                </div>
+                                            @else
+                                                {{-- Standard File Upload --}}
+                                                <div class="input-group">
+                                                    <input type="file" class="form-control individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}">
+                                                </div>
+                                            @endif
 
                                             @if($filePath)
                                                 <div class="mt-1 text-success small">
@@ -244,6 +262,41 @@
         {{-- Spacer for fixed bottom bar --}}
         <div style="height: 100px;"></div>
     </form>
+
+    {{-- Cropper Modal --}}
+    <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cropperModalLabel">{{ __('Crop Image') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <style>
+                        .img-container {
+                            max-height: 500px;
+                            display: block;
+                        }
+                        .img-container img {
+                            max-width: 100%;
+                            display: block;
+                        }
+                    </style>
+                    <div class="img-container">
+                        <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('Crop & Save') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Hidden inputs for triggering file/camera selection --}}
+    <input type="file" class="d-none" id="globalTriggerFile" accept="image/*">
+    <input type="file" class="d-none" id="globalTriggerCamera" accept="image/*" capture="environment">
 
     <script>
         (function() {
@@ -307,6 +360,149 @@
                     });
                 });
             }
+
+            // --- Cropper Logic ---
+            let currentEmployeeId = null;
+            let currentOriginalFile = null;
+            let cropper = null;
+
+            const cropperModalEl = document.getElementById('cropperModal');
+            const cropperModal = new bootstrap.Modal(cropperModalEl);
+            const imageToCrop = document.getElementById('imageToCrop');
+            const cropImageBtn = document.getElementById('cropImageBtn');
+            const globalTriggerFile = document.getElementById('globalTriggerFile');
+            const globalTriggerCamera = document.getElementById('globalTriggerCamera');
+
+            // 1. Listen for trigger clicks
+            document.querySelectorAll('.btn-crop-trigger').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentEmployeeId = this.dataset.employeeId;
+                    const action = this.dataset.action;
+
+                    // Reset global inputs
+                    globalTriggerFile.value = '';
+                    globalTriggerCamera.value = '';
+
+                    if (action === 'file') {
+                        globalTriggerFile.click();
+                    } else {
+                        globalTriggerCamera.click();
+                    }
+                });
+            });
+
+            // 2. Handle File Selection
+            function handleFileSelect(event) {
+                if (event.target.files && event.target.files.length > 0) {
+                    currentOriginalFile = event.target.files[0];
+                } else {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imageToCrop.src = e.target.result;
+                    cropperModal.show();
+                };
+                reader.readAsDataURL(currentOriginalFile);
+            }
+
+            if (globalTriggerFile) globalTriggerFile.addEventListener('change', handleFileSelect);
+            if (globalTriggerCamera) globalTriggerCamera.addEventListener('change', handleFileSelect);
+
+            // 3. Init Cropper on Modal Show
+            cropperModalEl.addEventListener('shown.bs.modal', function () {
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+                // Ensure image is loaded
+                if (imageToCrop.complete) {
+                     setTimeout(initCropper, 200);
+                } else {
+                    imageToCrop.onload = function() {
+                        setTimeout(initCropper, 200);
+                    };
+                }
+            });
+
+            function initCropper() {
+                if (typeof Cropper === 'undefined') {
+                    alert('Cropper.js not loaded.');
+                    return;
+                }
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 150 / 180,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    background: false,
+                    autoCropArea: 0.8,
+                    movable: true,
+                    zoomable: true,
+                    rotatable: true,
+                    scalable: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                });
+            }
+
+            // 4. Destroy Cropper on Modal Hide
+            cropperModalEl.addEventListener('hidden.bs.modal', function () {
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+                imageToCrop.src = '';
+                currentEmployeeId = null;
+                currentOriginalFile = null;
+            });
+
+            // 5. Handle Crop & Save
+            if(cropImageBtn) {
+                cropImageBtn.addEventListener('click', function () {
+                    if (!cropper || !currentEmployeeId) {
+                        return;
+                    }
+
+                    const canvas = cropper.getCroppedCanvas({
+                        width: 300,
+                        height: 360,
+                        imageSmoothingQuality: 'high',
+                    });
+
+                    canvas.toBlob(function (blob) {
+                        if (!blob) return;
+
+                        // Update Preview Image
+                        const croppedImageUrl = URL.createObjectURL(blob);
+                        const previewImg = document.getElementById(`preview-img-${currentEmployeeId}`);
+                        if (previewImg) {
+                            previewImg.src = croppedImageUrl;
+                        }
+
+                        // Create a new File object
+                        const croppedFile = new File([blob], currentOriginalFile.name, {
+                            type: currentOriginalFile.type || 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+
+                        // Update Hidden Input
+                        const targetInput = document.getElementById(`photo-input-${currentEmployeeId}`);
+                        if (targetInput) {
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(croppedFile);
+                            targetInput.files = dataTransfer.files;
+
+                             // Visual feedback
+                             previewImg.classList.add('border-success', 'border-2');
+                        }
+
+                        cropperModal.hide();
+
+                    }, currentOriginalFile.type || 'image/jpeg');
+                });
+            }
+
         })();
     </script>
 </div>
