@@ -21,8 +21,11 @@
     <td class="text-center">{{ $employee->employeePassport ?? '-' }}</td>
     <td class="text-center">{{ $employee->employeeWorkPermit ?? '-' }}</td>
     <td class="text-center">
-        <button type="button" class="btn btn-sm btn-outline-primary btn-edit-individual" data-id="{{ $employee->id }}">
-            <i class="bi bi-pencil-square"></i> {{ __('Edit') }}
+        <button type="button" class="btn btn-sm btn-outline-primary btn-edit-individual" data-id="{{ $employee->id }}" title="{{ __('Edit') }}">
+            <i class="bi bi-pencil-square"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-individual" data-id="{{ $employee->id }}" title="{{ __('Delete') }}">
+            <i class="bi bi-trash"></i>
         </button>
     </td>
 </tr>

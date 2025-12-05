@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/import', [App\Http\Controllers\ImportEmployeeController::class, 'store'])->name('employees.import');
     Route::get('employees/template', [App\Http\Controllers\ImportEmployeeController::class, 'downloadTemplate'])->name('employees.template');
     Route::post('employees/fetch-batch', [App\Http\Controllers\ImportEmployeeController::class, 'fetchBatch'])->name('employees.fetch_batch');
+    Route::post('employees/import/cancel', [App\Http\Controllers\ImportEmployeeController::class, 'cancelImport'])->name('employees.import.cancel');
 
     // Advanced Bulk Edit Routes (Must come BEFORE resource route)
     Route::post('employees/bulk-edit/select-fields', [EmployeeController::class, 'bulkEditSelectFields'])->name('employees.bulk_edit.select_fields');

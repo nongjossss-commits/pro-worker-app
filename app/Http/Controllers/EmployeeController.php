@@ -515,7 +515,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
     public function destroy(Employee $employee)
     {
         $employee->delete();
-        return response()->json(['success' => 'Employee moved to trash successfully.']);
+
+        if (request()->ajax() || request()->wantsJson()) {
+             return response()->json(['success' => true, 'message' => 'Employee moved to trash successfully.']);
+        }
+
+        return redirect()->back()->with('success', 'Employee moved to trash successfully.');
     }
 
     public function export(Request $request)
