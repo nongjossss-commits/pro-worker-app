@@ -61,7 +61,7 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="employerId" class="form-label">{{ __('Employer ID') }}</label>
-                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="{{ $newEmployerId }}" readonly required>
+                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="" placeholder="สร้างอัตโนมัติเมื่อบันทึก" readonly>
                 @error('employerId')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror

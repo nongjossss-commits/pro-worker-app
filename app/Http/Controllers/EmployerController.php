@@ -60,12 +60,7 @@ class EmployerController extends Controller
         $jobOwners = JobOwner::orderBy('name')->get();
         $staffUsers = User::role(['admin', 'staff', 'caretaker'])->orderBy('name')->get();
 
-        // สร้างรหัสนายจ้างใหม่ที่ไม่ซ้ำใคร
-        $lastEmployer = Employer::orderBy('id', 'desc')->first();
-        $nextId = $lastEmployer ? $lastEmployer->id + 1 : 1;
-        $newEmployerId = 'EMP-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
-
-    return view('employers.create', compact('jobOwners', 'newEmployerId', 'staffUsers'));
+        return view('employers.create', compact('jobOwners', 'staffUsers'));
     }
 
     public function store(Request $request)
@@ -73,7 +68,7 @@ class EmployerController extends Controller
         $validated = $request->validate([
             'employerNameTh' => 'required|string|max:255',
             'employerNameEn' => 'nullable|string|max:255',
-            'employerId' => 'required|string|unique:employers,employerId|max:255',
+            // 'employerId' will be auto-generated
             'employerTaxId' => 'nullable|string|max:255',
             'employerEmail' => 'nullable|email|max:255|unique:employers,employerEmail',
             'employerPassword' => 'nullable|string|max:255',
@@ -99,6 +94,13 @@ class EmployerController extends Controller
             'job_owner_id' => 'required|exists:job_owners,id',
             'assigned_staff_id' => 'nullable|exists:users,id',
         ]);
+
+        // Generate a unique random Employer ID
+        do {
+            $randomId = 'EMP-' . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        } while (Employer::where('employerId', $randomId)->exists());
+
+        $validated['employerId'] = $randomId;
 
         // Handle new document uploads
         $docFields = ['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'];
