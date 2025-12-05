@@ -19,6 +19,9 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Alpine.js -->
@@ -801,6 +804,64 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Function to initialize Flatpickr on a given element
+        function initFlatpickr(element) {
+            if (element._flatpickr) return; // Already initialized
+
+            // Check if element is readonly or disabled, if so, we might want to respect that
+            // Flatpickr handles this automatically usually.
+
+            flatpickr(element, {
+                locale: 'th',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'd/m/Y',
+                allowInput: true,
+                disableMobile: true, // Force Flatpickr UI on mobile for consistency
+                onChange: function(selectedDates, dateStr, instance) {
+                    // Dispatch native input event for frameworks like Alpine.js or Vue
+                    // and 'change' event for standard listeners
+                    instance.element.dispatchEvent(new Event('input', {bubbles: true}));
+                    instance.element.dispatchEvent(new Event('change', {bubbles: true}));
+                }
+            });
+        }
+
+        // 1. Initialize on existing elements
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => initFlatpickr(input));
+
+        // 2. Observe for new elements (e.g. via Alpine or AJAX)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.tagName === 'INPUT' && node.type === 'date') {
+                            initFlatpickr(node);
+                        } else if (node.querySelectorAll) {
+                             // Check children
+                            const inputs = node.querySelectorAll('input[type="date"]');
+                            inputs.forEach(input => initFlatpickr(input));
+                        }
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    });
+    </script>
+
     @include('components.download-modals')
     @stack('scripts')
 
