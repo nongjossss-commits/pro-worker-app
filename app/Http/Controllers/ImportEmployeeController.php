@@ -539,4 +539,42 @@ class ImportEmployeeController extends Controller
 
         return response()->json(['rows' => $rows]);
     }
+
+    /**
+     * Cancel the import by permanently deleting the imported employees.
+     */
+    public function cancelImport(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:employees,id',
+        ]);
+
+        $ids = $request->input('ids');
+        $count = count($ids);
+
+        DB::beginTransaction();
+        try {
+            // Force delete the employees
+            Employee::whereIn('id', $ids)->forceDelete();
+
+            DB::commit();
+
+            // Clear session data related to import
+            session()->forget(['imported_employees', 'imported_employee_ids', 'import_errors']);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully cancelled import and deleted $count employees."
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Import cancellation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel import.'
+            ], 500);
+        }
+    }
 }

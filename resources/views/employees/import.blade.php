@@ -130,6 +130,9 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" id="btn-cancel-import">
+                    <i class="bi bi-x-circle me-1"></i> {{ __('Cancel Import') }}
+                </button>
                 <a href="{{ route('employees.index') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
             </div>
         </div>
@@ -177,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const actionModal = new bootstrap.Modal(actionModalEl);
     const actionModalBody = document.getElementById('actionModalBody');
     const actionModalTitle = document.getElementById('actionModalTitle');
+    const cancelImportBtn = document.getElementById('btn-cancel-import');
 
     // 3. Selection Logic
     function updateSelectionState() {
@@ -235,11 +239,75 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 5. Individual Edit Logic
     tableBody.addEventListener('click', function(e) {
-        // Find closest button
-        const btn = e.target.closest('.btn-edit-individual');
-        if (!btn) return;
+        // Find closest button for edit
+        const editBtn = e.target.closest('.btn-edit-individual');
 
-        const employeeId = btn.dataset.id;
+        // Handle Delete Button
+        const deleteBtn = e.target.closest('.btn-delete-individual');
+
+        if (deleteBtn) {
+            const employeeId = deleteBtn.dataset.id;
+
+            Swal.fire({
+                title: '{{ __("Move to Trash?") }}',
+                text: '{{ __("Are you sure you want to delete this employee? They will be moved to the Trash.") }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '{{ __("Yes, delete it!") }}',
+                cancelButtonText: '{{ __("Cancel") }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/employees/${employeeId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) return response.json();
+                        throw new Error('Network response was not ok');
+                    })
+                    .then(data => {
+                        // Remove row from table
+                        const row = document.getElementById(`row-${employeeId}`);
+                        if (row) row.remove();
+
+                        // Remove from imported IDs list if we want to keep it consistent,
+                        // though cancellation uses the original full list.
+                        // It's safer to keep the ID in window.importedEmployeeIds
+                        // or filter it out. Let's filter it out to avoid errors on "Cancel Import".
+                        if (window.importedEmployeeIds) {
+                            window.importedEmployeeIds = window.importedEmployeeIds.filter(id => id != employeeId);
+                        }
+
+                        updateSelectionState();
+
+                        Swal.fire(
+                            '{{ __("Deleted!") }}',
+                            '{{ __("Employee has been moved to trash.") }}',
+                            'success'
+                        );
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire(
+                            '{{ __("Error!") }}',
+                            '{{ __("Failed to delete employee.") }}',
+                            'error'
+                        );
+                    });
+                }
+            });
+            return;
+        }
+
+        if (!editBtn) return;
+
+        const employeeId = editBtn.dataset.id;
         actionModalTitle.textContent = '{{ __("Edit Employee") }}';
         actionModalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
         actionModal.show();
@@ -502,6 +570,68 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // 8. Cancel Import Logic
+    if (cancelImportBtn) {
+        cancelImportBtn.addEventListener('click', function() {
+            if (!window.importedEmployeeIds || window.importedEmployeeIds.length === 0) {
+                // If list is empty (e.g. all individually deleted), just close or reload
+                window.location.reload();
+                return;
+            }
+
+            Swal.fire({
+                title: '{{ __("Cancel Import?") }}',
+                text: '{{ __("This will permanently delete all imported employees from this session. This action cannot be undone.") }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '{{ __("Yes, delete all!") }}',
+                cancelButtonText: '{{ __("No, keep them") }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading state
+                    const originalText = cancelImportBtn.innerHTML;
+                    cancelImportBtn.disabled = true;
+                    cancelImportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+                    fetch('{{ route("employees.import.cancel") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ ids: window.importedEmployeeIds })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                '{{ __("Cancelled!") }}',
+                                data.message,
+                                'success'
+                            ).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            throw new Error(data.message || 'Unknown error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire(
+                            '{{ __("Error!") }}',
+                            '{{ __("Failed to cancel import.") }}',
+                            'error'
+                        );
+                        cancelImportBtn.disabled = false;
+                        cancelImportBtn.innerHTML = originalText;
+                    });
+                }
+            });
+        });
+    }
 });
 </script>
 @endpush
