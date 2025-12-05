@@ -109,17 +109,37 @@
     <div class="mb-3">
         <ul class="nav nav-tabs flex-wrap" id="notificationTab" role="tablist">
             @foreach($tabs as $type => $title)
+                @php
+                    $count = $counts[$type]['total'] ?? 0;
+                    $hasNotifications = $count > 0;
+                    $bgColor = $hasNotifications ? '#dc3545' : '#198754'; // Danger Red or Success Green
+                @endphp
                 <li class="nav-item" role="presentation">
                     {{-- Note: $title here typically comes from Controller/Config. I should translate it if possible or check if it's a key --}}
                     {{-- Assuming $title might be a key or raw string. Let's try to translate it if it matches a key, or output as is --}}
-                    <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
-                         {{ __($title) }} <span class="badge bg-danger rounded-pill ms-1">{{ $counts[$type]['total'] ?? 0 }}</span>
+                    <button class="nav-link {{ $loop->first ? 'active' : '' }} text-white"
+                            style="background-color: {{ $bgColor }} !important;"
+                            id="{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $type }}-pane" type="button">
+                         {{ __($title) }}
+                         @if($hasNotifications)
+                            <span class="badge bg-white text-danger rounded-pill ms-1">{{ $count }}</span>
+                         @endif
                     </button>
                 </li>
             @endforeach
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled-pane" type="button">
-                    {{ __('Cancelled Items') }} <span class="badge bg-secondary rounded-pill ms-1">{{ $counts['cancelled'] ?? 0 }}</span>
+                @php
+                    $cancelledCount = $counts['cancelled'] ?? 0;
+                    $hasCancelled = $cancelledCount > 0;
+                    $cancelledBgColor = $hasCancelled ? '#dc3545' : '#198754';
+                @endphp
+                <button class="nav-link text-white"
+                        style="background-color: {{ $cancelledBgColor }} !important;"
+                        id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled-pane" type="button">
+                    {{ __('Cancelled Items') }}
+                    @if($hasCancelled)
+                        <span class="badge bg-white text-danger rounded-pill ms-1">{{ $cancelledCount }}</span>
+                    @endif
                 </button>
             </li>
         </ul>
