@@ -50,39 +50,39 @@
             </button>
         </div>
     </form>
-</div>
 
-<script>
-    (function() {
-        const checkboxes = document.querySelectorAll('.field-checkbox');
-        const submitBtn = document.getElementById('submit-btn');
-        const MAX_SELECTION = 5;
+    <script>
+        (function() {
+            const checkboxes = document.querySelectorAll('.field-checkbox');
+            const submitBtn = document.getElementById('submit-btn');
+            const MAX_SELECTION = 5;
 
-        function updateState() {
-            const checked = document.querySelectorAll('.field-checkbox:checked');
-            const count = checked.length;
+            function updateState() {
+                const checked = document.querySelectorAll('.field-checkbox:checked');
+                const count = checked.length;
 
-            // Enable/Disable checkboxes based on max selection
-            checkboxes.forEach(cb => {
-                if (!cb.checked) {
-                    cb.disabled = count >= MAX_SELECTION;
-                } else {
-                    cb.disabled = false;
+                // Enable/Disable checkboxes based on max selection
+                checkboxes.forEach(cb => {
+                    if (!cb.checked) {
+                        cb.disabled = count >= MAX_SELECTION;
+                    } else {
+                        cb.disabled = false;
+                    }
+                });
+
+                // Enable submit only if at least one field is selected
+                if (submitBtn) {
+                    submitBtn.disabled = count === 0;
                 }
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateState);
             });
 
-            // Enable submit only if at least one field is selected
-            if (submitBtn) {
-                submitBtn.disabled = count === 0;
-            }
-        }
-
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', updateState);
-        });
-
-        // Initial check
-        updateState();
-    })();
-</script>
+            // Initial check
+            updateState();
+        })();
+    </script>
+</div>
 @endsection

@@ -3,37 +3,37 @@
 @section('title', 'Advanced Bulk Edit')
 
 @section('content')
-{{-- CSS Fix for Tailwind + Bootstrap Collapse Conflict --}}
-<style>
-    /* Fix for Tailwind's .collapse { visibility: collapse } conflicting with Bootstrap */
-    .accordion-collapse.collapse {
-        visibility: visible !important;
-    }
-    .accordion-collapse.collapsing {
-        visibility: visible !important;
-    }
-
-    /* Enhanced UI Styles */
-    .accordion-button:not(.collapsed) {
-        background-color: var(--bs-primary-light);
-        color: white;
-        box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
-    }
-    .accordion-button:not(.collapsed)::after {
-        filter: brightness(0) invert(1);
-    }
-    .master-control-card {
-        border: 2px solid var(--bs-primary);
-        box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.2);
-    }
-    .employee-checkbox {
-        width: 1.2em;
-        height: 1.2em;
-        cursor: pointer;
-    }
-</style>
 
 <div class="container-fluid p-4">
+    {{-- CSS Fix for Tailwind + Bootstrap Collapse Conflict --}}
+    <style>
+        /* Fix for Tailwind's .collapse { visibility: collapse } conflicting with Bootstrap */
+        .accordion-collapse.collapse {
+            visibility: visible !important;
+        }
+        .accordion-collapse.collapsing {
+            visibility: visible !important;
+        }
+
+        /* Enhanced UI Styles */
+        .accordion-button:not(.collapsed) {
+            background-color: var(--bs-primary-light);
+            color: white;
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+        }
+        .accordion-button:not(.collapsed)::after {
+            filter: brightness(0) invert(1);
+        }
+        .master-control-card {
+            border: 2px solid var(--bs-primary);
+            box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.2);
+        }
+        .employee-checkbox {
+            width: 1.2em;
+            height: 1.2em;
+            cursor: pointer;
+        }
+    </style>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">
             <i class="bi bi-ui-checks-grid me-2 text-primary"></i>{{ __('Advanced Bulk Edit') }}
@@ -244,70 +244,70 @@
         {{-- Spacer for fixed bottom bar --}}
         <div style="height: 100px;"></div>
     </form>
+
+    <script>
+        (function() {
+            // Handle Master Field Sync
+            const applyButtons = document.querySelectorAll('.apply-master-btn');
+
+            applyButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const field = this.dataset.field;
+                    const masterInput = document.querySelector(`.master-input[data-field="${field}"]`);
+                    const individualInputs = document.querySelectorAll(`.individual-input[data-field="${field}"]`);
+
+                    if (!masterInput) return;
+
+                    // Safety check for file inputs, though button should be disabled
+                    if (masterInput.type === 'file') {
+                        return;
+                    }
+
+                    const value = masterInput.value;
+                    individualInputs.forEach(input => {
+                        input.value = value;
+                        // Trigger change event so any other listeners know it updated
+                        input.dispatchEvent(new Event('change'));
+
+                        // Visual highlight effect
+                        input.classList.add('bg-success-subtle');
+                        setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
+                    });
+
+                    // Button Visual feedback
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i> {{ __("Applied!") }}';
+                    btn.classList.replace('btn-outline-primary', 'btn-success');
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.replace('btn-success', 'btn-outline-primary');
+                    }, 1500);
+                });
+            });
+
+            // Expand/Collapse All
+            const expandAllBtn = document.getElementById('btn-expand-all');
+            const collapseAllBtn = document.getElementById('btn-collapse-all');
+            const accordionCollapses = document.querySelectorAll('.accordion-collapse');
+
+            if(expandAllBtn && collapseAllBtn) {
+                expandAllBtn.addEventListener('click', () => {
+                    accordionCollapses.forEach(el => {
+                        // Use Bootstrap 5 API if available, or fallback to class manipulation
+                        const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+                        bsCollapse.show();
+                    });
+                });
+
+                collapseAllBtn.addEventListener('click', () => {
+                    accordionCollapses.forEach(el => {
+                        const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+                        bsCollapse.hide();
+                    });
+                });
+            }
+        })();
+    </script>
 </div>
-
-<script>
-    (function() {
-        // Handle Master Field Sync
-        const applyButtons = document.querySelectorAll('.apply-master-btn');
-
-        applyButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const field = this.dataset.field;
-                const masterInput = document.querySelector(`.master-input[data-field="${field}"]`);
-                const individualInputs = document.querySelectorAll(`.individual-input[data-field="${field}"]`);
-
-                if (!masterInput) return;
-
-                // Safety check for file inputs, though button should be disabled
-                if (masterInput.type === 'file') {
-                    return;
-                }
-
-                const value = masterInput.value;
-                individualInputs.forEach(input => {
-                    input.value = value;
-                    // Trigger change event so any other listeners know it updated
-                    input.dispatchEvent(new Event('change'));
-
-                    // Visual highlight effect
-                    input.classList.add('bg-success-subtle');
-                    setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
-                });
-
-                // Button Visual feedback
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="bi bi-check-lg"></i> {{ __("Applied!") }}';
-                btn.classList.replace('btn-outline-primary', 'btn-success');
-
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                    btn.classList.replace('btn-success', 'btn-outline-primary');
-                }, 1500);
-            });
-        });
-
-        // Expand/Collapse All
-        const expandAllBtn = document.getElementById('btn-expand-all');
-        const collapseAllBtn = document.getElementById('btn-collapse-all');
-        const accordionCollapses = document.querySelectorAll('.accordion-collapse');
-
-        if(expandAllBtn && collapseAllBtn) {
-            expandAllBtn.addEventListener('click', () => {
-                accordionCollapses.forEach(el => {
-                    // Use Bootstrap 5 API if available, or fallback to class manipulation
-                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
-                    bsCollapse.show();
-                });
-            });
-
-            collapseAllBtn.addEventListener('click', () => {
-                accordionCollapses.forEach(el => {
-                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
-                    bsCollapse.hide();
-                });
-            });
-        }
-    })();
-</script>
 @endsection
