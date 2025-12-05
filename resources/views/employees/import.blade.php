@@ -310,6 +310,15 @@ document.addEventListener('DOMContentLoaded', function() {
              if(form) {
                  form.addEventListener('submit', function(e) {
                      e.preventDefault();
+                     e.stopPropagation();
+
+                     // Disable button to prevent double submit
+                     const btn = form.querySelector('button[type="submit"]');
+                     if(btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
+                     }
+
                      loadBulkEditForm(new FormData(form));
                  });
              }
@@ -370,10 +379,20 @@ document.addEventListener('DOMContentLoaded', function() {
                  bottomBar.classList.add('mt-4', 'border-top', 'pt-3');
              }
 
+             // DISABLE SAVE BUTTON TEMPORARILY to prevent phantom clicks or double events
+             const saveBtn = content.querySelector('button[type="submit"]');
+             if(saveBtn) {
+                 saveBtn.disabled = true;
+                 setTimeout(() => {
+                     saveBtn.disabled = false;
+                 }, 800); // 800ms delay safety
+             }
+
              const form = content.querySelector('form');
              if(form) {
                  form.addEventListener('submit', function(e) {
                      e.preventDefault();
+                     e.stopPropagation();
                      submitBulkUpdate(new FormData(form));
                  });
              }
