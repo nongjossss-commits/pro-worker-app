@@ -180,8 +180,8 @@
             <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
             @if($employee->insurance_document_path_private)
                 <p class="form-control-plaintext">
-                    <a href="{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}" target="_blank">
-                        <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
+                    <a href="{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}" target="_blank" class="btn btn-success btn-sm text-white">
+                        <i class="bi bi-eye-fill"></i> ดูเอกสาร
                     </a>
                 </p>
             @else
@@ -224,8 +224,8 @@
                 <label class="form-label fw-bold">{{ $label }}</label>
                 @if($employee->{$field})
                     <p class="form-control-plaintext">
-                        <a href="{{ $url }}" target="_blank">
-                            <i class="bi bi-file-earmark-text"></i> ดูเอกสาร
+                        <a href="{{ $url }}" target="_blank" class="btn btn-success btn-sm text-white">
+                            <i class="bi bi-eye-fill"></i> ดูเอกสาร
                         </a>
                          @if($desc_field && $employee->{$desc_field})
                             <span class="text-muted d-block" style="font-size: 0.875em;">({{ $employee->{$desc_field} }})</span>

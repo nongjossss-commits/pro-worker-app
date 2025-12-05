@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Edit Mock</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { padding: 20px; font-family: 'Inter', sans-serif; }
+        .content-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container content-section">
+    <!-- Mocking the Insurance File Section -->
+    <h5 class="mt-4"><i class="bi bi-heart-pulse"></i> 5. ข้อมูลประกันสุขภาพ (Health Insurance)</h5>
+    <hr class="mb-4">
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="insurance_document_path_private" class="form-label">แนบไฟล์เอกสารประกัน</label>
+            <!-- Here is the new button style -->
+            <div class="mb-2">
+                <a href="#" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+            </div>
+            <input type="file" class="form-control form-control-sm" name="insurance_document_path_private">
+        </div>
+    </div>
+
+    <!-- Mocking the Attachments Section -->
+    <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
+    <hr class="mb-4">
+    <div class="row">
+        <!-- Item 1 -->
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">1. พาสปอร์ต</label>
+            <div class="mb-2">
+                <a href="#" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+            </div>
+            <input type="file" class="form-control form-control-sm">
+        </div>
+        <!-- Item 2 -->
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">2. วีซ่า</label>
+            <div class="mb-2">
+                <a href="#" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+            </div>
+            <input type="file" class="form-control form-control-sm">
+        </div>
+        <!-- Item 3 -->
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">3. ใบอนุญาต Work Permit</label>
+            <!-- No file uploaded mock -->
+            <input type="file" class="form-control form-control-sm">
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
