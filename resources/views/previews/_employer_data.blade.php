@@ -102,7 +102,7 @@
         <div class="col-md-6">
             <label class="form-label fw-bold">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
             @if($employer->employer_doc_company)
-                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a></p>
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a></p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
@@ -116,7 +116,7 @@
         <div class="col-md-6">
             <label class="form-label fw-bold">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
              @if($employer->employer_doc_lease)
-                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a></p>
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a></p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
@@ -124,7 +124,7 @@
         <div class="col-md-6">
             <label class="form-label fw-bold">3. สัญญาก่อสร้าง / แผนที่</label>
             @if($employer->employer_doc_construction)
-                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a></p>
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a></p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
@@ -134,7 +134,7 @@
         <div class="col-md-4">
             <label class="form-label fw-bold">4. เอกสารอื่นๆ 1</label>
             @if($employer->employer_doc_other_1)
-                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_1_desc ?? 'N/A' }})</p>
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_1_desc ?? 'N/A' }})</p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
@@ -142,7 +142,7 @@
         <div class="col-md-4">
             <label class="form-label fw-bold">5. เอกสารอื่นๆ 2</label>
             @if($employer->employer_doc_other_2)
-                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_2_desc ?? 'N/A' }})</p>
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_2_desc ?? 'N/A' }})</p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
@@ -150,7 +150,7 @@
         <div class="col-md-4">
             <label class="form-label fw-bold">6. เอกสารอื่นๆ 3</label>
             @if($employer->employer_doc_other_3)
-                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank"><i class="bi bi-file-earmark-text"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_3_desc ?? 'N/A' }})</p>
+                <p class="form-control-plaintext"><a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a> ({{ $employer->employer_doc_other_3_desc ?? 'N/A' }})</p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
             @endif
