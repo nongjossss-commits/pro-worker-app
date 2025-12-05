@@ -186,8 +186,8 @@ class ImportEmployeeController extends Controller
         $endDataRow = 112; // 100 rows
 
         // Set dimensions
-        // Column A (Photo) Width ~ 20 (approx 140px width)
-        $sheet->getColumnDimension('A')->setWidth(20);
+        // Column A (Photo) Width ~ 30 (approx 210px width) - Increased for Portrait
+        $sheet->getColumnDimension('A')->setWidth(30);
 
         // Auto-size other columns (B to L)
         foreach (range('B', 'L') as $col) {
@@ -205,7 +205,8 @@ class ImportEmployeeController extends Controller
 
         // Apply row formatting and validation
         for ($r = $startDataRow; $r <= $endDataRow; $r++) {
-            $sheet->getRowDimension($r)->setRowHeight(80);
+            // Increased row height to 150 to support portrait photos
+            $sheet->getRowDimension($r)->setRowHeight(150);
 
             // Apply borders to all cells in the grid
             $rowRange = "A{$r}:L{$r}";
@@ -292,33 +293,35 @@ class ImportEmployeeController extends Controller
                     $row = (int)$matches[2];
 
                     // Broadened Search Logic:
-                    // 1. Allow columns A, B, or C (A=1, B=2, C=3) in case the user pasted carelessly.
-                    // 2. Allow rows starting from 2 (Header usually ends at 11 or 12).
-                    //    This helps catch images that are "floating" well above the data row but visually aligned.
-                    if (in_array($column, ['A', 'B', 'C']) && $row >= 2) {
-                        // Store image by its anchor row.
-                        // If multiple images map to same row, this overwrites. Usually 1 photo per row.
-                        $images[$row] = $drawing;
+                    // 1. Allow columns A or B (A=1, B=2) in case the user pasted carelessly.
+                    // 2. Allow rows starting from 2.
+                    // Store as list to avoid overwriting if multiple images map to the same row index
+                    if (in_array($column, ['A', 'B']) && $row >= 2) {
+                        $images[] = [
+                            'drawing' => $drawing,
+                            'row' => $row,
+                            'col' => $column
+                        ];
                     }
                 }
             }
 
             if (!empty($images)) {
-                Log::info("Found " . count($images) . " images in import file starting from row $START_ROW.");
+                Log::info("Found " . count($images) . " images in import file.");
             }
 
             // Iterate rows starting from START_ROW
             $highestRow = $sheet->getHighestRow();
-            $usedImageIndices = [];
+            $usedImageIndices = []; // Keep track of used images to prevent duplication
 
             for ($rowIdx = $START_ROW; $rowIdx <= $highestRow; $rowIdx++) {
                 // Get cell values
                 // Updated Mapping for New Template:
                 // A (1) = Photo
-                // B (2) = Title (EN) <-- Swapped
-                // C (3) = Name (EN)  <-- Swapped
-                // D (4) = Title (TH) <-- Swapped
-                // E (5) = Name (TH)  <-- Swapped
+                // B (2) = Title (EN)
+                // C (3) = Name (EN)
+                // D (4) = Title (TH)
+                // E (5) = Name (TH)
                 // F (6) = DOB
                 // G (7) = Nationality
                 // H (8) = Passport
@@ -335,23 +338,8 @@ class ImportEmployeeController extends Controller
                     $row[] = trim((string)$val);
                 }
 
-                // $row array is 0-indexed relative to the loop.
-                // $row[0] = B (Title EN)
-                // $row[1] = C (Name EN)
-                // $row[2] = D (Title TH)
-                // $row[3] = E (Name TH)
-                // $row[4] = F (DOB)
-                // $row[5] = G (Nationality)
-                // $row[6] = H (Passport)
-                // $row[7] = I (WP)
-                // $row[8] = J (WP Type)
-                // $row[9] = K (Pink Card)
-                // $row[10]= L (Book Type)
-
-                // Check if empty row (TitleEN, NameEN, NameTH are in indices 0, 1, 3 of $row array)
-                // Checking standard name fields to determine emptiness
+                // Check if empty row
                 if (empty($row[0]) && empty($row[1]) && empty($row[3])) {
-                    // It might be one of the pre-formatted empty rows.
                     continue;
                 }
 
@@ -371,7 +359,6 @@ class ImportEmployeeController extends Controller
                  // Format Date
                 $dob = null;
                 if (!empty($dobRaw)) {
-                    // DOB is at Col 6 (F)
                     $dobColLetter = 'F';
                     if (Date::isDateTime($sheet->getCell($dobColLetter . $rowIdx))) {
                          $dob = Carbon::instance(Date::excelToDateTimeObject($dobRaw))->format('Y-m-d');
@@ -386,35 +373,44 @@ class ImportEmployeeController extends Controller
 
                 // Process Image from Column A
                 $photoPath = null;
-
-                // Heuristic Image Matching
                 $drawing = null;
-                $matchedRowIndex = null;
 
-                // Priority 1: Exact Match (Row = Row)
-                if (isset($images[$rowIdx]) && !in_array($rowIdx, $usedImageIndices)) {
-                    $drawing = $images[$rowIdx];
-                    $matchedRowIndex = $rowIdx;
-                }
-                // Priority 2: Floating Up (Image anchored to previous row, e.g., Row 12 for Data Row 13)
-                elseif (isset($images[$rowIdx - 1]) && !in_array($rowIdx - 1, $usedImageIndices)) {
-                    $drawing = $images[$rowIdx - 1];
-                    $matchedRowIndex = $rowIdx - 1;
-                }
-                // Priority 3: Floating Up (Image anchored even higher, e.g., Row 11)
-                // Useful if the row height is large and image is top-aligned
-                elseif (isset($images[$rowIdx - 2]) && !in_array($rowIdx - 2, $usedImageIndices)) {
-                    $drawing = $images[$rowIdx - 2];
-                    $matchedRowIndex = $rowIdx - 2;
-                }
-                // Priority 4: Floating Down (Image anchored to next row, e.g. Row 14)
-                elseif (isset($images[$rowIdx + 1]) && !in_array($rowIdx + 1, $usedImageIndices)) {
-                    $drawing = $images[$rowIdx + 1];
-                    $matchedRowIndex = $rowIdx + 1;
+                // Attempt 1: Exact Match (Image anchored in this row)
+                foreach ($images as $key => $imgData) {
+                    if (in_array($key, $usedImageIndices)) continue;
+
+                    if ($imgData['row'] == $rowIdx) {
+                        $drawing = $imgData['drawing'];
+                        $usedImageIndices[] = $key;
+                        break;
+                    }
                 }
 
-                if ($matchedRowIndex !== null) {
-                    $usedImageIndices[] = $matchedRowIndex;
+                // Attempt 2: Fuzzy Match (Image anchored in previous row - Floating Up)
+                if (!$drawing) {
+                    foreach ($images as $key => $imgData) {
+                        if (in_array($key, $usedImageIndices)) continue;
+
+                        if ($imgData['row'] == ($rowIdx - 1)) {
+                            $drawing = $imgData['drawing'];
+                            $usedImageIndices[] = $key;
+                            break;
+                        }
+                    }
+                }
+
+                // Attempt 3: Fuzzy Match (Image anchored 2 rows up - Large Floating Up)
+                // Only if row height is very small or image is huge, but safe to include.
+                if (!$drawing) {
+                     foreach ($images as $key => $imgData) {
+                        if (in_array($key, $usedImageIndices)) continue;
+
+                        if ($imgData['row'] == ($rowIdx - 2)) {
+                            $drawing = $imgData['drawing'];
+                            $usedImageIndices[] = $key;
+                            break;
+                        }
+                    }
                 }
 
                 if ($drawing) {
