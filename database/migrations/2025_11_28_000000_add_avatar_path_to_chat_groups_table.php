@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('chat_groups', function (Blueprint $table) {
-            $table->string('avatar_path')->nullable()->after('name');
-        });
+        if (Schema::hasTable('chat_groups') && !Schema::hasColumn('chat_groups', 'avatar_path')) {
+            Schema::table('chat_groups', function (Blueprint $table) {
+                $table->string('avatar_path')->nullable()->after('name');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('chat_groups', function (Blueprint $table) {
-            $table->dropColumn('avatar_path');
-        });
+        if (Schema::hasTable('chat_groups') && Schema::hasColumn('chat_groups', 'avatar_path')) {
+            Schema::table('chat_groups', function (Blueprint $table) {
+                $table->dropColumn('avatar_path');
+            });
+        }
     }
 };
