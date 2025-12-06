@@ -57,6 +57,15 @@
                             <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>{{ __('Others') }}</option>
                         </select>
                     </div>
+                    <div class="col-12 col-md-2">
+                        <select name="insurance_type" class="form-select form-select-sm">
+                            <option value="">-- {{ __('Insurance Type') }} --</option>
+                            <option value="none" {{ request('insurance_type') == 'none' ? 'selected' : '' }}>{{ __('No Insurance') }}</option>
+                            <option value="ประกันสังคม" {{ request('insurance_type') == 'ประกันสังคม' ? 'selected' : '' }}>{{ __('Social Security') }}</option>
+                            <option value="ประกันโรงพยาบาล" {{ request('insurance_type') == 'ประกันโรงพยาบาล' ? 'selected' : '' }}>{{ __('Hospital Insurance') }}</option>
+                            <option value="ประกันเอกชน" {{ request('insurance_type') == 'ประกันเอกชน' ? 'selected' : '' }}>{{ __('Private Insurance') }}</option>
+                        </select>
+                    </div>
                     <div class="col-6 col-md-auto">
                         <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> {{ __('Filter') }}</button>
                     </div>

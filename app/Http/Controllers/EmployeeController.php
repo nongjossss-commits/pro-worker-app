@@ -113,6 +113,17 @@ public function reinstate(Employee $employee)
         $query->where('workPermitMOUGroup', $request->input('mou_group'));
     }
 
+    if ($request->filled('insurance_type')) {
+        $insuranceType = $request->input('insurance_type');
+        if ($insuranceType === 'none') {
+            $query->where(function ($q) {
+                $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+            });
+        } else {
+            $query->where('insurance_type', $insuranceType);
+        }
+    }
+
     if ($request->filled('pink_card')) {
         if ($request->input('pink_card') === 'yes') {
             $query->where(function ($q) {
@@ -564,6 +575,17 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $query->where('workPermitMOUGroup', $request->input('mou_group'));
         }
 
+        if ($request->filled('insurance_type')) {
+            $insuranceType = $request->input('insurance_type');
+            if ($insuranceType === 'none') {
+                $query->where(function ($q) {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+                });
+            } else {
+                $query->where('insurance_type', $insuranceType);
+            }
+        }
+
         if ($request->filled('pink_card')) {
             if ($request->input('pink_card') === 'yes') {
                 $query->where(fn($q) => $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', ''));
@@ -670,6 +692,17 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         if ($request->filled('mou_group')) {
             $query->where('workPermitMOUGroup', $request->input('mou_group'));
+        }
+
+        if ($request->filled('insurance_type')) {
+            $insuranceType = $request->input('insurance_type');
+            if ($insuranceType === 'none') {
+                $query->where(function ($q) {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+                });
+            } else {
+                $query->where('insurance_type', $insuranceType);
+            }
         }
 
         if ($request->filled('pink_card')) {

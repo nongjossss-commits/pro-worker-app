@@ -144,6 +144,17 @@ public function edit(Request $request, Employer $employer)
         $employeeQuery->where('workPermitMOUGroup', $request->input('mou_group'));
     }
 
+    if ($request->filled('insurance_type')) {
+        $insuranceType = $request->input('insurance_type');
+        if ($insuranceType === 'none') {
+            $employeeQuery->where(function ($q) {
+                $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+            });
+        } else {
+            $employeeQuery->where('insurance_type', $insuranceType);
+        }
+    }
+
     if ($request->filled('pink_card')) {
         if ($request->input('pink_card') === 'yes') {
             $employeeQuery->where(function ($q) {
@@ -332,6 +343,16 @@ public function edit(Request $request, Employer $employer)
             }
             if ($request->filled('mou_group')) {
                 $query->where('workPermitMOUGroup', $request->input('mou_group'));
+            }
+            if ($request->filled('insurance_type')) {
+                $insuranceType = $request->input('insurance_type');
+                if ($insuranceType === 'none') {
+                    $query->where(function ($q) {
+                        $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+                    });
+                } else {
+                    $query->where('insurance_type', $insuranceType);
+                }
             }
             if ($request->filled('pink_card')) {
                 if ($request->input('pink_card') === 'yes') {

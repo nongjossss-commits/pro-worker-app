@@ -165,6 +165,19 @@ class NotificationController extends Controller
                 $q->where('workPermitMOUGroup', $request->input('mou_type'));
             });
         }
+
+        if ($request->filled('insurance_type')) {
+            $type = $request->input('insurance_type');
+            // Only apply to notifications linked to employees
+            $query->whereHas('employee', function ($q) use ($type) {
+                if ($type === 'none') {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+                } else {
+                    $q->where('insurance_type', $type);
+                }
+            });
+        }
+
         return $query;
     }
 
