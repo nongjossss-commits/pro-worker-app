@@ -20,6 +20,35 @@
             background-color: #f8fafc; /* Tailwind's slate-50 */
         }
     </style>
+
+    <script>
+        // Auto-refresh logic to prevent 419 Page Expired errors
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. Handle Back/Forward Cache (bfcache)
+            // If the user navigates back to this page, the CSRF token might be stale.
+            // We force a reload if the page is persisted in the bfcache.
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    window.location.reload();
+                }
+            });
+
+            // 2. Auto-refresh after inactivity
+            // If the tab is left open longer than the session lifetime (or a safe margin),
+            // reload the page to get a fresh CSRF token before the user tries to submit.
+            // Setting this to 20 minutes (1200000 ms) as a safe check.
+            const REFRESH_TIME = 20 * 60 * 1000;
+
+            let refreshTimer = setTimeout(function() {
+                window.location.reload();
+            }, REFRESH_TIME);
+
+            // Optional: Reset timer on user interaction if we wanted to keep the session alive via AJAX,
+            // but for a login page, we just want to ensure the token on screen matches the server.
+            // Since the server token expires independently of client activity on a static login page,
+            // a fixed reload is safer than an activity-based one for the 'login form' specifically.
+        });
+    </script>
 </head>
 <body class="antialiased text-slate-800">
 
