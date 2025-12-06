@@ -1,41 +1,41 @@
-const CACHE_NAME = 'pwl-system-v2';
-const urlsToCache = [
-    '/images/icons/icon-192x192.png',
-    '/images/icons/icon-512x512.png'
-];
+// Service Worker for PWL System
+// Strategy: Network Only (No Offline Support)
+// This ensures maximum stability and avoids ERR_FAILED issues from stale caches.
+
+const CACHE_NAME = 'pwl-system-v3-online-only';
 
 self.addEventListener('install', event => {
+    // Force the waiting service worker to become the active service worker.
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+    // Tell the active service worker to take control of the page immediately.
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                return cache.addAll(urlsToCache);
+        Promise.all([
+            self.clients.claim(),
+            // Clean up old caches to save space and avoid confusion
+            caches.keys().then(cacheNames => {
+                return Promise.all(
+                    cacheNames.map(cacheName => {
+                        return caches.delete(cacheName);
+                    })
+                );
             })
+        ])
     );
 });
 
 self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request);
-            })
-    );
-});
+    // Pass all requests directly to the network.
+    // If the network fails, the browser will show its standard offline page.
+    // We intentionally do NOT use event.respondWith() here for a pure passthrough,
+    // but using it with fetch() allows us to potentially catch errors if we wanted to.
+    // For "smoothness", a direct fetch is best.
 
-self.addEventListener('activate', event => {
-    const cacheWhitelist = [CACHE_NAME];
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
+    event.respondWith(fetch(event.request));
 });
