@@ -58,25 +58,33 @@
 <div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item" draggable="true"
      data-drag-payload="{{ json_encode($payload) }}"
      ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
-    <div class="d-flex align-items-center gap-3">
-        {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
-        @if($employee)
-            <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_checkbox_{{ $notification->id }}">
-        @else
-            <input class="form-check-input" type="checkbox" disabled>
-        @endif
+    <div class="d-flex align-items-start gap-3">
 
-        {{-- Use employee photo or a placeholder --}}
-        <img src="{{ $employee->photo_url ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-             alt="Photo"
-             class="w-12 h-12 object-cover rounded-full bg-light flex-shrink-0"
-             style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+        {{-- Left: Checkbox & Image --}}
+        {{-- Mobile: Stacked vertically (flex-column) to save horizontal space --}}
+        {{-- Desktop: Side-by-side (flex-md-row) to match standard list layout --}}
+        <div class="d-flex flex-column flex-md-row align-items-center gap-2 mt-1 flex-shrink-0">
+            @if($employee)
+                <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_checkbox_{{ $notification->id }}">
+            @else
+                <input class="form-check-input" type="checkbox" disabled>
+            @endif
 
-        <div class="d-flex justify-content-between align-items-start w-100">
-            <div class="flex-grow-1">
+            <img src="{{ $employee->photo_url ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
+                 alt="Photo"
+                 class="w-12 h-12 object-cover rounded-full bg-light"
+                 style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+        </div>
+
+        {{-- Right: Content & Actions --}}
+        {{-- Mobile: Stacked (Text top, Actions bottom) --}}
+        {{-- Desktop: Side-by-side (Text left, Actions right) --}}
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start w-100 gap-2">
+
+            {{-- Text Content --}}
+            <div class="flex-grow-1 w-100">
                 <h5 class="alert-heading mb-1">
                     {{ $itemNumber }}.
-                    {{-- Display Employee Name or Employer Document Type --}}
                     @if($employee)
                         <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
                             {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
@@ -114,8 +122,11 @@
                     @endif
                 </p>
             </div>
-            <div class="text-end flex-shrink-0 ms-2">
-                <span class="badge {{ $badge_class }} mb-2 d-block text-nowrap fs-6">
+
+            {{-- Actions Area: Badge & Buttons --}}
+            <div class="w-100 w-md-auto d-flex flex-column align-items-md-end mt-2 mt-md-0 flex-shrink-0">
+                {{-- Badge: Full width on mobile, auto on desktop --}}
+                <span class="badge {{ $badge_class }} mb-2 d-block text-nowrap fs-6 w-100 w-md-auto text-center">
                     @if($isMissingDataType)
                         กรุณาอัพเดต
                     @elseif($is_overdue)
@@ -124,22 +135,24 @@
                         เหลือ {{ $days_remaining }} วัน
                     @endif
                 </span>
-                <div class="d-flex flex-column flex-md-row gap-2" role="group">
+
+                {{-- Button Group: Horizontal on BOTH Mobile and Desktop --}}
+                <div class="d-flex flex-row gap-2 justify-content-between justify-content-md-end w-100 w-md-auto flex-wrap" role="group">
                     @if($notification->status === 'cancelled')
-                        <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-grid d-md-inline">
+                        <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-grid d-md-inline flex-fill flex-md-grow-0">
                             @csrf
-                            <button type="submit" class="btn btn-info" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
+                            <button type="submit" class="btn btn-info w-100" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
                         </form>
-                        <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
+                        <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline flex-fill flex-md-grow-0" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
+                            <button type="submit" class="btn btn-danger w-100" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
                         </form>
                     @else
-                        <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
+                        <a href="#" class="btn btn-info flex-fill flex-md-grow-0" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
 
                         {{-- Update/Renew Button --}}
-                        <a href="#" class="btn btn-success"
+                        <a href="#" class="btn btn-success flex-fill flex-md-grow-0"
                            title="{{ $isMissingDataType ? 'อัพเดตข้อมูล' : 'ต่ออายุ' }}"
                            data-bs-toggle="modal"
                            data-bs-target="#renewNotificationModal"
@@ -151,9 +164,9 @@
 
                         {{-- Only show the 'Locate' button if there is an employee --}}
                         @if($employee)
-                            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+                            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary flex-fill flex-md-grow-0" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                         @endif
-                        <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+                        <a href="#" class="btn btn-warning flex-fill flex-md-grow-0" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
                     @endif
                 </div>
             </div>
