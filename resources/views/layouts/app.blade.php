@@ -6,6 +6,14 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- PWA Settings -->
+    <meta name="theme-color" content="#F97316">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Proworker">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo_new.jpg') }}">
+
     <title>@yield('title', 'Company Records')</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -154,6 +162,25 @@
         #sidebar .offcanvas-body {
             padding: 1.5rem;
         }
+
+        /* Responsive Sidebar: Static on Desktop, Offcanvas on Mobile */
+        @media (min-width: 992px) {
+            #sidebar.offcanvas {
+                position: static !important;
+                transform: none !important;
+                visibility: visible !important;
+                height: auto !important;
+                z-index: auto !important;
+                border-right: 1px solid var(--bs-border-color);
+            }
+            .offcanvas-backdrop {
+                display: none !important;
+            }
+            #sidebar .btn-close {
+                display: none;
+            }
+        }
+
         /* Reduce main content padding on mobile view */
         @media (max-width: 991.98px) {
             #main-content {
@@ -350,7 +377,7 @@
         <main id="main-content" style="position: relative; z-index: 1;">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                    <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                         <i class="bi bi-list"></i>
                     </button>
 
@@ -536,6 +563,18 @@
     @include('components.chat-widget')
 
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
 
     <script>
     // Global Drag Helper
