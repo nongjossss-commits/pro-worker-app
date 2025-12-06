@@ -45,6 +45,13 @@
                 <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>{{ __('MOU Registration') }}</option>
                 <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>{{ __('Others') }}</option>
             </select>
+            <select name="insurance_type" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- {{ __('Insurance Type') }} --</option>
+                <option value="none" {{ request('insurance_type') == 'none' ? 'selected' : '' }}>{{ __('No Insurance') }}</option>
+                <option value="ประกันสังคม" {{ request('insurance_type') == 'ประกันสังคม' ? 'selected' : '' }}>{{ __('Social Security') }}</option>
+                <option value="ประกันโรงพยาบาล" {{ request('insurance_type') == 'ประกันโรงพยาบาล' ? 'selected' : '' }}>{{ __('Hospital Insurance') }}</option>
+                <option value="ประกันเอกชน" {{ request('insurance_type') == 'ประกันเอกชน' ? 'selected' : '' }}>{{ __('Private Insurance') }}</option>
+            </select>
             <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- {{ __('Pink Card') }} --</option>
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>{{ __('Has Pink Card') }}</option>
