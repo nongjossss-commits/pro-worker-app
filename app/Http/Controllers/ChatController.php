@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\ChatMessage;
 use App\Models\ChatMessageRead; // Added
 use App\Models\ChatGroup;
+use App\Models\PushSubscription; // Added
+use App\Services\WebPushService; // Added
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -247,6 +249,50 @@ class ChatController extends Controller
 
         $message->load('sender:id,name,avatar_path');
         $message->read_count = 0; // Initial read count
+
+        // --- WEB PUSH NOTIFICATION ---
+        // Fire and forget (or queue it in a real app)
+        // We find recipients who are NOT the sender.
+        $recipientIds = [];
+
+        if ($data['chat_group_id']) {
+            // Get all members of the group except sender
+            // Community group: All 'active' users who have chat access? Or explicit members?
+            $group = ChatGroup::find($data['chat_group_id']);
+            if ($group->type === 'community') {
+                // Community is implicitly everyone with roles admin/staff/caretaker/delegate
+                 $recipientIds = User::whereHas('roles', function($q) {
+                        $q->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
+                 })->where('id', '!=', Auth::id())->pluck('id')->toArray();
+            } else {
+                 $recipientIds = $group->members()->where('user_id', '!=', Auth::id())->pluck('user_id')->toArray();
+            }
+        } else {
+            $recipientIds = [$data['receiver_id']];
+        }
+
+        // Send Push
+        if (!empty($recipientIds)) {
+            $subscriptions = PushSubscription::whereIn('user_id', $recipientIds)->get();
+            $pushService = new WebPushService();
+            $payload = json_encode([
+                'title' => 'New Message from ' . $currentUser->name,
+                'body' => substr($message->message, 0, 100),
+                'icon' => $currentUser->avatar_url,
+                'url' => '/dashboard#chat'
+            ]);
+
+            foreach ($subscriptions as $sub) {
+                // Simple check: we don't want to push if user is currently online (last_active < 1 min)?
+                // The requirement says "like modern chat apps", which usually push anyway or silence if focused.
+                // We'll push.
+                $pushService->sendNotification(
+                    $sub->endpoint,
+                    ['p256dh' => $sub->public_key, 'auth' => $sub->auth_token],
+                    $payload
+                );
+            }
+        }
 
         return response()->json($message);
     }
