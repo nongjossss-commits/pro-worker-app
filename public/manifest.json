@@ -1,7 +1,7 @@
 {
     "name": "PWL System",
     "short_name": "PWL System",
-    "start_url": "/login",
+    "start_url": "/dashboard",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#F97316",
