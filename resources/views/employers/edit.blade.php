@@ -419,7 +419,10 @@
     </div>
 
     <x-bulk-action-bar id="employer-edit-bulk-bar">
+        <li><a class="dropdown-item" href="#" id="employer-bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
         <li><a class="dropdown-item" href="#" id="employer-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" id="employer-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
         <li><a class="dropdown-item" href="#" id="employer-bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
     </x-bulk-action-bar>
 
@@ -540,6 +543,69 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Handle Advanced Edit
+        const bulkEditBtn = document.getElementById('employer-bulk-advanced-edit-btn');
+        if (bulkEditBtn) {
+            bulkEditBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                // Create a form dynamically and submit POST
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route('employees.bulk_edit.select_fields') }}';
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                const redirectInput = document.createElement('input');
+                redirectInput.type = 'hidden';
+                redirectInput.name = 'redirect_to';
+                redirectInput.value = window.location.href;
+                form.appendChild(redirectInput);
+
+                selected.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'employee_ids[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        // Handle Download Files
+        const bulkDownloadBtn = document.getElementById('employer-bulk-download-btn');
+        if (bulkDownloadBtn) {
+            bulkDownloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                if (window.openBulkDownloadModal) {
+                    window.openBulkDownloadModal(selected);
+                } else {
+                    console.error('Download modal function not found.');
+                    showToast('Download function not available.', 'danger');
+                }
+            });
+        }
+
         const bulkExportBtn = document.getElementById('employer-bulk-advanced-export-btn');
         if (bulkExportBtn) {
             bulkExportBtn.addEventListener('click', function(e) {
