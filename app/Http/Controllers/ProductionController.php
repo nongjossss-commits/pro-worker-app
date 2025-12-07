@@ -36,7 +36,33 @@ class ProductionController extends Controller
         $employerId = $request->query('employer_id');
         $ticketId = $request->query('ticket_id');
 
-        return view('production.create', compact('employerId', 'ticketId'));
+        // Handle pre-selected employees (sent from bulk actions)
+        $selectedEmployeeIds = $request->query('employee_ids'); // Expecting array or comma-separated if GET
+        if (!$selectedEmployeeIds && $request->has('employee_ids_json')) {
+            $selectedEmployeeIds = json_decode($request->query('employee_ids_json'), true);
+        }
+
+        // If coming from a POST form (via session or forwarded request) - handled better by sending as GET params or session
+        // Let's check session as well if redirected
+        if (session()->has('bulk_employee_ids')) {
+            $selectedEmployeeIds = session('bulk_employee_ids');
+        }
+
+        // Fetch Employee Models if IDs exist
+        $preSelectedEmployees = collect();
+        if ($selectedEmployeeIds) {
+            if (is_string($selectedEmployeeIds)) {
+                $selectedEmployeeIds = explode(',', $selectedEmployeeIds);
+            }
+            $preSelectedEmployees = Employee::whereIn('id', $selectedEmployeeIds)->get();
+
+            // Auto-detect employer if not set
+            if (!$employerId && $preSelectedEmployees->isNotEmpty()) {
+                $employerId = $preSelectedEmployees->first()->employer_id;
+            }
+        }
+
+        return view('production.create', compact('employerId', 'ticketId', 'preSelectedEmployees'));
     }
 
     /**

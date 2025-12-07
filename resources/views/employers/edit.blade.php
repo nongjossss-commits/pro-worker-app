@@ -667,12 +667,20 @@
         if (bulkSendProductionBtn) {
             bulkSendProductionBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                // We just need the employer ID to redirect to Production Create
-                // In this context, we are in Employer Edit, so $employer->id is available via Blade or DOM
-                // But we should check if employees are selected, maybe pass them later.
-                // For now, simpler is better: redirect to Create Page with Employer Pre-selected.
+                // Get selected employees
+                const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+                const selected = Array.from(checkboxes).map(cb => cb.value);
+
+                // Prepare URL params
                 const employerId = '{{ $employer->id }}';
-                window.location.href = '{{ route("production.create") }}?employer_id=' + employerId;
+                let url = '{{ route("production.create") }}?employer_id=' + employerId;
+
+                if (selected.length > 0) {
+                     const idsJson = encodeURIComponent(JSON.stringify(selected));
+                     url += '&employee_ids_json=' + idsJson;
+                }
+
+                window.location.href = url;
             });
         }
 

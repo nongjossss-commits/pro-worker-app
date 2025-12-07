@@ -347,7 +347,7 @@
                         <i class="bi bi-clipboard-data-fill me-2"></i>{{ __('P Production') }}
                     </a>
                     <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.workflow') ? 'active' : '' }}">
-                        <i class="bi bi-diagram-3-fill me-2"></i>{{ __('P Workflow') }}
+                        <i class="bi bi-diagram-3-fill me-2"></i>{{ __('Workflow') }}
                     </a>
                 @endif
 
