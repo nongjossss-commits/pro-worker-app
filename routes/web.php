@@ -116,6 +116,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
     Route::delete('/notifications/{notification}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.forceDelete');
 
+    // Web Push Subscriptions
+    Route::post('/push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->name('push.subscribe');
+
     // --- V2.4: Employer Ticket Routes ---
     Route::resource('tickets', TicketController::class)->only([
         'index', 'create', 'store', 'show', 'destroy'

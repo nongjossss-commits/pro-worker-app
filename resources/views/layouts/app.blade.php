@@ -561,16 +561,110 @@
         e.dataTransfer.setData('text/plain', jsonPayload); // Fallback for broader compatibility
     }
 
-    // Register PWA Service Worker
+    // Register PWA Service Worker & Push Subscription
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
                 .then(registration => {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    initializePushSubscription(registration);
                 })
                 .catch(err => {
                     console.log('ServiceWorker registration failed: ', err);
                 });
+        });
+    }
+
+    // Helper to convert VAPID key
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/');
+
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    function initializePushSubscription(registration) {
+        // Check if push is supported
+        if (!('PushManager' in window)) {
+            console.log('Push messaging isn\'t supported.');
+            return;
+        }
+
+        // Check permission state
+        if (Notification.permission === 'denied') {
+            console.log('The user has blocked notifications.');
+            return;
+        }
+
+        // We can request permission here, or let the user click a button.
+        // For PWA experience, we often ask on load or interaction.
+        // Let's ask on load for now as per requirement "like a modern app".
+
+        // Use a dummy VAPID public key if we don't have a real one yet from .env
+        // In a real scenario, this comes from config.
+        // I will use a placeholder or check if one is injected.
+        const vapidPublicKey = '{{ config('services.webpush.public_key', 'BCmti7ScwxxVAlB7WAzMMSiwV4-D1_5z509i546e4k7e4k7e4k7e4k7e4k7e4k7e4k7e4k7e4k7e4k7e4k4') }}';
+
+        // If key is invalid placeholder, we can't really subscribe securely, but we'll try standard subscribe
+        // For local testing without VAPID, push might not work fully in all browsers.
+
+        // Ideally:
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        // Check if already subscribed
+        registration.pushManager.getSubscription()
+            .then(function(subscription) {
+                if (subscription) {
+                    console.log('User is already subscribed:', subscription);
+                    sendSubscriptionToBackEnd(subscription);
+                    return subscription;
+                }
+
+                return registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: convertedVapidKey
+                });
+            })
+            .then(function(subscription) {
+                if (subscription) {
+                    console.log('User is subscribed:', subscription);
+                    sendSubscriptionToBackEnd(subscription);
+                }
+            })
+            .catch(function(err) {
+                console.log('Failed to subscribe the user: ', err);
+            });
+    }
+
+    function sendSubscriptionToBackEnd(subscription) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        fetch('{{ route('push.subscribe') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify(subscription)
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('Bad status code from server.');
+            }
+            return response.json();
+        })
+        .then(function(responseData) {
+            if (!responseData.success) {
+                throw new Error('Bad response from server.');
+            }
         });
     }
     </script>

@@ -27,7 +27,8 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt([...$credentials, 'status' => 'active'])) {
+        // Force "Remember Me" to true for persistent login (PWA/Mobile friendly)
+        if (Auth::attempt([...$credentials, 'status' => 'active'], true)) {
             $request->session()->regenerate();
 
             // Set default language to Thai
