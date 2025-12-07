@@ -82,7 +82,7 @@
                     @foreach($selectedFields as $field)
                         <div class="col-md-4">
                             <div class="p-3 border rounded bg-white shadow-sm h-100 d-flex flex-column">
-                                <label class="form-label fw-bold text-primary mb-2">{{ $fieldLabels[$field] ?? $field }}</label>
+                                <label class="form-label fw-bold text-primary mb-2">{{ __($fieldLabels[$field] ?? $field) }}</label>
 
                                 <div class="mb-2 flex-grow-1">
                                     @if(in_array($field, $fileFields))
@@ -163,7 +163,7 @@
                             <div class="row g-3">
                                 @foreach($selectedFields as $field)
                                     <div class="col-md-4">
-                                        <label class="form-label text-secondary small text-uppercase fw-bold">{{ $fieldLabels[$field] ?? $field }}</label>
+                                        <label class="form-label text-secondary small text-uppercase fw-bold">{{ __($fieldLabels[$field] ?? $field) }}</label>
 
                                         @if(in_array($field, $fileFields))
                                             @php

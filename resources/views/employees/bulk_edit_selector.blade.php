@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Advanced Bulk Edit Selection')
+@section('title', __('Advanced Bulk Edit Selection'))
 
 @section('content')
 <div class="container-fluid p-4">
