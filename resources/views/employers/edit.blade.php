@@ -424,6 +424,7 @@
         <li><hr class="dropdown-divider"></li>
         <li><a class="dropdown-item" href="#" id="employer-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
         <li><a class="dropdown-item" href="#" id="employer-bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
+        <li><a class="dropdown-item" href="#" id="employer-bulk-send-production-btn"><i class="bi bi-diagram-3 me-2"></i>{{ __('Send to P Production') }}</a></li>
     </x-bulk-action-bar>
 
     <div id="employeeList">
@@ -659,6 +660,19 @@
                 const modalEl = document.getElementById('selectTargetEmployerModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
+            });
+        }
+
+        const bulkSendProductionBtn = document.getElementById('employer-bulk-send-production-btn');
+        if (bulkSendProductionBtn) {
+            bulkSendProductionBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                // We just need the employer ID to redirect to Production Create
+                // In this context, we are in Employer Edit, so $employer->id is available via Blade or DOM
+                // But we should check if employees are selected, maybe pass them later.
+                // For now, simpler is better: redirect to Create Page with Employer Pre-selected.
+                const employerId = '{{ $employer->id }}';
+                window.location.href = '{{ route("production.create") }}?employer_id=' + employerId;
             });
         }
 

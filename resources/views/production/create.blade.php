@@ -23,11 +23,11 @@
                                     @php
                                         // Fetching directly in view for simplicity as per "First Draft" instruction
                                         // In production refactor to controller passing variable
-                                        $employers = \App\Models\Employer::select('id', 'name_th', 'name_en', 'employer_id')->limit(100)->get();
+                                        $employers = \App\Models\Employer::select('id', 'employerNameTh', 'employerNameEn', 'employerId')->limit(100)->get();
                                     @endphp
                                     @foreach($employers as $emp)
-                                        <option value="{{ $emp->id }}">
-                                            {{ $emp->employer_id }} - {{ $emp->name_en }} ({{ $emp->name_th }})
+                                        <option value="{{ $emp->id }}" {{ (isset($employerId) && $employerId == $emp->id) ? 'selected' : '' }}>
+                                            {{ $emp->employerId }} - {{ $emp->employerNameEn }} ({{ $emp->employerNameTh }})
                                         </option>
                                     @endforeach
                                 </select>

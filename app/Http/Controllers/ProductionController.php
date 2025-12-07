@@ -28,12 +28,15 @@ class ProductionController extends Controller
     /**
      * Show the form for creating a new Production Order (Pre-Production).
      */
-    public function create()
+    public function create(Request $request)
     {
         // For the employer selector
         // We might want to limit this or use an AJAX search for performance if many employers exist.
         // For now, passing all employers or using the existing API endpoint logic in view.
-        return view('production.create');
+        $employerId = $request->query('employer_id');
+        $ticketId = $request->query('ticket_id');
+
+        return view('production.create', compact('employerId', 'ticketId'));
     }
 
     /**
