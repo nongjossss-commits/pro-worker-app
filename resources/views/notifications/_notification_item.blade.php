@@ -58,12 +58,12 @@
 <div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item" draggable="true"
      data-drag-payload="{{ json_encode($payload) }}"
      ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-start gap-3">
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)
-            <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_checkbox_{{ $notification->id }}">
+            <input class="form-check-input bulk-action-checkbox mt-1" type="checkbox" value="{{ $employee->id }}" id="notification_checkbox_{{ $notification->id }}">
         @else
-            <input class="form-check-input" type="checkbox" disabled>
+            <input class="form-check-input mt-1" type="checkbox" disabled>
         @endif
 
         {{-- Use employee photo or a placeholder --}}
@@ -72,7 +72,7 @@
              class="w-12 h-12 object-cover rounded-full bg-light flex-shrink-0"
              style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
 
-        <div class="d-flex justify-content-between align-items-start w-100">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
                 <h5 class="alert-heading mb-1">
                     {{ $itemNumber }}.
@@ -114,51 +114,54 @@
                     @endif
                 </p>
             </div>
-            <div class="text-end flex-shrink-0 ms-2">
-                <span class="badge {{ $badge_class }} mb-2 d-block text-nowrap fs-6">
-                    @if($isMissingDataType)
-                        กรุณาอัพเดต
-                    @elseif($is_overdue)
-                        หมดอายุ {{ abs($days_remaining) }} วัน
-                    @else
-                        เหลือ {{ $days_remaining }} วัน
-                    @endif
-                </span>
-                <div class="btn-group-vertical btn-group-sm" role="group">
-                    @if($notification->status === 'cancelled')
-                        <form id="restore-form-{{ $notification->id }}" action="{{ route('notifications.restore', $notification->id) }}" method="POST" style="display: none;">
-                            @csrf
-                        </form>
-                        <button type="submit" form="restore-form-{{ $notification->id }}" class="btn btn-outline-info" title="กู้คืน">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </button>
 
-                        <form id="force-delete-form-{{ $notification->id }}" action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');" style="display: none;">
-                            @csrf
-                            @method('DELETE')
-                        </form>
-                        <button type="submit" form="force-delete-form-{{ $notification->id }}" class="btn btn-outline-danger" title="ลบถาวร">
-                            <i class="bi bi-trash3-fill"></i>
-                        </button>
-                    @else
-                        <a href="#" class="btn btn-outline-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
-
-                        {{-- Update/Renew Button --}}
-                        <a href="#" class="btn btn-outline-success"
-                           title="{{ $isMissingDataType ? 'อัพเดตข้อมูล' : 'ต่ออายุ' }}"
-                           data-bs-toggle="modal"
-                           data-bs-target="#renewNotificationModal"
-                           data-notification-id="{{ $notification->id }}"
-                           data-notification-type="{{ $notification->type }}">
-                           <i class="bi {{ $isMissingDataType ? 'bi-pencil-square' : 'bi-calendar-check' }}"></i>
-                        </a>
-
-                        {{-- Only show the 'Locate' button if there is an employee --}}
-                        @if($employee)
-                            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+            <div class="text-end flex-shrink-0 mt-2 mt-sm-0 align-self-end align-self-sm-auto ms-sm-2">
+                <div class="d-flex flex-column align-items-end">
+                    <span class="badge {{ $badge_class }} mb-2 d-block text-nowrap fs-6">
+                        @if($isMissingDataType)
+                            กรุณาอัพเดต
+                        @elseif($is_overdue)
+                            หมดอายุ {{ abs($days_remaining) }} วัน
+                        @else
+                            เหลือ {{ $days_remaining }} วัน
                         @endif
-                        <a href="#" class="btn btn-outline-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
-                    @endif
+                    </span>
+                    <div class="d-flex flex-row flex-sm-column gap-1 justify-content-end" role="group">
+                        @if($notification->status === 'cancelled')
+                            <form id="restore-form-{{ $notification->id }}" action="{{ route('notifications.restore', $notification->id) }}" method="POST" style="display: none;">
+                                @csrf
+                            </form>
+                            <button type="submit" form="restore-form-{{ $notification->id }}" class="btn btn-sm btn-outline-info" title="กู้คืน">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+
+                            <form id="force-delete-form-{{ $notification->id }}" action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');" style="display: none;">
+                                @csrf
+                                @method('DELETE')
+                            </form>
+                            <button type="submit" form="force-delete-form-{{ $notification->id }}" class="btn btn-sm btn-outline-danger" title="ลบถาวร">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        @else
+                            <a href="#" class="btn btn-sm btn-outline-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
+
+                            {{-- Update/Renew Button --}}
+                            <a href="#" class="btn btn-sm btn-outline-success"
+                               title="{{ $isMissingDataType ? 'อัพเดตข้อมูล' : 'ต่ออายุ' }}"
+                               data-bs-toggle="modal"
+                               data-bs-target="#renewNotificationModal"
+                               data-notification-id="{{ $notification->id }}"
+                               data-notification-type="{{ $notification->type }}">
+                               <i class="bi {{ $isMissingDataType ? 'bi-pencil-square' : 'bi-calendar-check' }}"></i>
+                            </a>
+
+                            {{-- Only show the 'Locate' button if there is an employee --}}
+                            @if($employee)
+                                <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-sm btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+                            @endif
+                            <a href="#" class="btn btn-sm btn-outline-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
