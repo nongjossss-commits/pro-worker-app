@@ -693,18 +693,10 @@
                         </form>
 
                         {{-- Forward to P-Workflow Button --}}
-                        <form id="forward-form" action="{{ route('admin.tickets.forward', $ticket) }}" method="POST" class="d-grid">
-                            @csrf
-                            <button type="button" class="btn btn-outline-primary btn-submit-swal"
-                                    data-swal-title="ยืนยันการส่งต่องาน"
-                                    data-swal-text="คุณต้องการส่งต่องานนี้เข้าสู่ P-Workflow (สถานะ In Progress) ใช่หรือไม่?"
-                                    data-swal-icon="info"
-                                    data-swal-confirm-text="ใช่, ส่งต่อเลย"
-                                    {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-arrow-right-circle-fill me-2"></i>
-                                Forward to P-Workflow
-                            </button>
-                        </form>
+                        <a href="{{ route('production.create', ['ticket_id' => $ticket->id, 'employer_id' => optional($ticket->employerUser->employer)->id]) }}"
+                           class="btn btn-outline-primary d-grid {{ $isClosed ? 'disabled' : '' }}">
+                           <span><i class="bi bi-arrow-right-circle-fill me-2"></i> Forward to P-Workflow</span>
+                        </a>
                         {{-- Change Assignment Button --}}
                         <button type="button" class="btn btn-outline-secondary d-grid" data-bs-toggle="modal" data-bs-target="#changeAssignmentModal" {{ $isClosed ? 'disabled' : '' }}>
                             <i class="bi bi-person-fill-gear me-2"></i> Change Assignment

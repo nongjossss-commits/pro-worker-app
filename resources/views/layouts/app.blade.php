@@ -340,6 +340,17 @@
                 @can('manage-users')
                 <a href="{{ route('admin.users.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-person-fill-gear me-2"></i>{{ __('User Management') }}</a>
                 @endcan
+
+                {{-- V2.4-S14: Production & Workflow Menus --}}
+                @if(Route::has('production.index'))
+                    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.*') ? 'active' : '' }}">
+                        <i class="bi bi-clipboard-data-fill me-2"></i>{{ __('P Production') }}
+                    </a>
+                    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.workflow') ? 'active' : '' }}">
+                        <i class="bi bi-diagram-3-fill me-2"></i>{{ __('P Workflow') }}
+                    </a>
+                @endif
+
                 @canany(['manage-roles', 'manage-settings'])
                 <hr>
                 <a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>{{ __('Roles & Permissions') }}</a>
