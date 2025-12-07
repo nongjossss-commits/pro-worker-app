@@ -111,6 +111,7 @@
                 <li><a class="dropdown-item" href="#" id="notification-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
                 <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
                 <li><a class="dropdown-item" href="#" id="notification-bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="notification-bulk-send-production-btn"><i class="bi bi-clipboard-data me-2"></i>{{ __('Send to P Production') }}</a></li>
             </ul>
         </div>
     </div>
@@ -356,6 +357,33 @@
                 const modalEl = document.getElementById('selectTargetEmployerModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
+            });
+        }
+
+        const bulkSendProductionBtn = document.getElementById('notification-bulk-send-production-btn');
+        if (bulkSendProductionBtn) {
+            bulkSendProductionBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
+                if (!activePane) return;
+
+                const checkboxes = activePane.querySelectorAll('.bulk-action-checkbox:checked');
+                const selected = Array.from(checkboxes).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                // Production requires a single employer logic usually, but here we might just pass IDs and let the Create page handle it.
+                // Or warn if mixed. Assuming standard flow:
+
+                const idsJson = encodeURIComponent(JSON.stringify(selected));
+                // We don't easily have employer ID here unless we query DOM.
+                // Production Create auto-detects from first employee if employer_id is missing.
+
+                let url = '{{ route("production.create") }}?employee_ids_json=' + idsJson;
+                window.location.href = url;
             });
         }
 

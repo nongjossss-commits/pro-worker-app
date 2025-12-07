@@ -35,6 +35,24 @@
                             <div class="form-text">Choose the employer this project belongs to.</div>
                         </div>
 
+                        <!-- Pre-selected Employees -->
+                        @if(isset($preSelectedEmployees) && $preSelectedEmployees->count() > 0)
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Selected Employees ({{ $preSelectedEmployees->count() }})</label>
+                                <div class="card p-2 bg-light border">
+                                    <ul class="list-unstyled mb-0" style="max-height: 150px; overflow-y: auto;">
+                                        @foreach($preSelectedEmployees as $emp)
+                                            <li class="d-flex align-items-center mb-1">
+                                                <i class="bi bi-person-fill me-2 text-muted"></i>
+                                                <small>{{ $emp->employeeNameTh }} ({{ $emp->employeeNameEn }})</small>
+                                                <input type="hidden" name="selected_employees[]" value="{{ $emp->id }}">
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Project Details -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Project Information</label>

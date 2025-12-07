@@ -132,6 +132,7 @@
         <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
         <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
         <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
+        <li><a class="dropdown-item" href="#" id="bulk-send-production-btn"><i class="bi bi-clipboard-data me-2"></i>{{ __('Send to P Production') }}</a></li>
     </x-bulk-action-bar>
 
     <!-- Groups Tabs (Server Side) -->
@@ -690,6 +691,45 @@
                 const modalEl = document.getElementById('selectTargetEmployerModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
+            });
+        }
+
+        const bulkSendProductionBtn = document.getElementById('bulk-send-production-btn');
+        if (bulkSendProductionBtn) {
+            bulkSendProductionBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+                const selected = Array.from(checkboxes).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                let employerIds = new Set();
+                checkboxes.forEach(cb => {
+                    const empId = cb.getAttribute('data-employer-id');
+                    if (empId) employerIds.add(empId);
+                });
+
+                if (employerIds.size > 1) {
+                     Swal.fire({
+                        icon: 'warning',
+                        title: '{{ __('Multiple Employers Selected') }}',
+                        text: '{{ __('You selected employees from different employers. Production projects are linked to a single employer.') }}'
+                    });
+                    return;
+                }
+
+                const idsJson = encodeURIComponent(JSON.stringify(selected));
+                const employerId = employerIds.size === 1 ? employerIds.values().next().value : '';
+
+                let url = '{{ route("production.create") }}?employee_ids_json=' + idsJson;
+                if(employerId) {
+                    url += '&employer_id=' + employerId;
+                }
+
+                window.location.href = url;
             });
         }
     });
