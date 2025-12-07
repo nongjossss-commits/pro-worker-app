@@ -177,6 +177,24 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::delete('tickets/messages/{message}', [\App\Http\Controllers\TicketMessageController::class, 'destroy'])->name('tickets.messages.destroy');
 });
 
+// === Production & Workflow Admin Routes ===
+Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin/production')->name('admin.production.')->group(function () {
+    Route::resource('barriers', \App\Http\Controllers\Admin\WorkflowBarrierController::class)->except(['create', 'show', 'edit']);
+});
+
+// === Production & Workflow User Routes ===
+Route::middleware(['auth'])->group(function () {
+    Route::resource('production', \App\Http\Controllers\ProductionController::class);
+
+    // Additional Production Routes
+    Route::post('production/{id}/add-employee', [\App\Http\Controllers\ProductionController::class, 'addEmployee'])->name('production.add_employee');
+    Route::post('production/{id}/add-new-employee', [\App\Http\Controllers\ProductionController::class, 'addNewEmployee'])->name('production.add_new_employee');
+
+    // Workflow Routes
+    Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');
+    Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
+});
+
 use App\Http\Controllers\Admin\NotificationSettingController;
 use App\Http\Controllers\Admin\ActivityLogController;
 
