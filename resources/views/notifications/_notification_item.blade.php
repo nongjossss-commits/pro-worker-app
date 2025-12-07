@@ -124,36 +124,40 @@
                         เหลือ {{ $days_remaining }} วัน
                     @endif
                 </span>
-                <div class="d-flex flex-column flex-md-row gap-2" role="group">
+                <div class="btn-group-vertical btn-group-sm" role="group">
                     @if($notification->status === 'cancelled')
-                        <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-grid d-md-inline">
+                        <form id="restore-form-{{ $notification->id }}" action="{{ route('notifications.restore', $notification->id) }}" method="POST" style="display: none;">
                             @csrf
-                            <button type="submit" class="btn btn-info" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
                         </form>
-                        <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
+                        <button type="submit" form="restore-form-{{ $notification->id }}" class="btn btn-outline-info" title="กู้คืน">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+
+                        <form id="force-delete-form-{{ $notification->id }}" action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');" style="display: none;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
                         </form>
+                        <button type="submit" form="force-delete-form-{{ $notification->id }}" class="btn btn-outline-danger" title="ลบถาวร">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
                     @else
-                        <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
+                        <a href="#" class="btn btn-outline-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
 
                         {{-- Update/Renew Button --}}
-                        <a href="#" class="btn btn-success"
+                        <a href="#" class="btn btn-outline-success"
                            title="{{ $isMissingDataType ? 'อัพเดตข้อมูล' : 'ต่ออายุ' }}"
                            data-bs-toggle="modal"
                            data-bs-target="#renewNotificationModal"
                            data-notification-id="{{ $notification->id }}"
                            data-notification-type="{{ $notification->type }}">
                            <i class="bi {{ $isMissingDataType ? 'bi-pencil-square' : 'bi-calendar-check' }}"></i>
-                           {{ $isMissingDataType ? 'อัพเดต' : '' }}
                         </a>
 
                         {{-- Only show the 'Locate' button if there is an employee --}}
                         @if($employee)
-                            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+                            <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                         @endif
-                        <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+                        <a href="#" class="btn btn-outline-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
                     @endif
                 </div>
             </div>
