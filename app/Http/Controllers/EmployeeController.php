@@ -857,6 +857,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $fieldGroups = [
             'Personal Information' => [
                 'employeePhoto' => 'Photo (Upload)',
+                'employer_employee_id' => 'Employee ID (Employer)',
+                'employee_id_number' => 'Personal ID',
                 'employeeTitleTh' => 'Title (TH)',
                 'employeeNameTh' => 'Name (TH)',
                 'employeeTitleEn' => 'Title (EN)',
@@ -867,6 +869,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'employeeDob' => 'Date of Birth',
                 'employeePhone' => 'Phone',
                 'employeeNationality' => 'Nationality',
+                'employee_reference_id' => 'Reference ID',
+                'email' => 'Email',
+                'password' => 'Password',
             ],
             'Passport & Visa' => [
                 'employeePassport' => 'Passport Number',
@@ -884,6 +889,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'workPermitExpiryDate' => 'Work Permit Expiry',
                 'workPermitMOUGroup' => 'MOU Group',
                 'pinkCardNo' => 'Pink Card Number',
+                'tax_id_number' => 'Tax ID',
+                'request_number' => 'Request Number',
+                'name_list_number' => 'Name List Number',
                 'work_permit_file' => 'Work Permit File (Upload)',
                 'pink_card_file' => 'Pink Card File (Upload)',
             ],
@@ -964,6 +972,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Ideally this should be a shared constant or helper.
         $fieldLabels = [
             'employeePhoto' => 'Photo (Upload)',
+            'employer_employee_id' => 'Employee ID (Employer)',
+            'employee_id_number' => 'Personal ID',
             'employeeNameTh' => 'Name (TH)',
             'employeeNameEn' => 'Name (EN)',
             'employeeTitleTh' => 'Title (TH)',
@@ -974,6 +984,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeDob' => 'Date of Birth',
             'employeePhone' => 'Phone',
             'employeeNationality' => 'Nationality',
+            'employee_reference_id' => 'Reference ID',
+            'email' => 'Email',
+            'password' => 'Password',
             'employeePassport' => 'Passport No.',
             'passport_issue_date' => 'Passport Issue Date',
             'passportExpiryDate' => 'Passport Expiry',
@@ -985,6 +998,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'workPermitExpiryDate' => 'Work Permit Expiry',
             'workPermitMOUGroup' => 'MOU Group',
             'pinkCardNo' => 'Pink Card No.',
+            'tax_id_number' => 'Tax ID',
+            'request_number' => 'Request Number',
+            'name_list_number' => 'Name List Number',
             'job_title' => 'Job Title',
             'job_description' => 'Job Description',
             'startDate' => 'Start Date',
