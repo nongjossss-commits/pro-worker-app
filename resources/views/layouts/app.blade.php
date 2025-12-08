@@ -376,6 +376,15 @@
                     <button class="btn btn-outline-secondary d-none d-md-block" onclick="openDownloadCenter()">
                         <i class="bi bi-cloud-download-fill me-1"></i> Download Center
                     </button>
+
+                    {{-- Drag to Split Button --}}
+                    <a href="{{ request()->fullUrl() }}"
+                       class="btn btn-outline-secondary d-none d-md-block ms-2"
+                       draggable="true"
+                       ondragstart="event.dataTransfer.setData('text/plain', this.href); event.dataTransfer.setData('text/uri-list', this.href);"
+                       title="ลากเพื่อแยกหน้าจอ (Drag to Split)">
+                        <i class="bi bi-grid-3x2-gap-fill me-1"></i> ลากเพื่อแยก
+                    </a>
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">
