@@ -42,14 +42,42 @@
                     <form action="{{ route('employees.import') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
+                        @if(isset($production) && $production)
+                            <div class="alert alert-primary mb-4">
+                                <i class="bi bi-diagram-3-fill me-2"></i>
+                                <strong>Importing for Project:</strong> {{ $production->project_name }}
+                                <br><small>Employees will be added with "Pending Confirmation" status.</small>
+                            </div>
+                            <input type="hidden" name="production_id" value="{{ $production->id }}">
+                        @endif
+
                         <div class="mb-4">
                             <label for="employer_id" class="form-label fw-bold required">{{ __('Select Employer') }}</label>
-                            <select name="employer_id" id="employer_id" class="form-select @error('employer_id') is-invalid @enderror" required>
-                                <option value="">-- {{ __('Select Employer') }} --</option>
-                                @foreach($employers as $employer)
-                                    <option value="{{ $employer->id }}">{{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})</option>
-                                @endforeach
-                            </select>
+
+                            @php
+                                $isLocked = false;
+                                $selectedEmployerId = old('employer_id');
+
+                                if(isset($production) && $production->type === 'employer') {
+                                    $isLocked = true;
+                                    $selectedEmployerId = $production->employer_id;
+                                }
+                            @endphp
+
+                            @if($isLocked)
+                                <input type="hidden" name="employer_id" value="{{ $selectedEmployerId }}">
+                                <input type="text" class="form-control bg-light" value="{{ $production->employer->employerNameTh ?? '' }} ({{ $production->employer->employerNameEn ?? '' }})" readonly>
+                            @else
+                                <select name="employer_id" id="employer_id" class="form-select @error('employer_id') is-invalid @enderror" required>
+                                    <option value="">-- {{ __('Select Employer') }} --</option>
+                                    @foreach($employers as $employer)
+                                        <option value="{{ $employer->id }}" {{ $selectedEmployerId == $employer->id ? 'selected' : '' }}>
+                                            {{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
+
                             @error('employer_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -65,7 +93,12 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{{ route('employees.index') }}" class="btn btn-light">{{ __('Cancel') }}</a>
+                            @if(isset($production))
+                                <a href="{{ route('production.edit', $production->id) }}" class="btn btn-light">{{ __('Back to Project') }}</a>
+                            @else
+                                <a href="{{ route('employees.index') }}" class="btn btn-light">{{ __('Cancel') }}</a>
+                            @endif
+
                             <button type="submit" class="btn btn-primary px-4">
                                 <i class="bi bi-upload me-2"></i>{{ __('Import Employees') }}
                             </button>
@@ -133,7 +166,11 @@
                 <button type="button" class="btn btn-danger me-auto" id="btn-cancel-import">
                     <i class="bi bi-x-circle me-1"></i> {{ __('Cancel Import') }}
                 </button>
-                <a href="{{ route('employees.index') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
+                @if(session('production_id'))
+                    <a href="{{ route('production.edit', session('production_id')) }}" class="btn btn-primary px-4">{{ __('Finish & Return to Project') }}</a>
+                @else
+                    <a href="{{ route('employees.index') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
+                @endif
             </div>
         </div>
     </div>

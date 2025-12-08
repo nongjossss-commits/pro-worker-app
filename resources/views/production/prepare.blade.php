@@ -11,15 +11,60 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('production.index') }}" class="btn btn-outline-secondary">Exit</a>
-            <form action="{{ route('production.update', $production->id) }}" method="POST">
+            <form action="{{ route('production.update', $production->id) }}" method="POST" id="startWorkflowForm">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="start_workflow" value="1">
                 <button type="submit" class="btn btn-success btn-lg shadow-sm"
-                    onclick="return confirm('Confirm sending this project to Workflow? This will activate tracking.');">
+                    :disabled="!isReadyToStart"
+                    onclick="return confirm('Confirm sending this project to Workflow? This will activate tracking and confirm pending employees.');">
                     <i class="bi bi-send-check me-2"></i>Send to Workflow
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Status Dashboard -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100" :class="{'bg-success text-white': documentReady, 'bg-light': !documentReady}">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="bi bi-file-earmark-check me-2"></i>Documents Ready</h5>
+                        <div class="small" :class="{'text-white-50': documentReady, 'text-muted': !documentReady}">
+                            Checked by Staff / Assignee
+                        </div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input fs-4" type="checkbox" role="switch"
+                            id="documentReadySwitch"
+                            x-model="documentReady"
+                            @change="toggleStatus('document_ready')">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100" :class="{'bg-success text-white': financialApproved, 'bg-light': !financialApproved}">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="bi bi-cash-coin me-2"></i>Ready to Proceed</h5>
+                        <div class="small" :class="{'text-white-50': financialApproved, 'text-muted': !financialApproved}">
+                            Financial / Admin Approval
+                        </div>
+                    </div>
+                    <div class="form-check form-switch">
+                        @can('approve-production')
+                        <input class="form-check-input fs-4" type="checkbox" role="switch"
+                            id="financialApprovedSwitch"
+                            x-model="financialApproved"
+                            @change="toggleStatus('financial_approved')">
+                        @else
+                        <input class="form-check-input fs-4" type="checkbox" disabled x-model="financialApproved">
+                        @endcan
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -60,6 +105,10 @@
                                 <input type="number" step="0.01" name="financial[paid_amount]" class="form-control form-control-sm" value="{{ $fin['paid_amount'] ?? '' }}">
                             </div>
                         </div>
+                        <div class="mb-2">
+                            <label class="small text-muted">Note</label>
+                            <textarea name="financial[note]" class="form-control form-control-sm" rows="2">{{ $fin['note'] ?? '' }}</textarea>
+                        </div>
                         <button type="submit" class="btn btn-sm btn-primary w-100 mt-2">Save Details</button>
                     </form>
                 </div>
@@ -76,8 +125,10 @@
                             <i class="bi bi-person-plus me-1"></i> Add Employee
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addExistingModal">Select Existing</a></li>
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addNewModal">Create New (Import/Hiring)</a></li>
+                            <li><a class="dropdown-item" href="{{ route('employees.import', ['production_id' => $production->id]) }}"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Import from Excel</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addExistingModal">Select Existing (DB)</a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addNewModal">Create New (Manual)</a></li>
                         </ul>
                     </div>
                 </div>
@@ -108,7 +159,11 @@
                                             @endif
                                         </td>
                                         <td class="text-end pe-4">
-                                            <span class="badge bg-secondary">Pending Workflow</span>
+                                            @if($item->employee && $item->employee->status === 'pending_confirmation')
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pending Confirmation</span>
+                                            @else
+                                                <span class="badge bg-secondary">Pending Workflow</span>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -218,7 +273,48 @@
 <script>
     function preparationManager() {
         return {
-            // Placeholder for any alpine logic
+            documentReady: {{ $production->document_ready_at ? 'true' : 'false' }},
+            financialApproved: {{ $production->financial_approved_at ? 'true' : 'false' }},
+
+            get isReadyToStart() {
+                return this.documentReady && this.financialApproved;
+            },
+
+            toggleStatus(type) {
+                // Determine new state based on current Alpine model
+                // Note: x-model updates before @change fires
+                let newState = type === 'document_ready' ? this.documentReady : this.financialApproved;
+
+                fetch('{{ route("production.toggle_status", $production->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        type: type,
+                        status: newState
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Success toast?
+                    } else {
+                        // Revert on failure
+                        if(type === 'document_ready') this.documentReady = !newState;
+                        if(type === 'financial_approved') this.financialApproved = !newState;
+                        alert('Error: ' + (data.message || 'Update failed'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Revert
+                    if(type === 'document_ready') this.documentReady = !newState;
+                    if(type === 'financial_approved') this.financialApproved = !newState;
+                    alert('Network error');
+                });
+            }
         }
     }
 </script>
