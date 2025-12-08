@@ -12,6 +12,7 @@ class ProductionOrder extends Model
 
     protected $fillable = [
         'employer_id',
+        'type', // 'employer' or 'independent'
         'project_name',
         'description',
         'status',

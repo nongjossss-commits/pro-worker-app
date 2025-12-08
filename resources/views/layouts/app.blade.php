@@ -343,10 +343,10 @@
 
                 {{-- V2.4-S14: Production & Workflow Menus --}}
                 @if(Route::has('production.index'))
-                    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.*') ? 'active' : '' }}">
+                    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.index') || request()->routeIs('production.create') || request()->routeIs('production.edit') ? 'active' : '' }}">
                         <i class="bi bi-clipboard-data-fill me-2"></i>{{ __('P Production') }}
                     </a>
-                    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.workflow') ? 'active' : '' }}">
+                    <a href="{{ route('workflow.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('workflow.*') ? 'active' : '' }}">
                         <i class="bi bi-diagram-3-fill me-2"></i>{{ __('Workflow') }}
                     </a>
                 @endif

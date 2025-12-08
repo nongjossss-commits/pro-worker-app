@@ -4,12 +4,10 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 text-gray-800 fw-bold">P Production (Preparation)</h1>
-            <p class="text-muted">Prepare projects before sending to Workflow</p>
+            <h1 class="h3 text-gray-800 fw-bold">Workflow Dashboard</h1>
+            <p class="text-muted">Track active projects and tasks</p>
         </div>
-        <a href="{{ route('production.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-2"></i>New Project
-        </a>
+        {{-- No Create Button here as per requirement --}}
     </div>
 
     <div class="card shadow-sm border-0">
@@ -22,7 +20,7 @@
                             <th>Type</th>
                             <th>Employer</th>
                             <th class="text-center">Employees</th>
-                            <th class="text-center">Financial</th>
+                            <th class="text-center">Progress</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
@@ -32,13 +30,13 @@
                                 <td class="ps-4">
                                     <div class="fw-bold">{{ $order->project_name ?? 'Untitled Project' }}</div>
                                     <div class="small text-muted">{{ Str::limit($order->description, 50) }}</div>
-                                    <div class="small text-muted">Created {{ $order->created_at->format('d/m/Y') }}</div>
+                                    <div class="small text-muted">Started {{ $order->updated_at->format('d/m/Y') }}</div>
                                 </td>
                                 <td>
                                     @if($order->type === 'independent')
                                         <span class="badge bg-purple text-white" style="background-color: #6f42c1;">Independent</span>
                                     @else
-                                        <span class="badge bg-secondary">Standard</span>
+                                        <span class="badge bg-primary">Standard</span>
                                     @endif
                                 </td>
                                 <td>
@@ -51,27 +49,23 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-warning text-dark rounded-pill">{{ $order->items_count }}</span>
+                                    <span class="badge bg-info rounded-pill">{{ $order->items_count }}</span>
                                 </td>
                                 <td class="text-center">
-                                    @php $fin = $order->financial_data ?? []; @endphp
-                                    @if(!empty($fin['total_amount']))
-                                        <div class="small">{{ number_format($fin['total_amount']) }}</div>
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
+                                    {{-- Placeholder for progress bar later --}}
+                                    <span class="badge bg-success">Active</span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <a href="{{ route('production.edit', $order->id) }}" class="btn btn-sm btn-outline-warning">
-                                        <i class="bi bi-gear-fill me-1"></i>Prepare
+                                    <a href="{{ route('workflow.show', $order->id) }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-kanban me-1"></i>Track Board
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
-                                    <i class="bi bi-clipboard-x fs-1 d-block mb-2"></i>
-                                    No projects in preparation.
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No active workflows found.
                                 </td>
                             </tr>
                         @endforelse

@@ -13,11 +13,13 @@ use App\Models\WorkflowBarrier;
 class ProductionController extends Controller
 {
     /**
-     * Display a listing of Production Orders (Dashboard).
+     * Display a listing of Production Orders (Preparation / Pre-Production).
      */
     public function index()
     {
+        // Only show Pre-Production here. Active jobs go to WorkflowController.
         $orders = ProductionOrder::with('employer')
+                    ->where('status', 'pre_production')
                     ->withCount('items')
                     ->latest()
                     ->paginate(15);
@@ -30,9 +32,6 @@ class ProductionController extends Controller
      */
     public function create(Request $request)
     {
-        // For the employer selector
-        // We might want to limit this or use an AJAX search for performance if many employers exist.
-        // For now, passing all employers or using the existing API endpoint logic in view.
         $employerId = $request->query('employer_id');
         $ticketId = $request->query('ticket_id');
 
@@ -42,27 +41,51 @@ class ProductionController extends Controller
             $selectedEmployeeIds = json_decode($request->query('employee_ids_json'), true);
         }
 
-        // If coming from a POST form (via session or forwarded request) - handled better by sending as GET params or session
-        // Let's check session as well if redirected
         if (session()->has('bulk_employee_ids')) {
             $selectedEmployeeIds = session('bulk_employee_ids');
         }
 
         // Fetch Employee Models if IDs exist
         $preSelectedEmployees = collect();
+        $isIndependent = false;
+        $detectedEmployerId = null;
+
         if ($selectedEmployeeIds) {
             if (is_string($selectedEmployeeIds)) {
                 $selectedEmployeeIds = explode(',', $selectedEmployeeIds);
             }
-            $preSelectedEmployees = Employee::whereIn('id', $selectedEmployeeIds)->get();
+            $preSelectedEmployees = Employee::with('employer')->whereIn('id', $selectedEmployeeIds)->get();
 
-            // Auto-detect employer if not set
-            if (!$employerId && $preSelectedEmployees->isNotEmpty()) {
-                $employerId = $preSelectedEmployees->first()->employer_id;
+            if ($preSelectedEmployees->isNotEmpty()) {
+                // Check if all belong to same employer
+                $employerIds = $preSelectedEmployees->pluck('employer_id')->unique();
+
+                if ($employerIds->count() > 1) {
+                    // Mixed employers -> Force Independent
+                    $isIndependent = true;
+                } else {
+                    // Single employer -> Default to Employer mode
+                    $detectedEmployerId = $employerIds->first();
+                }
             }
         }
 
-        return view('production.create', compact('employerId', 'ticketId', 'preSelectedEmployees'));
+        // Use detected employer if not explicitly overridden in URL
+        if (!$employerId && $detectedEmployerId) {
+            $employerId = $detectedEmployerId;
+        }
+
+        // FIX: Provide list of employers for manual selection if starting from scratch
+        // Fetch lighter list for performance
+        $employers = collect();
+        if ($preSelectedEmployees->isEmpty()) {
+            $employers = Employer::select('id', 'employerNameTh', 'employerNameEn', 'employer_id')
+                                ->orderBy('employerNameTh')
+                                ->limit(200) // Safety limit
+                                ->get();
+        }
+
+        return view('production.create', compact('employerId', 'ticketId', 'preSelectedEmployees', 'isIndependent', 'employers'));
     }
 
     /**
@@ -71,24 +94,35 @@ class ProductionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'employer_id' => 'required|exists:employers,id',
             'project_name' => 'nullable|string|max:255',
-            'selected_employees' => 'nullable|array', // IDs of existing employees
+            'type' => 'required|in:employer,independent',
+            // employer_id required only if type is employer
+            'employer_id' => 'required_if:type,employer|nullable|exists:employers,id',
+            'selected_employees' => 'nullable|array',
             'selected_employees.*' => 'exists:employees,id',
             'new_employees' => 'nullable|array', // Array of new employee data
-            'financial.quotation_no' => 'nullable|string',
-            'financial.invoice_no' => 'nullable|string',
-            'financial.total_amount' => 'nullable|numeric',
-            'financial.paid_amount' => 'nullable|numeric',
         ]);
 
         DB::beginTransaction();
         try {
+            // Check for independent mismatch
+            if ($request->type === 'employer' && $request->has('selected_employees')) {
+                $employees = Employee::whereIn('id', $request->selected_employees)->get();
+                $diffEmployers = $employees->pluck('employer_id')->unique();
+                if ($diffEmployers->count() > 1 || ($diffEmployers->isNotEmpty() && $diffEmployers->first() != $request->employer_id)) {
+                    // This creates a conflict: Employer mode but employees from other employers.
+                    // Ideally, UI prevents this, but backend should guard or auto-switch.
+                    // For now, strict validation:
+                    throw new \Exception('Selected employees do not belong to the selected employer. Please use "Independent" mode.');
+                }
+            }
+
             $order = ProductionOrder::create([
-                'employer_id' => $request->employer_id,
+                'employer_id' => $request->type === 'employer' ? $request->employer_id : null,
+                'type' => $request->type,
                 'project_name' => $request->project_name,
                 'description' => $request->description,
-                'status' => 'pre_production', // Starts in Pre-Production
+                'status' => 'pre_production',
                 'financial_data' => $request->financial,
                 'created_by' => auth()->id(),
             ]);
@@ -103,59 +137,43 @@ class ProductionController extends Controller
                 }
             }
 
-            // 2. Create & Attach New Employees
+            // 2. Create New Employees (Temp Data or Real DB?)
+            // User requested "New employees might not be in DB yet but show card".
+            // So we store in 'new_employee_data' JSON column on ProductionItem.
             if ($request->has('new_employees')) {
                 foreach ($request->new_employees as $newEmpData) {
-                    // Minimal creation - logic can be expanded to match full EmployeeController validation
-                    // Assuming basic fields: name, passport, etc.
-                    // Important: These are linked to the Employer
-
-                    // We need to handle potential 'title' mapping if needed, or just save raw
-                    $employee = Employee::create([
-                        'employer_id' => $request->employer_id,
-                        'employeeTitleTh' => $newEmpData['title'] ?? null,
-                        'employeeFirstNameTh' => $newEmpData['name_th'] ?? null,
-                        'employeeLastNameTh' => $newEmpData['surname_th'] ?? null,
-                        'employeeFirstNameEn' => $newEmpData['name_en'] ?? null,
-                        'employeeLastNameEn' => $newEmpData['surname_en'] ?? null,
-                        'employeePassport' => $newEmpData['passport_no'] ?? null,
-                        'employeeNationality' => $newEmpData['nationality'] ?? null,
-                        // Add defaults for required fields if any
-                    ]);
-
                     ProductionItem::create([
                         'production_order_id' => $order->id,
-                        'employee_id' => $employee->id,
+                        'employee_id' => null, // Not in DB yet
+                        'new_employee_data' => $newEmpData // Store raw JSON
                     ]);
                 }
             }
 
             DB::commit();
 
-            // Redirect to the "Preparation" view (Edit mode of Pre-Production)
             return redirect()->route('production.edit', $order->id)->with('success', 'Project created in Pre-Production.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error creating project: ' . $e->getMessage())->withInput();
+            return back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
 
     /**
      * Display the specified resource.
-     * If status is 'active', show the Workflow tracking view.
-     * If 'pre_production', show the Preparation view.
+     * Redirects based on status.
      */
-    public function show(ProductionOrder $production) // Route param name mismatch fix: route uses {production}
+    public function show($id)
     {
-        $production->load(['items.employee', 'items.currentBarrier', 'employer']);
+        $production = ProductionOrder::findOrFail($id);
 
         if ($production->status === 'pre_production') {
             return redirect()->route('production.edit', $production->id);
         }
 
-        $barriers = WorkflowBarrier::orderBy('sequence')->get();
-        return view('production.workflow_dashboard', compact('production', 'barriers'));
+        // If active, redirect to Workflow controller
+        return redirect()->route('workflow.show', $production->id);
     }
 
     /**
@@ -163,10 +181,10 @@ class ProductionController extends Controller
      */
     public function edit($id)
     {
-        $production = ProductionOrder::with(['items.employee', 'employer'])->findOrFail($id);
+        $production = ProductionOrder::with(['items.employee.employer', 'employer'])->findOrFail($id);
 
         if ($production->status !== 'pre_production') {
-            return redirect()->route('production.show', $production->id);
+            return redirect()->route('workflow.show', $production->id);
         }
 
         return view('production.prepare', compact('production'));
@@ -174,7 +192,6 @@ class ProductionController extends Controller
 
     /**
      * Update the specified resource in storage.
-     * Used to save changes during Preparation or to "Send to Workflow".
      */
     public function update(Request $request, $id)
     {
@@ -183,10 +200,9 @@ class ProductionController extends Controller
         // Check if we are "Starting Workflow"
         if ($request->has('start_workflow') && $request->start_workflow == 1) {
             $production->update(['status' => 'active']);
-            return redirect()->route('production.show', $production->id)->with('success', 'Project sent to Workflow.');
+            return redirect()->route('workflow.show', $production->id)->with('success', 'Project sent to Workflow.');
         }
 
-        // Otherwise, standard update of details/finance
         $production->update([
             'project_name' => $request->project_name,
             'description' => $request->description,
@@ -197,17 +213,30 @@ class ProductionController extends Controller
     }
 
     /**
-     * Add an employee to an existing order (Pre-production or Active).
+     * Add an employee to an existing order.
      */
     public function addEmployee(Request $request, $id)
     {
         $production = ProductionOrder::findOrFail($id);
         $request->validate(['employee_id' => 'required|exists:employees,id']);
 
-        // Check duplicate
+        // Check duplicate in THIS order
         $exists = ProductionItem::where('production_order_id', $id)
                     ->where('employee_id', $request->employee_id)
                     ->exists();
+
+        // Independent check logic?
+        // User said: "Employees can be in different cards in workflow, but NOT in the same card."
+        // We handle that with the $exists check.
+        // Also "Independent jobs can have mixed employers".
+        // "Employer jobs must be single employer".
+
+        if ($production->type === 'employer') {
+            $employee = Employee::find($request->employee_id);
+            if ($employee->employer_id !== $production->employer_id) {
+                return back()->with('error', 'Cannot add employee from different employer to this Standard Project.');
+            }
+        }
 
         if (!$exists) {
             ProductionItem::create([
@@ -220,28 +249,27 @@ class ProductionController extends Controller
     }
 
     /**
-     * Add a NEW employee to an existing order.
+     * Add a NEW (Temp) employee to an existing order.
      */
     public function addNewEmployee(Request $request, $id)
     {
         $production = ProductionOrder::findOrFail($id);
 
-        // Similar logic to store()
-        $employee = Employee::create([
-            'employer_id' => $production->employer_id,
-            'employeeTitleTh' => $request->title,
-            'employeeFirstNameTh' => $request->name_th,
-            'employeeLastNameTh' => $request->surname_th,
-            'employeePassport' => $request->passport_no,
-            'employeeNationality' => $request->nationality,
+        // Validate basic inputs
+        $data = $request->validate([
+            'name_th' => 'required|string',
+            'passport_no' => 'nullable|string',
+            'nationality' => 'nullable|string',
+            // Add more as needed
         ]);
 
         ProductionItem::create([
-            'production_order_id' => $production->id,
-            'employee_id' => $employee->id
+            'production_order_id' => $id,
+            'employee_id' => null,
+            'new_employee_data' => $data
         ]);
 
-        return back()->with('success', 'New employee created and added.');
+        return back()->with('success', 'New employee added to card.');
     }
 
     public function destroy($id)
