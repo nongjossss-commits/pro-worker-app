@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mock Financial Tab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <meta name="csrf-token" content="mock-token">
+</head>
+<body class="bg-light p-4">
+    <div class="container" x-data="financialManager()">
+        <div class="row">
+            <!-- Summary Column -->
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-white fw-bold">Financial Summary</div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Total Project Value:</span>
+                            <span class="fw-bold text-primary" x-text="formatCurrency(totalAmount)"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Total Scheduled:</span>
+                            <span x-text="formatCurrency(scheduledAmount)" :class="{'text-success': isFullyScheduled, 'text-warning': !isFullyScheduled}"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Remaining to Schedule:</span>
+                            <span x-text="formatCurrency(remainingSchedule)" class="text-danger fw-bold"></span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Paid Amount:</span>
+                            <span x-text="formatCurrency(totalPaid)" class="text-success fw-bold"></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Outstanding Balance:</span>
+                            <span x-text="formatCurrency(outstandingBalance)" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Center -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-bold"><i class="bi bi-printer me-2"></i>Document Center</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Select Bill Header</label>
+                            <select class="form-select form-select-sm" x-model="selectedProfile">
+                                <option value="">Default Company Profile</option>
+                                <option value="1">Profile A</option>
+                                <option value="2">Profile B</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-secondary btn-sm text-start"><i class="bi bi-file-earmark-text me-2"></i>Quotation</button>
+                            <button class="btn btn-outline-secondary btn-sm text-start"><i class="bi bi-receipt me-2"></i>Invoice</button>
+                            <button class="btn btn-outline-secondary btn-sm text-start"><i class="bi bi-check-circle me-2"></i>Receipt</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Column -->
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Installments & Payments</h5>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
+                            <i class="bi bi-plus-lg"></i> Add Installment
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">Description</th>
+                                        <th>Due Date</th>
+                                        <th class="text-end">Amount</th>
+                                        <th class="text-end">Paid</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="t in transactions" :key="t.id">
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="fw-bold" x-text="formatType(t.type)"></div>
+                                                <div class="small text-muted" x-text="t.notes || '-'"></div>
+                                            </td>
+                                            <td x-text="formatDate(t.due_date)"></td>
+                                            <td class="text-end" x-text="formatCurrency(t.amount)"></td>
+                                            <td class="text-end" x-text="formatCurrency(t.paid_amount)"></td>
+                                            <td class="text-center">
+                                                <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <button class="btn btn-sm btn-outline-success"><i class="bi bi-cash"></i></button>
+                                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Transaction Modal (Simplified) -->
+        <div class="modal fade" id="addTransactionModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add Payment Schedule</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                         <form @submit.prevent="mockAdd">
+                            <div class="mb-3">
+                                <label>Amount</label>
+                                <input type="number" class="form-control" x-model="newTransaction.amount">
+                            </div>
+                            <button class="btn btn-primary w-100">Save</button>
+                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function financialManager() {
+        return {
+            totalAmount: 50000,
+            transactions: [
+                { id: 1, type: 'down_payment', amount: 10000, paid_amount: 10000, status: 'paid', due_date: '2023-12-01', notes: 'Deposit' },
+                { id: 2, type: 'installment', amount: 20000, paid_amount: 0, status: 'pending', due_date: '2024-01-01', notes: '1st Installment' }
+            ],
+            selectedProfile: '',
+            newTransaction: { amount: '' },
+
+            get scheduledAmount() { return this.transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0); },
+            get remainingSchedule() { return Math.max(0, this.totalAmount - this.scheduledAmount); },
+            get isFullyScheduled() { return Math.abs(this.totalAmount - this.scheduledAmount) < 1; },
+            get totalPaid() { return this.transactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0); },
+            get outstandingBalance() { return Math.max(0, this.totalAmount - this.totalPaid); },
+
+            formatCurrency(val) { return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(val); },
+            formatDate(date) { return date; },
+            formatType(type) { return type; },
+            formatStatus(status) { return status; },
+            statusClass(status) { return status === 'paid' ? 'bg-success' : 'bg-secondary'; },
+
+            mockAdd() {
+                this.transactions.push({
+                    id: Date.now(),
+                    type: 'installment',
+                    amount: this.newTransaction.amount,
+                    paid_amount: 0,
+                    status: 'pending',
+                    due_date: '2024-02-01',
+                    notes: 'New Item'
+                });
+                bootstrap.Modal.getInstance(document.getElementById('addTransactionModal')).hide();
+                this.newTransaction.amount = '';
+            }
+        }
+    }
+    </script>
+</body>
+</html>

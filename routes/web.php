@@ -20,6 +20,7 @@ use App\Http\Controllers\TicketReplyController;
 use App\Http\Controllers\Admin\TicketStatusController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\FinancialController; // Import
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 
@@ -191,6 +192,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('production/{id}/add-new-employee', [\App\Http\Controllers\ProductionController::class, 'addNewEmployee'])->name('production.add_new_employee');
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
 
+    // Financial Routes
+    Route::post('production/{id}/transactions', [FinancialController::class, 'storeTransaction']);
+    Route::put('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For status updates
+    Route::post('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For file uploads (method spoofing)
+    Route::delete('production/transactions/{id}', [FinancialController::class, 'destroyTransaction']);
+    Route::get('production/{id}/documents/{type}', [FinancialController::class, 'generateDocument']);
+
     // Workflow Routes
     Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->name('workflow.index');
     Route::get('workflow/{id}', [\App\Http\Controllers\WorkflowController::class, 'show'])->name('workflow.show'); // Board
@@ -220,6 +228,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'index'])->name('settings.completeness.index');
     Route::post('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'store'])->name('settings.completeness.store');
+
+    // Financial Settings
+    Route::get('/settings/financial', [FinancialController::class, 'indexSettings'])->name('settings.financial.index');
+    Route::post('/settings/financial', [FinancialController::class, 'storeProfile'])->name('settings.financial.store');
 
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::resource('notifications', App\Http\Controllers\Admin\NotificationSettingController::class);
