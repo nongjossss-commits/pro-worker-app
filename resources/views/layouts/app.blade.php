@@ -1237,41 +1237,142 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // --- Global Selection Manager (Persists across pages/searches) ---
+    // Stores array of objects: { id: "1", employer_id: "5" }
+    const STORAGE_KEY = 'selectedEmployeeData';
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
     const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
     const bulkActionBar = document.querySelector('.bulk-action-bar');
     const selectedCountSpan = document.getElementById('selected-count');
     const bulkActionButton = bulkActionBar ? bulkActionBar.querySelector('button') : null;
 
-    if (!selectAllCheckbox) return; // Exit if controls are not on this page
+    // Helper: Get all stored data
+    window.getGlobalSelectedData = function() {
+        const stored = sessionStorage.getItem(STORAGE_KEY);
+        try {
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            console.error('Error parsing selectedEmployeeData', e);
+            return [];
+        }
+    };
 
-    function updateBulkActionBar() {
-        const selectedCheckboxes = document.querySelectorAll('.employee-checkbox:checked');
-        const count = selectedCheckboxes.length;
+    // Helper: Get just IDs (compatibility)
+    window.getGlobalSelectedIds = function() {
+        return window.getGlobalSelectedData().map(item => item.id);
+    };
 
-        if (count > 0) {
-            bulkActionBar.style.display = 'flex';
-            selectedCountSpan.textContent = count;
-            bulkActionButton.disabled = false;
-            // Sync select-all checkbox
-            selectAllCheckbox.checked = (count === employeeCheckboxes.length);
-        } else {
-            bulkActionBar.style.display = 'none';
-            bulkActionButton.disabled = true;
+    // Helper: Save data
+    window.setGlobalSelectedData = function(data) {
+        // Ensure uniqueness by ID
+        const unique = [];
+        const map = new Map();
+        for (const item of data) {
+            if(!map.has(String(item.id))) {
+                map.set(String(item.id), true);
+                unique.push(item);
+            }
+        }
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(unique));
+        updateUI();
+    };
+
+    // Helper: Add items (accepts array of {id, employer_id})
+    function addItems(newItems) {
+        const current = window.getGlobalSelectedData();
+        const combined = [...current, ...newItems];
+        window.setGlobalSelectedData(combined);
+    }
+
+    // Helper: Remove items by ID
+    function removeItemsByIds(idsToRemove) {
+        const current = window.getGlobalSelectedData();
+        const filtered = current.filter(item => !idsToRemove.includes(String(item.id)));
+        window.setGlobalSelectedData(filtered);
+    }
+
+    // Clear all selections
+    window.clearGlobalSelection = function() {
+        sessionStorage.removeItem(STORAGE_KEY);
+        // Uncheck all visible
+        document.querySelectorAll('.employee-checkbox').forEach(cb => cb.checked = false);
+        if(selectAllCheckbox) selectAllCheckbox.checked = false;
+        updateUI();
+    };
+
+    // UI Updater
+    function updateUI() {
+        const allData = window.getGlobalSelectedData();
+        const count = allData.length;
+        const allIds = allData.map(item => String(item.id));
+
+        if (bulkActionBar) {
+            if (count > 0) {
+                bulkActionBar.style.display = 'flex';
+                if (selectedCountSpan) selectedCountSpan.textContent = count;
+                if (bulkActionButton) bulkActionButton.disabled = false;
+            } else {
+                bulkActionBar.style.display = 'none';
+                if (bulkActionButton) bulkActionButton.disabled = true;
+            }
+        }
+
+        // Sync "Select All" checkbox state based on VISIBLE items
+        // If all visible items are in the selected set, check "Select All"
+        if (selectAllCheckbox && employeeCheckboxes.length > 0) {
+            const allVisibleSelected = Array.from(employeeCheckboxes).every(cb => allIds.includes(String(cb.value)));
+            selectAllCheckbox.checked = allVisibleSelected;
+        } else if (selectAllCheckbox) {
             selectAllCheckbox.checked = false;
         }
     }
 
-    selectAllCheckbox.addEventListener('change', function () {
-        employeeCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
+    // --- Initialization ---
+
+    if (!selectAllCheckbox && employeeCheckboxes.length === 0) return;
+
+    // 1. Restore state from storage on load
+    const savedIds = window.getGlobalSelectedIds();
+    employeeCheckboxes.forEach(cb => {
+        if (savedIds.includes(String(cb.value))) {
+            cb.checked = true;
+        }
+    });
+    updateUI();
+
+    // 2. Handle Individual Checkbox Changes
+    employeeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+            const id = this.value;
+            const employerId = this.dataset.employerId || '';
+            if (this.checked) {
+                addItems([{ id: id, employer_id: employerId }]);
+            } else {
+                removeItemsByIds([id]);
+            }
         });
-        updateBulkActionBar();
     });
 
-    employeeCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateBulkActionBar);
-    });
+    // 3. Handle "Select All" Checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function () {
+            const visibleItems = Array.from(employeeCheckboxes).map(cb => ({
+                id: cb.value,
+                employer_id: cb.dataset.employerId || ''
+            }));
+            const visibleIds = visibleItems.map(item => item.id);
+
+            if (this.checked) {
+                // Check all visible and add to storage
+                employeeCheckboxes.forEach(cb => cb.checked = true);
+                addItems(visibleItems);
+            } else {
+                // Uncheck all visible and remove from storage
+                employeeCheckboxes.forEach(cb => cb.checked = false);
+                removeItemsByIds(visibleIds);
+            }
+        });
+    }
 });
 </script>
 

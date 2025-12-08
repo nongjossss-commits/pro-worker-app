@@ -114,6 +114,7 @@
             <li><a class="dropdown-item" href="#" id="bulk-send-production-btn"><i class="bi bi-clipboard-data me-2"></i>{{ __('Send to P Production') }}</a></li>
         </ul>
     </div>
+    <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
     <div class="ms-auto text-muted small d-none d-md-block">
         <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
     </div>
@@ -217,14 +218,14 @@
 <script>
     // Special handler for bulk drag
     window.startDragBulk = function(e) {
-        const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
-        const count = checkboxes.length;
+        const ids = window.getGlobalSelectedIds();
+        const count = ids.length;
+
         if (count === 0) {
             e.preventDefault();
             return;
         }
 
-        const ids = Array.from(checkboxes).map(cb => cb.value);
         const payload = {
             type: 'employees_bulk',
             title: count + ' Employees',
@@ -246,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bulkExportBtn) {
         bulkExportBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+            const selected = window.getGlobalSelectedIds();
 
             if (selected.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -267,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bulkDownloadBtn) {
         bulkDownloadBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+            const selected = window.getGlobalSelectedIds();
             if (selected.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');
                 return;
@@ -286,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bulkEditBtn) {
         bulkEditBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+            const selected = window.getGlobalSelectedIds();
 
             if (selected.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -329,23 +330,22 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bulkSendDataBtn) {
         bulkSendDataBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
-            const selected = Array.from(checkboxes).map(cb => cb.value);
+            const selectedData = window.getGlobalSelectedData();
+            const selectedIds = selectedData.map(item => item.id);
 
-            if (selected.length === 0) {
+            if (selectedIds.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');
                 return;
             }
 
-            // Step 1: Check if all selected employees belong to the same employer (based on current view context)
-            // Note: In table view, we added data-employer-id to the checkbox.
-            // If checking fails, we alert the user.
+            // Step 1: Check if all selected employees belong to the same employer
             let employerIds = new Set();
-            checkboxes.forEach(cb => {
-                const empId = cb.getAttribute('data-employer-id');
-                if (empId) employerIds.add(empId);
+            selectedData.forEach(item => {
+                if (item.employer_id) employerIds.add(item.employer_id);
             });
 
+            // Note: If we have items from previous pages that might NOT have captured employer_id (legacy data?), this check might be imperfect.
+            // But with the new logic, we capture employer_id on check.
             if (employerIds.size > 1) {
                  Swal.fire({
                     icon: 'warning',
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Step 2: Store selected IDs in a global variable
-            window.pendingTicketEmployeeIds = selected;
+            window.pendingTicketEmployeeIds = selectedIds;
 
             // Step 3: Open Modal to Select Target Employer
             const modalEl = document.getElementById('selectTargetEmployerModal');
@@ -370,19 +370,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bulkSendProductionBtn) {
         bulkSendProductionBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
-            const selected = Array.from(checkboxes).map(cb => cb.value);
+            const selectedData = window.getGlobalSelectedData();
+            const selectedIds = selectedData.map(item => item.id);
 
-            if (selected.length === 0) {
+            if (selectedIds.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');
                 return;
             }
 
             // Check employers
             let employerIds = new Set();
-            checkboxes.forEach(cb => {
-                const empId = cb.getAttribute('data-employer-id');
-                if (empId) employerIds.add(empId);
+            selectedData.forEach(item => {
+                if (item.employer_id) employerIds.add(item.employer_id);
             });
 
             if (employerIds.size > 1) {
@@ -396,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Redirect to Production Create with IDs
             // Use JSON string for array of IDs
-            const idsJson = encodeURIComponent(JSON.stringify(selected));
+            const idsJson = encodeURIComponent(JSON.stringify(selectedIds));
             const employerId = employerIds.size === 1 ? employerIds.values().next().value : '';
 
             let url = '{{ route("production.create") }}?employee_ids_json=' + idsJson;
