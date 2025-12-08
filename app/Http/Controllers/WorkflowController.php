@@ -3,12 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductionItem;
+use App\Models\ProductionOrder; // Added
 use App\Models\WorkflowStep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Models\WorkflowBarrier; // Added
 
 class WorkflowController extends Controller
 {
+    /**
+     * Display the Workflow Board (Kanban or List).
+     * Only shows ACTIVE workflows.
+     */
+    public function index()
+    {
+        $orders = ProductionOrder::activeWorkflow()
+                    ->with(['employer', 'items.employee', 'items.currentBarrier']) // Eager load
+                    ->latest()
+                    ->paginate(15);
+
+        // We might want to pass barriers for the Kanban view if implemented here
+        $barriers = WorkflowBarrier::orderBy('sequence')->get();
+
+        return view('production.workflow_dashboard', compact('orders', 'barriers'));
+    }
+
     /**
      * Show the timeline for a specific item (employee in a project).
      */

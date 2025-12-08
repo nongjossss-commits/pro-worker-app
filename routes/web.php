@@ -189,8 +189,12 @@ Route::middleware(['auth'])->group(function () {
     // Additional Production Routes
     Route::post('production/{id}/add-employee', [\App\Http\Controllers\ProductionController::class, 'addEmployee'])->name('production.add_employee');
     Route::post('production/{id}/add-new-employee', [\App\Http\Controllers\ProductionController::class, 'addNewEmployee'])->name('production.add_new_employee');
+    // New Routes for Bulk/Custom Fields
+    Route::post('production/{id}/add-custom-field', [\App\Http\Controllers\ProductionController::class, 'addCustomField'])->name('production.add_custom_field');
+    Route::post('production/{id}/bulk-update-field', [\App\Http\Controllers\ProductionController::class, 'bulkUpdateCustomField'])->name('production.bulk_update_custom_field');
 
     // Workflow Routes
+    Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->name('workflow.index'); // Explicit index route
     Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');
     Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
 });

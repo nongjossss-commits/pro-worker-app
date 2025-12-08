@@ -12,8 +12,15 @@ class ProductionItem extends Model
 
     protected $fillable = [
         'production_order_id',
-        'employee_id',
+        'employee_id', // Nullable (if ghost)
+        'new_employee_data', // JSON
         'current_barrier_id',
+        'custom_field_values', // JSON
+    ];
+
+    protected $casts = [
+        'new_employee_data' => 'array',
+        'custom_field_values' => 'array',
     ];
 
     public function order()
@@ -33,7 +40,42 @@ class ProductionItem extends Model
 
     public function steps()
     {
-        // Ordered chronologically
         return $this->hasMany(WorkflowStep::class)->orderBy('created_at', 'asc');
+    }
+
+    /**
+     * Get the display name (Real or Ghost).
+     */
+    public function getDisplayNameAttribute()
+    {
+        if ($this->employee_id && $this->employee) {
+            return $this->employee->fullname_th;
+        }
+        $data = $this->new_employee_data ?? [];
+        return ($data['name_th'] ?? '') . ' ' . ($data['surname_th'] ?? '');
+    }
+
+    /**
+     * Get the passport (Real or Ghost).
+     */
+    public function getPassportNumberAttribute()
+    {
+        if ($this->employee_id && $this->employee) {
+            return $this->employee->employeePassport;
+        }
+        $data = $this->new_employee_data ?? [];
+        return $data['passport_no'] ?? '-';
+    }
+
+     /**
+     * Get the photo URL (Real or Ghost).
+     */
+    public function getPhotoUrlAttribute()
+    {
+        if ($this->employee_id && $this->employee) {
+            return $this->employee->avatar; // Assuming accessor on Employee
+        }
+        $data = $this->new_employee_data ?? [];
+        return $data['photo_url'] ?? asset('images/default-avatar.png');
     }
 }
