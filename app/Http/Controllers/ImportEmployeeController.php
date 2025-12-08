@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\Employer;
+use App\Models\ProductionOrder;
+use App\Models\ProductionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,8 +27,15 @@ class ImportEmployeeController extends Controller
     /**
      * Show the import form.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $productionId = $request->query('production_id');
+        $production = null;
+
+        if ($productionId) {
+            $production = ProductionOrder::find($productionId);
+        }
+
         $employers = collect();
         if (auth()->user()->can('view-employers')) {
              $employers = Employer::orderBy('employerNameTh')->get(['id', 'employerNameTh', 'employerNameEn']);
@@ -37,7 +46,7 @@ class ImportEmployeeController extends Controller
              }
         }
 
-        return view('employees.import', compact('employers'));
+        return view('employees.import', compact('employers', 'production'));
     }
 
     /**
@@ -251,9 +260,11 @@ class ImportEmployeeController extends Controller
         $request->validate([
             'employer_id' => 'required|exists:employers,id',
             'file' => 'required|file|mimes:xlsx,xls,xlsm|max:20480', // 20MB limit
+            'production_id' => 'nullable|exists:production_orders,id',
         ]);
 
         $employerId = $request->input('employer_id');
+        $productionId = $request->input('production_id');
         $file = $request->file('file');
 
         if (!auth()->user()->can('create-employees')) {
@@ -481,7 +492,7 @@ class ImportEmployeeController extends Controller
                     'workPermitMOUGroup' => $wpType,
                     'pinkCardNo' => $pinkCard,
                     'employeePhoto' => $photoPath,
-                    'status' => 'active',
+                    'status' => $productionId ? 'pending_confirmation' : 'active',
                 ];
 
                 if ($nationality === 'กัมพูชา') {
@@ -491,6 +502,15 @@ class ImportEmployeeController extends Controller
                 }
 
                 $employee = Employee::create($employeeData);
+
+                // If importing for Production, link immediately
+                if ($productionId) {
+                    ProductionItem::create([
+                        'production_order_id' => $productionId,
+                        'employee_id' => $employee->id,
+                    ]);
+                }
+
                 $importedEmployees[] = $employee;
                 $count++;
             }
@@ -507,7 +527,8 @@ class ImportEmployeeController extends Controller
             return back()->with('success', $msg)
                          ->with('import_errors', $errors)
                          ->with('imported_employees', $importedEmployees)
-                         ->with('imported_employee_ids', $importedEmployeeIds);
+                         ->with('imported_employee_ids', $importedEmployeeIds)
+                         ->with('production_id', $productionId);
 
         } catch (\Exception $e) {
             DB::rollBack();

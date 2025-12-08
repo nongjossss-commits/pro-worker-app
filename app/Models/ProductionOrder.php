@@ -18,10 +18,16 @@ class ProductionOrder extends Model
         'status',
         'financial_data',
         'created_by',
+        'document_ready_at',
+        'document_ready_by',
+        'financial_approved_at',
+        'financial_approved_by',
     ];
 
     protected $casts = [
         'financial_data' => 'array',
+        'document_ready_at' => 'datetime',
+        'financial_approved_at' => 'datetime',
     ];
 
     public function employer()

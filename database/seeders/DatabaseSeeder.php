@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             CounterSeeder::class,
             RoleAndPermissionSeeder::class,
             NotificationSettingSeeder::class,
+            ApproveProductionPermissionSeeder::class,
         ]);
     }
 }

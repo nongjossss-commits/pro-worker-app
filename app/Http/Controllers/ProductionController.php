@@ -191,6 +191,46 @@ class ProductionController extends Controller
     }
 
     /**
+     * Toggle readiness status flags via AJAX.
+     */
+    public function toggleStatus(Request $request, $id)
+    {
+        $production = ProductionOrder::findOrFail($id);
+
+        $request->validate([
+            'type' => 'required|in:document_ready,financial_approved',
+            'status' => 'required|boolean'
+        ]);
+
+        $type = $request->type;
+        $status = $request->status;
+
+        if ($type === 'financial_approved') {
+            // Check admin permission
+            if (!auth()->user()->can('approve-production')) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized. Admin permission required.'], 403);
+            }
+
+            $production->update([
+                'financial_approved_at' => $status ? now() : null,
+                'financial_approved_by' => $status ? auth()->id() : null
+            ]);
+        }
+        else if ($type === 'document_ready') {
+            // Assume any staff with access to this page can toggle this?
+            // Or specific permission? User said "Staff or Caretaker".
+            // Since they are on this page, they likely have permission to edit.
+
+            $production->update([
+                'document_ready_at' => $status ? now() : null,
+                'document_ready_by' => $status ? auth()->id() : null
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
@@ -199,8 +239,37 @@ class ProductionController extends Controller
 
         // Check if we are "Starting Workflow"
         if ($request->has('start_workflow') && $request->start_workflow == 1) {
-            $production->update(['status' => 'active']);
-            return redirect()->route('workflow.show', $production->id)->with('success', 'Project sent to Workflow.');
+            // Server-side validation of flags
+            if (!$production->document_ready_at || !$production->financial_approved_at) {
+                 return back()->with('error', 'Cannot start workflow. Both "Documents Ready" and "Financial/Admin Approved" flags must be set.');
+            }
+
+            DB::beginTransaction();
+            try {
+                // Activate Production Order
+                $production->update(['status' => 'active']);
+
+                // Confirm all "pending_confirmation" employees in this order
+                $pendingItems = $production->items()->with('employee')->get();
+                $pendingEmployees = collect();
+
+                foreach($pendingItems as $item) {
+                    if ($item->employee && $item->employee->status === 'pending_confirmation') {
+                        $pendingEmployees->push($item->employee->id);
+                    }
+                }
+
+                if ($pendingEmployees->isNotEmpty()) {
+                    Employee::whereIn('id', $pendingEmployees)->update(['status' => 'active']);
+                }
+
+                DB::commit();
+                return redirect()->route('workflow.show', $production->id)->with('success', 'Project sent to Workflow. Employees confirmed.');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()->with('error', 'Failed to start workflow: ' . $e->getMessage());
+            }
         }
 
         $production->update([
