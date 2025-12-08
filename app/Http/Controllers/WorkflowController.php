@@ -2,66 +2,128 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProductionItem;
-use App\Models\WorkflowStep;
+use App\Models\ProductionOrder;
+use App\Models\ProductionItem; // Added
+use App\Models\WorkflowBarrier;
+use App\Models\WorkflowStep; // Added
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class WorkflowController extends Controller
 {
     /**
-     * Show the timeline for a specific item (employee in a project).
+     * Display a listing of Active Production Orders (Workflow).
      */
-    public function showItem($itemId)
+    public function index()
     {
-        $item = ProductionItem::with(['order', 'employee', 'steps.barrier', 'steps.creator', 'currentBarrier'])
-                ->findOrFail($itemId);
+        $orders = ProductionOrder::with('employer')
+                    ->where('status', '!=', 'pre_production') // Active, Completed, Cancelled
+                    ->withCount('items')
+                    ->latest()
+                    ->paginate(15);
 
-        return view('production.workflow_item_timeline', compact('item'));
+        return view('workflow.index', compact('orders'));
     }
 
     /**
-     * Add a step to the timeline.
+     * Display the specified resource (The Kanban/Board View).
      */
-    public function storeStep(Request $request, $itemId)
+    public function show($id)
     {
-        $item = ProductionItem::findOrFail($itemId);
+        $production = ProductionOrder::with(['items.employee', 'items.currentBarrier', 'employer', 'items.steps'])->findOrFail($id);
 
+        if ($production->status === 'pre_production') {
+            return redirect()->route('production.edit', $production->id);
+        }
+
+        $barriers = WorkflowBarrier::orderBy('sequence')->get();
+
+        // Ensure items without a barrier are assigned to the first one
+        if ($barriers->isNotEmpty()) {
+            $firstBarrierId = $barriers->first()->id;
+            foreach ($production->items as $item) {
+                if (!$item->current_barrier_id) {
+                    $item->update(['current_barrier_id' => $firstBarrierId]);
+                }
+            }
+        }
+
+        return view('workflow.board', compact('production', 'barriers'));
+    }
+
+    /**
+     * API: Update Item Barrier (Drag & Drop)
+     */
+    public function updateItemBarrier(Request $request)
+    {
         $request->validate([
-            'step_type' => 'required|in:text,date,file,barrier',
-            'label' => 'nullable|string|max:255',
-            'barrier_id' => 'required_if:step_type,barrier|exists:workflow_barriers,id',
-            'value_file' => 'required_if:step_type,file|file|max:10240', // 10MB
+            'item_id' => 'required|exists:production_items,id',
+            'barrier_id' => 'required|exists:workflow_barriers,id'
         ]);
 
-        $data = [
+        $item = ProductionItem::findOrFail($request->item_id);
+        $item->update(['current_barrier_id' => $request->barrier_id]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Bulk Add Step (Create Fields)
+     */
+    public function bulkStoreStep(Request $request)
+    {
+        $request->validate([
+            'item_ids' => 'required|array',
+            'item_ids.*' => 'exists:production_items,id',
+            'step_type' => 'required|in:text,date,file',
+            'label' => 'required|string|max:255',
+            'value' => 'nullable'
+        ]);
+
+        foreach ($request->item_ids as $id) {
+            WorkflowStep::create([
+                'production_item_id' => $id,
+                'step_type' => $request->step_type,
+                'label' => $request->label,
+                'value_text' => $request->step_type === 'text' ? $request->value : null,
+                'value_date' => $request->step_type === 'date' ? $request->value : null,
+                'created_by' => auth()->id()
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Show a specific item detail (Step tracker).
+     */
+    public function showItem($item_id)
+    {
+        $item = ProductionItem::with(['steps', 'employee', 'order'])->findOrFail($item_id);
+        return view('workflow.item_detail', compact('item'));
+    }
+
+    /**
+     * Store a new step for an item.
+     */
+    public function storeStep(Request $request, $item_id)
+    {
+        $item = ProductionItem::findOrFail($item_id);
+
+        $request->validate([
+            'step_type' => 'required|in:text,date,file',
+            'label' => 'required|string|max:255',
+            'value' => 'nullable'
+        ]);
+
+        WorkflowStep::create([
             'production_item_id' => $item->id,
             'step_type' => $request->step_type,
             'label' => $request->label,
-            'created_by' => auth()->id(),
-        ];
+            'value_text' => $request->step_type === 'text' ? $request->value : null,
+            'value_date' => $request->step_type === 'date' ? $request->value : null,
+            'created_by' => auth()->id()
+        ]);
 
-        if ($request->step_type === 'text') {
-            $data['value_text'] = $request->value_text;
-        } elseif ($request->step_type === 'date') {
-            $data['value_date'] = $request->value_date;
-        } elseif ($request->step_type === 'file') {
-            if ($request->hasFile('value_file')) {
-                $path = $request->file('value_file')->store('workflow_files', 'public');
-                $data['file_path'] = $path;
-                // Use the original filename as text value for display if needed
-                $data['value_text'] = $request->file('value_file')->getClientOriginalName();
-            }
-        } elseif ($request->step_type === 'barrier') {
-            $data['barrier_id'] = $request->barrier_id;
-
-            // UPDATE THE CURRENT STATUS of the item
-            $item->current_barrier_id = $request->barrier_id;
-            $item->save();
-        }
-
-        WorkflowStep::create($data);
-
-        return back()->with('success', 'Step added.');
+        return back()->with('success', 'Step added successfully');
     }
 }

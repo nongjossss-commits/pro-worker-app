@@ -12,8 +12,13 @@ class ProductionItem extends Model
 
     protected $fillable = [
         'production_order_id',
-        'employee_id',
+        'employee_id', // Nullable now
+        'new_employee_data', // JSON for temp employees
         'current_barrier_id',
+    ];
+
+    protected $casts = [
+        'new_employee_data' => 'array',
     ];
 
     public function order()

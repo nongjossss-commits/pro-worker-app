@@ -191,8 +191,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('production/{id}/add-new-employee', [\App\Http\Controllers\ProductionController::class, 'addNewEmployee'])->name('production.add_new_employee');
 
     // Workflow Routes
+    Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->name('workflow.index');
+    Route::get('workflow/{id}', [\App\Http\Controllers\WorkflowController::class, 'show'])->name('workflow.show'); // Board
     Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');
     Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
+
+    // Workflow API Routes
+    Route::post('workflow/api/update-barrier', [\App\Http\Controllers\WorkflowController::class, 'updateItemBarrier'])->name('workflow.api.update_barrier');
+    Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
 });
 
 use App\Http\Controllers\Admin\NotificationSettingController;
