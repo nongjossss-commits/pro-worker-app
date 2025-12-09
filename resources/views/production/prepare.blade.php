@@ -6,7 +6,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <div class="text-uppercase text-muted small fw-bold">Pre-Production Stage</div>
-            <h2 class="fw-bold mb-0">{{ $production->project_name ?? 'Untitled Project' }}</h2>
+            <!-- Editable Header Title -->
+            <input type="text" x-model="projectName" class="display-6 fw-bold border-0 bg-transparent p-0 w-100" placeholder="Project Name" aria-label="Project Name">
+
             <div class="text-muted">{{ $production->employer->name_en ?? $production->employer->name_th ?? 'Independent Project' }}</div>
         </div>
         <div class="d-flex gap-2">
@@ -92,7 +94,7 @@
                                 @method('PUT')
                                 <div class="mb-3">
                                     <label class="form-label">Project Name</label>
-                                    <input type="text" name="project_name" class="form-control" value="{{ $production->project_name }}">
+                                    <input type="text" name="project_name" x-model="projectName" class="form-control">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Description</label>
@@ -185,6 +187,14 @@
 
                                                         <div class="small text-muted mb-2">
                                                             <i class="bi bi-building me-1"></i> {{ $employerName }}
+                                                            @if($emp->employer)
+                                                                <button type="button" class="btn btn-link p-0 text-info btn-preview ms-1"
+                                                                        data-model-type="employer"
+                                                                        data-model-id="{{ $emp->employer->id }}"
+                                                                        title="Preview Employer">
+                                                                    <i class="bi bi-search"></i>
+                                                                </button>
+                                                            @endif
                                                         </div>
 
                                                         <div>
@@ -305,6 +315,7 @@
 <script>
     function preparationManager() {
         return {
+            projectName: '{{ $production->project_name ?? "" }}',
             documentReady: {{ $production->document_ready_at ? 'true' : 'false' }},
             financialApproved: {{ $production->financial_approved_at ? 'true' : 'false' }},
 
