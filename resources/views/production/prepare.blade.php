@@ -128,78 +128,127 @@
                                     <p class="mt-2">No employees added to this project yet.</p>
                                 </div>
                             @else
-                                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-2 g-3">
-                                    @foreach($production->items as $item)
-                                        <div class="col">
-                                            @php
-                                                $emp = $item->employee;
-                                                // Handle potential null employee if it's a "new temp" employee (stored in new_employee_data)
-                                                // If $item->employee_id is null, use $item->new_employee_data
-                                                if (!$emp && $item->new_employee_data) {
-                                                    $data = $item->new_employee_data; // JSON cast in model? need to check
+                                @php
+                                    $newEmployees = $production->items->whereNull('employee_id');
+                                    $existingEmployees = $production->items->whereNotNull('employee_id');
+                                @endphp
+
+                                @if($newEmployees->isNotEmpty())
+                                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-person-plus-fill me-2"></i>New / Imported Employees</h6>
+                                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-2 g-3 mb-4">
+                                        @foreach($newEmployees as $item)
+                                            <div class="col">
+                                                @php
+                                                    $data = $item->new_employee_data;
                                                     // Quick Mock for view consistency
-                                                    $emp = new \App\Models\Employee(); // Dummy
+                                                    $emp = new \App\Models\Employee();
                                                     $emp->id = null;
                                                     $emp->employeeNameTh = $data['name_th'] ?? '-';
                                                     $emp->employeeNameEn = '-';
                                                     $emp->employeePassport = $data['passport_no'] ?? '-';
                                                     $emp->employeeNationality = $data['nationality'] ?? '-';
                                                     $emp->status = 'pending_create';
-                                                }
-                                                $employerName = $emp->employer->employerNameTh ?? 'N/A';
-                                            @endphp
-                                            <div class="card h-100 border shadow-sm employee-card-production">
-                                                <div class="card-body d-flex align-items-start">
-                                                    <img src="{{ $emp->employeePhoto ? asset('storage/' . $emp->employeePhoto) : asset('images/default-profile.png') }}"
-                                                         alt="Photo" class="rounded-circle me-3 border"
-                                                         style="width: 50px; height: 50px; object-fit: cover;">
-                                                    <div class="flex-grow-1 overflow-hidden">
-                                                        <div class="d-flex justify-content-between align-items-start">
-                                                            <h6 class="fw-bold mb-0 text-truncate" title="{{ $emp->employeeNameTh }}">
-                                                                {{ $emp->employeeNameTh ?? 'Unknown' }}
-                                                            </h6>
-                                                            @if($emp->id)
-                                                            <button type="button" class="btn btn-link p-0 text-primary btn-preview"
-                                                                data-model-type="employee"
-                                                                data-model-id="{{ $emp->id }}"
-                                                                title="Preview">
-                                                                <i class="bi bi-search"></i>
-                                                            </button>
-                                                            @endif
-                                                        </div>
-                                                        <div class="small text-muted mb-1 text-truncate">{{ $emp->employeeNameEn ?? '' }}</div>
+                                                    $employerName = 'N/A';
+                                                @endphp
+                                                <div class="card h-100 border shadow-sm employee-card-production">
+                                                    <div class="card-body d-flex align-items-start">
+                                                        <img src="{{ asset('images/default-profile.png') }}"
+                                                             alt="Photo" class="rounded-circle me-3 border"
+                                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                                        <div class="flex-grow-1 overflow-hidden">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <h6 class="fw-bold mb-0 text-truncate" title="{{ $emp->employeeNameTh }}">
+                                                                    {{ $emp->employeeNameTh ?? 'Unknown' }}
+                                                                </h6>
+                                                            </div>
+                                                            <div class="small text-muted mb-1 text-truncate">New Import</div>
 
-                                                        <div class="d-flex align-items-center small mb-1">
-                                                            <i class="bi bi-pass me-1 text-secondary"></i>
-                                                            <span class="me-2">{{ $emp->employeePassport ?? $emp->pinkCardNo ?? '-' }}</span>
-                                                            @if($emp->employeeNationality)
-                                                                @php
-                                                                    $countryCode = \App\Helpers\CountryHelper::getCountryCode($emp->employeeNationality);
-                                                                @endphp
-                                                                @if($countryCode)
-                                                                    <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px;" class="me-1">
+                                                            <div class="d-flex align-items-center small mb-1">
+                                                                <i class="bi bi-pass me-1 text-secondary"></i>
+                                                                <span class="me-2">{{ $emp->employeePassport ?? '-' }}</span>
+                                                                @if($emp->employeeNationality)
+                                                                    @php
+                                                                        $countryCode = \App\Helpers\CountryHelper::getCountryCode($emp->employeeNationality);
+                                                                    @endphp
+                                                                    @if($countryCode)
+                                                                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px;" class="me-1">
+                                                                    @endif
+                                                                    <span class="text-secondary">{{ $emp->employeeNationality }}</span>
                                                                 @endif
-                                                                <span class="text-secondary">{{ $emp->employeeNationality }}</span>
-                                                            @endif
-                                                        </div>
+                                                            </div>
 
-                                                        <div class="small text-muted mb-2">
-                                                            <i class="bi bi-building me-1"></i> {{ $employerName }}
-                                                        </div>
-
-                                                        <div>
-                                                            @if($emp->status === 'pending_confirmation' || $emp->status === 'pending_create')
-                                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pending Workflow</span>
-                                                            @else
-                                                                <span class="badge bg-secondary">Pending Workflow</span>
-                                                            @endif
+                                                            <div>
+                                                                <span class="badge bg-info text-dark"><i class="bi bi-star-fill me-1"></i>New Entry</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    @endforeach
-                                </div>
+                                        @endforeach
+                                    </div>
+                                    <hr class="my-4">
+                                @endif
+
+                                @if($existingEmployees->isNotEmpty())
+                                    <h6 class="text-secondary fw-bold mb-3"><i class="bi bi-database-check me-2"></i>Existing Database Employees</h6>
+                                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-2 g-3">
+                                        @foreach($existingEmployees as $item)
+                                            <div class="col">
+                                                @php
+                                                    $emp = $item->employee;
+                                                    $employerName = $emp->employer->employerNameTh ?? 'N/A';
+                                                @endphp
+                                                <div class="card h-100 border shadow-sm employee-card-production">
+                                                    <div class="card-body d-flex align-items-start">
+                                                        <img src="{{ $emp->employeePhoto ? asset('storage/' . $emp->employeePhoto) : asset('images/default-profile.png') }}"
+                                                             alt="Photo" class="rounded-circle me-3 border"
+                                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                                        <div class="flex-grow-1 overflow-hidden">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <h6 class="fw-bold mb-0 text-truncate" title="{{ $emp->employeeNameTh }}">
+                                                                    {{ $emp->employeeNameTh ?? 'Unknown' }}
+                                                                </h6>
+                                                                <button type="button" class="btn btn-link p-0 text-primary btn-preview"
+                                                                    data-model-type="employee"
+                                                                    data-model-id="{{ $emp->id }}"
+                                                                    title="Preview">
+                                                                    <i class="bi bi-search"></i>
+                                                                </button>
+                                                            </div>
+                                                            <div class="small text-muted mb-1 text-truncate">{{ $emp->employeeNameEn ?? '' }}</div>
+
+                                                            <div class="d-flex align-items-center small mb-1">
+                                                                <i class="bi bi-pass me-1 text-secondary"></i>
+                                                                <span class="me-2">{{ $emp->employeePassport ?? $emp->pinkCardNo ?? '-' }}</span>
+                                                                @if($emp->employeeNationality)
+                                                                    @php
+                                                                        $countryCode = \App\Helpers\CountryHelper::getCountryCode($emp->employeeNationality);
+                                                                    @endphp
+                                                                    @if($countryCode)
+                                                                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px;" class="me-1">
+                                                                    @endif
+                                                                    <span class="text-secondary">{{ $emp->employeeNationality }}</span>
+                                                                @endif
+                                                            </div>
+
+                                                            <div class="small text-muted mb-2">
+                                                                <i class="bi bi-building me-1"></i> {{ $employerName }}
+                                                            </div>
+
+                                                            <div>
+                                                                @if($emp->status === 'pending_confirmation')
+                                                                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pending Workflow</span>
+                                                                @else
+                                                                    <span class="badge bg-secondary">Pending Workflow</span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             @endif
                         </div>
                     </div>

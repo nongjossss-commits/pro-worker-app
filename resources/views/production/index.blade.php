@@ -80,7 +80,7 @@
                                         <div class="form-check form-switch">
                                             <input class="form-check-input status-toggle" type="checkbox" id="docReady{{ $order->id }}"
                                                 data-id="{{ $order->id }}" data-type="document_ready"
-                                                {{ $order->document_ready_at ? 'checked' : '' }}>
+                                                {{ $order->document_ready_at ? 'checked' : '' }} disabled>
                                             <label class="form-check-label small" for="docReady{{ $order->id }}">Documents Ready</label>
                                         </div>
 
@@ -88,7 +88,7 @@
                                         <div class="form-check form-switch">
                                             <input class="form-check-input status-toggle" type="checkbox" id="finReady{{ $order->id }}"
                                                 data-id="{{ $order->id }}" data-type="financial_approved"
-                                                {{ $order->financial_approved_at ? 'checked' : '' }}>
+                                                {{ $order->financial_approved_at ? 'checked' : '' }} disabled>
                                             <label class="form-check-label small" for="finReady{{ $order->id }}">Ready to Process</label>
                                         </div>
 
