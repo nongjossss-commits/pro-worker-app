@@ -459,33 +459,26 @@ class ImportEmployeeController extends Controller
                                  $info = pathinfo($imagePath);
                                  $extension = $info['extension'] ?? 'jpg';
                             } else {
-                                // Fallback: Try to use GD resource if path is invalid (common in imported Xlsx)
+                                // Fallback: Extract from Zip archive (XLSX is a zip)
                                 try {
-                                    $imageResource = $drawing->getImageResource();
-                                    if ($imageResource) {
-                                        $extension = $drawing->getExtension();
-                                        if (!$extension) $extension = 'jpg';
-
-                                        ob_start();
-                                        switch (strtolower($extension)) {
-                                            case 'png':
-                                                imagepng($imageResource);
+                                    $zip = new \ZipArchive();
+                                    if ($zip->open($path) === true) {
+                                        $drawingName = basename($imagePath);
+                                        // Images in Excel are usually in xl/media/
+                                        // We try to find the file in the zip that ends with the drawing name
+                                        for ($i = 0; $i < $zip->numFiles; $i++) {
+                                            $filename = $zip->getNameIndex($i);
+                                            if (basename($filename) === $drawingName) {
+                                                $imageContent = $zip->getFromIndex($i);
+                                                $info = pathinfo($filename);
+                                                $extension = $info['extension'] ?? 'jpg';
                                                 break;
-                                            case 'gif':
-                                                imagegif($imageResource);
-                                                break;
-                                            case 'jpeg':
-                                            case 'jpg':
-                                            default:
-                                                imagejpeg($imageResource);
-                                                $extension = 'jpg';
-                                                break;
+                                            }
                                         }
-                                        $imageContent = ob_get_contents();
-                                        ob_end_clean();
+                                        $zip->close();
                                     }
                                 } catch (\Exception $e) {
-                                    Log::warning("Fallback image extraction failed for row $rowIdx: " . $e->getMessage());
+                                    Log::warning("Zip extraction failed for row $rowIdx: " . $e->getMessage());
                                 }
                             }
                         }
