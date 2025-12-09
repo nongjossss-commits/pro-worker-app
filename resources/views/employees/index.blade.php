@@ -171,7 +171,12 @@
                             <div class="d-flex align-items-center">
                                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">
                                 <div>
-                                    <div class="fw-bold">{{ $employee->employeeNameEn ?? 'N/A' }}</div>
+                                    <div class="fw-bold">
+                                        {{ $employee->employeeNameEn ?? 'N/A' }}
+                                        <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('Preview Data') }}">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
                                     <div class="text-muted">{{ $employee->employeeNameTh ?? 'N/A' }}</div>
                                 </div>
                             </div>
@@ -189,7 +194,14 @@
                                 {{ $employee->employeeNationality ?? '-' }}
                             @endif
                         </td>
-                        <td class="text-muted">{{ $employee->employer->employerNameTh ?? 'N/A' }}</td>
+                        <td class="text-muted">
+                            {{ $employee->employer->employerNameTh ?? 'N/A' }}
+                            @if($employee->employer)
+                                <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            @endif
+                        </td>
                         <td>{{ $employee->employeePassport ?? '-' }}</td>
                         <td>{{ $employee->employeeWorkPermit ?? '-' }}</td>
                         <td>{{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}</td>
