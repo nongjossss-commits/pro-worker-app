@@ -23,12 +23,34 @@
             $unitPrice = $production->financial_data['unit_price'] ?? 0;
             $refundAmount = request('refund_amount', 0);
 
+            // VAT Logic
+            $vatRate = $production->financial_data['vat_rate'] ?? 7;
+            $vatIncluded = $production->financial_data['vat_included'] ?? false;
+
             // Calculate Paid Heads (reverse engineer)
             // Assuming Total Paid represents a certain number of heads
             $totalPaid = \App\Models\FinancialTransaction::where('production_order_id', $production->id)->sum('paid_amount');
             $paidHeads = ($unitPrice > 0) ? floor($totalPaid / $unitPrice) : 0;
 
             $diffHeads = max(0, $paidHeads - $actualCount);
+
+            // Calculate Refund Breakdown
+            $refundSubtotal = 0;
+            $refundVat = 0;
+
+            if ($vatIncluded) {
+                // Refund Amount is Total (Inc VAT)
+                $refundSubtotal = $refundAmount / (1 + ($vatRate / 100));
+                $refundVat = $refundAmount - $refundSubtotal;
+            } else {
+                // Refund Amount was likely calculated as (Diff * UnitPrice) + VAT?
+                // Wait, JS logic for refundAmount:
+                // if (!vatIncluded) deliveredValue = deliveredValue * (1 + Rate);
+                // refund = Paid - deliveredValue.
+                // So refundAmount IS the Total Refund (Inc VAT if applicable).
+                $refundSubtotal = $refundAmount / (1 + ($vatRate / 100));
+                 $refundVat = $refundAmount - $refundSubtotal;
+            }
         @endphp
 
         <tr>
@@ -62,6 +84,17 @@
         </tr>
     </tbody>
     <tfoot>
+        <!-- Refund Breakdown -->
+        <tr>
+            <td colspan="2" style="border: none;"></td>
+            <td class="text-right text-muted">Refund Subtotal</td>
+            <td class="amount text-danger">{{ number_format($refundSubtotal, 2) }}</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="border: none;"></td>
+            <td class="text-right text-muted">VAT Correction ({{ $vatRate }}%)</td>
+            <td class="amount text-danger">{{ number_format($refundVat, 2) }}</td>
+        </tr>
         <tr>
             <td colspan="2" style="border: none;"></td>
             <td class="text-right font-bold text-danger" style="font-size: 1.1em;">Total Refund</td>

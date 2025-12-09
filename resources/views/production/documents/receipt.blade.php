@@ -16,15 +16,23 @@
     </thead>
     <tbody>
         @php
-            $transactions = \App\Models\FinancialTransaction::where('production_order_id', $production->id)
-                            ->where('status', 'paid')
-                            ->orderBy('updated_at', 'desc')
-                            ->get();
+            // Filtered Transactions from Controller
             $grandTotal = 0;
+            $subtotal = 0;
+
+            // VAT Logic
+            $vatRate = $production->financial_data['vat_rate'] ?? 7;
+            $vatIncluded = $production->financial_data['vat_included'] ?? false;
         @endphp
 
         @forelse($transactions as $index => $t)
-            @php $grandTotal += $t->paid_amount; @endphp
+            @php
+                $amount = $t->paid_amount; // Use actual PAID amount
+                $grandTotal += $amount;
+
+                // Calculate Subtotal (assuming Paid Amount is inclusive of VAT portion)
+                $subtotal += ($amount / (1 + ($vatRate / 100)));
+            @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td>
@@ -37,11 +45,26 @@
             </tr>
         @empty
             <tr>
-                <td colspan="5" class="text-center py-4 text-muted">No completed payments found.</td>
+                <td colspan="5" class="text-center py-4 text-muted">No completed payments selected.</td>
             </tr>
         @endforelse
     </tbody>
     <tfoot>
+        <!-- Breakdown -->
+        @php
+            $vatAmount = $grandTotal - $subtotal;
+        @endphp
+
+        <tr>
+            <td colspan="3" style="border: none;"></td>
+            <td class="text-right text-muted">Subtotal</td>
+            <td class="amount">{{ number_format($subtotal, 2) }}</td>
+        </tr>
+        <tr>
+            <td colspan="3" style="border: none;"></td>
+            <td class="text-right text-muted">VAT {{ $vatRate }}%</td>
+            <td class="amount">{{ number_format($vatAmount, 2) }}</td>
+        </tr>
         <tr>
             <td colspan="3" style="border: none;"></td>
             <td class="text-right font-bold text-primary" style="font-size: 1.1em;">Total Received</td>
