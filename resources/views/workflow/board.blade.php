@@ -52,15 +52,58 @@
         </div>
     </div>
 
+    {{-- Summary Dashboard --}}
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+             <div class="card bg-white border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="bg-light rounded-circle p-3 me-3">
+                        <i class="bi bi-people-fill text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0">Total Employees</h6>
+                        <h3 class="fw-bold mb-0" x-text="items.length">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @foreach($barriers as $barrier)
+        <div class="col-md">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid var(--bs-{{ $barrier->color }}) !important;">
+                <div class="card-body py-2">
+                    <h6 class="text-muted mb-1 small text-truncate">{{ $barrier->name }}</h6>
+                    <h4 class="fw-bold mb-0" x-text="getItemsCount({{ $barrier->id }})">0</h4>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+
     {{-- Board Area --}}
     <div class="flex-grow-1 overflow-auto">
         <div class="d-flex gap-3 h-100 pb-3" style="min-width: 100%;">
+
+            @if($barriers->isEmpty())
+                <div class="w-100 d-flex flex-column align-items-center justify-content-center text-muted" style="height: 400px;">
+                    <i class="bi bi-kanban display-1 mb-3 opacity-50"></i>
+                    <h4 class="fw-bold">No Workflow Barriers Defined</h4>
+                    <p>Please contact an Administrator to set up workflow barriers (statuses).</p>
+                    @role('admin')
+                        <a href="{{ route('admin.production.barriers.index') }}" class="btn btn-primary mt-2">
+                            <i class="bi bi-gear-fill me-1"></i> Configure Barriers
+                        </a>
+                    @endrole
+                </div>
+            @endif
 
             {{-- Loop through Barriers (Columns) --}}
             @foreach($barriers as $barrier)
                 <div class="card bg-light border-0 shadow-sm" style="min-width: 300px; max-width: 300px;">
                     <div class="card-header bg-transparent fw-bold border-0 d-flex justify-content-between">
-                        <span>{{ $barrier->name }}</span>
+                        <span class="d-flex align-items-center">
+                            <span class="badge bg-{{ $barrier->color }} me-2 rounded-circle p-1" style="width: 10px; height: 10px;"> </span>
+                            {{ $barrier->name }}
+                        </span>
                         <span class="badge bg-secondary rounded-pill" x-text="getItemsCount({{ $barrier->id }})">0</span>
                     </div>
                     <div class="card-body p-2 overflow-auto custom-scrollbar"
