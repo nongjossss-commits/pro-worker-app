@@ -1,6 +1,21 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    // Prepare data for AlpineJS to avoid complex Blade/Json parsing issues
+    $boardItems = $production->items->map(function($item) use ($barriers) {
+        return [
+            'id' => $item->id,
+            'barrier_id' => $item->current_barrier_id ?? ($barriers->isNotEmpty() ? $barriers->first()->id : null),
+            'is_new' => $item->employee_id ? false : true,
+            'name' => $item->employee ? ($item->employee->fullname_th ?? $item->employee->name_th) : ($item->new_employee_data['name_th'] ?? 'New Employee'),
+            'photo_url' => $item->employee ? $item->employee->avatar_url : null,
+            'employer_name' => $item->employee && $item->employee->employer ? $item->employee->employer->name_th : 'Unknown',
+            'steps' => $item->steps
+        ];
+    });
+@endphp
+
 <div class="container-fluid py-4 h-100 d-flex flex-column" x-data="workflowBoard({{ $production->id }})">
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -182,17 +197,7 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('workflowBoard', (orderId) => ({
-            items: @json($production->items->map(function($item) {
-                return [
-                    'id' => $item->id,
-                    'barrier_id' => $item->current_barrier_id ?? $barriers->first()->id,
-                    'is_new' => $item->employee_id ? false : true,
-                    'name' => $item->employee ? ($item->employee->fullname_th ?? $item->employee->name_th) : ($item->new_employee_data['name_th'] ?? 'New Employee'),
-                    'photo_url' => $item->employee ? $item->employee->avatar_url : null,
-                    'employer_name' => $item->employee && $item->employee->employer ? $item->employee->employer->name_th : 'Unknown',
-                    'steps' => $item->steps
-                ];
-            })),
+            items: @json($boardItems),
             selectedItems: [],
             bulkStepType: 'text',
             bulkStepLabel: '',
