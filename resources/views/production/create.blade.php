@@ -2,6 +2,13 @@
 
 @section('content')
 <div class="container py-4">
+    {{-- CSS to hide checkboxes in the cards, as we use hidden inputs for submission --}}
+    <style>
+        .employee-list .employee-checkbox {
+            display: none !important;
+        }
+    </style>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 fw-bold">Create New Project</h1>
         <a href="{{ route('production.index') }}" class="btn btn-outline-secondary">Back</a>
@@ -53,12 +60,12 @@
                         <option value="">-- Choose Employer --</option>
                         @if($preSelectedEmployees->isNotEmpty() && $employerId)
                              <option value="{{ $employerId }}" selected>
-                                 {{ $preSelectedEmployees->first()->employer->name_th ?? 'Selected Employer' }}
+                                 {{ $preSelectedEmployees->first()->employer->employerNameTh ?? $preSelectedEmployees->first()->employer->employerNameEn ?? 'Selected Employer' }}
                              </option>
                         @elseif(isset($employers) && $employers->isNotEmpty())
                             @foreach($employers as $emp)
                                 <option value="{{ $emp->id }}" {{ $employerId == $emp->id ? 'selected' : '' }}>
-                                    {{ $emp->employerNameTh }} ({{ $emp->employerNameEn }}) - {{ $emp->employer_id }}
+                                    {{ $emp->employerNameTh }} ({{ $emp->employerNameEn }}) - {{ $emp->employerId }}
                                 </option>
                             @endforeach
                         @endif
@@ -75,25 +82,30 @@
 
                 <h5 class="fw-bold mb-3">Selected Employees ({{ $preSelectedEmployees->count() }})</h5>
                 @if($preSelectedEmployees->isNotEmpty())
-                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Passport</th>
-                                    <th>Employer</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($preSelectedEmployees as $emp)
-                                    <tr>
-                                        <td>{{ $emp->fullname_th ?? $emp->name_th }}</td>
-                                        <td>{{ $emp->passport_number ?? $emp->passport_no }}</td>
-                                        <td>{{ $emp->employer->name_th ?? 'N/A' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <div class="employee-list bg-light p-3 rounded border" style="max-height: 500px; overflow-y: auto;">
+                        @php
+                            $groupedEmployees = $preSelectedEmployees->groupBy('employer_id');
+                        @endphp
+                        @foreach($groupedEmployees as $employerId => $employees)
+                            @php
+                                $firstEmp = $employees->first();
+                                $employerName = $firstEmp->employer ? ($firstEmp->employer->employerNameTh . ' (' . $firstEmp->employer->employerNameEn . ')') : 'Unknown / No Employer';
+                            @endphp
+                            <div class="mb-4">
+                                <h5 class="bg-white p-2 rounded border-start border-4 border-primary shadow-sm sticky-top" style="top: -16px; z-index: 5;">
+                                    <i class="bi bi-building me-2"></i>{{ $employerName }}
+                                    <span class="badge bg-secondary ms-2">{{ $employees->count() }}</span>
+                                </h5>
+                                <div class="list-group ps-2">
+                                    @foreach($employees as $emp)
+                                        @include('partials._employee_card', [
+                                            'employee' => $emp,
+                                            'hideTeamTags' => true
+                                        ])
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 @else
                     <div class="alert alert-warning">No employees selected. You can add them in the next step.</div>
@@ -106,6 +118,9 @@
         </div>
     </div>
 </div>
+
+{{-- Include Action Modals for Previews etc. --}}
+@include('partials._employee_action_modals')
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
