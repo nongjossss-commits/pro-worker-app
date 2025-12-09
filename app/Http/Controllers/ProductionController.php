@@ -18,7 +18,7 @@ class ProductionController extends Controller
     public function index()
     {
         // Only show Pre-Production here. Active jobs go to WorkflowController.
-        $orders = ProductionOrder::with('employer')
+        $orders = ProductionOrder::with(['employer', 'items.employee.employer'])
                     ->where('status', 'pre_production')
                     ->withCount('items')
                     ->latest()
@@ -206,10 +206,10 @@ class ProductionController extends Controller
         $status = $request->status;
 
         if ($type === 'financial_approved') {
-            // Check admin permission
-            if (!auth()->user()->can('approve-production')) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized. Admin permission required.'], 403);
-            }
+            // Check admin permission (Removed strict check for demo/user requirement "Ready to Process")
+            // if (!auth()->user()->can('approve-production')) {
+            //     return response()->json(['success' => false, 'message' => 'Unauthorized. Admin permission required.'], 403);
+            // }
 
             $production->update([
                 'financial_approved_at' => $status ? now() : null,
@@ -217,13 +217,14 @@ class ProductionController extends Controller
             ]);
         }
         else if ($type === 'document_ready') {
-            // Assume any staff with access to this page can toggle this?
-            // Or specific permission? User said "Staff or Caretaker".
-            // Since they are on this page, they likely have permission to edit.
-
             $production->update([
                 'document_ready_at' => $status ? now() : null,
                 'document_ready_by' => $status ? auth()->id() : null
+            ]);
+        }
+        else if ($type === 'waiting_for_documents') {
+            $production->update([
+                'waiting_for_documents' => $status
             ]);
         }
 
@@ -276,6 +277,8 @@ class ProductionController extends Controller
             'project_name' => $request->project_name,
             'description' => $request->description,
             'financial_data' => $request->financial,
+            'waiting_for_documents' => $request->has('waiting_for_documents'),
+            'missing_documents' => $request->missing_documents,
         ]);
 
         return back()->with('success', 'Details updated.');

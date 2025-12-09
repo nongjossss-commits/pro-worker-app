@@ -535,14 +535,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (item.employer_id) employerIds.add(item.employer_id);
             });
 
-            if (employerIds.size > 1) {
-                 Swal.fire({
-                    icon: 'warning',
-                    title: '{{ __('Multiple Employers Selected') }}',
-                    text: '{{ __('You selected employees from different employers. Production projects are linked to a single employer.') }}'
-                });
-                return;
-            }
+            // REMOVED BLOCKING: Now allowing multiple employers to create Independent Project
+            // if (employerIds.size > 1) { ... }
 
             // Redirect to Production Create with IDs
             // Use JSON string for array of IDs

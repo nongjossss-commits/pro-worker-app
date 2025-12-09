@@ -20,6 +20,8 @@ class ProductionOrder extends Model
         'created_by',
         'document_ready_at',
         'document_ready_by',
+        'waiting_for_documents',
+        'missing_documents',
         'financial_approved_at',
         'financial_approved_by',
     ];
