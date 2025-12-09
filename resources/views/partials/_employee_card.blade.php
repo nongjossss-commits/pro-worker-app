@@ -25,7 +25,7 @@
      })">
     <div class="card-body d-flex align-items-center">
         <div class="me-3">
-            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}">
+            <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}" data-name-th="{{ $employee->employeeNameTh }}" data-name-en="{{ $employee->employeeNameEn }}" data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}" data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
         </div>
 
         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}"
