@@ -22,12 +22,39 @@
     </thead>
     <tbody>
         @php
-            $transactions = \App\Models\FinancialTransaction::where('production_order_id', $production->id)->orderBy('due_date')->get();
+            // Use transactions passed from Controller (already filtered)
+            // $transactions is available from the View Composer or Controller
             $grandTotal = 0;
+            $subtotal = 0;
+
+            // VAT Logic
+            $vatRate = $production->financial_data['vat_rate'] ?? 7;
+            $vatIncluded = $production->financial_data['vat_included'] ?? false;
         @endphp
 
         @forelse($transactions as $index => $t)
-            @php $grandTotal += $t->amount; @endphp
+            @php
+                $amount = $t->amount;
+                $grandTotal += $amount;
+
+                // Calculate Subtotal contribution
+                if ($vatIncluded) {
+                     $subtotal += ($amount / (1 + ($vatRate / 100)));
+                } else {
+                     $subtotal += $amount; // Assuming transactions are stored as Base if Excluded?
+                     // Wait, usually Transaction Amount IS the amount to be paid.
+                     // If VAT Excluded, is the stored amount Base or Total?
+                     // Standard: Transaction Amount is what needs to be paid.
+                     // If VAT is Excluded globally, does user enter Base or Total in "Add Installment"?
+                     // Usually "Add Installment" asks for "Amount".
+                     // Let's assume Transaction Amount = Final Amount (Grand Total) for simplicity in billing,
+                     // OR reverse engineer base.
+
+                     // Actually, if VAT is Added on top, the Transaction Amount in DB usually represents the FINAL billing amount.
+                     // So we treat $amount as Inclusive for display breakdown.
+                     $subtotal += ($amount / (1 + ($vatRate / 100)));
+                }
+            @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td>
@@ -43,15 +70,35 @@
             </tr>
         @empty
             <tr>
-                <td colspan="5" class="text-center py-4 text-muted">No scheduled payments found.</td>
+                <td colspan="5" class="text-center py-4 text-muted">No items selected.</td>
             </tr>
         @endforelse
     </tbody>
     <tfoot>
+        <!-- Breakdown -->
+        @php
+            $vatAmount = $grandTotal - $subtotal;
+        @endphp
+
         <tr>
             <td colspan="3" style="border: none;"></td>
-            <td class="text-right font-bold text-primary" style="font-size: 1.1em;">Total Due</td>
+            <td class="text-right text-muted">Subtotal</td>
+            <td class="amount">{{ number_format($subtotal, 2) }}</td>
+        </tr>
+        <tr>
+            <td colspan="3" style="border: none;"></td>
+            <td class="text-right text-muted">VAT {{ $vatRate }}%</td>
+            <td class="amount">{{ number_format($vatAmount, 2) }}</td>
+        </tr>
+        <tr>
+            <td colspan="3" style="border: none;"></td>
+            <td class="text-right font-bold text-primary" style="font-size: 1.1em;">Grand Total</td>
             <td class="amount font-bold text-primary" style="font-size: 1.1em;">{{ number_format($grandTotal, 2) }}</td>
+        </tr>
+         <tr>
+             <td colspan="5" class="text-right text-muted text-sm" style="border: none; padding-top: 5px;">
+                 ( {{ \App\Helpers\ThaiBahtHelper::toText($grandTotal) ?? 'Baht' }} )
+             </td>
         </tr>
     </tfoot>
 </table>

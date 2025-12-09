@@ -31,10 +31,24 @@
                 </div>
 
                 <div x-show="pricingMode === 'fixed'" class="mb-3">
-                    <label class="form-label">Total Project Value</label>
+                    <label class="form-label">Total Project Value (Before VAT)</label>
                     <div class="input-group">
                         <span class="input-group-text">฿</span>
                         <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
+                    </div>
+                </div>
+
+                <!-- VAT Settings -->
+                <div class="mb-3 border-top pt-3">
+                    <label class="form-label small text-muted">VAT Settings</label>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="vatIncluded" x-model="vatIncluded" @change="updateTotal()">
+                        <label class="form-check-label" for="vatIncluded">Price Includes VAT</label>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">VAT Rate</span>
+                        <input type="number" step="0.1" class="form-control" x-model="vatRate" @input="updateTotal()">
+                        <span class="input-group-text">%</span>
                     </div>
                 </div>
 
@@ -50,9 +64,20 @@
             <div class="card-header bg-white fw-bold">Financial Summary</div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Total Project Value:</span>
+                    <span class="text-muted">Subtotal:</span>
+                    <span x-text="formatCurrency(subtotalAmount)"></span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">VAT (<span x-text="vatRate"></span>%):</span>
+                    <span x-text="formatCurrency(vatAmount)"></span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 border-top pt-2">
+                    <span class="fw-bold">Grand Total:</span>
                     <span class="fw-bold text-primary" x-text="formatCurrency(totalAmount)"></span>
                 </div>
+
+                <hr>
+
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Total Scheduled:</span>
                     <span x-text="formatCurrency(scheduledAmount)" :class="{'text-success': isFullyScheduled, 'text-warning': !isFullyScheduled}"></span>
@@ -61,8 +86,7 @@
                     <span class="text-muted">Remaining to Schedule:</span>
                     <span x-text="formatCurrency(remainingSchedule)" class="text-danger fw-bold"></span>
                 </div>
-                <hr>
-                <div class="d-flex justify-content-between mb-2">
+                <div class="d-flex justify-content-between mb-2 border-top pt-2">
                     <span class="text-muted">Paid Amount:</span>
                     <span x-text="formatCurrency(totalPaid)" class="text-success fw-bold"></span>
                 </div>
@@ -90,10 +114,12 @@
                     <button @click="openDocument('quotation')" class="btn btn-outline-secondary btn-sm text-start">
                         <i class="bi bi-file-earmark-text me-2"></i>Quotation (ใบเสนอราคา)
                     </button>
-                    <button @click="openDocument('invoice')" class="btn btn-outline-secondary btn-sm text-start">
+                    <!-- Invoice Button with Modal Trigger -->
+                    <button @click="openSelectionModal('invoice')" class="btn btn-outline-secondary btn-sm text-start">
                         <i class="bi bi-receipt me-2"></i>Invoice (ใบแจ้งหนี้)
                     </button>
-                    <button @click="openDocument('receipt')" class="btn btn-outline-secondary btn-sm text-start">
+                    <!-- Receipt Button with Modal Trigger -->
+                    <button @click="openSelectionModal('receipt')" class="btn btn-outline-secondary btn-sm text-start">
                         <i class="bi bi-check-circle me-2"></i>Receipt (ใบเสร็จรับเงิน)
                     </button>
                 </div>
@@ -117,7 +143,8 @@
                 </div>
 
                 <div class="d-grid">
-                     <button @click="openDocument('credit_note')" class="btn btn-outline-danger btn-sm text-start" :disabled="refundAmount <= 0">
+                     <!-- Button enabled state fixed logic -->
+                     <button @click="openDocument('credit_note')" class="btn btn-outline-danger btn-sm text-start" :disabled="!canRefund">
                         <i class="bi bi-file-earmark-spreadsheet me-2"></i>Generate Credit Note (ใบคืนยอด)
                     </button>
                 </div>
@@ -131,7 +158,7 @@
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold">Installments & Payments</h5>
-                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
+                <button class="btn btn-primary btn-sm" @click="openAddModal()">
                     <i class="bi bi-plus-lg"></i> Add Installment
                 </button>
             </div>
@@ -142,7 +169,7 @@
                             <tr>
                                 <th class="ps-4">Description</th>
                                 <th>Due Date</th>
-                                <th class="text-end">Amount</th>
+                                <th class="text-end">Amount (Inc. VAT)</th>
                                 <th class="text-end">Paid</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-end pe-4">Actions</th>
@@ -188,7 +215,7 @@
 </div>
 
 <!-- Add Transaction Modal -->
-<div class="modal fade" id="addTransactionModal" tabindex="-1">
+<div class="modal fade" id="addTransactionModal" tabindex="-1" x-ref="addModal">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -226,7 +253,7 @@
 </div>
 
 <!-- Update Payment Modal -->
-<div class="modal fade" id="updatePaymentModal" tabindex="-1">
+<div class="modal fade" id="updatePaymentModal" tabindex="-1" x-ref="payModal">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -258,17 +285,54 @@
     </div>
 </div>
 
+<!-- Document Selection Modal -->
+<div class="modal fade" id="documentSelectionModal" tabindex="-1" x-ref="docSelectionModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Installments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">Select which installments to include in this document.</p>
+                <div class="list-group">
+                    <template x-for="t in transactions" :key="t.id">
+                        <label class="list-group-item">
+                            <input class="form-check-input me-1" type="checkbox" :value="t.id" x-model="selectedTransactionIds">
+                            <span x-text="formatType(t.type)"></span> -
+                            <span x-text="formatCurrency(t.amount)"></span>
+                            <span class="badge ms-2" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
+                        </label>
+                    </template>
+                </div>
+                <div class="mt-3 d-grid">
+                    <button class="btn btn-primary" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
+                        Generate Document
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function financialManager() {
     return {
         // Init Data from PHP
         pricingMode: '{{ $production->financial_data['pricing_mode'] ?? 'fixed' }}',
-        fixedTotal: {{ $production->financial_data['total_amount'] ?? 0 }}, // Stored 'total' used as fixed default
+
+        // VAT Settings
+        vatIncluded: {{ ($production->financial_data['vat_included'] ?? false) ? 'true' : 'false' }},
+        vatRate: {{ $production->financial_data['vat_rate'] ?? 7 }},
+
+        fixedTotal: {{ $production->financial_data['fixed_base_amount'] ?? ($production->financial_data['total_amount'] ?? 0) }}, // Base amount before VAT logic
         unitPrice: {{ $production->financial_data['unit_price'] ?? 0 }},
         employeeCount: {{ $production->items->count() }},
 
         // Dynamic Total (The one used for calculations)
-        totalAmount: {{ $production->financial_data['total_amount'] ?? 0 }},
+        totalAmount: 0, // Calculated in updateTotal()
+        subtotalAmount: 0,
+        vatAmount: 0,
 
         transactions: @json(\App\Models\FinancialTransaction::where('production_order_id', $production->id)->get()),
         selectedProfile: '',
@@ -276,6 +340,10 @@ function financialManager() {
         editingTransaction: {},
         selectedFile: null,
         isSaving: false,
+
+        // Document Selection
+        selectedTransactionIds: [],
+        documentTypeToGenerate: '',
 
         // Refund Logic
         actualDeliveredCount: {{ $production->items->count() }}, // Default to current
@@ -286,10 +354,25 @@ function financialManager() {
         },
 
         updateTotal() {
+            let base = 0;
             if (this.pricingMode === 'per_head') {
-                this.totalAmount = this.unitPrice * this.employeeCount;
+                base = this.unitPrice * this.employeeCount;
             } else {
-                this.totalAmount = this.fixedTotal;
+                base = parseFloat(this.fixedTotal) || 0;
+            }
+
+            // VAT Logic
+            if (this.vatIncluded) {
+                // Base is inclusive: Total = Base
+                // Subtotal = Base / (1 + Rate/100)
+                this.totalAmount = base;
+                this.subtotalAmount = base / (1 + (this.vatRate / 100));
+                this.vatAmount = this.totalAmount - this.subtotalAmount;
+            } else {
+                // Base is exclusive: Total = Base + (Base * Rate/100)
+                this.subtotalAmount = base;
+                this.vatAmount = base * (this.vatRate / 100);
+                this.totalAmount = this.subtotalAmount + this.vatAmount;
             }
         },
 
@@ -302,12 +385,14 @@ function financialManager() {
             const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             // Build the financial array to merge into existing
-            // Note: In ProductionController@update, we map request->financial to financial_data
             const payload = {
                 financial: {
                     pricing_mode: this.pricingMode,
                     unit_price: this.unitPrice,
-                    total_amount: this.totalAmount // Important: Save the computed total
+                    fixed_base_amount: this.fixedTotal, // Save the input value
+                    total_amount: this.totalAmount, // Save the calculated final total
+                    vat_included: this.vatIncluded,
+                    vat_rate: this.vatRate
                 },
                 _method: 'PUT'
             };
@@ -320,17 +405,11 @@ function financialManager() {
             .then(res => res.json())
             .then(data => {
                 this.isSaving = false;
-                // Since update redirects/reloads in standard controller, we might get a redirect.
-                // But if we want AJAX behavior, we need to check response.
-                // The current controller returns a Redirect.
-                // For better UX, we'll reload to show success flash message or handle it.
-                // Or better, let's just reload to be safe and simple as requested.
                 window.location.reload();
             })
             .catch(err => {
                 this.isSaving = false;
                 console.error(err);
-                // Fallback reload
                 window.location.reload();
             });
         },
@@ -353,22 +432,38 @@ function financialManager() {
 
         // Refund Getters
         get paidHeadCount() {
-            // Rough estimate: Total Paid / Unit Price (if per_head)
-            if(this.pricingMode === 'per_head' && this.unitPrice > 0) {
+            // Estimate based on unit price
+            if(this.unitPrice > 0) {
+                 // We should use Subtotal (Ex-VAT) for unit price calc logic if unit price is Ex-VAT?
+                 // Assuming unit price input follows the VAT setting logic.
+                 // If totalPaid is inclusive, and unitPrice is inclusive, it matches.
                 return Math.floor(this.totalPaid / this.unitPrice);
             }
             return 0;
         },
         get refundAmount() {
+            // Simple Logic: Paid - (Actual * UnitPrice)
+            // But we need to account for VAT settings?
+            // Let's assume refund is based on the final amounts (Total).
+
+            // If Pricing Mode is Per Head
             if (this.pricingMode === 'per_head') {
-                 // Calculate difference in heads
-                 // If we have paid for X heads, but actual is Y (where Y < X)
-                 // Or easier: Total Paid - (Actual Count * Unit Price)
-                 const actualValue = this.actualDeliveredCount * this.unitPrice;
-                 return Math.max(0, this.totalPaid - actualValue);
+                 // Calculate value of delivered goods
+                 let deliveredValue = this.actualDeliveredCount * this.unitPrice;
+
+                 // If excluded VAT, add VAT to delivered value to compare with Total Paid (which is Inc VAT presumably)
+                 if (!this.vatIncluded) {
+                     deliveredValue = deliveredValue * (1 + (this.vatRate/100));
+                 }
+
+                 return Math.max(0, this.totalPaid - deliveredValue);
             }
-            // For fixed mode, maybe just Paid - Total?
+
+            // Fixed Mode
             return Math.max(0, this.totalPaid - this.totalAmount);
+        },
+        get canRefund() {
+            return this.refundAmount > 0;
         },
 
         formatCurrency(val) {
@@ -389,8 +484,21 @@ function financialManager() {
             return map[status] || 'bg-light text-dark';
         },
 
+        // --- Improved Modal Handling ---
+        openAddModal() {
+            const modalEl = this.$refs.addModal;
+            if(modalEl) {
+                // Use Bootstrap API if available
+                if(typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+            }
+        },
+
         addTransaction() {
             const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
             fetch('/production/{{ $production->id }}/transactions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
@@ -400,18 +508,32 @@ function financialManager() {
             .then(data => {
                 if(data.success) {
                     this.transactions.push(data.transaction);
-                    bootstrap.Modal.getInstance(document.getElementById('addTransactionModal')).hide();
+
+                    // Close Modal Safely
+                    if(typeof bootstrap !== 'undefined') {
+                        const modalEl = document.getElementById('addTransactionModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if(modal) modal.hide();
+                    }
+
                     this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
                 } else {
                     alert(data.message || 'Error');
                 }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                alert('An error occurred while saving.');
             });
         },
 
         openPayModal(t) {
-            this.editingTransaction = { ...t }; // Clone
+            this.editingTransaction = { ...t };
             this.selectedFile = null;
-            new bootstrap.Modal(document.getElementById('updatePaymentModal')).show();
+            if(typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('updatePaymentModal'));
+                modal.show();
+            }
         },
 
         handleFileSelect(e) {
@@ -421,7 +543,7 @@ function financialManager() {
         updateTransaction() {
             const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             const formData = new FormData();
-            formData.append('_method', 'PUT'); // Fake PUT for file upload
+            formData.append('_method', 'PUT');
             formData.append('paid_amount', this.editingTransaction.paid_amount);
             formData.append('status', this.editingTransaction.status);
             if (this.selectedFile) {
@@ -438,7 +560,11 @@ function financialManager() {
                 if(data.success) {
                     const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                     if(idx !== -1) this.transactions[idx] = data.transaction;
-                    bootstrap.Modal.getInstance(document.getElementById('updatePaymentModal')).hide();
+
+                    if(typeof bootstrap !== 'undefined') {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('updatePaymentModal'));
+                        if(modal) modal.hide();
+                    }
                 } else {
                     alert(data.message || 'Error');
                 }
@@ -462,12 +588,42 @@ function financialManager() {
             });
         },
 
-        openDocument(type) {
+        // --- Document Generation ---
+        openSelectionModal(type) {
+            this.documentTypeToGenerate = type;
+            this.selectedTransactionIds = [];
+            // Pre-select all if empty? No, let user choose.
+
+            if(typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('documentSelectionModal'));
+                modal.show();
+            }
+        },
+
+        generateSelectedDocument() {
+            if (this.selectedTransactionIds.length === 0) return;
+
+            const ids = this.selectedTransactionIds.join(',');
+            this.openDocument(this.documentTypeToGenerate, ids);
+
+            // Hide modal
+            if(typeof bootstrap !== 'undefined') {
+                 const modal = bootstrap.Modal.getInstance(document.getElementById('documentSelectionModal'));
+                 if(modal) modal.hide();
+            }
+        },
+
+        openDocument(type, transactionIds = null) {
             let url = `/production/{{ $production->id }}/documents/${type}?profile_id=${this.selectedProfile}`;
+
+            if (transactionIds) {
+                url += `&transaction_ids=${transactionIds}`;
+            }
 
             // Pass refund params if credit note
             if (type === 'credit_note') {
                 url += `&actual_count=${this.actualDeliveredCount}&refund_amount=${this.refundAmount}`;
+                // Also pass VAT settings if needed, or controller gets from DB
             }
 
             window.open(url, '_blank');
