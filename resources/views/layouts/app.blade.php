@@ -1320,6 +1320,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        // Sync individual checkboxes
+        if (employeeCheckboxes) {
+            employeeCheckboxes.forEach(cb => {
+                cb.checked = allIds.includes(String(cb.value));
+            });
+        }
+
         // Sync "Select All" checkbox state based on VISIBLE items
         // If all visible items are in the selected set, check "Select All"
         if (selectAllCheckbox && employeeCheckboxes.length > 0) {
