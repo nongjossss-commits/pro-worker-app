@@ -79,13 +79,15 @@ class NotificationController extends Controller
             if ($type === 'work_permit_mou') {
                 $notificationsData[$type] = $query->get();
             } else {
-                $notificationsData[$type] = $query->paginate($perPage, ['*'], $type . '_page')->withQueryString();
+                $notificationsData[$type] = $query->paginate($perPage, ['*'], $type . '_page')
+                    ->appends(array_merge($request->query(), ['active_tab' => $type]));
             }
         }
 
         $cancelledQuery = $this->getFilteredQuery($request, 'cancelled');
         $counts['cancelled'] = (clone $cancelledQuery)->count();
-        $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')->withQueryString();
+        $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')
+            ->appends(array_merge($request->query(), ['active_tab' => 'cancelled']));
 
         return view('notifications.index', compact('notificationsData', 'counts', 'tabs', 'currentView', 'perPageOptions'));
     }
