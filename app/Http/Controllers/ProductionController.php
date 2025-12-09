@@ -79,7 +79,7 @@ class ProductionController extends Controller
         // Fetch lighter list for performance
         $employers = collect();
         if ($preSelectedEmployees->isEmpty()) {
-            $employers = Employer::select('id', 'employerNameTh', 'employerNameEn', 'employer_id')
+            $employers = Employer::select('id', 'employerNameTh', 'employerNameEn')
                                 ->orderBy('employerNameTh')
                                 ->limit(200) // Safety limit
                                 ->get();
