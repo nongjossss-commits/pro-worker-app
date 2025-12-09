@@ -115,6 +115,9 @@
         </ul>
     </div>
     <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+    <button class="btn btn-sm btn-info text-white" id="btn-view-selected">
+        <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+    </button>
     <div class="ms-auto text-muted small d-none d-md-block">
         <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
     </div>
@@ -163,7 +166,7 @@
                             url: '{{ route('employees.show', $employee->id) }}'
                         })"
                         style="cursor: grab;">
-                        <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}"></td>
+                        <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}" data-name-th="{{ $employee->employeeNameTh }}" data-name-en="{{ $employee->employeeNameEn }}" data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}"></td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">
@@ -214,7 +217,155 @@
 @include('employees.modals.advanced_export')
 @include('employees.modals.select_target_employer_modal')
 
+<!-- View Selected Items Modal -->
+<div class="modal fade" id="viewSelectedModal" tabindex="-1" aria-labelledby="viewSelectedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewSelectedModalLabel">{{ __('Selected Employees') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="selected-list-container" class="list-group list-group-flush">
+                    <!-- Items will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const viewSelectedBtn = document.getElementById('btn-view-selected');
+    const container = document.getElementById('selected-list-container');
+    const modalEl = document.getElementById('viewSelectedModal');
+    const modal = new bootstrap.Modal(modalEl);
+
+    if (viewSelectedBtn) {
+        viewSelectedBtn.addEventListener('click', function() {
+            const data = window.getGlobalSelectedData();
+            if (data.length === 0) {
+                showToast('{{ __('No employees selected') }}', 'danger');
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(item => {
+                const li = document.createElement('div');
+                li.className = 'list-group-item d-flex align-items-center justify-content-between';
+                li.id = `selected-item-${item.id}`;
+
+                const photoUrl = item.photo || 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC';
+                const nameTh = item.name_th || 'N/A';
+                const nameEn = item.name_en || 'N/A';
+                const employerName = item.employer_name || 'N/A';
+
+                // --- Safe DOM Creation ---
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'd-flex align-items-center';
+
+                const img = document.createElement('img');
+                img.src = photoUrl;
+                img.alt = 'Photo';
+                img.className = 'rounded-circle me-3';
+                img.style.width = '40px';
+                img.style.height = '40px';
+                img.style.objectFit = 'cover';
+                leftDiv.appendChild(img);
+
+                const infoDiv = document.createElement('div');
+
+                const nameEnDiv = document.createElement('div');
+                nameEnDiv.className = 'fw-bold';
+                nameEnDiv.textContent = nameEn;
+                infoDiv.appendChild(nameEnDiv);
+
+                const nameThDiv = document.createElement('div');
+                nameThDiv.className = 'text-muted small';
+                nameThDiv.textContent = nameTh;
+                infoDiv.appendChild(nameThDiv);
+
+                const employerDiv = document.createElement('div');
+                employerDiv.className = 'text-muted small';
+                const buildingIcon = document.createElement('i');
+                buildingIcon.className = 'bi bi-building me-1';
+                employerDiv.appendChild(buildingIcon);
+                employerDiv.appendChild(document.createTextNode(employerName));
+                infoDiv.appendChild(employerDiv);
+
+                leftDiv.appendChild(infoDiv);
+                li.appendChild(leftDiv);
+
+                const rightDiv = document.createElement('div');
+                rightDiv.className = 'd-flex align-items-center gap-2';
+
+                // Employee Preview Button
+                const empPreviewBtn = document.createElement('button');
+                empPreviewBtn.type = 'button';
+                empPreviewBtn.className = 'btn btn-sm btn-outline-info btn-preview';
+                empPreviewBtn.dataset.modelType = 'employee';
+                empPreviewBtn.dataset.modelId = item.id;
+                empPreviewBtn.title = '{{ __('Preview Employee') }}';
+                empPreviewBtn.innerHTML = '<i class="bi bi-person-lines-fill"></i>';
+                rightDiv.appendChild(empPreviewBtn);
+
+                // Employer Preview Button (Conditional)
+                if (item.employer_id) {
+                    const emrPreviewBtn = document.createElement('button');
+                    emrPreviewBtn.type = 'button';
+                    emrPreviewBtn.className = 'btn btn-sm btn-outline-primary btn-preview';
+                    emrPreviewBtn.dataset.modelType = 'employer';
+                    emrPreviewBtn.dataset.modelId = item.employer_id;
+                    emrPreviewBtn.title = '{{ __('Preview Employer') }}';
+                    emrPreviewBtn.innerHTML = '<i class="bi bi-building"></i>';
+                    rightDiv.appendChild(emrPreviewBtn);
+                }
+
+                // Remove Button
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-sm btn-outline-danger btn-remove-selected';
+                removeBtn.dataset.id = item.id;
+                removeBtn.title = '{{ __('Remove from selection') }}';
+                removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                rightDiv.appendChild(removeBtn);
+
+                li.appendChild(rightDiv);
+                container.appendChild(li);
+            });
+
+            modal.show();
+        });
+    }
+
+    // Handle removal from within the modal
+    if (container) {
+        container.addEventListener('click', function(e) {
+            const removeBtn = e.target.closest('.btn-remove-selected');
+            if (removeBtn) {
+                const id = removeBtn.dataset.id;
+                // Remove from global storage
+                window.removeItemsByIds([id]);
+                // Remove from UI
+                const itemEl = document.getElementById(`selected-item-${id}`);
+                if (itemEl) itemEl.remove();
+
+                // Check if empty
+                if (container.children.length === 0) {
+                    modal.hide();
+                    // Also update the UI on the page is automatic via window.removeItemsByIds
+                    // but we might want to trigger a toast
+                    showToast('{{ __('Selection cleared') }}', 'info');
+                }
+            }
+        });
+    }
+});
+</script>
 <script>
     // Special handler for bulk drag
     window.startDragBulk = function(e) {

@@ -1280,7 +1280,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Helper: Add items (accepts array of {id, employer_id})
     function addItems(newItems) {
         const current = window.getGlobalSelectedData();
-        const combined = [...current, ...newItems];
+        // Filter out existing items that are being re-added (to update them with potentially newer data)
+        const newIds = newItems.map(i => String(i.id));
+        const currentFiltered = current.filter(i => !newIds.includes(String(i.id)));
+        const combined = [...currentFiltered, ...newItems];
         window.setGlobalSelectedData(combined);
     }
 
@@ -1331,6 +1334,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!selectAllCheckbox && employeeCheckboxes.length === 0) return;
 
+    // Helper to extract rich data
+    function getEmployeeData(cb) {
+        return {
+            id: cb.value,
+            employer_id: cb.dataset.employerId || '',
+            name_th: cb.dataset.nameTh || '',
+            name_en: cb.dataset.nameEn || '',
+            photo: cb.dataset.photo || '',
+            employer_name: cb.dataset.employerName || ''
+        };
+    }
+
     // 1. Restore state from storage on load
     const savedIds = window.getGlobalSelectedIds();
     employeeCheckboxes.forEach(cb => {
@@ -1343,12 +1358,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // 2. Handle Individual Checkbox Changes
     employeeCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function () {
-            const id = this.value;
-            const employerId = this.dataset.employerId || '';
+            const data = getEmployeeData(this);
             if (this.checked) {
-                addItems([{ id: id, employer_id: employerId }]);
+                addItems([data]);
             } else {
-                removeItemsByIds([id]);
+                removeItemsByIds([data.id]);
             }
         });
     });
@@ -1356,10 +1370,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 3. Handle "Select All" Checkbox
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function () {
-            const visibleItems = Array.from(employeeCheckboxes).map(cb => ({
-                id: cb.value,
-                employer_id: cb.dataset.employerId || ''
-            }));
+            const visibleItems = Array.from(employeeCheckboxes).map(cb => getEmployeeData(cb));
             const visibleIds = visibleItems.map(item => item.id);
 
             if (this.checked) {
