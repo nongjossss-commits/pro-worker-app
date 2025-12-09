@@ -712,14 +712,8 @@
                     if (empId) employerIds.add(empId);
                 });
 
-                if (employerIds.size > 1) {
-                     Swal.fire({
-                        icon: 'warning',
-                        title: '{{ __('Multiple Employers Selected') }}',
-                        text: '{{ __('You selected employees from different employers. Production projects are linked to a single employer.') }}'
-                    });
-                    return;
-                }
+                // REMOVED BLOCKING: Now allowing multiple employers to create Independent Project
+                // if (employerIds.size > 1) { ... }
 
                 const idsJson = encodeURIComponent(JSON.stringify(selected));
                 const employerId = employerIds.size === 1 ? employerIds.values().next().value : '';
