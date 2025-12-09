@@ -1,6 +1,51 @@
 <div x-data="financialManager()" class="row">
-    <!-- Summary Column -->
+    <!-- Left Column: Summary & Pricing Logic -->
     <div class="col-md-4">
+
+        <!-- Pricing Logic Card (NEW) -->
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-header bg-white fw-bold"><i class="bi bi-calculator me-2"></i>Pricing Settings</div>
+            <div class="card-body">
+                <!-- Mode Selection -->
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Pricing Mode</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="pricing_mode" id="mode_fixed" value="fixed" x-model="pricingMode" @change="updateTotal()">
+                        <label class="btn btn-outline-primary btn-sm" for="mode_fixed">Fixed Total</label>
+
+                        <input type="radio" class="btn-check" name="pricing_mode" id="mode_per_head" value="per_head" x-model="pricingMode" @change="updateTotal()">
+                        <label class="btn btn-outline-primary btn-sm" for="mode_per_head">Per Head</label>
+                    </div>
+                </div>
+
+                <!-- Inputs based on Mode -->
+                <div x-show="pricingMode === 'per_head'" class="mb-3">
+                    <label class="form-label">Unit Price (Per Head)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">฿</span>
+                        <input type="number" class="form-control" x-model="unitPrice" @input="updateTotal()">
+                    </div>
+                    <div class="form-text small">
+                        Multiplied by <strong x-text="employeeCount"></strong> employees = <span x-text="formatCurrency(calculatedTotal)"></span>
+                    </div>
+                </div>
+
+                <div x-show="pricingMode === 'fixed'" class="mb-3">
+                    <label class="form-label">Total Project Value</label>
+                    <div class="input-group">
+                        <span class="input-group-text">฿</span>
+                        <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
+                    </div>
+                </div>
+
+                <!-- Save Pricing Button -->
+                <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSaving">
+                    <i class="bi bi-save me-1"></i> Save Pricing Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- Financial Summary -->
         <div class="card shadow-sm border-0 mb-3">
             <div class="card-header bg-white fw-bold">Financial Summary</div>
             <div class="card-body">
@@ -29,7 +74,7 @@
         </div>
 
         <!-- Document Center -->
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0 mb-3">
             <div class="card-header bg-white fw-bold"><i class="bi bi-printer me-2"></i>Document Center</div>
             <div class="card-body">
                 <div class="mb-3">
@@ -54,6 +99,31 @@
                 </div>
             </div>
         </div>
+
+         <!-- Refund / Credit Note Section (New) -->
+         <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-bold text-danger"><i class="bi bi-arrow-return-left me-2"></i>Refund / Credit Note</div>
+            <div class="card-body">
+                <div class="mb-2 small text-muted">Use this if actual delivered count is less than paid.</div>
+
+                <div class="mb-3">
+                    <label class="form-label small">Actual Delivered Count</label>
+                    <input type="number" class="form-control form-control-sm" x-model="actualDeliveredCount">
+                </div>
+
+                <div x-show="refundAmount > 0" class="alert alert-warning py-2 mb-2">
+                    <div class="small fw-bold">Refund Due: <span x-text="formatCurrency(refundAmount)"></span></div>
+                    <div class="small text-muted">(Paid for <span x-text="paidHeadCount"></span> heads)</div>
+                </div>
+
+                <div class="d-grid">
+                     <button @click="openDocument('credit_note')" class="btn btn-outline-danger btn-sm text-start" :disabled="refundAmount <= 0">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Generate Credit Note (ใบคืนยอด)
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Transactions Column -->
@@ -191,12 +261,79 @@
 <script>
 function financialManager() {
     return {
+        // Init Data from PHP
+        pricingMode: '{{ $production->financial_data['pricing_mode'] ?? 'fixed' }}',
+        fixedTotal: {{ $production->financial_data['total_amount'] ?? 0 }}, // Stored 'total' used as fixed default
+        unitPrice: {{ $production->financial_data['unit_price'] ?? 0 }},
+        employeeCount: {{ $production->items->count() }},
+
+        // Dynamic Total (The one used for calculations)
         totalAmount: {{ $production->financial_data['total_amount'] ?? 0 }},
+
         transactions: @json(\App\Models\FinancialTransaction::where('production_order_id', $production->id)->get()),
         selectedProfile: '',
         newTransaction: { type: 'installment', amount: '', due_date: '', notes: '' },
         editingTransaction: {},
         selectedFile: null,
+        isSaving: false,
+
+        // Refund Logic
+        actualDeliveredCount: {{ $production->items->count() }}, // Default to current
+
+        init() {
+            // Re-calculate total on load just in case count changed but DB wasn't updated
+            this.updateTotal();
+        },
+
+        updateTotal() {
+            if (this.pricingMode === 'per_head') {
+                this.totalAmount = this.unitPrice * this.employeeCount;
+            } else {
+                this.totalAmount = this.fixedTotal;
+            }
+        },
+
+        get calculatedTotal() {
+             return this.unitPrice * this.employeeCount;
+        },
+
+        saveFinancialData() {
+            this.isSaving = true;
+            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Build the financial array to merge into existing
+            // Note: In ProductionController@update, we map request->financial to financial_data
+            const payload = {
+                financial: {
+                    pricing_mode: this.pricingMode,
+                    unit_price: this.unitPrice,
+                    total_amount: this.totalAmount // Important: Save the computed total
+                },
+                _method: 'PUT'
+            };
+
+            fetch('{{ route("production.update", $production->id) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.isSaving = false;
+                // Since update redirects/reloads in standard controller, we might get a redirect.
+                // But if we want AJAX behavior, we need to check response.
+                // The current controller returns a Redirect.
+                // For better UX, we'll reload to show success flash message or handle it.
+                // Or better, let's just reload to be safe and simple as requested.
+                window.location.reload();
+            })
+            .catch(err => {
+                this.isSaving = false;
+                console.error(err);
+                // Fallback reload
+                window.location.reload();
+            });
+        },
 
         get scheduledAmount() {
             return this.transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
@@ -212,6 +349,26 @@ function financialManager() {
         },
         get outstandingBalance() {
             return Math.max(0, this.totalAmount - this.totalPaid);
+        },
+
+        // Refund Getters
+        get paidHeadCount() {
+            // Rough estimate: Total Paid / Unit Price (if per_head)
+            if(this.pricingMode === 'per_head' && this.unitPrice > 0) {
+                return Math.floor(this.totalPaid / this.unitPrice);
+            }
+            return 0;
+        },
+        get refundAmount() {
+            if (this.pricingMode === 'per_head') {
+                 // Calculate difference in heads
+                 // If we have paid for X heads, but actual is Y (where Y < X)
+                 // Or easier: Total Paid - (Actual Count * Unit Price)
+                 const actualValue = this.actualDeliveredCount * this.unitPrice;
+                 return Math.max(0, this.totalPaid - actualValue);
+            }
+            // For fixed mode, maybe just Paid - Total?
+            return Math.max(0, this.totalPaid - this.totalAmount);
         },
 
         formatCurrency(val) {
@@ -306,7 +463,13 @@ function financialManager() {
         },
 
         openDocument(type) {
-            const url = `/production/{{ $production->id }}/documents/${type}?profile_id=${this.selectedProfile}`;
+            let url = `/production/{{ $production->id }}/documents/${type}?profile_id=${this.selectedProfile}`;
+
+            // Pass refund params if credit note
+            if (type === 'credit_note') {
+                url += `&actual_count=${this.actualDeliveredCount}&refund_amount=${this.refundAmount}`;
+            }
+
             window.open(url, '_blank');
         }
     }
