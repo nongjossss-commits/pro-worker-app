@@ -303,6 +303,8 @@ class ImportEmployeeController extends Controller
                     $column = $matches[1];
                     $row = (int)$matches[2];
 
+                    Log::info("Found image at coords: $coords (Row: $row, Col: $column)");
+
                     // Broadened Search Logic:
                     // 1. Allow columns A or B (A=1, B=2) in case the user pasted carelessly.
                     // 2. Allow rows starting from 2.
@@ -314,6 +316,8 @@ class ImportEmployeeController extends Controller
                             'col' => $column
                         ];
                     }
+                } else {
+                    Log::warning("Could not parse image coordinates: $coords");
                 }
             }
 
@@ -454,6 +458,35 @@ class ImportEmployeeController extends Controller
                                  $imageContent = file_get_contents($imagePath);
                                  $info = pathinfo($imagePath);
                                  $extension = $info['extension'] ?? 'jpg';
+                            } else {
+                                // Fallback: Try to use GD resource if path is invalid (common in imported Xlsx)
+                                try {
+                                    $imageResource = $drawing->getImageResource();
+                                    if ($imageResource) {
+                                        $extension = $drawing->getExtension();
+                                        if (!$extension) $extension = 'jpg';
+
+                                        ob_start();
+                                        switch (strtolower($extension)) {
+                                            case 'png':
+                                                imagepng($imageResource);
+                                                break;
+                                            case 'gif':
+                                                imagegif($imageResource);
+                                                break;
+                                            case 'jpeg':
+                                            case 'jpg':
+                                            default:
+                                                imagejpeg($imageResource);
+                                                $extension = 'jpg';
+                                                break;
+                                        }
+                                        $imageContent = ob_get_contents();
+                                        ob_end_clean();
+                                    }
+                                } catch (\Exception $e) {
+                                    Log::warning("Fallback image extraction failed for row $rowIdx: " . $e->getMessage());
+                                }
                             }
                         }
 
