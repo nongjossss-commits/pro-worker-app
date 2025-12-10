@@ -51,6 +51,10 @@
                             <input type="hidden" name="production_id" value="{{ $production->id }}">
                         @endif
 
+                        @if(request('target_status'))
+                            <input type="hidden" name="target_status" value="{{ request('target_status') }}">
+                        @endif
+
                         <div class="mb-4">
                             <label for="employer_id" class="form-label fw-bold required">{{ __('Select Employer') }}</label>
 
