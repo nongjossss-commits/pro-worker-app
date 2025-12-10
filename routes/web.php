@@ -176,6 +176,9 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::post('tickets/employers/{user}/unhide', [AdminTicketController::class, 'unhideEmployer'])->name('tickets.unhideEmployer'); // V2.5.2 Unhide Employer Box
 
     Route::delete('tickets/messages/{message}', [\App\Http\Controllers\TicketMessageController::class, 'destroy'])->name('tickets.messages.destroy');
+
+    // Business Types
+    Route::resource('business-types', \App\Http\Controllers\Admin\BusinessTypeController::class)->only(['index', 'store', 'destroy']);
 });
 
 // === Production & Workflow Admin Routes ===
