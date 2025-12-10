@@ -261,10 +261,12 @@ class ImportEmployeeController extends Controller
             'employer_id' => 'required|exists:employers,id',
             'file' => 'required|file|mimes:xlsx,xls,xlsm|max:20480', // 20MB limit
             'production_id' => 'nullable|exists:production_orders,id',
+            'target_status' => 'nullable|string', // Added target_status
         ]);
 
         $employerId = $request->input('employer_id');
         $productionId = $request->input('production_id');
+        $targetStatus = $request->input('target_status'); // Get target status
         $file = $request->file('file');
 
         if (!auth()->user()->can('create-employees')) {
@@ -505,6 +507,13 @@ class ImportEmployeeController extends Controller
                     $passportTypeKey = 'passport_type_cambodia';
                 }
 
+                $status = 'active';
+                if ($targetStatus) {
+                    $status = $targetStatus;
+                } elseif ($productionId) {
+                    $status = 'pending_confirmation';
+                }
+
                 $employeeData = [
                     'employer_id' => $employerId,
                     'employeeTitleTh' => $titleTh,
@@ -518,7 +527,7 @@ class ImportEmployeeController extends Controller
                     'workPermitMOUGroup' => $wpType,
                     'pinkCardNo' => $pinkCard,
                     'employeePhoto' => $photoPath,
-                    'status' => $productionId ? 'pending_confirmation' : 'active',
+                    'status' => $status,
                 ];
 
                 if ($nationality === 'กัมพูชา') {

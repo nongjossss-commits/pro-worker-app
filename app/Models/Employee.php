@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// ... (Existing imports)
-// Add Attribute and Storage imports
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,20 +21,13 @@ class Employee extends Model
             if (Auth::check()) {
                 $user = Auth::user();
                 if ($user->hasRole('employer')) {
-                    // Find the employer record linked to this user
                     $employer = $user->employer;
                     if ($employer) {
-                        // This user is an 'employer'. Filter their view to *only*
-                        // Employees who belong to their linked Employer ID.
                         $builder->where('employer_id', $employer->id);
                     } else {
-                        // This employer user is not linked to any employer record.
-                        // Show them nothing.
-                        $builder->whereRaw('1 = 0'); // Forces query to return empty
+                        $builder->whereRaw('1 = 0');
                     }
                 } elseif ($user->hasRole('caretaker')) {
-                    // This user is a 'caretaker'. Filter their view to *only*
-                    // Employees whose Employer has this user assigned as staff.
                     $builder->whereHas('employer', function ($q) use ($user) {
                         $q->where('assigned_staff_id', $user->id);
                     });
@@ -45,9 +36,9 @@ class Employee extends Model
         });
     }
 
-    // The $fillable array is correct as it matches the camelCase schema.
     protected $fillable = [
         'employer_id',
+        'status', // Added status
         'english_prefix',
         'employeeNameTh',
         'employeeNameEn',
@@ -140,13 +131,7 @@ class Employee extends Model
         'insurance_attachment_path',
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        // --- FIX: The keys MUST be camelCase to match the database columns ---
         'passportExpiryDate' => 'date:Y-m-d',
         'workPermitExpiryDate' => 'date:Y-m-d',
         'visaExpiryDate' => 'date:Y-m-d',
@@ -160,31 +145,19 @@ class Employee extends Model
         'terminated_at' => 'datetime',
     ];
 
-    // --- V2.4-S6: Accessor for Photo URL ---
-    /**
-     * Get the full URL for the employee's photo, with a fallback avatar.
-     * Usage in Blade/API: $employee->photo_url
-     */
     protected function photoUrl(): Attribute
     {
         return Attribute::make(
             get: function () {
-                // Robust check: Ensure property is set AND file exists on disk
                 if ($this->employeePhoto && Storage::disk('public')->exists($this->employeePhoto)) {
                     return Storage::disk('public')->url($this->employeePhoto);
                 }
-                // Fallback using ui-avatars.com based on the name
                 $name = urlencode($this->employeeNameTh ?? $this->employeeNameEn ?? 'User');
-                // Use primary color defined in app.blade.php (F97316 - Orange)
                 return "https://ui-avatars.com/api/?name={$name}&color=FFFFFF&background=F97316&size=128";
             }
         );
     }
 
-    /**
-     * Calculate the employee's age from their date of birth.
-     * Usage in Blade/API: $employee->age
-     */
     protected function age(): Attribute
     {
         return Attribute::make(
@@ -192,10 +165,6 @@ class Employee extends Model
         );
     }
 
-    /**
-     * Determine the employee's gender from their Thai title.
-     * Usage in Blade/API: $employee->gender
-     */
     protected function gender(): Attribute
     {
         return Attribute::make(
@@ -227,10 +196,19 @@ class Employee extends Model
                     ->withTimestamps();
     }
 
-    /**
-     * Get the number of days since the employee was terminated.
-     * Usage in Blade/API: $employee->days_since_termination
-     */
+    // --- New Relationships for Registration Process ---
+    public function registrationSteps()
+    {
+        return $this->belongsToMany(RegistrationStep::class, 'employee_registration_status')
+                    ->withPivot('completed_at')
+                    ->withTimestamps();
+    }
+
+    public function customFields()
+    {
+        return $this->hasMany(EmployeeCustomField::class);
+    }
+
     protected function daysSinceTermination(): Attribute
     {
         return Attribute::make(
@@ -238,7 +216,6 @@ class Employee extends Model
                 if (!$this->terminated_at) {
                     return 0;
                 }
-                // Use floor to ensure we get a whole number of days.
                 return floor(now()->diffInDays($this->terminated_at));
             }
         );
