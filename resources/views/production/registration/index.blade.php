@@ -39,6 +39,22 @@
             </div>
         </div>
 
+        {{-- Bulk Actions Bar --}}
+        <div class="col-12 mb-3" id="registration-bulk-bar" style="display: none;">
+            <div class="card border-primary bg-primary bg-opacity-10">
+                <div class="card-body d-flex justify-content-between align-items-center py-2">
+                    <div>
+                        <span class="fw-bold text-primary"><span id="reg-selected-count">0</span> {{ __('Selected') }}</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary btn-sm" onclick="bulkFinalize()">
+                            <i class="bi bi-database-add me-1"></i> {{ __('Save All to Database') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Workflow Steps Summary --}}
         <div class="col-md-6 mb-3">
             <div class="card h-100 shadow-sm border-0">
@@ -188,5 +204,98 @@
             }
         }
     }
+
+    // Global Functions for Non-Alpine Actions (referenced in _employee_card)
+
+    function toggleStep(employeeId, stepId, completed) {
+        fetch(`/production/registration/progress/${employeeId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ step_id: stepId, completed: completed })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // No reload needed for pure toggle if we want smooth UX,
+                // but simpler to reload to reflect stats unless we build full reactivity
+                location.reload();
+            }
+        });
+    }
+
+    function finalizeEmployee(id) {
+        if(!confirm('{{ __("Save this employee to the main database?") }}')) return;
+
+        fetch(`/production/registration/${id}/finalize`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) location.reload();
+        });
+    }
+
+    function restoreEmployeeState(id) {
+        if(!confirm('{{ __("Undo save? This will move employee back to pending state.") }}')) return;
+
+        fetch(`/production/registration/${id}/restore-state`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) location.reload();
+        });
+    }
+
+    // Bulk Selection Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.registration-checkbox');
+        const bulkBar = document.getElementById('registration-bulk-bar');
+        const countSpan = document.getElementById('reg-selected-count');
+
+        function updateBulkUI() {
+            const checked = document.querySelectorAll('.registration-checkbox:checked');
+            if(checked.length > 0) {
+                bulkBar.style.display = 'block';
+                countSpan.textContent = checked.length;
+            } else {
+                bulkBar.style.display = 'none';
+            }
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBulkUI);
+        });
+
+        window.bulkFinalize = function() {
+            const checked = document.querySelectorAll('.registration-checkbox:checked');
+            const ids = Array.from(checked).map(cb => cb.value);
+
+            if(ids.length === 0) return;
+            if(!confirm(`{{ __("Save ${ids.length} employees to the main database?") }}`)) return;
+
+            fetch('{{ route("production.registration.bulk_finalize") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ employee_ids: ids })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) location.reload();
+            });
+        }
+    });
 </script>
 @endsection

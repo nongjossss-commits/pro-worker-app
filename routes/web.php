@@ -185,6 +185,31 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin/producti
 
 // === Production & Workflow User Routes ===
 Route::middleware(['auth'])->group(function () {
+    // Registration Resolution Routes (P Production > Registration)
+    // MOVED ABOVE 'production' resource to prevent route masking
+    Route::prefix('production/registration')->name('production.registration.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Production\RegistrationController::class, 'create'])->name('create');
+        Route::post('/store', [App\Http\Controllers\Production\RegistrationController::class, 'store'])->name('store');
+
+        // Step Management
+        Route::post('/steps', [App\Http\Controllers\Production\RegistrationController::class, 'storeStep'])->name('steps.store');
+        Route::put('/steps/{step}', [App\Http\Controllers\Production\RegistrationController::class, 'updateStep'])->name('steps.update');
+        Route::delete('/steps/{step}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyStep'])->name('steps.destroy');
+
+        // Progress Updates
+        Route::post('/progress/{employee}', [App\Http\Controllers\Production\RegistrationController::class, 'updateProgress'])->name('progress.update');
+
+        // Custom Fields
+        Route::post('/custom-fields/{employee}', [App\Http\Controllers\Production\RegistrationController::class, 'storeCustomField'])->name('custom_fields.store');
+        Route::delete('/custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyCustomField'])->name('custom_fields.destroy');
+
+        // Finalize & Restore (NEW)
+        Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RegistrationController::class, 'finalize'])->name('finalize');
+        Route::post('/{employee}/restore-state', [App\Http\Controllers\Production\RegistrationController::class, 'restoreState'])->name('restore_state');
+        Route::post('/bulk-finalize', [App\Http\Controllers\Production\RegistrationController::class, 'bulkFinalize'])->name('bulk_finalize');
+    });
+
     Route::resource('production', \App\Http\Controllers\ProductionController::class);
 
     // Additional Production Routes
@@ -210,25 +235,6 @@ Route::middleware(['auth'])->group(function () {
     // Workflow API Routes
     Route::post('workflow/api/update-barrier', [\App\Http\Controllers\WorkflowController::class, 'updateItemBarrier'])->name('workflow.api.update_barrier');
     Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
-
-    // Registration Resolution Routes (P Production > Registration)
-    Route::prefix('production/registration')->name('production.registration.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\Production\RegistrationController::class, 'create'])->name('create');
-        Route::post('/store', [App\Http\Controllers\Production\RegistrationController::class, 'store'])->name('store');
-
-        // Step Management
-        Route::post('/steps', [App\Http\Controllers\Production\RegistrationController::class, 'storeStep'])->name('steps.store');
-        Route::put('/steps/{step}', [App\Http\Controllers\Production\RegistrationController::class, 'updateStep'])->name('steps.update');
-        Route::delete('/steps/{step}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyStep'])->name('steps.destroy');
-
-        // Progress Updates
-        Route::post('/progress/{employee}', [App\Http\Controllers\Production\RegistrationController::class, 'updateProgress'])->name('progress.update');
-
-        // Custom Fields
-        Route::post('/custom-fields/{employee}', [App\Http\Controllers\Production\RegistrationController::class, 'storeCustomField'])->name('custom_fields.store');
-        Route::delete('/custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyCustomField'])->name('custom_fields.destroy');
-    });
 });
 
 use App\Http\Controllers\Admin\NotificationSettingController;

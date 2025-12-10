@@ -26,8 +26,8 @@ class RegistrationController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Fetch Stats
-        $registrationEmployees = Employee::where('status', 'registration_pending')->get();
+        // 1. Fetch Stats (Both pending and completed/finalized)
+        $registrationEmployees = Employee::whereIn('status', ['registration_pending', 'registration_completed'])->get();
         $totalEmployees = $registrationEmployees->count();
         $totalEmployers = $registrationEmployees->pluck('employer_id')->unique()->count();
 
@@ -35,10 +35,6 @@ class RegistrationController extends Controller
         $steps = RegistrationStep::orderBy('order')->get();
         $stepStats = [];
 
-        // Count employees at each step (Cumulative or Specific?)
-        // User requested: "Who completed step 1... who finished step 2".
-        // And "who is stuck at step 1".
-        // Let's count how many have marked each step as completed.
         foreach ($steps as $step) {
             $count = DB::table('employee_registration_status')
                 ->where('registration_step_id', $step->id)
@@ -48,12 +44,11 @@ class RegistrationController extends Controller
         }
 
         // 3. Fetch Employees Grouped by Employer
-        // We want to display an employer list, and expand to see their registration employees.
         $employers = Employer::whereHas('employees', function($q) {
-            $q->where('status', 'registration_pending');
+            $q->whereIn('status', ['registration_pending', 'registration_completed']);
         })->with(['employees' => function($q) {
-            $q->where('status', 'registration_pending')
-              ->with(['registrationSteps', 'customFields']); // Eager load progress and fields
+            $q->whereIn('status', ['registration_pending', 'registration_completed'])
+              ->with(['registrationSteps', 'customFields']);
         }])->get();
 
         return view('production.registration.index', compact(
@@ -63,6 +58,54 @@ class RegistrationController extends Controller
             'stepStats',
             'employers'
         ));
+    }
+
+    /**
+     * Finalize an employee (Save to Database).
+     */
+    public function finalize(Request $request, Employee $employee)
+    {
+        // Change status to 'registration_completed'
+        // This makes them visible in the main Employee list (since we only filter out 'pending')
+        // AND keeps them visible here (since we include 'completed').
+        $employee->update(['status' => 'registration_completed']);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Employee saved to database.');
+    }
+
+    /**
+     * Bulk Finalize employees.
+     */
+    public function bulkFinalize(Request $request)
+    {
+        $request->validate([
+            'employee_ids' => 'required|array',
+            'employee_ids.*' => 'exists:employees,id',
+        ]);
+
+        Employee::whereIn('id', $request->input('employee_ids'))
+            ->update(['status' => 'registration_completed']);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Selected employees saved to database.');
+    }
+
+    /**
+     * Restore state (Undo Finalize).
+     */
+    public function restoreState(Request $request, Employee $employee)
+    {
+        $employee->update(['status' => 'registration_pending']);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Employee restored to pending state.');
     }
 
     /**

@@ -343,21 +343,15 @@
 
                 {{-- V2.4-S14: Production & Workflow Menus --}}
                 @if(Route::has('production.index'))
-                    <a href="#productionSubmenu" data-bs-toggle="collapse" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ request()->routeIs('production.*') || request()->routeIs('workflow.*') ? 'active' : '' }}" aria-expanded="false">
-                        <span><i class="bi bi-clipboard-data-fill me-2"></i>{{ __('P Production') }}</span>
-                        <i class="bi bi-chevron-down small"></i>
+                    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.*') ? 'active' : '' }}">
+                        <i class="bi bi-clipboard-data-fill me-2"></i>{{ __('P Production') }}
                     </a>
-                    <div class="collapse {{ request()->routeIs('production.*') || request()->routeIs('workflow.*') ? 'show' : '' }}" id="productionSubmenu">
-                        <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action ps-4 border-0 {{ request()->routeIs('production.index') ? 'bg-light text-primary fw-bold' : '' }}">
-                            <i class="bi bi-circle-fill small me-2" style="font-size: 0.5rem;"></i>{{ __('Jobs') }}
-                        </a>
-                        <a href="{{ route('workflow.index') }}" class="list-group-item list-group-item-action ps-4 border-0 {{ request()->routeIs('workflow.*') ? 'bg-light text-primary fw-bold' : '' }}">
-                            <i class="bi bi-diagram-3-fill me-2"></i>{{ __('Workflow') }}
-                        </a>
-                        <a href="{{ route('production.registration.index') }}" class="list-group-item list-group-item-action ps-4 border-0 {{ request()->routeIs('production.registration.*') ? 'bg-light text-primary fw-bold' : '' }}">
-                            <i class="bi bi-person-lines-fill me-2"></i>{{ __('Registration Resolution') }}
-                        </a>
-                    </div>
+                    <a href="{{ route('workflow.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('workflow.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+                        <i class="bi bi-diagram-3-fill me-2"></i>{{ __('Workflow') }}
+                    </a>
+                    <a href="{{ route('production.registration.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.registration.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+                        <i class="bi bi-person-lines-fill me-2"></i>{{ __('Registration Resolution') }}
+                    </a>
                 @endif
 
                 @canany(['manage-roles', 'manage-settings'])
