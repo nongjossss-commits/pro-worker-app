@@ -212,103 +212,108 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Add Transaction Modal -->
-<div class="modal fade" id="addTransactionModal" tabindex="-1" x-ref="addModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Payment Schedule</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addTransactionForm" @submit.prevent="addTransaction">
-                    <div class="mb-3">
-                        <label class="form-label">Type</label>
-                        <select class="form-select" x-model="newTransaction.type" required>
-                            <option value="installment">Installment (งวดงาน)</option>
-                            <option value="down_payment">Down Payment (มัดจำ)</option>
-                            <option value="full_payment">Full Payment (จ่ายเต็ม)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Amount</label>
-                        <input type="number" step="0.01" class="form-control" x-model="newTransaction.amount" required>
-                        <div class="form-text">Remaining: <span x-text="formatCurrency(remainingSchedule)"></span></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Due Date</label>
-                        <input type="date" class="form-control" x-model="newTransaction.due_date">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        <textarea class="form-control" x-model="newTransaction.notes" rows="2"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Save</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Update Payment Modal -->
-<div class="modal fade" id="updatePaymentModal" tabindex="-1" x-ref="payModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Update Payment Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="updatePaymentForm" @submit.prevent="updateTransaction">
-                    <div class="mb-3">
-                        <label class="form-label">Paid Amount</label>
-                        <input type="number" step="0.01" class="form-control" x-model="editingTransaction.paid_amount">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" x-model="editingTransaction.status">
-                            <option value="pending">Pending</option>
-                            <option value="partial">Partial</option>
-                            <option value="paid">Paid</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Upload Slip</label>
-                        <input type="file" class="form-control" @change="handleFileSelect">
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">Update</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Document Selection Modal -->
-<div class="modal fade" id="documentSelectionModal" tabindex="-1" x-ref="docSelectionModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Select Installments</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p class="small text-muted">Select which installments to include in this document.</p>
-                <div class="list-group">
-                    <template x-for="t in transactions" :key="t.id">
-                        <label class="list-group-item">
-                            <input class="form-check-input me-1" type="checkbox" :value="t.id" x-model="selectedTransactionIds">
-                            <span x-text="formatType(t.type)"></span> -
-                            <span x-text="formatCurrency(t.amount)"></span>
-                            <span class="badge ms-2" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
-                        </label>
-                    </template>
+    <!-- Add Transaction Modal -->
+    <div class="modal fade" id="addTransactionModal" tabindex="-1" x-ref="addModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Payment Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="mt-3 d-grid">
-                    <button class="btn btn-primary" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
-                        Generate Document
-                    </button>
+                <div class="modal-body">
+                    <form id="addTransactionForm" @submit.prevent="addTransaction">
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" x-model="newTransaction.type" required>
+                                <option value="installment">Installment (งวดงาน)</option>
+                                <option value="down_payment">Down Payment (มัดจำ)</option>
+                                <option value="full_payment">Full Payment (จ่ายเต็ม)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" step="0.01" class="form-control" x-model="newTransaction.amount" required>
+                            <div class="form-text">Remaining: <span x-text="formatCurrency(remainingSchedule)"></span></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-control" x-model="newTransaction.due_date">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" x-model="newTransaction.notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" :disabled="isSaving">
+                            <span x-show="isSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            <span x-show="!isSaving">Save</span>
+                            <span x-show="isSaving">Saving...</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Payment Modal -->
+    <div class="modal fade" id="updatePaymentModal" tabindex="-1" x-ref="payModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Payment Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="updatePaymentForm" @submit.prevent="updateTransaction">
+                        <div class="mb-3">
+                            <label class="form-label">Paid Amount</label>
+                            <input type="number" step="0.01" class="form-control" x-model="editingTransaction.paid_amount">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" x-model="editingTransaction.status">
+                                <option value="pending">Pending</option>
+                                <option value="partial">Partial</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Upload Slip</label>
+                            <input type="file" class="form-control" @change="handleFileSelect">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Update</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Selection Modal -->
+    <div class="modal fade" id="documentSelectionModal" tabindex="-1" x-ref="docSelectionModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Installments</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">Select which installments to include in this document.</p>
+                    <div class="list-group">
+                        <template x-for="t in transactions" :key="t.id">
+                            <label class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" :value="t.id" x-model="selectedTransactionIds">
+                                <span x-text="formatType(t.type)"></span> -
+                                <span x-text="formatCurrency(t.amount)"></span>
+                                <span class="badge ms-2" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
+                            </label>
+                        </template>
+                    </div>
+                    <div class="mt-3 d-grid">
+                        <button class="btn btn-primary" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
+                            Generate Document
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -497,14 +502,31 @@ function financialManager() {
         },
 
         addTransaction() {
+            this.isSaving = true;
             const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            console.log("Submitting transaction:", this.newTransaction); // Debug log
 
             fetch('/production/{{ $production->id }}/transactions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
                 body: JSON.stringify(this.newTransaction)
             })
-            .then(res => res.json())
+            .then(async response => {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                     return response.json().then(data => {
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Server returned error');
+                        }
+                        return data;
+                    });
+                } else {
+                     const text = await response.text();
+                     console.error("Non-JSON response", text);
+                     throw new Error('Server error (Non-JSON response)');
+                }
+            })
             .then(data => {
                 if(data.success) {
                     this.transactions.push(data.transaction);
@@ -512,7 +534,7 @@ function financialManager() {
                     // Close Modal Safely
                     if(typeof bootstrap !== 'undefined') {
                         const modalEl = document.getElementById('addTransactionModal');
-                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        const modal = bootstrap.Modal.getOrCreateInstance(modalEl); // Use getOrCreateInstance
                         if(modal) modal.hide();
                     }
 
@@ -523,7 +545,10 @@ function financialManager() {
             })
             .catch(err => {
                 console.error('Fetch error:', err);
-                alert('An error occurred while saving.');
+                alert('An error occurred while saving: ' + err.message);
+            })
+            .finally(() => {
+                this.isSaving = false;
             });
         },
 
