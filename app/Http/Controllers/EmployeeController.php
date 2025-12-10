@@ -84,7 +84,13 @@ public function reinstate(Employee $employee)
 
     public function index(Request $request)
 {
-    $query = Employee::query()->whereNull('terminated_at');
+    // Filter out 'registration_pending' status so they don't appear until finalized
+    $query = Employee::query()
+        ->whereNull('terminated_at')
+        ->where(function($q) {
+            $q->where('status', '!=', 'registration_pending')
+              ->orWhereNull('status');
+        });
 
     // --- START: ADDED FILTERING LOGIC ---
     if ($request->filled('search')) {
@@ -544,7 +550,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
         if ($isHistoryExport) {
             $query = Employee::query()->whereNotNull('terminated_at');
         } else {
-            $query = Employee::query()->whereNull('terminated_at');
+            $query = Employee::query()
+                ->whereNull('terminated_at')
+                ->where(function($q) {
+                    $q->where('status', '!=', 'registration_pending')
+                      ->orWhereNull('status');
+                });
         }
 
         // Reuse the same filtering logic from the index method
