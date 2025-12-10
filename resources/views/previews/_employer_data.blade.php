@@ -39,9 +39,16 @@
             <label class="form-label fw-bold">เลขประจำตัวนายจ้าง</label>
             <p class="form-control-plaintext">{{ $employer->employerTaxId ?? 'N/A' }}</p>
         </div>
+    </div>
+
+    <div class="row mb-3">
         <div class="col-md-6">
-            <label class="form-label fw-bold">ประเภทกิจการ</label>
+            <label class="form-label fw-bold">ประเภทกิจการ (ไทย)</label>
             <p class="form-control-plaintext">{{ $employer->businessType ?? 'N/A' }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">ประเภทกิจการ (อังกฤษ)</label>
+            <p class="form-control-plaintext">{{ $employer->businessTypeEn ?? 'N/A' }}</p>
         </div>
     </div>
 
@@ -54,6 +61,12 @@
         <div class="col-md-6">
             <label class="form-label fw-bold">เบอร์โทรศัพท์</label>
             <p class="form-control-plaintext">{{ $employer->employerPhone ?? 'N/A' }}</p>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">รหัสผ่านสำหรับนายจ้าง</label>
+            <p class="form-control-plaintext">{{ $employer->employerPassword ?? 'N/A' }}</p>
         </div>
     </div>
     <div class="row mb-3">
@@ -75,10 +88,6 @@
         </div>
     </div>
     <div class="row mb-3">
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Type of Business</label>
-            <p class="form-control-plaintext">{{ $employer->businessTypeEn ?? 'N/A' }}</p>
-        </div>
         <div class="col-md-6">
             <label class="form-label fw-bold">ทุนจดทะเบียน</label>
             <p class="form-control-plaintext">{{ $employer->regCapital ? number_format($employer->regCapital, 2) : 'N/A' }}</p>

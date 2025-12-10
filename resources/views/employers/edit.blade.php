@@ -93,10 +93,31 @@
                 <input type="text" class="form-control" id="employerTaxId" name="employerTaxId" value="{{ old('employerTaxId', $employer->employerTaxId) }}">
             </div>
             <div class="col-md-6">
-                <label for="businessType" class="form-label">{{ __('Business Type') }}</label>
-                <input type="text" class="form-control" id="businessType" name="businessType" value="{{ old('businessType', $employer->businessType) }}">
+                <label class="form-label">{{ __('Select Business Type') }}</label>
+                <div class="input-group">
+                    <select class="form-select" id="business_type_select">
+                        <option value="">{{ __('Select...') }}</option>
+                    </select>
+                    @if(auth()->user()->hasRole('admin'))
+                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#manageBusinessTypeModal">
+                        <i class="bi bi-gear"></i> {{ __('Manage') }}
+                    </button>
+                    @endif
+                </div>
             </div>
         </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="businessType" class="form-label">{{ __('Business Type (Thai)') }}</label>
+                <input type="text" class="form-control" id="businessType" name="businessType" value="{{ old('businessType', $employer->businessType) }}">
+            </div>
+            <div class="col-md-6">
+                <label for="businessTypeEn" class="form-label">{{ __('Business Type (English)') }}</label>
+                <input type="text" class="form-control" id="businessTypeEn" name="businessTypeEn" value="{{ old('businessTypeEn', $employer->businessTypeEn) }}">
+            </div>
+        </div>
+
         <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
@@ -140,10 +161,6 @@
             </div>
         </div>
         <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="businessTypeEn" class="form-label">{{ __('Type of Business') }}</label>
-                <input type="text" class="form-control" id="businessTypeEn" name="businessTypeEn" value="{{ old('businessTypeEn', $employer->businessTypeEn) }}">
-            </div>
             <div class="col-md-6">
                 <label for="regCapital" class="form-label">{{ __('Registered Capital') }}</label>
                 <input type="text" class="form-control" id="regCapital" name="regCapital" value="{{ old('regCapital', $employer->regCapital) }}">
@@ -539,11 +556,148 @@
     @include('partials._employee_action_modals')
     @include('employees.modals.advanced_export')
     @include('employees.modals.select_target_employer_modal')
+
+<!-- Business Type Management Modal -->
+<div class="modal fade" id="manageBusinessTypeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('Manage Business Types') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addBusinessTypeForm" class="mb-4">
+                    <div class="mb-2">
+                        <label class="form-label">{{ __('Thai Name') }}</label>
+                        <input type="text" class="form-control form-control-sm" name="name_th" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">{{ __('English Name') }}</label>
+                        <input type="text" class="form-control form-control-sm" name="name_en" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success w-100">{{ __('Add Type') }}</button>
+                </form>
+                <hr>
+                <h6>{{ __('Existing Types') }}</h6>
+                <ul class="list-group" id="businessTypeList">
+                    <!-- Loaded via JS -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // --- Business Type Logic ---
+        const businessTypeSelect = document.getElementById('business_type_select');
+        const businessTypeThInput = document.getElementById('businessType');
+        const businessTypeEnInput = document.getElementById('businessTypeEn');
+        const businessTypeList = document.getElementById('businessTypeList');
+
+        function fetchBusinessTypes() {
+            fetch('{{ route('admin.business-types.index') }}')
+                .then(response => response.json())
+                .then(data => {
+                    // Populate Select
+                    businessTypeSelect.innerHTML = '<option value="">{{ __('Select...') }}</option>';
+                    data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = `${item.name_th} / ${item.name_en}`;
+                        option.dataset.th = item.name_th;
+                        option.dataset.en = item.name_en;
+                        businessTypeSelect.appendChild(option);
+                    });
+
+                    // Populate List in Modal (if exists)
+                    if (businessTypeList) {
+                        businessTypeList.innerHTML = '';
+                        data.forEach(item => {
+                            const li = document.createElement('li');
+                            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                            li.innerHTML = `
+                                <span>${item.name_th} / ${item.name_en}</span>
+                                <button class="btn btn-sm btn-outline-danger delete-business-type" data-id="${item.id}"><i class="bi bi-trash"></i></button>
+                            `;
+                            businessTypeList.appendChild(li);
+                        });
+                    }
+                });
+        }
+
+        // Initial Fetch
+        fetchBusinessTypes();
+
+        // Handle Select Change
+        if (businessTypeSelect) {
+            businessTypeSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption.value) {
+                    businessTypeThInput.value = selectedOption.dataset.th;
+                    businessTypeEnInput.value = selectedOption.dataset.en;
+                }
+            });
+        }
+
+        // Handle Add New Type
+        const addBusinessTypeForm = document.getElementById('addBusinessTypeForm');
+        if (addBusinessTypeForm) {
+            addBusinessTypeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const data = {
+                    name_th: formData.get('name_th'),
+                    name_en: formData.get('name_en')
+                };
+
+                fetch('{{ route('admin.business-types.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        fetchBusinessTypes();
+                        this.reset();
+                        showToast('Business Type added', 'success');
+                    }
+                });
+            });
+        }
+
+        // Handle Delete Type
+        if (businessTypeList) {
+            businessTypeList.addEventListener('click', function(e) {
+                if (e.target.closest('.delete-business-type')) {
+                    const btn = e.target.closest('.delete-business-type');
+                    const id = btn.dataset.id;
+                    if (confirm('Delete this type?')) {
+                        fetch(`{{ url('admin/business-types') }}/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                fetchBusinessTypes();
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        // --- End Business Type Logic ---
         // Handle Advanced Edit
         const bulkEditBtn = document.getElementById('employer-bulk-advanced-edit-btn');
         if (bulkEditBtn) {
