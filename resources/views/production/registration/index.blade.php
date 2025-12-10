@@ -281,7 +281,10 @@
             const ids = Array.from(checked).map(cb => cb.value);
 
             if(ids.length === 0) return;
-            if(!confirm(`{{ __("Save ${ids.length} employees to the main database?") }}`)) return;
+            let message = '{{ __("Save :count employees to the main database?") }}';
+            message = message.replace(':count', ids.length);
+
+            if(!confirm(message)) return;
 
             fetch('{{ route("production.registration.bulk_finalize") }}', {
                 method: 'POST',
