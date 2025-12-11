@@ -100,18 +100,19 @@ class RegistrationController extends Controller
             $employer->financeOrder->setRelation('items', $employer->employees);
 
             // Calculate per-employer step stats (Highest Step Logic)
-            $employer->stepStats = $steps->pluck('id')->mapWithKeys(function ($id) {
+            $stats = $steps->pluck('id')->mapWithKeys(function ($id) {
                 return [$id => 0];
             })->toArray();
 
             foreach ($employer->employees as $emp) {
                 $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
                 if ($highestStep) {
-                    if (isset($employer->stepStats[$highestStep->id])) {
-                        $employer->stepStats[$highestStep->id]++;
+                    if (isset($stats[$highestStep->id])) {
+                        $stats[$highestStep->id]++;
                     }
                 }
             }
+            $employer->stepStats = $stats;
         }
 
         return view('production.registration.index', compact(
