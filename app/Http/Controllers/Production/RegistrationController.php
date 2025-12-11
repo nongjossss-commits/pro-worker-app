@@ -176,6 +176,44 @@ class RegistrationController extends Controller
      * Show the form for creating a new registration employee.
      * Reuses the standard employee form view but we might need to inject context.
      */
+    /**
+     * Display the Import View for Registration Resolution.
+     * Reuses the standard 'employees.import' view but with specific context.
+     */
+    public function importView(Request $request)
+    {
+        // Reuse logic from ImportEmployeeController@index but simplified
+        $employers = collect();
+        if (auth()->user()->can('view-employers')) {
+             $employers = Employer::orderBy('employerNameTh')->get(['id', 'employerNameTh', 'employerNameEn']);
+        } else {
+             $user = auth()->user();
+             if ($user->employer) {
+                 $employers = collect([$user->employer]);
+             }
+        }
+
+        // We pass 'target_status' via the URL query string to the view's form action
+        // Actually, the view 'employees.import' has a hidden input logic for 'target_status' if it's in the request.
+        // So we just need to ensure the form posts to the standard import route but carries the payload.
+
+        // However, the standard import route (ImportEmployeeController@store) redirects 'back()'.
+        // If we serve the view from THIS route, 'back()' will return here. Perfect.
+
+        // We inject the 'target_status' into the request or view so the view renders the hidden input.
+        $request->merge(['target_status' => 'registration_pending']);
+
+        // Set session for finish_route because store() redirects back() which is this view,
+        // but session helps persist the intent for the Success Modal buttons.
+        session()->flash('finish_route', route('production.registration.index'));
+
+        return view('employees.import', [
+            'employers' => $employers,
+            'production' => null, // No specific production order context needed, just status
+            'back_route' => route('production.registration.index'),
+        ]);
+    }
+
     public function create(Request $request)
     {
         // We can reuse the standard view, or create a specific one.
