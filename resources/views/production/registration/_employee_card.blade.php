@@ -49,7 +49,7 @@
             <div class="d-flex gap-2">
                  {{-- Preview Button (Universal) --}}
                  <button class="btn btn-sm btn-outline-info btn-preview"
-                    data-model-type="App\Models\Employee"
+                    data-model-type="employee"
                     data-model-id="{{ $employee->id }}"
                     title="Preview">
                     <i class="bi bi-search"></i>

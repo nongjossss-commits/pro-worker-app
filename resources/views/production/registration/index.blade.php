@@ -26,16 +26,16 @@
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Workflow Progress</h5>
+                        <h5 class="card-title mb-0">Workflow Progress (Global)</h5>
                         <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
                             <i class="bi bi-gear"></i> Settings
                         </button>
                     </div>
-                    <div class="d-flex gap-2 flex-wrap">
+                    <div class="d-flex gap-2 flex-wrap" id="global-stats-container">
                         @foreach($steps as $step)
                             <div class="border rounded p-2 text-center" style="min-width: 60px;">
                                 <div class="fw-bold">{{ $step->order }}</div>
-                                <span class="badge bg-success rounded-pill">{{ $stepStats[$step->id] ?? 0 }}</span>
+                                <span class="badge bg-success rounded-pill global-stat-badge" data-step-id="{{ $step->id }}">{{ $stepStats[$step->id] ?? 0 }}</span>
                             </div>
                         @endforeach
                     </div>
@@ -74,10 +74,21 @@
         @foreach($employers as $employer)
             <div class="card mb-3 border shadow-sm">
                 <div class="card-header bg-white py-3" id="heading{{ $employer->id }}">
-                    <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center w-100 gap-3">
                         <button class="btn btn-link text-decoration-none text-dark fw-bold p-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}" aria-expanded="true" aria-controls="collapse{{ $employer->id }}">
                             <span class="fs-5">{{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})</span>
                         </button>
+
+                        {{-- Employer Scoreboard --}}
+                        <div class="d-flex gap-1 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
+                             @foreach($steps as $step)
+                                <div class="border rounded px-2 py-1 text-center bg-light" style="min-width: 40px;">
+                                    <small class="fw-bold d-block" style="font-size: 0.65rem;">Step {{ $step->order }}</small>
+                                    <span class="badge bg-secondary rounded-pill employer-stat-badge" data-step-id="{{ $step->id }}">{{ $employer->stepStats[$step->id] ?? 0 }}</span>
+                                </div>
+                             @endforeach
+                        </div>
+
                         <div class="d-flex align-items-center gap-2">
                             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
                                 <i class="bi bi-currency-dollar"></i> Finance
@@ -284,7 +295,14 @@
         });
     }
 
+    // --- New AJAX Toggle Step with Real-time Updates ---
     function toggleStep(employeeId, stepId, completed) {
+        // Optimistic UI Update (Toggle Button Style)
+        const btn = document.querySelector(`button[onclick="toggleStep(${employeeId}, ${stepId}, ${!completed})"]`);
+        // Note: The onclick will be updated by the server response logic if we wanted to be super precise,
+        // but for now we just want to toggle visual state.
+        // Actually, let's wait for server response to be safe, or just toggle class.
+
         fetch(`/production/registration/${employeeId}/progress`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
@@ -292,8 +310,45 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.success) location.reload(); // Reload to update stats
-        });
+            if(data.success) {
+                // 1. Update Button State
+                if (btn) {
+                    if (completed) {
+                        btn.classList.remove('btn-outline-secondary');
+                        btn.classList.add('btn-success');
+                        btn.innerHTML = btn.innerHTML + ' <i class="bi bi-check"></i>';
+                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, false)`);
+                    } else {
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-outline-secondary');
+                        const icon = btn.querySelector('i');
+                        if(icon) icon.remove();
+                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, true)`);
+                    }
+                }
+
+                // 2. Update Global Stats
+                if (data.globalStats) {
+                    const globalContainer = document.getElementById('global-stats-container');
+                    for (const [sId, count] of Object.entries(data.globalStats)) {
+                        const badge = globalContainer.querySelector(`.global-stat-badge[data-step-id="${sId}"]`);
+                        if (badge) badge.textContent = count;
+                    }
+                }
+
+                // 3. Update Employer Stats
+                if (data.employerStats && data.employerId) {
+                    const employerContainer = document.getElementById(`employer-stats-${data.employerId}`);
+                    if (employerContainer) {
+                         for (const [sId, count] of Object.entries(data.employerStats)) {
+                            const badge = employerContainer.querySelector(`.employer-stat-badge[data-step-id="${sId}"]`);
+                            if (badge) badge.textContent = count;
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
     }
 </script>
 @endpush
