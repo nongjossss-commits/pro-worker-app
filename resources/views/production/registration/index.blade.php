@@ -309,12 +309,6 @@
         // Actually, we can just find buttons in the card and check their onclick or text
         // Or simpler: Add a unique ID to each step button: step-btn-{emp}-{step}
 
-        // However, I will stick to the provided code structure but improve robustness
-        // The original code passed 'completed' which is the *desired* state (true to complete, false to uncomplete)?
-        // No, 'completed' param in JS function call is usually "should be completed"
-        // Wait, the call is `toggleStep(id, stepId, true)` -> means "Make it true (completed)"
-        // The Blade renders: `onclick="toggleStep(..., {{ $isStepCompleted ? 'false' : 'true' }})"`
-
         fetch(`/production/registration/${employeeId}/progress`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
