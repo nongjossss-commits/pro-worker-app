@@ -27,30 +27,61 @@ class RegistrationController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Fetch Stats (Both pending and completed/finalized)
-        $registrationEmployees = Employee::whereIn('status', ['registration_pending', 'registration_completed'])->get();
+        // 1. Build Query for Employees
+        $query = Employee::whereIn('status', ['registration_pending', 'registration_completed'])
+                         ->with('registrationSteps');
+
+        // Apply Search Filter
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function($q2) use ($search) {
+                      $q2->where('employerNameTh', 'like', "%{$search}%")
+                         ->orWhere('employerNameEn', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $registrationEmployees = $query->get();
         $totalEmployees = $registrationEmployees->count();
         $totalEmployers = $registrationEmployees->pluck('employer_id')->unique()->count();
 
-        // 2. Fetch Workflow Steps & Progress
+        // 2. Fetch Workflow Steps
         $steps = RegistrationStep::orderBy('order')->get();
-        $stepStats = [];
 
-        foreach ($steps as $step) {
-            $count = DB::table('employee_registration_status')
-                ->where('registration_step_id', $step->id)
-                ->whereIn('employee_id', $registrationEmployees->pluck('id'))
-                ->count();
-            $stepStats[$step->id] = $count;
+        // 3. Calculate "Highest Step" Stats
+        // Initialize stats with 0
+        $stepStats = $steps->pluck('id')->mapWithKeys(function ($id) {
+            return [$id => 0];
+        })->toArray();
+
+        foreach ($registrationEmployees as $emp) {
+            // Get the highest step 'order' this employee has completed
+            // registrationSteps relationship returns the attached steps.
+            $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+
+            if ($highestStep) {
+                // Increment stat for this specific step only
+                if (isset($stepStats[$highestStep->id])) {
+                    $stepStats[$highestStep->id]++;
+                }
+            }
         }
 
-        // 3. Fetch Employees Grouped by Employer
-        $employers = Employer::whereHas('employees', function($q) {
-            $q->whereIn('status', ['registration_pending', 'registration_completed']);
-        })->with(['employees' => function($q) {
-            $q->whereIn('status', ['registration_pending', 'registration_completed'])
-              ->with(['registrationSteps', 'customFields']);
-        }])->get();
+        // 4. Fetch Employers (Filtered by the same search criteria via employees)
+        // We get the unique employer IDs from our filtered employees list
+        $filteredEmployerIds = $registrationEmployees->pluck('employer_id')->unique();
+
+        $employers = Employer::whereIn('id', $filteredEmployerIds)
+            ->with(['employees' => function($q) use ($registrationEmployees) {
+                // Only load the employees that match our main filter
+                // We can use whereIn('id', ...)
+                $q->whereIn('id', $registrationEmployees->pluck('id'))
+                  ->with(['registrationSteps', 'customFields']);
+            }])->get();
 
         foreach ($employers as $employer) {
             $financeOrder = ProductionOrder::firstOrCreate(
@@ -67,6 +98,20 @@ class RegistrationController extends Controller
             $employer->financeOrder = $financeOrder;
             // Spoof items for the count logic in view
             $employer->financeOrder->setRelation('items', $employer->employees);
+
+            // Calculate per-employer step stats (Highest Step Logic)
+            $employer->stepStats = $steps->pluck('id')->mapWithKeys(function ($id) {
+                return [$id => 0];
+            })->toArray();
+
+            foreach ($employer->employees as $emp) {
+                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                if ($highestStep) {
+                    if (isset($employer->stepStats[$highestStep->id])) {
+                        $employer->stepStats[$highestStep->id]++;
+                    }
+                }
+            }
         }
 
         return view('production.registration.index', compact(
@@ -345,7 +390,41 @@ class RegistrationController extends Controller
             $employee->registrationSteps()->detach($validated['step_id']);
         }
 
-        return response()->json(['success' => true]);
+        // --- Recalculate Stats for Response (Highest Step Logic) ---
+        // Global Stats
+        $allEmployees = Employee::whereIn('status', ['registration_pending', 'registration_completed'])
+                                ->with('registrationSteps')
+                                ->get();
+        $steps = RegistrationStep::orderBy('order')->get();
+        $globalStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+
+        foreach ($allEmployees as $emp) {
+            $highest = $emp->registrationSteps->sortByDesc('order')->first();
+            if ($highest && isset($globalStats[$highest->id])) {
+                $globalStats[$highest->id]++;
+            }
+        }
+
+        // Employer Stats
+        $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+        $employerEmployees = Employee::where('employer_id', $employee->employer_id)
+                                    ->whereIn('status', ['registration_pending', 'registration_completed'])
+                                    ->with('registrationSteps')
+                                    ->get();
+
+        foreach ($employerEmployees as $emp) {
+             $highest = $emp->registrationSteps->sortByDesc('order')->first();
+             if ($highest && isset($employerStats[$highest->id])) {
+                 $employerStats[$highest->id]++;
+             }
+        }
+
+        return response()->json([
+            'success' => true,
+            'globalStats' => $globalStats,
+            'employerStats' => $employerStats,
+            'employerId' => $employee->employer_id
+        ]);
     }
 
     /**
