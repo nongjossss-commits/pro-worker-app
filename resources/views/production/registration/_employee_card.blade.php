@@ -88,6 +88,7 @@
                         class="btn btn-sm {{ $isStepCompleted ? 'btn-success' : 'btn-outline-secondary' }}"
                         style="font-size: 0.75rem;"
                         onclick="toggleStep({{ $employee->id }}, {{ $step->id }}, {{ $isStepCompleted ? 'false' : 'true' }})"
+                        data-step-id="{{ $step->id }}"
                         {{ $isCompleted ? 'disabled' : '' }}
                     >
                         {{ $step->name }}

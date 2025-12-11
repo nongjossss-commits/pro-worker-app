@@ -143,8 +143,8 @@
                 </div>
 
                 <div class="d-grid">
-                     <!-- Button enabled state fixed logic -->
-                     <button @click="openDocument('credit_note')" class="btn btn-outline-danger btn-sm text-start" :disabled="!canRefund">
+                     <!-- Allow clicking but show alert if no refund due -->
+                     <button @click="generateCreditNote()" class="btn btn-outline-danger btn-sm text-start">
                         <i class="bi bi-file-earmark-spreadsheet me-2"></i>Generate Credit Note (ใบคืนยอด)
                     </button>
                 </div>
@@ -410,12 +410,17 @@ function financialManager() {
             .then(res => res.json())
             .then(data => {
                 this.isSaving = false;
-                window.location.reload();
+                // Removed page reload to keep modal open
+                if(typeof showToast === 'function') {
+                    showToast('Pricing Settings Saved', 'success');
+                } else {
+                    alert('Pricing Settings Saved');
+                }
             })
             .catch(err => {
                 this.isSaving = false;
                 console.error(err);
-                window.location.reload();
+                alert('Error saving data');
             });
         },
 
@@ -469,6 +474,14 @@ function financialManager() {
         },
         get canRefund() {
             return this.refundAmount > 0;
+        },
+
+        generateCreditNote() {
+            if (!this.canRefund) {
+                alert('No refund due (Refund Amount is 0). Please check Paid Amount and Actual Delivered Count.');
+                return;
+            }
+            this.openDocument('credit_note');
         },
 
         formatCurrency(val) {

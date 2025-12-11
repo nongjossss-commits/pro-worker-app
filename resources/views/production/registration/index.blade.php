@@ -34,7 +34,8 @@
                     <div class="d-flex gap-2 flex-wrap" id="global-stats-container">
                         @foreach($steps as $step)
                             <div class="border rounded p-2 text-center" style="min-width: 60px;">
-                                <div class="fw-bold">{{ $step->order }}</div>
+                                {{-- Use Step Name --}}
+                                <div class="fw-bold text-truncate" style="max-width: 80px;" title="{{ $step->name }}">{{ $step->name }}</div>
                                 <span class="badge bg-success rounded-pill global-stat-badge" data-step-id="{{ $step->id }}">{{ $stepStats[$step->id] ?? 0 }}</span>
                             </div>
                         @endforeach
@@ -83,7 +84,8 @@
                         <div class="d-flex gap-1 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
                              @foreach($steps as $step)
                                 <div class="border rounded px-2 py-1 text-center bg-light" style="min-width: 40px;">
-                                    <small class="fw-bold d-block" style="font-size: 0.65rem;">Step {{ $step->order }}</small>
+                                    {{-- Use Step Name here too --}}
+                                    <small class="fw-bold d-block text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
                                     <span class="badge bg-secondary rounded-pill employer-stat-badge" data-step-id="{{ $step->id }}">{{ $employer->stepStats[$step->id] ?? 0 }}</span>
                                 </div>
                              @endforeach
@@ -297,11 +299,21 @@
 
     // --- New AJAX Toggle Step with Real-time Updates ---
     function toggleStep(employeeId, stepId, completed) {
-        // Optimistic UI Update (Toggle Button Style)
-        const btn = document.querySelector(`button[onclick="toggleStep(${employeeId}, ${stepId}, ${!completed})"]`);
-        // Note: The onclick will be updated by the server response logic if we wanted to be super precise,
-        // but for now we just want to toggle visual state.
-        // Actually, let's wait for server response to be safe, or just toggle class.
+        // Find the specific button instance
+        // We use querySelectorAll because an employee ID might be unique, but let's be safe
+        // Construct the selector to find the exact button
+        const card = document.getElementById(`employee-card-${employeeId}`);
+        // We look for a button that has the onclick matching our target
+        // Note: The previous logic relied on `querySelector` with a specific attribute value which might be flaky if spacing differs
+        // Let's use a more robust way: attributes
+        // Actually, we can just find buttons in the card and check their onclick or text
+        // Or simpler: Add a unique ID to each step button: step-btn-{emp}-{step}
+
+        // However, I will stick to the provided code structure but improve robustness
+        // The original code passed 'completed' which is the *desired* state (true to complete, false to uncomplete)?
+        // No, 'completed' param in JS function call is usually "should be completed"
+        // Wait, the call is `toggleStep(id, stepId, true)` -> means "Make it true (completed)"
+        // The Blade renders: `onclick="toggleStep(..., {{ $isStepCompleted ? 'false' : 'true' }})"`
 
         fetch(`/production/registration/${employeeId}/progress`, {
             method: 'POST',
@@ -312,18 +324,34 @@
         .then(data => {
             if(data.success) {
                 // 1. Update Button State
-                if (btn) {
-                    if (completed) {
-                        btn.classList.remove('btn-outline-secondary');
-                        btn.classList.add('btn-success');
-                        btn.innerHTML = btn.innerHTML + ' <i class="bi bi-check"></i>';
-                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, false)`);
-                    } else {
-                        btn.classList.remove('btn-success');
-                        btn.classList.add('btn-outline-secondary');
-                        const icon = btn.querySelector('i');
-                        if(icon) icon.remove();
-                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, true)`);
+                // We need to find the button. Since we don't have a direct reference, let's rely on the DOM structure.
+                // It's inside #employee-card-{id} -> .d-flex.gap-1.flex-wrap -> button
+                // We can iterate buttons to find the one for this stepId.
+                // To do this cleanly, I'll update _employee_card.blade.php to add data-step-id to buttons.
+                // But since I can't edit _employee_card in this block, I'll use a selector based on onclick text or order?
+                // Actually, I am editing index.blade.php, so I can't change _employee_card here easily without a separate tool call.
+                // But I *can* overwrite _employee_card in the next step.
+                // For now, let's assume I will add `data-step-id` to the buttons in the next step.
+
+                const card = document.getElementById(`employee-card-${employeeId}`);
+                if (card) {
+                    // Try to find button with data attribute (which I will add)
+                    const btn = card.querySelector(`button[data-step-id="${stepId}"]`);
+                    if (btn) {
+                        if (completed) {
+                            btn.classList.remove('btn-outline-secondary');
+                            btn.classList.add('btn-success');
+                            if(!btn.querySelector('i.bi-check')) {
+                                btn.innerHTML = btn.innerText + ' <i class="bi bi-check"></i>';
+                            }
+                            btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, false)`);
+                        } else {
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-outline-secondary');
+                            const icon = btn.querySelector('i.bi-check');
+                            if(icon) icon.remove();
+                            btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, true)`);
+                        }
                     }
                 }
 
