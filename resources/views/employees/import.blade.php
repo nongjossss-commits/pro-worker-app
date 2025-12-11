@@ -97,7 +97,9 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            @if(isset($production))
+                            @if(isset($back_route))
+                                <a href="{{ $back_route }}" class="btn btn-light">{{ __('Back') }}</a>
+                            @elseif(isset($production))
                                 <a href="{{ route('production.edit', $production->id) }}" class="btn btn-light">{{ __('Back to Project') }}</a>
                             @else
                                 <a href="{{ route('employees.index') }}" class="btn btn-light">{{ __('Cancel') }}</a>
@@ -170,7 +172,11 @@
                 <button type="button" class="btn btn-danger me-auto" id="btn-cancel-import">
                     <i class="bi bi-x-circle me-1"></i> {{ __('Cancel Import') }}
                 </button>
-                @if(session('production_id'))
+                @if(session('finish_route'))
+                    <a href="{{ session('finish_route') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
+                @elseif(isset($back_route)) {{-- Fallback if passed directly --}}
+                    <a href="{{ $back_route }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
+                @elseif(session('production_id'))
                     <a href="{{ route('production.edit', session('production_id')) }}" class="btn btn-primary px-4">{{ __('Finish & Return to Project') }}</a>
                 @else
                     <a href="{{ route('employees.index') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>

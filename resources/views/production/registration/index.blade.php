@@ -64,9 +64,10 @@
             <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white">
                 <i class="bi bi-plus-lg"></i> Add New Employee
             </a>
-            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+            {{-- UPDATED: Link to dedicated import page --}}
+            <a href="{{ route('production.registration.import') }}" class="btn btn-success">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Import
-            </button>
+            </a>
         </div>
     </div>
 
@@ -180,40 +181,7 @@
     </div>
 </div>
 
-{{-- Import Modal --}}
-<div class="modal fade" id="importModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Import Employees from Excel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form action="{{ route('employees.import') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <input type="hidden" name="redirect_route" value="{{ route('production.registration.index') }}">
-
-                    <div class="mb-3">
-                        <label class="form-label">Select Employer</label>
-                        <select class="form-select" name="employer_id" required>
-                            <option value="">-- Choose Employer --</option>
-                            @foreach($employers as $emp)
-                                <option value="{{ $emp->id }}">{{ $emp->employerNameTh }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Excel File</label>
-                        <input type="file" class="form-control" name="file" required accept=".xlsx, .xls, .csv">
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-success">Import</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+{{-- REMOVED: Import Modal (Replaced by direct page link) --}}
 
 @endsection
 
@@ -297,17 +265,36 @@
         });
     }
 
-    // --- New AJAX Toggle Step with Real-time Updates ---
+    // --- Fixed AJAX Toggle Step with Real-time Updates ---
     function toggleStep(employeeId, stepId, completed) {
-        // Find the specific button instance
-        // We use querySelectorAll because an employee ID might be unique, but let's be safe
-        // Construct the selector to find the exact button
+        // Find the card and button
         const card = document.getElementById(`employee-card-${employeeId}`);
-        // We look for a button that has the onclick matching our target
-        // Note: The previous logic relied on `querySelector` with a specific attribute value which might be flaky if spacing differs
-        // Let's use a more robust way: attributes
-        // Actually, we can just find buttons in the card and check their onclick or text
-        // Or simpler: Add a unique ID to each step button: step-btn-{emp}-{step}
+        if (!card) return;
+
+        // Use more specific selector to find the button
+        const btn = card.querySelector(`button[data-step-id="${stepId}"]`);
+
+        // Optimistic UI Update (Instant Feedback)
+        const originalClass = btn.className;
+        const originalHtml = btn.innerHTML;
+        const originalOnClick = btn.getAttribute('onclick');
+
+        if (btn) {
+            if (completed) {
+                // Determine it is becoming complete
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+                if(!btn.querySelector('i.bi-check')) {
+                    btn.innerHTML = btn.innerText + ' <i class="bi bi-check"></i>';
+                }
+            } else {
+                // Becoming incomplete
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+                const icon = btn.querySelector('i.bi-check');
+                if(icon) icon.remove();
+            }
+        }
 
         fetch(`/production/registration/${employeeId}/progress`, {
             method: 'POST',
@@ -317,44 +304,25 @@
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                // 1. Update Button State
-                // We need to find the button. Since we don't have a direct reference, let's rely on the DOM structure.
-                // It's inside #employee-card-{id} -> .d-flex.gap-1.flex-wrap -> button
-                // We can iterate buttons to find the one for this stepId.
-                // To do this cleanly, I'll update _employee_card.blade.php to add data-step-id to buttons.
-                // But since I can't edit _employee_card in this block, I'll use a selector based on onclick text or order?
-                // Actually, I am editing index.blade.php, so I can't change _employee_card here easily without a separate tool call.
-                // But I *can* overwrite _employee_card in the next step.
-                // For now, let's assume I will add `data-step-id` to the buttons in the next step.
-
-                const card = document.getElementById(`employee-card-${employeeId}`);
-                if (card) {
-                    // Try to find button with data attribute (which I will add)
-                    const btn = card.querySelector(`button[data-step-id="${stepId}"]`);
-                    if (btn) {
-                        if (completed) {
-                            btn.classList.remove('btn-outline-secondary');
-                            btn.classList.add('btn-success');
-                            if(!btn.querySelector('i.bi-check')) {
-                                btn.innerHTML = btn.innerText + ' <i class="bi bi-check"></i>';
-                            }
-                            btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, false)`);
-                        } else {
-                            btn.classList.remove('btn-success');
-                            btn.classList.add('btn-outline-secondary');
-                            const icon = btn.querySelector('i.bi-check');
-                            if(icon) icon.remove();
-                            btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, true)`);
-                        }
+                // 1. Update Button State (Confirm & Update OnClick)
+                if (btn) {
+                    if (completed) {
+                         // Set next action to un-complete (false)
+                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, false)`);
+                    } else {
+                         // Set next action to complete (true)
+                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, true)`);
                     }
                 }
 
                 // 2. Update Global Stats
                 if (data.globalStats) {
                     const globalContainer = document.getElementById('global-stats-container');
-                    for (const [sId, count] of Object.entries(data.globalStats)) {
-                        const badge = globalContainer.querySelector(`.global-stat-badge[data-step-id="${sId}"]`);
-                        if (badge) badge.textContent = count;
+                    if (globalContainer) {
+                        for (const [sId, count] of Object.entries(data.globalStats)) {
+                            const badge = globalContainer.querySelector(`.global-stat-badge[data-step-id="${sId}"]`);
+                            if (badge) badge.textContent = count;
+                        }
                     }
                 }
 
@@ -368,9 +336,24 @@
                         }
                     }
                 }
+            } else {
+                // Revert on failure
+                if (btn) {
+                    btn.className = originalClass;
+                    btn.innerHTML = originalHtml;
+                    btn.setAttribute('onclick', originalOnClick);
+                }
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Error:', error);
+            // Revert on failure
+            if (btn) {
+                btn.className = originalClass;
+                btn.innerHTML = originalHtml;
+                btn.setAttribute('onclick', originalOnClick);
+            }
+        });
     }
 </script>
 @endpush
