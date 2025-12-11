@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Production;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\Employer;
+use App\Models\ProductionOrder;
 use App\Models\RegistrationStep;
 use App\Models\EmployeeCustomField;
 use Illuminate\Http\Request;
@@ -50,6 +51,23 @@ class RegistrationController extends Controller
             $q->whereIn('status', ['registration_pending', 'registration_completed'])
               ->with(['registrationSteps', 'customFields']);
         }])->get();
+
+        foreach ($employers as $employer) {
+            $financeOrder = ProductionOrder::firstOrCreate(
+                [
+                    'employer_id' => $employer->id,
+                    'status'      => 'registration_resolution'
+                ],
+                [
+                    'type'         => 'employer',
+                    'project_name' => 'Registration Resolution - ' . $employer->employerNameTh,
+                    'financial_data' => []
+                ]
+            );
+            $employer->financeOrder = $financeOrder;
+            // Spoof items for the count logic in view
+            $employer->financeOrder->setRelation('items', $employer->employees);
+        }
 
         return view('production.registration.index', compact(
             'totalEmployees',
