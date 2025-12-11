@@ -1,73 +1,39 @@
 @extends('layouts.app')
 
-@section('title', 'Add New Registration Employee')
+@section('title', 'เพิ่มพนักงาน (Registration Resolution)')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="mb-0"><i class="bi bi-person-plus-fill me-2"></i>{{ __('Add New Registration Employee') }}</h2>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('production.registration.index') }}">{{ __('Registration Resolution') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ __('Add New') }}</li>
-                </ol>
-            </nav>
+<div class="content-section">
+    @if(isset($employer) && $employer)
+        <h2 class="mb-4">เพิ่มพนักงาน (Registration) สำหรับ {{ $employer->employerNameTh }}</h2>
+    @else
+        <h2 class="mb-4">เพิ่มพนักงาน (Registration)</h2>
+    @endif
+
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
-    </div>
+    @endif
 
-    {{-- Main Content reusing logic --}}
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="mb-0">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+    {{-- Pass the specific action route for RegistrationController --}}
+    <form action="{{ $formAction }}" method="POST" enctype="multipart/form-data">
+        @csrf
 
-            <form action="{{ route('production.registration.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
+        @include('employees.partials.create_form_partial_content')
 
-                @if(request()->has('employer_id'))
-                    <input type="hidden" name="source_employer_id" value="{{ request('employer_id') }}">
-                @endif
-
-                @if(isset($employer) && $employer)
-                    <input type="hidden" name="employer_id" value="{{ $employer->id }}">
-                    <h5 class="mb-3">For Employer: <span class="text-primary">{{ $employer->employerNameTh }}</span></h5>
-                @else
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <label for="employer_id" class="form-label">เลือกนายจ้าง <span class="text-danger">*</span></label>
-                            <select class="form-select" id="employer_id" name="employer_id" required>
-                                <option value="">-- กรุณาเลือกนายจ้าง --</option>
-                                @foreach($employers as $emp)
-                                    <option value="{{ $emp->id }}" {{ old('employer_id') == $emp->id ? 'selected' : '' }}>
-                                        {{ $emp->employerNameTh }} ({{ $emp->employerNameEn }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                @endif
-
-                {{-- Include the partial form logic but without the layout wrapper --}}
-                @include('employees.create_form_partial_content')
-
-                <div class="mt-4 d-flex justify-content-end">
-                    <a href="{{ route('production.registration.index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
-                    <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน (Registration)</button>
-                </div>
-            </form>
+        <div class="mt-4 d-flex justify-content-end">
+            <a href="{{ route('production.registration.index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน (Registration)</button>
         </div>
-    </div>
+    </form>
 </div>
 
-<!-- Cropper Modal -->
+<!-- Cropper Modal (Identical to main create page, copied for functionality) -->
 <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -97,16 +63,12 @@
         </div>
     </div>
 </div>
-
 @endsection
 
 @push('scripts')
-{{-- Include the scripts from the partial, but we must ensure they run correctly --}}
-{{-- Since we cannot easily extract scripts from the partial without parsing,
-     I will manually duplicate the script block here for stability,
-     as requested to ensure "zero doubt" and robustness.
---}}
 <script>
+// Copied JS logic from employees.create to ensure functionality works here too.
+// Ideally, this JS should also be in a partial or a shared JS file.
 document.addEventListener('DOMContentLoaded', function () {
     // --- V6: Get all required elements ---
     const titleTh = document.getElementById('employeeTitleTh');
@@ -161,13 +123,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    if(titleTh) titleTh.addEventListener('change', () => syncTitles('th'));
-    if(titleEn) titleEn.addEventListener('change', () => syncTitles('en'));
+    if (titleTh) titleTh.addEventListener('change', () => syncTitles('th'));
+    if (titleEn) titleEn.addEventListener('change', () => syncTitles('en'));
 
 
     // --- Logic Block 2: Age Calculation ---
     function calculateAge() {
-        if(!dobInput) return;
+        if (!dobInput || !ageInput) return;
         const dob = new Date(dobInput.value);
         if (!isNaN(dob.getTime())) {
             const today = new Date();
@@ -181,41 +143,45 @@ document.addEventListener('DOMContentLoaded', function () {
             ageInput.value = '';
         }
     }
-    if(dobInput) dobInput.addEventListener('change', calculateAge);
+    if (dobInput) dobInput.addEventListener('change', calculateAge);
 
 
     // --- Logic Block 3: Nationality Conditional Fields ---
     function toggleNationalityFields() {
-        if(!nationalitySelect) return;
+        if (!nationalitySelect) return;
         // Myanmar
-        myanmarPassportContainer.classList.toggle('d-none', nationalitySelect.value !== 'เมียนมา');
+        if (myanmarPassportContainer) myanmarPassportContainer.classList.toggle('d-none', nationalitySelect.value !== 'เมียนมา');
         // Cambodia
-        cambodiaPassportContainer.classList.toggle('d-none', nationalitySelect.value !== 'กัมพูชา');
+        if (cambodiaPassportContainer) cambodiaPassportContainer.classList.toggle('d-none', nationalitySelect.value !== 'กัมพูชา');
     }
-    if(nationalitySelect) nationalitySelect.addEventListener('change', toggleNationalityFields);
+    if (nationalitySelect) nationalitySelect.addEventListener('change', toggleNationalityFields);
 
 
     // --- Logic Block 4: MOU "Other" Field ---
      function toggleMouGroupOther() {
-        if(!mouGroupSelect) return;
-        mouGroupOtherContainer.classList.toggle('d-none', mouGroupSelect.value !== 'อื่นๆ');
+        if (!mouGroupSelect) return;
+        if (mouGroupOtherContainer) mouGroupOtherContainer.classList.toggle('d-none', mouGroupSelect.value !== 'อื่นๆ');
     }
-    if(mouGroupSelect) mouGroupSelect.addEventListener('change', toggleMouGroupOther);
+    if (mouGroupSelect) mouGroupSelect.addEventListener('change', toggleMouGroupOther);
 
 
     // --- V6: Logic Block 5: Insurance Conditional Fields ---
     function toggleInsuranceVisibility() {
-        if(!insuranceSelect) return;
+        if (!insuranceSelect) return;
         const selectedType = insuranceSelect.value;
-        socialContainer.classList.toggle('d-none', selectedType !== 'ประกันสังคม');
-        hospitalContainer.classList.toggle('d-none', selectedType !== 'ประกันโรงพยาบาล');
-        privateContainer.classList.toggle('d-none', selectedType !== 'ประกันเอกชน');
+        if (socialContainer) socialContainer.classList.toggle('d-none', selectedType !== 'ประกันสังคม');
+        if (hospitalContainer) hospitalContainer.classList.toggle('d-none', selectedType !== 'ประกันโรงพยาบาล');
+        if (privateContainer) privateContainer.classList.toggle('d-none', selectedType !== 'ประกันเอกชน');
     }
-    if(insuranceSelect) insuranceSelect.addEventListener('change', toggleInsuranceVisibility);
+    if (insuranceSelect) insuranceSelect.addEventListener('change', toggleInsuranceVisibility);
 
 
     // --- Logic Block 6: Photo Cropping ---
-    const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+    const cropperModalEl = document.getElementById('cropperModal');
+    let cropperModal;
+    if (cropperModalEl) {
+         cropperModal = new bootstrap.Modal(cropperModalEl);
+    }
     const imageToCrop = document.getElementById('imageToCrop');
     const cropImageBtn = document.getElementById('cropImageBtn');
     let cropper;
@@ -230,22 +196,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const reader = new FileReader();
         reader.onload = function (e) {
-            imageToCrop.src = e.target.result;
-            cropperModal.show();
+            if (imageToCrop) {
+                imageToCrop.src = e.target.result;
+                if (cropperModal) cropperModal.show();
+            }
         };
         reader.readAsDataURL(originalFile);
         // Clear the input value to allow re-selecting the same file
         event.target.value = '';
     }
 
-    document.getElementById('cropperModal').addEventListener('shown.bs.modal', function () {
-        // Ensure image is loaded and ready
-        if (imageToCrop.complete) {
-            initCropper();
-        } else {
-            imageToCrop.onload = initCropper;
-        }
-    });
+    if (cropperModalEl) {
+        cropperModalEl.addEventListener('shown.bs.modal', function () {
+            // Ensure image is loaded and ready
+            if (imageToCrop.complete) {
+                initCropper();
+            } else {
+                imageToCrop.onload = initCropper;
+            }
+        });
+
+        cropperModalEl.addEventListener('hidden.bs.modal', function () {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            // Also clear the src to prevent flashing old image
+            imageToCrop.src = '';
+        });
+    }
 
     function initCropper() {
         if (typeof Cropper === 'undefined') {
@@ -270,16 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.getElementById('cropperModal').addEventListener('hidden.bs.modal', function () {
-        if (cropper) {
-            cropper.destroy();
-            cropper = null;
-        }
-        // Also clear the src to prevent flashing old image
-        imageToCrop.src = '';
-    });
-
-    if(cropImageBtn) {
+    if (cropImageBtn) {
         cropImageBtn.addEventListener('click', function () {
             if (!cropper) return;
 
@@ -293,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!blob) return;
 
                 const croppedImageUrl = URL.createObjectURL(blob);
-                employeePhotoPreview.src = croppedImageUrl;
+                if (employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
 
                 // Create a new File object
                 const croppedFile = new File([blob], originalFile.name, {
@@ -306,9 +276,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 dataTransfer.items.add(croppedFile);
 
                 // Assign the FileList to the ACTUAL input for submission
-                actualInput.files = dataTransfer.files;
+                if (actualInput) actualInput.files = dataTransfer.files;
 
-                cropperModal.hide();
+                if (cropperModal) cropperModal.hide();
 
             }, originalFile.type || 'image/jpeg');
         });
@@ -319,11 +289,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- Initial State Setup on Page Load ---
-    updateGender();
-    calculateAge();
-    toggleNationalityFields();
-    toggleMouGroupOther();
-    toggleInsuranceVisibility();
+    if (titleTh) updateGender();
+    if (dobInput) calculateAge();
+    if (nationalitySelect) toggleNationalityFields();
+    if (mouGroupSelect) toggleMouGroupOther();
+    if (insuranceSelect) toggleInsuranceVisibility();
 
 });
 </script>
