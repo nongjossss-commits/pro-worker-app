@@ -164,7 +164,7 @@
         const photoUrl = employee.employeePhoto ? `/storage/${employee.employeePhoto}` : 'https://placehold.co/60x60?text=U';
         const name = employee.employeeNameTh || employee.employeeNameEn;
         const code = employee.employeePassport || 'No ID';
-        const addUrl = `/production/registration/${employee.id}/custom-fields`;
+        const addUrl = `/production/registration/custom-fields/${employee.id}`;
 
         const fieldsHtml = generateFieldsHtml(employee.custom_fields, csrfToken);
 
