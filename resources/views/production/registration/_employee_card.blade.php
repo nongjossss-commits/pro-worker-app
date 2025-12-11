@@ -12,7 +12,7 @@
         <div class="d-flex justify-content-between align-items-start">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-center gap-3 w-100">
-                {{-- Only show checkbox if NOT completed (or allow selecting completed for other actions? User said greyed out/sealed, usually implies no bulk actions unless restore) --}}
+                {{-- Only show checkbox if NOT completed --}}
                 @if(!$isCompleted)
                     <div class="form-check">
                         <input class="form-check-input registration-checkbox" type="checkbox" value="{{ $employee->id }}" id="check_{{ $employee->id }}">
@@ -47,6 +47,19 @@
 
             {{-- Actions --}}
             <div class="d-flex gap-2">
+                 {{-- Preview Button (Universal) --}}
+                 <button class="btn btn-sm btn-outline-info btn-preview"
+                    data-model-type="App\Models\Employee"
+                    data-model-id="{{ $employee->id }}"
+                    title="Preview">
+                    <i class="bi bi-search"></i>
+                </button>
+
+                 {{-- Drawer Button (Custom Fields) --}}
+                 <button class="btn btn-sm btn-outline-primary" title="Custom Fields" onclick="openEmployeeDrawer({{ json_encode($employee) }})">
+                    <i class="bi bi-layout-text-sidebar-reverse"></i>
+                </button>
+
                 @if(!$isCompleted)
                     {{-- Standard Actions --}}
                     <button class="btn btn-sm btn-outline-success" title="Save to Database" onclick="finalizeEmployee({{ $employee->id }})">

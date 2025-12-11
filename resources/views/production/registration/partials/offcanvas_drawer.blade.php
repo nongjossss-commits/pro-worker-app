@@ -1,0 +1,186 @@
+{{-- Offcanvas Drawer for Employee Custom Fields --}}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="employeeDrawer" aria-labelledby="employeeDrawerLabel">
+    <div class="offcanvas-header bg-light">
+        <h5 class="offcanvas-title" id="employeeDrawerLabel">Employee Details</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body" id="employeeDrawerBody">
+        {{-- Content injected via JS --}}
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Template for Drawer Content (Hidden) --}}
+{{-- We use a script to populate this because we need one drawer instance for many employees --}}
+<script id="drawer-content-template" type="text/template">
+    <div class="employee-drawer-content">
+        <div class="d-flex align-items-center mb-4">
+             <img src="${photoUrl}" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+             <div>
+                 <h5 class="mb-0 fw-bold">${name}</h5>
+                 <div class="text-muted small">${code}</div>
+             </div>
+        </div>
+
+        <h6 class="fw-bold border-bottom pb-2 mb-3">Custom Fields</h6>
+
+        <div class="custom-fields-list mb-4">
+            ${fieldsHtml}
+        </div>
+
+        <h6 class="fw-bold border-bottom pb-2 mb-3">Add New Field</h6>
+        <form action="${addUrl}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="_token" value="${csrf}">
+
+            <div class="mb-3">
+                <label class="form-label small">Field Name (Label)</label>
+                <input type="text" name="field_name" class="form-control form-control-sm" required placeholder="e.g. Additional Note, Medical Cert">
+            </div>
+
+            <div class="mb-3">
+                 <label class="form-label small">Field Type</label>
+                 <select name="field_type" class="form-select form-select-sm" onchange="toggleDrawerInputs(this)">
+                     <option value="text">Text Box</option>
+                     <option value="date">Date</option>
+                     <option value="file">File Attachment</option>
+                 </select>
+            </div>
+
+            {{-- Dynamic Inputs --}}
+            <div class="mb-3 input-group-text-type">
+                <label class="form-label small">Value</label>
+                <textarea name="field_value" class="form-control form-control-sm" rows="2"></textarea>
+            </div>
+
+            <div class="mb-3 input-group-date-type d-none">
+                <label class="form-label small">Select Date</label>
+                <input type="date" name="field_date_value" class="form-control form-control-sm">
+                {{-- User asked for date label: The 'field_name' acts as the label --}}
+            </div>
+
+            <div class="mb-3 input-group-file-type d-none">
+                <label class="form-label small">Select File</label>
+                <input type="file" name="field_file" class="form-control form-control-sm">
+                <div class="mt-2">
+                    <label class="form-label small">Description (Optional)</label>
+                    <input type="text" name="field_value_desc" class="form-control form-control-sm" placeholder="File description...">
+                    {{-- Note: We map this to field_value in backend --}}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm w-100">Add Field</button>
+        </form>
+    </div>
+</script>
+
+<script>
+    function toggleDrawerInputs(select) {
+        const form = select.closest('form');
+        form.querySelector('.input-group-text-type').classList.add('d-none');
+        form.querySelector('.input-group-date-type').classList.add('d-none');
+        form.querySelector('.input-group-file-type').classList.add('d-none');
+
+        if(select.value === 'text') form.querySelector('.input-group-text-type').classList.remove('d-none');
+        if(select.value === 'date') form.querySelector('.input-group-date-type').classList.remove('d-none');
+        if(select.value === 'file') form.querySelector('.input-group-file-type').classList.remove('d-none');
+    }
+
+    // Function to generate HTML for existing fields
+    function generateFieldsHtml(fields, csrfToken) {
+        if(!fields || fields.length === 0) return '<p class="text-muted small fst-italic">No custom fields added.</p>';
+
+        return fields.map(field => {
+            let valueHtml = '';
+            let editInputHtml = '';
+
+            if(field.field_type === 'text') {
+                valueHtml = `<p class="mb-1 bg-light p-2 rounded small">${field.field_value || '-'}</p>`;
+                editInputHtml = `<textarea name="field_value" class="form-control form-control-sm mb-2" rows="2">${field.field_value || ''}</textarea>`;
+            } else if(field.field_type === 'date') {
+                valueHtml = `<div class="d-flex align-items-center gap-2 mb-1"><i class="bi bi-calendar"></i> ${field.field_value}</div>`;
+                editInputHtml = `<input type="date" name="field_date_value" class="form-control form-control-sm mb-2" value="${field.field_value}">`;
+            } else if(field.field_type === 'file') {
+                 valueHtml = `
+                    <div class="d-flex align-items-center gap-2 mb-1 bg-light p-2 rounded">
+                        <i class="bi bi-paperclip"></i>
+                        <a href="/storage/${field.file_path}" target="_blank" class="text-decoration-none text-truncate" style="max-width: 150px;">View File</a>
+                    </div>
+                    ${field.field_value ? `<div class="small text-muted fst-italic">${field.field_value}</div>` : ''}
+                 `;
+                 editInputHtml = `<input type="text" name="field_value" class="form-control form-control-sm mb-2" value="${field.field_value || ''}" placeholder="Update description...">`;
+            }
+
+            // Edit Form (Hidden by default)
+            const editFormId = `edit-field-form-${field.id}`;
+            const displayId = `display-field-${field.id}`;
+
+            return `
+                <div class="mb-3 border-bottom pb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <label class="form-label fw-bold small mb-1">${field.field_name}</label>
+                        <div class="dropdown">
+                            <button class="btn btn-link btn-sm p-0 text-muted" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item small" href="#" onclick="event.preventDefault(); document.getElementById('${displayId}').classList.add('d-none'); document.getElementById('${editFormId}').classList.remove('d-none');">Edit</a></li>
+                                <li>
+                                    <form action="/production/registration/custom-fields/${field.id}" method="POST" onsubmit="return confirm('Delete this field?');">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <button type="submit" class="dropdown-item small text-danger">Delete</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="${displayId}">
+                        ${valueHtml}
+                    </div>
+
+                    <form id="${editFormId}" action="/production/registration/custom-fields/${field.id}" method="POST" class="d-none mt-2">
+                         <input type="hidden" name="_token" value="${csrfToken}">
+                         <input type="hidden" name="_method" value="PUT">
+                         <input type="text" name="field_name" class="form-control form-control-sm mb-2" value="${field.field_name}" placeholder="Field Name">
+                         ${editInputHtml}
+                         <div class="d-flex justify-content-end gap-2">
+                             <button type="button" class="btn btn-xs btn-outline-secondary" onclick="document.getElementById('${displayId}').classList.remove('d-none'); document.getElementById('${editFormId}').classList.add('d-none');">Cancel</button>
+                             <button type="submit" class="btn btn-xs btn-primary">Save</button>
+                         </div>
+                    </form>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function openEmployeeDrawer(employee) {
+        const drawerBody = document.getElementById('employeeDrawerBody');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Prepare Data
+        const photoUrl = employee.employeePhoto ? `/storage/${employee.employeePhoto}` : 'https://placehold.co/60x60?text=U';
+        const name = employee.employeeNameTh || employee.employeeNameEn;
+        const code = employee.employeePassport || 'No ID';
+        const addUrl = `/production/registration/${employee.id}/custom-fields`;
+
+        const fieldsHtml = generateFieldsHtml(employee.custom_fields, csrfToken);
+
+        // Replace Template Strings
+        let template = document.getElementById('drawer-content-template').innerHTML;
+        template = template.replace(/\${photoUrl}/g, photoUrl)
+                           .replace(/\${name}/g, name)
+                           .replace(/\${code}/g, code)
+                           .replace(/\${addUrl}/g, addUrl)
+                           .replace(/\${csrf}/g, csrfToken)
+                           .replace('${fieldsHtml}', fieldsHtml);
+
+        drawerBody.innerHTML = template;
+
+        // Open Offcanvas
+        const bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('employeeDrawer'));
+        bsOffcanvas.show();
+    }
+</script>

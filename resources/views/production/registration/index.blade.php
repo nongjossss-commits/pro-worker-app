@@ -3,237 +3,268 @@
 @section('title', 'Registration Resolution')
 
 @section('content')
-<div class="container-fluid" x-data="registrationHandler()">
-    {{-- Header & Stats --}}
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
-            <h2 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>{{ __('Registration Resolution') }}</h2>
-            <div>
-                <button class="btn btn-outline-secondary me-2" @click="openSettingsModal()">
-                    <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
-                </button>
-                <a href="{{ route('production.registration.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-lg me-1"></i> {{ __('Add New Employee') }}
-                </a>
-                <a href="{{ route('employees.import_view') }}?target_status=registration_pending" class="btn btn-success ms-2">
-                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import from Excel') }}
-                </a>
-            </div>
-        </div>
-
-        {{-- Stats Cards --}}
-        <div class="col-md-3 mb-3">
-            <div class="card bg-primary text-white h-100 shadow-sm">
-                <div class="card-body text-center">
+<div class="container-fluid">
+    {{-- Top Stats --}}
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
                     <h1 class="display-4 fw-bold">{{ $totalEmployees }}</h1>
-                    <p class="card-text fs-5">{{ __('Total Employees') }}</p>
+                    <p class="card-text fs-5">Total Employees</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card bg-dark text-white h-100 shadow-sm">
-                <div class="card-body text-center">
+        <div class="col-md-3">
+            <div class="card bg-dark text-white h-100">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
                     <h1 class="display-4 fw-bold">{{ $totalEmployers }}</h1>
-                    <p class="card-text fs-5">{{ __('Total Employers') }}</p>
+                    <p class="card-text fs-5">Total Employers</p>
                 </div>
             </div>
         </div>
-
-        {{-- Bulk Actions Bar --}}
-        <div class="col-12 mb-3" id="registration-bulk-bar" style="display: none;">
-            <div class="card border-primary bg-primary bg-opacity-10">
-                <div class="card-body d-flex justify-content-between align-items-center py-2">
-                    <div>
-                        <span class="fw-bold text-primary"><span id="reg-selected-count">0</span> {{ __('Selected') }}</span>
-                    </div>
-                    <div>
-                        <button class="btn btn-primary btn-sm" onclick="bulkFinalize()">
-                            <i class="bi bi-database-add me-1"></i> {{ __('Save All to Database') }}
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Workflow Progress</h5>
+                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                            <i class="bi bi-gear"></i> Settings
                         </button>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Workflow Steps Summary --}}
-        <div class="col-md-6 mb-3">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-white fw-bold">{{ __('Workflow Progress') }}</div>
-                <div class="card-body overflow-auto">
-                    <div class="d-flex flex-wrap gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
                         @foreach($steps as $step)
-                            <div class="badge bg-light text-dark border p-2 d-flex align-items-center gap-2">
-                                <span class="fw-bold">{{ $step->name }}</span>
+                            <div class="border rounded p-2 text-center" style="min-width: 60px;">
+                                <div class="fw-bold">{{ $step->order }}</div>
                                 <span class="badge bg-success rounded-pill">{{ $stepStats[$step->id] ?? 0 }}</span>
                             </div>
                         @endforeach
-                        @if($steps->isEmpty())
-                            <span class="text-muted small">No steps defined. Click Settings to add.</span>
-                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Main Content: Employer List --}}
-    <div class="accordion" id="employerAccordion">
-        @forelse($employers as $employer)
-            <div class="accordion-item mb-3 border rounded shadow-sm overflow-hidden">
-                <h2 class="accordion-header" id="heading{{ $employer->id }}">
-                    <button class="accordion-button collapsed bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}" aria-expanded="false" aria-controls="collapse{{ $employer->id }}">
-                        <div class="d-flex w-100 justify-content-between align-items-center me-3">
-                            <span class="fw-bold fs-5 text-primary">{{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})</span>
-                            <span class="badge bg-secondary rounded-pill">{{ $employer->employees->count() }} Employees</span>
-                        </div>
-                    </button>
-                </h2>
-                <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $employer->id }}" data-bs-parent="#employerAccordion">
-                    <div class="accordion-body bg-light p-3">
-                        <div class="row g-3">
-                            @foreach($employer->employees as $employee)
-                                <div class="col-12">
-                                    @include('production.registration._employee_card', ['employee' => $employee, 'steps' => $steps])
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
+    {{-- Actions Bar --}}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <h4 class="mb-0 text-primary fw-bold"><i class="bi bi-people-fill me-2"></i>Registration Resolution</h4>
+
+        <form action="{{ route('production.registration.index') }}" method="GET" class="d-flex flex-grow-1 mx-md-4" style="max-width: 500px;">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search employee or employer..." value="{{ request('search') }}">
+                <button class="btn btn-primary" type="submit">Search</button>
+                @if(request('search'))
+                    <a href="{{ route('production.registration.index') }}" class="btn btn-outline-secondary">Clear</a>
+                @endif
             </div>
-        @empty
-            <div class="text-center py-5 text-muted">
-                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                <p>No registration data found.</p>
-            </div>
-        @endforelse
+        </form>
+
+        <div class="d-flex gap-2">
+            <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white">
+                <i class="bi bi-plus-lg"></i> Add New Employee
+            </a>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Import
+            </button>
+        </div>
     </div>
 
-    {{-- Settings Modal --}}
-    <div class="modal fade" id="settingsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ __('Manage Workflow Steps') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" x-model="newStepName" placeholder="Enter step name (e.g., Medical Checkup)">
-                        <button class="btn btn-primary" @click="addStep()">{{ __('Add Step') }}</button>
+    {{-- Employers List --}}
+    <div class="accordion" id="employersAccordion">
+        @foreach($employers as $employer)
+            <div class="card mb-3 border shadow-sm">
+                <div class="card-header bg-white py-3" id="heading{{ $employer->id }}">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <button class="btn btn-link text-decoration-none text-dark fw-bold p-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}" aria-expanded="true" aria-controls="collapse{{ $employer->id }}">
+                            <span class="fs-5">{{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})</span>
+                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
+                                <i class="bi bi-currency-dollar"></i> Finance
+                            </button>
+                            <span class="badge bg-secondary">{{ $employer->employees->count() }} Employees</span>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
                     </div>
+                </div>
 
-                    <ul class="list-group">
-                        <template x-for="step in steps" :key="step.id">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center gap-2 w-100">
-                                    <span class="badge bg-secondary" x-text="step.order"></span>
-                                    <input type="text" class="form-control form-control-sm border-0" x-model="step.name" @change="updateStep(step)">
-                                </div>
-                                <button class="btn btn-sm btn-outline-danger ms-2" @click="deleteStep(step.id)">
+                <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ $employer->id }}">
+                    <div class="card-body bg-light">
+                         <div class="employee-list">
+                            @foreach($employer->employees as $employee)
+                                @include('production.registration._employee_card', ['employee' => $employee, 'steps' => $steps])
+                            @endforeach
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Finance Modal for this Employer --}}
+            <div class="modal fade" id="financeModal-{{ $employer->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Finance: {{ $employer->employerNameTh }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body bg-light">
+                            {{-- Reuse the existing Financial Tab component --}}
+                            {{-- We pass the 'Shadow' Production Order we created in the Controller --}}
+                            @include('production.partials.financial-tab', ['production' => $employer->financeOrder])
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+</div>
+
+{{-- Include Drawer --}}
+@include('production.registration.partials.offcanvas_drawer')
+
+{{-- Manage Steps Modal --}}
+<div class="modal fade" id="manageStepsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Workflow Steps</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStepForm" class="mb-4">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="newStepName" placeholder="Enter step name (e.g., Medical Checkup)" required>
+                        <button class="btn btn-primary" type="submit">Add Step</button>
+                    </div>
+                </form>
+
+                <ul class="list-group" id="stepsList">
+                    @foreach($steps as $step)
+                        <li class="list-group-item d-flex justify-content-between align-items-center" id="step-item-{{ $step->id }}">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary rounded-pill">{{ $step->order }}</span>
+                                <span class="step-name">{{ $step->name }}</span>
+                                <input type="text" class="form-control form-control-sm d-none step-edit-input" value="{{ $step->name }}">
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary btn-edit-step" onclick="toggleEditStep({{ $step->id }})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success d-none btn-save-step" onclick="saveStep({{ $step->id }})">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})">
                                     <i class="bi bi-trash"></i>
                                 </button>
-                            </li>
-                        </template>
-                    </ul>
-                </div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Alpine.js Logic --}}
+{{-- Import Modal --}}
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Employees from Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ route('employees.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="redirect_route" value="{{ route('production.registration.index') }}">
+
+                    <div class="mb-3">
+                        <label class="form-label">Select Employer</label>
+                        <select class="form-select" name="employer_id" required>
+                            <option value="">-- Choose Employer --</option>
+                            @foreach($employers as $emp)
+                                <option value="{{ $emp->id }}">{{ $emp->employerNameTh }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Excel File</label>
+                        <input type="file" class="form-control" name="file" required accept=".xlsx, .xls, .csv">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@push('scripts')
 <script>
-    function registrationHandler() {
-        return {
-            steps: @json($steps),
-            newStepName: '',
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-            init() {
-                // Initial setup if needed
-            },
+    // --- Manage Steps ---
+    document.getElementById('addStepForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('newStepName').value;
 
-            openSettingsModal() {
-                new bootstrap.Modal(document.getElementById('settingsModal')).show();
-            },
-
-            addStep() {
-                if (!this.newStepName) return;
-
-                fetch('{{ route('production.registration.steps.store') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ name: this.newStepName })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    }
-                });
-            },
-
-            updateStep(step) {
-                fetch(`/production/registration/steps/${step.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ name: step.name })
-                });
-            },
-
-            deleteStep(id) {
-                if (!confirm('Delete this step?')) return;
-                fetch(`/production/registration/steps/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        this.steps = this.steps.filter(s => s.id !== id);
-                        location.reload();
-                    }
-                });
-            }
-        }
-    }
-
-    // Global Functions for Non-Alpine Actions (referenced in _employee_card)
-
-    function toggleStep(employeeId, stepId, completed) {
-        fetch(`/production/registration/progress/${employeeId}`, {
+        fetch('{{ route("production.registration.steps.store") }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({ step_id: stepId, completed: completed })
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ name: name })
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                // No reload needed for pure toggle if we want smooth UX,
-                // but simpler to reload to reflect stats unless we build full reactivity
-                location.reload();
-            }
+            if(data.success) location.reload();
+        });
+    });
+
+    function deleteStep(id) {
+        if(!confirm('Delete this step?')) return;
+        fetch(`/production/registration/steps/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) location.reload();
         });
     }
 
-    function finalizeEmployee(id) {
-        if(!confirm('{{ __("Save this employee to the main database?") }}')) return;
+    function toggleEditStep(id) {
+        const item = document.getElementById(`step-item-${id}`);
+        item.querySelector('.step-name').classList.toggle('d-none');
+        item.querySelector('.step-edit-input').classList.toggle('d-none');
+        item.querySelector('.btn-edit-step').classList.toggle('d-none');
+        item.querySelector('.btn-save-step').classList.toggle('d-none');
+    }
 
+    function saveStep(id) {
+        const item = document.getElementById(`step-item-${id}`);
+        const newName = item.querySelector('.step-edit-input').value;
+
+        fetch(`/production/registration/steps/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ name: newName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) location.reload();
+        });
+    }
+
+    // --- Employee Actions ---
+    function finalizeEmployee(id) {
+        if(!confirm('Save this employee to the main database?')) return;
         fetch(`/production/registration/${id}/finalize`, {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+            headers: { 'X-CSRF-TOKEN': csrfToken }
         })
         .then(res => res.json())
         .then(data => {
@@ -242,13 +273,10 @@
     }
 
     function restoreEmployeeState(id) {
-        if(!confirm('{{ __("Undo save? This will move employee back to pending state.") }}')) return;
-
+         if(!confirm('Undo save status?')) return;
         fetch(`/production/registration/${id}/restore-state`, {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+            headers: { 'X-CSRF-TOKEN': csrfToken }
         })
         .then(res => res.json())
         .then(data => {
@@ -256,49 +284,16 @@
         });
     }
 
-    // Bulk Selection Logic
-    document.addEventListener('DOMContentLoaded', function() {
-        const checkboxes = document.querySelectorAll('.registration-checkbox');
-        const bulkBar = document.getElementById('registration-bulk-bar');
-        const countSpan = document.getElementById('reg-selected-count');
-
-        function updateBulkUI() {
-            const checked = document.querySelectorAll('.registration-checkbox:checked');
-            if(checked.length > 0) {
-                bulkBar.style.display = 'block';
-                countSpan.textContent = checked.length;
-            } else {
-                bulkBar.style.display = 'none';
-            }
-        }
-
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', updateBulkUI);
+    function toggleStep(employeeId, stepId, completed) {
+        fetch(`/production/registration/${employeeId}/progress`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ step_id: stepId, completed: completed })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) location.reload(); // Reload to update stats
         });
-
-        window.bulkFinalize = function() {
-            const checked = document.querySelectorAll('.registration-checkbox:checked');
-            const ids = Array.from(checked).map(cb => cb.value);
-
-            if(ids.length === 0) return;
-            let message = '{{ __("Save :count employees to the main database?") }}';
-            message = message.replace(':count', ids.length);
-
-            if(!confirm(message)) return;
-
-            fetch('{{ route("production.registration.bulk_finalize") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({ employee_ids: ids })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) location.reload();
-            });
-        }
-    });
+    }
 </script>
-@endsection
+@endpush
