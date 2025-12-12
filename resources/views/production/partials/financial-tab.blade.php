@@ -38,6 +38,15 @@
                     </div>
                 </div>
 
+                <!-- Discount Field (NEW) -->
+                <div class="mb-3">
+                    <label class="form-label">Discount</label>
+                    <div class="input-group">
+                        <span class="input-group-text">฿</span>
+                        <input type="number" class="form-control" x-model="discount" @input="updateTotal()">
+                    </div>
+                </div>
+
                 <!-- VAT Settings -->
                 <div class="mb-3 border-top pt-3">
                     <label class="form-label small text-muted">VAT Settings</label>
@@ -64,7 +73,15 @@
             <div class="card-header bg-white fw-bold">Financial Summary</div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Subtotal:</span>
+                    <span class="text-muted">Base Total:</span>
+                    <span x-text="formatCurrency(baseTotal)"></span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 text-success" x-show="discount > 0">
+                    <span>Discount:</span>
+                    <span>- <span x-text="formatCurrency(discount)"></span></span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal (Net Base):</span>
                     <span x-text="formatCurrency(subtotalAmount)"></span>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
@@ -333,9 +350,11 @@ function financialManager() {
         fixedTotal: {{ $production->financial_data['fixed_base_amount'] ?? ($production->financial_data['total_amount'] ?? 0) }}, // Base amount before VAT logic
         unitPrice: {{ $production->financial_data['unit_price'] ?? 0 }},
         employeeCount: {{ $production->items->count() }},
+        discount: {{ $production->financial_data['discount'] ?? 0 }},
 
         // Dynamic Total (The one used for calculations)
         totalAmount: 0, // Calculated in updateTotal()
+        baseTotal: 0,
         subtotalAmount: 0,
         vatAmount: 0,
 
@@ -366,19 +385,22 @@ function financialManager() {
                 base = parseFloat(this.fixedTotal) || 0;
             }
 
+            this.baseTotal = base;
+            let netBase = Math.max(0, base - (parseFloat(this.discount) || 0));
+
             // VAT Logic
             if (this.vatIncluded) {
-                // Base is inclusive: Total = Base
-                // Subtotal = Base / (1 + Rate/100)
-                this.totalAmount = base;
-                this.subtotalAmount = base / (1 + (this.vatRate / 100));
+                // Base is inclusive: Total = Net Base
+                // Subtotal = Net Base / (1 + Rate/100)
+                this.totalAmount = netBase;
+                this.subtotalAmount = netBase / (1 + (this.vatRate / 100));
                 this.vatAmount = this.totalAmount - this.subtotalAmount;
             } else {
-                // Base is exclusive: Total = Base + VAT
-                // Subtotal = Base
-                // VAT = Base * Rate/100
-                this.subtotalAmount = base;
-                this.vatAmount = base * (this.vatRate / 100);
+                // Base is exclusive: Total = Net Base + VAT
+                // Subtotal = Net Base
+                // VAT = Net Base * Rate/100
+                this.subtotalAmount = netBase;
+                this.vatAmount = netBase * (this.vatRate / 100);
                 this.totalAmount = this.subtotalAmount + this.vatAmount;
             }
         },
@@ -399,7 +421,8 @@ function financialManager() {
                     fixed_base_amount: this.fixedTotal, // Save the input value
                     total_amount: this.totalAmount, // Save the calculated final total
                     vat_included: this.vatIncluded,
-                    vat_rate: this.vatRate
+                    vat_rate: this.vatRate,
+                    discount: this.discount
                 },
                 _method: 'PUT'
             };
