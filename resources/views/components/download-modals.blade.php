@@ -99,6 +99,30 @@
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_4" id="chkOther4">
                                     <label class="form-check-label" for="chkOther4">12. เอกสารอื่นๆ 4</label>
                                 </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_5" id="chkOther5">
+                                    <label class="form-check-label" for="chkOther5">13. เอกสารอื่นๆ 5</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_6" id="chkOther6">
+                                    <label class="form-check-label" for="chkOther6">14. เอกสารอื่นๆ 6</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_7" id="chkOther7">
+                                    <label class="form-check-label" for="chkOther7">15. เอกสารอื่นๆ 7</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_8" id="chkOther8">
+                                    <label class="form-check-label" for="chkOther8">16. เอกสารอื่นๆ 8</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_9" id="chkOther9">
+                                    <label class="form-check-label" for="chkOther9">17. เอกสารอื่นๆ 9</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_10" id="chkOther10">
+                                    <label class="form-check-label" for="chkOther10">18. เอกสารอื่นๆ 10</label>
+                                </div>
                             </div>
                         </div>
                     </div>

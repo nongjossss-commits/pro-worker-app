@@ -343,4 +343,34 @@
         <input type="file" class="form-control form-control-sm" id="employee_doc_12" name="employee_doc_12">
         <input type="text" class="form-control form-control-sm mt-2" name="other_doc_4_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_4_desc') }}">
     </div>
+    <div class="col-md-6 mb-3">
+        <label for="employee_doc_13" class="form-label">13. เอกสารอื่นๆ 5</label>
+        <input type="file" class="form-control form-control-sm" id="employee_doc_13" name="employee_doc_13">
+        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_5_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_5_desc') }}">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="employee_doc_14" class="form-label">14. เอกสารอื่นๆ 6</label>
+        <input type="file" class="form-control form-control-sm" id="employee_doc_14" name="employee_doc_14">
+        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_6_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_6_desc') }}">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="employee_doc_15" class="form-label">15. เอกสารอื่นๆ 7</label>
+        <input type="file" class="form-control form-control-sm" id="employee_doc_15" name="employee_doc_15">
+        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_7_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_7_desc') }}">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="employee_doc_16" class="form-label">16. เอกสารอื่นๆ 8</label>
+        <input type="file" class="form-control form-control-sm" id="employee_doc_16" name="employee_doc_16">
+        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_8_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_8_desc') }}">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="employee_doc_17" class="form-label">17. เอกสารอื่นๆ 9</label>
+        <input type="file" class="form-control form-control-sm" id="employee_doc_17" name="employee_doc_17">
+        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_9_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_9_desc') }}">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="employee_doc_18" class="form-label">18. เอกสารอื่นๆ 10</label>
+        <input type="file" class="form-control form-control-sm" id="employee_doc_18" name="employee_doc_18">
+        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_10_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_10_desc') }}">
+    </div>
 </div>

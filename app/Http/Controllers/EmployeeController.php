@@ -239,6 +239,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
+            'other_doc_5_desc' => 'nullable|string|max:255',
+            'other_doc_6_desc' => 'nullable|string|max:255',
+            'other_doc_7_desc' => 'nullable|string|max:255',
+            'other_doc_8_desc' => 'nullable|string|max:255',
+            'other_doc_9_desc' => 'nullable|string|max:255',
+            'other_doc_10_desc' => 'nullable|string|max:255',
             'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
@@ -254,6 +260,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_13' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_14' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_15' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_16' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_17' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_18' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
         // --- V6 Step 1.5: Map insurance data to correct model properties ---
@@ -295,7 +307,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeePhoto', 'insurance_document_path','insurance_document_path_private',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
-            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
+            'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
+            'employee_doc_17', 'employee_doc_18'
         ];
 
         foreach ($fileFields as $field) {
@@ -387,6 +401,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
+            'other_doc_5_desc' => 'nullable|string|max:255',
+            'other_doc_6_desc' => 'nullable|string|max:255',
+            'other_doc_7_desc' => 'nullable|string|max:255',
+            'other_doc_8_desc' => 'nullable|string|max:255',
+            'other_doc_9_desc' => 'nullable|string|max:255',
+            'other_doc_10_desc' => 'nullable|string|max:255',
             'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
@@ -402,6 +422,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_13' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_14' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_15' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_16' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_17' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_18' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'passport_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'visa_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'work_permit_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
@@ -486,7 +512,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeePhoto', 'insurance_document_path','insurance_document_path_private',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
-            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
+            'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
+            'employee_doc_17', 'employee_doc_18'
         ];
 
         // --- V-6: Step 4: Unified File Deletion Loop (FIX) ---
@@ -765,6 +793,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Whitelist of allowed document fields to prevent security risks
         $allowedFields = [
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
+            'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
+            'employee_doc_17', 'employee_doc_18',
             'insurance_document_path_private',
             // Keep old fields for backward compatibility if needed
             'passport_file_path', 'visa_file_path', 'work_permit_file_path',
@@ -932,6 +964,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'employee_doc_10' => 'Document 2',
                 'employee_doc_11' => 'Document 3',
                 'employee_doc_12' => 'Document 4',
+                'employee_doc_13' => 'Document 5',
+                'employee_doc_14' => 'Document 6',
+                'employee_doc_15' => 'Document 7',
+                'employee_doc_16' => 'Document 8',
+                'employee_doc_17' => 'Document 9',
+                'employee_doc_18' => 'Document 10',
             ],
         ];
 
@@ -957,7 +995,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeePhoto',
             'passport_file', 'visa_file', 'work_permit_file', 'pink_card_file', 'insurance_attachment',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
-            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
+            'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
+            'employee_doc_17', 'employee_doc_18'
         ];
 
         $dateFields = [
@@ -1035,6 +1075,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_10' => 'Document 2',
             'employee_doc_11' => 'Document 3',
             'employee_doc_12' => 'Document 4',
+            'employee_doc_13' => 'Document 5',
+            'employee_doc_14' => 'Document 6',
+            'employee_doc_15' => 'Document 7',
+            'employee_doc_16' => 'Document 8',
+            'employee_doc_17' => 'Document 9',
+            'employee_doc_18' => 'Document 10',
         ];
 
         return view('employees.bulk_edit_form', compact('employees', 'selectedFields', 'fileFields', 'dateFields', 'options', 'fieldLabels', 'redirectTo'));
