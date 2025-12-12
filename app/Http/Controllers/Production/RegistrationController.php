@@ -174,16 +174,10 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Show the form for creating a new registration employee.
-     * Reuses the standard employee form view but we might need to inject context.
-     */
-    /**
      * Display the Import View for Registration Resolution.
-     * Reuses the standard 'employees.import' view but with specific context.
      */
     public function importView(Request $request)
     {
-        // Reuse logic from ImportEmployeeController@index but simplified
         $employers = collect();
         if (auth()->user()->can('view-employers')) {
              $employers = Employer::orderBy('employerNameTh')->get(['id', 'employerNameTh', 'employerNameEn']);
@@ -194,33 +188,19 @@ class RegistrationController extends Controller
              }
         }
 
-        // We pass 'target_status' via the URL query string to the view's form action
-        // Actually, the view 'employees.import' has a hidden input logic for 'target_status' if it's in the request.
-        // So we just need to ensure the form posts to the standard import route but carries the payload.
-
-        // However, the standard import route (ImportEmployeeController@store) redirects 'back()'.
-        // If we serve the view from THIS route, 'back()' will return here. Perfect.
-
-        // We inject the 'target_status' into the request or view so the view renders the hidden input.
         $request->merge(['target_status' => 'registration_pending']);
 
-        // Set session for finish_route because store() redirects back() which is this view,
-        // but session helps persist the intent for the Success Modal buttons.
         session()->flash('finish_route', route('production.registration.index'));
 
         return view('employees.import', [
             'employers' => $employers,
-            'production' => null, // No specific production order context needed, just status
+            'production' => null,
             'back_route' => route('production.registration.index'),
         ]);
     }
 
     public function create(Request $request)
     {
-        // We can reuse the standard view, or create a specific one.
-        // Let's reuse the logic but pass a flag to the view if needed,
-        // OR simply rely on the 'store' route being different.
-
         $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
         $selectedEmployer = null;
 
@@ -228,8 +208,6 @@ class RegistrationController extends Controller
             $selectedEmployer = \App\Models\Employer::find($request->employer_id);
         }
 
-        // We will render a view that posts to the registration store route.
-        // To avoid modifying the 'employees.create' view too much, we can pass a 'formAction' variable.
         return view('production.registration.create', [
             'employers' => $employers,
             'employer' => $selectedEmployer,
@@ -239,7 +217,6 @@ class RegistrationController extends Controller
 
     /**
      * Store a newly created registration employee.
-     * Logic is copied from EmployeeController@store but sets status = 'registration_pending'.
      */
     public function store(Request $request)
     {
@@ -437,10 +414,13 @@ class RegistrationController extends Controller
 
             // --- Recalculate Stats for Response (Highest Step Logic) ---
             // Global Stats
-            // Use withoutGlobalScopes to avoid issues if the user has a restrictive scope (e.g. 'employer' role)
-            // but is allowed to see this dashboard via permission.
-            $allEmployees = Employee::withoutGlobalScopes()
-                                    ->whereIn('status', ['registration_pending', 'registration_completed'])
+            // Ensure no global scope issues, but handle if method doesn't exist just in case
+            $allQuery = Employee::query();
+            if (method_exists($allQuery, 'withoutGlobalScopes')) {
+                $allQuery->withoutGlobalScopes();
+            }
+
+            $allEmployees = $allQuery->whereIn('status', ['registration_pending', 'registration_completed'])
                                     ->with('registrationSteps')
                                     ->get();
 
@@ -455,9 +435,13 @@ class RegistrationController extends Controller
             }
 
             // Employer Stats
+            $empQuery = Employee::query();
+            if (method_exists($empQuery, 'withoutGlobalScopes')) {
+                $empQuery->withoutGlobalScopes();
+            }
+
             $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $employerEmployees = Employee::withoutGlobalScopes()
-                                        ->where('employer_id', $employee->employer_id)
+            $employerEmployees = $empQuery->where('employer_id', $employee->employer_id)
                                         ->whereIn('status', ['registration_pending', 'registration_completed'])
                                         ->with('registrationSteps')
                                         ->get();
@@ -479,7 +463,18 @@ class RegistrationController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error updating progress for employee {$employee->id}: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Server error: ' . $e->getMessage()], 500);
+            // Return JSON even on fatal error
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        } catch (\Throwable $e) { // Catch fatal errors (PHP 7+)
+             DB::rollBack();
+             Log::error("Fatal Error updating progress for employee {$employee->id}: " . $e->getMessage());
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Fatal Error: ' . $e->getMessage()
+             ], 500);
         }
     }
 

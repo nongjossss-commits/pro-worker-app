@@ -31,7 +31,7 @@
                 </div>
 
                 <div x-show="pricingMode === 'fixed'" class="mb-3">
-                    <label class="form-label">Total Project Value (Before VAT)</label>
+                    <label class="form-label">Total Project Value <span x-show="!vatIncluded">(Excl. VAT)</span><span x-show="vatIncluded">(Incl. VAT)</span></label>
                     <div class="input-group">
                         <span class="input-group-text">฿</span>
                         <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
@@ -374,7 +374,9 @@ function financialManager() {
                 this.subtotalAmount = base / (1 + (this.vatRate / 100));
                 this.vatAmount = this.totalAmount - this.subtotalAmount;
             } else {
-                // Base is exclusive: Total = Base + (Base * Rate/100)
+                // Base is exclusive: Total = Base + VAT
+                // Subtotal = Base
+                // VAT = Base * Rate/100
                 this.subtotalAmount = base;
                 this.vatAmount = base * (this.vatRate / 100);
                 this.totalAmount = this.subtotalAmount + this.vatAmount;
