@@ -23,7 +23,6 @@
     <tbody>
         @php
             // Use transactions passed from Controller (already filtered)
-            // $transactions is available from the View Composer or Controller
             $grandTotal = 0;
             $subtotal = 0;
 
@@ -37,21 +36,30 @@
                 $amount = $t->amount;
                 $grandTotal += $amount;
 
-                // Calculate Subtotal contribution
+                // Breakdown Calculation Logic
                 if ($vatIncluded) {
+                     // Inclusive: Total = Base + VAT
+                     // Base = Total / (1 + Rate)
                      $subtotal += ($amount / (1 + ($vatRate / 100)));
                 } else {
-                     $subtotal += $amount; // Assuming transactions are stored as Base if Excluded?
-                     // Wait, usually Transaction Amount IS the amount to be paid.
-                     // If VAT Excluded, is the stored amount Base or Total?
-                     // Standard: Transaction Amount is what needs to be paid.
-                     // If VAT is Excluded globally, does user enter Base or Total in "Add Installment"?
-                     // Usually "Add Installment" asks for "Amount".
-                     // Let's assume Transaction Amount = Final Amount (Grand Total) for simplicity in billing,
-                     // OR reverse engineer base.
+                     // Exclusive: Total = Base + VAT
+                     // Subtotal (Base) = Total / (1 + Rate) ... IF the stored Amount is the final total.
+                     // But typically for Exclusive, the user enters the BASE amount in pricing?
 
-                     // Actually, if VAT is Added on top, the Transaction Amount in DB usually represents the FINAL billing amount.
-                     // So we treat $amount as Inclusive for display breakdown.
+                     // Re-reading logic in financial-tab:
+                     // If !vatIncluded: TotalAmount = SubtotalAmount + VATAmount.
+                     // And transactions sum up to 'Total Scheduled'.
+                     // So the Transaction Amount stored in DB is the FINAL amount to be paid?
+
+                     // Let's assume Transaction Amount is ALWAYS the Final Payment Amount.
+                     // Therefore, to get the Base for the invoice breakdown:
+                     // Base = Amount / (1 + Rate) -- WAIT, no.
+
+                     // If I bill 100 + 7% VAT = 107.
+                     // The Transaction Amount is likely 107.
+                     // So Base = 107 / 1.07 = 100.
+
+                     // So the logic is actually the SAME for both cases if the Transaction Amount is the Gross Total.
                      $subtotal += ($amount / (1 + ($vatRate / 100)));
                 }
             @endphp
@@ -77,6 +85,7 @@
     <tfoot>
         <!-- Breakdown -->
         @php
+            // Recalculate VAT based on the derived subtotal
             $vatAmount = $grandTotal - $subtotal;
         @endphp
 

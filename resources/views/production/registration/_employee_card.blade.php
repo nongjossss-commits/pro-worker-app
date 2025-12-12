@@ -55,9 +55,10 @@
                     <i class="bi bi-search"></i>
                 </button>
 
-                 {{-- Drawer Button (Custom Fields) --}}
-                 <button class="btn btn-sm btn-outline-primary" title="Custom Fields" onclick="openEmployeeDrawer({{ json_encode($employee) }})">
-                    <i class="bi bi-layout-text-sidebar-reverse"></i>
+                 {{-- Inline Drawer Toggle Button --}}
+                 <button class="btn btn-sm btn-outline-primary" title="Custom Fields"
+                    onclick="toggleInlineDrawer({{ $employee->id }}, {{ json_encode($employee) }})">
+                    <i class="bi bi-layout-text-window-reverse"></i> {{ __('Fields') }}
                 </button>
 
                 @if(!$isCompleted)
@@ -65,7 +66,6 @@
                     <button class="btn btn-sm btn-outline-success" title="Save to Database" onclick="finalizeEmployee({{ $employee->id }})">
                         <i class="bi bi-check-lg"></i> <span class="d-none d-md-inline">{{ __('Save to DB') }}</span>
                     </button>
-                    {{-- Add other actions like Edit/Delete here if needed --}}
                 @else
                     {{-- Restore Action --}}
                     <button class="btn btn-sm btn-outline-warning" title="Restore / Undo" onclick="restoreEmployeeState({{ $employee->id }})">
@@ -95,6 +95,19 @@
                         @if($isStepCompleted) <i class="bi bi-check"></i> @endif
                     </button>
                 @endforeach
+            </div>
+        </div>
+
+        {{-- Inline Drawer Container --}}
+        <div class="collapse mt-3" id="drawer-employee-{{ $employee->id }}">
+            <div class="card card-body bg-light border-0">
+                <div id="drawer-content-{{ $employee->id }}" class="position-relative" style="min-height: 100px;">
+                    {{-- Content injected via JS --}}
+                    <div class="d-flex justify-content-center align-items-center h-100 py-3">
+                         <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                         <span class="ms-2 small text-muted">Loading fields...</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
