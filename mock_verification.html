@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Mock</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js"></script>
+    <meta name="csrf-token" content="mock-token">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Registration Resolution Mock</h1>
+
+        <!-- MOCK: Add Custom Field Modal Trigger -->
+        <button class="btn btn-primary" onclick="openAddCustomFieldModal(1)">Test Add Custom Field Modal</button>
+
+        <!-- MOCK: Drawer Content -->
+        <div id="drawer-content-1">
+            <div class="custom-fields-container"></div>
+            <!-- This button is usually injected by the drawer template -->
+             <div class="d-grid mt-3">
+                <button class="btn btn-outline-primary btn-sm" onclick="openAddCustomFieldModal(1)">
+                    <i class="bi bi-plus-lg"></i> Add New Field (Drawer)
+                </button>
+            </div>
+        </div>
+
+        <!-- MOCK: Finance Tab -->
+        <div class="mt-5 border p-3">
+            <h3>Finance Mock</h3>
+             <div x-data="financialManager()" class="row">
+                <!-- Left Column: Summary & Pricing Logic -->
+                <div class="col-md-4">
+
+                    <!-- Pricing Logic Card (NEW) -->
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header bg-white fw-bold"><i class="bi bi-calculator me-2"></i>Pricing Settings</div>
+                        <div class="card-body">
+                            <!-- Mode Selection -->
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Pricing Mode</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="pricing_mode" id="mode_fixed" value="fixed" x-model="pricingMode" @change="updateTotal()">
+                                    <label class="btn btn-outline-primary btn-sm" for="mode_fixed">Fixed Total</label>
+
+                                    <input type="radio" class="btn-check" name="pricing_mode" id="mode_per_head" value="per_head" x-model="pricingMode" @change="updateTotal()">
+                                    <label class="btn btn-outline-primary btn-sm" for="mode_per_head">Per Head</label>
+                                </div>
+                            </div>
+
+                            <!-- Inputs based on Mode -->
+                            <div x-show="pricingMode === 'per_head'" class="mb-3">
+                                <label class="form-label">Unit Price (Per Head)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">฿</span>
+                                    <input type="number" class="form-control" x-model="unitPrice" @input="updateTotal()">
+                                </div>
+                                <div class="form-text small">
+                                    Multiplied by <strong x-text="employeeCount"></strong> employees = <span x-text="formatCurrency(calculatedTotal)"></span>
+                                </div>
+                            </div>
+
+                            <div x-show="pricingMode === 'fixed'" class="mb-3">
+                                <label class="form-label">Total Project Value <span x-show="!vatIncluded">(Excl. VAT)</span><span x-show="vatIncluded">(Incl. VAT)</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">฿</span>
+                                    <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
+                                </div>
+                            </div>
+
+                            <!-- Discount Field (NEW) -->
+                            <div class="mb-3">
+                                <label class="form-label">Discount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">฿</span>
+                                    <input type="number" class="form-control" x-model="discount" @input="updateTotal()">
+                                </div>
+                            </div>
+
+                            <!-- VAT Settings -->
+                            <div class="mb-3 border-top pt-3">
+                                <label class="form-label small text-muted">VAT Settings</label>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="vatIncluded" x-model="vatIncluded" @change="updateTotal()">
+                                    <label class="form-check-label" for="vatIncluded">Price Includes VAT</label>
+                                </div>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">VAT Rate</span>
+                                    <input type="number" step="0.1" class="form-control" x-model="vatRate" @input="updateTotal()">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header bg-white fw-bold">Financial Summary</div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Base Total:</span>
+                                <span x-text="formatCurrency(baseTotal)"></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 text-success" x-show="discount > 0">
+                                <span>Discount:</span>
+                                <span>- <span x-text="formatCurrency(discount)"></span></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Subtotal (Net Base):</span>
+                                <span x-text="formatCurrency(subtotalAmount)"></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">VAT (<span x-text="vatRate"></span>%):</span>
+                                <span x-text="formatCurrency(vatAmount)"></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 border-top pt-2">
+                                <span class="fw-bold">Grand Total:</span>
+                                <span class="fw-bold text-primary" x-text="formatCurrency(totalAmount)"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INCLUDE MODAL HTML -->
+    <div class="modal fade" id="addCustomFieldModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Custom Field</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCustomFieldForm" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Field Name (Label)</label>
+                            <input type="text" name="field_name" class="form-control" required placeholder="e.g. Additional Note, Medical Cert">
+                        </div>
+
+                        <div class="mb-3">
+                             <label class="form-label">Field Type</label>
+                             <select name="field_type" class="form-select" onchange="toggleModalInputs(this)">
+                                 <option value="text">Text Box</option>
+                                 <option value="date">Date</option>
+                                 <option value="file">File Attachment</option>
+                             </select>
+                        </div>
+
+                        {{-- Dynamic Inputs --}}
+                        <div class="mb-3 input-group-text-type">
+                            <label class="form-label">Value</label>
+                            <textarea name="field_value" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3 input-group-date-type d-none">
+                            <label class="form-label">Select Date</label>
+                            <input type="date" name="field_date_value" class="form-control">
+                        </div>
+
+                        <div class="mb-3 input-group-file-type d-none">
+                            <label class="form-label">Select File</label>
+                            <input type="file" name="field_file" class="form-control">
+                            <div class="mt-2">
+                                <label class="form-label small">Description (Optional)</label>
+                                <input type="text" name="field_value_desc" class="form-control form-control-sm" placeholder="File description...">
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-add-field">Add Field</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal Scripts
+        function openAddCustomFieldModal(employeeId) {
+            const modalEl = document.getElementById('addCustomFieldModal');
+            const form = document.getElementById('addCustomFieldForm');
+
+            // Set Form Action (Mock)
+            form.action = `/production/registration/custom-fields/${employeeId}`;
+            form.dataset.employeeId = employeeId;
+
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        function toggleModalInputs(select) {
+            const form = select.closest('form');
+            form.querySelector('.input-group-text-type').classList.add('d-none');
+            form.querySelector('.input-group-date-type').classList.add('d-none');
+            form.querySelector('.input-group-file-type').classList.add('d-none');
+
+            if(select.value === 'text') form.querySelector('.input-group-text-type').classList.remove('d-none');
+            if(select.value === 'date') form.querySelector('.input-group-date-type').classList.remove('d-none');
+            if(select.value === 'file') form.querySelector('.input-group-file-type').classList.remove('d-none');
+        }
+
+        // Financial Manager Scripts
+        function financialManager() {
+            return {
+                pricingMode: 'fixed',
+                vatIncluded: false,
+                vatRate: 7,
+                fixedTotal: 10000,
+                unitPrice: 500,
+                employeeCount: 10,
+                discount: 0,
+
+                totalAmount: 0,
+                baseTotal: 0,
+                subtotalAmount: 0,
+                vatAmount: 0,
+
+                init() {
+                    this.updateTotal();
+                },
+
+                updateTotal() {
+                    let base = 0;
+                    if (this.pricingMode === 'per_head') {
+                        base = this.unitPrice * this.employeeCount;
+                    } else {
+                        base = parseFloat(this.fixedTotal) || 0;
+                    }
+
+                    this.baseTotal = base;
+                    let netBase = Math.max(0, base - (parseFloat(this.discount) || 0));
+
+                    if (this.vatIncluded) {
+                        this.totalAmount = netBase;
+                        this.subtotalAmount = netBase / (1 + (this.vatRate / 100));
+                        this.vatAmount = this.totalAmount - this.subtotalAmount;
+                    } else {
+                        this.subtotalAmount = netBase;
+                        this.vatAmount = netBase * (this.vatRate / 100);
+                        this.totalAmount = this.subtotalAmount + this.vatAmount;
+                    }
+                },
+                formatCurrency(val) {
+                    return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(val);
+                },
+                saveFinancialData() { alert('Saved (Mock)'); },
+                get scheduledAmount() { return 0; },
+                get remainingSchedule() { return this.totalAmount; },
+                get isFullyScheduled() { return false; },
+                get totalPaid() { return 0; },
+                get outstandingBalance() { return this.totalAmount; },
+                get refundAmount() { return 0; }
+            }
+        }
+    </script>
+</body>
+</html>

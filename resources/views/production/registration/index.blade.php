@@ -138,6 +138,9 @@
 {{-- Include Drawer --}}
 @include('production.registration.partials.offcanvas_drawer')
 
+{{-- Include Add Custom Field Modal --}}
+@include('production.registration.partials.modals.add_custom_field')
+
 {{-- Manage Steps Modal --}}
 <div class="modal fade" id="manageStepsModal" tabindex="-1">
     <div class="modal-dialog">
@@ -180,8 +183,6 @@
         </div>
     </div>
 </div>
-
-{{-- REMOVED: Import Modal (Replaced by direct page link) --}}
 
 @endsection
 
@@ -296,7 +297,7 @@
             }
         }
 
-        fetch(`/production/registration/${employeeId}/progress`, {
+        fetch(`/production/registration/progress/${employeeId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ step_id: stepId, completed: completed })
