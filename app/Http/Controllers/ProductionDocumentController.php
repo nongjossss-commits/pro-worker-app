@@ -22,6 +22,18 @@ class ProductionDocumentController extends Controller
         $profileId = $request->query('profile_id');
         $companyProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::first();
 
+        // Fallback dummy profile if none exists (Prevents view crash)
+        if (!$companyProfile) {
+            $companyProfile = new CompanyProfile([
+                'name' => 'Company Name (Default)',
+                'address' => 'Please configure a company profile in settings.',
+                'tax_id' => '0000000000000',
+                'phone' => '-',
+                'email' => '-',
+                // Add other fields as necessary to prevent null access in view
+            ]);
+        }
+
         // --- Filter Transactions Logic ---
         $transactionsQuery = FinancialTransaction::where('production_order_id', $production->id);
 

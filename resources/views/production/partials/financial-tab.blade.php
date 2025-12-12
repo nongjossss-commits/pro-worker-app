@@ -145,7 +145,7 @@
                 <div class="d-grid">
                      <!-- Allow clicking but show alert if no refund due -->
                      <button @click="generateCreditNote()" class="btn btn-outline-danger btn-sm text-start">
-                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Generate Credit Note (ใบคืนยอด)
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Generate Debt Reduction Note (ใบลดหนี้)
                     </button>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 @extends('layouts.document')
 
 @section('title', 'Credit Note - ' . $production->project_name)
-@section('document_title', 'CREDIT NOTE (ใบคืนยอด)')
+@section('document_title', 'DEBT REDUCTION NOTE (ใบลดหนี้)')
 
 @section('content')
 <div class="mb-4 p-4 bg-gray-50 border rounded text-sm">

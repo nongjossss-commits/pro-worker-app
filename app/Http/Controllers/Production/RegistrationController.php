@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RegistrationController extends Controller
 {
@@ -416,54 +417,70 @@ class RegistrationController extends Controller
      */
     public function updateProgress(Request $request, Employee $employee)
     {
-        $validated = $request->validate([
-            'step_id' => 'required|exists:registration_steps,id',
-            'completed' => 'required|boolean',
-        ]);
-
-        if ($validated['completed']) {
-            $employee->registrationSteps()->syncWithoutDetaching([
-                $validated['step_id'] => ['completed_at' => now()]
+        try {
+            $validated = $request->validate([
+                'step_id' => 'required|exists:registration_steps,id',
+                'completed' => 'required|boolean',
             ]);
-        } else {
-            $employee->registrationSteps()->detach($validated['step_id']);
-        }
 
-        // --- Recalculate Stats for Response (Highest Step Logic) ---
-        // Global Stats
-        $allEmployees = Employee::whereIn('status', ['registration_pending', 'registration_completed'])
-                                ->with('registrationSteps')
-                                ->get();
-        $steps = RegistrationStep::orderBy('order')->get();
-        $globalStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            DB::beginTransaction();
 
-        foreach ($allEmployees as $emp) {
-            $highest = $emp->registrationSteps->sortByDesc('order')->first();
-            if ($highest && isset($globalStats[$highest->id])) {
-                $globalStats[$highest->id]++;
+            if ($validated['completed']) {
+                $employee->registrationSteps()->syncWithoutDetaching([
+                    $validated['step_id'] => ['completed_at' => now()]
+                ]);
+            } else {
+                $employee->registrationSteps()->detach($validated['step_id']);
             }
-        }
 
-        // Employer Stats
-        $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-        $employerEmployees = Employee::where('employer_id', $employee->employer_id)
+            DB::commit();
+
+            // --- Recalculate Stats for Response (Highest Step Logic) ---
+            // Global Stats
+            // Use withoutGlobalScopes to avoid issues if the user has a restrictive scope (e.g. 'employer' role)
+            // but is allowed to see this dashboard via permission.
+            $allEmployees = Employee::withoutGlobalScopes()
                                     ->whereIn('status', ['registration_pending', 'registration_completed'])
                                     ->with('registrationSteps')
                                     ->get();
 
-        foreach ($employerEmployees as $emp) {
-             $highest = $emp->registrationSteps->sortByDesc('order')->first();
-             if ($highest && isset($employerStats[$highest->id])) {
-                 $employerStats[$highest->id]++;
-             }
-        }
+            $steps = RegistrationStep::orderBy('order')->get();
+            $globalStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
-        return response()->json([
-            'success' => true,
-            'globalStats' => $globalStats,
-            'employerStats' => $employerStats,
-            'employerId' => $employee->employer_id
-        ]);
+            foreach ($allEmployees as $emp) {
+                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                if ($highest && isset($globalStats[$highest->id])) {
+                    $globalStats[$highest->id]++;
+                }
+            }
+
+            // Employer Stats
+            $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            $employerEmployees = Employee::withoutGlobalScopes()
+                                        ->where('employer_id', $employee->employer_id)
+                                        ->whereIn('status', ['registration_pending', 'registration_completed'])
+                                        ->with('registrationSteps')
+                                        ->get();
+
+            foreach ($employerEmployees as $emp) {
+                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                 if ($highest && isset($employerStats[$highest->id])) {
+                     $employerStats[$highest->id]++;
+                 }
+            }
+
+            return response()->json([
+                'success' => true,
+                'globalStats' => $globalStats,
+                'employerStats' => $employerStats,
+                'employerId' => $employee->employer_id
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error updating progress for employee {$employee->id}: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Server error: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -491,9 +508,24 @@ class RegistrationController extends Controller
              $data['file_path'] = $path;
         } else {
              $data['field_value'] = $validated['field_value'];
+             if ($validated['field_type'] === 'date' && $request->has('field_date_value')) {
+                 $data['field_value'] = $request->field_date_value;
+             }
         }
 
-        EmployeeCustomField::create($data);
+        $field = EmployeeCustomField::create($data);
+
+        if ($request->ajax()) {
+            // Return the full list of custom fields for this employee to refresh the view
+            // OR just the new field. Let's return the updated list logic as per the JS helper.
+            $employee->load('customFields');
+            return response()->json([
+                'success' => true,
+                'message' => 'Field added successfully.',
+                'employee' => $employee, // Contains updated customFields
+                'newField' => $field
+            ]);
+        }
 
         return back()->with('success', 'Field added successfully.');
     }
