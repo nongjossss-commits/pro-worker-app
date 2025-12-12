@@ -28,12 +28,12 @@
 
         <h6 class="fw-bold border-bottom pb-2 mb-3">Custom Fields</h6>
 
-        <div class="custom-fields-list mb-4">
+        <div class="custom-fields-list mb-4" id="custom-fields-container">
             ${fieldsHtml}
         </div>
 
         <h6 class="fw-bold border-bottom pb-2 mb-3">Add New Field</h6>
-        <form action="${addUrl}" method="POST" enctype="multipart/form-data">
+        <form action="${addUrl}" method="POST" enctype="multipart/form-data" onsubmit="submitCustomField(event, this)">
             <input type="hidden" name="_token" value="${csrf}">
 
             <div class="mb-3">
@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-sm w-100">Add Field</button>
+            <button type="submit" class="btn btn-primary btn-sm w-100 btn-add-field">Add Field</button>
         </form>
     </div>
 </script>
@@ -91,7 +91,7 @@
 
     // Function to generate HTML for existing fields
     function generateFieldsHtml(fields, csrfToken) {
-        if(!fields || fields.length === 0) return '<p class="text-muted small fst-italic">No custom fields added.</p>';
+        if(!fields || fields.length === 0) return '<p class="text-muted small fst-italic no-fields-msg">No custom fields added.</p>';
 
         return fields.map(field => {
             let valueHtml = '';
@@ -119,7 +119,7 @@
             const displayId = `display-field-${field.id}`;
 
             return `
-                <div class="mb-3 border-bottom pb-2">
+                <div class="mb-3 border-bottom pb-2 field-item">
                     <div class="d-flex justify-content-between align-items-start">
                         <label class="form-label fw-bold small mb-1">${field.field_name}</label>
                         <div class="dropdown">
@@ -182,5 +182,72 @@
         // Open Offcanvas
         const bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('employeeDrawer'));
         bsOffcanvas.show();
+    }
+
+    // AJAX Submission for New Field
+    function submitCustomField(event, form) {
+        event.preventDefault();
+
+        const btn = form.querySelector('.btn-add-field');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Adding...';
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest', // Important for Laravel to detect ajax()
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => { throw new Error(data.message || 'Server error'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Reload fields
+                const container = document.getElementById('custom-fields-container');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                // If 'no fields' message exists, remove it
+                const noMsg = container.querySelector('.no-fields-msg');
+                if(noMsg) noMsg.remove();
+
+                // Generate HTML for the NEW field only?
+                // Or re-render all? The controller returns 'employee' with all fields loaded.
+                // Let's re-render all to be safe and consistent with sorting.
+                const newHtml = generateFieldsHtml(data.employee.custom_fields, csrfToken);
+                container.innerHTML = newHtml;
+
+                // Reset Form
+                form.reset();
+                // Reset inputs visibility
+                toggleDrawerInputs(form.querySelector('select[name="field_type"]'));
+
+                if(typeof showToast === 'function') {
+                    showToast('Field added successfully', 'success');
+                }
+            } else {
+                throw new Error(data.message || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            if(typeof showToast === 'function') {
+                showToast(error.message, 'danger');
+            } else {
+                alert(error.message);
+            }
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        });
     }
 </script>

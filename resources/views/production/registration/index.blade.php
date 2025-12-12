@@ -301,7 +301,12 @@
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ step_id: stepId, completed: completed })
         })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                 return res.json().then(data => { throw new Error(data.message || 'Server error'); });
+            }
+            return res.json();
+        })
         .then(data => {
             if(data.success) {
                 // 1. Update Button State (Confirm & Update OnClick)
@@ -337,16 +342,17 @@
                     }
                 }
             } else {
-                // Revert on failure
-                if (btn) {
-                    btn.className = originalClass;
-                    btn.innerHTML = originalHtml;
-                    btn.setAttribute('onclick', originalOnClick);
-                }
+                throw new Error(data.message || 'Unknown error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            if(typeof showToast === 'function') {
+                showToast('Failed to update progress: ' + error.message, 'danger');
+            } else {
+                alert('Failed: ' + error.message);
+            }
+
             // Revert on failure
             if (btn) {
                 btn.className = originalClass;
