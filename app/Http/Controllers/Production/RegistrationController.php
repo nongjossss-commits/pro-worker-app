@@ -29,7 +29,7 @@ class RegistrationController extends Controller
     public function index(Request $request)
     {
         // 1. Build Query for Employees
-        $query = Employee::whereIn('status', ['registration_pending', 'registration_completed'])
+        $query = Employee::whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
                          ->with('registrationSteps');
 
         // Apply Search Filter
@@ -47,11 +47,22 @@ class RegistrationController extends Controller
         }
 
         $registrationEmployees = $query->get();
-        $totalEmployees = $registrationEmployees->count();
+        $totalEmployees = $registrationEmployees->where('status', '!=', 'registration_cancelled')->count();
         $totalEmployers = $registrationEmployees->pluck('employer_id')->unique()->count();
 
         // 2. Fetch Workflow Steps
         $steps = RegistrationStep::orderBy('order')->get();
+
+        // Determine step 1 ID for "Not Started" logic
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
+        // "Not Started" Count (Global)
+        $notStartedCount = $registrationEmployees->filter(function ($emp) use ($stepOneId) {
+             // Not started if status is NOT cancelled AND they don't have step 1 completed
+             if ($emp->status === 'registration_cancelled') return false;
+             return !$emp->registrationSteps->contains('id', $stepOneId);
+        })->count();
+
 
         // 3. Calculate "Highest Step" Stats
         // Initialize stats with 0
@@ -60,6 +71,8 @@ class RegistrationController extends Controller
         })->toArray();
 
         foreach ($registrationEmployees as $emp) {
+            if ($emp->status === 'registration_cancelled') continue;
+
             // Get the highest step 'order' this employee has completed
             // registrationSteps relationship returns the attached steps.
             $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
@@ -105,7 +118,15 @@ class RegistrationController extends Controller
                 return [$id => 0];
             })->toArray();
 
+            $employerNotStarted = 0;
+
             foreach ($employer->employees as $emp) {
+                if ($emp->status === 'registration_cancelled') continue;
+
+                if (!$emp->registrationSteps->contains('id', $stepOneId)) {
+                    $employerNotStarted++;
+                }
+
                 $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
                 if ($highestStep) {
                     if (isset($stats[$highestStep->id])) {
@@ -114,11 +135,14 @@ class RegistrationController extends Controller
                 }
             }
             $employer->stepStats = $stats;
+            $employer->notStartedCount = $employerNotStarted;
+            $employer->activeEmployeesCount = $employer->employees->where('status', '!=', 'registration_cancelled')->count();
         }
 
         return view('production.registration.index', compact(
             'totalEmployees',
             'totalEmployers',
+            'notStartedCount',
             'steps',
             'stepStats',
             'employers'
@@ -131,14 +155,51 @@ class RegistrationController extends Controller
     public function finalize(Request $request, Employee $employee)
     {
         // Change status to 'registration_completed'
-        // This makes them visible in the main Employee list (since we only filter out 'pending')
-        // AND keeps them visible here (since we include 'completed').
         $employee->update(['status' => 'registration_completed']);
 
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
         return back()->with('success', 'Employee saved to database.');
+    }
+
+    /**
+     * Cancel an employee (Grey out).
+     */
+    public function cancel(Request $request, Employee $employee)
+    {
+        $employee->update(['status' => 'registration_cancelled']);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Employee registration cancelled.');
+    }
+
+    /**
+     * Restore an employee (Back to pending).
+     */
+    public function restore(Request $request, Employee $employee)
+    {
+        $employee->update(['status' => 'registration_pending']);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Employee restored to pending.');
+    }
+
+    /**
+     * Soft delete an employee.
+     */
+    public function destroy(Request $request, Employee $employee)
+    {
+        $employee->delete(); // Soft delete
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Employee deleted.');
     }
 
     /**
@@ -162,15 +223,11 @@ class RegistrationController extends Controller
 
     /**
      * Restore state (Undo Finalize).
+     * @deprecated Use restore() instead for general restore. Kept for backward compat if needed.
      */
     public function restoreState(Request $request, Employee $employee)
     {
-        $employee->update(['status' => 'registration_pending']);
-
-        if ($request->ajax()) {
-            return response()->json(['success' => true]);
-        }
-        return back()->with('success', 'Employee restored to pending state.');
+        return $this->restore($request, $employee);
     }
 
     /**
@@ -354,12 +411,14 @@ class RegistrationController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'color' => 'nullable|string|max:50',
         ]);
 
         $maxOrder = RegistrationStep::max('order') ?? 0;
 
         RegistrationStep::create([
             'name' => $validated['name'],
+            'color' => $validated['color'] ?? 'primary',
             'order' => $maxOrder + 1,
         ]);
 
@@ -367,15 +426,19 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Update a step (rename).
+     * Update a step (rename/color).
      */
     public function updateStep(Request $request, RegistrationStep $step)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'color' => 'nullable|string|max:50',
         ]);
 
-        $step->update(['name' => $validated['name']]);
+        $step->update([
+            'name' => $validated['name'],
+            'color' => $validated['color'] ?? $step->color
+        ]);
 
         return response()->json(['success' => true]);
     }

@@ -212,6 +212,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RegistrationController::class, 'finalize'])->name('finalize');
         Route::post('/{employee}/restore-state', [App\Http\Controllers\Production\RegistrationController::class, 'restoreState'])->name('restore_state');
         Route::post('/bulk-finalize', [App\Http\Controllers\Production\RegistrationController::class, 'bulkFinalize'])->name('bulk_finalize');
+
+        // Cancel, Restore (General), Delete
+        Route::post('/{employee}/cancel', [App\Http\Controllers\Production\RegistrationController::class, 'cancel'])->name('cancel');
+        Route::post('/{employee}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restore'])->name('restore');
+        Route::delete('/{employee}/destroy', [App\Http\Controllers\Production\RegistrationController::class, 'destroy'])->name('destroy');
     });
 
     Route::resource('production', \App\Http\Controllers\ProductionController::class);

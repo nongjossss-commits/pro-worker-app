@@ -6,98 +6,186 @@
 <div class="container-fluid">
     {{-- Top Stats --}}
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card bg-warning text-white h-100">
-                <div class="card-body text-center d-flex flex-column justify-content-center">
-                    <h1 class="display-4 fw-bold">{{ $totalEmployees }}</h1>
-                    <p class="card-text fs-5">Total Employees</p>
+        {{-- Total Employees --}}
+        <div class="col-md-4">
+            <div class="card text-white h-100 shadow-sm" style="background-color: #FBBF24; border: none;"> {{-- Yellow-ish --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-3 fw-bold mb-0">{{ $totalEmployees }}</h1>
+                    <p class="fs-4 fw-light mb-0">{{ __('Total Employees') }}</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-dark text-white h-100">
-                <div class="card-body text-center d-flex flex-column justify-content-center">
-                    <h1 class="display-4 fw-bold">{{ $totalEmployers }}</h1>
-                    <p class="card-text fs-5">Total Employers</p>
+
+        {{-- Not Started --}}
+        <div class="col-md-4">
+            <div class="card text-white h-100 shadow-sm" style="background-color: #EF4444; border: none;"> {{-- Red --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-3 fw-bold mb-0">{{ $notStartedCount }}</h1>
+                    <p class="fs-4 fw-light mb-0">{{ __('Not Started') }}</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Workflow Progress (Global)</h5>
-                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                            <i class="bi bi-gear"></i> Settings
-                        </button>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap" id="global-stats-container">
-                        @foreach($steps as $step)
-                            <div class="border rounded p-2 text-center" style="min-width: 60px;">
-                                {{-- Use Step Name --}}
-                                <div class="fw-bold text-truncate" style="max-width: 80px;" title="{{ $step->name }}">{{ $step->name }}</div>
-                                <span class="badge bg-success rounded-pill global-stat-badge" data-step-id="{{ $step->id }}">{{ $stepStats[$step->id] ?? 0 }}</span>
-                            </div>
-                        @endforeach
-                    </div>
+
+        {{-- Total Employers --}}
+        <div class="col-md-4">
+            <div class="card bg-dark text-white h-100 shadow-sm" style="border: none;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-3 fw-bold mb-0">{{ $totalEmployers }}</h1>
+                    <p class="fs-4 fw-light mb-0">{{ __('Total Employers') }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Actions Bar --}}
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-        <h4 class="mb-0 text-primary fw-bold"><i class="bi bi-people-fill me-2"></i>Registration Resolution</h4>
-
-        <form action="{{ route('production.registration.index') }}" method="GET" class="d-flex flex-grow-1 mx-md-4" style="max-width: 500px;">
-            <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search employee or employer..." value="{{ request('search') }}">
-                <button class="btn btn-primary" type="submit">Search</button>
-                @if(request('search'))
-                    <a href="{{ route('production.registration.index') }}" class="btn btn-outline-secondary">Clear</a>
-                @endif
+    {{-- Global Workflow Progress --}}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Workflow Progress (Global)</h5>
+                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                    <i class="bi bi-gear-fill me-1"></i> Settings
+                </button>
             </div>
-        </form>
 
-        <div class="d-flex gap-2">
-            <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white">
-                <i class="bi bi-plus-lg"></i> Add New Employee
-            </a>
-            {{-- UPDATED: Link to dedicated import page --}}
-            <a href="{{ route('production.registration.import') }}" class="btn btn-success">
-                <i class="bi bi-file-earmark-spreadsheet"></i> Import
-            </a>
+            <div class="d-flex gap-3 flex-wrap justify-content-start" id="global-stats-container">
+                @foreach($steps as $step)
+                    @php
+                        // Check if color is hex or class
+                        $bgStyle = str_starts_with($step->color, '#') ? "background-color: {$step->color} !important;" : "";
+                        $bgClass = !str_starts_with($step->color, '#') ? "bg-{$step->color}" : "";
+                        // Ensure text contrast if background is light/dark? Assuming white text for colored badges is standard.
+                    @endphp
+                    <div class="d-flex flex-column align-items-center" style="min-width: 80px;">
+                        <span class="badge rounded-pill mb-2 px-3 py-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm"
+                              style="{{ $bgStyle }}"
+                              data-step-id="{{ $step->id }}">
+                            {{ $stepStats[$step->id] ?? 0 }}
+                        </span>
+                        <small class="fw-bold text-muted text-center text-truncate" style="max-width: 100px;" title="{{ $step->name }}">{{ $step->name }}</small>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- Actions Bar --}}
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-people-fill me-2"></i>Registration Resolution</h4>
+
+                <form action="{{ route('production.registration.index') }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="Search employee or employer..." value="{{ request('search') }}">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                        @if(request('search'))
+                            <a href="{{ route('production.registration.index') }}" class="btn btn-outline-secondary">Clear</a>
+                        @endif
+                    </div>
+                </form>
+
+                <div class="d-flex gap-2 flex-wrap justify-content-end">
+                    <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white fw-bold">
+                        <i class="bi bi-plus-lg me-1"></i> New Employee
+                    </a>
+                    <a href="{{ route('production.registration.import') }}" class="btn btn-success fw-bold">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Import
+                    </a>
+                </div>
+            </div>
+
+            {{-- Bulk Action Bar (Copied from employees.index) --}}
+            <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded"
+                 style="display: none;"
+                 id="bulkActionBar"
+                 draggable="true"
+                 ondragstart="window.startDragBulk(event)">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+                    <label class="form-check-label fw-bold" for="select-all-checkbox">
+                        {{ __('Select All') }} (<span id="selected-count">0</span>)
+                    </label>
+                </div>
+
+                <div class="vr mx-2"></div>
+
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="bulkActionDropdown" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                        {{ __('Actions') }}
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
+                        <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
+                        <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+                        {{-- Added based on requirement --}}
+                        <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
+                        <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
+                    </ul>
+                </div>
+
+                <button class="btn btn-sm btn-outline-danger ms-2" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+                <button class="btn btn-sm btn-info text-white" id="btn-view-selected">
+                    <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+                </button>
+                <div class="ms-auto text-muted small d-none d-md-block">
+                    <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
+                </div>
+            </div>
         </div>
     </div>
 
     {{-- Employers List --}}
     <div class="accordion" id="employersAccordion">
         @foreach($employers as $employer)
-            <div class="card mb-3 border shadow-sm">
-                <div class="card-header bg-white py-3" id="heading{{ $employer->id }}">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center w-100 gap-3">
-                        <button class="btn btn-link text-decoration-none text-dark fw-bold p-0 d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}" aria-expanded="true" aria-controls="collapse{{ $employer->id }}">
-                            <span class="fs-5">{{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})</span>
-                        </button>
+            <div class="card mb-4 border-0 shadow-sm overflow-hidden">
+                <div class="card-header bg-white py-4 px-4 border-bottom" id="heading{{ $employer->id }}">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 w-100">
+                        {{-- Employer Info --}}
+                        <div class="d-flex align-items-center gap-3">
+                             <button class="btn btn-link text-decoration-none text-dark p-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
+                                <h3 class="fw-bold mb-1">{{ $employer->employerNameTh }}</h3>
+                                <h5 class="text-muted mb-0 fw-light">{{ $employer->employerNameEn }}</h5>
+                            </button>
+                        </div>
+
+                        {{-- Employer Stats --}}
+                        <div class="d-flex gap-4 text-center">
+                            <div>
+                                <h4 class="fw-bold mb-0">{{ $employer->activeEmployeesCount ?? 0 }}</h4>
+                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Total Employees</small>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold mb-0 text-danger">{{ $employer->notStartedCount ?? 0 }}</h4>
+                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Not Started</small>
+                            </div>
+                        </div>
 
                         {{-- Employer Scoreboard --}}
-                        <div class="d-flex gap-1 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
+                        <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
                              @foreach($steps as $step)
-                                <div class="border rounded px-2 py-1 text-center bg-light" style="min-width: 40px;">
-                                    {{-- Use Step Name here too --}}
-                                    <small class="fw-bold d-block text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
-                                    <span class="badge bg-secondary rounded-pill employer-stat-badge" data-step-id="{{ $step->id }}">{{ $employer->stepStats[$step->id] ?? 0 }}</span>
+                                @php
+                                    $bgStyle = str_starts_with($step->color, '#') ? "background-color: {$step->color} !important;" : "";
+                                    $bgClass = !str_starts_with($step->color, '#') ? "bg-{$step->color}" : "";
+                                @endphp
+                                <div class="text-center" style="min-width: 50px;">
+                                    <span class="badge rounded-pill {{ $bgClass }} employer-stat-badge mb-1"
+                                          style="{{ $bgStyle }}"
+                                          data-step-id="{{ $step->id }}">
+                                        {{ $employer->stepStats[$step->id] ?? 0 }}
+                                    </span>
+                                    <small class="d-block text-muted text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
                                 </div>
                              @endforeach
                         </div>
 
+                        {{-- Employer Actions --}}
                         <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
+                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
                                 <i class="bi bi-currency-dollar"></i> Finance
                             </button>
-                            <span class="badge bg-secondary">{{ $employer->employees->count() }} Employees</span>
-                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
+                            <button class="btn btn-light rounded-circle" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
                                 <i class="bi bi-chevron-down"></i>
                             </button>
                         </div>
@@ -105,9 +193,10 @@
                 </div>
 
                 <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ $employer->id }}">
-                    <div class="card-body bg-light">
+                    <div class="card-body bg-light p-4">
                          <div class="employee-list">
                             @foreach($employer->employees as $employee)
+                                {{-- Filter out cancelled if needed, or show them differently. The controller returns them. --}}
                                 @include('production.registration._employee_card', ['employee' => $employee, 'steps' => $steps])
                             @endforeach
                          </div>
@@ -124,8 +213,6 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body bg-light">
-                            {{-- Reuse the existing Financial Tab component --}}
-                            {{-- We pass the 'Shadow' Production Order we created in the Controller --}}
                             @include('production.partials.financial-tab', ['production' => $employer->financeOrder])
                         </div>
                     </div>
@@ -141,36 +228,102 @@
 {{-- Include Add Custom Field Modal --}}
 @include('production.registration.partials.modals.add_custom_field')
 
-{{-- Manage Steps Modal --}}
-<div class="modal fade" id="manageStepsModal" tabindex="-1">
-    <div class="modal-dialog">
+{{-- Include Advanced Export & Target Employer Modals (reused from Employees) --}}
+@include('employees.modals.advanced_export')
+@include('employees.modals.select_target_employer_modal')
+
+{{-- View Selected Items Modal --}}
+<div class="modal fade" id="viewSelectedModal" tabindex="-1" aria-labelledby="viewSelectedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Manage Workflow Steps</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="viewSelectedModalLabel">{{ __('Selected Employees') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form id="addStepForm" class="mb-4">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="newStepName" placeholder="Enter step name (e.g., Medical Checkup)" required>
-                        <button class="btn btn-primary" type="submit">Add Step</button>
+            <div class="modal-body p-0">
+                <div id="selected-list-container" class="list-group list-group-flush">
+                    <!-- Items will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Manage Steps Modal --}}
+<div class="modal fade" id="manageStepsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>Manage Workflow Steps</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                {{-- Add New Step --}}
+                <form id="addStepForm" class="mb-4 p-3 bg-light rounded border">
+                    <label class="form-label fw-bold">Add New Step</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="text" class="form-control" id="newStepName" placeholder="Step Name (e.g., Medical Checkup)" required>
+                        {{-- Color Picker (Simple Select for now, implemented with JS badges) --}}
+                         <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="newStepColorBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="badge rounded-circle p-2 bg-primary" id="newStepColorPreview" style="width: 20px; height: 20px;"></span>
+                            </button>
+                            <input type="hidden" id="newStepColor" value="primary">
+                            <ul class="dropdown-menu p-2" style="min-width: 200px;">
+                                <div class="d-flex flex-wrap gap-2" id="color-palette-new">
+                                    {{-- JS will populate this --}}
+                                </div>
+                            </ul>
+                        </div>
+                        <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> Add</button>
                     </div>
                 </form>
 
-                <ul class="list-group" id="stepsList">
+                <h6 class="fw-bold mb-3 text-secondary">Existing Steps</h6>
+                <ul class="list-group list-group-flush" id="stepsList">
                     @foreach($steps as $step)
-                        <li class="list-group-item d-flex justify-content-between align-items-center" id="step-item-{{ $step->id }}">
-                            <div class="d-flex align-items-center gap-2">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3" id="step-item-{{ $step->id }}">
+                            <div class="d-flex align-items-center gap-3 flex-grow-1">
                                 <span class="badge bg-secondary rounded-pill">{{ $step->order }}</span>
-                                <span class="step-name">{{ $step->name }}</span>
-                                <input type="text" class="form-control form-control-sm d-none step-edit-input" value="{{ $step->name }}">
+
+                                {{-- Display Mode --}}
+                                <div class="d-flex align-items-center gap-2 step-display">
+                                    @php
+                                        $bgStyle = str_starts_with($step->color, '#') ? "background-color: {$step->color} !important;" : "";
+                                        $bgClass = !str_starts_with($step->color, '#') ? "bg-{$step->color}" : "";
+                                    @endphp
+                                    <span class="badge rounded-pill {{ $bgClass }}" style="{{ $bgStyle }}">&nbsp;</span>
+                                    <span class="fw-bold step-name-text">{{ $step->name }}</span>
+                                </div>
+
+                                {{-- Edit Mode --}}
+                                <div class="step-edit d-none flex-grow-1 d-flex gap-2 align-items-center">
+                                    <input type="text" class="form-control form-control-sm step-edit-input" value="{{ $step->name }}">
+
+                                    {{-- Edit Color --}}
+                                     <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <span class="badge rounded-circle p-1" style="{{ $bgStyle }}" id="editStepColorPreview-{{ $step->id }}"> </span>
+                                        </button>
+                                        <input type="hidden" id="editStepColor-{{ $step->id }}" value="{{ $step->color }}">
+                                        <ul class="dropdown-menu p-2">
+                                            <div class="d-flex flex-wrap gap-2 color-palette-edit" data-target-id="{{ $step->id }}">
+                                                {{-- JS populates --}}
+                                            </div>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
+
                             <div class="btn-group">
                                 <button class="btn btn-sm btn-outline-primary btn-edit-step" onclick="toggleEditStep({{ $step->id }})">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-success d-none btn-save-step" onclick="saveStep({{ $step->id }})">
-                                    <i class="bi bi-check"></i>
+                                <button class="btn btn-sm btn-success d-none btn-save-step" onclick="saveStep({{ $step->id }})">
+                                    <i class="bi bi-check-lg"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})">
                                     <i class="bi bi-trash"></i>
@@ -190,15 +343,77 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+    // --- Color Palette ---
+    // 12 Preset Colors (Tailwind/Bootstrap inspired Hex)
+    const presetColors = [
+        '#3B82F6', // Blue (Primary)
+        '#EF4444', // Red (Danger)
+        '#10B981', // Green (Success)
+        '#F59E0B', // Amber (Warning)
+        '#6366F1', // Indigo
+        '#8B5CF6', // Violet
+        '#EC4899', // Pink
+        '#14B8A6', // Teal
+        '#0EA5E9', // Sky
+        '#84CC16', // Lime
+        '#64748B', // Slate
+        '#A855F7', // Purple
+    ];
+
+    function renderColorPalette(container, inputId, previewId) {
+        container.innerHTML = '';
+        presetColors.forEach(color => {
+            const swatch = document.createElement('div');
+            swatch.style.width = '24px';
+            swatch.style.height = '24px';
+            swatch.style.backgroundColor = color;
+            swatch.style.borderRadius = '50%';
+            swatch.style.cursor = 'pointer';
+            swatch.style.border = '2px solid transparent';
+
+            swatch.addEventListener('click', () => {
+                document.getElementById(inputId).value = color;
+                const preview = document.getElementById(previewId);
+                preview.className = 'badge rounded-circle p-2'; // Reset classes
+                preview.style.backgroundColor = color;
+                // Highlight selection
+                Array.from(container.children).forEach(c => c.style.borderColor = 'transparent');
+                swatch.style.borderColor = '#000';
+            });
+
+            container.appendChild(swatch);
+        });
+    }
+
+    // Init Palette for New Step
+    document.addEventListener('DOMContentLoaded', () => {
+        renderColorPalette(
+            document.getElementById('color-palette-new'),
+            'newStepColor',
+            'newStepColorPreview'
+        );
+
+        // Init Palettes for Edit Steps
+        document.querySelectorAll('.color-palette-edit').forEach(container => {
+            const id = container.dataset.targetId;
+            renderColorPalette(
+                container,
+                `editStepColor-${id}`,
+                `editStepColorPreview-${id}`
+            );
+        });
+    });
+
     // --- Manage Steps ---
     document.getElementById('addStepForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const name = document.getElementById('newStepName').value;
+        const color = document.getElementById('newStepColor').value;
 
         fetch('{{ route("production.registration.steps.store") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ name: name, color: color })
         })
         .then(res => res.json())
         .then(data => {
@@ -207,21 +422,35 @@
     });
 
     function deleteStep(id) {
-        if(!confirm('Delete this step?')) return;
-        fetch(`/production/registration/steps/${id}`, {
-            method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) location.reload();
+        // Use SweetAlert if available, else standard confirm
+        Swal.fire({
+            title: 'Delete Step?',
+            text: "This will remove this step from all employees.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/production/registration/steps/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire('Deleted!', 'Step has been deleted.', 'success')
+                        .then(() => location.reload());
+                    }
+                });
+            }
         });
     }
 
     function toggleEditStep(id) {
         const item = document.getElementById(`step-item-${id}`);
-        item.querySelector('.step-name').classList.toggle('d-none');
-        item.querySelector('.step-edit-input').classList.toggle('d-none');
+        item.querySelector('.step-display').classList.toggle('d-none');
+        item.querySelector('.step-edit').classList.toggle('d-none');
         item.querySelector('.btn-edit-step').classList.toggle('d-none');
         item.querySelector('.btn-save-step').classList.toggle('d-none');
     }
@@ -229,11 +458,12 @@
     function saveStep(id) {
         const item = document.getElementById(`step-item-${id}`);
         const newName = item.querySelector('.step-edit-input').value;
+        const newColor = document.getElementById(`editStepColor-${id}`).value;
 
         fetch(`/production/registration/steps/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ name: newName })
+            body: JSON.stringify({ name: newName, color: newColor })
         })
         .then(res => res.json())
         .then(data => {
@@ -243,26 +473,96 @@
 
     // --- Employee Actions ---
     function finalizeEmployee(id) {
-        if(!confirm('Save this employee to the main database?')) return;
-        fetch(`/production/registration/${id}/finalize`, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) location.reload();
+        // No confirmation needed? User said "beautiful popup".
+        Swal.fire({
+            title: 'Save to Database?',
+            text: "The employee will be marked as completed.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Save'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/registration/${id}/finalize`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) location.reload();
+                });
+             }
         });
     }
 
     function restoreEmployeeState(id) {
-         if(!confirm('Undo save status?')) return;
-        fetch(`/production/registration/${id}/restore-state`, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) location.reload();
+        Swal.fire({
+            title: 'Restore to Pending?',
+            text: "This will move the employee back to the active list.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Restore'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/registration/${id}/restore`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) location.reload();
+                });
+             }
+        });
+    }
+
+    function cancelEmployee(id) {
+        Swal.fire({
+            title: 'Cancel Registration?',
+            text: "The employee card will be grayed out.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Cancel'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/registration/${id}/cancel`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) location.reload();
+                });
+             }
+        });
+    }
+
+    function deleteEmployee(id) {
+        Swal.fire({
+            title: 'Delete Employee?',
+            text: "This will move the employee to the trash.",
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Yes, Delete'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/registration/${id}/destroy`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                })
+                .then(res => {
+                     if(!res.ok) throw new Error(res.statusText);
+                     return res.json();
+                })
+                .then(data => {
+                    if(data.success) location.reload();
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Error', 'Could not delete employee. Check console.', 'error');
+                });
+             }
         });
     }
 
@@ -282,16 +582,30 @@
 
         if (btn) {
             if (completed) {
-                // Determine it is becoming complete
+                // Becoming Complete
                 btn.classList.remove('btn-outline-secondary');
-                btn.classList.add('btn-success');
+                const color = btn.dataset.color || 'success';
+
+                btn.classList.add(`btn-${color}`); // If class based
+                // If hex based, we need to set background-color.
+                if (btn.dataset.hexColor) {
+                    btn.style.backgroundColor = btn.dataset.hexColor;
+                    btn.style.borderColor = btn.dataset.hexColor;
+                    btn.style.color = '#fff';
+                } else {
+                    btn.classList.add('btn-success'); // Fallback
+                }
+
                 if(!btn.querySelector('i.bi-check')) {
                     btn.innerHTML = btn.innerText + ' <i class="bi bi-check"></i>';
                 }
             } else {
-                // Becoming incomplete
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-secondary');
+                // Becoming Incomplete
+                btn.style.backgroundColor = '';
+                btn.style.borderColor = '';
+                btn.style.color = '';
+                btn.className = 'btn btn-sm btn-outline-secondary'; // Reset
+
                 const icon = btn.querySelector('i.bi-check');
                 if(icon) icon.remove();
             }
@@ -359,8 +673,200 @@
                 btn.className = originalClass;
                 btn.innerHTML = originalHtml;
                 btn.setAttribute('onclick', originalOnClick);
+                btn.style = ''; // Clear inline styles
             }
         });
     }
+
+    // --- Bulk Action Handlers (Advanced Features) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const viewSelectedBtn = document.getElementById('btn-view-selected');
+        const container = document.getElementById('selected-list-container');
+        const modalEl = document.getElementById('viewSelectedModal');
+        const modal = new bootstrap.Modal(modalEl);
+
+        if (viewSelectedBtn) {
+            viewSelectedBtn.addEventListener('click', function() {
+                const data = window.getGlobalSelectedData();
+                if (data.length === 0) {
+                    showToast('{{ __('No employees selected') }}', 'danger');
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(item => {
+                    // Populate modal list (Copied logic from employees.index)
+                    const li = document.createElement('div');
+                    li.className = 'list-group-item d-flex align-items-center justify-content-between';
+                    li.id = `selected-item-${item.id}`;
+
+                    li.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <img src="${item.photo}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                            <div>
+                                <div class="fw-bold">${item.name_en || 'N/A'}</div>
+                                <div class="text-muted small">${item.name_th || 'N/A'}</div>
+                                <div class="text-muted small"><i class="bi bi-building me-1"></i>${item.employer_name || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-selected" data-id="${item.id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    `;
+                    container.appendChild(li);
+                });
+
+                // Re-attach remove listeners inside modal
+                container.querySelectorAll('.btn-remove-selected').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        window.removeItemsByIds ? window.removeItemsByIds([id]) : console.error('removeItemsByIds not found');
+                        // Update UI inside modal manually or let global listener handle page,
+                        // but modal needs manual removal from list
+                         const itemEl = document.getElementById(`selected-item-${id}`);
+                        if (itemEl) itemEl.remove();
+                        if (container.children.length === 0) modal.hide();
+                    });
+                });
+
+                modal.show();
+            });
+        }
+
+        // Bulk Advanced Edit
+        const bulkEditBtn = document.getElementById('bulk-advanced-edit-btn');
+        if (bulkEditBtn) {
+            bulkEditBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route('employees.bulk_edit.select_fields') }}';
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                const redirectInput = document.createElement('input');
+                redirectInput.type = 'hidden';
+                redirectInput.name = 'redirect_to';
+                redirectInput.value = window.location.href;
+                form.appendChild(redirectInput);
+
+                selected.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'employee_ids[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        // Bulk Advanced Export
+        const bulkExportBtn = document.getElementById('bulk-advanced-export-btn');
+        if (bulkExportBtn) {
+            bulkExportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                const modalEl = document.getElementById('advancedExportModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+        }
+
+        // Bulk Download Center
+        const bulkDownloadBtn = document.getElementById('bulk-download-btn');
+        if (bulkDownloadBtn) {
+            bulkDownloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                if (window.openBulkDownloadModal) {
+                    window.openBulkDownloadModal(selected);
+                } else {
+                    console.error('Download modal function not found.');
+                }
+            });
+        }
+
+        // Bulk Send Data (To Ticket)
+        const bulkSendDataBtn = document.getElementById('bulk-send-data-btn');
+        if (bulkSendDataBtn) {
+            bulkSendDataBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selectedData = window.getGlobalSelectedData();
+                const selectedIds = selectedData.map(item => item.id);
+
+                if (selectedIds.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                // Check employers
+                let employerIds = new Set();
+                selectedData.forEach(item => {
+                    if (item.employer_id) employerIds.add(item.employer_id);
+                });
+
+                if (employerIds.size > 1) {
+                     Swal.fire({
+                        icon: 'warning',
+                        title: '{{ __('Multiple Employers Selected') }}',
+                        text: '{{ __('You selected employees from different employers. Please select employees from the same employer for one transaction.') }}'
+                    });
+                    return;
+                }
+
+                window.pendingTicketEmployeeIds = selectedIds;
+                const modalEl = document.getElementById('selectTargetEmployerModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+        }
+
+        // Special handler for bulk drag (Required for "Drag to Chat")
+        window.startDragBulk = function(e) {
+            const ids = window.getGlobalSelectedIds();
+            const count = ids.length;
+
+            if (count === 0) {
+                e.preventDefault();
+                return;
+            }
+
+            const payload = {
+                type: 'employees_bulk',
+                title: count + ' Employees',
+                count: count,
+                ids: ids,
+                url: window.location.href
+            };
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('application/json', JSON.stringify(payload));
+        }
+    });
 </script>
 @endpush
