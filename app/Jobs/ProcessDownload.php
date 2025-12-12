@@ -39,6 +39,12 @@ class ProcessDownload implements ShouldQueue
         'other_doc_2' => 'employee_doc_10',
         'other_doc_3' => 'employee_doc_11',
         'other_doc_4' => 'employee_doc_12',
+        'other_doc_5' => 'employee_doc_13',
+        'other_doc_6' => 'employee_doc_14',
+        'other_doc_7' => 'employee_doc_15',
+        'other_doc_8' => 'employee_doc_16',
+        'other_doc_9' => 'employee_doc_17',
+        'other_doc_10' => 'employee_doc_18',
     ];
 
     public function __construct($taskId, $employeeIds, $selectedFiles)

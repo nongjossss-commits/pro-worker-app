@@ -210,6 +210,12 @@
                 '10' => ['field' => 'employee_doc_10', 'label' => '10. เอกสารอื่นๆ 2', 'desc_field' => 'other_doc_2_desc'],
                 '11' => ['field' => 'employee_doc_11', 'label' => '11. เอกสารอื่นๆ 3', 'desc_field' => 'other_doc_3_desc'],
                 '12' => ['field' => 'employee_doc_12', 'label' => '12. เอกสารอื่นๆ 4', 'desc_field' => 'other_doc_4_desc'],
+                '13' => ['field' => 'employee_doc_13', 'label' => '13. เอกสารอื่นๆ 5', 'desc_field' => 'other_doc_5_desc'],
+                '14' => ['field' => 'employee_doc_14', 'label' => '14. เอกสารอื่นๆ 6', 'desc_field' => 'other_doc_6_desc'],
+                '15' => ['field' => 'employee_doc_15', 'label' => '15. เอกสารอื่นๆ 7', 'desc_field' => 'other_doc_7_desc'],
+                '16' => ['field' => 'employee_doc_16', 'label' => '16. เอกสารอื่นๆ 8', 'desc_field' => 'other_doc_8_desc'],
+                '17' => ['field' => 'employee_doc_17', 'label' => '17. เอกสารอื่นๆ 9', 'desc_field' => 'other_doc_9_desc'],
+                '18' => ['field' => 'employee_doc_18', 'label' => '18. เอกสารอื่นๆ 10', 'desc_field' => 'other_doc_10_desc'],
             ];
         @endphp
 
