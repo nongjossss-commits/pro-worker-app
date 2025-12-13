@@ -430,9 +430,8 @@
         });
     }
 
-    // --- Employee Actions ---
+    // --- Employee Actions (Updated for Immediate DOM Feedback) ---
     function finalizeEmployee(id) {
-        // No confirmation needed? User said "beautiful popup".
         Swal.fire({
             title: 'Save to Database?',
             text: "The employee will be marked as completed.",
@@ -447,7 +446,34 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    if(data.success) location.reload();
+                    if(data.success) {
+                        // DOM Update: Completed State
+                        const card = document.getElementById(`employee-card-${id}`);
+                        if(card) {
+                            // 1. Change Card Style
+                            card.className = 'card bg-success bg-opacity-10 border-0 text-muted mb-3';
+
+                            // 2. Hide/Show Buttons
+                            toggleElement(`btn-save-${id}`, false);
+                            toggleElement(`btn-cancel-${id}`, false);
+                            toggleElement(`btn-restore-${id}`, false);
+                            toggleElement(`btn-undo-${id}`, true);
+
+                            // 3. Hide Checkbox & Steps Overlay
+                            toggleElement(`checkbox-container-${id}`, false);
+                            const infoContainer = document.getElementById(`info-container-${id}`);
+                            if(infoContainer) infoContainer.classList.add('opacity-75', 'pointer-events-none');
+
+                            const stepsContainer = document.getElementById(`steps-container-${id}`);
+                            if(stepsContainer) stepsContainer.classList.add('opacity-75', 'pointer-events-none');
+
+                            // 4. Update Badges
+                            toggleElement(`badge-completed-${id}`, true);
+                            toggleElement(`badge-cancelled-${id}`, false);
+
+                            Swal.fire('Saved!', 'Employee marked as completed.', 'success');
+                        }
+                    }
                 });
              }
         });
@@ -468,7 +494,39 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    if(data.success) location.reload();
+                    if(data.success) {
+                        // DOM Update: Active State
+                        const card = document.getElementById(`employee-card-${id}`);
+                        if(card) {
+                            // 1. Change Card Style (Reset)
+                            card.className = 'card bg-white border shadow-sm mb-3';
+                            card.style.filter = ''; // Remove grayscale
+
+                            // 2. Hide/Show Buttons
+                            toggleElement(`btn-save-${id}`, true);
+                            toggleElement(`btn-cancel-${id}`, true);
+                            toggleElement(`btn-restore-${id}`, false);
+                            toggleElement(`btn-undo-${id}`, false);
+
+                            // 3. Show Checkbox & Enable Steps
+                            toggleElement(`checkbox-container-${id}`, true);
+                            const infoContainer = document.getElementById(`info-container-${id}`);
+                            if(infoContainer) infoContainer.classList.remove('opacity-75', 'pointer-events-none', 'opacity-50');
+
+                            const stepsContainer = document.getElementById(`steps-container-${id}`);
+                            if(stepsContainer) stepsContainer.classList.remove('opacity-75', 'pointer-events-none', 'opacity-50');
+
+                            // 4. Update Badges
+                            toggleElement(`badge-completed-${id}`, false);
+                            toggleElement(`badge-cancelled-${id}`, false);
+
+                            // Disable Steps Buttons? No, they should be enabled.
+                            const stepsBtns = card.querySelectorAll('button[data-step-id]');
+                            stepsBtns.forEach(btn => btn.disabled = false);
+
+                            Swal.fire('Restored!', 'Employee is back to pending.', 'success');
+                        }
+                    }
                 });
              }
         });
@@ -490,7 +548,35 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    if(data.success) location.reload();
+                    if(data.success) {
+                        // DOM Update: Cancelled State
+                        const card = document.getElementById(`employee-card-${id}`);
+                        if(card) {
+                            // 1. Change Card Style
+                            card.className = 'card bg-light border-0 text-secondary grayscale-mode mb-3';
+                            card.style.filter = 'grayscale(100%)';
+
+                            // 2. Hide/Show Buttons
+                            toggleElement(`btn-save-${id}`, false);
+                            toggleElement(`btn-cancel-${id}`, false);
+                            toggleElement(`btn-restore-${id}`, true);
+                            toggleElement(`btn-undo-${id}`, false);
+
+                            // 3. Hide Checkbox & Steps Overlay
+                            toggleElement(`checkbox-container-${id}`, false);
+                            const infoContainer = document.getElementById(`info-container-${id}`);
+                            if(infoContainer) infoContainer.classList.add('opacity-50', 'pointer-events-none');
+
+                            const stepsContainer = document.getElementById(`steps-container-${id}`);
+                            if(stepsContainer) stepsContainer.classList.add('opacity-50', 'pointer-events-none');
+
+                            // 4. Update Badges
+                            toggleElement(`badge-completed-${id}`, false);
+                            toggleElement(`badge-cancelled-${id}`, true);
+
+                            Swal.fire('Cancelled', 'Registration cancelled.', 'success');
+                        }
+                    }
                 });
              }
         });
@@ -515,7 +601,16 @@
                      return res.json();
                 })
                 .then(data => {
-                    if(data.success) location.reload();
+                    if(data.success) {
+                        const card = document.getElementById(`employee-card-${id}`);
+                        if(card) {
+                            card.style.transition = 'all 0.5s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.9)';
+                            setTimeout(() => card.remove(), 500);
+                        }
+                        Swal.fire('Deleted!', 'Employee has been deleted.', 'success');
+                    }
                 })
                 .catch(err => {
                     console.error(err);
@@ -523,6 +618,15 @@
                 });
              }
         });
+    }
+
+    // Helper to toggle visibility
+    function toggleElement(id, show) {
+        const el = document.getElementById(id);
+        if(el) {
+            if(show) el.classList.remove('d-none');
+            else el.classList.add('d-none');
+        }
     }
 
     // --- Fixed AJAX Toggle Step with Real-time Updates ---
