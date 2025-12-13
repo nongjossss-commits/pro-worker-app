@@ -50,16 +50,23 @@
             <div class="d-flex gap-3 flex-wrap justify-content-start" id="global-stats-container">
                 @foreach($steps as $step)
                     @php
+                        $count = $stepStats[$step->id] ?? 0;
+                        $isZero = $count === 0;
+
                         // Check if color is hex or class
-                        $bgStyle = str_starts_with($step->color, '#') ? "background-color: {$step->color} !important;" : "";
-                        $bgClass = !str_starts_with($step->color, '#') ? "bg-{$step->color}" : "";
-                        // Ensure text contrast if background is light/dark? Assuming white text for colored badges is standard.
+                        $bgStyle = (!$isZero && str_starts_with($step->color, '#')) ? "background-color: {$step->color} !important;" : "";
+                        $bgClass = (!$isZero && !str_starts_with($step->color, '#')) ? "bg-{$step->color}" : "";
+
+                        if ($isZero) {
+                            $bgClass = "bg-secondary bg-opacity-50 text-white"; // Gray for zero
+                            $bgStyle = "";
+                        }
                     @endphp
                     <div class="d-flex flex-column align-items-center" style="min-width: 80px;">
                         <span class="badge rounded-pill mb-2 px-3 py-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm"
                               style="{{ $bgStyle }}"
                               data-step-id="{{ $step->id }}">
-                            {{ $stepStats[$step->id] ?? 0 }}
+                            {{ $count }}
                         </span>
                         <small class="fw-bold text-muted text-center text-truncate" style="max-width: 100px;" title="{{ $step->name }}">{{ $step->name }}</small>
                     </div>
@@ -141,48 +148,58 @@
         @foreach($employers as $employer)
             <div class="card mb-4 border-0 shadow-sm overflow-hidden">
                 <div class="card-header bg-white py-4 px-4 border-bottom" id="heading{{ $employer->id }}">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 w-100">
-                        {{-- Employer Info --}}
-                        <div class="d-flex align-items-center gap-3">
-                             <button class="btn btn-link text-decoration-none text-dark p-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
-                                <h3 class="fw-bold mb-1">{{ $employer->employerNameTh }}</h3>
-                                <h5 class="text-muted mb-0 fw-light">{{ $employer->employerNameEn }}</h5>
+                    <div class="row w-100 align-items-center gy-3">
+                        {{-- Employer Info (Col-4) --}}
+                        <div class="col-lg-4 d-flex align-items-center gap-3">
+                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
+                                <h3 class="fw-bold mb-1 text-truncate" title="{{ $employer->employerNameTh }}">{{ $employer->employerNameTh }}</h3>
+                                <h5 class="text-muted mb-0 fw-light text-truncate" title="{{ $employer->employerNameEn }}">{{ $employer->employerNameEn }}</h5>
                             </button>
                         </div>
 
-                        {{-- Employer Stats --}}
-                        <div class="d-flex gap-4 text-center">
+                        {{-- Employer Stats (Col-2) --}}
+                        <div class="col-lg-2 d-flex justify-content-center gap-4 text-center">
                             <div>
                                 <h4 class="fw-bold mb-0">{{ $employer->activeEmployeesCount ?? 0 }}</h4>
-                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Total Employees</small>
+                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Total</small>
                             </div>
                             <div>
                                 <h4 class="fw-bold mb-0 text-danger">{{ $employer->notStartedCount ?? 0 }}</h4>
-                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Not Started</small>
+                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Pending</small>
                             </div>
                         </div>
 
-                        {{-- Employer Scoreboard --}}
-                        <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
-                             @foreach($steps as $step)
-                                @php
-                                    $bgStyle = str_starts_with($step->color, '#') ? "background-color: {$step->color} !important;" : "";
-                                    $bgClass = !str_starts_with($step->color, '#') ? "bg-{$step->color}" : "";
-                                @endphp
-                                <div class="text-center" style="min-width: 50px;">
-                                    <span class="badge rounded-pill {{ $bgClass }} employer-stat-badge mb-1"
-                                          style="{{ $bgStyle }}"
-                                          data-step-id="{{ $step->id }}">
-                                        {{ $employer->stepStats[$step->id] ?? 0 }}
-                                    </span>
-                                    <small class="d-block text-muted text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
-                                </div>
-                             @endforeach
+                        {{-- Employer Scoreboard (Col-4) --}}
+                        <div class="col-lg-4">
+                            <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
+                                 @foreach($steps as $step)
+                                    @php
+                                        $count = $employer->stepStats[$step->id] ?? 0;
+                                        $isZero = $count === 0;
+
+                                        $bgStyle = (!$isZero && str_starts_with($step->color, '#')) ? "background-color: {$step->color} !important;" : "";
+                                        $bgClass = (!$isZero && !str_starts_with($step->color, '#')) ? "bg-{$step->color}" : "";
+
+                                        if ($isZero) {
+                                            $bgClass = "bg-secondary bg-opacity-25 text-muted"; // Lighter gray for zero
+                                            $bgStyle = "";
+                                        }
+                                    @endphp
+                                    <div class="text-center" style="min-width: 50px;">
+                                        <span class="badge rounded-pill {{ $bgClass }} employer-stat-badge mb-1"
+                                              style="{{ $bgStyle }}"
+                                              data-step-id="{{ $step->id }}">
+                                            {{ $count }}
+                                        </span>
+                                        <small class="d-block text-muted text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
+                                    </div>
+                                 @endforeach
+                            </div>
                         </div>
 
-                        {{-- Employer Actions --}}
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
+                        {{-- Employer Actions (Col-2) --}}
+                        <div class="col-lg-2 d-flex justify-content-end align-items-center gap-2">
+                            <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
                                 <i class="bi bi-currency-dollar"></i> Finance
                             </button>
                             <button class="btn btn-light rounded-circle" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
@@ -192,7 +209,7 @@
                     </div>
                 </div>
 
-                <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ $employer->id }}">
+                <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $employer->id }}">
                     <div class="card-body bg-light p-4">
                          <div class="employee-list">
                             @foreach($employer->employees as $employee)
