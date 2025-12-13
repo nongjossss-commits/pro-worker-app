@@ -20,7 +20,7 @@
         <div class="col-md-4">
             <div class="card text-white h-100 shadow-sm" style="background-color: #EF4444; border: none;"> {{-- Red --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-3 fw-bold mb-0">{{ $notStartedCount }}</h1>
+                    <h1 class="display-3 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
                     <p class="fs-4 fw-light mb-0">{{ __('Not Started') }}</p>
                 </div>
             </div>
@@ -159,15 +159,30 @@
                             </button>
                         </div>
 
-                        {{-- Employer Stats (Col-2) --}}
-                        <div class="col-lg-2 d-flex justify-content-center gap-4 text-center">
-                            <div>
-                                <h4 class="fw-bold mb-0">{{ $employer->activeEmployeesCount ?? 0 }}</h4>
-                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Total</small>
+                        {{-- Employer Stats (Col-2) - REFACTORED --}}
+                        <div class="col-lg-2 d-flex justify-content-center gap-3 align-items-center">
+                            {{-- Total --}}
+                            <div class="d-flex flex-column align-items-center position-relative">
+                                <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
+                                     style="width: 50px; height: 50px; background-color: #F3F4F6;">
+                                    <span class="fw-bold fs-5 text-dark">{{ $employer->activeEmployeesCount ?? 0 }}</span>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
+                                    TOTAL
+                                </span>
                             </div>
-                            <div>
-                                <h4 class="fw-bold mb-0 text-danger">{{ $employer->notStartedCount ?? 0 }}</h4>
-                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Pending</small>
+
+                            {{-- Pending --}}
+                            <div class="d-flex flex-column align-items-center position-relative">
+                                <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
+                                     style="width: 50px; height: 50px; background-color: #FEE2E2;">
+                                    <span class="fw-bold fs-5 text-danger" id="employer-not-started-{{ $employer->id }}">
+                                        {{ $employer->notStartedCount ?? 0 }}
+                                    </span>
+                                </div>
+                                <span class="badge bg-danger rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
+                                    NOT STARTED
+                                </span>
                             </div>
                         </div>
 
@@ -435,7 +450,15 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.success) location.reload();
+            if(data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Step Created',
+                    text: 'New workflow step added successfully!',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => location.reload());
+            }
         });
     });
 
@@ -485,7 +508,15 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.success) location.reload();
+            if(data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved!',
+                    text: 'Step settings updated successfully.',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => location.reload());
+            }
         });
     }
 
@@ -612,6 +643,11 @@
                     btn.style.borderColor = hexColor;
                 } else {
                     btn.classList.add(`btn-${color}`);
+                    // Handle contrast for light colors
+                    if (color === 'warning' || color === 'light') {
+                        btn.classList.remove('text-white');
+                        btn.classList.add('text-dark');
+                    }
                 }
 
                 if(!btn.querySelector('i.bi-check')) {
@@ -717,6 +753,18 @@
                         }
                     }
                 }
+
+                // 4. Update Not Started Counts
+                if (typeof data.globalNotStarted !== 'undefined') {
+                    const globalNotStartedEl = document.getElementById('global-not-started-count');
+                    if (globalNotStartedEl) globalNotStartedEl.innerText = data.globalNotStarted;
+                }
+
+                if (typeof data.employerNotStarted !== 'undefined' && data.employerId) {
+                    const empNotStartedEl = document.getElementById(`employer-not-started-${data.employerId}`);
+                    if (empNotStartedEl) empNotStartedEl.innerText = data.employerNotStarted;
+                }
+
             } else {
                 throw new Error(data.message || 'Unknown error');
             }

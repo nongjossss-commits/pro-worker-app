@@ -146,7 +146,17 @@
                                 $btnClass = 'text-white border-0';
                                 $btnStyle = "background-color: {$hexColor} !important; border-color: {$hexColor} !important;";
                             } else {
-                                $btnClass = "btn-{$step->color} text-white";
+                                // For standard bootstrap classes like 'primary', 'success', etc.
+                                // We check if it is one of the standard contextual classes
+                                if (in_array($step->color, ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'])) {
+                                     $btnClass = "btn-{$step->color} text-white";
+                                     if($step->color == 'warning' || $step->color == 'light') {
+                                         $btnClass = "btn-{$step->color} text-dark"; // Better contrast
+                                     }
+                                } else {
+                                    // Fallback for custom strings that aren't hex or standard
+                                     $btnClass = "btn-primary text-white";
+                                }
                             }
                         }
                     @endphp
