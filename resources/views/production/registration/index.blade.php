@@ -52,14 +52,15 @@
                     @php
                         $count = $stepStats[$step->id] ?? 0;
                         $isZero = $count === 0;
-
-                        // Check if color is hex or class
-                        $bgStyle = (!$isZero && str_starts_with($step->color, '#')) ? "background-color: {$step->color} !important;" : "";
-                        $bgClass = (!$isZero && !str_starts_with($step->color, '#')) ? "bg-{$step->color}" : "";
+                        $color = $step->color ?? 'primary';
 
                         if ($isZero) {
                             $bgClass = "bg-secondary bg-opacity-50 text-white"; // Gray for zero
                             $bgStyle = "";
+                        } else {
+                            // Check if color is hex or class
+                            $bgStyle = str_starts_with($color, '#') ? "background-color: {$color} !important;" : "";
+                            $bgClass = !str_starts_with($color, '#') ? "bg-{$color}" : "";
                         }
                     @endphp
                     <div class="d-flex flex-column align-items-center" style="min-width: 80px;">
@@ -176,13 +177,14 @@
                                     @php
                                         $count = $employer->stepStats[$step->id] ?? 0;
                                         $isZero = $count === 0;
-
-                                        $bgStyle = (!$isZero && str_starts_with($step->color, '#')) ? "background-color: {$step->color} !important;" : "";
-                                        $bgClass = (!$isZero && !str_starts_with($step->color, '#')) ? "bg-{$step->color}" : "";
+                                        $color = $step->color ?? 'primary';
 
                                         if ($isZero) {
                                             $bgClass = "bg-secondary bg-opacity-25 text-muted"; // Lighter gray for zero
                                             $bgStyle = "";
+                                        } else {
+                                             $bgStyle = str_starts_with($color, '#') ? "background-color: {$color} !important;" : "";
+                                             $bgClass = !str_starts_with($color, '#') ? "bg-{$color}" : "";
                                         }
                                     @endphp
                                     <div class="text-center" style="min-width: 50px;">

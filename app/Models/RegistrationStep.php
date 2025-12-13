@@ -9,7 +9,7 @@ class RegistrationStep extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'order'];
+    protected $fillable = ['name', 'order', 'color'];
 
     public function employees()
     {

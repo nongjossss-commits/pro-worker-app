@@ -136,8 +136,8 @@
                         // Determine styles based on hex or class
                         $hexColor = str_starts_with($step->color, '#') ? $step->color : null;
 
-                        // Default State: Incomplete -> Gray outline
-                        $btnClass = 'btn-outline-secondary';
+                        // Default State: Incomplete -> Solid Gray (visible "To Do" state)
+                        $btnClass = 'btn-light border text-secondary';
                         $btnStyle = '';
 
                         // Completed State: Colored background
