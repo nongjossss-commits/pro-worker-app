@@ -4,11 +4,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 text-gray-800 fw-bold">P Production (Preparation)</h1>
-            <p class="text-muted">Prepare projects before sending to Workflow</p>
+            <h1 class="h3 text-gray-800 fw-bold">{{ __('P Production (Preparation)') }}</h1>
+            <p class="text-muted">{{ __('Prepare projects before sending to Workflow') }}</p>
         </div>
         <a href="{{ route('production.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-2"></i>New Project
+            <i class="bi bi-plus-lg me-2"></i>{{ __('New Project') }}
         </a>
     </div>
 
@@ -18,12 +18,12 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="ps-4" style="width: 25%;">Project Name</th>
-                            <th style="width: 10%;">Type</th>
-                            <th style="width: 20%;">Employer</th>
-                            <th class="text-center" style="width: 10%;">Employees</th>
-                            <th style="width: 20%;">Readiness Status</th>
-                            <th class="text-end pe-4" style="width: 15%;">Actions</th>
+                            <th class="ps-4" style="width: 25%;">{{ __('Project Name') }}</th>
+                            <th style="width: 10%;">{{ __('Type') }}</th>
+                            <th style="width: 20%;">{{ __('Employer') }}</th>
+                            <th class="text-center" style="width: 10%;">{{ __('Employees') }}</th>
+                            <th style="width: 20%;">{{ __('Readiness Status') }}</th>
+                            <th class="text-end pe-4" style="width: 15%;">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -32,19 +32,19 @@
                                 <td class="ps-4">
                                     <div class="fw-bold">{{ $order->project_name ?? 'Untitled Project' }}</div>
                                     <div class="small text-muted">{{ Str::limit($order->description, 50) }}</div>
-                                    <div class="small text-muted">Created {{ $order->created_at->format('d/m/Y') }}</div>
+                                    <div class="small text-muted">{{ __('Created') }} {{ $order->created_at->format('d/m/Y') }}</div>
 
                                     {{-- Waiting for Documents Warning --}}
                                     <div class="mt-1" id="missing-docs-display-{{ $order->id }}" style="{{ $order->waiting_for_documents ? '' : 'display:none;' }}">
-                                        <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Waiting for Docs</span>
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>{{ __('Waiting for Docs') }}</span>
                                         <div class="small text-danger fst-italic mt-1 missing-docs-text">{{ $order->missing_documents }}</div>
                                     </div>
                                 </td>
                                 <td>
                                     @if($order->type === 'independent')
-                                        <span class="badge bg-purple text-white" style="background-color: #6f42c1;">Independent</span>
+                                        <span class="badge bg-purple text-white" style="background-color: #6f42c1;">{{ __('Independent') }}</span>
                                     @else
-                                        <span class="badge bg-secondary">Standard</span>
+                                        <span class="badge bg-secondary">{{ __('Standard') }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -68,7 +68,7 @@
                                             <div class="text-muted fst-italic">Mixed / Independent</div>
                                         @endif
                                     @else
-                                        <span class="text-danger">Unknown</span>
+                                        <span class="text-danger">{{ __('Unknown') }}</span>
                                     @endif
                                 </td>
                                 <td class="text-center">
@@ -81,7 +81,7 @@
                                             <input class="form-check-input status-toggle" type="checkbox" id="docReady{{ $order->id }}"
                                                 data-id="{{ $order->id }}" data-type="document_ready"
                                                 {{ $order->document_ready_at ? 'checked' : '' }} disabled>
-                                            <label class="form-check-label small" for="docReady{{ $order->id }}">Documents Ready</label>
+                                            <label class="form-check-label small" for="docReady{{ $order->id }}">{{ __('Documents Ready') }}</label>
                                         </div>
 
                                         {{-- Ready to Process (Financial) Toggle --}}
@@ -89,20 +89,20 @@
                                             <input class="form-check-input status-toggle" type="checkbox" id="finReady{{ $order->id }}"
                                                 data-id="{{ $order->id }}" data-type="financial_approved"
                                                 {{ $order->financial_approved_at ? 'checked' : '' }} disabled>
-                                            <label class="form-check-label small" for="finReady{{ $order->id }}">Ready to Process</label>
+                                            <label class="form-check-label small" for="finReady{{ $order->id }}">{{ __('Ready to Process') }}</label>
                                         </div>
 
                                         {{-- Waiting for Docs Button/Toggle --}}
                                         <button class="btn btn-sm btn-link text-decoration-none p-0 text-start text-danger"
                                             onclick="openMissingDocsModal({{ $order->id }}, '{{ addslashes($order->missing_documents) }}')">
-                                            <i class="bi bi-pencil-square"></i> <span class="small">Missing Documents...</span>
+                                            <i class="bi bi-pencil-square"></i> <span class="small">{{ __('Missing Documents...') }}</span>
                                         </button>
                                     </div>
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="d-flex flex-column align-items-end gap-2">
                                         <a href="{{ route('production.edit', $order->id) }}" class="btn btn-sm btn-outline-warning w-100">
-                                            <i class="bi bi-gear-fill me-1"></i>Prepare
+                                            <i class="bi bi-gear-fill me-1"></i>{{ __('Prepare') }}
                                         </a>
 
                                         {{-- Send to Workflow Button (Conditional) --}}
@@ -114,7 +114,7 @@
                                             @method('PUT')
                                             <input type="hidden" name="start_workflow" value="1">
                                             <button type="submit" class="btn btn-sm btn-success w-100">
-                                                <i class="bi bi-send-fill me-1"></i>Send to Workflow
+                                                <i class="bi bi-send-fill me-1"></i>{{ __('Send to Workflow') }}
                                             </button>
                                         </form>
                                     </div>
@@ -124,7 +124,7 @@
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
                                     <i class="bi bi-clipboard-x fs-1 d-block mb-2"></i>
-                                    No projects in preparation.
+                                    {{ __('No projects in preparation.') }}
                                 </td>
                             </tr>
                         @endforelse
@@ -145,22 +145,22 @@
             @csrf
             @method('PUT')
             <div class="modal-header">
-                <h5 class="modal-title">Missing Documents</h5>
+                <h5 class="modal-title">{{ __('Missing Documents') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" id="waitingForDocsToggle" name="waiting_for_documents" value="1">
-                    <label class="form-check-label" for="waitingForDocsToggle">Status: Waiting for Documents</label>
+                    <label class="form-check-label" for="waitingForDocsToggle">{{ __('Status') }}: {{ __('Waiting for Docs') }}</label>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">List Missing Documents</label>
+                    <label class="form-label">{{ __('List Missing Documents') }}</label>
                     <textarea class="form-control" name="missing_documents" id="missingDocsText" rows="4" placeholder="e.g. Copy of Passport, Photo..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
             </div>
         </form>
     </div>

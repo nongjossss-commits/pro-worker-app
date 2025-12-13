@@ -43,13 +43,13 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link {{ ($activeTab ?? 'admin') == 'caretaker' ? 'active' : '' }}" id="caretaker-tab" data-bs-toggle="tab" data-bs-target="#caretaker-pane" type="button" role="tab" aria-controls="caretaker-pane" aria-selected="false">
-                            <i class="bi bi-person-gear me-1"></i> {{ __('Caretaker') }}
+                        <button class="nav-link {{ ($activeTab ?? 'admin') == 'staff' ? 'active' : '' }}" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff-pane" type="button" role="tab" aria-controls="staff-pane" aria-selected="false">
+                            <i class="bi bi-person-badge me-1"></i> {{ __('Staff') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link {{ ($activeTab ?? 'admin') == 'staff' ? 'active' : '' }}" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff-pane" type="button" role="tab" aria-controls="staff-pane" aria-selected="false">
-                            <i class="bi bi-person-badge me-1"></i> {{ __('Staff') }}
+                        <button class="nav-link {{ ($activeTab ?? 'admin') == 'caretaker' ? 'active' : '' }}" id="caretaker-tab" data-bs-toggle="tab" data-bs-target="#caretaker-pane" type="button" role="tab" aria-controls="caretaker-pane" aria-selected="false">
+                            <i class="bi bi-person-gear me-1"></i> {{ __('Customer Care') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -66,14 +66,14 @@
                         @include('admin.users.partials.table', ['users' => $users->filter(fn($u) => $u->roles->contains('name', 'admin'))])
                     </div>
 
-                    {{-- Caretaker Tab Pane --}}
-                    <div class="tab-pane fade {{ ($activeTab ?? 'admin') == 'caretaker' ? 'show active' : '' }}" id="caretaker-pane" role="tabpanel" aria-labelledby="caretaker-tab">
-                        @include('admin.users.partials.table', ['users' => $users->filter(fn($u) => $u->roles->contains('name', 'caretaker'))])
-                    </div>
-
                     {{-- Staff Tab Pane --}}
                     <div class="tab-pane fade {{ ($activeTab ?? 'admin') == 'staff' ? 'show active' : '' }}" id="staff-pane" role="tabpanel" aria-labelledby="staff-tab">
                         @include('admin.users.partials.table', ['users' => $users->filter(fn($u) => $u->roles->contains('name', 'staff'))])
+                    </div>
+
+                    {{-- Caretaker Tab Pane (Renamed to Customer Care in UI) --}}
+                    <div class="tab-pane fade {{ ($activeTab ?? 'admin') == 'caretaker' ? 'show active' : '' }}" id="caretaker-pane" role="tabpanel" aria-labelledby="caretaker-tab">
+                        @include('admin.users.partials.table', ['users' => $users->filter(fn($u) => $u->roles->contains('name', 'caretaker'))])
                     </div>
 
                     {{-- Employer Tab Pane --}}
