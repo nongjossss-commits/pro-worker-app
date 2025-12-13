@@ -156,18 +156,31 @@ class FinancialController extends Controller
 
     public function storeProfile(Request $request)
     {
-        $request->validate(['name' => 'required', 'logo' => 'nullable|image']);
+        // Allow logo to be a string (path) for JSON requests
+        $request->validate([
+            'name' => 'required',
+            'logo' => 'nullable',
+        ]);
+
         $data = $request->except('logo');
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->store('company_logos', 'public');
+        } elseif ($request->filled('logo') && is_string($request->logo)) {
+            // If saving via JSON and logo is already a path
+            $data['logo_path'] = $request->logo;
         }
 
         if ($request->is_default) {
             CompanyProfile::where('is_default', true)->update(['is_default' => false]);
         }
 
-        CompanyProfile::create($data);
+        $profile = CompanyProfile::create($data);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'profile' => $profile]);
+        }
+
         return back()->with('success', 'Profile created');
     }
 }

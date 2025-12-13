@@ -281,6 +281,10 @@ class ProductionController extends Controller
             'missing_documents' => $request->missing_documents,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Details updated.']);
+        }
+
         return back()->with('success', 'Details updated.');
     }
 
