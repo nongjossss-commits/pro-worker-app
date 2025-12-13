@@ -28,11 +28,20 @@ class RegistrationController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Build Query for Employees
+        // Use the centralized count logic (reusing filter logic)
+        $counts = $this->calculateCounts($request);
+
+        $totalEmployees = $counts['global']['total']; // Active (Pending+Completed)
+        $notStartedCount = $counts['global']['not_started'];
+        $totalCancelled = $counts['global']['cancelled']; // New
+        $totalSaved = $counts['global']['saved']; // New
+        $totalEmployers = $counts['global']['total_employers'];
+
+        // 1. Build Query for Employees List (Reuse logic for consistency)
         $query = Employee::whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
                          ->with('registrationSteps');
 
-        // Apply Search Filter
+        // Apply Search Filter (Duplicate logic from calculateCounts to ensure list matches stats)
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -47,28 +56,13 @@ class RegistrationController extends Controller
         }
 
         $registrationEmployees = $query->get();
-        $totalEmployees = $registrationEmployees->where('status', '!=', 'registration_cancelled')->count();
-        $totalEmployers = $registrationEmployees->pluck('employer_id')->unique()->count();
 
         // 2. Fetch Workflow Steps
         $steps = RegistrationStep::orderBy('order')->get();
-
-        // Identify the Last Step (highest order) for special UI highlighting
         $lastStepId = $steps->sortByDesc('order')->first()?->id;
-
-        // Determine step 1 ID for "Not Started" logic
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
-        // "Not Started" Count (Global)
-        $notStartedCount = $registrationEmployees->filter(function ($emp) use ($stepOneId) {
-             // Not started if status is NOT cancelled AND they don't have step 1 completed
-             if ($emp->status === 'registration_cancelled') return false;
-             return !$emp->registrationSteps->contains('id', $stepOneId);
-        })->count();
-
-
         // 3. Calculate "Highest Step" Stats
-        // Initialize stats with 0
         $stepStats = $steps->pluck('id')->mapWithKeys(function ($id) {
             return [$id => 0];
         })->toArray();
@@ -76,26 +70,19 @@ class RegistrationController extends Controller
         foreach ($registrationEmployees as $emp) {
             if ($emp->status === 'registration_cancelled') continue;
 
-            // Get the highest step 'order' this employee has completed
-            // registrationSteps relationship returns the attached steps.
             $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
-
             if ($highestStep) {
-                // Increment stat for this specific step only
                 if (isset($stepStats[$highestStep->id])) {
                     $stepStats[$highestStep->id]++;
                 }
             }
         }
 
-        // 4. Fetch Employers (Filtered by the same search criteria via employees)
-        // We get the unique employer IDs from our filtered employees list
+        // 4. Fetch Employers (Filtered)
         $filteredEmployerIds = $registrationEmployees->pluck('employer_id')->unique();
 
         $employers = Employer::whereIn('id', $filteredEmployerIds)
             ->with(['employees' => function($q) use ($registrationEmployees) {
-                // Only load the employees that match our main filter
-                // We can use whereIn('id', ...)
                 $q->whereIn('id', $registrationEmployees->pluck('id'))
                   ->with(['registrationSteps', 'customFields']);
             }])->get();
@@ -113,23 +100,35 @@ class RegistrationController extends Controller
                 ]
             );
             $employer->financeOrder = $financeOrder;
-            // Spoof items for the count logic in view
             $employer->financeOrder->setRelation('items', $employer->employees);
 
-            // Calculate per-employer step stats (Highest Step Logic)
+            // Calculate per-employer step stats
             $stats = $steps->pluck('id')->mapWithKeys(function ($id) {
                 return [$id => 0];
             })->toArray();
 
             $employerNotStarted = 0;
+            $employerCancelledCount = 0; // New
+            $employerSavedCount = 0; // New
 
             foreach ($employer->employees as $emp) {
-                if ($emp->status === 'registration_cancelled') continue;
+                // Cancelled Count
+                if ($emp->status === 'registration_cancelled') {
+                    $employerCancelledCount++;
+                    continue; // Skip steps calculation for cancelled
+                }
 
+                // Saved Count
+                if ($emp->status === 'registration_completed') {
+                    $employerSavedCount++;
+                }
+
+                // Not Started Count
                 if (!$emp->registrationSteps->contains('id', $stepOneId)) {
                     $employerNotStarted++;
                 }
 
+                // Steps Stats
                 $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
                 if ($highestStep) {
                     if (isset($stats[$highestStep->id])) {
@@ -137,15 +136,21 @@ class RegistrationController extends Controller
                     }
                 }
             }
+
             $employer->stepStats = $stats;
             $employer->notStartedCount = $employerNotStarted;
             $employer->activeEmployeesCount = $employer->employees->where('status', '!=', 'registration_cancelled')->count();
+            // Attach new counts
+            $employer->cancelledCount = $employerCancelledCount;
+            $employer->savedCount = $employerSavedCount;
         }
 
         return view('production.registration.index', compact(
             'totalEmployees',
             'totalEmployers',
             'notStartedCount',
+            'totalCancelled', // New
+            'totalSaved', // New
             'steps',
             'stepStats',
             'employers',
@@ -154,15 +159,97 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Helper to Calculate Counts (Respecting Search Filters)
+     */
+    private function calculateCounts(Request $request, $employerId = null)
+    {
+        // Base Query (Always fetch ALL relevant records first to calculate accurate Global stats)
+        $query = Employee::whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+
+        // NOTE: We do NOT filter by $employerId here yet.
+        // We need the full dataset to calculate global totals.
+        // We will filter in memory for the specific employer stats later.
+
+        // Apply Search (Same logic as index)
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function($q2) use ($search) {
+                      $q2->where('employerNameTh', 'like', "%{$search}%")
+                         ->orWhere('employerNameEn', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // We need to fetch basic data to determine "Not Started" (requires relationship)
+        // Optimization: Select only necessary columns and eager load minimal relation
+        $employees = $query->with('registrationSteps:id')->get(['id', 'status', 'employer_id']);
+
+        $steps = RegistrationStep::orderBy('order')->get(['id', 'order']);
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
+        // Global Counters
+        $globalTotal = $employees->where('status', '!=', 'registration_cancelled')->count();
+        $globalCancelled = $employees->where('status', 'registration_cancelled')->count();
+        $globalSaved = $employees->where('status', 'registration_completed')->count();
+        $globalEmployers = $employees->pluck('employer_id')->unique()->count();
+
+        $globalNotStarted = $employees->filter(function ($emp) use ($stepOneId) {
+             if ($emp->status === 'registration_cancelled') return false;
+             return !$emp->registrationSteps->contains('id', $stepOneId);
+        })->count();
+
+        // Build Response
+        $result = [
+            'global' => [
+                'total' => $globalTotal,
+                'not_started' => $globalNotStarted,
+                'cancelled' => $globalCancelled,
+                'saved' => $globalSaved,
+                'total_employers' => $globalEmployers
+            ],
+            'employer' => null
+        ];
+
+        // If specific employer requested, calculate their specific stats from the filtered set
+        if ($employerId) {
+            $empEmployees = $employees->where('employer_id', $employerId);
+
+            $empTotal = $empEmployees->where('status', '!=', 'registration_cancelled')->count();
+            $empCancelled = $empEmployees->where('status', 'registration_cancelled')->count();
+            $empSaved = $empEmployees->where('status', 'registration_completed')->count();
+            $empNotStarted = $empEmployees->filter(function ($emp) use ($stepOneId) {
+                 if ($emp->status === 'registration_cancelled') return false;
+                 return !$emp->registrationSteps->contains('id', $stepOneId);
+            })->count();
+
+            $result['employer'] = [
+                'id' => $employerId,
+                'total' => $empTotal,
+                'not_started' => $empNotStarted,
+                'cancelled' => $empCancelled,
+                'saved' => $empSaved
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Finalize an employee (Save to Database).
      */
     public function finalize(Request $request, Employee $employee)
     {
-        // Change status to 'registration_completed'
         $employee->update(['status' => 'registration_completed']);
 
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'counts' => $this->calculateCounts($request, $employee->employer_id)
+            ]);
         }
         return back()->with('success', 'Employee saved to database.');
     }
@@ -175,7 +262,10 @@ class RegistrationController extends Controller
         $employee->update(['status' => 'registration_cancelled']);
 
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'counts' => $this->calculateCounts($request, $employee->employer_id)
+            ]);
         }
         return back()->with('success', 'Employee registration cancelled.');
     }
@@ -188,7 +278,10 @@ class RegistrationController extends Controller
         $employee->update(['status' => 'registration_pending']);
 
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'counts' => $this->calculateCounts($request, $employee->employer_id)
+            ]);
         }
         return back()->with('success', 'Employee restored to pending.');
     }
@@ -198,10 +291,14 @@ class RegistrationController extends Controller
      */
     public function destroy(Request $request, Employee $employee)
     {
+        $employerId = $employee->employer_id;
         $employee->delete(); // Soft delete
 
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'counts' => $this->calculateCounts($request, $employerId)
+            ]);
         }
         return back()->with('success', 'Employee deleted.');
     }
@@ -220,7 +317,14 @@ class RegistrationController extends Controller
             ->update(['status' => 'registration_completed']);
 
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            // For bulk, we might affect multiple employers.
+            // For simplicity/performance, return global counts.
+            // If the UI needs per-employer updates for bulk actions across employers, logic gets complex.
+            // Assuming bulk action usually refreshes or we just return global.
+            return response()->json([
+                'success' => true,
+                'counts' => $this->calculateCounts($request)
+            ]);
         }
         return back()->with('success', 'Selected employees saved to database.');
     }
@@ -476,38 +580,37 @@ class RegistrationController extends Controller
             DB::commit();
 
             // --- Recalculate Stats for Response (Highest Step Logic) ---
-            // Global Stats
-            // Ensure no global scope issues, but handle if method doesn't exist just in case
+            // Reusing calculateCounts logic here would be ideal but response structure differs (steps vs totals).
+            // For now, I'll update the counts via calculateCounts and append them to the existing response.
+
+            $counts = $this->calculateCounts($request, $employee->employer_id);
+
+            // Existing logic for step stats...
             $allQuery = Employee::query();
             if (method_exists($allQuery, 'withoutGlobalScopes')) {
                 $allQuery->withoutGlobalScopes();
             }
+
+            // ... (rest of existing Step Stats logic) ...
+            // Wait, to avoid duplication and inconsistencies, I should probably rely on calculateCounts
+            // for the basic counts and keep the step stats logic here.
 
             $allEmployees = $allQuery->whereIn('status', ['registration_pending', 'registration_completed'])
                                     ->with('registrationSteps')
                                     ->get();
 
             $steps = RegistrationStep::orderBy('order')->get();
-            // Determine step 1 ID for "Not Started" logic
             $stepOneId = $steps->sortBy('order')->first()?->id;
 
-            // Global Stats
             $globalStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $globalNotStarted = 0;
 
             foreach ($allEmployees as $emp) {
-                // Count Not Started
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
-                    $globalNotStarted++;
-                }
-
                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
                 if ($highest && isset($globalStats[$highest->id])) {
                     $globalStats[$highest->id]++;
                 }
             }
 
-            // Employer Stats
             $empQuery = Employee::query();
             if (method_exists($empQuery, 'withoutGlobalScopes')) {
                 $empQuery->withoutGlobalScopes();
@@ -519,14 +622,7 @@ class RegistrationController extends Controller
                                         ->with('registrationSteps')
                                         ->get();
 
-            $employerNotStarted = 0;
-
             foreach ($employerEmployees as $emp) {
-                 // Count Not Started
-                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
-                     $employerNotStarted++;
-                 }
-
                  $highest = $emp->registrationSteps->sortByDesc('order')->first();
                  if ($highest && isset($employerStats[$highest->id])) {
                      $employerStats[$highest->id]++;
@@ -536,21 +632,19 @@ class RegistrationController extends Controller
             return response()->json([
                 'success' => true,
                 'globalStats' => $globalStats,
-                'globalNotStarted' => $globalNotStarted,
                 'employerStats' => $employerStats,
-                'employerNotStarted' => $employerNotStarted,
-                'employerId' => $employee->employer_id
+                // Append the new counts
+                'counts' => $counts
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error updating progress for employee {$employee->id}: " . $e->getMessage());
-            // Return JSON even on fatal error
             return response()->json([
                 'success' => false,
                 'message' => 'Server error: ' . $e->getMessage()
             ], 500);
-        } catch (\Throwable $e) { // Catch fatal errors (PHP 7+)
+        } catch (\Throwable $e) {
              DB::rollBack();
              Log::error("Fatal Error updating progress for employee {$employee->id}: " . $e->getMessage());
              return response()->json([
@@ -593,13 +687,11 @@ class RegistrationController extends Controller
         $field = EmployeeCustomField::create($data);
 
         if ($request->ajax()) {
-            // Return the full list of custom fields for this employee to refresh the view
-            // OR just the new field. Let's return the updated list logic as per the JS helper.
             $employee->load('customFields');
             return response()->json([
                 'success' => true,
                 'message' => 'Field added successfully.',
-                'employee' => $employee, // Contains updated customFields
+                'employee' => $employee,
                 'newField' => $field
             ]);
         }

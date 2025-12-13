@@ -7,31 +7,51 @@
     {{-- Top Stats --}}
     <div class="row g-3 mb-4">
         {{-- Total Employees --}}
-        <div class="col-md-4">
+        <div class="col-md-2 col-sm-6">
             <div class="card text-white h-100 shadow-sm" style="background-color: #FBBF24; border: none;"> {{-- Yellow-ish --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-3 fw-bold mb-0">{{ $totalEmployees }}</h1>
-                    <p class="fs-4 fw-light mb-0">{{ __('Total Employees') }}</p>
+                    <h1 class="display-5 fw-bold mb-0" id="global-total-count">{{ $totalEmployees }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Total Employees') }}</p>
                 </div>
             </div>
         </div>
 
         {{-- Not Started --}}
-        <div class="col-md-4">
+        <div class="col-md-2 col-sm-6">
             <div class="card text-white h-100 shadow-sm" style="background-color: #EF4444; border: none;"> {{-- Red --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-3 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
-                    <p class="fs-4 fw-light mb-0">{{ __('Not Started') }}</p>
+                    <h1 class="display-5 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Not Started') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Cancelled (New) --}}
+        <div class="col-md-2 col-sm-6">
+            <div class="card text-white h-100 shadow-sm" style="background-color: #6B7280; border: none;"> {{-- Gray-500 --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-5 fw-bold mb-0" id="global-cancelled-count">{{ $totalCancelled }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Cancelled') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Saved (New) --}}
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-white h-100 shadow-sm" style="background-color: #10B981; border: none;"> {{-- Green --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-5 fw-bold mb-0" id="global-saved-count">{{ $totalSaved }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Saved to Database') }}</p>
                 </div>
             </div>
         </div>
 
         {{-- Total Employers --}}
-        <div class="col-md-4">
+        <div class="col-md-3 col-sm-12">
             <div class="card bg-dark text-white h-100 shadow-sm" style="border: none;">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-3 fw-bold mb-0">{{ $totalEmployers }}</h1>
-                    <p class="fs-4 fw-light mb-0">{{ __('Total Employers') }}</p>
+                    <h1 class="display-5 fw-bold mb-0" id="global-employers-count">{{ $totalEmployers }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Total Employers') }}</p>
                 </div>
             </div>
         </div>
@@ -168,29 +188,29 @@
                 <div class="card-header bg-white py-4 px-4 border-bottom" id="heading{{ $employer->id }}">
                     <div class="row w-100 align-items-center gy-3">
                         {{-- Employer Info (Col-5) + Stats --}}
-                        <div class="col-lg-5 d-flex align-items-center gap-4">
+                        <div class="col-lg-6 d-flex align-items-center gap-4">
                              <button class="btn btn-link text-decoration-none text-dark p-0 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
                                 <h3 class="fw-bold mb-1 text-truncate" title="{{ $employer->employerNameTh }}">{{ $employer->employerNameTh }}</h3>
                                 <h5 class="text-muted mb-0 fw-light text-truncate" title="{{ $employer->employerNameEn }}">{{ $employer->employerNameEn }}</h5>
                             </button>
 
-                            <div class="d-flex align-items-center gap-3 border-start ps-4">
+                            <div class="d-flex align-items-center gap-3 border-start ps-4 flex-wrap">
                                 {{-- Total --}}
                                 <div class="d-flex flex-column align-items-center position-relative">
                                     <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                                         style="width: 50px; height: 50px; background-color: #F3F4F6;">
-                                        <span class="fw-bold fs-5 text-dark">{{ $employer->activeEmployeesCount ?? 0 }}</span>
+                                         style="width: 40px; height: 40px; background-color: #F3F4F6;">
+                                        <span class="fw-bold fs-6 text-dark" id="employer-total-{{ $employer->id }}">{{ $employer->activeEmployeesCount ?? 0 }}</span>
                                     </div>
                                     <span class="badge bg-secondary rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
                                         TOTAL
                                     </span>
                                 </div>
 
-                                {{-- Pending --}}
+                                {{-- Not Started --}}
                                 <div class="d-flex flex-column align-items-center position-relative">
                                     <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                                         style="width: 50px; height: 50px; background-color: #FEE2E2;">
-                                        <span class="fw-bold fs-5 text-danger" id="employer-not-started-{{ $employer->id }}">
+                                         style="width: 40px; height: 40px; background-color: #FEE2E2;">
+                                        <span class="fw-bold fs-6 text-danger" id="employer-not-started-{{ $employer->id }}">
                                             {{ $employer->notStartedCount ?? 0 }}
                                         </span>
                                     </div>
@@ -198,11 +218,37 @@
                                         NOT STARTED
                                     </span>
                                 </div>
+
+                                {{-- Cancelled (New) --}}
+                                <div class="d-flex flex-column align-items-center position-relative">
+                                    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
+                                         style="width: 40px; height: 40px; background-color: #E5E7EB;">
+                                        <span class="fw-bold fs-6 text-muted" id="employer-cancelled-{{ $employer->id }}">
+                                            {{ $employer->cancelledCount ?? 0 }}
+                                        </span>
+                                    </div>
+                                    <span class="badge bg-secondary rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem; background-color: #6B7280 !important;">
+                                        CANCELLED
+                                    </span>
+                                </div>
+
+                                {{-- Saved (New) --}}
+                                <div class="d-flex flex-column align-items-center position-relative">
+                                    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
+                                         style="width: 40px; height: 40px; background-color: #D1FAE5;">
+                                        <span class="fw-bold fs-6 text-success" id="employer-saved-{{ $employer->id }}">
+                                            {{ $employer->savedCount ?? 0 }}
+                                        </span>
+                                    </div>
+                                    <span class="badge bg-success rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
+                                        SAVED
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {{-- Employer Scoreboard (Col-5) - REFACTORED to "Chip" Style --}}
-                        <div class="col-lg-5">
+                        {{-- Employer Scoreboard (Col-5) --}}
+                        <div class="col-lg-4">
                             <div class="d-flex gap-2 flex-wrap align-items-center justify-content-start employer-stats-container" id="employer-stats-{{ $employer->id }}">
                                  @foreach($steps as $step)
                                     @php
@@ -463,6 +509,40 @@
         });
     }
 
+    // --- Helper for updating counts via JS ---
+    function updateCounts(counts) {
+        if (!counts) return;
+
+        // Global
+        if (counts.global) {
+            const elTotal = document.getElementById('global-total-count');
+            const elNotStarted = document.getElementById('global-not-started-count');
+            const elCancelled = document.getElementById('global-cancelled-count');
+            const elSaved = document.getElementById('global-saved-count');
+            const elEmployers = document.getElementById('global-employers-count');
+
+            if (elTotal) elTotal.innerText = counts.global.total;
+            if (elNotStarted) elNotStarted.innerText = counts.global.not_started;
+            if (elCancelled) elCancelled.innerText = counts.global.cancelled;
+            if (elSaved) elSaved.innerText = counts.global.saved;
+            if (elEmployers) elEmployers.innerText = counts.global.total_employers;
+        }
+
+        // Employer
+        if (counts.employer) {
+            const id = counts.employer.id;
+            const elTotal = document.getElementById(`employer-total-${id}`);
+            const elNotStarted = document.getElementById(`employer-not-started-${id}`);
+            const elCancelled = document.getElementById(`employer-cancelled-${id}`);
+            const elSaved = document.getElementById(`employer-saved-${id}`);
+
+            if (elTotal) elTotal.innerText = counts.employer.total;
+            if (elNotStarted) elNotStarted.innerText = counts.employer.not_started;
+            if (elCancelled) elCancelled.innerText = counts.employer.cancelled;
+            if (elSaved) elSaved.innerText = counts.employer.saved;
+        }
+    }
+
     // --- Employee Actions (Updated for Immediate DOM Feedback) ---
     function finalizeEmployee(id) {
         Swal.fire({
@@ -473,7 +553,8 @@
             confirmButtonText: 'Yes, Save'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/finalize`, {
+                const searchParams = window.location.search;
+                fetch(`/production/registration/${id}/finalize${searchParams}`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -504,6 +585,9 @@
                             toggleElement(`badge-completed-${id}`, true);
                             toggleElement(`badge-cancelled-${id}`, false);
 
+                            // 5. Update Counts
+                            if (data.counts) updateCounts(data.counts);
+
                             Swal.fire('Saved!', 'Employee marked as completed.', 'success');
                         }
                     }
@@ -521,7 +605,8 @@
             confirmButtonText: 'Yes, Restore'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/restore`, {
+                const searchParams = window.location.search;
+                fetch(`/production/registration/${id}/restore${searchParams}`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -557,6 +642,9 @@
                             const stepsBtns = card.querySelectorAll('button[data-step-id]');
                             stepsBtns.forEach(btn => btn.disabled = false);
 
+                            // 5. Update Counts
+                            if (data.counts) updateCounts(data.counts);
+
                             Swal.fire('Restored!', 'Employee is back to pending.', 'success');
                         }
                     }
@@ -575,7 +663,8 @@
             confirmButtonText: 'Yes, Cancel'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/cancel`, {
+                const searchParams = window.location.search;
+                fetch(`/production/registration/${id}/cancel${searchParams}`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -607,6 +696,9 @@
                             toggleElement(`badge-completed-${id}`, false);
                             toggleElement(`badge-cancelled-${id}`, true);
 
+                            // 5. Update Counts
+                            if (data.counts) updateCounts(data.counts);
+
                             Swal.fire('Cancelled', 'Registration cancelled.', 'success');
                         }
                     }
@@ -625,7 +717,8 @@
             confirmButtonText: 'Yes, Delete'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/destroy`, {
+                const searchParams = window.location.search;
+                fetch(`/production/registration/${id}/destroy${searchParams}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -642,6 +735,7 @@
                             card.style.transform = 'scale(0.9)';
                             setTimeout(() => card.remove(), 500);
                         }
+                        if (data.counts) updateCounts(data.counts);
                         Swal.fire('Deleted!', 'Employee has been deleted.', 'success');
                     }
                 })
@@ -703,7 +797,8 @@
             }
         }
 
-        fetch(`/production/registration/progress/${employeeId}`, {
+        const searchParams = window.location.search;
+        fetch(`/production/registration/progress/${employeeId}${searchParams}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ step_id: stepId, completed: completed })
@@ -761,7 +856,7 @@
                     }
                 };
 
-                // 2. Update Global Stats
+                // 2. Update Global Stats (Steps)
                 if (data.globalStats) {
                     const globalContainer = document.getElementById('global-stats-container');
                     if (globalContainer) {
@@ -772,7 +867,7 @@
                     }
                 }
 
-                // 3. Update Employer Stats
+                // 3. Update Employer Stats (Steps)
                 if (data.employerStats && data.employerId) {
                     const employerContainer = document.getElementById(`employer-stats-${data.employerId}`);
                     if (employerContainer) {
@@ -783,15 +878,9 @@
                     }
                 }
 
-                // 4. Update Not Started Counts
-                if (typeof data.globalNotStarted !== 'undefined') {
-                    const globalNotStartedEl = document.getElementById('global-not-started-count');
-                    if (globalNotStartedEl) globalNotStartedEl.innerText = data.globalNotStarted;
-                }
-
-                if (typeof data.employerNotStarted !== 'undefined' && data.employerId) {
-                    const empNotStartedEl = document.getElementById(`employer-not-started-${data.employerId}`);
-                    if (empNotStartedEl) empNotStartedEl.innerText = data.employerNotStarted;
+                // 4. Update Main Counts (via helper)
+                if (data.counts) {
+                     updateCounts(data.counts);
                 }
 
             } else {
