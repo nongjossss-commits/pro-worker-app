@@ -488,9 +488,19 @@ class RegistrationController extends Controller
                                     ->get();
 
             $steps = RegistrationStep::orderBy('order')->get();
+            // Determine step 1 ID for "Not Started" logic
+            $stepOneId = $steps->sortBy('order')->first()?->id;
+
+            // Global Stats
             $globalStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            $globalNotStarted = 0;
 
             foreach ($allEmployees as $emp) {
+                // Count Not Started
+                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                    $globalNotStarted++;
+                }
+
                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
                 if ($highest && isset($globalStats[$highest->id])) {
                     $globalStats[$highest->id]++;
@@ -509,7 +519,14 @@ class RegistrationController extends Controller
                                         ->with('registrationSteps')
                                         ->get();
 
+            $employerNotStarted = 0;
+
             foreach ($employerEmployees as $emp) {
+                 // Count Not Started
+                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                     $employerNotStarted++;
+                 }
+
                  $highest = $emp->registrationSteps->sortByDesc('order')->first();
                  if ($highest && isset($employerStats[$highest->id])) {
                      $employerStats[$highest->id]++;
@@ -519,7 +536,9 @@ class RegistrationController extends Controller
             return response()->json([
                 'success' => true,
                 'globalStats' => $globalStats,
+                'globalNotStarted' => $globalNotStarted,
                 'employerStats' => $employerStats,
+                'employerNotStarted' => $employerNotStarted,
                 'employerId' => $employee->employer_id
             ]);
 
