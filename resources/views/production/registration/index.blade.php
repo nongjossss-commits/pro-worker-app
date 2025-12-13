@@ -358,7 +358,7 @@
 
         fetch('{{ route("production.registration.steps.store") }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ name: name })
         })
         .then(res => res.json())
@@ -388,7 +388,7 @@
             if (result.isConfirmed) {
                 fetch(`/production/registration/steps/${id}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -415,7 +415,7 @@
 
         fetch(`/production/registration/steps/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ name: newName })
         })
         .then(res => res.json())
@@ -444,7 +444,7 @@
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/finalize`, {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -492,7 +492,7 @@
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/restore`, {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -546,7 +546,7 @@
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/cancel`, {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -596,7 +596,7 @@
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/destroy`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
                 .then(res => {
                      if(!res.ok) throw new Error(res.statusText);
@@ -674,7 +674,7 @@
 
         fetch(`/production/registration/progress/${employeeId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ step_id: stepId, completed: completed })
         })
         .then(res => {
