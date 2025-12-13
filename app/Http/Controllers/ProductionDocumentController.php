@@ -18,20 +18,37 @@ class ProductionDocumentController extends Controller
             abort(404);
         }
 
-        // Get Company Profile
-        $profileId = $request->query('profile_id');
-        $companyProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::first();
+        // --- Header Logic ---
+        // Check if Custom Header is active in production data
+        $financialData = $production->financial_data ?? [];
+        $customHeader = $financialData['custom_header'] ?? null;
 
-        // Fallback dummy profile if none exists (Prevents view crash)
-        if (!$companyProfile) {
-            $companyProfile = new CompanyProfile([
-                'name' => 'Company Name (Default)',
-                'address' => 'Please configure a company profile in settings.',
-                'tax_id' => '0000000000000',
-                'phone' => '-',
-                'email' => '-',
-                // Add other fields as necessary to prevent null access in view
-            ]);
+        // If Custom Header exists and is not null, wrap it in an object similar to CompanyProfile
+        if ($customHeader) {
+            $companyProfile = (object) [
+                'name' => $customHeader['name'] ?? 'Custom Company',
+                'address' => $customHeader['address'] ?? '',
+                'tax_id' => $customHeader['tax_id'] ?? '',
+                'phone' => $customHeader['phone'] ?? '',
+                'email' => $customHeader['email'] ?? '', // Optional
+                'logo' => $customHeader['logo'] ?? null,
+            ];
+        } else {
+            // Fallback to System Profile
+            // Prefer the one saved in financial_data['profile_id'] if exists, else request param, else default
+            $profileId = $financialData['profile_id'] ?? $request->query('profile_id');
+            $companyProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::first();
+
+            // Fallback dummy profile if none exists (Prevents view crash)
+            if (!$companyProfile) {
+                $companyProfile = new CompanyProfile([
+                    'name' => 'Company Name (Default)',
+                    'address' => 'Please configure a company profile in settings.',
+                    'tax_id' => '0000000000000',
+                    'phone' => '-',
+                    'email' => '-',
+                ]);
+            }
         }
 
         // --- Filter Transactions Logic ---
@@ -44,14 +61,11 @@ class ProductionDocumentController extends Controller
         }
 
         // For Receipt, usually only show 'paid' ones? Or user choice?
-        // User choice via selection modal overrides this.
-        // But if no selection, maybe default behavior?
         if ($type === 'receipt' && !$request->has('transaction_ids')) {
              $transactionsQuery->where('status', 'paid');
         }
 
         $transactions = $transactionsQuery->orderBy('due_date')->get();
-
 
         // Prepare data for the view
         $data = [
@@ -59,7 +73,8 @@ class ProductionDocumentController extends Controller
             'company' => $companyProfile,
             'type' => $type,
             'date' => now(),
-            'transactions' => $transactions, // Pass filtered transactions
+            'transactions' => $transactions,
+            'financial' => $financialData // Pass full financial data for easier access in view
         ];
 
         return view('production.documents.' . $type, $data);
