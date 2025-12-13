@@ -47,11 +47,16 @@
                 </button>
             </div>
 
-            <div class="d-flex gap-3 flex-wrap justify-content-start" id="global-stats-container">
+            @php
+                // Identify the last step dynamically
+                $lastStepId = $steps->sortBy('order')->last()?->id;
+            @endphp
+            <div class="d-flex gap-3 flex-wrap justify-content-start align-items-end" id="global-stats-container">
                 @foreach($steps as $step)
                     @php
                         $count = $stepStats[$step->id] ?? 0;
                         $isZero = $count === 0;
+                        $isLastStep = ($step->id === $lastStepId);
 
                         if ($isZero) {
                             $bgClass = "bg-secondary bg-opacity-50 text-white"; // Gray for zero
@@ -60,14 +65,28 @@
                             $bgClass = "bg-success";
                             $bgStyle = "";
                         }
+
+                        // Special styling for Last Step
+                        if ($isLastStep) {
+                            $badgeClass = "px-4 py-3 fs-3 border border-3 border-success shadow";
+                            $containerStyle = "min-width: 120px;";
+                            $nameStyle = "font-size: 1rem;";
+                        } else {
+                            $badgeClass = "px-3 py-2 fs-6 shadow-sm";
+                            $containerStyle = "min-width: 80px;";
+                            $nameStyle = "max-width: 100px;";
+                        }
                     @endphp
-                    <div class="d-flex flex-column align-items-center" style="min-width: 80px;">
-                        <span class="badge rounded-pill mb-2 px-3 py-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm"
+                    <div class="d-flex flex-column align-items-center" style="{{ $containerStyle }}">
+                        <span class="badge rounded-pill mb-2 {{ $badgeClass }} {{ $bgClass }} global-stat-badge"
                               style="{{ $bgStyle }}"
                               data-step-id="{{ $step->id }}">
                             {{ $count }}
                         </span>
-                        <small class="fw-bold text-muted text-center text-truncate" style="max-width: 100px;" title="{{ $step->name }}">{{ $step->name }}</small>
+                        <small class="fw-bold text-muted text-center text-truncate" style="{{ $nameStyle }}" title="{{ $step->name }}">
+                            {{ $step->name }}
+                            @if($isLastStep) <i class="bi bi-check-all text-success ms-1"></i> @endif
+                        </small>
                     </div>
                 @endforeach
             </div>
@@ -185,11 +204,12 @@
 
                         {{-- Employer Scoreboard (Col-4) --}}
                         <div class="col-lg-4">
-                            <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
+                            <div class="d-flex gap-2 flex-wrap align-items-end justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
                                  @foreach($steps as $step)
                                     @php
                                         $count = $employer->stepStats[$step->id] ?? 0;
                                         $isZero = $count === 0;
+                                        $isLastStep = ($step->id === $lastStepId);
 
                                         if ($isZero) {
                                             $bgClass = "bg-secondary bg-opacity-25 text-muted"; // Lighter gray for zero
@@ -198,14 +218,25 @@
                                              $bgClass = "bg-success";
                                              $bgStyle = "";
                                         }
+
+                                        // Special styling for Last Step in Employer Card
+                                        if ($isLastStep) {
+                                            $badgeClass = "fs-5 px-3 py-2 border border-2 border-success shadow-sm"; // Bigger
+                                            $wrapperStyle = "min-width: 70px;";
+                                            $nameStyle = "font-size: 0.75rem; max-width: 80px;";
+                                        } else {
+                                            $badgeClass = ""; // Default size
+                                            $wrapperStyle = "min-width: 50px;";
+                                            $nameStyle = "font-size: 0.65rem; max-width: 60px;";
+                                        }
                                     @endphp
-                                    <div class="text-center" style="min-width: 50px;">
-                                        <span class="badge rounded-pill {{ $bgClass }} employer-stat-badge mb-1"
+                                    <div class="text-center" style="{{ $wrapperStyle }}">
+                                        <span class="badge rounded-pill {{ $bgClass }} {{ $badgeClass }} employer-stat-badge mb-1"
                                               style="{{ $bgStyle }}"
                                               data-step-id="{{ $step->id }}">
                                             {{ $count }}
                                         </span>
-                                        <small class="d-block text-muted text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
+                                        <small class="d-block text-muted text-truncate" style="{{ $nameStyle }}" title="{{ $step->name }}">{{ $step->name }}</small>
                                     </div>
                                  @endforeach
                             </div>
