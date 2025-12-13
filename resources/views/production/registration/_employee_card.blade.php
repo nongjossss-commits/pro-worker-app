@@ -136,15 +136,17 @@
                         // Determine styles based on hex or class
                         $hexColor = str_starts_with($step->color, '#') ? $step->color : null;
 
+                        // Default State: Incomplete -> Gray outline
                         $btnClass = 'btn-outline-secondary';
                         $btnStyle = '';
 
+                        // Completed State: Colored background
                         if ($isStepCompleted) {
                             if ($hexColor) {
-                                $btnClass = 'text-white border-0'; // Base class for colored
-                                $btnStyle = "background-color: {$hexColor};";
+                                $btnClass = 'text-white border-0';
+                                $btnStyle = "background-color: {$hexColor} !important; border-color: {$hexColor} !important;";
                             } else {
-                                $btnClass = "btn-{$step->color}";
+                                $btnClass = "btn-{$step->color} text-white";
                             }
                         }
                     @endphp

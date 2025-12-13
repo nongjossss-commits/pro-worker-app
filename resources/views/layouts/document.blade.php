@@ -138,10 +138,11 @@
         <div class="grid-2 mb-8">
             <div>
                 <h4 class="mb-2 text-muted text-sm uppercase">Bill To</h4>
-                <div class="font-bold text-lg">{{ $production->employer->employerNameTh ?? 'Client Name' }}</div>
+                <div class="font-bold text-lg">{{ $billTo->employerNameTh ?? 'Client Name' }}</div>
                 <div class="text-sm text-muted">
-                    {{ $production->employer->employerAddress ?? 'Address' }}<br>
-                    Tel: {{ $production->employer->employerPhone ?? '-' }}
+                    {{ $billTo->employerAddress ?? 'Address' }}<br>
+                    @if(isset($billTo->tax_id) && $billTo->tax_id !== '-') Tax ID: {{ $billTo->tax_id }}<br> @endif
+                    Tel: {{ $billTo->employerPhone ?? '-' }}
                 </div>
             </div>
             <div class="text-right">

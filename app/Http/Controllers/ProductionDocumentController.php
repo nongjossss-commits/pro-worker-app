@@ -51,6 +51,24 @@ class ProductionDocumentController extends Controller
             }
         }
 
+        // --- Bill To Logic (Customer Override) ---
+        // Check if Customer Override is active in production data
+        $customCustomer = $financialData['customer_override'] ?? null;
+        $billTo = $production->employer; // Default
+
+        if ($customCustomer) {
+            // Wrap in object to match Employer structure interface used in view
+            // Employer model uses: employerNameTh, employerAddress, employerPhone
+            // We map the override data to these keys for compatibility, or view can handle both.
+            // Let's create a generic object.
+            $billTo = (object) [
+                'employerNameTh' => $customCustomer['name'] ?? 'Client Name',
+                'employerAddress' => $customCustomer['address'] ?? '',
+                'employerPhone' => $customCustomer['phone'] ?? '-',
+                'tax_id' => $customCustomer['tax_id'] ?? '-' // Employer model might not have tax_id accessor commonly used in view yet
+            ];
+        }
+
         // --- Filter Transactions Logic ---
         $transactionsQuery = FinancialTransaction::where('production_order_id', $production->id);
 
@@ -71,6 +89,7 @@ class ProductionDocumentController extends Controller
         $data = [
             'production' => $production,
             'company' => $companyProfile,
+            'billTo' => $billTo, // Pass the resolved Bill To entity
             'type' => $type,
             'date' => now(),
             'transactions' => $transactions,

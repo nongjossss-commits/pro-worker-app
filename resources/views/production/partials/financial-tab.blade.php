@@ -205,6 +205,29 @@
                     <button @click="openSelectionModal('receipt')" class="btn btn-outline-secondary btn-sm text-start">
                         <i class="bi bi-check-circle me-2"></i>Receipt (ใบเสร็จรับเงิน)
                     </button>
+                    <button @click="openSelectionModal('credit_note')" class="btn btn-outline-secondary btn-sm text-start">
+                        <i class="bi bi-file-earmark-minus me-2"></i>Credit Note (ใบลดหนี้)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bill To / Customer Settings -->
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-badge me-2"></i>Bill To (Customer)</span>
+                <button class="btn btn-xs btn-outline-secondary" @click="showCustomCustomerModal = true">
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Active Customer</label>
+                    <div class="d-flex align-items-center gap-2">
+                         <div x-show="customCustomer" class="badge bg-warning text-dark">Override Active</div>
+                         <div x-show="!customCustomer" class="badge bg-secondary">Default (Employer)</div>
+                    </div>
+                    <div class="small mt-1 text-truncate fw-bold" x-text="customerNameDisplay"></div>
                 </div>
             </div>
         </div>
@@ -329,6 +352,10 @@
                                 <div class="small text-success">Logo Set</div>
                             </div>
                         </div>
+                        <!-- Save as New Profile Button -->
+                         <button class="btn btn-outline-success btn-sm w-100 mt-2" @click="saveAsNewProfile()">
+                            <i class="bi bi-hdd-fill me-1"></i> Save as New System Profile
+                        </button>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -340,6 +367,69 @@
     </div>
     <!-- Backdrop for manual modal -->
     <div class="modal-backdrop fade show" x-show="showCustomHeaderModal" style="z-index: 1040;"></div>
+
+    <!-- Custom Customer Modal -->
+    <div class="modal fade" id="customCustomerModal" tabindex="-1" x-show="showCustomCustomerModal" style="display: none;" :class="{ 'show d-block': showCustomCustomerModal }">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bill To (Customer) Settings</h5>
+                    <button type="button" class="btn-close" @click="showCustomCustomerModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Load from Agent -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Quick Load: From Agent</label>
+                        <div class="input-group input-group-sm">
+                            <select class="form-select" x-model="selectedAgentId" @change="loadAgentData()">
+                                <option value="">-- Select Agent --</option>
+                                @foreach(\App\Models\Agent::all() as $agent)
+                                    <option value="{{ $agent->id }}"
+                                            data-name="{{ $agent->agentNameEn }}"
+                                            data-phone="{{ $agent->agentPhone ?? '' }}"
+                                            >{{ $agent->agentNameEn }}</option>
+                                @endforeach
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" @click="loadAgentData()">Load</button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="useCustomCustomerToggle" x-model="useCustomCustomer">
+                        <label class="form-check-label fw-bold" for="useCustomCustomerToggle">Override Default (Employer)</label>
+                    </div>
+
+                    <div x-show="useCustomCustomer">
+                        <div class="mb-2">
+                            <label class="form-label small">Client Name</label>
+                            <input type="text" class="form-control form-control-sm" x-model="customCustomerData.name">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Address</label>
+                            <textarea class="form-control form-control-sm" rows="3" x-model="customCustomerData.address"></textarea>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label small">Tax ID</label>
+                                <input type="text" class="form-control form-control-sm" x-model="customCustomerData.tax_id">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Phone</label>
+                                <input type="text" class="form-control form-control-sm" x-model="customCustomerData.phone">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" @click="showCustomCustomerModal = false">Close</button>
+                    <button type="button" class="btn btn-primary btn-sm" @click="saveFinancialData(); showCustomCustomerModal = false;">Save & Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show" x-show="showCustomCustomerModal" style="z-index: 1040;"></div>
 
 
     <!-- Add Transaction Modal -->
@@ -468,6 +558,12 @@ function financialManager() {
         customHeader: {!! json_encode($production->financial_data['custom_header'] ?? ['name'=>'', 'address'=>'', 'tax_id'=>'', 'phone'=>'', 'logo'=>'']) !!},
         selectedProfileId: '{{ $production->financial_data['profile_id'] ?? '' }}',
 
+        // Custom Customer (Bill To) Data
+        showCustomCustomerModal: false,
+        useCustomCustomer: {{ isset($production->financial_data['customer_override']) ? 'true' : 'false' }},
+        customCustomerData: {!! json_encode($production->financial_data['customer_override'] ?? ['name'=>'', 'address'=>'', 'tax_id'=>'', 'phone'=>'']) !!},
+        selectedAgentId: '',
+
         // Calculated values
         totalAmount: 0,
         baseTotal: 0,
@@ -557,10 +653,15 @@ function financialManager() {
             if (this.useCustomHeader) {
                 return this.customHeader.name || 'Custom Header';
             }
-            // Logic to get profile name from ID would require a JS map or lookup,
-            // simpler to just show "System Profile" or use the select box text if we bound it differently.
-            // For now, simple text:
             return this.selectedProfileId ? 'Selected System Profile' : 'Default Profile';
+        },
+
+        get customerNameDisplay() {
+             return this.useCustomCustomer ? (this.customCustomerData.name || 'Custom Client') : 'Default (Employer)';
+        },
+
+        get customCustomer() {
+             return this.useCustomCustomer;
         },
 
         // --- Save Logic ---
@@ -572,19 +673,22 @@ function financialManager() {
                 financial: {
                     pricing_mode: this.pricingMode,
                     fixed_base_amount: this.fixedTotal,
-                    pricing_tiers: this.pricingTiers, // New
+                    pricing_tiers: this.pricingTiers,
                     discount: this.discount,
 
                     vat_included: this.vatIncluded,
                     vat_rate: this.vatRate,
-                    wht_enabled: this.whtEnabled, // New
-                    wht_rate: this.whtRate, // New
+                    wht_enabled: this.whtEnabled,
+                    wht_rate: this.whtRate,
 
-                    total_amount: this.totalAmount, // Calculated
+                    total_amount: this.totalAmount,
 
                     // Header Data
                     custom_header: this.useCustomHeader ? this.customHeader : null,
-                    profile_id: this.selectedProfileId
+                    profile_id: this.selectedProfileId,
+
+                    // Customer Override Data
+                    customer_override: this.useCustomCustomer ? this.customCustomerData : null
                 },
                 _method: 'PUT'
             };
@@ -597,15 +701,66 @@ function financialManager() {
             .then(res => res.json())
             .then(data => {
                 this.isSaving = false;
-                if(typeof showToast === 'function') {
-                    showToast('Settings Saved', 'success');
-                } else {
-                    alert('Settings Saved');
-                }
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Settings Saved',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    toast: true,
+                    position: 'top-end'
+                });
             })
             .catch(err => {
                 this.isSaving = false;
-                alert('Error saving data');
+                Swal.fire('Error', 'Error saving data', 'error');
+            });
+        },
+
+        // --- Agent Logic ---
+        loadAgentData() {
+            if (!this.selectedAgentId) return;
+            const select = this.$el.querySelector('select');
+            const option = select.options[select.selectedIndex];
+            const name = option.getAttribute('data-name');
+            const phone = option.getAttribute('data-phone');
+
+            this.customCustomerData.name = name;
+            this.customCustomerData.phone = phone;
+            this.customCustomerData.address = ''; // Agent address usually not in list, left blank
+            this.customCustomerData.tax_id = '';
+
+            this.useCustomCustomer = true;
+            Swal.fire({
+                icon: 'success',
+                title: 'Agent Data Loaded',
+                text: 'Don\'t forget to save!',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        },
+
+        // --- Profile Logic ---
+        saveAsNewProfile() {
+            if (!this.customHeader.name) {
+                Swal.fire('Error', 'Please enter a Company Name', 'error');
+                return;
+            }
+
+            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('{{ route("admin.settings.financial.store") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                body: JSON.stringify(this.customHeader)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Success', 'Profile Saved!', 'success').then(() => {
+                        location.reload(); // Reload to refresh profile list
+                    });
+                } else {
+                     Swal.fire('Error', 'Failed to save profile', 'error');
+                }
             });
         },
 
@@ -618,8 +773,6 @@ function financialManager() {
             formData.append('logo', file);
             const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-            // We need a route for this. Using a generic temp upload or a new specific one?
-            // Let's assume we create a new route: production/{id}/upload-logo
             fetch('/production/{{ $production->id }}/upload-logo', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrf },
@@ -629,9 +782,9 @@ function financialManager() {
             .then(data => {
                 if (data.success) {
                     this.customHeader.logo = data.path;
-                    alert('Logo uploaded!');
+                    Swal.fire('Success', 'Logo uploaded!', 'success');
                 } else {
-                    alert('Upload failed');
+                    Swal.fire('Error', 'Upload failed', 'error');
                 }
             });
         },
