@@ -350,4 +350,30 @@ class ProductionController extends Controller
         $production->delete();
         return redirect()->route('production.index')->with('success', 'Project deleted.');
     }
+
+    /**
+     * Upload a custom logo for the financial header.
+     */
+    public function uploadLogo(Request $request, $id)
+    {
+        $request->validate([
+            'logo' => 'required|image|max:2048', // 2MB Max
+        ]);
+
+        $production = ProductionOrder::findOrFail($id);
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = 'logo_' . time() . '.' . $file->getClientOriginalExtension();
+            // Store in a public folder
+            $path = $file->storeAs('uploads/logos', $filename, 'public');
+
+            return response()->json([
+                'success' => true,
+                'path' => $path
+            ]);
+        }
+
+        return response()->json(['success' => false], 400);
+    }
 }
