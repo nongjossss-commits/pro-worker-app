@@ -843,15 +843,34 @@ function financialManager() {
             });
         },
         deleteTransaction(id) {
-            if(!confirm('Delete?')) return;
-            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch('/production/transactions/' + id, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) this.transactions = this.transactions.filter(t => t.id !== id);
+            Swal.fire({
+                title: '{{ __('Are you sure?') }}',
+                text: '{{ __('This transaction will be permanently deleted.') }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '{{ __('Yes, delete it!') }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    fetch('/production/transactions/' + id, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) {
+                            this.transactions = this.transactions.filter(t => t.id !== id);
+                            Swal.fire(
+                                '{{ __('Deleted!') }}',
+                                '{{ __('Transaction has been deleted.') }}',
+                                'success'
+                            );
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to delete', 'error');
+                        }
+                    });
+                }
             });
         },
         formatCurrency(val) {

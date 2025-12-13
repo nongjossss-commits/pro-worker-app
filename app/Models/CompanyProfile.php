@@ -13,6 +13,7 @@ class CompanyProfile extends Model
         'name',
         'address',
         'tax_id',
+        'phone',
         'logo_path',
         'is_default',
     ];
