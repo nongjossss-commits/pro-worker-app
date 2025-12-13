@@ -411,14 +411,12 @@ class RegistrationController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'color' => 'nullable|string|max:50',
         ]);
 
         $maxOrder = RegistrationStep::max('order') ?? 0;
 
         RegistrationStep::create([
             'name' => $validated['name'],
-            'color' => $validated['color'] ?? 'primary',
             'order' => $maxOrder + 1,
         ]);
 
@@ -432,12 +430,10 @@ class RegistrationController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'color' => 'nullable|string|max:50',
         ]);
 
         $step->update([
             'name' => $validated['name'],
-            'color' => $validated['color'] ?? $step->color
         ]);
 
         return response()->json(['success' => true]);
