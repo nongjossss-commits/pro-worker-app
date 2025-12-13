@@ -53,6 +53,9 @@ class RegistrationController extends Controller
         // 2. Fetch Workflow Steps
         $steps = RegistrationStep::orderBy('order')->get();
 
+        // Identify the Last Step (highest order) for special UI highlighting
+        $lastStepId = $steps->sortByDesc('order')->first()?->id;
+
         // Determine step 1 ID for "Not Started" logic
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
@@ -145,7 +148,8 @@ class RegistrationController extends Controller
             'notStartedCount',
             'steps',
             'stepStats',
-            'employers'
+            'employers',
+            'lastStepId'
         ));
     }
 

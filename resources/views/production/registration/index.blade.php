@@ -47,27 +47,44 @@
                 </button>
             </div>
 
-            <div class="d-flex gap-2 flex-wrap justify-content-start" id="global-stats-container">
+            <div class="d-flex gap-2 flex-wrap justify-content-start align-items-center" id="global-stats-container">
                 @foreach($steps as $step)
                     @php
                         $count = $stepStats[$step->id] ?? 0;
                         $isZero = $count === 0;
+                        $isLastStep = ($step->id === $lastStepId);
 
-                        if ($isZero) {
-                            $bgClass = "bg-secondary bg-opacity-50 text-white"; // Gray for zero
-                            $bgStyle = "";
+                        if ($isLastStep) {
+                             // Last Step Special Styling
+                             if ($isZero) {
+                                 $bgClass = "bg-secondary bg-opacity-50 text-white";
+                             } else {
+                                 $bgClass = "bg-primary"; // Blue for last step
+                             }
+                             $sizeClass = "fs-2 p-3"; // Bigger font and padding
+                             $dimensions = "width: 64px; height: 64px;"; // Bigger circle
+                             $containerClass = "py-3 px-4"; // Bigger pill
+                             $nameClass = "fs-4"; // Bigger name
                         } else {
-                            $bgClass = "bg-success";
-                            $bgStyle = "";
+                            // Normal Step
+                            if ($isZero) {
+                                $bgClass = "bg-secondary bg-opacity-50 text-white";
+                            } else {
+                                $bgClass = "bg-success";
+                            }
+                            $sizeClass = "fs-6 p-2";
+                            $dimensions = "width: 32px; height: 32px;";
+                            $containerClass = "py-2 px-3";
+                            $nameClass = "fs-6";
                         }
                     @endphp
-                    <div class="d-inline-flex align-items-center bg-white border rounded-pill px-3 py-2 shadow-sm gap-2">
-                        <span class="badge rounded-circle p-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm d-flex align-items-center justify-content-center"
-                              style="{{ $bgStyle }}; width: 32px; height: 32px;"
+                    <div class="d-inline-flex align-items-center bg-white border rounded-pill {{ $containerClass }} shadow-sm gap-2">
+                        <span class="badge rounded-circle {{ $sizeClass }} {{ $bgClass }} global-stat-badge shadow-sm d-flex align-items-center justify-content-center"
+                              style="{{ $dimensions }}"
                               data-step-id="{{ $step->id }}">
                             {{ $count }}
                         </span>
-                        <span class="fw-bold text-dark fs-6 step-name-text" title="{{ $step->name }}">
+                        <span class="fw-bold text-dark {{ $nameClass }} step-name-text" title="{{ $step->name }}">
                             {{ $step->name }}
                         </span>
                     </div>
@@ -191,19 +208,32 @@
                                     @php
                                         $count = $employer->stepStats[$step->id] ?? 0;
                                         $isZero = $count === 0;
+                                        $isLastStep = ($step->id === $lastStepId);
 
-                                        if ($isZero) {
-                                            $bgClass = "bg-secondary bg-opacity-25 text-muted"; // Lighter gray for zero
-                                            $bgStyle = "";
+                                        if ($isLastStep) {
+                                            if ($isZero) {
+                                                $bgClass = "bg-secondary bg-opacity-25 text-muted";
+                                            } else {
+                                                $bgClass = "bg-primary text-white"; // Blue
+                                            }
+                                            $sizeClass = "fs-5 p-2";
+                                            $dimensions = "width: 48px; height: 48px;";
+                                            $containerClass = "px-3 py-2";
                                         } else {
-                                             $bgClass = "bg-success";
-                                             $bgStyle = "";
+                                            if ($isZero) {
+                                                $bgClass = "bg-secondary bg-opacity-25 text-muted";
+                                            } else {
+                                                 $bgClass = "bg-success text-white";
+                                            }
+                                            $sizeClass = ""; // Default
+                                            $dimensions = "width: 24px; height: 24px;";
+                                            $containerClass = "px-3 py-1";
                                         }
                                     @endphp
-                                    <div class="d-inline-flex align-items-center bg-light border rounded-pill px-3 py-1 gap-2"
+                                    <div class="d-inline-flex align-items-center bg-light border rounded-pill {{ $containerClass }} gap-2"
                                          style="min-width: max-content;">
-                                        <span class="badge rounded-circle p-1 d-flex align-items-center justify-content-center {{ $bgClass }} employer-stat-badge"
-                                              style="{{ $bgStyle }}; width: 24px; height: 24px;"
+                                        <span class="badge rounded-circle d-flex align-items-center justify-content-center {{ $sizeClass }} {{ $bgClass }} employer-stat-badge"
+                                              style="{{ $dimensions }}"
                                               data-step-id="{{ $step->id }}">
                                             {{ $count }}
                                         </span>
@@ -350,6 +380,7 @@
 @push('scripts')
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const lastStepId = {{ $lastStepId ?? 'null' }};
 
     // --- Manage Steps ---
     document.getElementById('addStepForm').addEventListener('submit', function(e) {
@@ -706,6 +737,8 @@
                     const allColors = ['primary', 'success', 'danger', 'warning', 'info', 'dark', 'secondary'];
                     allColors.forEach(c => badge.classList.remove(`bg-${c}`));
 
+                    const isLast = (parseInt(badge.dataset.stepId) === lastStepId);
+
                     if (count === 0) {
                         // Gray State
                         badge.classList.add('bg-secondary');
@@ -715,8 +748,16 @@
                              badge.classList.add('bg-opacity-25', 'text-muted');
                         }
                     } else {
-                        // Colored State (Always Success/Green)
-                        badge.classList.add('bg-success');
+                        // Colored State
+                        if (isLast) {
+                            // Last step gets Primary Blue
+                            badge.classList.add('bg-primary');
+                            if (!isGlobal) badge.classList.add('text-white'); // Ensure contrast
+                        } else {
+                            // Normal step gets Success Green
+                            badge.classList.add('bg-success');
+                            if (!isGlobal) badge.classList.add('text-white');
+                        }
                     }
                 };
 
