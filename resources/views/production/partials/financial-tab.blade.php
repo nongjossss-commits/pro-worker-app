@@ -465,7 +465,7 @@ function financialManager() {
         // Custom Header Data
         showCustomHeaderModal: false,
         useCustomHeader: {{ isset($production->financial_data['custom_header']) ? 'true' : 'false' }},
-        customHeader: @json($production->financial_data['custom_header'] ?? ['name'=>'', 'address'=>'', 'tax_id'=>'', 'phone'=>'', 'logo'=>'']),
+        customHeader: {!! json_encode($production->financial_data['custom_header'] ?? ['name'=>'', 'address'=>'', 'tax_id'=>'', 'phone'=>'', 'logo'=>'']) !!},
         selectedProfileId: '{{ $production->financial_data['profile_id'] ?? '' }}',
 
         // Calculated values
