@@ -52,22 +52,19 @@
                     @php
                         $count = $stepStats[$step->id] ?? 0;
                         $isZero = $count === 0;
-                        $color = $step->color ?? 'primary';
 
                         if ($isZero) {
                             $bgClass = "bg-secondary bg-opacity-50 text-white"; // Gray for zero
                             $bgStyle = "";
                         } else {
-                            // Check if color is hex or class
-                            $bgStyle = str_starts_with($color, '#') ? "background-color: {$color} !important;" : "";
-                            $bgClass = !str_starts_with($color, '#') ? "bg-{$color}" : "";
+                            $bgClass = "bg-success";
+                            $bgStyle = "";
                         }
                     @endphp
                     <div class="d-flex flex-column align-items-center" style="min-width: 80px;">
                         <span class="badge rounded-pill mb-2 px-3 py-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm"
                               style="{{ $bgStyle }}"
-                              data-step-id="{{ $step->id }}"
-                              data-step-color="{{ $step->color ?? 'primary' }}">
+                              data-step-id="{{ $step->id }}">
                             {{ $count }}
                         </span>
                         <small class="fw-bold text-muted text-center text-truncate" style="max-width: 100px;" title="{{ $step->name }}">{{ $step->name }}</small>
@@ -193,21 +190,19 @@
                                     @php
                                         $count = $employer->stepStats[$step->id] ?? 0;
                                         $isZero = $count === 0;
-                                        $color = $step->color ?? 'primary';
 
                                         if ($isZero) {
                                             $bgClass = "bg-secondary bg-opacity-25 text-muted"; // Lighter gray for zero
                                             $bgStyle = "";
                                         } else {
-                                             $bgStyle = str_starts_with($color, '#') ? "background-color: {$color} !important;" : "";
-                                             $bgClass = !str_starts_with($color, '#') ? "bg-{$color}" : "";
+                                             $bgClass = "bg-success";
+                                             $bgStyle = "";
                                         }
                                     @endphp
                                     <div class="text-center" style="min-width: 50px;">
                                         <span class="badge rounded-pill {{ $bgClass }} employer-stat-badge mb-1"
                                               style="{{ $bgStyle }}"
-                                              data-step-id="{{ $step->id }}"
-                                              data-step-color="{{ $step->color ?? 'primary' }}">
+                                              data-step-id="{{ $step->id }}">
                                             {{ $count }}
                                         </span>
                                         <small class="d-block text-muted text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
@@ -302,18 +297,6 @@
                     <label class="form-label fw-bold">Add New Step</label>
                     <div class="d-flex gap-2 align-items-center">
                         <input type="text" class="form-control" id="newStepName" placeholder="Step Name (e.g., Medical Checkup)" required>
-                        {{-- Color Picker (Simple Select for now, implemented with JS badges) --}}
-                         <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="newStepColorBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span class="badge rounded-circle p-2 bg-primary" id="newStepColorPreview" style="width: 20px; height: 20px;"></span>
-                            </button>
-                            <input type="hidden" id="newStepColor" value="primary">
-                            <ul class="dropdown-menu p-2" style="min-width: 200px;">
-                                <div class="d-flex flex-wrap gap-2" id="color-palette-new">
-                                    {{-- JS will populate this --}}
-                                </div>
-                            </ul>
-                        </div>
                         <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> Add</button>
                     </div>
                 </form>
@@ -328,8 +311,8 @@
                                 {{-- Display Mode --}}
                                 <div class="d-flex align-items-center gap-2 step-display">
                                     @php
-                                        $bgStyle = str_starts_with($step->color, '#') ? "background-color: {$step->color} !important;" : "";
-                                        $bgClass = !str_starts_with($step->color, '#') ? "bg-{$step->color}" : "";
+                                        $bgClass = "bg-success";
+                                        $bgStyle = "";
                                     @endphp
                                     <span class="badge rounded-pill {{ $bgClass }}" style="{{ $bgStyle }}">&nbsp;</span>
                                     <span class="fw-bold step-name-text">{{ $step->name }}</span>
@@ -338,19 +321,6 @@
                                 {{-- Edit Mode --}}
                                 <div class="step-edit d-none flex-grow-1 d-flex gap-2 align-items-center">
                                     <input type="text" class="form-control form-control-sm step-edit-input" value="{{ $step->name }}">
-
-                                    {{-- Edit Color --}}
-                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <span class="badge rounded-circle p-1" style="{{ $bgStyle }}" id="editStepColorPreview-{{ $step->id }}"> </span>
-                                        </button>
-                                        <input type="hidden" id="editStepColor-{{ $step->id }}" value="{{ $step->color }}">
-                                        <ul class="dropdown-menu p-2">
-                                            <div class="d-flex flex-wrap gap-2 color-palette-edit" data-target-id="{{ $step->id }}">
-                                                {{-- JS populates --}}
-                                            </div>
-                                        </ul>
-                                    </div>
                                 </div>
                             </div>
 
@@ -379,74 +349,15 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // --- Color Palette (System Colors) ---
-    const systemColors = [
-        { name: 'primary', hex: '#0d6efd', label: 'Primary (Blue)' },
-        { name: 'success', hex: '#198754', label: 'Success (Green)' },
-        { name: 'danger',  hex: '#dc3545', label: 'Danger (Red)' },
-        { name: 'warning', hex: '#ffc107', label: 'Warning (Yellow)' },
-        { name: 'info',    hex: '#0dcaf0', label: 'Info (Cyan)' },
-        { name: 'dark',    hex: '#212529', label: 'Dark (Black)' }
-    ];
-
-    function renderColorPalette(container, inputId, previewId) {
-        container.innerHTML = '';
-        systemColors.forEach(colorObj => {
-            const swatch = document.createElement('div');
-            swatch.style.width = '24px';
-            swatch.style.height = '24px';
-            swatch.style.backgroundColor = colorObj.hex;
-            swatch.style.borderRadius = '50%';
-            swatch.style.cursor = 'pointer';
-            swatch.style.border = '2px solid transparent';
-            swatch.title = colorObj.label;
-
-            swatch.addEventListener('click', () => {
-                document.getElementById(inputId).value = colorObj.name;
-                const preview = document.getElementById(previewId);
-
-                // Reset styling
-                preview.style.backgroundColor = '';
-                preview.className = `badge rounded-circle p-2 bg-${colorObj.name}`;
-
-                // Highlight selection
-                Array.from(container.children).forEach(c => c.style.borderColor = 'transparent');
-                swatch.style.borderColor = '#000';
-            });
-
-            container.appendChild(swatch);
-        });
-    }
-
-    // Init Palette for New Step
-    document.addEventListener('DOMContentLoaded', () => {
-        renderColorPalette(
-            document.getElementById('color-palette-new'),
-            'newStepColor',
-            'newStepColorPreview'
-        );
-
-        // Init Palettes for Edit Steps
-        document.querySelectorAll('.color-palette-edit').forEach(container => {
-            const id = container.dataset.targetId;
-            renderColorPalette(
-                container,
-                `editStepColor-${id}`,
-                `editStepColorPreview-${id}`
-            );
-        });
-    });
-
     // --- Manage Steps ---
     document.getElementById('addStepForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const name = document.getElementById('newStepName').value;
-        const color = document.getElementById('newStepColor').value;
 
         fetch('{{ route("production.registration.steps.store") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ name: name, color: color })
+            body: JSON.stringify({ name: name })
         })
         .then(res => res.json())
         .then(data => {
@@ -499,12 +410,11 @@
     function saveStep(id) {
         const item = document.getElementById(`step-item-${id}`);
         const newName = item.querySelector('.step-edit-input').value;
-        const newColor = document.getElementById(`editStepColor-${id}`).value;
 
         fetch(`/production/registration/steps/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ name: newName, color: newColor })
+            body: JSON.stringify({ name: newName })
         })
         .then(res => res.json())
         .then(data => {
@@ -633,23 +543,8 @@
             if (completed) {
                 // Becoming Complete: Change to Color
                 // Reset base classes first to avoid conflicts
-                btn.className = 'btn btn-sm rounded-pill px-3 text-white border-0';
-
-                const color = btn.dataset.color || 'success';
-                const hexColor = btn.dataset.hexColor;
-
-                if (hexColor) {
-                    btn.style.backgroundColor = hexColor;
-                    btn.style.borderColor = hexColor;
-                } else {
-                    btn.classList.add(`btn-${color}`);
-                    // Handle contrast for light colors
-                    if (color === 'warning' || color === 'light') {
-                        btn.classList.remove('text-white');
-                        btn.classList.add('text-dark');
-                    }
-                }
-
+                btn.className = 'btn btn-sm rounded-pill px-3 text-white border-0 btn-success';
+                // Force check icon
                 if(!btn.querySelector('i.bi-check')) {
                     btn.innerHTML = btn.innerText + ' <i class="bi bi-check-circle-fill ms-1"></i>';
                 }
@@ -698,9 +593,6 @@
                 // Helper to update badge color/style
                 const updateBadgeStyle = (badge, count, isGlobal) => {
                     badge.textContent = count;
-                    const color = badge.dataset.stepColor || 'primary';
-                    const isHex = color.startsWith('#');
-
                     // Reset common classes
                     badge.style.backgroundColor = '';
                     badge.classList.remove('bg-secondary', 'bg-opacity-50', 'bg-opacity-25', 'text-muted', 'text-white');
@@ -717,18 +609,8 @@
                              badge.classList.add('bg-opacity-25', 'text-muted');
                         }
                     } else {
-                        // Colored State
-                        if (isHex) {
-                            badge.style.backgroundColor = color + ' !important'; // Force override
-                            badge.classList.add('text-white');
-                        } else {
-                            badge.classList.add(`bg-${color}`);
-                            // Warning usually needs dark text, others white. Bootstrap handles this automatically often,
-                            // but let's assume text-white is safer for deep colors, or let BS decide.
-                            // Actually, mostly text-white is good except yellow.
-                            // Let's just leave text color to BS default for the bg-class, or force white if needed.
-                            // Check existing logic: was using text-white? No, implied by bg-class usually.
-                        }
+                        // Colored State (Always Success/Green)
+                        badge.classList.add('bg-success');
                     }
                 };
 
