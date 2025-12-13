@@ -7,7 +7,7 @@
     // Style: if completed/cancelled, flat/grey out.
     // Cancelled gets a specific flat grey look.
     $cardClass = 'bg-white border shadow-sm';
-    $overlayClass = '';
+    $overlayClass = ''; // Added to the avatar/info container and steps container
 
     if ($isCompleted) {
         $cardClass = 'bg-success bg-opacity-10 border-0 text-muted';
@@ -24,22 +24,20 @@
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-center gap-3 w-100">
                 {{-- Only show checkbox if Active (Pending) --}}
-                @if(!$isCompleted && !$isCancelled)
-                    <div class="form-check">
-                        <input class="form-check-input employee-checkbox"
-                               type="checkbox"
-                               value="{{ $employee->id }}"
-                               id="check_{{ $employee->id }}"
-                               data-employee-id="{{ $employee->id }}"
-                               data-employer-id="{{ $employee->employer_id }}"
-                               data-name-th="{{ $employee->employeeNameTh }}"
-                               data-name-en="{{ $employee->employeeNameEn }}"
-                               data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
-                               data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
-                    </div>
-                @endif
+                <div class="form-check {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
+                    <input class="form-check-input employee-checkbox"
+                           type="checkbox"
+                           value="{{ $employee->id }}"
+                           id="check_{{ $employee->id }}"
+                           data-employee-id="{{ $employee->id }}"
+                           data-employer-id="{{ $employee->employer_id }}"
+                           data-name-th="{{ $employee->employeeNameTh }}"
+                           data-name-en="{{ $employee->employeeNameEn }}"
+                           data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
+                           data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
+                </div>
 
-                <div class="d-flex align-items-center gap-3 {{ $overlayClass }}">
+                <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $employee->id }}">
                     {{-- Avatar --}}
                     <div class="avatar-container position-relative">
                         @if($employee->employeePhoto)
@@ -49,16 +47,14 @@
                                 {{ substr($employee->employeeNameEn ?? 'U', 0, 1) }}
                             </div>
                         @endif
-                        @if($isCompleted)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success border border-white">
-                                <i class="bi bi-check"></i>
-                            </span>
-                        @endif
-                         @if($isCancelled)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary border border-white">
-                                <i class="bi bi-x"></i>
-                            </span>
-                        @endif
+
+                        {{-- Status Badges (Hidden by default, toggled by JS/PHP) --}}
+                        <span id="badge-completed-{{ $employee->id }}" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success border border-white {{ !$isCompleted ? 'd-none' : '' }}">
+                            <i class="bi bi-check"></i>
+                        </span>
+                        <span id="badge-cancelled-{{ $employee->id }}" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary border border-white {{ !$isCancelled ? 'd-none' : '' }}">
+                            <i class="bi bi-x"></i>
+                        </span>
                     </div>
 
                     {{-- Info --}}
@@ -95,30 +91,37 @@
                     <i class="bi bi-pencil-fill"></i>
                 </a>
 
-                @if(!$isCompleted && !$isCancelled)
-                    {{-- Standard Actions --}}
-                    <button class="btn btn-sm btn-success rounded-pill px-3" title="Save to Database" onclick="finalizeEmployee({{ $employee->id }})">
-                        <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Save to DB') }}</span>
-                    </button>
+                {{-- SAVE TO DB --}}
+                <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
+                    id="btn-save-{{ $employee->id }}"
+                    title="Save to Database"
+                    onclick="finalizeEmployee({{ $employee->id }})">
+                    <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Save to DB') }}</span>
+                </button>
 
-                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="Cancel Registration" onclick="cancelEmployee({{ $employee->id }})">
-                        <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
-                    </button>
-                @endif
+                {{-- CANCEL --}}
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
+                    id="btn-cancel-{{ $employee->id }}"
+                    title="Cancel Registration"
+                    onclick="cancelEmployee({{ $employee->id }})">
+                    <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
+                </button>
 
-                @if($isCancelled)
-                    {{-- Restore Action for Cancelled --}}
-                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3" title="Restore" onclick="restoreEmployeeState({{ $employee->id }})">
-                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
-                    </button>
-                @endif
+                {{-- RESTORE (For Cancelled) --}}
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCancelled ? 'd-none' : '' }}"
+                    id="btn-restore-{{ $employee->id }}"
+                    title="Restore"
+                    onclick="restoreEmployeeState({{ $employee->id }})">
+                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
+                </button>
 
-                @if($isCompleted)
-                     {{-- Undo Complete --}}
-                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3" title="Undo / Restore" onclick="restoreEmployeeState({{ $employee->id }})">
-                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
-                    </button>
-                @endif
+                {{-- UNDO (For Completed) --}}
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCompleted ? 'd-none' : '' }}"
+                    id="btn-undo-{{ $employee->id }}"
+                    title="Undo / Restore"
+                    onclick="restoreEmployeeState({{ $employee->id }})">
+                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
+                </button>
 
                 {{-- Delete (Soft) --}}
                 <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }})">
@@ -128,7 +131,7 @@
         </div>
 
         {{-- Steps Progress Bar (Disable interaction if completed/cancelled) --}}
-        <div class="mt-3 {{ $overlayClass }}">
+        <div class="mt-3 {{ $overlayClass }}" id="steps-container-{{ $employee->id }}">
             <div class="d-flex gap-2 flex-wrap">
                 @foreach($steps as $step)
                     @php
