@@ -107,7 +107,7 @@
                             <input class="form-check-input" type="checkbox" id="whtEnabled" x-model="whtEnabled" @change="updateTotal()">
                             <label class="form-check-label small" for="whtEnabled">{{ __('Withholding Tax (WHT)') }}</label>
                         </div>
-                        <div class="input-group input-group-sm" style="width: 120px;" x-show="whtEnabled">
+                        <div class="input-group input-group-sm" style="width: 160px;" x-show="whtEnabled">
                             <span class="input-group-text">WHT</span>
                             <input type="number" step="0.1" class="form-control text-end" x-model="whtRate" @input="updateTotal()">
                             <span class="input-group-text">%</span>

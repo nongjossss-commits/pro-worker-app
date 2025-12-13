@@ -47,7 +47,7 @@
                 </button>
             </div>
 
-            <div class="d-flex gap-3 flex-wrap justify-content-start" id="global-stats-container">
+            <div class="d-flex gap-2 flex-wrap justify-content-start" id="global-stats-container">
                 @foreach($steps as $step)
                     @php
                         $count = $stepStats[$step->id] ?? 0;
@@ -61,13 +61,15 @@
                             $bgStyle = "";
                         }
                     @endphp
-                    <div class="d-flex flex-column align-items-center" style="min-width: 80px;">
-                        <span class="badge rounded-pill mb-2 px-3 py-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm"
-                              style="{{ $bgStyle }}"
+                    <div class="d-inline-flex align-items-center bg-white border rounded-pill px-3 py-2 shadow-sm gap-2">
+                        <span class="badge rounded-circle p-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm d-flex align-items-center justify-content-center"
+                              style="{{ $bgStyle }}; width: 32px; height: 32px;"
                               data-step-id="{{ $step->id }}">
                             {{ $count }}
                         </span>
-                        <small class="fw-bold text-muted text-center text-truncate" style="max-width: 100px;" title="{{ $step->name }}">{{ $step->name }}</small>
+                        <span class="fw-bold text-dark fs-6 step-name-text" title="{{ $step->name }}">
+                            {{ $step->name }}
+                        </span>
                     </div>
                 @endforeach
             </div>
@@ -148,44 +150,43 @@
             <div class="card mb-4 border-0 shadow-sm overflow-hidden">
                 <div class="card-header bg-white py-4 px-4 border-bottom" id="heading{{ $employer->id }}">
                     <div class="row w-100 align-items-center gy-3">
-                        {{-- Employer Info (Col-4) --}}
-                        <div class="col-lg-4 d-flex align-items-center gap-3">
+                        {{-- Employer Info (Col-5) + Stats --}}
+                        <div class="col-lg-5 d-flex align-items-center gap-4">
                              <button class="btn btn-link text-decoration-none text-dark p-0 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
                                 <h3 class="fw-bold mb-1 text-truncate" title="{{ $employer->employerNameTh }}">{{ $employer->employerNameTh }}</h3>
                                 <h5 class="text-muted mb-0 fw-light text-truncate" title="{{ $employer->employerNameEn }}">{{ $employer->employerNameEn }}</h5>
                             </button>
-                        </div>
 
-                        {{-- Employer Stats (Col-2) - REFACTORED --}}
-                        <div class="col-lg-2 d-flex justify-content-center gap-3 align-items-center">
-                            {{-- Total --}}
-                            <div class="d-flex flex-column align-items-center position-relative">
-                                <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                                     style="width: 50px; height: 50px; background-color: #F3F4F6;">
-                                    <span class="fw-bold fs-5 text-dark">{{ $employer->activeEmployeesCount ?? 0 }}</span>
-                                </div>
-                                <span class="badge bg-secondary rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
-                                    TOTAL
-                                </span>
-                            </div>
-
-                            {{-- Pending --}}
-                            <div class="d-flex flex-column align-items-center position-relative">
-                                <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                                     style="width: 50px; height: 50px; background-color: #FEE2E2;">
-                                    <span class="fw-bold fs-5 text-danger" id="employer-not-started-{{ $employer->id }}">
-                                        {{ $employer->notStartedCount ?? 0 }}
+                            <div class="d-flex align-items-center gap-3 border-start ps-4">
+                                {{-- Total --}}
+                                <div class="d-flex flex-column align-items-center position-relative">
+                                    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
+                                         style="width: 50px; height: 50px; background-color: #F3F4F6;">
+                                        <span class="fw-bold fs-5 text-dark">{{ $employer->activeEmployeesCount ?? 0 }}</span>
+                                    </div>
+                                    <span class="badge bg-secondary rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
+                                        TOTAL
                                     </span>
                                 </div>
-                                <span class="badge bg-danger rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
-                                    NOT STARTED
-                                </span>
+
+                                {{-- Pending --}}
+                                <div class="d-flex flex-column align-items-center position-relative">
+                                    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
+                                         style="width: 50px; height: 50px; background-color: #FEE2E2;">
+                                        <span class="fw-bold fs-5 text-danger" id="employer-not-started-{{ $employer->id }}">
+                                            {{ $employer->notStartedCount ?? 0 }}
+                                        </span>
+                                    </div>
+                                    <span class="badge bg-danger rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
+                                        NOT STARTED
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {{-- Employer Scoreboard (Col-4) --}}
-                        <div class="col-lg-4">
-                            <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center employer-stats-container" id="employer-stats-{{ $employer->id }}">
+                        {{-- Employer Scoreboard (Col-5) - REFACTORED to "Chip" Style --}}
+                        <div class="col-lg-5">
+                            <div class="d-flex gap-2 flex-wrap align-items-center justify-content-start employer-stats-container" id="employer-stats-{{ $employer->id }}">
                                  @foreach($steps as $step)
                                     @php
                                         $count = $employer->stepStats[$step->id] ?? 0;
@@ -199,13 +200,14 @@
                                              $bgStyle = "";
                                         }
                                     @endphp
-                                    <div class="text-center" style="min-width: 50px;">
-                                        <span class="badge rounded-pill {{ $bgClass }} employer-stat-badge mb-1"
-                                              style="{{ $bgStyle }}"
+                                    <div class="d-inline-flex align-items-center bg-light border rounded-pill px-3 py-1 gap-2"
+                                         style="min-width: max-content;">
+                                        <span class="badge rounded-circle p-1 d-flex align-items-center justify-content-center {{ $bgClass }} employer-stat-badge"
+                                              style="{{ $bgStyle }}; width: 24px; height: 24px;"
                                               data-step-id="{{ $step->id }}">
                                             {{ $count }}
                                         </span>
-                                        <small class="d-block text-muted text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
+                                        <span class="text-dark fw-bold fs-6">{{ $step->name }}</span>
                                     </div>
                                  @endforeach
                             </div>
