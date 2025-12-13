@@ -167,84 +167,83 @@
             <div class="card mb-4 border-0 shadow-sm overflow-hidden">
                 <div class="card-header bg-white py-4 px-4 border-bottom" id="heading{{ $employer->id }}">
                     <div class="row w-100 align-items-center gy-3">
-                        {{-- Employer Info (Col-5) + Stats --}}
-                        <div class="col-lg-5 d-flex align-items-center gap-4">
-                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
-                                <h3 class="fw-bold mb-1 text-truncate" title="{{ $employer->employerNameTh }}">{{ $employer->employerNameTh }}</h3>
-                                <h5 class="text-muted mb-0 fw-light text-truncate" title="{{ $employer->employerNameEn }}">{{ $employer->employerNameEn }}</h5>
-                            </button>
-
-                            <div class="d-flex align-items-center gap-3 border-start ps-4">
+                        {{-- Left: Stats & Employer Name (Col-3) --}}
+                        <div class="col-lg-3 d-flex flex-column justify-content-center gap-2 border-end pe-4">
+                            {{-- Row 1: Stats (Top Left) --}}
+                            <div class="d-flex align-items-center gap-3">
                                 {{-- Total --}}
-                                <div class="d-flex flex-column align-items-center position-relative">
-                                    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                                         style="width: 50px; height: 50px; background-color: #F3F4F6;">
-                                        <span class="fw-bold fs-5 text-dark">{{ $employer->activeEmployeesCount ?? 0 }}</span>
-                                    </div>
-                                    <span class="badge bg-secondary rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
-                                        TOTAL
+                                <div class="d-flex align-items-center gap-2" title="Total Employees">
+                                    <span class="badge bg-light text-dark border d-flex align-items-center gap-2 px-2 py-1">
+                                        <i class="bi bi-people-fill text-muted"></i>
+                                        <span class="fw-bold">{{ $employer->activeEmployeesCount ?? 0 }}</span>
+                                        <span class="text-muted small ms-1" style="font-size: 0.75rem;">TOTAL</span>
                                     </span>
                                 </div>
-
-                                {{-- Pending --}}
-                                <div class="d-flex flex-column align-items-center position-relative">
-                                    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                                         style="width: 50px; height: 50px; background-color: #FEE2E2;">
-                                        <span class="fw-bold fs-5 text-danger" id="employer-not-started-{{ $employer->id }}">
-                                            {{ $employer->notStartedCount ?? 0 }}
-                                        </span>
-                                    </div>
-                                    <span class="badge bg-danger rounded-pill position-absolute top-100 start-50 translate-middle-x mt-1 border border-white" style="font-size: 0.65rem;">
-                                        NOT STARTED
+                                {{-- Not Started --}}
+                                <div class="d-flex align-items-center gap-2" title="Not Started">
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center gap-2 px-2 py-1">
+                                        <i class="bi bi-exclamation-circle-fill"></i>
+                                        <span class="fw-bold" id="employer-not-started-{{ $employer->id }}">{{ $employer->notStartedCount ?? 0 }}</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.75rem;">PENDING</span>
                                     </span>
                                 </div>
                             </div>
+
+                            {{-- Row 2: Employer Name --}}
+                            <button class="btn btn-link text-decoration-none text-dark p-0 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
+                                <h4 class="fw-bold mb-0 text-truncate" title="{{ $employer->employerNameTh }}">{{ $employer->employerNameTh }}</h4>
+                                <div class="text-muted small text-truncate" title="{{ $employer->employerNameEn }}">{{ $employer->employerNameEn }}</div>
+                            </button>
                         </div>
 
-                        {{-- Employer Scoreboard (Col-5) - REFACTORED to "Chip" Style --}}
-                        <div class="col-lg-5">
-                            <div class="d-flex gap-2 flex-wrap align-items-center justify-content-start employer-stats-container" id="employer-stats-{{ $employer->id }}">
+                        {{-- Middle: Workflow Steps (Col-7) - Single Row, Scrollable --}}
+                        <div class="col-lg-7">
+                            <div class="d-flex flex-nowrap align-items-center gap-2 overflow-auto pb-2 custom-scrollbar employer-stats-container"
+                                 id="employer-stats-{{ $employer->id }}"
+                                 style="scrollbar-width: thin;">
                                  @foreach($steps as $step)
                                     @php
                                         $count = $employer->stepStats[$step->id] ?? 0;
                                         $isZero = $count === 0;
                                         $isLastStep = ($step->id === $lastStepId);
 
+                                        // Refined Styling for Compact Single Row
                                         if ($isLastStep) {
                                             if ($isZero) {
                                                 $bgClass = "bg-secondary bg-opacity-25 text-muted";
                                             } else {
-                                                $bgClass = "bg-primary text-white"; // Blue
+                                                $bgClass = "bg-primary text-white";
                                             }
-                                            $sizeClass = "fs-5 p-2";
-                                            $dimensions = "width: 48px; height: 48px;";
-                                            $containerClass = "px-3 py-2";
+                                            // Make last step slightly distinctive but not huge
+                                            $sizeClass = "";
+                                            $dimensions = "width: 28px; height: 28px;";
+                                            $containerClass = "px-3 py-1 border-primary"; // Add border to highlight
                                         } else {
                                             if ($isZero) {
                                                 $bgClass = "bg-secondary bg-opacity-25 text-muted";
                                             } else {
                                                  $bgClass = "bg-success text-white";
                                             }
-                                            $sizeClass = ""; // Default
+                                            $sizeClass = "";
                                             $dimensions = "width: 24px; height: 24px;";
                                             $containerClass = "px-3 py-1";
                                         }
                                     @endphp
-                                    <div class="d-inline-flex align-items-center bg-light border rounded-pill {{ $containerClass }} gap-2"
+                                    <div class="d-inline-flex align-items-center bg-light border rounded-pill {{ $containerClass }} gap-2 flex-shrink-0"
                                          style="min-width: max-content;">
                                         <span class="badge rounded-circle d-flex align-items-center justify-content-center {{ $sizeClass }} {{ $bgClass }} employer-stat-badge"
                                               style="{{ $dimensions }}"
                                               data-step-id="{{ $step->id }}">
                                             {{ $count }}
                                         </span>
-                                        <span class="text-dark fw-bold fs-6">{{ $step->name }}</span>
+                                        <span class="text-dark fw-bold" style="font-size: 0.85rem;">{{ $step->name }}</span>
                                     </div>
                                  @endforeach
                             </div>
                         </div>
 
-                        {{-- Employer Actions (Col-2) --}}
-                        <div class="col-lg-2 d-flex justify-content-end align-items-center gap-2">
+                        {{-- Right: Actions (Col-2) --}}
+                        <div class="col-lg-2 d-flex justify-content-end align-items-center gap-2 ps-lg-4 border-start">
                             <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
                                 <i class="bi bi-currency-dollar"></i> Finance
                             </button>
