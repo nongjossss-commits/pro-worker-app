@@ -66,7 +66,8 @@
                     <div class="d-flex flex-column align-items-center" style="min-width: 80px;">
                         <span class="badge rounded-pill mb-2 px-3 py-2 fs-6 {{ $bgClass }} global-stat-badge shadow-sm"
                               style="{{ $bgStyle }}"
-                              data-step-id="{{ $step->id }}">
+                              data-step-id="{{ $step->id }}"
+                              data-step-color="{{ $step->color ?? 'primary' }}">
                             {{ $count }}
                         </span>
                         <small class="fw-bold text-muted text-center text-truncate" style="max-width: 100px;" title="{{ $step->name }}">{{ $step->name }}</small>
@@ -190,7 +191,8 @@
                                     <div class="text-center" style="min-width: 50px;">
                                         <span class="badge rounded-pill {{ $bgClass }} employer-stat-badge mb-1"
                                               style="{{ $bgStyle }}"
-                                              data-step-id="{{ $step->id }}">
+                                              data-step-id="{{ $step->id }}"
+                                              data-step-color="{{ $step->color ?? 'primary' }}">
                                             {{ $count }}
                                         </span>
                                         <small class="d-block text-muted text-truncate" style="font-size: 0.65rem; max-width: 60px;" title="{{ $step->name }}">{{ $step->name }}</small>
@@ -362,39 +364,36 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // --- Color Palette ---
-    // 12 Preset Colors (Tailwind/Bootstrap inspired Hex)
-    const presetColors = [
-        '#3B82F6', // Blue (Primary)
-        '#EF4444', // Red (Danger)
-        '#10B981', // Green (Success)
-        '#F59E0B', // Amber (Warning)
-        '#6366F1', // Indigo
-        '#8B5CF6', // Violet
-        '#EC4899', // Pink
-        '#14B8A6', // Teal
-        '#0EA5E9', // Sky
-        '#84CC16', // Lime
-        '#64748B', // Slate
-        '#A855F7', // Purple
+    // --- Color Palette (System Colors) ---
+    const systemColors = [
+        { name: 'primary', hex: '#0d6efd', label: 'Primary (Blue)' },
+        { name: 'success', hex: '#198754', label: 'Success (Green)' },
+        { name: 'danger',  hex: '#dc3545', label: 'Danger (Red)' },
+        { name: 'warning', hex: '#ffc107', label: 'Warning (Yellow)' },
+        { name: 'info',    hex: '#0dcaf0', label: 'Info (Cyan)' },
+        { name: 'dark',    hex: '#212529', label: 'Dark (Black)' }
     ];
 
     function renderColorPalette(container, inputId, previewId) {
         container.innerHTML = '';
-        presetColors.forEach(color => {
+        systemColors.forEach(colorObj => {
             const swatch = document.createElement('div');
             swatch.style.width = '24px';
             swatch.style.height = '24px';
-            swatch.style.backgroundColor = color;
+            swatch.style.backgroundColor = colorObj.hex;
             swatch.style.borderRadius = '50%';
             swatch.style.cursor = 'pointer';
             swatch.style.border = '2px solid transparent';
+            swatch.title = colorObj.label;
 
             swatch.addEventListener('click', () => {
-                document.getElementById(inputId).value = color;
+                document.getElementById(inputId).value = colorObj.name;
                 const preview = document.getElementById(previewId);
-                preview.className = 'badge rounded-circle p-2'; // Reset classes
-                preview.style.backgroundColor = color;
+
+                // Reset styling
+                preview.style.backgroundColor = '';
+                preview.className = `badge rounded-circle p-2 bg-${colorObj.name}`;
+
                 // Highlight selection
                 Array.from(container.children).forEach(c => c.style.borderColor = 'transparent');
                 swatch.style.borderColor = '#000';
@@ -601,32 +600,38 @@
 
         if (btn) {
             if (completed) {
-                // Becoming Complete
-                btn.classList.remove('btn-outline-secondary');
-                const color = btn.dataset.color || 'success';
+                // Becoming Complete: Change to Color
+                // Reset base classes first to avoid conflicts
+                btn.className = 'btn btn-sm rounded-pill px-3 text-white border-0';
 
-                btn.classList.add(`btn-${color}`); // If class based
-                // If hex based, we need to set background-color.
-                if (btn.dataset.hexColor) {
-                    btn.style.backgroundColor = btn.dataset.hexColor;
-                    btn.style.borderColor = btn.dataset.hexColor;
-                    btn.style.color = '#fff';
+                const color = btn.dataset.color || 'success';
+                const hexColor = btn.dataset.hexColor;
+
+                if (hexColor) {
+                    btn.style.backgroundColor = hexColor;
+                    btn.style.borderColor = hexColor;
                 } else {
-                    btn.classList.add('btn-success'); // Fallback
+                    btn.classList.add(`btn-${color}`);
                 }
 
                 if(!btn.querySelector('i.bi-check')) {
-                    btn.innerHTML = btn.innerText + ' <i class="bi bi-check"></i>';
+                    btn.innerHTML = btn.innerText + ' <i class="bi bi-check-circle-fill ms-1"></i>';
                 }
             } else {
-                // Becoming Incomplete
+                // Becoming Incomplete: Change to Solid Gray (Light)
                 btn.style.backgroundColor = '';
                 btn.style.borderColor = '';
                 btn.style.color = '';
-                btn.className = 'btn btn-sm btn-outline-secondary'; // Reset
+                btn.className = 'btn btn-sm btn-light border text-secondary rounded-pill px-3';
 
-                const icon = btn.querySelector('i.bi-check');
+                // Restore original text (remove check icon)
+                // Assuming original text is just the step name.
+                // To be safe, we strip the icon.
+                const icon = btn.querySelector('i.bi-check-circle-fill');
                 if(icon) icon.remove();
+                // Also check for simple bi-check
+                const iconSimple = btn.querySelector('i.bi-check');
+                if(iconSimple) iconSimple.remove();
             }
         }
 
@@ -654,13 +659,50 @@
                     }
                 }
 
+                // Helper to update badge color/style
+                const updateBadgeStyle = (badge, count, isGlobal) => {
+                    badge.textContent = count;
+                    const color = badge.dataset.stepColor || 'primary';
+                    const isHex = color.startsWith('#');
+
+                    // Reset common classes
+                    badge.style.backgroundColor = '';
+                    badge.classList.remove('bg-secondary', 'bg-opacity-50', 'bg-opacity-25', 'text-muted', 'text-white');
+                    // Remove all likely bg-colors
+                    const allColors = ['primary', 'success', 'danger', 'warning', 'info', 'dark', 'secondary'];
+                    allColors.forEach(c => badge.classList.remove(`bg-${c}`));
+
+                    if (count === 0) {
+                        // Gray State
+                        badge.classList.add('bg-secondary');
+                        if (isGlobal) {
+                             badge.classList.add('bg-opacity-50', 'text-white');
+                        } else {
+                             badge.classList.add('bg-opacity-25', 'text-muted');
+                        }
+                    } else {
+                        // Colored State
+                        if (isHex) {
+                            badge.style.backgroundColor = color + ' !important'; // Force override
+                            badge.classList.add('text-white');
+                        } else {
+                            badge.classList.add(`bg-${color}`);
+                            // Warning usually needs dark text, others white. Bootstrap handles this automatically often,
+                            // but let's assume text-white is safer for deep colors, or let BS decide.
+                            // Actually, mostly text-white is good except yellow.
+                            // Let's just leave text color to BS default for the bg-class, or force white if needed.
+                            // Check existing logic: was using text-white? No, implied by bg-class usually.
+                        }
+                    }
+                };
+
                 // 2. Update Global Stats
                 if (data.globalStats) {
                     const globalContainer = document.getElementById('global-stats-container');
                     if (globalContainer) {
                         for (const [sId, count] of Object.entries(data.globalStats)) {
                             const badge = globalContainer.querySelector(`.global-stat-badge[data-step-id="${sId}"]`);
-                            if (badge) badge.textContent = count;
+                            if (badge) updateBadgeStyle(badge, count, true);
                         }
                     }
                 }
@@ -671,7 +713,7 @@
                     if (employerContainer) {
                          for (const [sId, count] of Object.entries(data.employerStats)) {
                             const badge = employerContainer.querySelector(`.employer-stat-badge[data-step-id="${sId}"]`);
-                            if (badge) badge.textContent = count;
+                            if (badge) updateBadgeStyle(badge, count, false);
                         }
                     }
                 }
