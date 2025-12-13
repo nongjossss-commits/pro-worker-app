@@ -4,23 +4,23 @@
 
         <!-- Pricing Logic Card -->
         <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-white fw-bold"><i class="bi bi-calculator me-2"></i>Pricing Settings</div>
+            <div class="card-header bg-white fw-bold"><i class="bi bi-calculator me-2"></i>{{ __('Pricing Settings') }}</div>
             <div class="card-body">
                 <!-- Mode Selection -->
                 <div class="mb-3">
-                    <label class="form-label small text-muted">Pricing Mode</label>
+                    <label class="form-label small text-muted">{{ __('Pricing Mode') }}</label>
                     <div class="btn-group w-100" role="group">
                         <input type="radio" class="btn-check" name="pricing_mode" id="mode_fixed" value="fixed" x-model="pricingMode" @change="updateTotal()">
-                        <label class="btn btn-outline-primary btn-sm" for="mode_fixed">Fixed Total</label>
+                        <label class="btn btn-outline-primary btn-sm" for="mode_fixed">{{ __('Fixed Total') }}</label>
 
                         <input type="radio" class="btn-check" name="pricing_mode" id="mode_per_head" value="per_head" x-model="pricingMode" @change="updateTotal()">
-                        <label class="btn btn-outline-primary btn-sm" for="mode_per_head">Per Head (Tiered)</label>
+                        <label class="btn btn-outline-primary btn-sm" for="mode_per_head">{{ __('Per Head (Tiered)') }}</label>
                     </div>
                 </div>
 
                 <!-- Fixed Price Input -->
                 <div x-show="pricingMode === 'fixed'" class="mb-3">
-                    <label class="form-label">Total Project Value <span x-show="!vatIncluded">(Excl. VAT)</span><span x-show="vatIncluded">(Incl. VAT)</span></label>
+                    <label class="form-label">{{ __('Total Project Value') }} <span x-show="!vatIncluded">{{ __('(Excl. VAT)') }}</span><span x-show="vatIncluded">{{ __('(Incl. VAT)') }}</span></label>
                     <div class="input-group">
                         <span class="input-group-text">฿</span>
                         <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
@@ -30,9 +30,9 @@
                 <!-- Tiered Pricing Inputs -->
                 <div x-show="pricingMode === 'per_head'" class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label mb-0">Pricing Tiers</label>
+                        <label class="form-label mb-0">{{ __('Pricing Tiers') }}</label>
                         <button class="btn btn-sm btn-outline-primary" @click="addTier()">
-                            <i class="bi bi-plus-lg"></i> Add Tier
+                            <i class="bi bi-plus-lg"></i> {{ __('Add Tier') }}
                         </button>
                     </div>
 
@@ -40,9 +40,9 @@
                         <table class="table table-sm table-borderless mb-0">
                             <thead>
                                 <tr class="text-muted small">
-                                    <th>Price (฿)</th>
-                                    <th>Count</th>
-                                    <th>Note</th>
+                                    <th>{{ __('Price (฿)') }}</th>
+                                    <th>{{ __('Count') }}</th>
+                                    <th>{{ __('Note') }}</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -65,9 +65,9 @@
 
                     <!-- Validation Message -->
                     <div class="d-flex justify-content-between small">
-                        <span>Total Employees: <strong x-text="employeeCount"></strong></span>
+                        <span>{{ __('Total Employees') }}: <strong x-text="employeeCount"></strong></span>
                         <span :class="{'text-success': tierCountSum === employeeCount, 'text-danger': tierCountSum !== employeeCount}">
-                            Assigned: <strong x-text="tierCountSum"></strong>
+                            {{ __('Assigned') }}: <strong x-text="tierCountSum"></strong>
                         </span>
                     </div>
                     <div x-show="tierCountSum !== employeeCount" class="text-danger small mt-1">
@@ -77,7 +77,7 @@
 
                 <!-- Discount Field -->
                 <div class="mb-3">
-                    <label class="form-label">Discount (From Total)</label>
+                    <label class="form-label">{{ __('Discount (From Total)') }}</label>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text">฿</span>
                         <input type="number" class="form-control" x-model="discount" @input="updateTotal()">
@@ -86,13 +86,13 @@
 
                 <!-- VAT & WHT Settings -->
                 <div class="mb-3 border-top pt-3">
-                    <label class="form-label small text-muted">Tax Settings</label>
+                    <label class="form-label small text-muted">{{ __('Tax Settings') }}</label>
 
                     <!-- VAT -->
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="vatIncluded" x-model="vatIncluded" @change="updateTotal()">
-                            <label class="form-check-label small" for="vatIncluded">Price Includes VAT</label>
+                            <label class="form-check-label small" for="vatIncluded">{{ __('Price Includes VAT') }}</label>
                         </div>
                         <div class="input-group input-group-sm" style="width: 120px;">
                             <span class="input-group-text">VAT</span>
@@ -105,7 +105,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="whtEnabled" x-model="whtEnabled" @change="updateTotal()">
-                            <label class="form-check-label small" for="whtEnabled">Withholding Tax (WHT)</label>
+                            <label class="form-check-label small" for="whtEnabled">{{ __('Withholding Tax (WHT)') }}</label>
                         </div>
                         <div class="input-group input-group-sm" style="width: 120px;" x-show="whtEnabled">
                             <span class="input-group-text">WHT</span>
@@ -114,23 +114,23 @@
                         </div>
                     </div>
                     <div x-show="whtEnabled" class="form-text small mt-1 text-end">
-                        <span class="badge bg-info text-dark">International Standard</span> Deducted from Base Amount
+                        <span class="badge bg-info text-dark">{{ __('International Standard') }}</span> {{ __('Deducted from Base Amount') }}
                     </div>
                 </div>
 
                 <!-- Save Pricing Button -->
                 <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSaving || (pricingMode === 'per_head' && tierCountSum !== employeeCount)">
-                    <i class="bi bi-save me-1"></i> Save Pricing Settings
+                    <i class="bi bi-save me-1"></i> {{ __('Save Pricing Settings') }}
                 </button>
             </div>
         </div>
 
         <!-- Financial Summary -->
         <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-white fw-bold">Financial Summary</div>
+            <div class="card-header bg-white fw-bold">{{ __('Financial Summary') }}</div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-1 small">
-                    <span class="text-muted">Gross Amount:</span>
+                    <span class="text-muted">{{ __('Gross Amount') }}:</span>
                     <span x-text="formatCurrency(baseTotal)"></span>
                 </div>
                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="discount > 0">
@@ -141,7 +141,7 @@
                 <hr class="my-2">
 
                 <div class="d-flex justify-content-between mb-1">
-                    <span class="text-muted">Base (Excl. VAT):</span>
+                    <span class="text-muted">{{ __('Base (Excl. VAT)') }}:</span>
                     <span x-text="formatCurrency(subtotalAmount)"></span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
@@ -160,18 +160,18 @@
                 </div>
 
                 <div class="d-flex justify-content-between border-top pt-2 mt-2">
-                    <span class="fw-bold">Net Receivable:</span>
+                    <span class="fw-bold">{{ __('Net Receivable') }}:</span>
                     <span class="fw-bold text-success" x-text="formatCurrency(netReceivable)"></span>
                 </div>
 
                 <hr>
 
                 <div class="d-flex justify-content-between mb-1 small">
-                    <span class="text-muted">Scheduled:</span>
+                    <span class="text-muted">{{ __('Scheduled') }}:</span>
                     <span x-text="formatCurrency(scheduledAmount)" :class="{'text-success': isFullyScheduled, 'text-warning': !isFullyScheduled}"></span>
                 </div>
                 <div class="d-flex justify-content-between mb-1 small">
-                    <span class="text-muted">Remaining:</span>
+                    <span class="text-muted">{{ __('Remaining') }}:</span>
                     <span x-text="formatCurrency(remainingSchedule)" class="text-danger fw-bold"></span>
                 </div>
             </div>
@@ -180,33 +180,33 @@
         <!-- Document Center & Headers -->
         <div class="card shadow-sm border-0 mb-3">
             <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-printer me-2"></i>Document Header</span>
+                <span><i class="bi bi-printer me-2"></i>{{ __('Document Header') }}</span>
                 <button class="btn btn-xs btn-outline-secondary" @click="showCustomHeaderModal = true">
-                    <i class="bi bi-pencil"></i> Edit
+                    <i class="bi bi-pencil"></i> {{ __('Edit') }}
                 </button>
             </div>
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label small text-muted">Active Profile</label>
                     <div class="d-flex align-items-center gap-2">
-                        <div x-show="useCustomHeader" class="badge bg-warning text-dark">Custom Override</div>
-                        <div x-show="!useCustomHeader" class="badge bg-secondary">System Profile</div>
+                        <div x-show="useCustomHeader" class="badge bg-warning text-dark">{{ __('Custom Override') }}</div>
+                        <div x-show="!useCustomHeader" class="badge bg-secondary">{{ __('System Profile') }}</div>
                     </div>
                     <div class="small mt-1 text-truncate fw-bold" x-text="headerNameDisplay"></div>
                 </div>
 
                 <div class="d-grid gap-2">
                     <button @click="openDocument('quotation')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-file-earmark-text me-2"></i>Quotation (ใบเสนอราคา)
+                        <i class="bi bi-file-earmark-text me-2"></i>{{ __('Quotation (ใบเสนอราคา)') }}
                     </button>
                     <button @click="openSelectionModal('invoice')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-receipt me-2"></i>Invoice (ใบแจ้งหนี้)
+                        <i class="bi bi-receipt me-2"></i>{{ __('Invoice (ใบแจ้งหนี้)') }}
                     </button>
                     <button @click="openSelectionModal('receipt')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-check-circle me-2"></i>Receipt (ใบเสร็จรับเงิน)
+                        <i class="bi bi-check-circle me-2"></i>{{ __('Receipt (ใบเสร็จรับเงิน)') }}
                     </button>
                     <button @click="openSelectionModal('credit_note')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-file-earmark-minus me-2"></i>Credit Note (ใบลดหนี้)
+                        <i class="bi bi-file-earmark-minus me-2"></i>{{ __('Credit Note (ใบลดหนี้)') }}
                     </button>
                 </div>
             </div>
@@ -215,17 +215,17 @@
         <!-- Bill To / Customer Settings -->
         <div class="card shadow-sm border-0 mb-3">
             <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-person-badge me-2"></i>Bill To (Customer)</span>
+                <span><i class="bi bi-person-badge me-2"></i>{{ __('Bill To (Customer)') }}</span>
                 <button class="btn btn-xs btn-outline-secondary" @click="showCustomCustomerModal = true">
-                    <i class="bi bi-pencil"></i> Edit
+                    <i class="bi bi-pencil"></i> {{ __('Edit') }}
                 </button>
             </div>
             <div class="card-body">
                 <div class="mb-2">
                     <label class="form-label small text-muted">Active Customer</label>
                     <div class="d-flex align-items-center gap-2">
-                         <div x-show="customCustomer" class="badge bg-warning text-dark">Override Active</div>
-                         <div x-show="!customCustomer" class="badge bg-secondary">Default (Employer)</div>
+                         <div x-show="customCustomer" class="badge bg-warning text-dark">{{ __('Custom Override') }}</div>
+                         <div x-show="!customCustomer" class="badge bg-secondary">{{ __('Active Customer') }}</div>
                     </div>
                     <div class="small mt-1 text-truncate fw-bold" x-text="customerNameDisplay"></div>
                 </div>
@@ -237,9 +237,9 @@
     <div class="col-md-7">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold">Installments & Payments</h5>
+                <h5 class="mb-0 fw-bold">{{ __('Installments & Payments') }}</h5>
                 <button class="btn btn-primary btn-sm" @click="openAddModal()">
-                    <i class="bi bi-plus-lg"></i> Add Installment
+                    <i class="bi bi-plus-lg"></i> {{ __('Add Installment') }}
                 </button>
             </div>
             <div class="card-body p-0">
@@ -247,12 +247,12 @@
                     <table class="table table-hover align-middle mb-0 text-sm">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-3">Description</th>
-                                <th>Due Date</th>
-                                <th class="text-end">Amount</th>
-                                <th class="text-end">Paid</th>
-                                <th class="text-center">Status</th>
-                                <th class="text-end pe-3">Actions</th>
+                                <th class="ps-3">{{ __('Description') }}</th>
+                                <th>{{ __('Due Date') }}</th>
+                                <th class="text-end">{{ __('Amount') }}</th>
+                                <th class="text-end">{{ __('Paid') }}</th>
+                                <th class="text-center">{{ __('Status') }}</th>
+                                <th class="text-end pe-3">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>

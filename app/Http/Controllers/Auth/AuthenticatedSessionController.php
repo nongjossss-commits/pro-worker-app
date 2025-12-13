@@ -31,8 +31,9 @@ class AuthenticatedSessionController extends Controller
         if (Auth::attempt([...$credentials, 'status' => 'active'], true)) {
             $request->session()->regenerate();
 
-            // Set default language to Thai
+            // Force Thai language on login as per requirements
             session(['locale' => 'th']);
+            \Illuminate\Support\Facades\App::setLocale('th');
 
             // เปลี่ยนจาก RouteServiceProvider::HOME เป็น '/dashboard' โดยตรง
             return redirect()->intended('/dashboard');

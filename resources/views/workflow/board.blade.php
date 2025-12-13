@@ -86,11 +86,11 @@
             @if($barriers->isEmpty())
                 <div class="w-100 d-flex flex-column align-items-center justify-content-center text-muted" style="height: 400px;">
                     <i class="bi bi-kanban display-1 mb-3 opacity-50"></i>
-                    <h4 class="fw-bold">No Workflow Barriers Defined</h4>
-                    <p>Please contact an Administrator to set up workflow barriers (statuses).</p>
+                    <h4 class="fw-bold">{{ __('No Workflow Barriers Defined') }}</h4>
+                    <p>{{ __('Please contact an Administrator to set up workflow barriers (statuses).') }}</p>
                     @role('admin')
                         <a href="{{ route('admin.production.barriers.index') }}" class="btn btn-primary mt-2">
-                            <i class="bi bi-gear-fill me-1"></i> Configure Barriers
+                            <i class="bi bi-gear-fill me-1"></i> {{ __('Configure Barriers') }}
                         </a>
                     @endrole
                 </div>
@@ -113,7 +113,7 @@
                         {{-- New / Imported Section --}}
                         <template x-if="getItems({{ $barrier->id }}, true).length > 0">
                             <div>
-                                <div class="small fw-bold text-primary mb-2 mt-2 border-bottom pb-1">New / Imported</div>
+                                <div class="small fw-bold text-primary mb-2 mt-2 border-bottom pb-1">{{ __('New / Imported') }}</div>
                                 <template x-for="item in getItems({{ $barrier->id }}, true)" :key="item.id">
                                     <div class="card mb-2 shadow-sm employee-card-draggable"
                                          :class="{ 'border-primary': selectedItems.includes(item.id) }"
@@ -132,7 +132,7 @@
                                                         <img :src="item.photo_url || '/images/default-avatar.png'" class="rounded-circle me-2" width="24" height="24">
                                                         <div class="fw-bold small text-truncate" style="max-width: 120px;" x-text="item.name"></div>
                                                     </div>
-                                                    <div class="badge bg-info text-dark mb-1" style="font-size: 0.6rem;">New Entry</div>
+                                                    <div class="badge bg-info text-dark mb-1" style="font-size: 0.6rem;">{{ __('New Entry') }}</div>
                                                     <div class="d-flex gap-1 mt-1 flex-wrap">
                                                         <template x-for="step in item.steps" :key="step.id">
                                                             <span class="badge bg-secondary" style="font-size: 0.6rem;" x-text="step.label"></span>
@@ -149,7 +149,7 @@
                         {{-- Existing Section --}}
                         <template x-if="getItems({{ $barrier->id }}, false).length > 0">
                             <div>
-                                <div class="small fw-bold text-secondary mb-2 mt-2 border-bottom pb-1">Existing Database</div>
+                                <div class="small fw-bold text-secondary mb-2 mt-2 border-bottom pb-1">{{ __('Existing Database') }}</div>
                                 <template x-for="item in getItems({{ $barrier->id }}, false)" :key="item.id">
                                     <div class="card mb-2 shadow-sm employee-card-draggable"
                                          :class="{ 'border-primary': selectedItems.includes(item.id) }"
@@ -201,35 +201,35 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Field to Selected (<span x-text="selectedItems.length"></span>)</h5>
+                    <h5 class="modal-title">{{ __('Add Field') }} (<span x-text="selectedItems.length"></span>)</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Field Name (Label)</label>
+                        <label class="form-label">{{ __('Field Name (Label)') }}</label>
                         <input type="text" class="form-control" x-model="bulkStepLabel" placeholder="e.g. Submission Date">
                     </div>
 
                     <template x-if="bulkStepType === 'text'">
                         <div class="mb-3">
-                            <label class="form-label">Value (Optional)</label>
+                            <label class="form-label">{{ __('Value (Optional)') }}</label>
                             <input type="text" class="form-control" x-model="bulkStepValue">
                         </div>
                     </template>
                     <template x-if="bulkStepType === 'date'">
                         <div class="mb-3">
-                            <label class="form-label">Date Value</label>
+                            <label class="form-label">{{ __('Date Value') }}</label>
                             <input type="date" class="form-control" x-model="bulkStepValue">
                         </div>
                     </template>
                      <template x-if="bulkStepType === 'file'">
                         <div class="alert alert-info small">
-                            For files, this will create a placeholder. You can upload files individually later.
+                            {{ __('For files, this will create a placeholder. You can upload files individually later.') }}
                         </div>
                     </template>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" @click="submitBulkStep">Add Field</button>
+                    <button type="button" class="btn btn-primary" @click="submitBulkStep">{{ __('Add Field') }}</button>
                 </div>
             </div>
         </div>
