@@ -26,7 +26,7 @@ class TrashController extends Controller
     }
 
     /**
-     * Display a list of all soft-deleted items, with search and view state.
+     * Display the list of all soft-deleted items, with search and view state.
      */
     public function index(Request $request)
     {
@@ -37,6 +37,11 @@ class TrashController extends Controller
 
         foreach ($models as $modelName => $modelClass) {
             $query = $modelClass::onlyTrashed();
+
+            // V2.5.5 Fix: Ensure Admin sees all trashed items by ignoring global scopes (tenancy)
+            if ($modelName === 'employees' || $modelName === 'employers') {
+                $query->withoutGlobalScopes();
+            }
 
             // --- Eager Loading ---
             // Eager load relationships to prevent N+1 query problems in the view.
@@ -156,6 +161,11 @@ class TrashController extends Controller
         // 1. Fetch the specific model's data, applying the same filters as the index page
         $query = $modelClass::onlyTrashed();
 
+        // V2.5.5 Fix: Ensure Admin sees all trashed items by ignoring global scopes (tenancy)
+        if ($modelName === 'employees' || $modelName === 'employers') {
+            $query->withoutGlobalScopes();
+        }
+
         if ($searchTerm) {
             $query->where(function ($q) use ($searchTerm, $modelName) {
                 // This switch MUST be kept in sync with the index method's search logic
@@ -268,7 +278,13 @@ class TrashController extends Controller
             return response()->json(['error' => 'You do not have permission to restore this item.'], 403);
         }
 
-        $item = $modelClass::onlyTrashed()->findOrFail($id);
+        // V2.5.5 Fix: Ensure we can find the item even if out of scope
+        $query = $modelClass::onlyTrashed();
+        if ($model === 'employees' || $model === 'employers') {
+            $query->withoutGlobalScopes();
+        }
+        $item = $query->findOrFail($id);
+
         $item->restore();
 
         return response()->json(['success' => class_basename($modelClass) . ' restored successfully.']);
@@ -293,7 +309,12 @@ class TrashController extends Controller
             return response()->json(['error' => 'You do not have permission to permanently delete this item.'], 403);
         }
 
-        $item = $modelClass::onlyTrashed()->findOrFail($id);
+        // V2.5.5 Fix: Ensure we can find the item even if out of scope
+        $query = $modelClass::onlyTrashed();
+        if ($model === 'employees' || $model === 'employers') {
+            $query->withoutGlobalScopes();
+        }
+        $item = $query->findOrFail($id);
         // Note: Logic for deleting associated files (like photos) should be in an observer or the model's forceDeleting event.
         $item->forceDelete();
 

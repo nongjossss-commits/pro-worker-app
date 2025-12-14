@@ -15,6 +15,10 @@
     .filter-active .badge {
         box-shadow: 0 0 10px rgba(59, 130, 246, 0.5) !important;
     }
+    .grayscale-mode {
+        filter: grayscale(100%);
+        opacity: 0.8;
+    }
 </style>
 
 <div class="container-fluid">
@@ -43,7 +47,7 @@
             </div>
         </div>
 
-        {{-- Cancelled (New) --}}
+        {{-- Total Cancelled Employees --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm" style="background-color: #6B7280; border: none;"> {{-- Gray --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
@@ -69,6 +73,16 @@
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-employers-count">{{ $totalEmployers }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Total Employers') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Cancelled Employers --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm" style="background-color: #4B5563; border: none;"> {{-- Dark Gray --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-cancelled-employers-count">{{ $cancelledEmployersCount }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Cancelled Employers') }}</p>
                 </div>
             </div>
         </div>
@@ -211,8 +225,13 @@
     {{-- Employers List --}}
     <div class="accordion" id="employersAccordion">
         @foreach($employers as $employer)
-            <div class="card mb-4 border border-primary border-2 shadow-sm overflow-hidden" id="employer-card-{{ $employer->id }}">
-                <div class="card-header bg-white py-3 px-4 border-bottom" id="heading{{ $employer->id }}">
+            @php
+                $isEmployerCancelled = $employer->financeOrder && $employer->financeOrder->status === 'registration_resolution_cancelled';
+                $employerCardClass = $isEmployerCancelled ? 'border-secondary grayscale-mode' : 'border-primary border-2';
+                $employerHeaderClass = $isEmployerCancelled ? 'bg-light' : 'bg-white';
+            @endphp
+            <div class="card mb-4 shadow-sm overflow-hidden {{ $employerCardClass }}" id="employer-card-{{ $employer->id }}">
+                <div class="card-header py-3 px-4 border-bottom {{ $employerHeaderClass }}" id="heading{{ $employer->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions --}}
                     <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
@@ -283,7 +302,7 @@
 
                              @can('manage-own-workflow')
                              {{-- Add Employee Button --}}
-                             <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold">
+                             <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
                                 <i class="bi bi-plus-lg"></i> {{ __('Add Employee') }}
                              </a>
                              @endcan
@@ -293,6 +312,19 @@
                              <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
                                 <i class="bi bi-currency-dollar"></i> {{ __('Finance') }}
                             </button>
+                            @endcan
+
+                            {{-- Cancel/Restore Employer Actions --}}
+                            @can('manage-own-workflow')
+                                @if($isEmployerCancelled)
+                                    <button class="btn btn-outline-warning btn-sm" onclick="restoreEmployer({{ $employer->id }})">
+                                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore Employer') }}
+                                    </button>
+                                @else
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="cancelEmployer({{ $employer->id }})">
+                                        <i class="bi bi-x-circle"></i> {{ __('Cancel Employer') }}
+                                    </button>
+                                @endif
                             @endcan
 
                             {{-- Collapse Chevron --}}
@@ -999,6 +1031,55 @@
                             applyFilters();
                             recalculateVisibleStats();
                         }
+                    }
+                });
+             }
+        });
+    }
+
+    function cancelEmployer(id) {
+        Swal.fire({
+            title: '{{ __("Cancel Employer?") }}',
+            text: "{{ __('This will seal the card and move it to the end. Active employees will also be cancelled.') }}",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: '{{ __("Yes, Cancel Employer") }}'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/registration/employer/${id}/cancel`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire('{{ __("Cancelled") }}', '{{ __("Employer registration cancelled.") }}', 'success')
+                        .then(() => location.reload()); // Reload to handle sorting and complex UI changes
+                    }
+                });
+             }
+        });
+    }
+
+    function restoreEmployer(id) {
+        Swal.fire({
+            title: '{{ __("Restore Employer?") }}',
+            text: "{{ __('This will restore the employer card and active employees.') }}",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes, Restore") }}'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/registration/employer/${id}/restore`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire('{{ __("Restored") }}', '{{ __("Employer restored.") }}', 'success')
+                        .then(() => location.reload());
                     }
                 });
              }

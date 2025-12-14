@@ -218,6 +218,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/cancel', [App\Http\Controllers\Production\RegistrationController::class, 'cancel'])->name('cancel');
         Route::post('/{employee}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restore'])->name('restore');
         Route::delete('/{employee}/destroy', [App\Http\Controllers\Production\RegistrationController::class, 'destroy'])->name('destroy');
+
+        // Employer Actions (NEW)
+        Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RegistrationController::class, 'cancelEmployer'])->name('cancel_employer');
+        Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restoreEmployer'])->name('restore_employer');
     });
 
     Route::resource('production', \App\Http\Controllers\ProductionController::class);
@@ -225,6 +229,7 @@ Route::middleware(['auth'])->group(function () {
     // Additional Production Routes
     Route::post('production/{id}/add-employee', [\App\Http\Controllers\ProductionController::class, 'addEmployee'])->name('production.add_employee');
     Route::post('production/{id}/add-new-employee', [\App\Http\Controllers\ProductionController::class, 'addNewEmployee'])->name('production.add_new_employee');
+
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
     Route::post('production/{id}/upload-logo', [\App\Http\Controllers\ProductionController::class, 'uploadLogo'])->name('production.upload_logo');
     Route::post('production/{id}/financial-groups', [\App\Http\Controllers\ProductionController::class, 'storeFinancialGroup'])->name('production.financial_groups.store');

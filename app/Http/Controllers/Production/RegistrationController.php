@@ -107,24 +107,29 @@ class RegistrationController extends Controller
             }])->get();
 
         foreach ($employers as $employer) {
-            $financeOrder = ProductionOrder::with('financialGroups.transactions')->firstOrCreate(
-                [
+            // Find existing order regardless of active/cancelled status to preserve state
+            $financeOrder = ProductionOrder::with('financialGroups.transactions')
+                ->where('employer_id', $employer->id)
+                ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+                ->first();
+
+            if (!$financeOrder) {
+                $financeOrder = ProductionOrder::create([
                     'employer_id' => $employer->id,
-                    'status'      => 'registration_resolution'
-                ],
-                [
+                    'status'      => 'registration_resolution',
                     'type'         => 'employer',
                     'project_name' => 'Registration Resolution - ' . $employer->employerNameTh,
                     'financial_data' => []
-                ]
-            );
+                ]);
+            }
+
             $employer->financeOrder = $financeOrder;
 
             // Ensure at least one default financial group exists
             if ($financeOrder->financialGroups->isEmpty()) {
                 $financeOrder->financialGroups()->create([
                     'name' => 'General',
-                    'financial_data' => $financeOrder->financial_data
+                    'financial_data' => $financeOrder->financial_data ?? []
                 ]);
                 $financeOrder->load('financialGroups.transactions');
             }
@@ -161,17 +166,87 @@ class RegistrationController extends Controller
             $employer->savedCount = $employer->employees->where('status', 'registration_completed')->count();
         }
 
+        // Sort Employers: Active first, Cancelled last
+        $employers = $employers->sortBy(function($emp) {
+            return $emp->financeOrder->status === 'registration_resolution_cancelled' ? 1 : 0;
+        });
+
+        $cancelledEmployersCount = $employers->where('financeOrder.status', 'registration_resolution_cancelled')->count();
+
         return view('production.registration.index', compact(
             'totalEmployees',
             'totalCancelled',
             'totalSaved',
             'totalEmployers',
+            'cancelledEmployersCount',
             'notStartedCount',
             'steps',
             'stepStats',
             'employers',
             'lastStepId'
         ));
+    }
+
+    /**
+     * Cancel an Employer.
+     */
+    public function cancelEmployer(Request $request, Employer $employer)
+    {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($employer) {
+            // 1. Update Order Status
+            $order = ProductionOrder::where('employer_id', $employer->id)
+                ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+                ->first();
+
+            if ($order) {
+                $order->update(['status' => 'registration_resolution_cancelled']);
+            }
+
+            // 2. Update Employees (Only Pending ones get cancelled)
+            $employer->employees()
+                ->where('status', 'registration_pending')
+                ->update(['status' => 'registration_cancelled']);
+        });
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Employer registration cancelled.');
+    }
+
+    /**
+     * Restore an Employer.
+     */
+    public function restoreEmployer(Request $request, Employer $employer)
+    {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($employer) {
+            // 1. Update Order Status
+            $order = ProductionOrder::where('employer_id', $employer->id)
+                ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+                ->first();
+
+            if ($order) {
+                $order->update(['status' => 'registration_resolution']);
+            }
+
+            // 2. Update Employees (Cancelled -> Pending)
+            $employer->employees()
+                ->where('status', 'registration_cancelled')
+                ->update(['status' => 'registration_pending']);
+        });
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Employer registration restored.');
     }
 
     /**
