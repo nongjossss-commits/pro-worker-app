@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\TicketStatusController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FinancialController; // Import
+use App\Http\Controllers\FinanceSettingsController; // Import
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 
@@ -270,9 +271,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/settings/financial', [FinancialController::class, 'indexSettings'])->name('settings.financial.index');
     Route::post('/settings/financial', [FinancialController::class, 'storeProfile'])->name('settings.financial.store');
 
+    // New Finance Access Settings (Password/Email)
+    Route::post('/finance/settings', [FinanceSettingsController::class, 'updateSettings'])->name('finance.settings.update');
+    Route::get('/finance/status', [FinanceSettingsController::class, 'getStatus'])->name('finance.settings.status');
+
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::resource('notifications', App\Http\Controllers\Admin\NotificationSettingController::class);
     });
+});
+
+// Shared Finance Access Routes (Admin & Staff)
+Route::middleware(['auth'])->prefix('finance')->name('finance.')->group(function () {
+    Route::post('/verify', [FinanceSettingsController::class, 'verify'])->name('verify');
+    Route::post('/lock', [FinanceSettingsController::class, 'lock'])->name('lock');
+    Route::post('/forgot', [FinanceSettingsController::class, 'forgotPassword'])->name('forgot');
 });
 
 // === Download Center Routes ===

@@ -293,9 +293,11 @@
 
                         {{-- Right: Actions (Col-2) --}}
                         <div class="col-lg-2 d-flex justify-content-end align-items-center gap-2 ps-lg-4 border-start">
-                            <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
-                                <i class="bi bi-currency-dollar"></i> Finance
-                            </button>
+                            @can('manage-finance')
+                                <button class="btn btn-outline-primary w-100" onclick="event.stopPropagation(); openFinanceProtection({{ $employer->id }})">
+                                    <i class="bi bi-currency-dollar"></i> Finance
+                                </button>
+                            @endcan
                             <button class="btn btn-light rounded-circle" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
                                 <i class="bi bi-chevron-down"></i>
                             </button>
@@ -358,6 +360,33 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Finance Access Password Prompt Modal --}}
+<div class="modal fade" id="financePasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-shield-lock-fill me-2"></i>{{ __('Restricted Access') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ __('Please enter the Finance System Password to continue.') }}</p>
+                <form id="financeAuthForm" onsubmit="submitFinancePassword(event)">
+                    <div class="mb-3">
+                        <input type="password" id="finance_auth_password" class="form-control form-control-lg text-center" placeholder="Password" required autofocus>
+                        <div class="invalid-feedback">{{ __('Incorrect password') }}</div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">{{ __('Unlock') }}</button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="forgotFinancePassword(event)" class="text-muted small">{{ __('Forgot Password?') }}</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -429,6 +458,91 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = {{ $lastStepId ?? 'null' }};
+    let targetFinanceModalId = null;
+
+    // --- Finance Protection Logic ---
+    function openFinanceProtection(employerId) {
+        // 1. Lock first (ensure fresh authentication)
+        fetch('{{ route('finance.lock') }}', {
+            method: 'POST',
+            headers: {'X-CSRF-TOKEN': csrfToken}
+        }).then(() => {
+            // 2. Set target and show password prompt
+            targetFinanceModalId = `financeModal-${employerId}`;
+            const pwdModal = new bootstrap.Modal(document.getElementById('financePasswordModal'));
+            document.getElementById('finance_auth_password').value = '';
+            document.getElementById('finance_auth_password').classList.remove('is-invalid');
+            pwdModal.show();
+        });
+    }
+
+    function submitFinancePassword(e) {
+        e.preventDefault();
+        const pwdInput = document.getElementById('finance_auth_password');
+        const btn = e.target.querySelector('button');
+
+        btn.disabled = true;
+        btn.innerText = '{{ __('Verifying...') }}';
+
+        fetch('{{ route('finance.verify') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ password: pwdInput.value })
+        })
+        .then(res => res.json().then(data => ({status: res.status, body: data})))
+        .then(response => {
+            if(response.status === 200) {
+                // Success: Hide Password Modal, Show Target Finance Modal
+                const pwdModalEl = document.getElementById('financePasswordModal');
+                const pwdModal = bootstrap.Modal.getInstance(pwdModalEl);
+                pwdModal.hide();
+
+                if(targetFinanceModalId) {
+                    const targetEl = document.getElementById(targetFinanceModalId);
+                    const targetModal = new bootstrap.Modal(targetEl);
+                    targetModal.show();
+
+                    // Add listener to lock on close
+                    targetEl.addEventListener('hidden.bs.modal', function onHide() {
+                        fetch('{{ route('finance.lock') }}', {
+                            method: 'POST',
+                            headers: {'X-CSRF-TOKEN': csrfToken}
+                        });
+                        targetEl.removeEventListener('hidden.bs.modal', onHide);
+                    });
+                }
+            } else {
+                pwdInput.classList.add('is-invalid');
+            }
+        })
+        .catch(err => console.error(err))
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = '{{ __('Unlock') }}';
+        });
+    }
+
+    function forgotFinancePassword(e) {
+        e.preventDefault();
+        if(!confirm('{{ __('Send password reset instructions to the registered email?') }}')) return;
+
+        fetch('{{ route('finance.forgot') }}', {
+            method: 'POST',
+            headers: {'X-CSRF-TOKEN': csrfToken}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                Swal.fire('{{ __('Sent!') }}', data.message, 'success');
+            } else {
+                Swal.fire('{{ __('Error') }}', data.message, 'error');
+            }
+        });
+    }
 
     // Helper: Update UI Stats
     function updateStatsUI(stats) {
