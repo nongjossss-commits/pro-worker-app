@@ -344,6 +344,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Fetch missing fields to highlight in the view
         $missingFields = \App\Helpers\CompletenessHelper::getMissingFields($employee);
 
+        if (request()->ajax()) {
+            return view('employees.partials._edit_form', compact('employee', 'employers', 'missingFields'));
+        }
+
         return view('employees.edit', compact('employee', 'employers', 'missingFields'));
     }
 

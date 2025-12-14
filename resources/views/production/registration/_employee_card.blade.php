@@ -104,9 +104,10 @@
                     <i class="bi bi-layout-text-window-reverse"></i> {{ __('Fields') }}
                 </button>
 
-                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-warning rounded-pill px-3" title="Edit">
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3" title="Edit"
+                    onclick="openEditEmployeeModal({{ $employee->id }})">
                     <i class="bi bi-pencil-fill"></i>
-                </a>
+                </button>
 
                 {{-- SAVE TO DB --}}
                 <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
