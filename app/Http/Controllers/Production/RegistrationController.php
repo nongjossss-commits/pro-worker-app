@@ -179,6 +179,10 @@ class RegistrationController extends Controller
      */
     public function finalize(Request $request, Employee $employee)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         // Change status to 'registration_completed'
         $employee->update(['status' => 'registration_completed']);
 
@@ -196,6 +200,10 @@ class RegistrationController extends Controller
      */
     public function cancel(Request $request, Employee $employee)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         $employee->update(['status' => 'registration_cancelled']);
 
         if ($request->ajax()) {
@@ -212,6 +220,10 @@ class RegistrationController extends Controller
      */
     public function restore(Request $request, Employee $employee)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         $employee->update(['status' => 'registration_pending']);
 
         if ($request->ajax()) {
@@ -228,6 +240,10 @@ class RegistrationController extends Controller
      */
     public function destroy(Request $request, Employee $employee)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         $employerId = $employee->employer_id; // Capture ID before deletion
         $employee->delete(); // Soft delete
 
@@ -245,6 +261,10 @@ class RegistrationController extends Controller
      */
     public function bulkFinalize(Request $request)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         $request->validate([
             'employee_ids' => 'required|array',
             'employee_ids.*' => 'exists:employees,id',
@@ -298,6 +318,10 @@ class RegistrationController extends Controller
 
     public function create(Request $request)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
         $selectedEmployer = null;
 
@@ -317,6 +341,10 @@ class RegistrationController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         // Copy of validation from EmployeeController@store
         $validated = $request->validate([
             'employer_id' => 'required|exists:employers,id',
@@ -493,6 +521,10 @@ class RegistrationController extends Controller
      */
     public function updateProgress(Request $request, Employee $employee)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         try {
             $validated = $request->validate([
                 'step_id' => 'required|exists:registration_steps,id',
@@ -601,6 +633,10 @@ class RegistrationController extends Controller
      */
     public function storeCustomField(Request $request, Employee $employee)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'field_name' => 'required|string|max:255',
             'field_type' => 'required|in:text,date,file',
@@ -645,6 +681,10 @@ class RegistrationController extends Controller
 
     public function destroyCustomField(EmployeeCustomField $field)
     {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
         if ($field->field_type === 'file' && $field->file_path) {
             Storage::disk('public')->delete($field->file_path);
         }

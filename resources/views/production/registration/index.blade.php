@@ -79,9 +79,11 @@
         <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="card-title fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }}</h5>
+                @can('manage-own-workflow')
                 <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
                     <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
                 </button>
+                @endcan
             </div>
 
             <div class="d-flex gap-2 flex-wrap justify-content-start align-items-center" id="global-stats-container">
@@ -150,6 +152,7 @@
                 </form>
 
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
+                    @can('manage-own-workflow')
                     <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white fw-bold">
                         <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
                     </a>
@@ -159,9 +162,11 @@
                     <a href="{{ route('admin.trash.index', ['tab' => 'employees']) }}" class="btn btn-secondary fw-bold">
                         <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
                     </a>
+                    @endcan
                 </div>
             </div>
 
+            @can('manage-own-workflow')
             {{-- Bulk Action Bar --}}
             <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded"
                  style="display: none;"
@@ -199,6 +204,7 @@
                     <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
                 </div>
             </div>
+            @endcan
         </div>
     </div>
 
@@ -213,10 +219,12 @@
 
                         {{-- Left: Identity --}}
                         <div class="d-flex align-items-center flex-wrap gap-3">
+                            @can('manage-own-workflow')
                             {{-- Select All for Employer --}}
                             <div class="form-check mb-0">
                                 <input class="form-check-input employer-select-all" type="checkbox" data-employer-id="{{ $employer->id }}" title="Select All for this Employer">
                             </div>
+                            @endcan
 
                             {{-- Name & Collapse Trigger --}}
                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
@@ -273,10 +281,12 @@
 
                              <div class="vr d-none d-xl-block"></div>
 
+                             @can('manage-own-workflow')
                              {{-- Add Employee Button --}}
                              <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold">
                                 <i class="bi bi-plus-lg"></i> {{ __('Add Employee') }}
                              </a>
+                             @endcan
 
                              {{-- Finance Button --}}
                              @can('view-finance')

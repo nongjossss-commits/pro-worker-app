@@ -36,6 +36,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-center gap-3 w-100">
+                @can('manage-own-workflow')
                 {{-- Only show checkbox if Active (Pending) --}}
                 <div class="form-check {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
                     <input class="form-check-input employee-checkbox"
@@ -50,6 +51,7 @@
                            data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
                            data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
                 </div>
+                @endcan
 
                 <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $employee->id }}">
                     {{-- Avatar --}}
@@ -95,6 +97,7 @@
                     <i class="bi bi-eye-fill"></i>
                 </button>
 
+                 @can('manage-own-workflow')
                  {{-- Inline Drawer Toggle --}}
                  <button class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Custom Fields"
                     onclick="toggleInlineDrawer({{ $employee->id }}, {{ json_encode($employee) }})">
@@ -141,6 +144,7 @@
                 <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }})">
                     <i class="bi bi-trash-fill"></i>
                 </button>
+                @endcan
             </div>
         </div>
 
@@ -177,14 +181,20 @@
                             }
                         }
                     @endphp
+                        @php
+                            $canManage = auth()->user()->can('manage-own-workflow');
+                            $disabled = ($isCompleted || $isCancelled || !$canManage) ? 'disabled' : '';
+                            $pointerEvents = !$canManage ? 'pointer-events: none;' : '';
+                            $onclick = $canManage ? "onclick=\"toggleStep({$employee->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
+                        @endphp
                     <button
                         class="btn btn-sm {{ $btnClass }} rounded-pill px-3"
-                        style="font-size: 0.8rem; {{ $btnStyle }}"
-                        onclick="toggleStep({{ $employee->id }}, {{ $step->id }}, {{ $isStepCompleted ? 'false' : 'true' }})"
+                            style="font-size: 0.8rem; {{ $btnStyle }} {{ $pointerEvents }}"
+                            {!! $onclick !!}
                         data-step-id="{{ $step->id }}"
                         data-color="{{ $step->color }}"
                         data-hex-color="{{ $hexColor }}"
-                        {{ ($isCompleted || $isCancelled) ? 'disabled' : '' }}
+                            {{ $disabled }}
                     >
                         {{ $step->name }}
                         @if($isStepCompleted) <i class="bi bi-check-circle-fill ms-1"></i> @endif
