@@ -90,6 +90,27 @@
                                         <div class="input-group">
                                             <input type="file" class="form-control master-input" data-field="{{ $field }}">
                                         </div>
+
+                                        @php
+                                            // Check if this is an "Other Document" (doc 9-18) and needs a description field
+                                            $isOtherDoc = preg_match('/^employee_doc_([9]|1[0-8])$/', $field, $matches);
+                                            $descField = null;
+                                            if ($isOtherDoc) {
+                                                $docIndex = (int)$matches[1];
+                                                $descIndex = $docIndex - 8;
+                                                $descField = "other_doc_{$descIndex}_desc";
+                                            }
+                                        @endphp
+
+                                        @if($descField)
+                                            <div class="mt-2">
+                                                <input type="text"
+                                                       class="form-control master-desc-input"
+                                                       data-parent-field="{{ $field }}"
+                                                       placeholder="{{ __('Document Description') }}">
+                                            </div>
+                                        @endif
+
                                         <div class="form-text text-muted small mt-1">
                                             <i class="bi bi-exclamation-circle"></i> {{ __('Uploads cannot be auto-applied due to browser security. Please upload individually.') }}
                                         </div>
@@ -199,6 +220,28 @@
                                                 {{-- Standard File Upload --}}
                                                 <div class="input-group">
                                                     <input type="file" class="form-control individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}">
+                                                </div>
+                                            @endif
+
+                                            @php
+                                                // Check if this is an "Other Document" (doc 9-18) and needs a description field
+                                                $isOtherDoc = preg_match('/^employee_doc_([9]|1[0-8])$/', $field, $matches);
+                                                $descField = null;
+                                                if ($isOtherDoc) {
+                                                    $docIndex = (int)$matches[1];
+                                                    $descIndex = $docIndex - 8;
+                                                    $descField = "other_doc_{$descIndex}_desc";
+                                                }
+                                            @endphp
+
+                                            @if($descField)
+                                                <div class="mt-2">
+                                                    <input type="text"
+                                                           class="form-control individual-desc-input"
+                                                           name="data[{{ $employee->id }}][{{ $descField }}]"
+                                                           value="{{ $employee->$descField }}"
+                                                           data-parent-field="{{ $field }}"
+                                                           placeholder="{{ __('Document Description') }}">
                                                 </div>
                                             @endif
 
@@ -326,6 +369,20 @@
                         input.classList.add('bg-success-subtle');
                         setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
                     });
+
+                    // Handle description field sync (if exists)
+                    const masterDescInput = document.querySelector(`.master-desc-input[data-parent-field="${field}"]`);
+                    const individualDescInputs = document.querySelectorAll(`.individual-desc-input[data-parent-field="${field}"]`);
+
+                    if (masterDescInput && individualDescInputs.length > 0) {
+                        const descValue = masterDescInput.value;
+                        individualDescInputs.forEach(input => {
+                            input.value = descValue;
+                            input.dispatchEvent(new Event('change'));
+                            input.classList.add('bg-success-subtle');
+                            setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
+                        });
+                    }
 
                     // Button Visual feedback
                     const originalHtml = btn.innerHTML;
