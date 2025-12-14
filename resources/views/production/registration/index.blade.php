@@ -3,6 +3,20 @@
 @section('title', 'Registration Resolution')
 
 @section('content')
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .filter-active {
+        transform: scale(1.15);
+        border: 2px solid #3b82f6 !important; /* Blue-500 */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 10;
+        transition: all 0.2s ease-in-out;
+    }
+    .filter-active .badge {
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.5) !important;
+    }
+</style>
+
 <div class="container-fluid">
     {{-- Top Stats --}}
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
@@ -18,7 +32,10 @@
 
         {{-- Not Started --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm" style="background-color: #EF4444; border: none;"> {{-- Red --}}
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-not-started"
+                 onclick="toggleFilter('not_started')"
+                 style="background-color: #EF4444; border: none; transition: transform 0.2s;"> {{-- Red --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Not Started') }}</p>
@@ -98,7 +115,9 @@
                             $nameClass = "fs-6";
                         }
                     @endphp
-                    <div class="d-inline-flex align-items-center bg-white border rounded-pill {{ $containerClass }} shadow-sm gap-2">
+                    <div class="d-inline-flex align-items-center bg-white border rounded-pill {{ $containerClass }} shadow-sm gap-2 cursor-pointer filter-pill"
+                         id="filter-step-{{ $step->id }}"
+                         onclick="toggleFilter('{{ $step->id }}')">
                         <span class="badge rounded-circle {{ $sizeClass }} {{ $bgClass }} global-stat-badge shadow-sm d-flex align-items-center justify-content-center"
                               style="{{ $dimensions }}"
                               data-step-id="{{ $step->id }}">
@@ -186,7 +205,7 @@
     {{-- Employers List --}}
     <div class="accordion" id="employersAccordion">
         @foreach($employers as $employer)
-            <div class="card mb-4 border border-primary border-2 shadow-sm overflow-hidden">
+            <div class="card mb-4 border border-primary border-2 shadow-sm overflow-hidden" id="employer-card-{{ $employer->id }}">
                 <div class="card-header bg-white py-3 px-4 border-bottom" id="heading{{ $employer->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions --}}
@@ -446,18 +465,239 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = {{ $lastStepId ?? 'null' }};
 
-    // Employer-level Select All
+    // State for Global Client-Side Filter
+    let currentStepFilter = null; // 'not_started', 'step_ID', or null
+
+    // Toggle Filter Function
+    function toggleFilter(filterKey) {
+        // 1. Update State
+        if (currentStepFilter === filterKey) {
+            currentStepFilter = null; // Toggle OFF
+        } else {
+            currentStepFilter = filterKey; // Toggle ON
+        }
+
+        // 2. Update UI (Visual Active State)
+        updateFilterUI();
+
+        // 3. Apply Filter (Show/Hide Rows)
+        applyFilters();
+
+        // 4. Recalculate Stats (Dynamic Counters)
+        recalculateVisibleStats();
+    }
+
+    function updateFilterUI() {
+        // Reset all
+        document.querySelectorAll('.filter-card, .filter-pill').forEach(el => el.classList.remove('filter-active'));
+
+        if (!currentStepFilter) return;
+
+        if (currentStepFilter === 'not_started') {
+            document.getElementById('filter-not-started').classList.add('filter-active');
+        } else {
+            // It's a step ID
+            const pill = document.getElementById(`filter-step-${currentStepFilter}`);
+            if (pill) pill.classList.add('filter-active');
+        }
+    }
+
+    function applyFilters() {
+        const cards = document.querySelectorAll('.employee-card-wrapper');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const highestStepId = card.dataset.highestStepId;
+            const isNotStarted = card.dataset.isNotStarted === 'true';
+
+            let show = true;
+
+            if (currentStepFilter) {
+                if (currentStepFilter === 'not_started') {
+                    if (!isNotStarted) show = false;
+                } else {
+                    // Check if highest step matches filter
+                    if (highestStepId != currentStepFilter) show = false;
+                }
+            }
+
+            if (show) {
+                card.classList.remove('d-none');
+                visibleCount++;
+            } else {
+                card.classList.add('d-none');
+            }
+        });
+
+        // Optional: Hide employers with 0 visible employees if desired?
+        // For now, let's keep employer cards visible but maybe update their badges.
+    }
+
+    function recalculateVisibleStats() {
+        // Reset Global Counters
+        let globalTotal = 0;
+        let globalNotStarted = 0;
+        let globalCancelled = 0;
+        let globalSaved = 0;
+
+        // Track global step counts for the filter pills
+        const globalStepCounts = {};
+
+        // Determine all employers present
+        const employersMap = {}; // empId -> { total, notStarted, cancelled, saved, stepCounts: {} }
+
+        // Actually, we need to iterate through VISIBLE cards for the stats.
+        const visibleCards = document.querySelectorAll('.employee-card-wrapper:not(.d-none)');
+
+        visibleCards.forEach(card => {
+            // Check Parent Visibility (for robustness against other filters/search)
+            if (card.offsetParent === null) return;
+
+            const status = card.dataset.status;
+            const isNotStarted = card.dataset.isNotStarted === 'true';
+            const highestStepId = card.dataset.highestStepId;
+            const empId = card.dataset.employerId;
+
+            // Init Employer Stats if new
+            if (!employersMap[empId]) {
+                employersMap[empId] = { total: 0, notStarted: 0, cancelled: 0, saved: 0, stepCounts: {} };
+            }
+            const empStats = employersMap[empId];
+
+            // 1. Total (Active)
+            if (status !== 'registration_cancelled') {
+                globalTotal++;
+                empStats.total++;
+            }
+
+            // 2. Not Started
+            if (isNotStarted) {
+                globalNotStarted++;
+                empStats.notStarted++;
+            }
+
+            // 3. Cancelled
+            if (status === 'registration_cancelled') {
+                globalCancelled++;
+                empStats.cancelled++;
+            }
+
+            // 4. Saved
+            if (status === 'registration_completed') {
+                globalSaved++;
+                empStats.saved++;
+            }
+
+            // 5. Step Counts (for Badge Updates)
+            if (highestStepId && highestStepId !== 'none' && highestStepId !== '') {
+                 // Employer
+                 if (!empStats.stepCounts[highestStepId]) empStats.stepCounts[highestStepId] = 0;
+                 empStats.stepCounts[highestStepId]++;
+
+                 // Global
+                 if (!globalStepCounts[highestStepId]) globalStepCounts[highestStepId] = 0;
+                 globalStepCounts[highestStepId]++;
+            }
+        });
+
+        // Update Global UI
+        updateText('global-total-count', globalTotal);
+        updateText('global-not-started-count', globalNotStarted);
+        updateText('global-cancelled-count', globalCancelled);
+        updateText('global-saved-count', globalSaved);
+        // Employers count (visible employers)
+        updateText('global-employers-count', Object.keys(employersMap).length);
+
+        // Update Global Workflow Badges
+        document.querySelectorAll('.global-stat-badge').forEach(badge => {
+            const stepId = badge.dataset.stepId;
+            const count = globalStepCounts[stepId] || 0;
+            badge.textContent = count;
+
+            // Update Global Badge Style (similar to employer badges)
+            if (count === 0) {
+                 badge.classList.add('bg-secondary', 'bg-opacity-50', 'text-white');
+                 badge.classList.remove('bg-primary', 'bg-success');
+            } else {
+                 badge.classList.remove('bg-secondary', 'bg-opacity-50');
+                 if (badge.dataset.stepId == lastStepId) {
+                     badge.classList.add('bg-primary'); // Blue for last
+                 } else {
+                     badge.classList.add('bg-success'); // Green for others
+                 }
+            }
+        });
+
+        // Update Per-Employer UI
+        // We need to loop through ALL employers to potentially zero-out those with no visible employees
+        document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
+            // Extract ID from e.g. employer-card-5
+            const empId = empCard.id.replace('employer-card-', '');
+            const stats = employersMap[empId] || { total: 0, notStarted: 0, cancelled: 0, saved: 0, stepCounts: {} };
+
+            updateText(`employer-total-${empId}`, stats.total);
+            updateText(`employer-not-started-${empId}`, stats.notStarted);
+            updateText(`employer-cancelled-${empId}`, stats.cancelled);
+            updateText(`employer-saved-${empId}`, stats.saved);
+
+            // Update Employer Step Badges?
+            // This is trickier as we need to reset all badges to 0 first or track them.
+            // Let's iterate all badges in this employer card
+            const badges = empCard.querySelectorAll('.employer-stat-badge');
+            badges.forEach(badge => {
+                const stepId = badge.dataset.stepId;
+                const count = stats.stepCounts[stepId] || 0;
+                badge.textContent = count;
+
+                // Update Style (simple zero check)
+                // We reuse the logic from toggleStep's response handler if possible, or simple check
+                if (count === 0) {
+                     badge.classList.add('bg-secondary', 'bg-opacity-25', 'text-muted');
+                     badge.classList.remove('bg-primary', 'bg-success', 'text-white');
+                } else {
+                     badge.classList.remove('bg-secondary', 'bg-opacity-25', 'text-muted');
+                     if (badge.dataset.stepId == lastStepId) {
+                         badge.classList.add('bg-primary', 'text-white');
+                     } else {
+                         badge.classList.add('bg-success', 'text-white');
+                     }
+                }
+            });
+        });
+    }
+
+    // Employer-level Select All (Modified for Visible & Active only)
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('employer-select-all')) {
             const employerId = e.target.dataset.employerId;
             const isChecked = e.target.checked;
+
+            // Find all checkboxes for this employer
             const checkboxes = document.querySelectorAll(`.employee-checkbox[data-employer-id="${employerId}"]`);
 
             checkboxes.forEach(cb => {
-                if(cb.checked !== isChecked) {
-                    cb.checked = isChecked;
-                    // Dispatch change event to trigger global listener (bulk action bar)
-                    cb.dispatchEvent(new Event('change', { bubbles: true }));
+                // Check if the wrapper row is visible
+                const cardWrapper = document.getElementById(`employee-card-${cb.value}`);
+                const isVisible = cardWrapper && !cardWrapper.classList.contains('d-none');
+
+                // Explicitly check status data attribute to prevent selecting non-pending (Saved/Cancelled)
+                // even if they are somehow visible or accessible.
+                const status = cardWrapper.dataset.status;
+                const isPending = (status === 'registration_pending');
+
+                if (isVisible && isPending) {
+                    if(cb.checked !== isChecked) {
+                        cb.checked = isChecked;
+                        // Dispatch change event to trigger global listener
+                        cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                } else {
+                    // If hidden or not pending, do not select.
+                    // If unchecking the master, uncheck these too to be safe/clean state.
+                    if (!isChecked) {
+                        cb.checked = false;
+                        cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                 }
             });
         }
@@ -588,14 +828,20 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        // Update Stats
-                        if(data.stats) updateStatsUI(data.stats);
+                        // Update Stats (Server Stats might be outdated if we have client filter, better to recalc)
+                        // If we use server stats, it resets to global.
+                        // Let's accept server stats for the DB update, but then re-run our client recalc
+                        // to keep counters correct with filters.
 
                         // DOM Update: Completed State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
+                            // Update Data Attribute for Client Filter
+                            card.dataset.status = 'registration_completed';
+                            card.dataset.isNotStarted = 'false';
+
                             // 1. Change Card Style
-                            card.className = 'card bg-success bg-opacity-10 border-0 text-muted mb-3';
+                            card.className = 'card bg-success bg-opacity-10 border-0 text-muted mb-3 employee-card-wrapper'; // Ensure wrapper class stays
 
                             // 2. Hide/Show Buttons
                             toggleElement(`btn-save-${id}`, false);
@@ -616,6 +862,10 @@
                             toggleElement(`badge-cancelled-${id}`, false);
 
                             Swal.fire('Saved!', 'Employee marked as completed.', 'success');
+
+                            // Re-apply filters (hide if filtering by Pending/Not Started) and Recalc
+                            applyFilters();
+                            recalculateVisibleStats();
                         }
                     }
                 });
@@ -639,14 +889,22 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                         // Update Stats
-                        if(data.stats) updateStatsUI(data.stats);
-
                         // DOM Update: Active State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
+                            card.dataset.status = 'registration_pending';
+                            // Re-evaluate 'Not Started'
+                            // We need to check steps. If restored, steps are preserved.
+                            // If has steps, isNotStarted = false.
+                            // The easiest way is to trust the current UI state or server data.
+                            // But for immediate update:
+                            // If we restore, we assume previous step state is valid.
+                            // The card.dataset.highestStepId should be valid still.
+                            const hasSteps = card.dataset.highestStepId && card.dataset.highestStepId !== '';
+                            card.dataset.isNotStarted = hasSteps ? 'false' : 'true';
+
                             // 1. Change Card Style (Reset)
-                            card.className = 'card bg-white border shadow-sm mb-3';
+                            card.className = 'card bg-white border shadow-sm mb-3 employee-card-wrapper';
                             card.style.filter = ''; // Remove grayscale
 
                             // 2. Hide/Show Buttons
@@ -672,6 +930,9 @@
                             stepsBtns.forEach(btn => btn.disabled = false);
 
                             Swal.fire('Restored!', 'Employee is back to pending.', 'success');
+
+                            applyFilters();
+                            recalculateVisibleStats();
                         }
                     }
                 });
@@ -696,14 +957,13 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        // Update Stats
-                        if(data.stats) updateStatsUI(data.stats);
-
-                        // DOM Update: Cancelled State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
+                            card.dataset.status = 'registration_cancelled';
+                            card.dataset.isNotStarted = 'false'; // Cancelled is not "Not Started" in our logic usually
+
                             // 1. Change Card Style
-                            card.className = 'card bg-light border-0 text-secondary grayscale-mode mb-3';
+                            card.className = 'card bg-light border-0 text-secondary grayscale-mode mb-3 employee-card-wrapper';
                             card.style.filter = 'grayscale(100%)';
 
                             // 2. Hide/Show Buttons
@@ -725,6 +985,9 @@
                             toggleElement(`badge-cancelled-${id}`, true);
 
                             Swal.fire('Cancelled', 'Registration cancelled.', 'success');
+
+                            applyFilters();
+                            recalculateVisibleStats();
                         }
                     }
                 });
@@ -752,15 +1015,15 @@
                 })
                 .then(data => {
                     if(data.success) {
-                        // Update Stats
-                        if(data.stats) updateStatsUI(data.stats);
-
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
                             card.style.transition = 'all 0.5s ease';
                             card.style.opacity = '0';
                             card.style.transform = 'scale(0.9)';
-                            setTimeout(() => card.remove(), 500);
+                            setTimeout(() => {
+                                card.remove();
+                                recalculateVisibleStats(); // Update stats after removal
+                            }, 500);
                         }
                         Swal.fire('Deleted!', 'Employee has been deleted.', 'success');
                     }
@@ -847,72 +1110,42 @@
                     }
                 }
 
-                // Helper to update badge color/style
-                const updateBadgeStyle = (badge, count, isGlobal) => {
-                    badge.textContent = count;
-                    // Reset common classes
-                    badge.style.backgroundColor = '';
-                    badge.classList.remove('bg-secondary', 'bg-opacity-50', 'bg-opacity-25', 'text-muted', 'text-white');
-                    // Remove all likely bg-colors
-                    const allColors = ['primary', 'success', 'danger', 'warning', 'info', 'dark', 'secondary'];
-                    allColors.forEach(c => badge.classList.remove(`bg-${c}`));
+                // Ensure card is available (re-select to be safe in this scope)
+                const card = document.getElementById(`employee-card-${employeeId}`);
 
-                    const isLast = (parseInt(badge.dataset.stepId) === lastStepId);
+                // 2. Client Side State Update (Highest Step Logic)
+                // We need to fetch the highest step ID from the active buttons in the DOM to avoid complex server roundtrips for filtering,
+                // OR we trust the server logic.
+                // The server returns globalStats/employerStats but NOT the specific employee's new highest step ID explicitly in a simple way to update the DOM attr.
+                // However, we can deduce it from the DOM state.
 
-                    if (count === 0) {
-                        // Gray State
-                        badge.classList.add('bg-secondary');
-                        if (isGlobal) {
-                             badge.classList.add('bg-opacity-50', 'text-white');
-                        } else {
-                             badge.classList.add('bg-opacity-25', 'text-muted');
-                        }
-                    } else {
-                        // Colored State
-                        if (isLast) {
-                            // Last step gets Primary Blue
-                            badge.classList.add('bg-primary');
-                            if (!isGlobal) badge.classList.add('text-white'); // Ensure contrast
-                        } else {
-                            // Normal step gets Success Green
-                            badge.classList.add('bg-success');
-                            if (!isGlobal) badge.classList.add('text-white');
-                        }
-                    }
-                };
+                // Get all active step buttons for this employee
+                const allButtons = card.querySelectorAll('button[data-step-id]');
+                let highestId = '';
+                // Since buttons are likely rendered in order, we can check the last active one?
+                // Or better, check the dataset.
+                // But the loop above renders them.
 
-                // 2. Update Global Stats
-                if (data.globalStats) {
-                    const globalContainer = document.getElementById('global-stats-container');
-                    if (globalContainer) {
-                        for (const [sId, count] of Object.entries(data.globalStats)) {
-                            const badge = globalContainer.querySelector(`.global-stat-badge[data-step-id="${sId}"]`);
-                            if (badge) updateBadgeStyle(badge, count, true);
-                        }
-                    }
-                }
+                // Let's iterate and find the one with class btn-success/btn-primary (completed).
+                // Note: The click just happened, so DOM class is updated.
+                let maxOrder = -1;
+                allButtons.forEach((b, index) => {
+                     // Check if completed (has specific classes)
+                     if (b.classList.contains('text-white') && !b.classList.contains('bg-secondary')) {
+                         // It is completed.
+                         // We assume the steps are rendered in order.
+                         // But to be safe, we might need the step ID.
+                         // Let's just assume the last one found is the highest for now (if rendered in order).
+                         highestId = b.dataset.stepId;
+                     }
+                });
 
-                // 3. Update Employer Stats
-                if (data.employerStats && data.employerId) {
-                    const employerContainer = document.getElementById(`employer-stats-${data.employerId}`);
-                    if (employerContainer) {
-                         for (const [sId, count] of Object.entries(data.employerStats)) {
-                            const badge = employerContainer.querySelector(`.employer-stat-badge[data-step-id="${sId}"]`);
-                            if (badge) updateBadgeStyle(badge, count, false);
-                        }
-                    }
-                }
+                card.dataset.highestStepId = highestId;
+                card.dataset.isNotStarted = (highestId === '') ? 'true' : 'false';
 
-                // 4. Update Not Started Counts
-                if (typeof data.globalNotStarted !== 'undefined') {
-                    const globalNotStartedEl = document.getElementById('global-not-started-count');
-                    if (globalNotStartedEl) globalNotStartedEl.innerText = data.globalNotStarted;
-                }
-
-                if (typeof data.employerNotStarted !== 'undefined' && data.employerId) {
-                    const empNotStartedEl = document.getElementById(`employer-not-started-${data.employerId}`);
-                    if (empNotStartedEl) empNotStartedEl.innerText = data.employerNotStarted;
-                }
+                // 3. Re-apply filters & stats
+                applyFilters();
+                recalculateVisibleStats();
 
             } else {
                 throw new Error(data.message || 'Unknown error');
