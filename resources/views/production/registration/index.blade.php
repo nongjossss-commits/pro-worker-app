@@ -247,9 +247,11 @@
                              <div class="vr d-none d-xl-block"></div>
 
                              {{-- Finance Button --}}
+                             @can('view-finance')
                              <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
                                 <i class="bi bi-currency-dollar"></i> Finance
                             </button>
+                            @endcan
 
                             {{-- Collapse Chevron --}}
                             <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">

@@ -47,7 +47,8 @@ class RoleAndPermissionSeeder extends Seeder
 
             'delete-addresses', 'restore-addresses', 'force-delete-addresses',
             'manage-tickets',
-            'use-chat'
+            'use-chat',
+            'view-finance'
             // END: Add new permissions
         ];
 
