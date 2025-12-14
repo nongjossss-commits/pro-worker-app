@@ -5,7 +5,7 @@
     <div class="col-12 mb-3">
         <div class="d-flex align-items-center justify-content-between border-bottom pb-2">
             <ul class="nav nav-tabs border-0" id="financialTabs" role="tablist">
-                <template x-for="group in financialGroups" :key="group.id">
+                <template x-for="(group, index) in financialGroups" :key="group.id">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link"
                                 :class="{ 'active fw-bold': activeGroupId === group.id }"
@@ -16,13 +16,20 @@
                             <!-- Edit Name Button (Mini) -->
                             <i class="bi bi-pencil-square ms-2 text-muted small"
                                @click.stop="renameGroup(group.id, group.name)"
+                               title="{{ __('Rename Tab') }}"
                                style="font-size: 0.8rem; cursor: pointer;"></i>
+                            <!-- Delete Tab Button (Only for 2nd tab onwards) -->
+                             <i class="bi bi-x-circle-fill ms-1 text-danger small"
+                                x-show="index > 0"
+                                @click.stop="deleteGroup(group.id)"
+                                title="{{ __('Delete Tab') }}"
+                                style="font-size: 0.8rem; cursor: pointer;"></i>
                         </button>
                     </li>
                 </template>
                 <li class="nav-item ms-2">
                     <button class="btn btn-sm btn-outline-success border-0" @click="addNewGroup()">
-                        <i class="bi bi-plus-circle-fill"></i> Add Tab
+                        <i class="bi bi-plus-circle-fill"></i> {{ __('Add Tab') }}
                     </button>
                 </li>
             </ul>
@@ -656,25 +663,74 @@ function financialManager() {
             this.updateTotal();
         },
 
-        addNewGroup(name = 'New Tab') {
-            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch('/production/{{ $production->id }}/financial-groups', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                body: JSON.stringify({ name: name })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    this.financialGroups.push(data.group);
-                    this.switchGroup(data.group.id); // Switch to new group
+        addNewGroup() {
+            Swal.fire({
+                title: '{{ __('Add Tab') }}',
+                input: 'text',
+                inputLabel: '{{ __('Enter new tab name') }}',
+                inputValue: 'New Tab',
+                showCancelButton: true,
+                confirmButtonText: '{{ __('Add') }}',
+                cancelButtonText: '{{ __('Cancel') }}'
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const name = result.value;
+                    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    fetch('/production/{{ $production->id }}/financial-groups', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                        body: JSON.stringify({ name: name })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.financialGroups.push(data.group);
+                            this.switchGroup(data.group.id); // Switch to new group
+                        }
+                    });
+                }
+            });
+        },
+
+        deleteGroup(groupId) {
+             Swal.fire({
+                title: '{{ __('Are you sure you want to delete this tab?') }}',
+                text: "All transactions in this group will be deleted.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '{{ __('Yes, delete it!') }}',
+                cancelButtonText: '{{ __('Cancel') }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    fetch(`/production/{{ $production->id }}/financial-groups/${groupId}`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove from local array
+                            this.financialGroups = this.financialGroups.filter(g => g.id !== groupId);
+                            // Switch to first group if active one was deleted
+                            if (this.activeGroupId === groupId) {
+                                if (this.financialGroups.length > 0) {
+                                    this.switchGroup(this.financialGroups[0].id);
+                                } else {
+                                    this.activeGroupId = null;
+                                }
+                            }
+                            Swal.fire('Deleted!', 'Tab has been deleted.', 'success');
+                        }
+                    });
                 }
             });
         },
 
         renameGroup(groupId, currentName) {
             Swal.fire({
-                title: 'Rename Tab',
+                title: '{{ __('Rename Tab') }}',
                 input: 'text',
                 inputValue: currentName,
                 showCancelButton: true,

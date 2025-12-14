@@ -229,6 +229,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('production/{id}/upload-logo', [\App\Http\Controllers\ProductionController::class, 'uploadLogo'])->name('production.upload_logo');
     Route::post('production/{id}/financial-groups', [\App\Http\Controllers\ProductionController::class, 'storeFinancialGroup'])->name('production.financial_groups.store');
     Route::put('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'updateFinancialGroup'])->name('production.financial_groups.update');
+    Route::delete('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'destroyFinancialGroup'])->name('production.financial_groups.destroy');
 
     // Financial Routes
     Route::post('production/{id}/transactions', [FinancialController::class, 'storeTransaction']);
