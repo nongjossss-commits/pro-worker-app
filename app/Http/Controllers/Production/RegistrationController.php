@@ -41,7 +41,10 @@ class RegistrationController extends Controller
                   ->orWhere('employeePassport', 'like', "%{$search}%")
                   ->orWhereHas('employer', function($q2) use ($search) {
                       $q2->where('employerNameTh', 'like', "%{$search}%")
-                         ->orWhere('employerNameEn', 'like', "%{$search}%");
+                         ->orWhere('employerNameEn', 'like', "%{$search}%")
+                         ->orWhereHas('jobOwner', function($q3) use ($search) {
+                             $q3->where('name', 'like', "%{$search}%");
+                         });
                   });
             });
         }
@@ -96,7 +99,7 @@ class RegistrationController extends Controller
         $filteredEmployerIds = $registrationEmployees->pluck('employer_id')->unique();
 
         $employers = Employer::whereIn('id', $filteredEmployerIds)
-            ->with(['employees' => function($q) use ($registrationEmployees) {
+            ->with(['jobOwner', 'employees' => function($q) use ($registrationEmployees) {
                 // Only load the employees that match our main filter
                 // We can use whereIn('id', ...)
                 $q->whereIn('id', $registrationEmployees->pluck('id'))
