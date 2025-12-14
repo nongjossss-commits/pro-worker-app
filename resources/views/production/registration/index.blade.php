@@ -551,7 +551,7 @@
 
         visibleCards.forEach(card => {
             // Check Parent Visibility (for robustness against other filters/search)
-            if (card.offsetParent === null) return;
+            // if (card.offsetParent === null) return; // Removed to allow counting in collapsed accordions
 
             const status = card.dataset.status;
             const isNotStarted = card.dataset.isNotStarted === 'true';
