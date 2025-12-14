@@ -1159,6 +1159,18 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 elseif (array_key_exists($field, $employeeInput)) {
                     $updateData[$dbColumn] = $employeeInput[$field];
                 }
+
+                // 3. Handle Other Document Descriptions (auto-mapping)
+                // If the current field is employee_doc_9 through 18, check for corresponding description
+                if (preg_match('/^employee_doc_([9]|1[0-8])$/', $field, $matches)) {
+                    $docIndex = (int)$matches[1]; // 9 to 18
+                    $descIndex = $docIndex - 8;   // 1 to 10
+                    $descField = "other_doc_{$descIndex}_desc";
+
+                    if (array_key_exists($descField, $employeeInput)) {
+                        $updateData[$descField] = $employeeInput[$descField];
+                    }
+                }
             }
 
             if (!empty($updateData)) {
