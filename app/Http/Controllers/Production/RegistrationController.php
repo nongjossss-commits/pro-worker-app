@@ -516,7 +516,7 @@ class RegistrationController extends Controller
             // Ensure no global scope issues, but handle if method doesn't exist just in case
             $allQuery = Employee::query();
             if (method_exists($allQuery, 'withoutGlobalScopes')) {
-                $allQuery->withoutGlobalScopes();
+                $allQuery->withoutGlobalScopes()->whereNull('deleted_at');
             }
 
             $allEmployees = $allQuery->whereIn('status', ['registration_pending', 'registration_completed'])
@@ -546,7 +546,7 @@ class RegistrationController extends Controller
             // Employer Stats
             $empQuery = Employee::query();
             if (method_exists($empQuery, 'withoutGlobalScopes')) {
-                $empQuery->withoutGlobalScopes();
+                $empQuery->withoutGlobalScopes()->whereNull('deleted_at');
             }
 
             $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
