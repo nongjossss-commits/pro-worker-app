@@ -192,7 +192,7 @@ class RegistrationController extends Controller
      */
     public function cancelEmployer(Request $request, Employer $employer)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employers')) {
             abort(403);
         }
 
@@ -223,7 +223,7 @@ class RegistrationController extends Controller
      */
     public function restoreEmployer(Request $request, Employer $employer)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employers')) {
             abort(403);
         }
 
@@ -254,7 +254,7 @@ class RegistrationController extends Controller
      */
     public function finalize(Request $request, Employee $employee)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -275,7 +275,7 @@ class RegistrationController extends Controller
      */
     public function cancel(Request $request, Employee $employee)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -295,7 +295,7 @@ class RegistrationController extends Controller
      */
     public function restore(Request $request, Employee $employee)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -315,7 +315,7 @@ class RegistrationController extends Controller
      */
     public function destroy(Request $request, Employee $employee)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -336,7 +336,7 @@ class RegistrationController extends Controller
      */
     public function bulkFinalize(Request $request)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -393,7 +393,7 @@ class RegistrationController extends Controller
 
     public function create(Request $request)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -416,7 +416,7 @@ class RegistrationController extends Controller
      */
     public function store(Request $request)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -596,7 +596,7 @@ class RegistrationController extends Controller
      */
     public function updateProgress(Request $request, Employee $employee)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -708,7 +708,7 @@ class RegistrationController extends Controller
      */
     public function storeCustomField(Request $request, Employee $employee)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
@@ -756,7 +756,7 @@ class RegistrationController extends Controller
 
     public function destroyCustomField(EmployeeCustomField $field)
     {
-        if (!auth()->user()->can('manage-own-workflow')) {
+        if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
