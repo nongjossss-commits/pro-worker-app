@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             NotificationSettingSeeder::class,
             ApproveProductionPermissionSeeder::class,
             WorkflowBarrierSeeder::class,
+            WorkflowPermissionSeeder::class,
         ]);
     }
 }
