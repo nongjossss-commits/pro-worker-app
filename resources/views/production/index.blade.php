@@ -85,12 +85,14 @@
                                         </div>
 
                                         {{-- Ready to Process (Financial) Toggle --}}
+                                        @can('view-finance')
                                         <div class="form-check form-switch">
                                             <input class="form-check-input status-toggle" type="checkbox" id="finReady{{ $order->id }}"
                                                 data-id="{{ $order->id }}" data-type="financial_approved"
                                                 {{ $order->financial_approved_at ? 'checked' : '' }} disabled>
                                             <label class="form-check-label small" for="finReady{{ $order->id }}">{{ __('Ready to Process') }}</label>
                                         </div>
+                                        @endcan
 
                                         {{-- Waiting for Docs Button/Toggle --}}
                                         <button class="btn btn-sm btn-link text-decoration-none p-0 text-start text-danger"

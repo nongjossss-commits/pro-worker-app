@@ -1,3 +1,4 @@
+@can('view-finance')
 <div x-data="financialManager()" class="row">
 
     <!-- TAB NAVIGATION -->
@@ -1036,3 +1037,8 @@ function financialManager() {
     }
 }
 </script>
+@else
+    <div class="alert alert-danger">
+        <i class="bi bi-lock-fill me-2"></i> {{ __('Access Denied: You do not have permission to view financial data.') }}
+    </div>
+@endcan

@@ -45,6 +45,7 @@
             </div>
         </div>
         <div class="col-md-6">
+            @can('view-finance')
             <div class="card shadow-sm border-0 h-100" :class="{'bg-success text-white': financialApproved, 'bg-light': !financialApproved}">
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
@@ -54,17 +55,14 @@
                         </div>
                     </div>
                     <div class="form-check form-switch">
-                        @can('approve-production')
                         <input class="form-check-input fs-4" type="checkbox" role="switch"
                             id="financialApprovedSwitch"
                             x-model="financialApproved"
                             @change="toggleStatus('financial_approved')">
-                        @else
-                        <input class="form-check-input fs-4" type="checkbox" disabled x-model="financialApproved">
-                        @endcan
                     </div>
                 </div>
             </div>
+            @endcan
         </div>
     </div>
 
@@ -73,9 +71,11 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-selected="true">Project Details & Employees</button>
         </li>
+        @can('view-finance')
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab" aria-selected="false">Financial Management</button>
         </li>
+        @endcan
     </ul>
 
     <div class="tab-content" id="productionTabsContent">
@@ -257,9 +257,11 @@
         </div>
 
         <!-- Tab 2: Financial Management -->
+        @can('view-finance')
         <div class="tab-pane fade" id="financial" role="tabpanel" tabindex="0">
             @include('production.partials.financial-tab')
         </div>
+        @endcan
     </div>
 </div>
 
