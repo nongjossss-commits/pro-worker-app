@@ -508,14 +508,16 @@ document.addEventListener('DOMContentLoaded', function() {
                  }, 800); // 800ms delay safety
              }
 
-             const form = content.querySelector('form');
-             if(form) {
-                 form.addEventListener('submit', function(e) {
-                     e.preventDefault();
-                     e.stopPropagation();
-                     submitBulkUpdate(new FormData(form));
-                 });
-             }
+             // Define success callback for the bulk edit form script
+             window.onBulkEditSuccess = function() {
+                actionModal.hide();
+                refreshImportTable();
+                if(typeof showToast === 'function') {
+                    showToast('Bulk update successful', 'success');
+                } else {
+                    alert('Bulk update successful');
+                }
+             };
 
              actionModalBody.innerHTML = '';
              actionModalBody.appendChild(content);

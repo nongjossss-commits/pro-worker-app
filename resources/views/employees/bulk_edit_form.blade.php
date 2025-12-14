@@ -49,7 +49,7 @@
         </div>
     </div>
 
-    <form action="{{ route('employees.bulk_update') }}" method="POST" enctype="multipart/form-data">
+    <form id="bulkEditForm" action="{{ route('employees.bulk_update') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -144,7 +144,7 @@
         {{-- Individual Employee List --}}
         <div class="accordion shadow-sm" id="employeeAccordion">
             @foreach($employees as $index => $employee)
-                <div class="accordion-item">
+                <div class="accordion-item" id="employee-row-{{ $employee->id }}" data-employee-id="{{ $employee->id }}">
                     <h2 class="accordion-header" id="heading{{ $employee->id }}">
                         <button class="accordion-button {{ $index === 0 ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employee->id }}" aria-expanded="{{ $index === 0 ? 'true' : 'false' }}" aria-controls="collapse{{ $employee->id }}">
                             <div class="d-flex align-items-center w-100">
@@ -296,7 +296,7 @@
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{{ $redirectTo ?? route('employees.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
-                    <button type="submit" class="btn btn-success btn-lg shadow-sm">
+                    <button type="submit" class="btn btn-success btn-lg shadow-sm" id="btn-save-all">
                         <i class="bi bi-save-fill me-2"></i> {{ __('Save All Changes') }}
                     </button>
                 </div>
@@ -337,20 +337,40 @@
         </div>
     </div>
 
+    {{-- Progress Modal --}}
+    <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Saving Changes') }}</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div id="saveProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <p class="text-muted" id="saveProgressText">{{ __('Preparing to save...') }}</p>
+                    <div class="text-danger small mt-2 d-none" id="saveErrorText"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Hidden inputs for triggering file/camera selection --}}
     <input type="file" class="d-none" id="globalTriggerFile" accept="image/*">
     <input type="file" class="d-none" id="globalTriggerCamera" accept="image/*" capture="environment">
 
     <script>
         (function() {
-            // Handle Master Field Sync
-            const applyButtons = document.querySelectorAll('.apply-master-btn');
+            // --- 1. Master Field Sync (Event Delegation) ---
+            document.body.addEventListener('click', function(e) {
+                if (e.target.matches('.apply-master-btn') || e.target.closest('.apply-master-btn')) {
+                    const btn = e.target.matches('.apply-master-btn') ? e.target : e.target.closest('.apply-master-btn');
+                    const field = btn.dataset.field;
+                    const container = document.querySelector('#bulkEditForm'); // Scope to form
+                    if (!container) return;
 
-            applyButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const field = this.dataset.field;
-                    const masterInput = document.querySelector(`.master-input[data-field="${field}"]`);
-                    const individualInputs = document.querySelectorAll(`.individual-input[data-field="${field}"]`);
+                    const masterInput = container.querySelector(`.master-input[data-field="${field}"]`);
+                    const individualInputs = container.querySelectorAll(`.individual-input[data-field="${field}"]`);
 
                     if (!masterInput) return;
 
@@ -359,18 +379,16 @@
                         const value = masterInput.value;
                         individualInputs.forEach(input => {
                             input.value = value;
-                            // Trigger change event so any other listeners know it updated
                             input.dispatchEvent(new Event('change'));
-
-                            // Visual highlight effect
+                            // Visual highlight
                             input.classList.add('bg-success-subtle');
                             setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
                         });
                     }
 
-                    // Handle description field sync (if exists)
-                    const masterDescInput = document.querySelector(`.master-desc-input[data-parent-field="${field}"]`);
-                    const individualDescInputs = document.querySelectorAll(`.individual-desc-input[data-parent-field="${field}"]`);
+                    // Handle description field sync
+                    const masterDescInput = container.querySelector(`.master-desc-input[data-parent-field="${field}"]`);
+                    const individualDescInputs = container.querySelectorAll(`.individual-desc-input[data-parent-field="${field}"]`);
 
                     if (masterDescInput && individualDescInputs.length > 0) {
                         const descValue = masterDescInput.value;
@@ -391,32 +409,26 @@
                         btn.innerHTML = originalHtml;
                         btn.classList.replace('btn-success', 'btn-outline-primary');
                     }, 1500);
-                });
+                }
             });
 
-            // Expand/Collapse All
-            const expandAllBtn = document.getElementById('btn-expand-all');
-            const collapseAllBtn = document.getElementById('btn-collapse-all');
-            const accordionCollapses = document.querySelectorAll('.accordion-collapse');
-
-            if(expandAllBtn && collapseAllBtn) {
-                expandAllBtn.addEventListener('click', () => {
-                    accordionCollapses.forEach(el => {
-                        // Use Bootstrap 5 API if available, or fallback to class manipulation
+            // --- 2. Expand/Collapse All (Event Delegation) ---
+            document.body.addEventListener('click', function(e) {
+                if (e.target.matches('#btn-expand-all') || e.target.closest('#btn-expand-all')) {
+                    document.querySelectorAll('.accordion-collapse').forEach(el => {
                         const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
                         bsCollapse.show();
                     });
-                });
-
-                collapseAllBtn.addEventListener('click', () => {
-                    accordionCollapses.forEach(el => {
+                }
+                if (e.target.matches('#btn-collapse-all') || e.target.closest('#btn-collapse-all')) {
+                    document.querySelectorAll('.accordion-collapse').forEach(el => {
                         const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
                         bsCollapse.hide();
                     });
-                });
-            }
+                }
+            });
 
-            // --- Cropper Logic ---
+            // --- 3. Cropper Logic (Event Delegation) ---
             let currentEmployeeId = null;
             let currentOriginalFile = null;
             let cropper = null;
@@ -428,11 +440,12 @@
             const globalTriggerFile = document.getElementById('globalTriggerFile');
             const globalTriggerCamera = document.getElementById('globalTriggerCamera');
 
-            // 1. Listen for trigger clicks
-            document.querySelectorAll('.btn-crop-trigger').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    currentEmployeeId = this.dataset.employeeId;
-                    const action = this.dataset.action;
+            // Trigger click listener (DELEGATED)
+            document.body.addEventListener('click', function(e) {
+                if (e.target.matches('.btn-crop-trigger') || e.target.closest('.btn-crop-trigger')) {
+                    const btn = e.target.matches('.btn-crop-trigger') ? e.target : e.target.closest('.btn-crop-trigger');
+                    currentEmployeeId = btn.dataset.employeeId;
+                    const action = btn.dataset.action;
 
                     // Reset global inputs
                     globalTriggerFile.value = '';
@@ -443,10 +456,9 @@
                     } else {
                         globalTriggerCamera.click();
                     }
-                });
+                }
             });
 
-            // 2. Handle File Selection
             function handleFileSelect(event) {
                 if (event.target.files && event.target.files.length > 0) {
                     currentOriginalFile = event.target.files[0];
@@ -465,13 +477,11 @@
             if (globalTriggerFile) globalTriggerFile.addEventListener('change', handleFileSelect);
             if (globalTriggerCamera) globalTriggerCamera.addEventListener('change', handleFileSelect);
 
-            // 3. Init Cropper on Modal Show
             cropperModalEl.addEventListener('shown.bs.modal', function () {
                 if (cropper) {
                     cropper.destroy();
                     cropper = null;
                 }
-                // Ensure image is loaded
                 if (imageToCrop.complete) {
                      setTimeout(initCropper, 200);
                 } else {
@@ -501,7 +511,6 @@
                 });
             }
 
-            // 4. Destroy Cropper on Modal Hide
             cropperModalEl.addEventListener('hidden.bs.modal', function () {
                 if (cropper) {
                     cropper.destroy();
@@ -512,7 +521,6 @@
                 currentOriginalFile = null;
             });
 
-            // 5. Handle Crop & Save
             if(cropImageBtn) {
                 cropImageBtn.addEventListener('click', function () {
                     if (!cropper || !currentEmployeeId) {
@@ -528,27 +536,23 @@
                     canvas.toBlob(function (blob) {
                         if (!blob) return;
 
-                        // Update Preview Image
                         const croppedImageUrl = URL.createObjectURL(blob);
                         const previewImg = document.getElementById(`preview-img-${currentEmployeeId}`);
                         if (previewImg) {
                             previewImg.src = croppedImageUrl;
                         }
 
-                        // Create a new File object
                         const croppedFile = new File([blob], currentOriginalFile.name, {
                             type: currentOriginalFile.type || 'image/jpeg',
                             lastModified: Date.now()
                         });
 
-                        // Update Hidden Input
                         const targetInput = document.getElementById(`photo-input-${currentEmployeeId}`);
                         if (targetInput) {
                             const dataTransfer = new DataTransfer();
                             dataTransfer.items.add(croppedFile);
                             targetInput.files = dataTransfer.files;
 
-                             // Visual feedback
                              previewImg.classList.add('border-success', 'border-2');
                         }
 
@@ -556,6 +560,132 @@
 
                     }, currentOriginalFile.type || 'image/jpeg');
                 });
+            }
+
+
+            // --- 4. BATCH SAVE LOGIC (Fixing the 20/100 Limit) ---
+            const form = document.getElementById('bulkEditForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    startBatchUpload(this);
+                });
+            }
+
+            async function startBatchUpload(formElement) {
+                const saveBtn = document.getElementById('btn-save-all');
+                if(saveBtn) saveBtn.disabled = true;
+
+                // 1. Gather all Employee IDs involved
+                const employeeIdInputs = formElement.querySelectorAll('input[name="employee_ids[]"]');
+                const allEmployeeIds = Array.from(employeeIdInputs).map(input => input.value);
+                const selectedFieldInputs = formElement.querySelectorAll('input[name="selected_fields[]"]');
+                const selectedFields = Array.from(selectedFieldInputs).map(input => input.value);
+                const redirectTo = formElement.querySelector('input[name="redirect_to"]')?.value;
+
+                if (allEmployeeIds.length === 0) {
+                    alert('No employees selected.');
+                    return;
+                }
+
+                // 2. Show Progress Modal
+                const progressModalEl = document.getElementById('progressModal');
+                const progressModal = new bootstrap.Modal(progressModalEl);
+                const progressBar = document.getElementById('saveProgressBar');
+                const progressText = document.getElementById('saveProgressText');
+                const errorText = document.getElementById('saveErrorText');
+
+                progressModal.show();
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                errorText.classList.add('d-none');
+                errorText.textContent = '';
+
+                // 3. Batching Configuration
+                const BATCH_SIZE = 5; // Safe limit to prevent max_file_uploads error
+                const total = allEmployeeIds.length;
+                let processed = 0;
+                let errors = [];
+
+                // 4. Iterate and Chunk
+                for (let i = 0; i < total; i += BATCH_SIZE) {
+                    const chunkIds = allEmployeeIds.slice(i, i + BATCH_SIZE);
+                    const chunkFormData = new FormData();
+
+                    // Add Metadata
+                    chunkFormData.append('_method', 'PUT');
+                    chunkFormData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                    selectedFields.forEach(f => chunkFormData.append('selected_fields[]', f));
+
+                    // Add Employee IDs for this chunk
+                    chunkIds.forEach(id => {
+                        chunkFormData.append('employee_ids[]', id);
+
+                        // extract inputs specific to this employee ID from the main form
+                        // Text/Date inputs
+                        const inputs = formElement.querySelectorAll(`[name^="data[${id}]"]`);
+                        inputs.forEach(input => {
+                            if (input.type === 'file') {
+                                if (input.files.length > 0) {
+                                    chunkFormData.append(input.name, input.files[0]);
+                                }
+                            } else {
+                                chunkFormData.append(input.name, input.value);
+                            }
+                        });
+                    });
+
+                    // Update UI
+                    progressText.textContent = `Saving batch ${Math.ceil((i+1)/BATCH_SIZE)} of ${Math.ceil(total/BATCH_SIZE)}... (${processed}/${total} employees)`;
+
+                    try {
+                        const response = await fetch(formElement.action, {
+                            method: 'POST', // POST with _method=PUT
+                            body: chunkFormData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Batch failed with status: ${response.status}`);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        errors.push(`Batch ${Math.ceil((i+1)/BATCH_SIZE)} failed.`);
+                    }
+
+                    processed += chunkIds.length;
+                    const percent = Math.min(100, Math.round((processed / total) * 100));
+                    progressBar.style.width = `${percent}%`;
+                    progressBar.textContent = `${percent}%`;
+                }
+
+                // 5. Completion
+                if (errors.length > 0) {
+                    progressText.textContent = 'Completed with errors.';
+                    progressBar.classList.add('bg-danger');
+                    errorText.classList.remove('d-none');
+                    errorText.textContent = 'Some batches failed to save. Please check your connection and try again.';
+                    setTimeout(() => {
+                         if(saveBtn) saveBtn.disabled = false;
+                    }, 2000);
+                } else {
+                    progressText.textContent = 'All changes saved successfully!';
+                    progressBar.classList.add('bg-success');
+                    setTimeout(() => {
+                         // Check for global callback (used in Import Modal)
+                        if (typeof window.onBulkEditSuccess === 'function') {
+                            const progressModalEl = document.getElementById('progressModal');
+                            const progressModal = bootstrap.Modal.getInstance(progressModalEl);
+                            progressModal.hide();
+
+                            window.onBulkEditSuccess();
+                        } else {
+                            window.location.href = redirectTo || '{{ route("employees.index") }}';
+                        }
+                    }, 1000);
+                }
             }
 
         })();
