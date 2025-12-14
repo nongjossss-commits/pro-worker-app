@@ -316,6 +316,37 @@
                             </div>
                         </div>
 
+                        <!-- Group 7: Employer Information -->
+                        <div class="col-12">
+                            <h6 class="fw-bold text-primary border-bottom pb-1">{{ __('Employer Information') }}</h6>
+                            <div class="row g-2">
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="employerNameTh" id="col_emp_name_th">
+                                        <label class="form-check-label" for="col_emp_name_th">{{ __('Employer Name (TH)') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="employerNameEn" id="col_emp_name_en">
+                                        <label class="form-check-label" for="col_emp_name_en">{{ __('Employer Name (EN)') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="employerAddressTh" id="col_emp_addr_th">
+                                        <label class="form-check-label" for="col_emp_addr_th">{{ __('Employer Address (TH)') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="employerAddressEn" id="col_emp_addr_en">
+                                        <label class="form-check-label" for="col_emp_addr_en">{{ __('Employer Address (EN)') }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
                 <div class="modal-footer">
