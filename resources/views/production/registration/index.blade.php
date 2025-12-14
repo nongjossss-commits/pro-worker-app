@@ -5,33 +5,53 @@
 @section('content')
 <div class="container-fluid">
     {{-- Top Stats --}}
-    <div class="row g-3 mb-4">
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         {{-- Total Employees --}}
-        <div class="col-md-4">
+        <div class="col">
             <div class="card text-white h-100 shadow-sm" style="background-color: #FBBF24; border: none;"> {{-- Yellow-ish --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-3 fw-bold mb-0">{{ $totalEmployees }}</h1>
-                    <p class="fs-4 fw-light mb-0">{{ __('Total Employees') }}</p>
+                    <h1 class="display-4 fw-bold mb-0" id="global-total-count">{{ $totalEmployees }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
                 </div>
             </div>
         </div>
 
         {{-- Not Started --}}
-        <div class="col-md-4">
+        <div class="col">
             <div class="card text-white h-100 shadow-sm" style="background-color: #EF4444; border: none;"> {{-- Red --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-3 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
-                    <p class="fs-4 fw-light mb-0">{{ __('Not Started') }}</p>
+                    <h1 class="display-4 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Not Started') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Cancelled (New) --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm" style="background-color: #6B7280; border: none;"> {{-- Gray --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-cancelled-count">{{ $totalCancelled }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Total Cancelled') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Saved (New) --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm" style="background-color: #10B981; border: none;"> {{-- Green --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-saved-count">{{ $totalSaved }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Saved to Database') }}</p>
                 </div>
             </div>
         </div>
 
         {{-- Total Employers --}}
-        <div class="col-md-4">
+        <div class="col">
             <div class="card bg-dark text-white h-100 shadow-sm" style="border: none;">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-3 fw-bold mb-0">{{ $totalEmployers }}</h1>
-                    <p class="fs-4 fw-light mb-0">{{ __('Total Employers') }}</p>
+                    <h1 class="display-4 fw-bold mb-0" id="global-employers-count">{{ $totalEmployers }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Total Employers') }}</p>
                 </div>
             </div>
         </div>
@@ -120,7 +140,7 @@
                 </div>
             </div>
 
-            {{-- Bulk Action Bar (Copied from employees.index) --}}
+            {{-- Bulk Action Bar --}}
             <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded"
                  style="display: none;"
                  id="bulkActionBar"
@@ -144,7 +164,6 @@
                         <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
-                        {{-- Added based on requirement --}}
                         <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
                         <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
                     </ul>
@@ -170,12 +189,12 @@
                         {{-- Left: Stats & Employer Name (Col-3) --}}
                         <div class="col-lg-3 d-flex flex-column justify-content-center gap-2 border-end pe-4">
                             {{-- Row 1: Stats (Top Left) --}}
-                            <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center flex-wrap gap-2">
                                 {{-- Total --}}
-                                <div class="d-flex align-items-center gap-2" title="Total Employees">
+                                <div class="d-flex align-items-center gap-2" title="Total Employees (Active)">
                                     <span class="badge bg-light text-dark border d-flex align-items-center gap-2 px-2 py-1">
                                         <i class="bi bi-people-fill text-muted"></i>
-                                        <span class="fw-bold">{{ $employer->activeEmployeesCount ?? 0 }}</span>
+                                        <span class="fw-bold" id="employer-total-{{ $employer->id }}">{{ $employer->activeEmployeesCount ?? 0 }}</span>
                                         <span class="text-muted small ms-1" style="font-size: 0.75rem;">TOTAL</span>
                                     </span>
                                 </div>
@@ -185,6 +204,22 @@
                                         <i class="bi bi-exclamation-circle-fill"></i>
                                         <span class="fw-bold" id="employer-not-started-{{ $employer->id }}">{{ $employer->notStartedCount ?? 0 }}</span>
                                         <span class="small ms-1 opacity-75" style="font-size: 0.75rem;">PENDING</span>
+                                    </span>
+                                </div>
+                                {{-- Saved (New) --}}
+                                <div class="d-flex align-items-center gap-2" title="Saved to Database">
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center gap-2 px-2 py-1">
+                                        <i class="bi bi-database-check"></i>
+                                        <span class="fw-bold" id="employer-saved-{{ $employer->id }}">{{ $employer->savedCount ?? 0 }}</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.75rem;">SAVED</span>
+                                    </span>
+                                </div>
+                                {{-- Cancelled (New) --}}
+                                <div class="d-flex align-items-center gap-2" title="Cancelled">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center gap-2 px-2 py-1">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                        <span class="fw-bold" id="employer-cancelled-{{ $employer->id }}">{{ $employer->cancelledCount ?? 0 }}</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.75rem;">CANCEL</span>
                                     </span>
                                 </div>
                             </div>
@@ -381,6 +416,33 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = {{ $lastStepId ?? 'null' }};
 
+    // Helper: Update UI Stats
+    function updateStatsUI(stats) {
+        if (!stats) return;
+
+        // Global
+        if (stats.global) {
+            updateText('global-total-count', stats.global.total);
+            updateText('global-not-started-count', stats.global.not_started);
+            updateText('global-cancelled-count', stats.global.cancelled);
+            updateText('global-saved-count', stats.global.saved);
+            updateText('global-employers-count', stats.global.employers_count);
+        }
+
+        // Employer
+        if (stats.employer) {
+            updateText(`employer-total-${stats.employer.id}`, stats.employer.total);
+            updateText(`employer-not-started-${stats.employer.id}`, stats.employer.not_started);
+            updateText(`employer-cancelled-${stats.employer.id}`, stats.employer.cancelled);
+            updateText(`employer-saved-${stats.employer.id}`, stats.employer.saved);
+        }
+    }
+
+    function updateText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.innerText = value;
+    }
+
     // --- Manage Steps ---
     document.getElementById('addStepForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -462,7 +524,7 @@
         });
     }
 
-    // --- Employee Actions (Updated for Immediate DOM Feedback) ---
+    // --- Employee Actions (Updated for Immediate DOM Feedback & Stats) ---
     function finalizeEmployee(id) {
         Swal.fire({
             title: 'Save to Database?',
@@ -479,6 +541,9 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
+                        // Update Stats
+                        if(data.stats) updateStatsUI(data.stats);
+
                         // DOM Update: Completed State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
@@ -527,6 +592,9 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
+                         // Update Stats
+                        if(data.stats) updateStatsUI(data.stats);
+
                         // DOM Update: Active State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
@@ -581,6 +649,9 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
+                        // Update Stats
+                        if(data.stats) updateStatsUI(data.stats);
+
                         // DOM Update: Cancelled State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
@@ -634,6 +705,9 @@
                 })
                 .then(data => {
                     if(data.success) {
+                        // Update Stats
+                        if(data.stats) updateStatsUI(data.stats);
+
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
                             card.style.transition = 'all 0.5s ease';
