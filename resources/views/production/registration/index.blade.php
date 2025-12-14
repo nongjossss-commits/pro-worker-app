@@ -137,6 +137,9 @@
                     <a href="{{ route('production.registration.import') }}" class="btn btn-success fw-bold">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Import
                     </a>
+                    <a href="{{ route('admin.trash.index', ['tab' => 'employees']) }}" class="btn btn-secondary fw-bold">
+                        <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
+                    </a>
                 </div>
             </div>
 
@@ -191,6 +194,11 @@
 
                         {{-- Left: Identity --}}
                         <div class="d-flex align-items-center flex-wrap gap-3">
+                            {{-- Select All for Employer --}}
+                            <div class="form-check mb-0">
+                                <input class="form-check-input employer-select-all" type="checkbox" data-employer-id="{{ $employer->id }}" title="Select All for this Employer">
+                            </div>
+
                             {{-- Name & Collapse Trigger --}}
                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
                                 <h4 class="fw-bold mb-0 text-primary">{{ $employer->employerNameTh }}</h4>
@@ -245,6 +253,11 @@
                              </div>
 
                              <div class="vr d-none d-xl-block"></div>
+
+                             {{-- Add Employee Button --}}
+                             <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold">
+                                <i class="bi bi-plus-lg"></i> {{ __('Add Employee') }}
+                             </a>
 
                              {{-- Finance Button --}}
                              <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
@@ -430,6 +443,23 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = {{ $lastStepId ?? 'null' }};
+
+    // Employer-level Select All
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('employer-select-all')) {
+            const employerId = e.target.dataset.employerId;
+            const isChecked = e.target.checked;
+            const checkboxes = document.querySelectorAll(`.employee-checkbox[data-employer-id="${employerId}"]`);
+
+            checkboxes.forEach(cb => {
+                if(cb.checked !== isChecked) {
+                    cb.checked = isChecked;
+                    // Dispatch change event to trigger global listener (bulk action bar)
+                    cb.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
+    });
 
     // Helper: Update UI Stats
     function updateStatsUI(stats) {
