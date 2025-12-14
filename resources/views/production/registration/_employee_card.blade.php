@@ -36,7 +36,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-center gap-3 w-100">
-                @can('manage-own-workflow')
+                @can('edit-employees')
                 {{-- Only show checkbox if Active (Pending) --}}
                 <div class="form-check {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
                     <input class="form-check-input employee-checkbox"
@@ -97,7 +97,7 @@
                     <i class="bi bi-eye-fill"></i>
                 </button>
 
-                 @can('manage-own-workflow')
+                 @can('edit-employees')
                  {{-- Inline Drawer Toggle --}}
                  <button class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Custom Fields"
                     onclick="toggleInlineDrawer({{ $employee->id }}, {{ json_encode($employee) }})">
@@ -183,7 +183,7 @@
                         }
                     @endphp
                         @php
-                            $canManage = auth()->user()->can('manage-own-workflow');
+                            $canManage = auth()->user()->can('edit-employees');
                             $disabled = ($isCompleted || $isCancelled || !$canManage) ? 'disabled' : '';
                             $pointerEvents = !$canManage ? 'pointer-events: none;' : '';
                             $onclick = $canManage ? "onclick=\"toggleStep({$employee->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
