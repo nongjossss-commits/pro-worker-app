@@ -16,9 +16,22 @@
         $cardClass = 'bg-light border-0 text-secondary grayscale-mode'; // Add grayscale class or inline style
         $overlayClass = 'opacity-50 pointer-events-none';
     }
+
+    // Determine Highest Completed Step for Filtering
+    $highestStep = $employee->registrationSteps->sortByDesc('order')->first();
+    $highestStepId = $highestStep ? $highestStep->id : '';
+    // Determine if "Not Started" (only if active status and no steps)
+    $isNotStarted = (!$isCompleted && !$isCancelled && !$highestStep);
 @endphp
 
-<div class="card {{ $cardClass }} mb-3" id="employee-card-{{ $employee->id }}" style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
+<div class="card {{ $cardClass }} mb-3 employee-card-wrapper"
+     id="employee-card-{{ $employee->id }}"
+     data-highest-step-id="{{ $highestStepId }}"
+     data-status="{{ $employee->status }}"
+     data-is-not-started="{{ $isNotStarted ? 'true' : 'false' }}"
+     data-employer-id="{{ $employee->employer_id }}"
+     style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
+
     <div class="card-body p-3">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
@@ -31,6 +44,7 @@
                            id="check_{{ $employee->id }}"
                            data-employee-id="{{ $employee->id }}"
                            data-employer-id="{{ $employee->employer_id }}"
+                           data-status="{{ $employee->status }}"
                            data-name-th="{{ $employee->employeeNameTh }}"
                            data-name-en="{{ $employee->employeeNameEn }}"
                            data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
