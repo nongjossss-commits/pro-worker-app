@@ -11,6 +11,7 @@ class FinancialTransaction extends Model
 
     protected $fillable = [
         'production_order_id',
+        'production_financial_group_id',
         'type', // installment, down_payment, full_payment
         'amount',
         'due_date',
@@ -31,5 +32,10 @@ class FinancialTransaction extends Model
     public function productionOrder()
     {
         return $this->belongsTo(ProductionOrder::class);
+    }
+
+    public function financialGroup()
+    {
+        return $this->belongsTo(ProductionFinancialGroup::class, 'production_financial_group_id');
     }
 }

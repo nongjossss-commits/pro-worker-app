@@ -289,6 +289,36 @@ class ProductionController extends Controller
     }
 
     /**
+     * Store a new financial group (Tab).
+     */
+    public function storeFinancialGroup(Request $request, $id)
+    {
+        $production = ProductionOrder::findOrFail($id);
+        $request->validate(['name' => 'required|string|max:255']);
+
+        $group = $production->financialGroups()->create([
+            'name' => $request->name,
+            'financial_data' => [] // Default empty
+        ]);
+
+        return response()->json(['success' => true, 'group' => $group]);
+    }
+
+    /**
+     * Rename a financial group.
+     */
+    public function updateFinancialGroup(Request $request, $id, $groupId)
+    {
+        $production = ProductionOrder::findOrFail($id);
+        $group = $production->financialGroups()->findOrFail($groupId);
+
+        $request->validate(['name' => 'required|string|max:255']);
+        $group->update(['name' => $request->name]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Add an employee to an existing order.
      */
     public function addEmployee(Request $request, $id)
