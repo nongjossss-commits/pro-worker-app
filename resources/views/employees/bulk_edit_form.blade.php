@@ -131,7 +131,7 @@
                                     @endif
                                 </div>
 
-                                <button type="button" class="btn btn-sm btn-outline-primary w-100 apply-master-btn mt-auto" data-field="{{ $field }}" {{ in_array($field, $fileFields) ? 'disabled' : '' }}>
+                                <button type="button" class="btn btn-sm btn-outline-primary w-100 apply-master-btn mt-auto" data-field="{{ $field }}" {{ (in_array($field, $fileFields) && !$isOtherDoc) ? 'disabled' : '' }}>
                                     <i class="bi bi-arrow-down-circle me-1"></i> {{ __('Apply to All') }}
                                 </button>
                             </div>
@@ -354,21 +354,19 @@
 
                     if (!masterInput) return;
 
-                    // Safety check for file inputs, though button should be disabled
-                    if (masterInput.type === 'file') {
-                        return;
+                    // Sync main input value (Skip for file inputs)
+                    if (masterInput.type !== 'file') {
+                        const value = masterInput.value;
+                        individualInputs.forEach(input => {
+                            input.value = value;
+                            // Trigger change event so any other listeners know it updated
+                            input.dispatchEvent(new Event('change'));
+
+                            // Visual highlight effect
+                            input.classList.add('bg-success-subtle');
+                            setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
+                        });
                     }
-
-                    const value = masterInput.value;
-                    individualInputs.forEach(input => {
-                        input.value = value;
-                        // Trigger change event so any other listeners know it updated
-                        input.dispatchEvent(new Event('change'));
-
-                        // Visual highlight effect
-                        input.classList.add('bg-success-subtle');
-                        setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
-                    });
 
                     // Handle description field sync (if exists)
                     const masterDescInput = document.querySelector(`.master-desc-input[data-parent-field="${field}"]`);
