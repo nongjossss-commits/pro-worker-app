@@ -327,19 +327,6 @@
                     <i class="bi bi-people-fill me-2"></i>{{ __('Group & Team') }}
                 </a>
                 @endcan
-                @can('view-importers')
-                <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>{{ __('Importers') }}</a>
-                @endcan
-                @can('view-agents')
-                <a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>{{ __('Agents') }}</a>
-                @endcan
-                @can('view-delegates')
-                <a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>{{ __('Delegates') }}</a>
-                @endcan
-
-                @can('manage-users')
-                <a href="{{ route('admin.users.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-person-fill-gear me-2"></i>{{ __('User Management') }}</a>
-                @endcan
 
                 {{-- V2.4-S14: Production & Workflow Menus --}}
                 @if(Route::has('production.index'))
@@ -353,6 +340,20 @@
                         <i class="bi bi-person-lines-fill me-2"></i>{{ __('Registration Resolution') }}
                     </a>
                 @endif
+
+                @can('view-importers')
+                <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>{{ __('Importers') }}</a>
+                @endcan
+                @can('view-agents')
+                <a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>{{ __('Agents') }}</a>
+                @endcan
+                @can('view-delegates')
+                <a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>{{ __('Delegates') }}</a>
+                @endcan
+
+                @can('manage-users')
+                <a href="{{ route('admin.users.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-person-fill-gear me-2"></i>{{ __('User Management') }}</a>
+                @endcan
 
                 @canany(['manage-roles', 'manage-settings'])
                 <hr>

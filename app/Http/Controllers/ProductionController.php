@@ -319,6 +319,29 @@ class ProductionController extends Controller
     }
 
     /**
+     * Delete a financial group.
+     */
+    public function destroyFinancialGroup($id, $groupId)
+    {
+        $production = ProductionOrder::findOrFail($id);
+        $group = $production->financialGroups()->findOrFail($groupId);
+
+        // Safety check to prevent deleting the first group
+        $firstGroup = $production->financialGroups()->orderBy('id')->first();
+        if ($firstGroup && $firstGroup->id == $groupId) {
+            return response()->json(['success' => false, 'message' => 'Cannot delete the primary tab.'], 403);
+        }
+
+        $group->delete(); // Cascading delete should handle transactions if set up in DB, otherwise manual delete might be needed.
+        // Assuming transactions linked via production_financial_group_id on Delete Cascade or we delete them here.
+        // Check Transaction Model or migration? Assuming safe delete for now.
+        // Actually, let's explicit delete transactions to be safe.
+        $group->transactions()->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Add an employee to an existing order.
      */
     public function addEmployee(Request $request, $id)

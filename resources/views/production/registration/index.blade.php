@@ -78,9 +78,9 @@
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="card-title fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Workflow Progress (Global)</h5>
+                <h5 class="card-title fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }}</h5>
                 <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                    <i class="bi bi-gear-fill me-1"></i> Settings
+                    <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
                 </button>
             </div>
 
@@ -136,25 +136,25 @@
     <div class="card shadow-sm border-0 mb-4 bg-white">
         <div class="card-body p-3">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
-                <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-people-fill me-2"></i>Registration Resolution</h4>
+                <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-people-fill me-2"></i>{{ __('Registration Resolution') }}</h4>
 
                 <form action="{{ route('production.registration.index') }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
                     <div class="input-group input-group-lg">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="Search employee or employer..." value="{{ request('search') }}">
-                        <button class="btn btn-primary" type="submit">Search</button>
+                        <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search employee or employer...') }}" value="{{ request('search') }}">
+                        <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
                         @if(request('search'))
-                            <a href="{{ route('production.registration.index') }}" class="btn btn-outline-secondary">Clear</a>
+                            <a href="{{ route('production.registration.index') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
                         @endif
                     </div>
                 </form>
 
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
                     <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white fw-bold">
-                        <i class="bi bi-plus-lg me-1"></i> New Employee
+                        <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
                     </a>
                     <a href="{{ route('production.registration.import') }}" class="btn btn-success fw-bold">
-                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Import
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import') }}
                     </a>
                     <a href="{{ route('admin.trash.index', ['tab' => 'employees']) }}" class="btn btn-secondary fw-bold">
                         <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
@@ -281,7 +281,7 @@
                              {{-- Finance Button --}}
                              @can('view-finance')
                              <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
-                                <i class="bi bi-currency-dollar"></i> Finance
+                                <i class="bi bi-currency-dollar"></i> {{ __('Finance') }}
                             </button>
                             @endcan
 
@@ -355,7 +355,7 @@
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Finance: {{ $employer->employerNameTh }}</h5>
+                            <h5 class="modal-title">{{ __('Finance') }}: {{ $employer->employerNameTh }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body bg-light">
