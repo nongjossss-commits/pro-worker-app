@@ -225,10 +225,24 @@
                             </div>
 
                             {{-- Row 2: Employer Name --}}
-                            <button class="btn btn-link text-decoration-none text-dark p-0 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
-                                <h4 class="fw-bold mb-0 text-truncate" title="{{ $employer->employerNameTh }}">{{ $employer->employerNameTh }}</h4>
-                                <div class="text-muted small text-truncate" title="{{ $employer->employerNameEn }}">{{ $employer->employerNameEn }}</div>
-                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-link text-decoration-none text-dark p-0 text-start flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
+                                    <h4 class="fw-bold mb-0 text-truncate" title="{{ $employer->employerNameTh }}">{{ $employer->employerNameTh }}</h4>
+                                    <div class="text-muted small text-truncate" title="{{ $employer->employerNameEn }}">{{ $employer->employerNameEn }}</div>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info btn-preview flex-shrink-0" data-model-type="employer" data-model-id="{{ $employer->id }}" title="Preview Employer Data">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+
+                            @if($employer->jobOwner)
+                                <div class="mt-1">
+                                    <i class="bi bi-person-badge text-muted me-1"></i>
+                                    <a href="{{ route('production.registration.index', ['search' => $employer->jobOwner->name]) }}" class="text-decoration-none text-secondary small" title="Filter by Job Owner">
+                                        {{ $employer->jobOwner->name }}
+                                    </a>
+                                </div>
+                            @endif
                         </div>
 
                         {{-- Middle: Workflow Steps (Col-7) - Single Row, Scrollable --}}
