@@ -1195,7 +1195,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return back()->with('error', 'No employees selected.');
         }
 
-        $employees = Employee::whereIn('id', $employeeIds)->get();
+        $employees = Employee::whereIn('id', $employeeIds)->with('employer.addresses')->get();
 
         // Define labels for the header
         $columnLabels = [
@@ -1242,6 +1242,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_expiry_date_private' => 'Private Expiry',
             'email' => 'Email',
             'password' => 'Password',
+            'employerNameTh' => 'Employer Name (TH)',
+            'employerNameEn' => 'Employer Name (EN)',
+            'employerAddressTh' => 'Employer Address (TH)',
+            'employerAddressEn' => 'Employer Address (EN)',
         ];
 
         // Handle Photo Column Logic: Must be first if selected
@@ -1296,6 +1300,45 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 } elseif ($col === 'employeeGender') {
                      // Use accessor or raw
                     $html .= '<td>' . ($employee->gender ?? $employee->employeeGender) . '</td>';
+                } elseif ($col === 'employerNameTh') {
+                    $html .= '<td>' . ($employee->employer->employerNameTh ?? '-') . '</td>';
+                } elseif ($col === 'employerNameEn') {
+                    $html .= '<td>' . ($employee->employer->employerNameEn ?? '-') . '</td>';
+                } elseif ($col === 'employerAddressTh') {
+                    // Get the first address (or specific type if implemented later)
+                    $address = $employee->employer->addresses->first();
+                    $fullAddress = '-';
+                    if ($address) {
+                        $parts = array_filter([
+                            $address->addrNo,
+                            $address->addrMoo ? "หมู่ " . $address->addrMoo : null,
+                            $address->addrSoi ? "ซอย " . $address->addrSoi : null,
+                            $address->addrRoad ? "ถนน " . $address->addrRoad : null,
+                            $address->addrSubDistrict ? "ต." . $address->addrSubDistrict : null,
+                            $address->addrDistrict ? "อ." . $address->addrDistrict : null,
+                            $address->addrProvince ? "จ." . $address->addrProvince : null,
+                            $address->addrZipCode
+                        ]);
+                        $fullAddress = implode(' ', $parts);
+                    }
+                    $html .= '<td>' . $fullAddress . '</td>';
+                } elseif ($col === 'employerAddressEn') {
+                    $address = $employee->employer->addresses->first();
+                    $fullAddress = '-';
+                    if ($address) {
+                        $parts = array_filter([
+                            $address->addrNoEn,
+                            $address->addrMooEn ? "Moo " . $address->addrMooEn : null,
+                            $address->addrSoiEn ? "Soi " . $address->addrSoiEn : null,
+                            $address->addrRoadEn ? "Road " . $address->addrRoadEn : null,
+                            $address->addrSubDistrictEn,
+                            $address->addrDistrictEn,
+                            $address->addrProvinceEn,
+                            $address->addrZipCodeEn
+                        ]);
+                        $fullAddress = implode(', ', $parts);
+                    }
+                    $html .= '<td>' . $fullAddress . '</td>';
                 } else {
                     $html .= '<td>' . ($employee->$col ?? '-') . '</td>';
                 }
