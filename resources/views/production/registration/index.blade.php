@@ -408,6 +408,25 @@
     </div>
 </div>
 
+{{-- Edit Employee Modal --}}
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editEmployeeModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit Employee</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light" id="editEmployeeModalBody">
+                <div class="d-flex justify-content-center align-items-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Manage Steps Modal --}}
 <div class="modal fade" id="manageStepsModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -469,6 +488,9 @@
 </div>
 
 @endsection
+
+@include('employees.partials._edit_scripts')
+@include('production.registration.partials.edit_modal_script')
 
 @push('scripts')
 <script>
