@@ -107,7 +107,7 @@ class RegistrationController extends Controller
             }])->get();
 
         foreach ($employers as $employer) {
-            $financeOrder = ProductionOrder::firstOrCreate(
+            $financeOrder = ProductionOrder::with('financialGroups.transactions')->firstOrCreate(
                 [
                     'employer_id' => $employer->id,
                     'status'      => 'registration_resolution'
@@ -119,6 +119,16 @@ class RegistrationController extends Controller
                 ]
             );
             $employer->financeOrder = $financeOrder;
+
+            // Ensure at least one default financial group exists
+            if ($financeOrder->financialGroups->isEmpty()) {
+                $financeOrder->financialGroups()->create([
+                    'name' => 'General',
+                    'financial_data' => $financeOrder->financial_data
+                ]);
+                $financeOrder->load('financialGroups.transactions');
+            }
+
             // Spoof items for the count logic in view
             $employer->financeOrder->setRelation('items', $employer->employees);
 

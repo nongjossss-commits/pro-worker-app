@@ -46,4 +46,9 @@ class ProductionOrder extends Model
     {
         return $this->hasMany(ProductionItem::class);
     }
+
+    public function financialGroups()
+    {
+        return $this->hasMany(ProductionFinancialGroup::class);
+    }
 }

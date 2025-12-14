@@ -28,11 +28,13 @@ class FinancialController extends Controller
             'amount' => 'required|numeric|min:0',
             'due_date' => 'nullable|date',
             'type' => 'required|in:installment,down_payment,full_payment',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
+            'financial_group_id' => 'required|exists:production_financial_groups,id'
         ]);
 
         $transaction = FinancialTransaction::create([
             'production_order_id' => $productionId,
+            'production_financial_group_id' => $request->financial_group_id,
             'type' => $request->type,
             'amount' => $request->amount,
             'due_date' => $request->due_date,
@@ -109,18 +111,64 @@ class FinancialController extends Controller
     }
 
     /**
-     * Generate Document (Quotation, Invoice, Receipt).
+     * Generate Document (Quotation, Invoice, Receipt, Tax Invoice).
      */
     public function generateDocument(Request $request, $productionId, $type)
     {
-        $production = ProductionOrder::with(['employer', 'items.employee'])->findOrFail($productionId);
+        $production = ProductionOrder::with(['employer', 'items.employee', 'financialGroups'])->findOrFail($productionId);
 
-        // Get Header Profile
-        $profileId = $request->query('profile_id');
+        // Filter transactions by IDs if provided (Partial/Selective Generation)
+        $transactionIds = $request->query('transaction_ids');
+        if ($transactionIds) {
+            $ids = explode(',', $transactionIds);
+            $transactions = FinancialTransaction::whereIn('id', $ids)->orderBy('due_date')->get();
+        } else {
+            // Default: Should probably not show ALL transactions if we have multiple tabs?
+            // User flow: They click "Generate" inside a tab.
+            // Ideally, we filter by group if no specific transactions selected.
+            // But let's stick to transaction IDs if possible, or fallback to all.
+            $transactions = FinancialTransaction::where('production_order_id', $productionId)->orderBy('due_date')->get();
+        }
+
+        // Determine which Group (Tab) we are generating for
+        // If transactions are selected, take the group from the first transaction
+        $activeGroup = null;
+        if ($transactions->isNotEmpty()) {
+            $activeGroup = $transactions->first()->financialGroup;
+        }
+
+        // If no transactions but we have a group_id param?
+        if (!$activeGroup && $request->has('group_id')) {
+            $activeGroup = $production->financialGroups->where('id', $request->query('group_id'))->first();
+        }
+
+        // Fallback: First group
+        if (!$activeGroup) {
+            $activeGroup = $production->financialGroups->first();
+        }
+
+        // Financial Data comes from the Group now, fallback to Order for legacy
+        $financial = $activeGroup ? $activeGroup->financial_data : ($production->financial_data ?? []);
+
+        // Get Header Profile (From Params > Group Settings > Default)
+        $profileId = $request->query('profile_id') ?? ($financial['profile_id'] ?? null);
         $profile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::where('is_default', true)->first();
 
+        // Custom Header Override
+        $customHeader = $financial['custom_header'] ?? null;
+        // If Custom Header exists and "useCustomHeader" flag is true (implied if present?), we construct a mock profile.
+        // Actually, logic is usually client-side param, but let's check data.
+        if (!empty($customHeader) && !empty($customHeader['name'])) {
+            $profile = new CompanyProfile([
+                'name' => $customHeader['name'],
+                'address' => $customHeader['address'] ?? '',
+                'tax_id' => $customHeader['tax_id'] ?? '',
+                'logo_path' => $customHeader['logo'] ?? null,
+                'phone' => $customHeader['phone'] ?? null
+            ]);
+        }
+
         if (!$profile) {
-            // Fallback dummy profile
             $profile = new CompanyProfile([
                 'name' => 'Company Name',
                 'address' => 'Company Address',
@@ -128,22 +176,16 @@ class FinancialController extends Controller
             ]);
         }
 
-        // Financial Data
-        $financial = $production->financial_data; // JSON
-        // Transactions
-        $transactions = FinancialTransaction::where('production_order_id', $productionId)->orderBy('due_date')->get();
-
         $viewName = match ($type) {
             'quotation' => 'documents.quotation',
             'invoice' => 'documents.invoice',
             'receipt' => 'documents.receipt',
+            'credit_note' => 'documents.credit_note',
+            'tax_invoice' => 'documents.tax_invoice',
             default => 'documents.generic',
         };
 
-        // For now, return View for printing. PDF generation can be added if `barryvdh/laravel-dompdf` is installed.
-        // User requested "Download", but browser "Print to PDF" is often better for simple setups without heavy deps.
-        // We will stick to a clean Print View.
-        return view($viewName, compact('production', 'profile', 'financial', 'transactions'));
+        return view($viewName, compact('production', 'profile', 'financial', 'transactions', 'type', 'activeGroup'));
     }
 
     // --- Settings Methods ---

@@ -1,4 +1,33 @@
 <div x-data="financialManager()" class="row">
+
+    <!-- TAB NAVIGATION -->
+    <div class="col-12 mb-3">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2">
+            <ul class="nav nav-tabs border-0" id="financialTabs" role="tablist">
+                <template x-for="group in financialGroups" :key="group.id">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link"
+                                :class="{ 'active fw-bold': activeGroupId === group.id }"
+                                @click="switchGroup(group.id)"
+                                type="button"
+                                role="tab">
+                            <span x-text="group.name"></span>
+                            <!-- Edit Name Button (Mini) -->
+                            <i class="bi bi-pencil-square ms-2 text-muted small"
+                               @click.stop="renameGroup(group.id, group.name)"
+                               style="font-size: 0.8rem; cursor: pointer;"></i>
+                        </button>
+                    </li>
+                </template>
+                <li class="nav-item ms-2">
+                    <button class="btn btn-sm btn-outline-success border-0" @click="addNewGroup()">
+                        <i class="bi bi-plus-circle-fill"></i> Add Tab
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
     <!-- Left Column: Summary & Pricing Logic -->
     <div class="col-md-5">
 
@@ -205,6 +234,9 @@
                     <button @click="openSelectionModal('receipt')" class="btn btn-outline-secondary btn-sm text-start">
                         <i class="bi bi-check-circle me-2"></i>{{ __('Receipt (ใบเสร็จรับเงิน)') }}
                     </button>
+                     <button @click="openSelectionModal('tax_invoice')" class="btn btn-outline-secondary btn-sm text-start">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Tax Invoice (ใบกำกับภาษี)') }}
+                    </button>
                     <button @click="openSelectionModal('credit_note')" class="btn btn-outline-secondary btn-sm text-start">
                         <i class="bi bi-file-earmark-minus me-2"></i>{{ __('Credit Note (ใบลดหนี้)') }}
                     </button>
@@ -256,7 +288,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="t in transactions" :key="t.id">
+                            <template x-for="t in filteredTransactions" :key="t.id">
                                 <tr>
                                     <td class="ps-3">
                                         <div class="fw-bold" x-text="formatType(t.type)"></div>
@@ -283,8 +315,8 @@
                                     </td>
                                 </tr>
                             </template>
-                            <tr x-show="transactions.length === 0">
-                                <td colspan="6" class="text-center py-4 text-muted">No transactions recorded.</td>
+                            <tr x-show="filteredTransactions.length === 0">
+                                <td colspan="6" class="text-center py-4 text-muted">No transactions recorded for this group.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -513,7 +545,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="list-group list-group-flush mb-3">
-                        <template x-for="t in transactions" :key="t.id">
+                        <template x-for="t in filteredTransactions" :key="t.id">
                             <label class="list-group-item px-0 py-2 d-flex gap-2">
                                 <input class="form-check-input" type="checkbox" :value="t.id" x-model="selectedTransactionIds">
                                 <div class="small">
@@ -535,33 +567,33 @@
 <script>
 function financialManager() {
     return {
+        // --- Groups (Tabs) ---
+        financialGroups: @json($production->financialGroups),
+        activeGroupId: null,
+
         // --- Data ---
-        pricingMode: '{{ $production->financial_data['pricing_mode'] ?? 'per_head' }}',
-        fixedTotal: {{ $production->financial_data['fixed_base_amount'] ?? 0 }},
-
-        // Tiered Pricing Data
-        pricingTiers: @json($production->financial_data['pricing_tiers'] ?? []),
+        pricingMode: 'per_head',
+        fixedTotal: 0,
+        pricingTiers: [],
         employeeCount: {{ $production->items->count() }},
-
-        // Discount
-        discount: {{ $production->financial_data['discount'] ?? 0 }},
+        discount: 0,
 
         // Tax Settings
-        vatIncluded: {{ ($production->financial_data['vat_included'] ?? false) ? 'true' : 'false' }},
-        vatRate: {{ $production->financial_data['vat_rate'] ?? 7 }},
-        whtEnabled: {{ ($production->financial_data['wht_enabled'] ?? false) ? 'true' : 'false' }},
-        whtRate: {{ $production->financial_data['wht_rate'] ?? 3 }},
+        vatIncluded: false,
+        vatRate: 7,
+        whtEnabled: false,
+        whtRate: 3,
 
         // Custom Header Data
         showCustomHeaderModal: false,
-        useCustomHeader: {{ isset($production->financial_data['custom_header']) ? 'true' : 'false' }},
-        customHeader: {!! json_encode($production->financial_data['custom_header'] ?? ['name'=>'', 'address'=>'', 'tax_id'=>'', 'phone'=>'', 'logo'=>'']) !!},
-        selectedProfileId: '{{ $production->financial_data['profile_id'] ?? '' }}',
+        useCustomHeader: false,
+        customHeader: { name:'', address:'', tax_id:'', phone:'', logo:'' },
+        selectedProfileId: '',
 
         // Custom Customer (Bill To) Data
         showCustomCustomerModal: false,
-        useCustomCustomer: {{ isset($production->financial_data['customer_override']) ? 'true' : 'false' }},
-        customCustomerData: {!! json_encode($production->financial_data['customer_override'] ?? ['name'=>'', 'address'=>'', 'tax_id'=>'', 'phone'=>'']) !!},
+        useCustomCustomer: false,
+        customCustomerData: { name:'', address:'', tax_id:'', phone:'' },
         selectedAgentId: '',
 
         // Calculated values
@@ -573,7 +605,7 @@ function financialManager() {
         netReceivable: 0,
 
         // Transaction State
-        transactions: @json(\App\Models\FinancialTransaction::where('production_order_id', $production->id)->get()),
+        transactions: @json($production->financialGroups->pluck('transactions')->flatten()),
         newTransaction: { type: 'installment', amount: '', due_date: '', notes: '' },
         editingTransaction: {},
         selectedFile: null,
@@ -582,11 +614,86 @@ function financialManager() {
         documentTypeToGenerate: '',
 
         init() {
+            if (this.financialGroups.length > 0) {
+                this.switchGroup(this.financialGroups[0].id);
+            } else {
+                // Safety fallback
+                this.addNewGroup('General');
+            }
+        },
+
+        switchGroup(groupId) {
+            this.activeGroupId = groupId;
+            const group = this.financialGroups.find(g => g.id === groupId);
+            if (!group) return;
+
+            // Load Group Data (Safely handle nulls)
+            const data = group.financial_data || {};
+
+            this.pricingMode = data.pricing_mode || 'per_head';
+            this.fixedTotal = data.fixed_base_amount || 0;
+            this.pricingTiers = data.pricing_tiers || [];
+            this.discount = data.discount || 0;
+
+            this.vatIncluded = !!data.vat_included;
+            this.vatRate = data.vat_rate || 7;
+            this.whtEnabled = !!data.wht_enabled;
+            this.whtRate = data.wht_rate || 3;
+
+            this.useCustomHeader = !!data.custom_header;
+            this.customHeader = data.custom_header || { name:'', address:'', tax_id:'', phone:'', logo:'' };
+            this.selectedProfileId = data.profile_id || '';
+
+            this.useCustomCustomer = !!data.customer_override;
+            this.customCustomerData = data.customer_override || { name:'', address:'', tax_id:'', phone:'' };
+
             // Default tier if empty
             if (this.pricingMode === 'per_head' && this.pricingTiers.length === 0) {
                 this.pricingTiers.push({ price: 0, count: this.employeeCount, note: 'Standard Price' });
             }
+
             this.updateTotal();
+        },
+
+        addNewGroup(name = 'New Tab') {
+            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/production/{{ $production->id }}/financial-groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                body: JSON.stringify({ name: name })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    this.financialGroups.push(data.group);
+                    this.switchGroup(data.group.id); // Switch to new group
+                }
+            });
+        },
+
+        renameGroup(groupId, currentName) {
+            Swal.fire({
+                title: 'Rename Tab',
+                input: 'text',
+                inputValue: currentName,
+                showCancelButton: true,
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    fetch(`/production/{{ $production->id }}/financial-groups/${groupId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                        body: JSON.stringify({ name: result.value })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                             const group = this.financialGroups.find(g => g.id === groupId);
+                             if(group) group.name = result.value;
+                        }
+                    });
+                }
+            });
         },
 
         // --- Pricing Logic ---
@@ -640,8 +747,13 @@ function financialManager() {
             this.netReceivable = this.totalAmount - this.whtAmount;
         },
 
+        get filteredTransactions() {
+            if (!this.activeGroupId) return [];
+            return this.transactions.filter(t => t.production_financial_group_id == this.activeGroupId);
+        },
+
         get scheduledAmount() {
-            return this.transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+            return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
         },
         get remainingSchedule() {
             return Math.max(0, this.totalAmount - this.scheduledAmount);
@@ -664,8 +776,10 @@ function financialManager() {
              return this.useCustomCustomer;
         },
 
-        // --- Save Logic ---
+        // --- Save Logic (Updated to save to Group) ---
         saveFinancialData() {
+            if (!this.activeGroupId) return;
+
             this.isSaving = true;
             const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -690,6 +804,7 @@ function financialManager() {
                     // Customer Override Data
                     customer_override: this.useCustomCustomer ? this.customCustomerData : null
                 },
+                financial_group_id: this.activeGroupId, // Tell Controller which group
                 _method: 'PUT'
             };
 
@@ -701,6 +816,11 @@ function financialManager() {
             .then(res => res.json())
             .then(data => {
                 this.isSaving = false;
+                // Update local group data to match saved
+                const group = this.financialGroups.find(g => g.id === this.activeGroupId);
+                if (group) {
+                    group.financial_data = payload.financial;
+                }
                 Swal.fire({
                     icon: 'success',
                     title: 'Settings Saved',
@@ -797,12 +917,18 @@ function financialManager() {
             }
         },
         addTransaction() {
+            if (!this.activeGroupId) return;
+
             this.isSaving = true;
             const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Append group ID to payload
+            const payload = { ...this.newTransaction, financial_group_id: this.activeGroupId };
+
             fetch('/production/{{ $production->id }}/transactions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                body: JSON.stringify(this.newTransaction)
+                body: JSON.stringify(payload)
             })
             .then(res => res.json())
             .then(data => {
@@ -897,12 +1023,14 @@ function financialManager() {
             bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
         },
         openDocument(type, transactionIds = null) {
-            // Updated to pass Custom Header Flag if needed?
-            // Actually, the Controller will read the 'ProductionOrder' which has the custom header saved.
-            // But we might want to preview BEFORE saving?
-            // For now, rely on "Save" then "Generate".
             let url = `/production/{{ $production->id }}/documents/${type}?profile_id=${this.selectedProfileId}`;
-            if (transactionIds) url += `&transaction_ids=${transactionIds}`;
+            // Append Group ID
+            if (this.activeGroupId) {
+                url += `&group_id=${this.activeGroupId}`;
+            }
+            if (transactionIds) {
+                url += `&transaction_ids=${transactionIds}`;
+            }
             window.open(url, '_blank');
         }
     }
