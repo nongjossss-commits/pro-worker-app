@@ -183,6 +183,9 @@
                     <a href="{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}" target="_blank" class="btn btn-success btn-sm text-white">
                         <i class="bi bi-eye-fill"></i> ดูเอกสาร
                     </a>
+                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank" class="btn btn-danger btn-sm text-white ms-1">
+                        <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                    </a>
                 </p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
@@ -225,6 +228,7 @@
                 $label = $file['label'];
                 $desc_field = $file['desc_field'] ?? null;
                 $url = $employee->{$field} ? Storage::disk('public')->url($employee->{$field}) : '#';
+                $pdfUrl = $employee->{$field} ? route('employees.documents.pdf', ['employee' => $employee->id, 'field' => $field]) : '#';
             @endphp
             <div class="col-md-4">
                 <label class="form-label fw-bold">{{ $label }}</label>
@@ -233,10 +237,15 @@
                         <a href="{{ $url }}" target="_blank" class="btn btn-success btn-sm text-white">
                             <i class="bi bi-eye-fill"></i> ดูเอกสาร
                         </a>
+                        <a href="{{ $pdfUrl }}" target="_blank" class="btn btn-danger btn-sm text-white ms-1">
+                            <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                        </a>
                          @if($desc_field && $employee->{$desc_field})
                             <span class="text-muted d-block" style="font-size: 0.875em;">({{ $employee->{$desc_field} }})</span>
                         @endif
                     </p>
+                @elseif($desc_field && $employee->{$desc_field})
+                    <p class="form-control-plaintext text-muted" style="color: #6c757d !important;">{{ $employee->{$desc_field} }}</p>
                 @else
                     <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
                 @endif
