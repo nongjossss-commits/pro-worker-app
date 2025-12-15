@@ -595,6 +595,21 @@
 
         // Optional: Hide employers with 0 visible employees if desired?
         // For now, let's keep employer cards visible but maybe update their badges.
+        document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
+            const visibleEmployees = empCard.querySelectorAll('.employee-card-wrapper:not(.d-none)');
+
+            if (currentStepFilter !== null) {
+                // Filter is active: Hide if no matches
+                if (visibleEmployees.length === 0) {
+                    empCard.classList.add('d-none');
+                } else {
+                    empCard.classList.remove('d-none');
+                }
+            } else {
+                // No filter active: Always show employer
+                empCard.classList.remove('d-none');
+            }
+        });
     }
 
     function recalculateVisibleStats() {
