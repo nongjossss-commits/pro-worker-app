@@ -360,7 +360,7 @@
     <input type="file" class="d-none" id="globalTriggerCamera" accept="image/*" capture="environment">
 
     <script>
-        (function() {
+        document.addEventListener('DOMContentLoaded', function() {
             // --- 1. Master Field Sync (Event Delegation) ---
             document.body.addEventListener('click', function(e) {
                 if (e.target.matches('.apply-master-btn') || e.target.closest('.apply-master-btn')) {
@@ -688,7 +688,7 @@
                 }
             }
 
-        })();
+        });
     </script>
 </div>
 @endsection
