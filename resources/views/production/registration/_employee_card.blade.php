@@ -75,13 +75,35 @@
 
                     {{-- Info --}}
                     <div>
-                        <h6 class="mb-0 fw-bold text-dark">
-                            {{ $employee->employeeNameTh }}
-                            @if($employee->employeeNameEn) <span class="text-muted small">({{ $employee->employeeNameEn }})</span> @endif
-                        </h6>
+                        <div class="fw-bold text-dark">
+                             {{-- English Name + Title --}}
+                            {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? '-' }}
+                        </div>
+                        <div class="text-muted small">
+                            {{-- Thai Name + Title --}}
+                            {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? '-' }}
+                        </div>
+                        <div class="small text-muted mt-1">
+                             <span class="me-2" title="{{ __('Date of Birth') }}">
+                                <i class="bi bi-calendar-event me-1"></i>
+                                {{ $employee->employeeDob ? \Carbon\Carbon::parse($employee->employeeDob)->format('d/m/Y') : '-' }}
+                                ({{ __('Age') }} : {{ $employee->age ?? '-' }} {{ __('Years') }})
+                             </span>
+                        </div>
                         <div class="small text-muted mt-1">
                             <span class="me-2"><i class="bi bi-passport text-primary me-1"></i> {{ $employee->employeePassport ?? '-' }}</span>
-                            <span><i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ $employee->employeeNationality ?? '-' }}</span>
+                            <span class="d-inline-flex align-items-center">
+                                <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                                @php
+                                    $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
+                                @endphp
+                                @if($countryCode)
+                                    <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}"
+                                         alt="{{ $countryCode }}"
+                                         style="width: 16px; height: 12px; margin-right: 5px;">
+                                @endif
+                                {{ $employee->employeeNationality ?? '-' }}
+                            </span>
                         </div>
                     </div>
                 </div>
