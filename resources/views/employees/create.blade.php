@@ -23,6 +23,10 @@
     <form action="{{ route('employees.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
+        @if(isset($employer) && $employer)
+            <input type="hidden" name="source_employer_id" value="{{ $employer->id }}">
+        @endif
+
         @include('employees.partials.create_form_partial_content')
 
         <div class="mt-4 d-flex justify-content-end">
