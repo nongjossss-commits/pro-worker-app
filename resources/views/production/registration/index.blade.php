@@ -23,13 +23,13 @@
 
 <div class="container-fluid">
     {{-- Top Stats --}}
-    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-6 g-3 mb-4">
         {{-- Total Employees --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm" style="background-color: #FBBF24; border: none;"> {{-- Yellow-ish --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-total-count">{{ $totalEmployees }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
+                    <h1 class="fs-2 fw-bold mb-0" id="global-total-count">{{ $totalEmployees }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Total Employees') }}</p>
                 </div>
             </div>
         </div>
@@ -40,9 +40,9 @@
                  id="filter-not-started"
                  onclick="toggleFilter('not_started')"
                  style="background-color: #EF4444; border: none; transition: transform 0.2s;"> {{-- Red --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Not Started') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
+                    <h1 class="fs-2 fw-bold mb-0" id="global-not-started-count">{{ $notStartedCount }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Not Started') }}</p>
                 </div>
             </div>
         </div>
@@ -50,9 +50,9 @@
         {{-- Total Cancelled Employees --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm" style="background-color: #6B7280; border: none;"> {{-- Gray --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-cancelled-count">{{ $totalCancelled }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Total Cancelled') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
+                    <h1 class="fs-2 fw-bold mb-0" id="global-cancelled-count">{{ $totalCancelled }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Total Cancelled') }}</p>
                 </div>
             </div>
         </div>
@@ -60,9 +60,9 @@
         {{-- Saved (New) --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm" style="background-color: #10B981; border: none;"> {{-- Green --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-saved-count">{{ $totalSaved }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Saved to Database') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
+                    <h1 class="fs-2 fw-bold mb-0" id="global-saved-count">{{ $totalSaved }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Saved to Database') }}</p>
                 </div>
             </div>
         </div>
@@ -70,9 +70,9 @@
         {{-- Total Employers --}}
         <div class="col">
             <div class="card bg-dark text-white h-100 shadow-sm" style="border: none;">
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-employers-count">{{ $totalEmployers }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Total Employers') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
+                    <h1 class="fs-2 fw-bold mb-0" id="global-employers-count">{{ $totalEmployers }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Total Employers') }}</p>
                 </div>
             </div>
         </div>
@@ -80,9 +80,9 @@
         {{-- Cancelled Employers --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm" style="background-color: #4B5563; border: none;"> {{-- Dark Gray --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-cancelled-employers-count">{{ $cancelledEmployersCount }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Cancelled Employers') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
+                    <h1 class="fs-2 fw-bold mb-0" id="global-cancelled-employers-count">{{ $cancelledEmployersCount }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Cancelled Employers') }}</p>
                 </div>
             </div>
         </div>
