@@ -1471,6 +1471,37 @@
             e.dataTransfer.effectAllowed = 'copy';
             e.dataTransfer.setData('application/json', JSON.stringify(payload));
         }
+
+        // --- Restore UI State on Load (After Reload) ---
+        const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id');
+        const restoreEmployeeId = sessionStorage.getItem('registration_restore_employee_id');
+
+        if (restoreEmployerId) {
+            sessionStorage.removeItem('registration_restore_employer_id'); // Clear immediately
+            const collapseEl = document.getElementById(`collapse${restoreEmployerId}`);
+            if (collapseEl) {
+                const bsCollapse = new bootstrap.Collapse(collapseEl, {
+                    toggle: false
+                });
+                bsCollapse.show();
+
+                // If we also have an employee to scroll to
+                if (restoreEmployeeId) {
+                    sessionStorage.removeItem('registration_restore_employee_id');
+                    // Wait for collapse animation (approx 350ms usually, but we can try slightly more)
+                    // Or listen to event 'shown.bs.collapse'
+                    collapseEl.addEventListener('shown.bs.collapse', function () {
+                        const employeeCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
+                        if (employeeCard) {
+                            employeeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // Optional: Highlight effect
+                            employeeCard.classList.add('border-warning');
+                            setTimeout(() => employeeCard.classList.remove('border-warning'), 2000);
+                        }
+                    }, { once: true });
+                }
+            }
+        }
     });
 </script>
 @endpush

@@ -97,12 +97,33 @@
                 }
 
                 // 3. Reload Page to reflect changes (as per request "Load on same page")
-                // Since updating the DOM manually for all potential fields is complex and error-prone,
-                // and the user accepts "load on the same page" (which usually means reload but stay here),
-                // we will reload. To make it "seamless", we can try to fetch just the card replacement?
-                // The user said: "System should not reset to another page... load and return to same point".
-                // A reload preserves scroll if we handle it, but plain reload might scroll top.
-                // Let's try to reload and scroll to the card.
+                // Capture state before reload
+                const formAction = form.action; // e.g., .../employees/123
+                const segments = formAction.split('/');
+                const employeeId = segments[segments.length - 1] || segments[segments.length - 2]; // Handle trailing slash if any
+
+                // Find the card to get Employer ID
+                // Note: The ID might be passed in differently, but extracting from URL is safer if DOM is gone?
+                // Actually DOM is still here.
+                // The modal is open, but we need the background card.
+                // We can't rely on 'employeeId' variable scope here easily unless we parse it.
+                // Let's try to find the card using the ID from the form action which is typically /employees/{id}
+
+                let empIdVal = null;
+                // Try to find ID from form action .../employees/{id}
+                const match = formAction.match(/\/employees\/(\d+)/);
+                if (match && match[1]) {
+                    empIdVal = match[1];
+                }
+
+                if (empIdVal) {
+                    const card = document.getElementById(`employee-card-${empIdVal}`);
+                    if (card && card.dataset.employerId) {
+                        sessionStorage.setItem('registration_restore_employer_id', card.dataset.employerId);
+                        sessionStorage.setItem('registration_restore_employee_id', empIdVal);
+                    }
+                }
+
                 window.location.reload();
 
             }
