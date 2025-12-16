@@ -54,15 +54,24 @@
 </div>
 
 <script>
-    function openAddCustomFieldModal(employeeId) {
+    function openAddCustomFieldModal(modelId, context = 'employee') {
         const modalEl = document.getElementById('addCustomFieldModal');
         const form = document.getElementById('addCustomFieldForm');
 
-        // Set Form Action
-        form.action = `/production/registration/custom-fields/${employeeId}`;
-
-        // Store employee ID for post-success logic
-        form.dataset.employeeId = employeeId;
+        // Set Form Action based on Context
+        if (context === 'employer') {
+            form.action = `/production/registration/employer-custom-fields/${modelId}`;
+            // Store employer ID for post-success logic
+            form.dataset.employerId = modelId;
+            form.dataset.context = 'employer';
+            delete form.dataset.employeeId;
+        } else {
+            form.action = `/production/registration/custom-fields/${modelId}`;
+            // Store employee ID for post-success logic
+            form.dataset.employeeId = modelId;
+            form.dataset.context = 'employee';
+            delete form.dataset.employerId;
+        }
 
         const modal = new bootstrap.Modal(modalEl);
         modal.show();
@@ -86,7 +95,9 @@
         const form = this;
         const btn = form.querySelector('.btn-add-field');
         const originalText = btn.innerText;
-        const employeeId = form.dataset.employeeId;
+
+        const context = form.dataset.context || 'employee';
+        const modelId = context === 'employer' ? form.dataset.employerId : form.dataset.employeeId;
 
         btn.disabled = true;
         btn.innerText = 'Adding...';
@@ -110,7 +121,9 @@
         .then(data => {
             if (data.success) {
                 // Update the drawer content if it exists/is visible
-                const container = document.getElementById(`drawer-content-${employeeId}`);
+                const containerId = context === 'employer' ? `drawer-content-employer-${modelId}` : `drawer-content-${modelId}`;
+                const container = document.getElementById(containerId);
+
                 if (container) {
                     const fieldsContainer = container.querySelector('.custom-fields-container');
                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -121,10 +134,13 @@
                         if(noMsg) noMsg.remove();
 
                         // Regenerate list
-                        // Note: generateFieldsHtml must be globally available or we need to duplicate/move it.
-                        // Ideally, it's defined in index.blade.php or offcanvas_drawer.blade.php which are loaded.
                         if (typeof generateFieldsHtml === 'function') {
-                             fieldsContainer.innerHTML = generateFieldsHtml(data.employee.custom_fields, csrfToken);
+                             // data.employee OR data.employer depending on response
+                             const customFields = context === 'employer'
+                                ? data.employer.custom_fields
+                                : data.employee.custom_fields;
+
+                             fieldsContainer.innerHTML = generateFieldsHtml(customFields, csrfToken, context);
                         }
                     }
                 }

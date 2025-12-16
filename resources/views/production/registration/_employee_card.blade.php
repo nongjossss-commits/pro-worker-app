@@ -24,7 +24,7 @@
     $isNotStarted = (!$isCompleted && !$isCancelled && !$highestStep);
 @endphp
 
-<div class="card {{ $cardClass }} mb-3 employee-card-wrapper"
+<div class="d-flex align-items-center employee-card-outer mb-3 employee-card-wrapper"
      id="employee-card-{{ $employee->id }}"
      data-highest-step-id="{{ $highestStepId }}"
      data-status="{{ $employee->status }}"
@@ -32,6 +32,12 @@
      data-employer-id="{{ $employee->employer_id }}"
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
 
+    {{-- Sequence Number (Outside Card) --}}
+    <div class="employee-sequence-number me-2 fs-5 fw-bold text-muted opacity-50 text-end" style="min-width: 30px;">
+        {{ $loop->iteration }}
+    </div>
+
+    <div class="card {{ $cardClass }} w-100">
     <div class="card-body p-3">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
@@ -237,5 +243,6 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </div>

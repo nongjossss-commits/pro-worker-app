@@ -8,6 +8,7 @@ use App\Models\Employer;
 use App\Models\ProductionOrder;
 use App\Models\RegistrationStep;
 use App\Models\EmployeeCustomField;
+use App\Models\ProductionCustomField;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -99,7 +100,7 @@ class RegistrationController extends Controller
         $filteredEmployerIds = $registrationEmployees->pluck('employer_id')->unique();
 
         $employers = Employer::whereIn('id', $filteredEmployerIds)
-            ->with(['jobOwner', 'employees' => function($q) use ($registrationEmployees) {
+            ->with(['jobOwner', 'customFields', 'employees' => function($q) use ($registrationEmployees) {
                 // Only load the employees that match our main filter
                 // We can use whereIn('id', ...)
                 $q->whereIn('id', $registrationEmployees->pluck('id'))
@@ -754,7 +755,69 @@ class RegistrationController extends Controller
         return back()->with('success', 'Field added successfully.');
     }
 
+    /**
+     * Store a custom field for an EMPLOYER.
+     */
+    public function storeEmployerCustomField(Request $request, Employer $employer)
+    {
+        if (!auth()->user()->can('edit-employees')) { // Assuming same permission
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'field_name' => 'required|string|max:255',
+            'field_type' => 'required|in:text,date,file',
+            'field_value' => 'nullable|string',
+            'field_file' => 'nullable|file|max:10240', // 10MB
+        ]);
+
+        $data = [
+            'field_name' => $validated['field_name'],
+            'field_type' => $validated['field_type'],
+        ];
+
+        if ($validated['field_type'] === 'file' && $request->hasFile('field_file')) {
+             $file = $request->file('field_file');
+             $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+             // Store in employer specific folder
+             $path = $file->storeAs("employer_files/{$employer->id}/custom", $filename, 'public');
+             $data['file_path'] = $path;
+        } else {
+             $data['field_value'] = $validated['field_value'];
+             if ($validated['field_type'] === 'date' && $request->has('field_date_value')) {
+                 $data['field_value'] = $request->field_date_value;
+             }
+        }
+
+        $field = $employer->customFields()->create($data);
+
+        if ($request->ajax()) {
+            $employer->load('customFields');
+            return response()->json([
+                'success' => true,
+                'message' => 'Field added successfully.',
+                'employer' => $employer,
+                'newField' => $field
+            ]);
+        }
+
+        return back()->with('success', 'Field added successfully.');
+    }
+
     public function destroyCustomField(EmployeeCustomField $field)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        if ($field->field_type === 'file' && $field->file_path) {
+            Storage::disk('public')->delete($field->file_path);
+        }
+        $field->delete();
+        return back()->with('success', 'Field removed.');
+    }
+
+    public function destroyEmployerCustomField(ProductionCustomField $field)
     {
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
