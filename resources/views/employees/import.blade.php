@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(html => {
              const parser = new DOMParser();
              const doc = parser.parseFromString(html, 'text/html');
-             const content = doc.querySelector('.container-fluid') || doc.body;
+             const content = doc.getElementById('bulk-edit-selector-wrapper') || doc.querySelector('.container-fluid') || doc.body;
 
              // Hijack form submit
              const form = content.querySelector('form');
@@ -488,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(html => {
              const parser = new DOMParser();
              const doc = parser.parseFromString(html, 'text/html');
-             const content = doc.querySelector('.container-fluid') || doc.body;
+             const content = doc.getElementById('bulk-edit-wrapper') || doc.querySelector('.container-fluid') || doc.body;
 
              // Remove layout clutter (like Fixed Bottom bar wrapper if it causes issues in modal)
              // The view has `fixed-bottom`. In a modal, this might be weird.

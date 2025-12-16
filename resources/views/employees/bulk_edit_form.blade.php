@@ -365,14 +365,19 @@
             const container = document.getElementById('bulk-edit-wrapper');
             if (!container) return; // Should not happen
 
+            console.log('Bulk Edit Script Initialized');
+
             // --- 1. Master Field Sync (Event Delegation on Container) ---
             container.addEventListener('click', function(e) {
                 if (e.target.matches('.apply-master-btn') || e.target.closest('.apply-master-btn')) {
                     const btn = e.target.matches('.apply-master-btn') ? e.target : e.target.closest('.apply-master-btn');
                     const field = btn.dataset.field;
                     // Ensure we search within THIS container
-                    const formContainer = container.querySelector('#bulkEditForm');
-                    if (!formContainer) return;
+                    const formContainer = container.querySelector('#bulkEditForm') || container.querySelector('form');
+                    if (!formContainer) {
+                        console.error('Bulk Edit Form not found');
+                        return;
+                    }
 
                     const masterInput = formContainer.querySelector(`.master-input[data-field="${field}"]`);
                     const individualInputs = formContainer.querySelectorAll(`.individual-input[data-field="${field}"]`);
