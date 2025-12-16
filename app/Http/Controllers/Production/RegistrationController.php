@@ -899,6 +899,33 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Update employer registration resolution status and note.
+     */
+    public function updateResolutionStatus(Request $request, Employer $employer)
+    {
+        if (!auth()->user()->can('edit-employees')) { // Assuming 'edit-employees' or similar is enough
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'nullable|in:preparing,waiting,ready',
+            'note' => 'nullable|string',
+        ]);
+
+        $data = [];
+        if ($request->has('status')) {
+            $data['registration_resolution_status'] = $validated['status'];
+        }
+        if ($request->has('note')) {
+            $data['registration_resolution_note'] = $validated['note'];
+        }
+
+        $employer->update($data);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Calculate global and employer-specific stats.
      *
      * @param int|null $employerId
