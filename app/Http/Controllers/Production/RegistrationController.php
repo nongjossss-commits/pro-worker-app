@@ -768,7 +768,7 @@ class RegistrationController extends Controller
             'field_name' => 'required|string|max:255',
             'field_type' => 'required|in:text,date,file',
             'field_value' => 'nullable|string',
-            'field_file' => 'nullable|file|max:10240', // 10MB
+            'field_file' => 'nullable|file|max:102400', // 100MB
         ]);
 
         $data = [
