@@ -442,7 +442,6 @@
                          </div>
                     </div>
                 </div>
-            </div>
             </div> {{-- End card --}}
             </div> {{-- End d-flex wrapper --}}
 
