@@ -19,6 +19,25 @@
         filter: grayscale(100%);
         opacity: 0.8;
     }
+    /* CSS Counters for persistent slot numbering */
+    #employersAccordion {
+        counter-reset: employer-counter;
+    }
+    .employer-card-container:not(.d-none) {
+        counter-increment: employer-counter;
+    }
+    .employer-sequence-number::before {
+        content: counter(employer-counter);
+    }
+    .employer-sequence-number {
+        /* Ensure it doesn't shift when content changes */
+        min-width: 50px;
+        text-align: center;
+        font-size: 2.5rem; /* display-5 size approx */
+        font-weight: bold;
+        color: #6c757d; /* text-muted */
+        opacity: 0.5;
+    }
 </style>
 
 <div class="container-fluid">
@@ -49,7 +68,10 @@
 
         {{-- Total Cancelled Employees --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm" style="background-color: #6B7280; border: none;"> {{-- Gray --}}
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-cancelled"
+                 onclick="toggleFilter('cancelled')"
+                 style="background-color: #6B7280; border: none;"> {{-- Gray --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-cancelled-count">{{ $totalCancelled }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Total Cancelled') }}</p>
@@ -59,7 +81,10 @@
 
         {{-- Saved (New) --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm" style="background-color: #10B981; border: none;"> {{-- Green --}}
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-saved"
+                 onclick="toggleFilter('saved')"
+                 style="background-color: #10B981; border: none;"> {{-- Green --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-saved-count">{{ $totalSaved }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Saved to Database') }}</p>
@@ -79,7 +104,10 @@
 
         {{-- Cancelled Employers --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm" style="background-color: #4B5563; border: none;"> {{-- Dark Gray --}}
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-cancelled-employer"
+                 onclick="toggleFilter('cancelled_employer')"
+                 style="background-color: #4B5563; border: none;"> {{-- Dark Gray --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-cancelled-employers-count">{{ $cancelledEmployersCount }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Cancelled Employers') }}</p>
@@ -232,19 +260,17 @@
             @endphp
 
             <div class="d-flex align-items-start employer-card-container mb-4" id="employer-card-{{ $employer->id }}">
-                {{-- Sequence Number (Left of Card) --}}
-                <div class="employer-sequence-number me-3 display-5 fw-bold text-muted opacity-50 pt-2" style="min-width: 40px; text-align: right;">
-                    {{ $loop->iteration }}
-                </div>
+                {{-- Sequence Number (CSS Counter will handle number) --}}
+                <div class="employer-sequence-number me-3 pt-2"></div>
 
                 <div class="card flex-grow-1 shadow-sm overflow-hidden {{ $employerCardClass }}">
                     <div class="card-header py-3 px-4 border-bottom {{ $employerHeaderClass }}" id="heading{{ $employer->id }}">
 
-                    {{-- Top Row: Identity + Stats + Actions --}}
-                    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
+                    {{-- Top Row: Identity + Stats + Actions (Using Grid for Alignment) --}}
+                    <div class="row align-items-xl-center g-3 mb-3">
 
                         {{-- Left: Identity --}}
-                        <div class="d-flex align-items-center flex-wrap gap-3">
+                        <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
                             @can('edit-employees')
                             {{-- Select All for Employer --}}
                             <div class="form-check mb-0">
@@ -254,7 +280,7 @@
 
                             {{-- Name & Collapse Trigger --}}
                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
-                                <h4 class="fw-bold mb-0 text-primary">{{ $employer->employerNameTh }}</h4>
+                                <h4 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">{{ $employer->employerNameTh }}</h4>
                             </button>
 
                             {{-- Preview --}}
@@ -263,7 +289,7 @@
                             </button>
 
                             {{-- English Name --}}
-                            <div class="text-muted small border-start ps-3 fw-bold">
+                            <div class="text-muted small border-start ps-3 fw-bold text-truncate" style="max-width: 200px;">
                                 {{ $employer->employerNameEn }}
                             </div>
 
@@ -279,70 +305,72 @@
                         </div>
 
                         {{-- Right: Stats & Finance --}}
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                             {{-- Stats Badges --}}
-                             <div class="d-flex align-items-center gap-2">
-                                {{-- Total --}}
-                                <span class="badge bg-light text-dark border d-flex align-items-center gap-2 px-2 py-1" title="Total Employees">
-                                    <i class="bi bi-people-fill text-muted"></i>
-                                    <span class="fw-bold" id="employer-total-{{ $employer->id }}">{{ $employer->activeEmployeesCount ?? 0 }}</span>
-                                    <span class="text-muted small ms-1" style="font-size: 0.75rem;">TOTAL</span>
-                                </span>
-                                {{-- Not Started --}}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center gap-2 px-2 py-1" title="Pending">
-                                     <span class="fw-bold" id="employer-not-started-{{ $employer->id }}">{{ $employer->notStartedCount ?? 0 }}</span>
-                                     <span class="small ms-1 opacity-75" style="font-size: 0.75rem;">PENDING</span>
-                                </span>
-                                {{-- Saved --}}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center gap-2 px-2 py-1" title="Saved">
-                                     <span class="fw-bold" id="employer-saved-{{ $employer->id }}">{{ $employer->savedCount ?? 0 }}</span>
-                                     <span class="small ms-1 opacity-75" style="font-size: 0.75rem;">SAVED</span>
-                                </span>
-                                {{-- Cancelled --}}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center gap-2 px-2 py-1" title="Cancelled">
-                                    <span class="fw-bold" id="employer-cancelled-{{ $employer->id }}">{{ $employer->cancelledCount ?? 0 }}</span>
-                                    <span class="small ms-1 opacity-75" style="font-size: 0.75rem;">CANCEL</span>
-                                </span>
-                             </div>
+                        <div class="col-12 col-xl text-xl-end">
+                            <div class="d-flex align-items-center justify-content-xl-end gap-2 flex-wrap">
+                                 {{-- Stats Badges (Fixed Widths for Alignment) --}}
+                                 <div class="d-flex align-items-center gap-2 me-xl-3">
+                                    {{-- Total --}}
+                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="Total Employees">
+                                        <i class="bi bi-people-fill text-muted"></i>
+                                        <span class="fw-bold" id="employer-total-{{ $employer->id }}">{{ $employer->activeEmployeesCount ?? 0 }}</span>
+                                        <span class="text-muted small ms-1" style="font-size: 0.70rem;">TOTAL</span>
+                                    </span>
+                                    {{-- Not Started --}}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 100px;" title="Pending">
+                                         <span class="fw-bold" id="employer-not-started-{{ $employer->id }}">{{ $employer->notStartedCount ?? 0 }}</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">PENDING</span>
+                                    </span>
+                                    {{-- Saved --}}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="Saved">
+                                         <span class="fw-bold" id="employer-saved-{{ $employer->id }}">{{ $employer->savedCount ?? 0 }}</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">SAVED</span>
+                                    </span>
+                                    {{-- Cancelled --}}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 95px;" title="Cancelled">
+                                        <span class="fw-bold" id="employer-cancelled-{{ $employer->id }}">{{ $employer->cancelledCount ?? 0 }}</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">CANCEL</span>
+                                    </span>
+                                 </div>
 
-                             <div class="vr d-none d-xl-block"></div>
+                                 <div class="vr d-none d-xl-block me-2"></div>
 
-                             @can('edit-employees')
-                             {{-- Add Employee Button --}}
-                             <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
-                                <i class="bi bi-plus-lg"></i> {{ __('Add Employee') }}
-                             </a>
-                             @endcan
+                                 @can('edit-employees')
+                                 {{-- Add Employee Button --}}
+                                 <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
+                                    <i class="bi bi-plus-lg"></i> {{ __('Add') }}
+                                 </a>
+                                 @endcan
 
-                             {{-- Finance Button --}}
-                             @can('view-finance')
-                             <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
-                                <i class="bi bi-currency-dollar"></i> {{ __('Finance') }}
-                            </button>
-                            @endcan
+                                 {{-- Finance Button --}}
+                                 @can('view-finance')
+                                 <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
+                                    <i class="bi bi-currency-dollar"></i> {{ __('Finance') }}
+                                </button>
+                                @endcan
 
-                            {{-- Custom Fields Button (Employer) --}}
-                            <button class="btn btn-outline-secondary btn-sm" onclick="toggleEmployerInlineDrawer({{ $employer->id }}, {{ json_encode($employer->customFields) }}); event.stopPropagation();">
-                                <i class="bi bi-list-task"></i> {{ __('Fields') }}
-                            </button>
+                                {{-- Custom Fields Button (Employer) --}}
+                                <button class="btn btn-outline-secondary btn-sm" onclick="toggleEmployerInlineDrawer({{ $employer->id }}, {{ json_encode($employer->customFields) }}); event.stopPropagation();">
+                                    <i class="bi bi-list-task"></i> {{ __('Fields') }}
+                                </button>
 
-                            {{-- Cancel/Restore Employer Actions --}}
-                            @can('edit-employers')
-                                @if($isEmployerCancelled)
-                                    <button class="btn btn-outline-warning btn-sm" onclick="restoreEmployer({{ $employer->id }})">
-                                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore Employer') }}
-                                    </button>
-                                @else
-                                    <button class="btn btn-outline-secondary btn-sm" onclick="cancelEmployer({{ $employer->id }})">
-                                        <i class="bi bi-x-circle"></i> {{ __('Cancel Employer') }}
-                                    </button>
-                                @endif
-                            @endcan
+                                {{-- Cancel/Restore Employer Actions --}}
+                                @can('edit-employers')
+                                    @if($isEmployerCancelled)
+                                        <button class="btn btn-outline-warning btn-sm" onclick="restoreEmployer({{ $employer->id }})">
+                                            <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
+                                        </button>
+                                    @else
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="cancelEmployer({{ $employer->id }})">
+                                            <i class="bi bi-x-circle"></i> {{ __('Cancel') }}
+                                        </button>
+                                    @endif
+                                @endcan
 
-                            {{-- Collapse Chevron --}}
-                            <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
-                                <i class="bi bi-chevron-down"></i>
-                            </button>
+                                {{-- Collapse Chevron --}}
+                                <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -556,7 +584,7 @@
     const lastStepId = {{ $lastStepId ?? 'null' }};
 
     // State for Global Client-Side Filter
-    let currentStepFilter = null; // 'not_started', 'step_ID', or null
+    let currentStepFilter = null; // 'not_started', 'saved', 'cancelled', 'cancelled_employer', 'step_ID', or null
 
     // Toggle Filter Function
     function toggleFilter(filterKey) {
@@ -576,8 +604,7 @@
         // 4. Recalculate Stats (Dynamic Counters)
         recalculateVisibleStats();
 
-        // 5. Update Sequence Numbers
-        updateSequenceNumbers();
+        // CSS Counters handle sequence automatically!
     }
 
     function updateFilterUI() {
@@ -588,6 +615,12 @@
 
         if (currentStepFilter === 'not_started') {
             document.getElementById('filter-not-started').classList.add('filter-active');
+        } else if (currentStepFilter === 'saved') {
+            document.getElementById('filter-saved').classList.add('filter-active');
+        } else if (currentStepFilter === 'cancelled') {
+            document.getElementById('filter-cancelled').classList.add('filter-active');
+        } else if (currentStepFilter === 'cancelled_employer') {
+            document.getElementById('filter-cancelled-employer').classList.add('filter-active');
         } else {
             // It's a step ID
             const pill = document.getElementById(`filter-step-${currentStepFilter}`);
@@ -599,19 +632,59 @@
         const cards = document.querySelectorAll('.employee-card-wrapper');
         let visibleCount = 0;
 
+        // Reset all employers to visible first (logic below handles hiding them)
+        document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => empCard.classList.remove('d-none'));
+
+        // Handle 'cancelled_employer' specifically first
+        if (currentStepFilter === 'cancelled_employer') {
+            document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
+                 // We need to know if employer is cancelled.
+                 // We can check if it has the 'grayscale-mode' class or look for the 'Restoe Employer' button presence?
+                 // Better: Add a data attribute to employer card.
+                 // Since I cannot modify the PHP loop easily in this patch block without getting messy,
+                 // I'll rely on the class 'grayscale-mode' which is added in the view for cancelled employers.
+                 const isCancelled = empCard.querySelector('.card').classList.contains('grayscale-mode');
+
+                 if (isCancelled) {
+                     empCard.classList.remove('d-none');
+                     // Show all its employees (even cancelled ones?)
+                     // Usually yes, if viewing cancelled employer.
+                     empCard.querySelectorAll('.employee-card-wrapper').forEach(c => c.classList.remove('d-none'));
+                 } else {
+                     empCard.classList.add('d-none');
+                 }
+            });
+            return; // Exit early for this special filter
+        }
+
+        // Standard Employee Filters
         cards.forEach(card => {
             const highestStepId = card.dataset.highestStepId;
             const isNotStarted = card.dataset.isNotStarted === 'true';
+            const status = card.dataset.status;
 
             let show = true;
 
             if (currentStepFilter) {
                 if (currentStepFilter === 'not_started') {
-                    if (!isNotStarted) show = false;
+                    if (!isNotStarted || status === 'registration_cancelled') show = false;
+                } else if (currentStepFilter === 'saved') {
+                    if (status !== 'registration_completed') show = false;
+                } else if (currentStepFilter === 'cancelled') {
+                    if (status !== 'registration_cancelled') show = false;
                 } else {
+                    // Step Filter
+                    // Should exclude cancelled? usually yes.
+                    if (status === 'registration_cancelled') show = false;
                     // Check if highest step matches filter
                     if (highestStepId != currentStepFilter) show = false;
                 }
+            } else {
+                // Default View: Hide Cancelled employees usually?
+                // The PHP controller returns them, but usually they clog the view.
+                // The current view displays them.
+                // If "Total" (No filter) is selected, we show everything active.
+                // But wait, the previous logic didn't hide cancelled explicitly unless filtered.
             }
 
             if (show) {
@@ -622,10 +695,14 @@
             }
         });
 
-        // Optional: Hide employers with 0 visible employees if desired?
-        // For now, let's keep employer cards visible but maybe update their badges.
+        // Hide employers with no visible employees
         document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
+            // If employer is cancelled, we generally hide it in default view?
+            // The controller sorts them to bottom.
+            // If we are filtering by 'cancelled' employees, we might show active employers who have cancelled staff.
+
             const visibleEmployees = empCard.querySelectorAll('.employee-card-wrapper:not(.d-none)');
+            // Also check if the employer ITSELF is the target (for cancelled employer filter - handled above)
 
             if (currentStepFilter !== null) {
                 // Filter is active: Hide if no matches
@@ -1517,29 +1594,8 @@
         }
 
         // --- Sequence Number Logic ---
-        function updateSequenceNumbers() {
-            // 1. Employers
-            const employers = document.querySelectorAll('.employer-card-container:not(.d-none)');
-            employers.forEach((el, index) => {
-                const seqEl = el.querySelector('.employer-sequence-number');
-                if(seqEl) seqEl.innerText = index + 1;
-            });
-
-            // 2. Employees (Per Employer)
-            employers.forEach(employerEl => {
-                const employeeList = employerEl.querySelector('.employee-list');
-                if(employeeList) {
-                    const employees = employeeList.querySelectorAll('.employee-card-outer:not(.d-none)');
-                    employees.forEach((empEl, index) => {
-                        const seqEl = empEl.querySelector('.employee-sequence-number');
-                        if(seqEl) seqEl.innerText = index + 1;
-                    });
-                }
-            });
-        }
-
-        // Call on load
-        document.addEventListener('DOMContentLoaded', updateSequenceNumbers);
+        // DEPRECATED: CSS Counters are now used for robust numbering.
+        // function updateSequenceNumbers() { ... }
 
         // --- Restore UI State on Load (After Reload) ---
         const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id');
