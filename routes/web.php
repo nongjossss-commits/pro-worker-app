@@ -211,6 +211,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Employer Custom Fields
         Route::post('/employer-custom-fields/{employer}', [App\Http\Controllers\Production\RegistrationController::class, 'storeEmployerCustomField'])->name('employer_custom_fields.store');
+        Route::put('/employer-custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'updateEmployerCustomField'])->name('employer_custom_fields.update');
         Route::delete('/employer-custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyEmployerCustomField'])->name('employer_custom_fields.destroy');
 
         // Finalize & Restore (NEW)

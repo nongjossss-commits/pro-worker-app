@@ -717,7 +717,7 @@ class RegistrationController extends Controller
             'field_name' => 'required|string|max:255',
             'field_type' => 'required|in:text,date,file',
             'field_value' => 'nullable|string',
-            'field_file' => 'nullable|file|max:10240', // 10MB
+            'field_file' => 'nullable|file|max:102400', // 100MB
         ]);
 
         $data = [
@@ -802,6 +802,74 @@ class RegistrationController extends Controller
         }
 
         return back()->with('success', 'Field added successfully.');
+    }
+
+    /**
+     * Update a custom field for an EMPLOYER.
+     */
+    public function updateEmployerCustomField(Request $request, ProductionCustomField $field)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        // We only allow updating the field name, or the value/file
+        // Type cannot be changed easily without UI complexity, so we assume type stays same.
+        // Actually, for file upload, the user might want to re-upload.
+
+        $rules = [
+            'field_name' => 'required|string|max:255',
+        ];
+
+        if ($field->field_type === 'file') {
+            // For file type, we might have a new file
+            // Note: The form input name in edit form for file is not standard yet in our JS
+            // But let's assume we use 'field_file' again if we add file input to edit form.
+            $rules['field_file'] = 'nullable|file|max:102400'; // 100MB
+        } else {
+             $rules['field_value'] = 'nullable|string';
+             if ($field->field_type === 'date') {
+                 $rules['field_date_value'] = 'nullable|date';
+             }
+        }
+
+        $validated = $request->validate($rules);
+
+        $data = [
+            'field_name' => $validated['field_name'],
+        ];
+
+        if ($field->field_type === 'file') {
+             if ($request->hasFile('field_file')) {
+                 // Delete old file
+                 if ($field->file_path) {
+                     Storage::disk('public')->delete($field->file_path);
+                 }
+
+                 $file = $request->file('field_file');
+                 $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                 // Store in employer specific folder. Getting employer ID via relation.
+                 $employerId = $field->model_id; // Assuming morphed to Employer
+                 $path = $file->storeAs("employer_files/{$employerId}/custom", $filename, 'public');
+                 $data['file_path'] = $path;
+                 // We can also update field_value to store original name or description if passed
+                 if ($request->filled('field_value')) {
+                     $data['field_value'] = $request->field_value;
+                 }
+             } elseif ($request->filled('field_value')) {
+                 // Just updating description
+                 $data['field_value'] = $request->field_value;
+             }
+        } else {
+             $data['field_value'] = $validated['field_value'] ?? null;
+             if ($field->field_type === 'date' && $request->has('field_date_value')) {
+                 $data['field_value'] = $request->field_date_value;
+             }
+        }
+
+        $field->update($data);
+
+        return back()->with('success', 'Field updated successfully.');
     }
 
     public function destroyCustomField(EmployeeCustomField $field)

@@ -83,7 +83,14 @@
 
             // Hide Edit for Employer context for now as Controller doesn't have update method explicitly added yet (I added store/destroy).
             // Actually, let's keep it simple.
-            const showEdit = context === 'employee';
+            // USER REQUEST: Enable Edit for Employer too.
+            const showEdit = true;
+
+            // For file type editing, we need to allow re-upload
+            if (field.field_type === 'file') {
+                 // Append file input to editInputHtml
+                 editInputHtml += `<input type="file" name="field_file" class="form-control form-control-sm mb-2">`;
+            }
 
             return `
                 <div class="mb-3 border-bottom pb-2 field-item">
@@ -109,7 +116,7 @@
                     </div>
 
                     ${showEdit ? `
-                    <form id="${editFormId}" action="${updateUrl}" method="POST" class="d-none mt-2">
+                    <form id="${editFormId}" action="${updateUrl}" method="POST" enctype="multipart/form-data" class="d-none mt-2">
                          <input type="hidden" name="_token" value="${csrfToken}">
                          <input type="hidden" name="_method" value="PUT">
                          <input type="text" name="field_name" class="form-control form-control-sm mb-2" value="${field.field_name}" placeholder="Field Name">
