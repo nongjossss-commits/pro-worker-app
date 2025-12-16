@@ -209,6 +209,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/custom-fields/{employee}', [App\Http\Controllers\Production\RegistrationController::class, 'storeCustomField'])->name('custom_fields.store');
         Route::delete('/custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyCustomField'])->name('custom_fields.destroy');
 
+        // Employer Custom Fields
+        Route::post('/employer-custom-fields/{employer}', [App\Http\Controllers\Production\RegistrationController::class, 'storeEmployerCustomField'])->name('employer_custom_fields.store');
+        Route::delete('/employer-custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyEmployerCustomField'])->name('employer_custom_fields.destroy');
+
         // Finalize & Restore (NEW)
         Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RegistrationController::class, 'finalize'])->name('finalize');
         Route::post('/{employee}/restore-state', [App\Http\Controllers\Production\RegistrationController::class, 'restoreState'])->name('restore_state');

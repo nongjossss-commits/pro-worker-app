@@ -96,4 +96,9 @@ class Employer extends Model
     {
         return $this->belongsTo(User::class, 'assigned_staff_id');
     }
+
+    public function customFields()
+    {
+        return $this->morphMany(ProductionCustomField::class, 'model');
+    }
 }

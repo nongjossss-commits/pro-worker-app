@@ -230,8 +230,15 @@
                 $employerCardClass = $isEmployerCancelled ? 'border-secondary grayscale-mode' : 'border-primary border-2';
                 $employerHeaderClass = $isEmployerCancelled ? 'bg-light' : 'bg-white';
             @endphp
-            <div class="card mb-4 shadow-sm overflow-hidden {{ $employerCardClass }}" id="employer-card-{{ $employer->id }}">
-                <div class="card-header py-3 px-4 border-bottom {{ $employerHeaderClass }}" id="heading{{ $employer->id }}">
+
+            <div class="d-flex align-items-start employer-card-container mb-4" id="employer-card-{{ $employer->id }}">
+                {{-- Sequence Number (Left of Card) --}}
+                <div class="employer-sequence-number me-3 display-5 fw-bold text-muted opacity-50 pt-2" style="min-width: 40px; text-align: right;">
+                    {{ $loop->iteration }}
+                </div>
+
+                <div class="card flex-grow-1 shadow-sm overflow-hidden {{ $employerCardClass }}">
+                    <div class="card-header py-3 px-4 border-bottom {{ $employerHeaderClass }}" id="heading{{ $employer->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions --}}
                     <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
@@ -314,6 +321,11 @@
                             </button>
                             @endcan
 
+                            {{-- Custom Fields Button (Employer) --}}
+                            <button class="btn btn-outline-secondary btn-sm" onclick="toggleEmployerInlineDrawer({{ $employer->id }}, {{ json_encode($employer->customFields) }}); event.stopPropagation();">
+                                <i class="bi bi-list-task"></i> {{ __('Fields') }}
+                            </button>
+
                             {{-- Cancel/Restore Employer Actions --}}
                             @can('edit-employers')
                                 @if($isEmployerCancelled)
@@ -331,6 +343,18 @@
                             <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
                                 <i class="bi bi-chevron-down"></i>
                             </button>
+                        </div>
+                    </div>
+
+                    {{-- Employer Custom Fields Drawer --}}
+                    <div class="collapse mt-3" id="drawer-employer-{{ $employer->id }}">
+                        <div class="card card-body bg-light border-0 rounded-3">
+                            <div id="drawer-content-employer-{{ $employer->id }}" class="position-relative" style="min-height: 100px;">
+                                <div class="d-flex justify-content-center align-items-center h-100 py-3">
+                                     <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                     <span class="ms-2 small text-muted">Loading fields...</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -382,15 +406,17 @@
 
                 <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $employer->id }}">
                     <div class="card-body bg-light p-4">
-                         <div class="employee-list">
+                         <div class="employee-list" id="employee-list-{{ $employer->id }}">
                             @foreach($employer->employees as $employee)
                                 {{-- Filter out cancelled if needed, or show them differently. The controller returns them. --}}
-                                @include('production.registration._employee_card', ['employee' => $employee, 'steps' => $steps])
+                                @include('production.registration._employee_card', ['employee' => $employee, 'steps' => $steps, 'loop' => $loop])
                             @endforeach
                          </div>
                     </div>
                 </div>
             </div>
+            </div> {{-- End card --}}
+            </div> {{-- End d-flex wrapper --}}
 
             {{-- Finance Modal for this Employer --}}
             <div class="modal fade" id="financeModal-{{ $employer->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
@@ -549,6 +575,9 @@
 
         // 4. Recalculate Stats (Dynamic Counters)
         recalculateVisibleStats();
+
+        // 5. Update Sequence Numbers
+        updateSequenceNumbers();
     }
 
     function updateFilterUI() {
@@ -1486,6 +1515,31 @@
             e.dataTransfer.effectAllowed = 'copy';
             e.dataTransfer.setData('application/json', JSON.stringify(payload));
         }
+
+        // --- Sequence Number Logic ---
+        function updateSequenceNumbers() {
+            // 1. Employers
+            const employers = document.querySelectorAll('.employer-card-container:not(.d-none)');
+            employers.forEach((el, index) => {
+                const seqEl = el.querySelector('.employer-sequence-number');
+                if(seqEl) seqEl.innerText = index + 1;
+            });
+
+            // 2. Employees (Per Employer)
+            employers.forEach(employerEl => {
+                const employeeList = employerEl.querySelector('.employee-list');
+                if(employeeList) {
+                    const employees = employeeList.querySelectorAll('.employee-card-outer:not(.d-none)');
+                    employees.forEach((empEl, index) => {
+                        const seqEl = empEl.querySelector('.employee-sequence-number');
+                        if(seqEl) seqEl.innerText = index + 1;
+                    });
+                }
+            });
+        }
+
+        // Call on load
+        document.addEventListener('DOMContentLoaded', updateSequenceNumbers);
 
         // --- Restore UI State on Load (After Reload) ---
         const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id');
