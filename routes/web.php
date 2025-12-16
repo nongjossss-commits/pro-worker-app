@@ -227,6 +227,7 @@ Route::middleware(['auth'])->group(function () {
         // Employer Actions (NEW)
         Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RegistrationController::class, 'cancelEmployer'])->name('cancel_employer');
         Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restoreEmployer'])->name('restore_employer');
+        Route::post('/employer/{employer}/resolution-status', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionStatus'])->name('employer_resolution.update');
     });
 
     Route::resource('production', \App\Http\Controllers\ProductionController::class);

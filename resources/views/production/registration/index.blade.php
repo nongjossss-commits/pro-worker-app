@@ -263,7 +263,50 @@
                 {{-- Sequence Number (CSS Counter will handle number) --}}
                 <div class="employer-sequence-number me-3 pt-2"></div>
 
-                <div class="card flex-grow-1 shadow-sm overflow-hidden {{ $employerCardClass }}">
+                <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}" style="position: relative;">
+                    {{-- Status/Note Tab/Drawer --}}
+                    <div class="position-absolute d-flex align-items-center gap-1 shadow-sm border border-secondary border-bottom-0 rounded-top bg-white px-2 py-1"
+                         style="top: -34px; right: 20px; z-index: 5; height: 34px;">
+                        {{-- Status Dropdown --}}
+                        @php
+                            $status = $employer->registration_resolution_status ?? 'preparing';
+                            $statusColor = match($status) {
+                                'preparing' => 'secondary',
+                                'waiting' => 'warning',
+                                'ready' => 'success',
+                                default => 'secondary'
+                            };
+                            $statusLabel = match($status) {
+                                'preparing' => 'Preparing',
+                                'waiting' => 'Waiting',
+                                'ready' => 'Ready',
+                                default => 'Preparing'
+                            };
+                        @endphp
+                        @can('edit-employees')
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-{{ $statusColor }} dropdown-toggle fw-bold py-0" type="button" id="statusDropdown{{ $employer->id }}" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem;">
+                                {{ $statusLabel }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="statusDropdown{{ $employer->id }}">
+                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'preparing')"><span class="badge bg-secondary me-2">Preparing</span>Preparing</button></li>
+                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'waiting')"><span class="badge bg-warning me-2">Waiting</span>Waiting for Order</button></li>
+                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'ready')"><span class="badge bg-success me-2">Ready</span>Ready to Proceed</button></li>
+                            </ul>
+                        </div>
+                        @else
+                            <span class="badge bg-{{ $statusColor }}">{{ $statusLabel }}</span>
+                        @endcan
+
+                        {{-- Job Order / Note Button --}}
+                        <button class="btn btn-sm btn-outline-secondary border-0"
+                                data-note="{{ $employer->registration_resolution_note ?? '' }}"
+                                onclick="openResolutionNoteModal({{ $employer->id }}, this.getAttribute('data-note'))"
+                                title="Job Order / Notes">
+                            <i class="bi bi-file-text-fill"></i>
+                        </button>
+                    </div>
+
                     <div class="card-header py-3 px-4 border-bottom {{ $employerHeaderClass }}" id="heading{{ $employer->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions (Using Grid for Alignment) --}}
@@ -573,6 +616,35 @@
     </div>
 </div>
 
+{{-- Job Order / Note Modal --}}
+<div class="modal fade" id="resolutionNoteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-text me-2"></i>Job Order / Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="resolutionNoteForm">
+                    <input type="hidden" id="noteEmployerId">
+                    <div class="mb-3">
+                        <label for="resolutionNoteText" class="form-label">Details / Instructions</label>
+                        <textarea class="form-control" id="resolutionNoteText" rows="6"
+                            @cannot('edit-employees') readonly @endcannot
+                        ></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                @can('edit-employees')
+                <button type="button" class="btn btn-primary" onclick="saveResolutionNote()">Save Note</button>
+                @endcan
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @include('employees.partials._edit_scripts')
@@ -582,6 +654,74 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = {{ $lastStepId ?? 'null' }};
+
+    // --- Resolution Status & Note Functions ---
+    function updateResolutionStatus(employerId, status) {
+        fetch(`/admin/employer/${employerId}/resolution-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                // Instead of full reload, we could update UI locally, but status change changes text & color.
+                // For simplicity and to show spinner/success, reload is safest to ensure consistency.
+                // Or update button classes.
+                location.reload();
+            } else {
+                Swal.fire('Error', 'Failed to update status', 'error');
+            }
+        })
+        .catch(err => Swal.fire('Error', 'Network error', 'error'));
+    }
+
+    const noteModal = new bootstrap.Modal(document.getElementById('resolutionNoteModal'));
+
+    function openResolutionNoteModal(employerId, currentNote) {
+        document.getElementById('noteEmployerId').value = employerId;
+        document.getElementById('resolutionNoteText').value = currentNote;
+        noteModal.show();
+    }
+
+    function saveResolutionNote() {
+        const employerId = document.getElementById('noteEmployerId').value;
+        const note = document.getElementById('resolutionNoteText').value;
+
+        fetch(`/admin/employer/${employerId}/resolution-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ note: note })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved',
+                    text: 'Note updated successfully',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                noteModal.hide();
+                // Update the onclick attribute in DOM to reflect new note so it persists without reload
+                // Find button
+                // This part is tricky because we need to escape the string properly for the onclick attribute.
+                location.reload();
+            } else {
+                Swal.fire('Error', 'Failed to save note', 'error');
+            }
+        })
+        .catch(err => Swal.fire('Error', 'Network error', 'error'));
+    }
 
     // State for Global Client-Side Filter
     let currentStepFilter = null; // 'not_started', 'saved', 'cancelled', 'cancelled_employer', 'step_ID', or null

@@ -61,6 +61,8 @@ class Employer extends Model
         'job_owner_id',
         'user_id',
         'assigned_staff_id',
+        'registration_resolution_status',
+        'registration_resolution_note',
     ];
 
     /**
