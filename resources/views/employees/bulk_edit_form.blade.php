@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="container-fluid p-4">
+<div class="container-fluid p-4" id="bulk-edit-wrapper">
     {{-- CSS Fix for Tailwind + Bootstrap Collapse Conflict --}}
     <style>
         /* Fix for Tailwind's .collapse { visibility: collapse } conflicting with Bootstrap */
@@ -360,17 +360,22 @@
     <input type="file" class="d-none" id="globalTriggerCamera" accept="image/*" capture="environment">
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // --- 1. Master Field Sync (Event Delegation) ---
-            document.body.addEventListener('click', function(e) {
+        // Use a wrapper check to avoid errors if script runs before DOM (which shouldn't happen here, but safe)
+        (function() {
+            const container = document.getElementById('bulk-edit-wrapper');
+            if (!container) return; // Should not happen
+
+            // --- 1. Master Field Sync (Event Delegation on Container) ---
+            container.addEventListener('click', function(e) {
                 if (e.target.matches('.apply-master-btn') || e.target.closest('.apply-master-btn')) {
                     const btn = e.target.matches('.apply-master-btn') ? e.target : e.target.closest('.apply-master-btn');
                     const field = btn.dataset.field;
-                    const container = document.querySelector('#bulkEditForm'); // Scope to form
-                    if (!container) return;
+                    // Ensure we search within THIS container
+                    const formContainer = container.querySelector('#bulkEditForm');
+                    if (!formContainer) return;
 
-                    const masterInput = container.querySelector(`.master-input[data-field="${field}"]`);
-                    const individualInputs = container.querySelectorAll(`.individual-input[data-field="${field}"]`);
+                    const masterInput = formContainer.querySelector(`.master-input[data-field="${field}"]`);
+                    const individualInputs = formContainer.querySelectorAll(`.individual-input[data-field="${field}"]`);
 
                     if (!masterInput) return;
 
@@ -387,8 +392,8 @@
                     }
 
                     // Handle description field sync
-                    const masterDescInput = container.querySelector(`.master-desc-input[data-parent-field="${field}"]`);
-                    const individualDescInputs = container.querySelectorAll(`.individual-desc-input[data-parent-field="${field}"]`);
+                    const masterDescInput = formContainer.querySelector(`.master-desc-input[data-parent-field="${field}"]`);
+                    const individualDescInputs = formContainer.querySelectorAll(`.individual-desc-input[data-parent-field="${field}"]`);
 
                     if (masterDescInput && individualDescInputs.length > 0) {
                         const descValue = masterDescInput.value;
@@ -412,16 +417,16 @@
                 }
             });
 
-            // --- 2. Expand/Collapse All (Event Delegation) ---
-            document.body.addEventListener('click', function(e) {
+            // --- 2. Expand/Collapse All (Event Delegation on Container) ---
+            container.addEventListener('click', function(e) {
                 if (e.target.matches('#btn-expand-all') || e.target.closest('#btn-expand-all')) {
-                    document.querySelectorAll('.accordion-collapse').forEach(el => {
+                    container.querySelectorAll('.accordion-collapse').forEach(el => {
                         const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
                         bsCollapse.show();
                     });
                 }
                 if (e.target.matches('#btn-collapse-all') || e.target.closest('#btn-collapse-all')) {
-                    document.querySelectorAll('.accordion-collapse').forEach(el => {
+                    container.querySelectorAll('.accordion-collapse').forEach(el => {
                         const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
                         bsCollapse.hide();
                     });
@@ -433,15 +438,15 @@
             let currentOriginalFile = null;
             let cropper = null;
 
-            const cropperModalEl = document.getElementById('cropperModal');
+            const cropperModalEl = container.querySelector('#cropperModal'); // Scope to container
             const cropperModal = new bootstrap.Modal(cropperModalEl);
-            const imageToCrop = document.getElementById('imageToCrop');
-            const cropImageBtn = document.getElementById('cropImageBtn');
-            const globalTriggerFile = document.getElementById('globalTriggerFile');
-            const globalTriggerCamera = document.getElementById('globalTriggerCamera');
+            const imageToCrop = container.querySelector('#imageToCrop');
+            const cropImageBtn = container.querySelector('#cropImageBtn');
+            const globalTriggerFile = container.querySelector('#globalTriggerFile');
+            const globalTriggerCamera = container.querySelector('#globalTriggerCamera');
 
             // Trigger click listener (DELEGATED)
-            document.body.addEventListener('click', function(e) {
+            container.addEventListener('click', function(e) {
                 if (e.target.matches('.btn-crop-trigger') || e.target.closest('.btn-crop-trigger')) {
                     const btn = e.target.matches('.btn-crop-trigger') ? e.target : e.target.closest('.btn-crop-trigger');
                     currentEmployeeId = btn.dataset.employeeId;
@@ -537,7 +542,7 @@
                         if (!blob) return;
 
                         const croppedImageUrl = URL.createObjectURL(blob);
-                        const previewImg = document.getElementById(`preview-img-${currentEmployeeId}`);
+                        const previewImg = container.querySelector(`#preview-img-${currentEmployeeId}`);
                         if (previewImg) {
                             previewImg.src = croppedImageUrl;
                         }
@@ -547,7 +552,7 @@
                             lastModified: Date.now()
                         });
 
-                        const targetInput = document.getElementById(`photo-input-${currentEmployeeId}`);
+                        const targetInput = container.querySelector(`#photo-input-${currentEmployeeId}`);
                         if (targetInput) {
                             const dataTransfer = new DataTransfer();
                             dataTransfer.items.add(croppedFile);
@@ -564,7 +569,7 @@
 
 
             // --- 4. BATCH SAVE LOGIC (Fixing the 20/100 Limit) ---
-            const form = document.getElementById('bulkEditForm');
+            const form = container.querySelector('#bulkEditForm');
             if (form) {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -573,7 +578,7 @@
             }
 
             async function startBatchUpload(formElement) {
-                const saveBtn = document.getElementById('btn-save-all');
+                const saveBtn = container.querySelector('#btn-save-all');
                 if(saveBtn) saveBtn.disabled = true;
 
                 // 1. Gather all Employee IDs involved
@@ -589,11 +594,11 @@
                 }
 
                 // 2. Show Progress Modal
-                const progressModalEl = document.getElementById('progressModal');
+                const progressModalEl = container.querySelector('#progressModal');
                 const progressModal = new bootstrap.Modal(progressModalEl);
-                const progressBar = document.getElementById('saveProgressBar');
-                const progressText = document.getElementById('saveProgressText');
-                const errorText = document.getElementById('saveErrorText');
+                const progressBar = container.querySelector('#saveProgressBar');
+                const progressText = container.querySelector('#saveProgressText');
+                const errorText = container.querySelector('#saveErrorText');
 
                 progressModal.show();
                 progressBar.style.width = '0%';
@@ -676,7 +681,7 @@
                     setTimeout(() => {
                          // Check for global callback (used in Import Modal)
                         if (typeof window.onBulkEditSuccess === 'function') {
-                            const progressModalEl = document.getElementById('progressModal');
+                            const progressModalEl = container.querySelector('#progressModal');
                             const progressModal = bootstrap.Modal.getInstance(progressModalEl);
                             progressModal.hide();
 
@@ -687,8 +692,7 @@
                     }, 1000);
                 }
             }
-
-        });
+        })();
     </script>
 </div>
 @endsection
