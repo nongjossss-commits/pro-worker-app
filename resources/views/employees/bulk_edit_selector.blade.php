@@ -3,7 +3,7 @@
 @section('title', __('Advanced Bulk Edit Selection'))
 
 @section('content')
-<div class="container-fluid p-4">
+<div class="container-fluid p-4" id="bulk-edit-selector-wrapper">
     <h2 class="mb-4">{{ __('Select Fields for Bulk Edit') }}</h2>
 
     <form action="{{ route('employees.bulk_edit.form') }}" method="POST">
