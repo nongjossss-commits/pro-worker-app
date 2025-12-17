@@ -668,11 +668,15 @@
 
 @push('scripts')
 <script>
+    // State for Global Client-Side Filter - Initialize at the TOP of the script block
+    let currentStepFilter = null; // 'not_started', 'saved', 'cancelled', 'cancelled_employer', 'step_ID', or null
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = @json($lastStepId);
 
     // --- Resolution Status & Note Functions ---
-    function updateResolutionStatus(employerId, status) {
+    // Make global for onclick
+    window.updateResolutionStatus = function(employerId, status) {
         fetch(`/production/registration/employer/${employerId}/resolution-status`, {
             method: 'POST',
             headers: {
@@ -685,9 +689,6 @@
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                // Instead of full reload, we could update UI locally, but status change changes text & color.
-                // For simplicity and to show spinner/success, reload is safest to ensure consistency.
-                // Or update button classes.
                 location.reload();
             } else {
                 Swal.fire('{{ __('Error') }}', '{{ __('Failed to update status') }}', 'error');
@@ -696,15 +697,23 @@
         .catch(err => Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error'));
     }
 
-    const noteModal = new bootstrap.Modal(document.getElementById('resolutionNoteModal'));
+    // Modal variable init inside DOMContentLoaded to ensure Bootstrap is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        const noteModal = new bootstrap.Modal(document.getElementById('resolutionNoteModal'));
 
-    function openResolutionNoteModal(employerId, currentNote) {
-        document.getElementById('noteEmployerId').value = employerId;
-        document.getElementById('resolutionNoteText').value = currentNote;
-        noteModal.show();
-    }
+        // Expose open function globally
+        window.openResolutionNoteModal = function(employerId, currentNote) {
+            document.getElementById('noteEmployerId').value = employerId;
+            document.getElementById('resolutionNoteText').value = currentNote;
+            noteModal.show();
+        }
 
-    function saveResolutionNote() {
+        // Attach modal instance to window if needed elsewhere, but mostly used in open function above.
+        window.noteModal = noteModal;
+    });
+
+
+    window.saveResolutionNote = function() {
         const employerId = document.getElementById('noteEmployerId').value;
         const note = document.getElementById('resolutionNoteText').value;
 
@@ -727,10 +736,7 @@
                     timer: 1000,
                     showConfirmButton: false
                 });
-                noteModal.hide();
-                // Update the onclick attribute in DOM to reflect new note so it persists without reload
-                // Find button
-                // This part is tricky because we need to escape the string properly for the onclick attribute.
+                window.noteModal.hide();
                 location.reload();
             } else {
                 Swal.fire('{{ __('Error') }}', '{{ __('Failed to save note') }}', 'error');
@@ -739,11 +745,9 @@
         .catch(err => Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error'));
     }
 
-    // State for Global Client-Side Filter
-    let currentStepFilter = null; // 'not_started', 'saved', 'cancelled', 'cancelled_employer', 'step_ID', or null
 
-    // Toggle Filter Function
-    function toggleFilter(filterKey) {
+    // Toggle Filter Function - Global
+    window.toggleFilter = function(filterKey) {
         // 1. Update State
         if (currentStepFilter === filterKey) {
             currentStepFilter = null; // Toggle OFF
@@ -759,8 +763,6 @@
 
         // 4. Recalculate Stats (Dynamic Counters)
         recalculateVisibleStats();
-
-        // CSS Counters handle sequence automatically!
     }
 
     function updateFilterUI() {
@@ -794,17 +796,10 @@
         // Handle 'cancelled_employer' specifically first
         if (currentStepFilter === 'cancelled_employer') {
             document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
-                 // We need to know if employer is cancelled.
-                 // We can check if it has the 'grayscale-mode' class or look for the 'Restoe Employer' button presence?
-                 // Better: Add a data attribute to employer card.
-                 // Since I cannot modify the PHP loop easily in this patch block without getting messy,
-                 // I'll rely on the class 'grayscale-mode' which is added in the view for cancelled employers.
                  const isCancelled = empCard.querySelector('.card').classList.contains('grayscale-mode');
 
                  if (isCancelled) {
                      empCard.classList.remove('d-none');
-                     // Show all its employees (even cancelled ones?)
-                     // Usually yes, if viewing cancelled employer.
                      empCard.querySelectorAll('.employee-card-wrapper').forEach(c => c.classList.remove('d-none'));
                  } else {
                      empCard.classList.add('d-none');
@@ -830,17 +825,11 @@
                     if (status !== 'registration_cancelled') show = false;
                 } else {
                     // Step Filter
-                    // Should exclude cancelled? usually yes.
                     if (status === 'registration_cancelled') show = false;
-                    // Check if highest step matches filter
                     if (highestStepId != currentStepFilter) show = false;
                 }
             } else {
-                // Default View: Hide Cancelled employees usually?
-                // The PHP controller returns them, but usually they clog the view.
-                // The current view displays them.
-                // If "Total" (No filter) is selected, we show everything active.
-                // But wait, the previous logic didn't hide cancelled explicitly unless filtered.
+                // Default View
             }
 
             if (show) {
@@ -853,12 +842,7 @@
 
         // Hide employers with no visible employees
         document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
-            // If employer is cancelled, we generally hide it in default view?
-            // The controller sorts them to bottom.
-            // If we are filtering by 'cancelled' employees, we might show active employers who have cancelled staff.
-
             const visibleEmployees = empCard.querySelectorAll('.employee-card-wrapper:not(.d-none)');
-            // Also check if the employer ITSELF is the target (for cancelled employer filter - handled above)
 
             if (currentStepFilter !== null) {
                 // Filter is active: Hide if no matches
@@ -891,9 +875,6 @@
         const visibleCards = document.querySelectorAll('.employee-card-wrapper:not(.d-none)');
 
         visibleCards.forEach(card => {
-            // Check Parent Visibility (for robustness against other filters/search)
-            // if (card.offsetParent === null) return; // Removed to allow counting in collapsed accordions
-
             const status = card.dataset.status;
             const isNotStarted = card.dataset.isNotStarted === 'true';
             const highestStepId = card.dataset.highestStepId;
@@ -1095,7 +1076,7 @@
         });
     });
 
-    function deleteStep(id) {
+    window.deleteStep = function(id) {
         // Use SweetAlert if available, else standard confirm
         Swal.fire({
             title: '{{ __('Delete Step?') }}',
@@ -1121,7 +1102,7 @@
         });
     }
 
-    function toggleEditStep(id) {
+    window.toggleEditStep = function(id) {
         const item = document.getElementById(`step-item-${id}`);
         item.querySelector('.step-display').classList.toggle('d-none');
         item.querySelector('.step-edit').classList.toggle('d-none');
@@ -1129,7 +1110,7 @@
         item.querySelector('.btn-save-step').classList.toggle('d-none');
     }
 
-    function saveStep(id) {
+    window.saveStep = function(id) {
         const item = document.getElementById(`step-item-${id}`);
         const newName = item.querySelector('.step-edit-input').value;
 
@@ -1153,7 +1134,7 @@
     }
 
     // --- Employee Actions (Updated for Immediate DOM Feedback & Stats) ---
-    function finalizeEmployee(id) {
+    window.finalizeEmployee = function(id) {
         Swal.fire({
             title: '{{ __('Save to Database?') }}',
             text: "{{ __('The employee will be marked as completed.') }}",
@@ -1169,42 +1150,23 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        // Update Stats (Server Stats might be outdated if we have client filter, better to recalc)
-                        // If we use server stats, it resets to global.
-                        // Let's accept server stats for the DB update, but then re-run our client recalc
-                        // to keep counters correct with filters.
-
-                        // DOM Update: Completed State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
-                            // Update Data Attribute for Client Filter
                             card.dataset.status = 'registration_completed';
                             card.dataset.isNotStarted = 'false';
-
-                            // 1. Change Card Style
-                            card.className = 'card bg-success bg-opacity-10 border-0 text-muted mb-3 employee-card-wrapper'; // Ensure wrapper class stays
-
-                            // 2. Hide/Show Buttons
+                            card.className = 'card bg-success bg-opacity-10 border-0 text-muted mb-3 employee-card-wrapper';
                             toggleElement(`btn-save-${id}`, false);
                             toggleElement(`btn-cancel-${id}`, false);
                             toggleElement(`btn-restore-${id}`, false);
                             toggleElement(`btn-undo-${id}`, true);
-
-                            // 3. Hide Checkbox & Steps Overlay
                             toggleElement(`checkbox-container-${id}`, false);
                             const infoContainer = document.getElementById(`info-container-${id}`);
                             if(infoContainer) infoContainer.classList.add('opacity-75', 'pointer-events-none');
-
                             const stepsContainer = document.getElementById(`steps-container-${id}`);
                             if(stepsContainer) stepsContainer.classList.add('opacity-75', 'pointer-events-none');
-
-                            // 4. Update Badges
                             toggleElement(`badge-completed-${id}`, true);
                             toggleElement(`badge-cancelled-${id}`, false);
-
                             Swal.fire('{{ __('Saved!') }}', '{{ __('Employee marked as completed.') }}', 'success');
-
-                            // Re-apply filters (hide if filtering by Pending/Not Started) and Recalc
                             applyFilters();
                             recalculateVisibleStats();
                         }
@@ -1214,7 +1176,7 @@
         });
     }
 
-    function restoreEmployeeState(id) {
+    window.restoreEmployeeState = function(id) {
         Swal.fire({
             title: '{{ __('Restore to Pending?') }}',
             text: "{{ __('This will move the employee back to the active list.') }}",
@@ -1230,48 +1192,27 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        // DOM Update: Active State
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
                             card.dataset.status = 'registration_pending';
-                            // Re-evaluate 'Not Started'
-                            // We need to check steps. If restored, steps are preserved.
-                            // If has steps, isNotStarted = false.
-                            // The easiest way is to trust the current UI state or server data.
-                            // But for immediate update:
-                            // If we restore, we assume previous step state is valid.
-                            // The card.dataset.highestStepId should be valid still.
                             const hasSteps = card.dataset.highestStepId && card.dataset.highestStepId !== '';
                             card.dataset.isNotStarted = hasSteps ? 'false' : 'true';
-
-                            // 1. Change Card Style (Reset)
                             card.className = 'card bg-white border shadow-sm mb-3 employee-card-wrapper';
-                            card.style.filter = ''; // Remove grayscale
-
-                            // 2. Hide/Show Buttons
+                            card.style.filter = '';
                             toggleElement(`btn-save-${id}`, true);
                             toggleElement(`btn-cancel-${id}`, true);
                             toggleElement(`btn-restore-${id}`, false);
                             toggleElement(`btn-undo-${id}`, false);
-
-                            // 3. Show Checkbox & Enable Steps
                             toggleElement(`checkbox-container-${id}`, true);
                             const infoContainer = document.getElementById(`info-container-${id}`);
                             if(infoContainer) infoContainer.classList.remove('opacity-75', 'pointer-events-none', 'opacity-50');
-
                             const stepsContainer = document.getElementById(`steps-container-${id}`);
                             if(stepsContainer) stepsContainer.classList.remove('opacity-75', 'pointer-events-none', 'opacity-50');
-
-                            // 4. Update Badges
                             toggleElement(`badge-completed-${id}`, false);
                             toggleElement(`badge-cancelled-${id}`, false);
-
-                            // Disable Steps Buttons? No, they should be enabled.
                             const stepsBtns = card.querySelectorAll('button[data-step-id]');
                             stepsBtns.forEach(btn => btn.disabled = false);
-
                             Swal.fire('{{ __('Restored!') }}', '{{ __('Employee is back to pending.') }}', 'success');
-
                             applyFilters();
                             recalculateVisibleStats();
                         }
@@ -1281,7 +1222,7 @@
         });
     }
 
-    function cancelEmployee(id) {
+    window.cancelEmployee = function(id) {
         Swal.fire({
             title: '{{ __('Cancel Registration?') }}',
             text: "{{ __('The employee card will be grayed out.') }}",
@@ -1301,32 +1242,21 @@
                         const card = document.getElementById(`employee-card-${id}`);
                         if(card) {
                             card.dataset.status = 'registration_cancelled';
-                            card.dataset.isNotStarted = 'false'; // Cancelled is not "Not Started" in our logic usually
-
-                            // 1. Change Card Style
+                            card.dataset.isNotStarted = 'false';
                             card.className = 'card bg-light border-0 text-secondary grayscale-mode mb-3 employee-card-wrapper';
                             card.style.filter = 'grayscale(100%)';
-
-                            // 2. Hide/Show Buttons
                             toggleElement(`btn-save-${id}`, false);
                             toggleElement(`btn-cancel-${id}`, false);
                             toggleElement(`btn-restore-${id}`, true);
                             toggleElement(`btn-undo-${id}`, false);
-
-                            // 3. Hide Checkbox & Steps Overlay
                             toggleElement(`checkbox-container-${id}`, false);
                             const infoContainer = document.getElementById(`info-container-${id}`);
                             if(infoContainer) infoContainer.classList.add('opacity-50', 'pointer-events-none');
-
                             const stepsContainer = document.getElementById(`steps-container-${id}`);
                             if(stepsContainer) stepsContainer.classList.add('opacity-50', 'pointer-events-none');
-
-                            // 4. Update Badges
                             toggleElement(`badge-completed-${id}`, false);
                             toggleElement(`badge-cancelled-${id}`, true);
-
                             Swal.fire('{{ __('Cancelled') }}', '{{ __('Registration cancelled.') }}', 'success');
-
                             applyFilters();
                             recalculateVisibleStats();
                         }
@@ -1336,7 +1266,7 @@
         });
     }
 
-    function cancelEmployer(id) {
+    window.cancelEmployer = function(id) {
         Swal.fire({
             title: '{{ __('Cancel Employer?') }}',
             text: "{{ __('This will seal the card and move it to the end. Active employees will also be cancelled.') }}",
@@ -1354,14 +1284,14 @@
                 .then(data => {
                     if(data.success) {
                         Swal.fire('{{ __('Cancelled') }}', '{{ __('Employer registration cancelled.') }}', 'success')
-                        .then(() => location.reload()); // Reload to handle sorting and complex UI changes
+                        .then(() => location.reload());
                     }
                 });
              }
         });
     }
 
-    function restoreEmployer(id) {
+    window.restoreEmployer = function(id) {
         Swal.fire({
             title: '{{ __('Restore Employer?') }}',
             text: "{{ __('This will restore the employer card and active employees.') }}",
@@ -1385,7 +1315,7 @@
         });
     }
 
-    function deleteEmployee(id) {
+    window.deleteEmployee = function(id) {
         Swal.fire({
             title: '{{ __('Delete Employee?') }}',
             text: "{{ __('This will move the employee to the trash.') }}",
@@ -1436,7 +1366,7 @@
     }
 
     // --- Fixed AJAX Toggle Step with Real-time Updates ---
-    function toggleStep(employeeId, stepId, completed) {
+    window.toggleStep = function(employeeId, stepId, completed) {
         // Find the card and button
         const card = document.getElementById(`employee-card-${employeeId}`);
         if (!card) return;
@@ -1504,28 +1434,12 @@
                 const card = document.getElementById(`employee-card-${employeeId}`);
 
                 // 2. Client Side State Update (Highest Step Logic)
-                // We need to fetch the highest step ID from the active buttons in the DOM to avoid complex server roundtrips for filtering,
-                // OR we trust the server logic.
-                // The server returns globalStats/employerStats but NOT the specific employee's new highest step ID explicitly in a simple way to update the DOM attr.
-                // However, we can deduce it from the DOM state.
-
-                // Get all active step buttons for this employee
                 const allButtons = card.querySelectorAll('button[data-step-id]');
                 let highestId = '';
-                // Since buttons are likely rendered in order, we can check the last active one?
-                // Or better, check the dataset.
-                // But the loop above renders them.
 
-                // Let's iterate and find the one with class btn-success/btn-primary (completed).
-                // Note: The click just happened, so DOM class is updated.
-                let maxOrder = -1;
                 allButtons.forEach((b, index) => {
                      // Check if completed (has specific classes)
                      if (b.classList.contains('text-white') && !b.classList.contains('bg-secondary')) {
-                         // It is completed.
-                         // We assume the steps are rendered in order.
-                         // But to be safe, we might need the step ID.
-                         // Let's just assume the last one found is the highest for now (if rendered in order).
                          highestId = b.dataset.stepId;
                      }
                 });
