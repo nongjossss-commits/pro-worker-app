@@ -669,7 +669,7 @@
 @push('scripts')
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const lastStepId = {{ $lastStepId ?? 'null' }};
+    const lastStepId = @json($lastStepId);
 
     // --- Resolution Status & Note Functions ---
     function updateResolutionStatus(employerId, status) {
