@@ -53,24 +53,24 @@
                 editInputHtml = `<input type="date" name="field_date_value" class="form-control form-control-sm mb-2" value="${field.field_value}">`;
             } else if(field.field_type === 'file') {
                  valueHtml = `
-                    <div class="d-flex align-items-center gap-2 mb-1 bg-white p-2 border rounded">
-                        <i class="bi bi-paperclip"></i>
-                        <a href="/storage/${field.file_path}" target="_blank" class="text-decoration-none text-truncate" style="max-width: 150px;">View File</a>
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-1 bg-white p-2 border rounded">
+                        <div class="d-flex align-items-center gap-2 text-truncate">
+                            <i class="bi bi-paperclip text-muted"></i>
+                            <span class="small text-secondary text-truncate" style="max-width: 150px;">Attachment</span>
+                        </div>
+                        <a href="/storage/${field.file_path}" target="_blank" class="btn btn-sm btn-success text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="View File">
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
                     </div>
-                    ${field.field_value ? `<div class="small text-muted fst-italic text-break">${field.field_value}</div>` : ''}
+                    ${field.field_value ? `<div class="small text-muted fst-italic text-break mt-1">${field.field_value}</div>` : ''}
                  `;
                  editInputHtml = `<input type="text" name="field_value" class="form-control form-control-sm mb-2" value="${field.field_value || ''}" placeholder="Update description...">`;
             }
 
             // Determine routes based on context
             const updateUrl = context === 'employer'
-                ? `/production/registration/employer-custom-fields/${field.id}` // Placeholder for update if implemented later, currently we only implemented store/delete for simplicity or reuse logic
+                ? `/production/registration/employer-custom-fields/${field.id}`
                 : `/production/registration/custom-fields/${field.id}`;
-
-            // NOTE: Update logic for employer fields is not fully implemented in controller yet (only store/delete).
-            // We'll hide the EDIT button for employer fields for now unless requested, or use the delete logic primarily.
-            // Actually, let's just use the delete logic for MVP as the user asked for "Add Field".
-            // Or reuse the existing route pattern if I add update method later.
 
             const deleteUrl = context === 'employer'
                 ? `/production/registration/employer-custom-fields/${field.id}`
@@ -81,9 +81,6 @@
             const editFormId = `edit-field-form-${field.id}`;
             const displayId = `display-field-${field.id}`;
 
-            // Hide Edit for Employer context for now as Controller doesn't have update method explicitly added yet (I added store/destroy).
-            // Actually, let's keep it simple.
-            // USER REQUEST: Enable Edit for Employer too.
             const showEdit = true;
 
             // For file type editing, we need to allow re-upload
@@ -173,5 +170,4 @@
 
         contentContainer.innerHTML = template;
     }
-</script>
 </script>
