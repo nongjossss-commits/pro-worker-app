@@ -38,6 +38,23 @@
         color: #6c757d; /* text-muted */
         opacity: 0.5;
     }
+
+    /* CSS Counters for Employees (Per Employer) */
+    .employee-list {
+        counter-reset: employee-counter;
+    }
+    .employee-card-wrapper:not(.d-none) {
+        counter-increment: employee-counter;
+    }
+    .employee-sequence-number::before {
+        content: counter(employee-counter);
+    }
+    .employee-sequence-number {
+        /* Ensure it doesn't shift when content changes */
+        min-width: 30px;
+        text-align: right;
+        font-weight: bold;
+    }
 </style>
 
 <div class="container-fluid">
