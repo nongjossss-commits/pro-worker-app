@@ -1377,7 +1377,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        Swal.fire('{{ __('Restored') }}', '{{ __('Employer restored.") }}', 'success')
+                        Swal.fire('{{ __('Restored') }}', '{{ __('Employer restored.') }}', 'success')
                         .then(() => location.reload());
                     }
                 });
