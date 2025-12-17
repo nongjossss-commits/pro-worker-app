@@ -294,10 +294,10 @@
                                 default => 'secondary'
                             };
                             $statusLabel = match($status) {
-                                'preparing' => 'Preparing',
-                                'waiting' => 'Waiting',
-                                'ready' => 'Ready',
-                                default => 'Preparing'
+                                'preparing' => __('Preparing'),
+                                'waiting' => __('Waiting'),
+                                'ready' => __('Ready'),
+                                default => __('Preparing')
                             };
                         @endphp
                         @can('edit-employees')
@@ -306,9 +306,9 @@
                                 {{ $statusLabel }}
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="statusDropdown{{ $employer->id }}">
-                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'preparing')"><span class="badge bg-secondary me-2">Preparing</span>Preparing</button></li>
-                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'waiting')"><span class="badge bg-warning me-2">Waiting</span>Waiting for Order</button></li>
-                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'ready')"><span class="badge bg-success me-2">Ready</span>Ready to Proceed</button></li>
+                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'preparing')"><span class="badge bg-secondary me-2">{{ __('Preparing') }}</span>{{ __('Preparing') }}</button></li>
+                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'waiting')"><span class="badge bg-warning me-2">{{ __('Waiting') }}</span>{{ __('Waiting for Order') }}</button></li>
+                                <li><button class="dropdown-item" onclick="updateResolutionStatus({{ $employer->id }}, 'ready')"><span class="badge bg-success me-2">{{ __('Ready') }}</span>{{ __('Ready to Proceed') }}</button></li>
                             </ul>
                         </div>
                         @else
@@ -319,7 +319,7 @@
                         <button class="btn btn-sm btn-outline-secondary border-0"
                                 data-note="{{ $employer->registration_resolution_note ?? '' }}"
                                 onclick="openResolutionNoteModal({{ $employer->id }}, this.getAttribute('data-note'))"
-                                title="Job Order / Notes">
+                                title="{{ __('Job Order / Notes') }}">
                             <i class="bi bi-file-text-fill"></i>
                         </button>
                     </div>
@@ -334,7 +334,7 @@
                             @can('edit-employees')
                             {{-- Select All for Employer --}}
                             <div class="form-check mb-0">
-                                <input class="form-check-input employer-select-all" type="checkbox" data-employer-id="{{ $employer->id }}" title="Select All for this Employer">
+                                <input class="form-check-input employer-select-all" type="checkbox" data-employer-id="{{ $employer->id }}" title="{{ __('Select All for this Employer') }}">
                             </div>
                             @endcan
 
@@ -344,7 +344,7 @@
                             </button>
 
                             {{-- Preview --}}
-                            <button class="btn btn-sm btn-outline-info btn-preview rounded-circle" data-model-type="employer" data-model-id="{{ $employer->id }}" title="Preview Employer Data">
+                            <button class="btn btn-sm btn-outline-info btn-preview rounded-circle" data-model-type="employer" data-model-id="{{ $employer->id }}" title="{{ __('Preview Employer Data') }}">
                                 <i class="bi bi-search"></i>
                             </button>
 
@@ -370,25 +370,25 @@
                                  {{-- Stats Badges (Fixed Widths for Alignment) --}}
                                  <div class="d-flex align-items-center gap-2 me-xl-3">
                                     {{-- Total --}}
-                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="Total Employees">
+                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="{{ __('Total Employees') }}">
                                         <i class="bi bi-people-fill text-muted"></i>
                                         <span class="fw-bold" id="employer-total-{{ $employer->id }}">{{ $employer->activeEmployeesCount ?? 0 }}</span>
-                                        <span class="text-muted small ms-1" style="font-size: 0.70rem;">TOTAL</span>
+                                        <span class="text-muted small ms-1" style="font-size: 0.70rem;">{{ __('TOTAL') }}</span>
                                     </span>
                                     {{-- Not Started --}}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 100px;" title="Pending">
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 100px;" title="{{ __('Pending') }}">
                                          <span class="fw-bold" id="employer-not-started-{{ $employer->id }}">{{ $employer->notStartedCount ?? 0 }}</span>
-                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">PENDING</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">{{ __('PENDING') }}</span>
                                     </span>
                                     {{-- Saved --}}
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="Saved">
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="{{ __('Saved') }}">
                                          <span class="fw-bold" id="employer-saved-{{ $employer->id }}">{{ $employer->savedCount ?? 0 }}</span>
-                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">SAVED</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">{{ __('SAVED') }}</span>
                                     </span>
                                     {{-- Cancelled --}}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 95px;" title="Cancelled">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 95px;" title="{{ __('Cancelled') }}">
                                         <span class="fw-bold" id="employer-cancelled-{{ $employer->id }}">{{ $employer->cancelledCount ?? 0 }}</span>
-                                        <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">CANCEL</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">{{ __('CANCEL') }}</span>
                                     </span>
                                  </div>
 
@@ -440,7 +440,7 @@
                             <div id="drawer-content-employer-{{ $employer->id }}" class="position-relative" style="min-height: 100px;">
                                 <div class="d-flex justify-content-center align-items-center h-100 py-3">
                                      <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                                     <span class="ms-2 small text-muted">Loading fields...</span>
+                                     <span class="ms-2 small text-muted">{{ __('Loading fields...') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -558,13 +558,13 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="editEmployeeModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit Employee</h5>
+                <h5 class="modal-title" id="editEmployeeModalLabel"><i class="bi bi-pencil-square me-2"></i>{{ __('Edit Employee') }}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body bg-light" id="editEmployeeModalBody">
                 <div class="d-flex justify-content-center align-items-center py-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
                     </div>
                 </div>
             </div>
@@ -577,20 +577,20 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>Manage Workflow Steps</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>{{ __('Manage Workflow Steps') }}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
                 {{-- Add New Step --}}
                 <form id="addStepForm" class="mb-4 p-3 bg-light rounded border">
-                    <label class="form-label fw-bold">Add New Step</label>
+                    <label class="form-label fw-bold">{{ __('Add New Step') }}</label>
                     <div class="d-flex gap-2 align-items-center">
-                        <input type="text" class="form-control" id="newStepName" placeholder="Step Name (e.g., Medical Checkup)" required>
-                        <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> Add</button>
+                        <input type="text" class="form-control" id="newStepName" placeholder="{{ __('Step Name (e.g., Medical Checkup)') }}" required>
+                        <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> {{ __('Add') }}</button>
                     </div>
                 </form>
 
-                <h6 class="fw-bold mb-3 text-secondary">Existing Steps</h6>
+                <h6 class="fw-bold mb-3 text-secondary">{{ __('Existing Steps') }}</h6>
                 <ul class="list-group list-group-flush" id="stepsList">
                     @foreach($steps as $step)
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3" id="step-item-{{ $step->id }}">
@@ -637,14 +637,14 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-file-text me-2"></i>Job Order / Note</h5>
+                <h5 class="modal-title"><i class="bi bi-file-text me-2"></i>{{ __('Job Order / Notes') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="resolutionNoteForm">
                     <input type="hidden" id="noteEmployerId">
                     <div class="mb-3">
-                        <label for="resolutionNoteText" class="form-label">Details / Instructions</label>
+                        <label for="resolutionNoteText" class="form-label">{{ __('Details / Instructions') }}</label>
                         <textarea class="form-control" id="resolutionNoteText" rows="6"
                             @cannot('edit-employees') readonly @endcannot
                         ></textarea>
@@ -652,9 +652,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                 @can('edit-employees')
-                <button type="button" class="btn btn-primary" onclick="saveResolutionNote()">Save Note</button>
+                <button type="button" class="btn btn-primary" onclick="saveResolutionNote()">{{ __('Save Note') }}</button>
                 @endcan
             </div>
         </div>
@@ -673,7 +673,7 @@
 
     // --- Resolution Status & Note Functions ---
     function updateResolutionStatus(employerId, status) {
-        fetch(`/admin/employer/${employerId}/resolution-status`, {
+        fetch(`/production/registration/employer/${employerId}/resolution-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -690,10 +690,10 @@
                 // Or update button classes.
                 location.reload();
             } else {
-                Swal.fire('Error', 'Failed to update status', 'error');
+                Swal.fire('{{ __('Error') }}', '{{ __('Failed to update status') }}', 'error');
             }
         })
-        .catch(err => Swal.fire('Error', 'Network error', 'error'));
+        .catch(err => Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error'));
     }
 
     const noteModal = new bootstrap.Modal(document.getElementById('resolutionNoteModal'));
@@ -708,7 +708,7 @@
         const employerId = document.getElementById('noteEmployerId').value;
         const note = document.getElementById('resolutionNoteText').value;
 
-        fetch(`/admin/employer/${employerId}/resolution-status`, {
+        fetch(`/production/registration/employer/${employerId}/resolution-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -722,8 +722,8 @@
             if(data.success) {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Saved',
-                    text: 'Note updated successfully',
+                    title: '{{ __('Saved!') }}',
+                    text: '{{ __('Note updated successfully') }}',
                     timer: 1000,
                     showConfirmButton: false
                 });
@@ -733,10 +733,10 @@
                 // This part is tricky because we need to escape the string properly for the onclick attribute.
                 location.reload();
             } else {
-                Swal.fire('Error', 'Failed to save note', 'error');
+                Swal.fire('{{ __('Error') }}', '{{ __('Failed to save note') }}', 'error');
             }
         })
-        .catch(err => Swal.fire('Error', 'Network error', 'error'));
+        .catch(err => Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error'));
     }
 
     // State for Global Client-Side Filter
@@ -1086,8 +1086,8 @@
             if(data.success) {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Step Created',
-                    text: 'New workflow step added successfully!',
+                    title: '{{ __('Step Created') }}',
+                    text: '{{ __('New workflow step added successfully!') }}',
                     timer: 1500,
                     showConfirmButton: false
                 }).then(() => location.reload());
@@ -1098,12 +1098,12 @@
     function deleteStep(id) {
         // Use SweetAlert if available, else standard confirm
         Swal.fire({
-            title: 'Delete Step?',
-            text: "This will remove this step from all employees.",
+            title: '{{ __('Delete Step?') }}',
+            text: "{{ __('This will remove this step from all employees.') }}",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: '{{ __('Yes, delete it!') }}'
         }).then((result) => {
             if (result.isConfirmed) {
                 fetch(`/production/registration/steps/${id}`, {
@@ -1113,7 +1113,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        Swal.fire('Deleted!', 'Step has been deleted.', 'success')
+                        Swal.fire('{{ __('Deleted!') }}', '{{ __('Step has been deleted.') }}', 'success')
                         .then(() => location.reload());
                     }
                 });
@@ -1143,8 +1143,8 @@
             if(data.success) {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Saved!',
-                    text: 'Step settings updated successfully.',
+                    title: '{{ __('Saved!') }}',
+                    text: '{{ __('Step settings updated successfully.') }}',
                     timer: 1500,
                     showConfirmButton: false
                 }).then(() => location.reload());
@@ -1155,11 +1155,11 @@
     // --- Employee Actions (Updated for Immediate DOM Feedback & Stats) ---
     function finalizeEmployee(id) {
         Swal.fire({
-            title: 'Save to Database?',
-            text: "The employee will be marked as completed.",
+            title: '{{ __('Save to Database?') }}',
+            text: "{{ __('The employee will be marked as completed.') }}",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, Save'
+            confirmButtonText: '{{ __('Yes, Save') }}'
         }).then((result) => {
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/finalize`, {
@@ -1202,7 +1202,7 @@
                             toggleElement(`badge-completed-${id}`, true);
                             toggleElement(`badge-cancelled-${id}`, false);
 
-                            Swal.fire('Saved!', 'Employee marked as completed.', 'success');
+                            Swal.fire('{{ __('Saved!') }}', '{{ __('Employee marked as completed.') }}', 'success');
 
                             // Re-apply filters (hide if filtering by Pending/Not Started) and Recalc
                             applyFilters();
@@ -1216,11 +1216,11 @@
 
     function restoreEmployeeState(id) {
         Swal.fire({
-            title: 'Restore to Pending?',
-            text: "This will move the employee back to the active list.",
+            title: '{{ __('Restore to Pending?') }}',
+            text: "{{ __('This will move the employee back to the active list.') }}",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, Restore'
+            confirmButtonText: '{{ __('Yes, Restore') }}'
         }).then((result) => {
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/restore`, {
@@ -1270,7 +1270,7 @@
                             const stepsBtns = card.querySelectorAll('button[data-step-id]');
                             stepsBtns.forEach(btn => btn.disabled = false);
 
-                            Swal.fire('Restored!', 'Employee is back to pending.', 'success');
+                            Swal.fire('{{ __('Restored!') }}', '{{ __('Employee is back to pending.') }}', 'success');
 
                             applyFilters();
                             recalculateVisibleStats();
@@ -1283,12 +1283,12 @@
 
     function cancelEmployee(id) {
         Swal.fire({
-            title: 'Cancel Registration?',
-            text: "The employee card will be grayed out.",
+            title: '{{ __('Cancel Registration?') }}',
+            text: "{{ __('The employee card will be grayed out.') }}",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, Cancel'
+            confirmButtonText: '{{ __('Yes, Cancel') }}'
         }).then((result) => {
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/cancel`, {
@@ -1325,7 +1325,7 @@
                             toggleElement(`badge-completed-${id}`, false);
                             toggleElement(`badge-cancelled-${id}`, true);
 
-                            Swal.fire('Cancelled', 'Registration cancelled.', 'success');
+                            Swal.fire('{{ __('Cancelled') }}', '{{ __('Registration cancelled.') }}', 'success');
 
                             applyFilters();
                             recalculateVisibleStats();
@@ -1338,12 +1338,12 @@
 
     function cancelEmployer(id) {
         Swal.fire({
-            title: '{{ __("Cancel Employer?") }}',
+            title: '{{ __('Cancel Employer?') }}',
             text: "{{ __('This will seal the card and move it to the end. Active employees will also be cancelled.') }}",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            confirmButtonText: '{{ __("Yes, Cancel Employer") }}'
+            confirmButtonText: '{{ __('Yes, Cancel Employer') }}'
         }).then((result) => {
              if (result.isConfirmed) {
                 fetch(`/production/registration/employer/${id}/cancel`, {
@@ -1353,7 +1353,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        Swal.fire('{{ __("Cancelled") }}', '{{ __("Employer registration cancelled.") }}', 'success')
+                        Swal.fire('{{ __('Cancelled') }}', '{{ __('Employer registration cancelled.') }}', 'success')
                         .then(() => location.reload()); // Reload to handle sorting and complex UI changes
                     }
                 });
@@ -1363,11 +1363,11 @@
 
     function restoreEmployer(id) {
         Swal.fire({
-            title: '{{ __("Restore Employer?") }}',
+            title: '{{ __('Restore Employer?') }}',
             text: "{{ __('This will restore the employer card and active employees.') }}",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: '{{ __("Yes, Restore") }}'
+            confirmButtonText: '{{ __('Yes, Restore') }}'
         }).then((result) => {
              if (result.isConfirmed) {
                 fetch(`/production/registration/employer/${id}/restore`, {
@@ -1377,7 +1377,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        Swal.fire('{{ __("Restored") }}', '{{ __("Employer restored.") }}', 'success')
+                        Swal.fire('{{ __('Restored') }}', '{{ __('Employer restored.") }}', 'success')
                         .then(() => location.reload());
                     }
                 });
@@ -1387,12 +1387,12 @@
 
     function deleteEmployee(id) {
         Swal.fire({
-            title: 'Delete Employee?',
-            text: "This will move the employee to the trash.",
+            title: '{{ __('Delete Employee?') }}',
+            text: "{{ __('This will move the employee to the trash.') }}",
             icon: 'error',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            confirmButtonText: 'Yes, Delete'
+            confirmButtonText: '{{ __('Yes, Delete') }}'
         }).then((result) => {
              if (result.isConfirmed) {
                 fetch(`/production/registration/${id}/destroy`, {
@@ -1415,12 +1415,12 @@
                                 recalculateVisibleStats(); // Update stats after removal
                             }, 500);
                         }
-                        Swal.fire('Deleted!', 'Employee has been deleted.', 'success');
+                        Swal.fire('{{ __('Deleted!') }}', '{{ __('Employee has been deleted.') }}', 'success');
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    Swal.fire('Error', 'Could not delete employee. Check console.', 'error');
+                    Swal.fire('{{ __('Error') }}', '{{ __('Could not delete employee. Check console.') }}', 'error');
                 });
              }
         });
@@ -1544,9 +1544,9 @@
         .catch(error => {
             console.error('Error:', error);
             if(typeof showToast === 'function') {
-                showToast('Failed to update progress: ' + error.message, 'danger');
+                showToast('{{ __('Failed to update progress: ') }}' + error.message, 'danger');
             } else {
-                alert('Failed: ' + error.message);
+                alert('{{ __('Failed: ') }}' + error.message);
             }
 
             // Revert on failure
