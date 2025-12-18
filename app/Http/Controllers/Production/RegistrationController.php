@@ -46,19 +46,7 @@ class RegistrationController extends Controller
 
         // Apply Search (Same logic as before)
         if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $employeeQuery->where(function($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%")
-                  ->orWhereHas('employer', function($q2) use ($search) {
-                      $q2->where('employerNameTh', 'like', "%{$search}%")
-                         ->orWhere('employerNameEn', 'like', "%{$search}%")
-                         ->orWhereHas('jobOwner', function($q3) use ($search) {
-                             $q3->where('name', 'like', "%{$search}%");
-                         });
-                  });
-            });
+            $this->applySearchToQuery($employeeQuery, $request->search);
         }
 
         // Execute Lightweight Query
@@ -264,31 +252,7 @@ class RegistrationController extends Controller
 
         // Apply Search (if global search is active)
         if ($request->has('search') && $request->search) {
-            $search = $request->search;
-
-            // Check if search matches Employer Name (TH/EN) or Job Owner
-            // Note: We use case-insensitive check to match 'like' query behavior broadly
-            $employerMatches = false;
-            if (stripos($employer->employerNameTh, $search) !== false ||
-                stripos($employer->employerNameEn, $search) !== false) {
-                $employerMatches = true;
-            }
-
-            if (!$employerMatches && $employer->jobOwner && stripos($employer->jobOwner->name, $search) !== false) {
-                $employerMatches = true;
-            }
-
-            if ($employerMatches) {
-                // If the employer itself matches the search term, we do NOT filter employees by name.
-                // We show ALL employees for this employer (subject to other status filters above).
-            } else {
-                // Employer does not match, so user is searching for specific employee
-                $query->where(function($q) use ($search) {
-                    $q->where('employeeNameTh', 'like', "%{$search}%")
-                      ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                      ->orWhere('employeePassport', 'like', "%{$search}%");
-                });
-            }
+            $this->applyEmployerSearchToQuery($query, $employer, $request->search);
         }
 
         // Apply Filter
@@ -405,7 +369,7 @@ class RegistrationController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'stats' => $this->getStats($employee->employer_id)
+                'stats' => $this->getStats($employee->employer_id, $request)
             ]);
         }
         return back()->with('success', 'Employee saved to database.');
@@ -425,7 +389,7 @@ class RegistrationController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'stats' => $this->getStats($employee->employer_id)
+                'stats' => $this->getStats($employee->employer_id, $request)
             ]);
         }
         return back()->with('success', 'Employee registration cancelled.');
@@ -445,7 +409,7 @@ class RegistrationController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'stats' => $this->getStats($employee->employer_id)
+                'stats' => $this->getStats($employee->employer_id, $request)
             ]);
         }
         return back()->with('success', 'Employee restored to pending.');
@@ -466,7 +430,7 @@ class RegistrationController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'stats' => $this->getStats($employerId)
+                'stats' => $this->getStats($employerId, $request)
             ]);
         }
         return back()->with('success', 'Employee deleted.');
@@ -767,6 +731,10 @@ class RegistrationController extends Controller
                 $allQuery->withoutGlobalScopes()->whereNull('deleted_at');
             }
 
+            if ($request->has('search') && $request->search) {
+                $this->applySearchToQuery($allQuery, $request->search);
+            }
+
             $allEmployees = $allQuery->whereIn('status', ['registration_pending', 'registration_completed'])
                                     ->with('registrationSteps')
                                     ->get();
@@ -797,12 +765,24 @@ class RegistrationController extends Controller
                 $empQuery->withoutGlobalScopes()->whereNull('deleted_at');
             }
 
-            $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $employerEmployees = $empQuery->where('employer_id', $employee->employer_id)
+            $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
                                         ->whereIn('status', ['registration_pending', 'registration_completed'])
-                                        ->with('registrationSteps')
-                                        ->get();
+                                        ->with('registrationSteps');
 
+            if ($request->has('search') && $request->search) {
+                 $employer = $employee->employer;
+                 // If the employee relation is not loaded or null, fetch it
+                 if (!$employer) {
+                     $employer = Employer::find($employee->employer_id);
+                 }
+                 if ($employer) {
+                     $this->applyEmployerSearchToQuery($employerEmployeesQuery, $employer, $request->search);
+                 }
+            }
+
+            $employerEmployees = $employerEmployeesQuery->get();
+
+            $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
             $employerNotStarted = 0;
 
             foreach ($employerEmployees as $emp) {
@@ -945,7 +925,34 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Update a custom field for an EMPLOYER.
+     * Update employer registration resolution status and note.
+     */
+    public function updateResolutionStatus(Request $request, Employer $employer)
+    {
+        if (!auth()->user()->can('edit-employees')) { // Assuming 'edit-employees' or similar is enough
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'nullable|in:preparing,waiting,ready',
+            'note' => 'nullable|string',
+        ]);
+
+        $data = [];
+        if ($request->has('status')) {
+            $data['registration_resolution_status'] = $validated['status'];
+        }
+        if ($request->has('note')) {
+            $data['registration_resolution_note'] = $validated['note'];
+        }
+
+        $employer->update($data);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Update employer registration custom field.
      */
     public function updateEmployerCustomField(Request $request, ProductionCustomField $field)
     {
@@ -1039,39 +1046,13 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Update employer registration resolution status and note.
-     */
-    public function updateResolutionStatus(Request $request, Employer $employer)
-    {
-        if (!auth()->user()->can('edit-employees')) { // Assuming 'edit-employees' or similar is enough
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'status' => 'nullable|in:preparing,waiting,ready',
-            'note' => 'nullable|string',
-        ]);
-
-        $data = [];
-        if ($request->has('status')) {
-            $data['registration_resolution_status'] = $validated['status'];
-        }
-        if ($request->has('note')) {
-            $data['registration_resolution_note'] = $validated['note'];
-        }
-
-        $employer->update($data);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
      * Calculate global and employer-specific stats.
      *
      * @param int|null $employerId
+     * @param Request $request
      * @return array
      */
-    private function getStats($employerId = null)
+    private function getStats($employerId = null, Request $request = null)
     {
         // Define relevant statuses
         $activeStatuses = ['registration_pending', 'registration_completed'];
@@ -1084,6 +1065,10 @@ class RegistrationController extends Controller
         // --- GLOBAL STATS ---
         // Use standard query to respect any relevant scopes (like tenancy)
         $globalQuery = Employee::query();
+
+        if ($request && $request->has('search') && $request->search) {
+            $this->applySearchToQuery($globalQuery, $request->search);
+        }
 
         // 1. Total Employees (Active)
         $globalTotal = (clone $globalQuery)->whereIn('status', $activeStatuses)->count();
@@ -1122,6 +1107,13 @@ class RegistrationController extends Controller
         if ($employerId) {
             $empQuery = Employee::query()->where('employer_id', $employerId);
 
+            if ($request && $request->has('search') && $request->search) {
+                 $employer = Employer::find($employerId);
+                 if ($employer) {
+                     $this->applyEmployerSearchToQuery($empQuery, $employer, $request->search);
+                 }
+            }
+
             $empTotal = (clone $empQuery)->whereIn('status', $activeStatuses)->count();
 
             $empNotStarted = 0;
@@ -1146,5 +1138,53 @@ class RegistrationController extends Controller
         }
 
         return $stats;
+    }
+
+    /**
+     * Apply Search Filter to Global Query
+     */
+    private function applySearchToQuery($query, $search)
+    {
+        return $query->where(function($q) use ($search) {
+            $q->where('employeeNameTh', 'like', "%{$search}%")
+              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+              ->orWhere('employeePassport', 'like', "%{$search}%")
+              ->orWhereHas('employer', function($q2) use ($search) {
+                  $q2->where('employerNameTh', 'like', "%{$search}%")
+                     ->orWhere('employerNameEn', 'like', "%{$search}%")
+                     ->orWhereHas('jobOwner', function($q3) use ($search) {
+                         $q3->where('name', 'like', "%{$search}%");
+                     });
+              });
+        });
+    }
+
+    /**
+     * Apply Search Filter to Specific Employer's Employees
+     */
+    private function applyEmployerSearchToQuery($query, $employer, $search)
+    {
+        $employerMatches = false;
+        if (stripos($employer->employerNameTh, $search) !== false ||
+            stripos($employer->employerNameEn, $search) !== false) {
+            $employerMatches = true;
+        }
+
+        if (!$employerMatches && $employer->jobOwner && stripos($employer->jobOwner->name, $search) !== false) {
+            $employerMatches = true;
+        }
+
+        if ($employerMatches) {
+            // If the employer itself matches the search term, we do NOT filter employees by name.
+            // We show ALL employees for this employer (subject to other status filters).
+            return $query;
+        } else {
+            // Employer does not match, so user is searching for specific employee
+            return $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
     }
 }

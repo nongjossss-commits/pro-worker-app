@@ -1084,7 +1084,7 @@
             confirmButtonText: '{{ __('Yes, Save') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/finalize`, {
+                fetch(`/production/registration/${id}/finalize` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -1127,7 +1127,7 @@
             confirmButtonText: '{{ __('Yes, Restore') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/restore`, {
+                fetch(`/production/registration/${id}/restore` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -1175,7 +1175,7 @@
             confirmButtonText: '{{ __('Yes, Cancel') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/cancel`, {
+                fetch(`/production/registration/${id}/cancel` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -1220,7 +1220,7 @@
             confirmButtonText: '{{ __('Yes, Cancel Employer') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/employer/${id}/cancel`, {
+                fetch(`/production/registration/employer/${id}/cancel` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -1244,7 +1244,7 @@
             confirmButtonText: '{{ __('Yes, Restore') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/employer/${id}/restore`, {
+                fetch(`/production/registration/employer/${id}/restore` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -1269,7 +1269,7 @@
             confirmButtonText: '{{ __('Yes, Delete') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/registration/${id}/destroy`, {
+                fetch(`/production/registration/${id}/destroy` + window.location.search, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -1350,7 +1350,7 @@
             }
         }
 
-        fetch(`/production/registration/progress/${employeeId}`, {
+        fetch(`/production/registration/progress/${employeeId}` + window.location.search, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ step_id: stepId, completed: completed })
