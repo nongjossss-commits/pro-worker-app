@@ -729,6 +729,9 @@
             container.innerHTML = html;
             window.loadedEmployers[employerId] = true;
             applyFilters(); // Re-apply client-side filters on newly loaded content
+            if (window.refreshGlobalSelectionUI) {
+                window.refreshGlobalSelectionUI();
+            }
         })
         .catch(err => {
             container.innerHTML = `<div class="text-danger p-3">Failed to load employees. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
