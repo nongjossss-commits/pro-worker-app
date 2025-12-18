@@ -186,7 +186,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4 mb-3"><label class="form-label">เลข Name List</label><input type="text" class="form-control" x-model="newEmployeeForm.name_list_number"></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">เลข RA จากระบบ outsource</label><input type="text" class="form-control" x-model="newEmployeeForm.name_list_number"></div>
                     <div class="col-md-4 mb-3"><label class="form-label">เลขที่คำขอ</label><input type="text" class="form-control" x-model="newEmployeeForm.request_number"></div>
                     <div class="col-md-4 mb-3"><label class="form-label">เลขประจำตัว</label><input type="text" class="form-control" x-model="newEmployeeForm.employee_id_number"></div>
                     <div class="col-md-4 mb-3"><label class="form-label">เลขประจำตัวผู้เสียภาษี</label><input type="text" class="form-control" x-model="newEmployeeForm.tax_id_number"></div>

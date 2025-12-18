@@ -251,7 +251,7 @@
         </div>
     </div>
     <div class="row">
-            <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">เลข Name List
+            <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">เลข RA จากระบบ outsource
                 @if(isset($missingFields) && in_array('name_list_number', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label><input type="text" class="form-control" id="name_list_number" name="name_list_number" value="{{ old('name_list_number', $employee->name_list_number) }}"></div>
             <div class="col-md-4 mb-3"><label for="request_number" class="form-label">เลขที่คำขอ

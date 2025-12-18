@@ -221,7 +221,7 @@
     </div>
 </div>
 <div class="row">
-        <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">เลข Name List</label><input type="text" class="form-control" id="name_list_number" name="name_list_number" value="{{ old('name_list_number') }}"></div>
+            <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">เลข RA จากระบบ outsource</label><input type="text" class="form-control" id="name_list_number" name="name_list_number" value="{{ old('name_list_number') }}"></div>
         <div class="col-md-4 mb-3"><label for="request_number" class="form-label">เลขที่คำขอ</label><input type="text" class="form-control" id="request_number" name="request_number" value="{{ old('request_number') }}"></div>
         <div class="col-md-4 mb-3"><label for="employee_id_number" class="form-label">เลขประจำตัว</label><input type="text" class="form-control" id="employee_id_number" name="employee_id_number" value="{{ old('employee_id_number') }}"></div>
         <div class="col-md-4 mb-3"><label for="tax_id_number" class="form-label">เลขประจำตัวผู้เสียภาษี</label><input type="text" class="form-control" id="tax_id_number" name="tax_id_number" value="{{ old('tax_id_number') }}"></div>
