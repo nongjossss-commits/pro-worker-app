@@ -3,6 +3,7 @@ import './bootstrap';
 import './employment-history.js';
 import './terminate-employee.js';
 import './address-handler.js';
+import './enable-text-selection.js';
 
 import Alpine from 'alpinejs';
 
