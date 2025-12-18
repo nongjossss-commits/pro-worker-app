@@ -742,56 +742,6 @@
                 if (btn) btn.disabled = false;
             }
         }
-
-        // --- Event Delegation for Dynamic Checkboxes (AJAX Loaded) ---
-        // This is crucial because the global listener in app.blade.php uses static binding
-        // which misses elements loaded via fetchEmployees()
-        document.body.addEventListener('change', function(e) {
-            if (e.target.classList.contains('employee-checkbox')) {
-                const cb = e.target;
-
-                // Helper to construct data object (matching global script expectation)
-                const data = {
-                    id: cb.value,
-                    employer_id: cb.dataset.employerId || '',
-                    name_th: cb.dataset.nameTh || '',
-                    name_en: cb.dataset.nameEn || '',
-                    photo: cb.dataset.photo || '',
-                    employer_name: cb.dataset.employerName || ''
-                };
-
-                // Manually invoke global storage helpers
-                if (window.addItems && window.removeItemsByIds) {
-                    if (cb.checked) {
-                        // Add single item
-                        const current = window.getGlobalSelectedData();
-                        // Prevent duplicates
-                        if (!current.find(i => String(i.id) === String(data.id))) {
-                            window.setGlobalSelectedData([...current, data]);
-                        }
-                    } else {
-                        // Remove single item
-                        window.removeItemsByIds([data.id]);
-                    }
-                }
-
-                // Manually trigger UI update locally since we can't easily call the private updateUI() from app.blade.php
-                // Note: window.setGlobalSelectedData calls updateUI() internally IF it's exposed?
-                // Actually app.blade.php defines updateUI inside DOMContentLoaded, so it's private.
-                // However, setGlobalSelectedData IS exposed and it calls updateUI inside the closure?
-                // No, setGlobalSelectedData is defined inside the closure in app.blade.php.
-                // Wait, in app.blade.php: window.setGlobalSelectedData = function... { ... updateUI(); }
-                // So calling window.setGlobalSelectedData WILL trigger the global updateUI!
-                // BUT, updateUI only updates elements it knows about (static list).
-                // So we might need to manually update our local Bulk Bar if the global one fails to detect changes?
-                // Actually, the global updateUI updates 'bulkActionBar' by ID. If we use the same ID, it should work!
-
-                // Let's verify: In app.blade.php, `const bulkActionBar = document.querySelector('.bulk-action-bar');`
-                // This runs on DOMContentLoaded. If our bar exists then, it works.
-                // So simply calling window.setGlobalSelectedData should be enough to update the BAR.
-                // However, we must ensure we don't double-bind if the global script somehow *did* catch it (unlikely for AJAX).
-            }
-        });
     });
 
     // --- Resolution Status & Note Functions ---
