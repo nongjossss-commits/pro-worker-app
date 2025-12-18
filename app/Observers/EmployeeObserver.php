@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Employee;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 class EmployeeObserver
 {
@@ -33,7 +34,12 @@ class EmployeeObserver
         if ($employee->isDirty($fieldsToMonitor)) {
             // By passing the employee's ID, we can run a much faster, targeted check
             // instead of re-checking every single employee in the system.
-            Artisan::queue('app:check-expiries', ['employee_id' => $employee->id]);
+            // Wrap in try-catch to prevent observer failure from blocking the update
+            try {
+                Artisan::queue('app:check-expiries', ['employee_id' => $employee->id]);
+            } catch (\Throwable $e) {
+                Log::error("Failed to queue check-expiries for employee {$employee->id}: " . $e->getMessage());
+            }
         }
     }
 }
