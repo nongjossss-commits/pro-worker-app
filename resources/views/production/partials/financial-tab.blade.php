@@ -162,7 +162,7 @@
                 </div>
 
                 <!-- Save Pricing Button -->
-                <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSaving || (pricingMode === 'per_head' && tierCountSum !== employeeCount)">
+                <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSavingSettings || (pricingMode === 'per_head' && tierCountSum !== employeeCount)">
                     <i class="bi bi-save me-1"></i> {{ __('Save Pricing Settings') }}
                 </button>
             </div>
@@ -509,7 +509,7 @@
                             <label class="form-label small">Notes</label>
                             <textarea class="form-control form-control-sm" x-model="newTransaction.notes" rows="2"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100" :disabled="isSaving">Save</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100" :disabled="isSavingTransaction">Save</button>
                     </form>
                 </div>
             </div>
