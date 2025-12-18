@@ -74,6 +74,18 @@ class ProcessDownload implements ShouldQueue
                 if (!file_exists($fontPath)) {
                     mkdir($fontPath, 0755, true);
                 }
+
+                // Ensure standard fonts exist in the custom font path
+                // This prevents "No such file or directory" errors when FPDF tries to load core fonts
+                $standardFonts = ['helvetica.php', 'helveticab.php', 'helveticai.php', 'helveticabi.php', 'courier.php', 'times.php'];
+                $vendorFontPath = base_path('vendor/setasign/fpdf/font/');
+
+                foreach ($standardFonts as $fontFile) {
+                    if (!file_exists($fontPath . $fontFile) && file_exists($vendorFontPath . $fontFile)) {
+                        @copy($vendorFontPath . $fontFile, $fontPath . $fontFile);
+                    }
+                }
+
                 define('FPDF_FONTPATH', $fontPath);
             }
 
