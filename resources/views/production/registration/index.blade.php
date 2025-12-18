@@ -495,10 +495,10 @@
                 <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $employer->id }}">
                     <div class="card-body bg-light p-4">
                          <div class="employee-list" id="employee-list-{{ $employer->id }}">
-                            @foreach($employer->employees as $employee)
-                                {{-- Filter out cancelled if needed, or show them differently. The controller returns them. --}}
-                                @include('production.registration._employee_card', ['employee' => $employee, 'steps' => $steps, 'loop' => $loop])
-                            @endforeach
+                            <div class="d-flex justify-content-center align-items-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <span class="ms-2 small text-muted">Loading employees...</span>
+                            </div>
                          </div>
                     </div>
                 </div>
@@ -668,11 +668,63 @@
 
 @push('scripts')
 <script>
-    // State for Global Client-Side Filter - Initialize at the TOP of the script block
-    let currentStepFilter = null; // 'not_started', 'saved', 'cancelled', 'cancelled_employer', 'step_ID', or null
-
+    // State for Global Server-Side Filter
+    const currentStepFilter = @json(request('filter'));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = @json($lastStepId);
+
+    // --- Lazy Loading Logic ---
+    window.loadedEmployers = {};
+
+    window.loadEmployees = function(employerId) {
+        if (window.loadedEmployers[employerId]) return;
+
+        const container = document.getElementById(`employee-list-${employerId}`);
+        // Base URL for the new AJAX route
+        const baseUrl = `{{ route('production.registration.index') }}/employer/${employerId}/employees`; // Using manual construction to avoid JS route issues
+
+        // Append current search/filter params
+        const url = new URL(baseUrl, window.location.origin);
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.forEach((value, key) => url.searchParams.append(key, value));
+
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+            container.innerHTML = html;
+            window.loadedEmployers[employerId] = true;
+        })
+        .catch(err => {
+            container.innerHTML = `<div class="text-danger p-3">Failed to load employees. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
+            console.error(err);
+        });
+    }
+
+    // Listen for Accordion Expand
+    document.addEventListener('DOMContentLoaded', function() {
+        const accordion = document.getElementById('employersAccordion');
+        if (accordion) {
+            accordion.addEventListener('show.bs.collapse', function (e) {
+                if (e.target.classList.contains('accordion-collapse')) {
+                    // ID is collapse{employerId}
+                    const employerId = e.target.id.replace('collapse', '');
+                    loadEmployees(employerId);
+                }
+            });
+        }
+
+        // Initial Filter UI State (Server-Side)
+        if (currentStepFilter) {
+             if (currentStepFilter === 'not_started') document.getElementById('filter-not-started')?.classList.add('filter-active');
+             else if (currentStepFilter === 'saved') document.getElementById('filter-saved')?.classList.add('filter-active');
+             else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
+             else if (currentStepFilter === 'cancelled_employer') document.getElementById('filter-cancelled-employer')?.classList.add('filter-active');
+             else {
+                 const pill = document.getElementById(`filter-step-${currentStepFilter}`);
+                 if (pill) pill.classList.add('filter-active');
+             }
+        }
+    });
 
     // --- Resolution Status & Note Functions ---
     // Make global for onclick
@@ -746,247 +798,24 @@
     }
 
 
-    // Toggle Filter Function - Global
+    // Toggle Filter Function - Global (Server-Side)
     window.toggleFilter = function(filterKey) {
-        // 1. Update State
-        if (currentStepFilter === filterKey) {
-            currentStepFilter = null; // Toggle OFF
+        const url = new URL(window.location.href);
+        const currentFilter = url.searchParams.get('filter');
+
+        if (currentFilter == filterKey) {
+            url.searchParams.delete('filter'); // Toggle OFF
         } else {
-            currentStepFilter = filterKey; // Toggle ON
+            url.searchParams.set('filter', filterKey); // Toggle ON
         }
 
-        // 2. Update UI (Visual Active State)
-        updateFilterUI();
-
-        // 3. Apply Filter (Show/Hide Rows)
-        applyFilters();
-
-        // 4. Recalculate Stats (Dynamic Counters)
-        recalculateVisibleStats();
+        window.location.href = url.toString();
     }
 
-    function updateFilterUI() {
-        // Reset all
-        document.querySelectorAll('.filter-card, .filter-pill').forEach(el => el.classList.remove('filter-active'));
-
-        if (!currentStepFilter) return;
-
-        if (currentStepFilter === 'not_started') {
-            document.getElementById('filter-not-started').classList.add('filter-active');
-        } else if (currentStepFilter === 'saved') {
-            document.getElementById('filter-saved').classList.add('filter-active');
-        } else if (currentStepFilter === 'cancelled') {
-            document.getElementById('filter-cancelled').classList.add('filter-active');
-        } else if (currentStepFilter === 'cancelled_employer') {
-            document.getElementById('filter-cancelled-employer').classList.add('filter-active');
-        } else {
-            // It's a step ID
-            const pill = document.getElementById(`filter-step-${currentStepFilter}`);
-            if (pill) pill.classList.add('filter-active');
-        }
-    }
-
-    function applyFilters() {
-        const cards = document.querySelectorAll('.employee-card-wrapper');
-        let visibleCount = 0;
-
-        // Reset all employers to visible first (logic below handles hiding them)
-        document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => empCard.classList.remove('d-none'));
-
-        // Handle 'cancelled_employer' specifically first
-        if (currentStepFilter === 'cancelled_employer') {
-            document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
-                 const isCancelled = empCard.querySelector('.card').classList.contains('grayscale-mode');
-
-                 if (isCancelled) {
-                     empCard.classList.remove('d-none');
-                     empCard.querySelectorAll('.employee-card-wrapper').forEach(c => c.classList.remove('d-none'));
-                 } else {
-                     empCard.classList.add('d-none');
-                 }
-            });
-            return; // Exit early for this special filter
-        }
-
-        // Standard Employee Filters
-        cards.forEach(card => {
-            const highestStepId = card.dataset.highestStepId;
-            const isNotStarted = card.dataset.isNotStarted === 'true';
-            const status = card.dataset.status;
-
-            let show = true;
-
-            if (currentStepFilter) {
-                if (currentStepFilter === 'not_started') {
-                    if (!isNotStarted || status === 'registration_cancelled') show = false;
-                } else if (currentStepFilter === 'saved') {
-                    if (status !== 'registration_completed') show = false;
-                } else if (currentStepFilter === 'cancelled') {
-                    if (status !== 'registration_cancelled') show = false;
-                } else {
-                    // Step Filter
-                    if (status === 'registration_cancelled') show = false;
-                    if (highestStepId != currentStepFilter) show = false;
-                }
-            } else {
-                // Default View
-            }
-
-            if (show) {
-                card.classList.remove('d-none');
-                visibleCount++;
-            } else {
-                card.classList.add('d-none');
-            }
-        });
-
-        // Hide employers with no visible employees
-        document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
-            const visibleEmployees = empCard.querySelectorAll('.employee-card-wrapper:not(.d-none)');
-
-            if (currentStepFilter !== null) {
-                // Filter is active: Hide if no matches
-                if (visibleEmployees.length === 0) {
-                    empCard.classList.add('d-none');
-                } else {
-                    empCard.classList.remove('d-none');
-                }
-            } else {
-                // No filter active: Always show employer
-                empCard.classList.remove('d-none');
-            }
-        });
-    }
-
-    function recalculateVisibleStats() {
-        // Reset Global Counters
-        let globalTotal = 0;
-        let globalNotStarted = 0;
-        let globalCancelled = 0;
-        let globalSaved = 0;
-
-        // Track global step counts for the filter pills
-        const globalStepCounts = {};
-
-        // Determine all employers present
-        const employersMap = {}; // empId -> { total, notStarted, cancelled, saved, stepCounts: {} }
-
-        // Actually, we need to iterate through VISIBLE cards for the stats.
-        const visibleCards = document.querySelectorAll('.employee-card-wrapper:not(.d-none)');
-
-        visibleCards.forEach(card => {
-            const status = card.dataset.status;
-            const isNotStarted = card.dataset.isNotStarted === 'true';
-            const highestStepId = card.dataset.highestStepId;
-            const empId = card.dataset.employerId;
-
-            // Init Employer Stats if new
-            if (!employersMap[empId]) {
-                employersMap[empId] = { total: 0, notStarted: 0, cancelled: 0, saved: 0, stepCounts: {} };
-            }
-            const empStats = employersMap[empId];
-
-            // 1. Total (Active)
-            if (status !== 'registration_cancelled') {
-                globalTotal++;
-                empStats.total++;
-            }
-
-            // 2. Not Started
-            if (isNotStarted) {
-                globalNotStarted++;
-                empStats.notStarted++;
-            }
-
-            // 3. Cancelled
-            if (status === 'registration_cancelled') {
-                globalCancelled++;
-                empStats.cancelled++;
-            }
-
-            // 4. Saved
-            if (status === 'registration_completed') {
-                globalSaved++;
-                empStats.saved++;
-            }
-
-            // 5. Step Counts (for Badge Updates)
-            if (highestStepId && highestStepId !== 'none' && highestStepId !== '') {
-                 // Employer
-                 if (!empStats.stepCounts[highestStepId]) empStats.stepCounts[highestStepId] = 0;
-                 empStats.stepCounts[highestStepId]++;
-
-                 // Global
-                 if (!globalStepCounts[highestStepId]) globalStepCounts[highestStepId] = 0;
-                 globalStepCounts[highestStepId]++;
-            }
-        });
-
-        // Update Global UI
-        updateText('global-total-count', globalTotal);
-        updateText('global-not-started-count', globalNotStarted);
-        updateText('global-cancelled-count', globalCancelled);
-        updateText('global-saved-count', globalSaved);
-        // Employers count (visible employers)
-        updateText('global-employers-count', Object.keys(employersMap).length);
-
-        // Update Global Workflow Badges
-        document.querySelectorAll('.global-stat-badge').forEach(badge => {
-            const stepId = badge.dataset.stepId;
-            const count = globalStepCounts[stepId] || 0;
-            badge.textContent = count;
-
-            // Update Global Badge Style (similar to employer badges)
-            if (count === 0) {
-                 badge.classList.add('bg-secondary', 'bg-opacity-50', 'text-white');
-                 badge.classList.remove('bg-primary', 'bg-success');
-            } else {
-                 badge.classList.remove('bg-secondary', 'bg-opacity-50');
-                 if (badge.dataset.stepId == lastStepId) {
-                     badge.classList.add('bg-primary'); // Blue for last
-                 } else {
-                     badge.classList.add('bg-success'); // Green for others
-                 }
-            }
-        });
-
-        // Update Per-Employer UI
-        // We need to loop through ALL employers to potentially zero-out those with no visible employees
-        document.querySelectorAll('[id^="employer-card-"]').forEach(empCard => {
-            // Extract ID from e.g. employer-card-5
-            const empId = empCard.id.replace('employer-card-', '');
-            const stats = employersMap[empId] || { total: 0, notStarted: 0, cancelled: 0, saved: 0, stepCounts: {} };
-
-            updateText(`employer-total-${empId}`, stats.total);
-            updateText(`employer-not-started-${empId}`, stats.notStarted);
-            updateText(`employer-cancelled-${empId}`, stats.cancelled);
-            updateText(`employer-saved-${empId}`, stats.saved);
-
-            // Update Employer Step Badges?
-            // This is trickier as we need to reset all badges to 0 first or track them.
-            // Let's iterate all badges in this employer card
-            const badges = empCard.querySelectorAll('.employer-stat-badge');
-            badges.forEach(badge => {
-                const stepId = badge.dataset.stepId;
-                const count = stats.stepCounts[stepId] || 0;
-                badge.textContent = count;
-
-                // Update Style (simple zero check)
-                // We reuse the logic from toggleStep's response handler if possible, or simple check
-                if (count === 0) {
-                     badge.classList.add('bg-secondary', 'bg-opacity-25', 'text-muted');
-                     badge.classList.remove('bg-primary', 'bg-success', 'text-white');
-                } else {
-                     badge.classList.remove('bg-secondary', 'bg-opacity-25', 'text-muted');
-                     if (badge.dataset.stepId == lastStepId) {
-                         badge.classList.add('bg-primary', 'text-white');
-                     } else {
-                         badge.classList.add('bg-success', 'text-white');
-                     }
-                }
-            });
-        });
-    }
+    // Legacy functions kept empty to prevent JS errors if called
+    function updateFilterUI() {}
+    function applyFilters() {}
+    function recalculateVisibleStats() {}
 
     // Employer-level Select All (Modified for Visible & Active only)
     document.addEventListener('change', function(e) {
