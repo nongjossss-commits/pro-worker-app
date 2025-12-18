@@ -306,64 +306,11 @@
         <div style="height: 100px;"></div>
     </form>
 
-    {{-- Cropper Modal --}}
-    <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="cropperModalLabel">{{ __('Crop Image') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <style>
-                        .img-container {
-                            max-height: 500px;
-                            display: block;
-                        }
-                        .img-container img {
-                            max-width: 100%;
-                            display: block;
-                        }
-                    </style>
-                    <div class="img-container">
-                        <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('Crop & Save') }}</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Progress Modal --}}
-    <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ __('Saving Changes') }}</h5>
-                </div>
-                <div class="modal-body text-center">
-                    <div class="progress mb-3" style="height: 25px;">
-                        <div id="saveProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
-                    </div>
-                    <p class="text-muted" id="saveProgressText">{{ __('Preparing to save...') }}</p>
-                    <div class="text-danger small mt-2 d-none" id="saveErrorText"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Hidden inputs for triggering file/camera selection --}}
-    <input type="file" class="d-none" id="globalTriggerFile" accept="image/*">
-    <input type="file" class="d-none" id="globalTriggerCamera" accept="image/*" capture="environment">
-
     <script>
-        // Use a wrapper check to avoid errors if script runs before DOM (which shouldn't happen here, but safe)
-        (function() {
+        // Use DOMContentLoaded to ensure robust element finding
+        document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('bulk-edit-wrapper');
-            if (!container) return; // Should not happen
+            if (!container) return;
 
             console.log('Bulk Edit Script Initialized');
 
@@ -697,7 +644,61 @@
                     }, 1000);
                 }
             }
-        })();
+        });
     </script>
+
+    {{-- Cropper Modal (Moved to end for Z-Index safety) --}}
+    <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cropperModalLabel">{{ __('Crop Image') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <style>
+                        .img-container {
+                            max-height: 500px;
+                            display: block;
+                        }
+                        .img-container img {
+                            max-width: 100%;
+                            display: block;
+                        }
+                    </style>
+                    <div class="img-container">
+                        <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('Crop & Save') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Progress Modal --}}
+    <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" style="z-index: 1070;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Saving Changes') }}</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div id="saveProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <p class="text-muted" id="saveProgressText">{{ __('Preparing to save...') }}</p>
+                    <div class="text-danger small mt-2 d-none" id="saveErrorText"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Hidden inputs for triggering file/camera selection --}}
+    <input type="file" style="display:none;" id="globalTriggerFile" accept="image/*">
+    <input type="file" style="display:none;" id="globalTriggerCamera" accept="image/*" capture="environment">
+
 </div>
 @endsection
