@@ -41,7 +41,7 @@ class RegistrationController extends Controller
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
             ->select('id', 'employer_id', 'status') // Lightweight Select
             ->with(['registrationSteps' => function($q) {
-                $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_step.employee_id'); // Lightweight Relation
+                $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id'); // Lightweight Relation
             }]);
 
         // Apply Search (Same logic as before)
