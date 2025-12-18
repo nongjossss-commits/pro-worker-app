@@ -44,7 +44,11 @@ if (typeof window.financialManager === 'undefined') {
             newTransaction: { type: 'installment', amount: '', due_date: '', notes: '' },
             editingTransaction: {},
             selectedFile: null,
-            isSaving: false,
+
+            // Separate Saving States
+            isSavingSettings: false,
+            isSavingTransaction: false,
+
             selectedTransactionIds: [],
             documentTypeToGenerate: '',
 
@@ -106,7 +110,7 @@ if (typeof window.financialManager === 'undefined') {
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
                         const name = result.value;
-                        fetch(`/admin/production/production/${this.productionId}/financial-groups`, {
+                        fetch(`/production/${this.productionId}/financial-groups`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                             body: JSON.stringify({ name: name })
@@ -133,7 +137,7 @@ if (typeof window.financialManager === 'undefined') {
                     cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        fetch(`/admin/production/production/${this.productionId}/financial-groups/${groupId}`, {
+                        fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
@@ -165,7 +169,7 @@ if (typeof window.financialManager === 'undefined') {
                     showCancelButton: true,
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
-                        fetch(`/admin/production/production/${this.productionId}/financial-groups/${groupId}`, {
+                        fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                             body: JSON.stringify({ name: result.value })
@@ -265,7 +269,7 @@ if (typeof window.financialManager === 'undefined') {
             saveFinancialData() {
                 if (!this.activeGroupId) return;
 
-                this.isSaving = true;
+                this.isSavingSettings = true;
 
                 const payload = {
                     financial: {
@@ -292,14 +296,14 @@ if (typeof window.financialManager === 'undefined') {
                     _method: 'PUT'
                 };
 
-                fetch(`/admin/production/production/${this.productionId}`, {
+                fetch(`/production/${this.productionId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 })
                 .then(res => res.json())
                 .then(data => {
-                    this.isSaving = false;
+                    this.isSavingSettings = false;
                     const group = this.financialGroups.find(g => g.id === this.activeGroupId);
                     if (group) {
                         group.financial_data = payload.financial;
@@ -314,7 +318,7 @@ if (typeof window.financialManager === 'undefined') {
                     });
                 })
                 .catch(err => {
-                    this.isSaving = false;
+                    this.isSavingSettings = false;
                     Swal.fire('Error', 'Error saving data', 'error');
                 });
             },
@@ -382,8 +386,7 @@ if (typeof window.financialManager === 'undefined') {
                 // Better: use x-ref="logoInput" and access via this.$refs.logoInput
                 // But $refs might be tricky if inside a loop.
                 // Let's assume standard behavior.
-                // Actually, inside the loop, refs are scoped to the component instance root?
-                // Yes, in Alpine, $refs are scoped to the `x-data` root.
+                // Actually, inside the loop, refs are scoped to the `x-data` root.
 
                 const file = this.$refs.logoInput ? this.$refs.logoInput.files[0] : null;
                 if (!file) return;
@@ -391,7 +394,7 @@ if (typeof window.financialManager === 'undefined') {
                 const formData = new FormData();
                 formData.append('logo', file);
 
-                fetch(`/admin/production/production/${this.productionId}/upload-logo`, {
+                fetch(`/production/${this.productionId}/upload-logo`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': this.csrfToken },
                     body: formData
@@ -415,24 +418,55 @@ if (typeof window.financialManager === 'undefined') {
                 }
             },
             addTransaction() {
-                if (!this.activeGroupId) return;
-                this.isSaving = true;
+                if (!this.activeGroupId) {
+                    Swal.fire('Error', 'Please select a financial tab first.', 'error');
+                    return;
+                }
+                this.isSavingTransaction = true;
                 const payload = { ...this.newTransaction, financial_group_id: this.activeGroupId };
 
-                fetch(`/admin/production/production/${this.productionId}/transactions`, {
+                fetch(`/production/${this.productionId}/transactions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                         // Check if response is JSON, else throw text
+                         const contentType = res.headers.get("content-type");
+                         if (contentType && contentType.indexOf("application/json") !== -1) {
+                             return res.json().then(err => { throw new Error(err.message || 'Server Error'); });
+                         } else {
+                             return res.text().then(text => { throw new Error(text || 'Server Error'); });
+                         }
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if(data.success) {
                         this.transactions.push(data.transaction);
                         bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
                         this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Transaction added successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                         throw new Error(data.message || 'Unknown error');
                     }
                 })
-                .finally(() => this.isSaving = false);
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: err.message || 'Failed to add transaction. Please check your inputs.',
+                    });
+                })
+                .finally(() => this.isSavingTransaction = false);
             },
             openPayModal(t) {
                 this.editingTransaction = { ...t };
@@ -447,18 +481,45 @@ if (typeof window.financialManager === 'undefined') {
                 formData.append('status', this.editingTransaction.status);
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
 
-                fetch(`/admin/production/production/transactions/${this.editingTransaction.id}`, {
+                fetch(`/production/transactions/${this.editingTransaction.id}`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: formData
                 })
-                .then(res => res.json())
+                .then(res => {
+                     if (!res.ok) {
+                         const contentType = res.headers.get("content-type");
+                         if (contentType && contentType.indexOf("application/json") !== -1) {
+                             return res.json().then(err => { throw new Error(err.message || 'Server Error'); });
+                         } else {
+                             return res.text().then(text => { throw new Error(text || 'Server Error'); });
+                         }
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if(data.success) {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                         if(idx !== -1) this.transactions[idx] = data.transaction;
                         bootstrap.Modal.getInstance(this.$refs.payModal).hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Payment updated successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        throw new Error(data.message || 'Unknown error');
                     }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Update Failed',
+                        text: err.message || 'Could not update transaction.',
+                    });
                 });
             },
             deleteTransaction(id) {
@@ -471,7 +532,7 @@ if (typeof window.financialManager === 'undefined') {
                     confirmButtonText: 'Yes, delete it!'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        fetch(`/admin/production/production/transactions/${id}`, {
+                        fetch(`/production/transactions/${id}`, {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
@@ -511,7 +572,7 @@ if (typeof window.financialManager === 'undefined') {
                 bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
             },
             openDocument(type, transactionIds = null) {
-                let url = `/admin/production/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
+                let url = `/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
                 }
