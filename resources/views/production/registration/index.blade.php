@@ -515,7 +515,10 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body bg-light">
-                            @include('production.partials.financial-tab', ['production' => $employer->financeOrder])
+                            @include('production.partials.financial-tab', [
+                                'production' => $employer->financeOrder,
+                                'employeeCount' => $employer->activeEmployeesCount ?? 0
+                            ])
                         </div>
                     </div>
                 </div>
