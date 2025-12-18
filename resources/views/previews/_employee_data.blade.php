@@ -121,7 +121,7 @@
     {{-- Official Document Numbers --}}
     <h5>ข้อมูลเอกสารราชการ</h5>
     <div class="row g-3">
-        <div class="col-md-4"><label class="form-label fw-bold">เลขที่ Namelist</label><p class="form-control-plaintext">{{ $employee->name_list_number ?? 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">เลข RA จากระบบ outsource</label><p class="form-control-plaintext">{{ $employee->name_list_number ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขที่คำขอ</label><p class="form-control-plaintext">{{ $employee->request_number ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขอ้างอิงคนงาน</label><p class="form-control-plaintext">{{ $employee->employee_reference_id ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขประจำตัว</label><p class="form-control-plaintext">{{ $employee->employee_id_number ?? 'N/A' }}</p></div>
