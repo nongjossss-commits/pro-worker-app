@@ -111,7 +111,12 @@
         // --- Logic Block 6: Photo Cropping ---
         const cropperModalEl = document.getElementById('cropperModal');
         if (cropperModalEl) {
-            const cropperModal = new bootstrap.Modal(cropperModalEl);
+            // Retrieve existing instance or create new one to avoid stacking issues
+            let cropperModal = bootstrap.Modal.getInstance(cropperModalEl);
+            if (!cropperModal) {
+                cropperModal = new bootstrap.Modal(cropperModalEl);
+            }
+
             const imageToCrop = document.getElementById('imageToCrop');
             const cropImageBtn = document.getElementById('cropImageBtn');
             let cropper;
@@ -186,52 +191,75 @@
                 imageToCrop.src = '';
             });
 
-            if(cropImageBtn) {
-                cropImageBtn.addEventListener('click', function () {
-                    if (!cropper) {
-                        alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
-                        return;
-                    }
+            // Prevent attaching multiple listeners if init runs multiple times
+            // Remove old listener if exists (requires named function, but here we use a simple flag or just replace logic)
+            // Simplest way for this context: remove old element and recreate button or just use onclick attribute.
+            // But let's stick to addEventListener and hope initEmployeeEditForm isn't called multiple times redundantly
+            // without full reload. Actually, it is called every time modal opens.
+            // So we SHOULD handle cleanup.
+            const newCropBtn = cropImageBtn.cloneNode(true);
+            cropImageBtn.parentNode.replaceChild(newCropBtn, cropImageBtn);
 
-                    const canvas = cropper.getCroppedCanvas({
-                        width: 300,
-                        height: 360,
-                        imageSmoothingQuality: 'high',
+            newCropBtn.addEventListener('click', function () {
+                if (!cropper) {
+                    alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
+                    return;
+                }
+
+                const canvas = cropper.getCroppedCanvas({
+                    width: 300,
+                    height: 360,
+                    imageSmoothingQuality: 'high',
+                });
+
+                canvas.toBlob(function (blob) {
+                    if (!blob) return;
+
+                    const croppedImageUrl = URL.createObjectURL(blob);
+                    if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
+
+                    // Create a new File object
+                    const croppedFile = new File([blob], originalFile.name, {
+                        type: originalFile.type || 'image/jpeg',
+                        lastModified: Date.now()
                     });
 
-                    canvas.toBlob(function (blob) {
-                        if (!blob) return;
+                    // Use a DataTransfer to create a FileList
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(croppedFile);
 
-                        const croppedImageUrl = URL.createObjectURL(blob);
-                        if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
+                    // Assign the FileList to the ACTUAL input for submission
+                    if(actualInput) {
+                        actualInput.files = dataTransfer.files;
+                    } else {
+                        console.error('Actual input for employee photo not found!');
+                    }
 
-                        // Create a new File object
-                        const croppedFile = new File([blob], originalFile.name, {
-                            type: originalFile.type || 'image/jpeg',
-                            lastModified: Date.now()
-                        });
+                    // Hide the modal using the correct instance
+                    cropperModal.hide();
 
-                        // Use a DataTransfer to create a FileList
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(croppedFile);
+                }, originalFile.type || 'image/jpeg');
+            });
 
-                        // Assign the FileList to the ACTUAL input for submission
-                        if(actualInput) actualInput.files = dataTransfer.files;
 
-                        cropperModal.hide();
-
-                    }, originalFile.type || 'image/jpeg');
-                });
+            if (triggerFileInput) {
+                 triggerFileInput.removeEventListener('change', handleFileSelect); // Attempt cleanup
+                 triggerFileInput.addEventListener('change', handleFileSelect);
             }
-
-            if (triggerFileInput) triggerFileInput.addEventListener('change', handleFileSelect);
-            if (triggerCameraInput) triggerCameraInput.addEventListener('change', handleFileSelect);
+            if (triggerCameraInput) {
+                 triggerCameraInput.removeEventListener('change', handleFileSelect); // Attempt cleanup
+                 triggerCameraInput.addEventListener('change', handleFileSelect);
+            }
         }
 
         // Cancel Button: If inside modal, close it. Else, history.back
         const cancelBtn = document.querySelector('.btn-cancel-edit');
         if (cancelBtn) {
-             cancelBtn.onclick = function() {
+             // Clone to remove old listeners
+             const newCancelBtn = cancelBtn.cloneNode(true);
+             cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+             newCancelBtn.onclick = function() {
                  const modal = document.getElementById('editEmployeeModal');
                  if(modal && modal.classList.contains('show')) {
                      const bsModal = bootstrap.Modal.getInstance(modal);
@@ -251,6 +279,7 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Run once on load, but function is globally available for AJAX calls
         window.initEmployeeEditForm();
     });
 </script>
