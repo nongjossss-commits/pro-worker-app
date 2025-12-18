@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use ZipArchive;
 use setasign\Fpdi\Fpdi;
 use Exception;
@@ -58,7 +59,7 @@ class ProcessDownload implements ShouldQueue
     {
         // Increase memory limit and execution time for large PDF merges
         ini_set('memory_limit', '512M');
-        set_time_limit(300);
+        set_time_limit(600); // Increased to 10 minutes
 
         $task = DownloadTask::find($this->taskId);
         if (!$task) return;
@@ -66,6 +67,15 @@ class ProcessDownload implements ShouldQueue
         $task->update(['status' => 'processing']);
 
         try {
+            // Check for font files and define font path if needed
+            if (!defined('FPDF_FONTPATH')) {
+                $fontPath = storage_path('fonts/');
+                if (!file_exists($fontPath)) {
+                    mkdir($fontPath, 0755, true);
+                }
+                define('FPDF_FONTPATH', $fontPath);
+            }
+
             $employees = Employee::whereIn('id', $this->employeeIds)->get();
             $tempDir = storage_path('app/temp_downloads/' . $task->id);
             if (!file_exists($tempDir)) {
@@ -91,9 +101,10 @@ class ProcessDownload implements ShouldQueue
             $this->deleteDir($tempDir);
 
         } catch (Throwable $e) {
+            Log::error("Download Task Failed: " . $e->getMessage());
             $task->update([
                 'status' => 'failed',
-                'error_message' => $e->getMessage()
+                'error_message' => 'Error: ' . $e->getMessage()
             ]);
         }
     }
@@ -173,23 +184,50 @@ class ProcessDownload implements ShouldQueue
 
         try {
             $pdf = new Fpdi();
-            // Disable auto page break to handle large images manually if needed,
-            // but mostly we want to control page adding.
             $pdf->SetAutoPageBreak(false);
 
+            // Attempt to load Thai font
+            $hasThaiFont = false;
+            // Check for both .php and .z files which are required by FPDF
+            // We assume they are in storage/fonts/ or default font path
+            // Note: FPDF_FONTPATH is defined at start of handle()
+
+            // Try standard names
+            $fontFiles = ['THSarabunNew.php', 'THSarabunNew.z'];
+            $fontDir = defined('FPDF_FONTPATH') ? FPDF_FONTPATH : storage_path('fonts/');
+
+            if (file_exists($fontDir . 'THSarabunNew.php')) {
+                $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
+                $pdf->AddFont('THSarabunNew', 'B', 'THSarabunNew-Bold.php'); // Assuming bold exists too if main does
+                $hasThaiFont = true;
+            }
+
             foreach ($employees as $employee) {
-                $employeeName = $employee->employeeNameTh ?? $employee->employeeNameEn ?? 'Employee ' . $employee->id;
+                $employeeNameTh = $employee->employeeNameTh;
+                $employeeNameEn = $employee->employeeNameEn;
 
-                // Add a separator page for the employee
+                // Add separator page
                 $pdf->AddPage();
-                $pdf->SetFont('Arial', 'B', 20);
-                // Note: FPDF generic font doesn't support Thai.
-                // We might need to use a supported font or just use English/ID.
-                // For now, using English ID fallback to avoid ????? characters if font missing.
-                $displayName = @iconv('UTF-8', 'cp874//TRANSLIT', $employeeName); // Try conversion or fallback
-                if (!$displayName) $displayName = "Employee ID: " . $employee->id;
 
+                if ($hasThaiFont && $employeeNameTh) {
+                    $pdf->SetFont('THSarabunNew', 'B', 24);
+                    // Convert UTF-8 to cp874 (TIS-620) for FPDF
+                    $displayName = @iconv('UTF-8', 'cp874//TRANSLIT', $employeeNameTh);
+                } else {
+                    $pdf->SetFont('Arial', 'B', 20);
+                    $displayName = $employeeNameEn ?? 'Employee ID: ' . $employee->id;
+                    // Sanitize fallback
+                    $displayName = preg_replace('/[^\x20-\x7E]/', '', $displayName);
+                }
+
+                // Centered Name
+                $pdf->SetXY(0, 100);
                 $pdf->Cell(0, 10, $displayName, 0, 1, 'C');
+
+                // Add Subtitle (ID or Employer)
+                $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', 16);
+                $subText = "ID: " . $employee->id;
+                $pdf->Cell(0, 10, $subText, 0, 1, 'C');
 
                 foreach ($this->selectedFiles as $fileType) {
                     $this->addFilesToPdf($pdf, $employee, $fileType);
@@ -223,7 +261,6 @@ class ProcessDownload implements ShouldQueue
                 $filePath = $this->getFilePath($employee->$attr);
                 if ($filePath && file_exists($filePath)) {
                     try {
-                        // Safer mime detection
                         $mime = @mime_content_type($filePath);
 
                         if ($mime === 'application/pdf') {
@@ -232,21 +269,50 @@ class ProcessDownload implements ShouldQueue
                                 try {
                                     $tplIdx = $pdf->importPage($i);
                                     $size = $pdf->getTemplateSize($tplIdx);
+
+                                    // Use original orientation
                                     $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                                     $pdf->useTemplate($tplIdx);
                                 } catch (Throwable $e) {
-                                    // Skip individual pages if they fail (e.g., internal damage)
+                                    // Log and skip bad pages
+                                    Log::warning("Failed to import page $i of $filePath: " . $e->getMessage());
                                     continue;
                                 }
                             }
                         } elseif (in_array($mime, ['image/jpeg', 'image/png', 'image/gif'])) {
+                            // Smart Image Scaling
                             $pdf->AddPage();
-                            // Scale image to fit page
-                            $pdf->Image($filePath, 10, 10, 190);
+
+                            // A4 Dimensions in mm
+                            $pageW = 210;
+                            $pageH = 297;
+                            $margin = 10;
+                            $writableW = $pageW - ($margin * 2);
+                            $writableH = $pageH - ($margin * 2);
+
+                            // Get image dimensions
+                            list($imgW, $imgH) = getimagesize($filePath);
+
+                            // Calculate aspect ratio
+                            $ratio = $imgW / $imgH;
+
+                            // Determine new dimensions fitting within margins
+                            if ($writableW / $writableH > $ratio) {
+                               $newH = $writableH;
+                               $newW = $writableH * $ratio;
+                            } else {
+                               $newW = $writableW;
+                               $newH = $writableW / $ratio;
+                            }
+
+                            // Center the image
+                            $x = ($pageW - $newW) / 2;
+                            $y = ($pageH - $newH) / 2;
+
+                            $pdf->Image($filePath, $x, $y, $newW, $newH);
                         }
                     } catch (Throwable $e) {
-                        // Log error but continue with other files
-                        // Log::error("Failed to merge file: " . $e->getMessage());
+                        Log::error("Failed to merge file $filePath: " . $e->getMessage());
                     }
                 }
             }
@@ -265,6 +331,10 @@ class ProcessDownload implements ShouldQueue
         // Check if it's a full path already or relative
         if (file_exists($dbPath)) return $dbPath;
 
+        // Sometimes path is stored as 'images/...' but it's in storage/app/public/images
+        $publicPath = storage_path('app/public/' . $dbPath);
+        if (file_exists($publicPath)) return $publicPath;
+
         return null;
     }
 
@@ -276,7 +346,9 @@ class ProcessDownload implements ShouldQueue
 
     protected function deleteDir($dirPath) {
         if (! is_dir($dirPath)) {
-            throw new InvalidArgumentException("$dirPath must be a directory");
+            // Check if it exists as a file just in case
+            if (file_exists($dirPath)) unlink($dirPath);
+            return;
         }
         if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
             $dirPath .= '/';
