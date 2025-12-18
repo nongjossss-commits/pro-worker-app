@@ -23,6 +23,7 @@ class ProcessDownload implements ShouldQueue
     protected $taskId;
     protected $employeeIds;
     protected $selectedFiles;
+    protected $tempImageFiles = [];
 
     // Map frontend checkbox values to model attributes
     protected $fileMap = [
@@ -97,8 +98,9 @@ class ProcessDownload implements ShouldQueue
                 'file_path' => $outputFile
             ]);
 
-            // Cleanup temp dir
+            // Cleanup temp dir and normalized images
             $this->deleteDir($tempDir);
+            $this->cleanupTempImages();
 
         } catch (Throwable $e) {
             Log::error("Download Task Failed: " . $e->getMessage());
@@ -106,6 +108,8 @@ class ProcessDownload implements ShouldQueue
                 'status' => 'failed',
                 'error_message' => 'Error: ' . $e->getMessage()
             ]);
+            // Attempt cleanup even on failure
+            $this->cleanupTempImages();
         }
     }
 
@@ -230,7 +234,11 @@ class ProcessDownload implements ShouldQueue
                 $pdf->Cell(0, 10, $subText, 0, 1, 'C');
 
                 foreach ($this->selectedFiles as $fileType) {
-                    $this->addFilesToPdf($pdf, $employee, $fileType);
+                    try {
+                        $this->addFilesToPdf($pdf, $employee, $fileType);
+                    } catch (Throwable $e) {
+                        Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
+                    }
                 }
             }
 
@@ -258,13 +266,13 @@ class ProcessDownload implements ShouldQueue
 
         foreach ($attributes as $attr) {
             if (!empty($employee->$attr)) {
-                $filePath = $this->getFilePath($employee->$attr);
-                if ($filePath && file_exists($filePath)) {
+                $originalFilePath = $this->getFilePath($employee->$attr);
+                if ($originalFilePath && file_exists($originalFilePath)) {
                     try {
-                        $mime = @mime_content_type($filePath);
+                        $mime = @mime_content_type($originalFilePath);
 
                         if ($mime === 'application/pdf') {
-                            $pageCount = $pdf->setSourceFile($filePath);
+                            $pageCount = $pdf->setSourceFile($originalFilePath);
                             for ($i = 1; $i <= $pageCount; $i++) {
                                 try {
                                     $tplIdx = $pdf->importPage($i);
@@ -275,12 +283,17 @@ class ProcessDownload implements ShouldQueue
                                     $pdf->useTemplate($tplIdx);
                                 } catch (Throwable $e) {
                                     // Log and skip bad pages
-                                    Log::warning("Failed to import page $i of $filePath: " . $e->getMessage());
+                                    Log::warning("Failed to import page $i of $originalFilePath: " . $e->getMessage());
                                     continue;
                                 }
                             }
-                        } elseif (in_array($mime, ['image/jpeg', 'image/png', 'image/gif'])) {
-                            // Smart Image Scaling
+                        } elseif (strpos($mime, 'image/') === 0) {
+                            // Normalize Image: Converts all images (jpg, png, gif, webp, bmp) to a standard temporary JPEG
+                            $normalizedPath = $this->normalizeImage($originalFilePath);
+                            if (!$normalizedPath) continue;
+
+                            $this->tempImageFiles[] = $normalizedPath; // Track for cleanup
+
                             $pdf->AddPage();
 
                             // A4 Dimensions in mm
@@ -291,7 +304,7 @@ class ProcessDownload implements ShouldQueue
                             $writableH = $pageH - ($margin * 2);
 
                             // Get image dimensions
-                            list($imgW, $imgH) = getimagesize($filePath);
+                            list($imgW, $imgH) = getimagesize($normalizedPath);
 
                             // Calculate aspect ratio
                             $ratio = $imgW / $imgH;
@@ -309,14 +322,72 @@ class ProcessDownload implements ShouldQueue
                             $x = ($pageW - $newW) / 2;
                             $y = ($pageH - $newH) / 2;
 
-                            $pdf->Image($filePath, $x, $y, $newW, $newH);
+                            $pdf->Image($normalizedPath, $x, $y, $newW, $newH);
                         }
                     } catch (Throwable $e) {
-                        Log::error("Failed to merge file $filePath: " . $e->getMessage());
+                        Log::error("Failed to merge file $originalFilePath: " . $e->getMessage());
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Converts various image formats to a standard JPEG compatible with FPDF.
+     * Handles transparency (PNG/GIF) by adding a white background.
+     */
+    protected function normalizeImage($filePath)
+    {
+        try {
+            if (!function_exists('imagecreatefromstring')) {
+                throw new Exception("GD library not installed.");
+            }
+
+            $data = file_get_contents($filePath);
+            if (!$data) return null;
+
+            $srcImg = @imagecreatefromstring($data);
+            if (!$srcImg) return null;
+
+            $width = imagesx($srcImg);
+            $height = imagesy($srcImg);
+
+            // Create a new true color image
+            $dstImg = imagecreatetruecolor($width, $height);
+
+            // Fill with white background (handles transparency)
+            $white = imagecolorallocate($dstImg, 255, 255, 255);
+            imagefilledrectangle($dstImg, 0, 0, $width, $height, $white);
+
+            // Copy and merge
+            imagecopy($dstImg, $srcImg, 0, 0, 0, 0, $width, $height);
+
+            // Create temp file
+            $tempPath = tempnam(sys_get_temp_dir(), 'img_norm_') . '.jpg';
+
+            // Save as JPEG with high quality
+            imagejpeg($dstImg, $tempPath, 90);
+
+            // Free memory
+            imagedestroy($srcImg);
+            imagedestroy($dstImg);
+
+            return $tempPath;
+
+        } catch (Throwable $e) {
+            Log::error("Image normalization failed for $filePath: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    protected function cleanupTempImages()
+    {
+        foreach ($this->tempImageFiles as $file) {
+            if (file_exists($file)) {
+                @unlink($file);
+            }
+        }
+        $this->tempImageFiles = [];
     }
 
     protected function getFilePath($dbPath)
