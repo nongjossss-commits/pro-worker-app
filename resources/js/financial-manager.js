@@ -110,7 +110,7 @@ if (typeof window.financialManager === 'undefined') {
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
                         const name = result.value;
-                        fetch(`/admin/production/production/${this.productionId}/financial-groups`, {
+                        fetch(`/production/${this.productionId}/financial-groups`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                             body: JSON.stringify({ name: name })
@@ -137,7 +137,7 @@ if (typeof window.financialManager === 'undefined') {
                     cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        fetch(`/admin/production/production/${this.productionId}/financial-groups/${groupId}`, {
+                        fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
@@ -169,7 +169,7 @@ if (typeof window.financialManager === 'undefined') {
                     showCancelButton: true,
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
-                        fetch(`/admin/production/production/${this.productionId}/financial-groups/${groupId}`, {
+                        fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                             body: JSON.stringify({ name: result.value })
@@ -296,7 +296,7 @@ if (typeof window.financialManager === 'undefined') {
                     _method: 'PUT'
                 };
 
-                fetch(`/admin/production/production/${this.productionId}`, {
+                fetch(`/production/${this.productionId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
@@ -394,7 +394,7 @@ if (typeof window.financialManager === 'undefined') {
                 const formData = new FormData();
                 formData.append('logo', file);
 
-                fetch(`/admin/production/production/${this.productionId}/upload-logo`, {
+                fetch(`/production/${this.productionId}/upload-logo`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': this.csrfToken },
                     body: formData
@@ -418,11 +418,14 @@ if (typeof window.financialManager === 'undefined') {
                 }
             },
             addTransaction() {
-                if (!this.activeGroupId) return;
+                if (!this.activeGroupId) {
+                    Swal.fire('Error', 'Please select a financial tab first.', 'error');
+                    return;
+                }
                 this.isSavingTransaction = true;
                 const payload = { ...this.newTransaction, financial_group_id: this.activeGroupId };
 
-                fetch(`/admin/production/production/${this.productionId}/transactions`, {
+                fetch(`/production/${this.productionId}/transactions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
@@ -478,7 +481,7 @@ if (typeof window.financialManager === 'undefined') {
                 formData.append('status', this.editingTransaction.status);
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
 
-                fetch(`/admin/production/production/transactions/${this.editingTransaction.id}`, {
+                fetch(`/production/transactions/${this.editingTransaction.id}`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: formData
@@ -529,7 +532,7 @@ if (typeof window.financialManager === 'undefined') {
                     confirmButtonText: 'Yes, delete it!'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        fetch(`/admin/production/production/transactions/${id}`, {
+                        fetch(`/production/transactions/${id}`, {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
@@ -569,7 +572,7 @@ if (typeof window.financialManager === 'undefined') {
                 bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
             },
             openDocument(type, transactionIds = null) {
-                let url = `/admin/production/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
+                let url = `/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
                 }
