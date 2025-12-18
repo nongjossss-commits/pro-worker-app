@@ -548,7 +548,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $employee->update($validated);
 
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'employee' => $employee->fresh(['employer']) // Return fresh data for frontend update
+            ]);
         }
 
         return redirect($request->input('_previous', route('employees.index')))

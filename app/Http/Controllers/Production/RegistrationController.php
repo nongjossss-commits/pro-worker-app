@@ -257,16 +257,14 @@ class RegistrationController extends Controller
         $steps = RegistrationStep::orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
+        // Apply the same base status filter as the index method to ensure consistency
         $query = $employer->employees()
+            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
             ->with(['registrationSteps', 'customFields']); // Load everything needed for the card
 
         // Apply Search (if global search is active)
         if ($request->has('search') && $request->search) {
              $search = $request->search;
-             // Note: The global search filtered employers.
-             // If I expand an employer, I probably want to see ALL their employees?
-             // OR only the matching ones?
-             // User usually expects to see the matching ones if they searched.
              $query->where(function($q) use ($search) {
                 $q->where('employeeNameTh', 'like', "%{$search}%")
                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
@@ -287,15 +285,8 @@ class RegistrationController extends Controller
             } elseif ($filter === 'cancelled') {
                  $query->where('status', 'registration_cancelled');
             } elseif (is_numeric($filter)) { // Step ID
-                 $query->where('status', '!=', 'registration_cancelled')
-                       ->whereHas('registrationSteps', function($q) use ($filter) {
-                           // This just checks if they HAVE the step.
-                           // But the filter is usually for "Highest Step".
-                           // Doing "Highest Step" filter in SQL is hard.
-                           // For now, let's filter in PHP after get() if it's a step filter,
-                           // or trust the lightweight filtering logic.
-                           // Actually, let's fetch all and filter in PHP for step accuracy.
-                       });
+                 $query->where('status', '!=', 'registration_cancelled');
+                 // We filter by highest step in PHP below
             }
         }
 

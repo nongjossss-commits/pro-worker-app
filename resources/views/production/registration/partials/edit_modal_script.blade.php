@@ -96,36 +96,14 @@
                     alert('Employee updated successfully');
                 }
 
-                // 3. Reload Page to reflect changes (as per request "Load on same page")
-                // Capture state before reload
-                const formAction = form.action; // e.g., .../employees/123
-                const segments = formAction.split('/');
-                const employeeId = segments[segments.length - 1] || segments[segments.length - 2]; // Handle trailing slash if any
-
-                // Find the card to get Employer ID
-                // Note: The ID might be passed in differently, but extracting from URL is safer if DOM is gone?
-                // Actually DOM is still here.
-                // The modal is open, but we need the background card.
-                // We can't rely on 'employeeId' variable scope here easily unless we parse it.
-                // Let's try to find the card using the ID from the form action which is typically /employees/{id}
-
-                let empIdVal = null;
-                // Try to find ID from form action .../employees/{id}
-                const match = formAction.match(/\/employees\/(\d+)/);
-                if (match && match[1]) {
-                    empIdVal = match[1];
+                // 3. Update DOM in-place (No Reload)
+                if (data.employee) {
+                    updateEmployeeCardInDom(data.employee);
+                } else {
+                    // Fallback if no data returned (though controller is updated)
+                    console.warn('No employee data returned, reloading...');
+                    window.location.reload();
                 }
-
-                if (empIdVal) {
-                    const card = document.getElementById(`employee-card-${empIdVal}`);
-                    if (card && card.dataset.employerId) {
-                        sessionStorage.setItem('registration_restore_employer_id', card.dataset.employerId);
-                        sessionStorage.setItem('registration_restore_employee_id', empIdVal);
-                    }
-                }
-
-                window.location.reload();
-
             }
         })
         .catch(error => {
@@ -140,5 +118,119 @@
             submitBtn.disabled = false;
             submitBtn.innerText = originalBtnText;
         });
+    }
+
+    function updateEmployeeCardInDom(emp) {
+        const card = document.getElementById(`employee-card-${emp.id}`);
+        if (!card) return;
+
+        // 1. Update Names
+        const nameDiv = card.querySelector('.fw-bold.text-dark');
+        if (nameDiv) {
+            nameDiv.innerText = `${emp.employeeTitleEn || ''} ${emp.employeeNameEn || '-'}`;
+        }
+        const thaiNameDiv = card.querySelector('.text-muted.small');
+        if (thaiNameDiv) {
+            // Be careful to target the correct div, structure: Avatar -> Info -> [NameEn, NameTh, Age, Passport]
+            // The structure in _employee_card.blade.php is:
+            /*
+                <div>
+                    <div class="fw-bold text-dark">...</div>
+                    <div class="text-muted small">...</div> (Thai Name)
+                    <div class="small text-muted mt-1">...</div> (DOB/Age)
+                    <div class="small text-muted mt-1">...</div> (Passport/Flag)
+                </div>
+            */
+           // Select by order to be safe or text content match? Structure is safer if consistent.
+           // Since we have reference to `nameDiv`, the next sibling is Thai Name.
+           if (nameDiv.nextElementSibling) {
+               nameDiv.nextElementSibling.innerText = `${emp.employeeTitleTh || ''} ${emp.employeeNameTh || '-'}`;
+           }
+        }
+
+        // 2. Update Age / DOB
+        const dobDiv = card.querySelector('div.small.text-muted.mt-1 span[title="Date of Birth"]');
+        // Or generic selector: third div in info container
+        if (dobDiv) {
+            // We need to format date. JS doesn't have Laravel's format.
+            // Let's rely on raw date or simple formatting.
+            let dobStr = '-';
+            if (emp.employeeDob) {
+                const date = new Date(emp.employeeDob);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                dobStr = `${day}/${month}/${year}`;
+            }
+            dobDiv.innerHTML = `<i class="bi bi-calendar-event me-1"></i> ${dobStr} (Age : ${emp.age || '-'} Years)`;
+        }
+
+        // 3. Update Passport & Nationality
+        // Fourth div in info block
+        // This is tricky because it has mixed content (Passport icon, text, flag icon, text)
+        // Structure:
+        /*
+            <div class="small text-muted mt-1">
+                <span class="me-2"><i class="bi bi-passport..."></i> ... </span>
+                <span class="d-inline-flex..."><i class="bi bi-geo..."></i> <img flag> ... </span>
+            </div>
+        */
+       // Let's find the container that holds passport info
+       const passportSpan = card.querySelector('.bi-passport')?.closest('span');
+       if (passportSpan) {
+           passportSpan.innerHTML = `<i class="bi bi-passport text-primary me-1"></i> ${emp.employeePassport || '-'}`;
+       }
+
+       const nationalitySpan = card.querySelector('.bi-geo-alt-fill')?.closest('span');
+       if (nationalitySpan) {
+           // We need country code for flag.
+           // We don't have the CountryHelper in JS.
+           // Map manually or pass from backend.
+           // Simple mapping for common ones:
+           const natMap = { 'เมียนมา': 'mm', 'ลาว': 'la', 'กัมพูชา': 'kh', 'เวียดนาม': 'vn', 'ไทย': 'th' };
+           const code = natMap[emp.employeeNationality] || '';
+           let imgHtml = '';
+           if (code) {
+               imgHtml = `<img src="/images/flags/${code}.png" alt="${code}" style="width: 16px; height: 12px; margin-right: 5px;">`;
+           }
+           nationalitySpan.innerHTML = `<i class="bi bi-geo-alt-fill text-danger me-1"></i> ${imgHtml} ${emp.employeeNationality || '-'}`;
+       }
+
+       // 4. Update Photo
+       const avatarImg = card.querySelector('.avatar-container img');
+       if (avatarImg && emp.employeePhoto) {
+           // Update src. Note: emp.employeePhoto is relative path "employee_files/...".
+           // We need full URL.
+           // In blade we used Storage::disk('public')->url().
+           // Usually /storage/...
+           avatarImg.src = `/storage/${emp.employeePhoto}?t=${new Date().getTime()}`; // Cache bust
+       } else if (emp.employeePhoto) {
+           // If avatar was placeholder div, replace with img
+           const avatarContainer = card.querySelector('.avatar-container');
+           if (avatarContainer) {
+               // Remove existing content (placeholder div)
+               // Keep badges! Badges are absolute positioned.
+               // It's safer to just set innerHTML but we lose badges if not careful.
+               // Let's just find the placeholder div and replace it.
+               const placeholder = avatarContainer.querySelector('.rounded-circle.bg-secondary');
+               if (placeholder) {
+                   const newImg = document.createElement('img');
+                   newImg.src = `/storage/${emp.employeePhoto}?t=${new Date().getTime()}`;
+                   newImg.className = 'rounded-circle shadow-sm';
+                   newImg.style.width = '50px';
+                   newImg.style.height = '50px';
+                   newImg.style.objectFit = 'cover';
+                   placeholder.replaceWith(newImg);
+               }
+           }
+       }
+
+       // 5. Update Checkbox Data Attributes (For bulk actions)
+       const checkbox = card.querySelector('.employee-checkbox');
+       if (checkbox) {
+           checkbox.dataset.nameTh = emp.employeeNameTh || '';
+           checkbox.dataset.nameEn = emp.employeeNameEn || '';
+           checkbox.dataset.photo = emp.employeePhoto ? `/storage/${emp.employeePhoto}` : '';
+       }
     }
 </script>
