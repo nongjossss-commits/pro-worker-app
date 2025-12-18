@@ -51,9 +51,10 @@
     }
     .employee-sequence-number {
         /* Ensure it doesn't shift when content changes */
-        min-width: 30px;
+        min-width: 40px; /* Increased to fit 3 digits */
         text-align: right;
         font-weight: bold;
+        white-space: nowrap; /* Prevent wrapping for large numbers */
     }
 </style>
 
@@ -693,6 +694,7 @@
         .then(html => {
             container.innerHTML = html;
             window.loadedEmployers[employerId] = true;
+            applyFilters(); // Re-apply client-side filters on newly loaded content
         })
         .catch(err => {
             container.innerHTML = `<div class="text-danger p-3">Failed to load employees. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
@@ -723,6 +725,19 @@
                  const pill = document.getElementById(`filter-step-${currentStepFilter}`);
                  if (pill) pill.classList.add('filter-active');
              }
+        }
+
+        // Ensure Bulk Action Bar is visible if items are selected
+        const selectedData = window.getGlobalSelectedData();
+        if (selectedData && selectedData.length > 0) {
+            const bulkActionBar = document.getElementById('bulkActionBar');
+            if (bulkActionBar) {
+                bulkActionBar.style.display = 'flex';
+                const countSpan = document.getElementById('selected-count');
+                if (countSpan) countSpan.textContent = selectedData.length;
+                const btn = document.getElementById('bulkActionDropdown');
+                if (btn) btn.disabled = false;
+            }
         }
     });
 
@@ -812,10 +827,42 @@
         window.location.href = url.toString();
     }
 
-    // Legacy functions kept empty to prevent JS errors if called
-    function updateFilterUI() {}
-    function applyFilters() {}
-    function recalculateVisibleStats() {}
+    // Client-side filter application (for when data changes without reload)
+    function applyFilters() {
+        // Since the main filter is server-side, we rely on reload.
+        // However, if we implement client-side immediate update, we might hide/show cards.
+        // But for now, stats update is enough.
+        // If a card changes status (e.g. Completed), it should disappear if "Not Started" filter is on?
+        // Yes.
+        const filter = new URLSearchParams(window.location.search).get('filter');
+        if (!filter) return;
+
+        document.querySelectorAll('.employee-card-wrapper').forEach(card => {
+            let visible = true;
+            if (filter === 'not_started') {
+                 visible = (card.dataset.isNotStarted === 'true' && card.dataset.status !== 'registration_cancelled');
+            } else if (filter === 'saved') {
+                 visible = (card.dataset.status === 'registration_completed');
+            } else if (filter === 'cancelled') {
+                 visible = (card.dataset.status === 'registration_cancelled');
+            } else if (!isNaN(filter)) {
+                 // Step ID
+                 visible = (card.dataset.highestStepId == filter && card.dataset.status !== 'registration_cancelled');
+            }
+
+            if (visible) {
+                card.classList.remove('d-none');
+            } else {
+                card.classList.add('d-none');
+            }
+        });
+    }
+
+    // Re-calculate stats based on DOM is difficult because of lazy loading.
+    // We will rely on server response data for precise updates.
+    window.recalculateVisibleStats = function() {
+        // Placeholder if we move to client-side calc later.
+    }
 
     // Employer-level Select All (Modified for Visible & Active only)
     document.addEventListener('change', function(e) {
@@ -858,17 +905,48 @@
     function updateStatsUI(stats) {
         if (!stats) return;
 
-        // Global
-        if (stats.global) {
+        // Note: The response from updateProgress has different structure than getStats
+        // updateProgress returns: globalStats (array), globalNotStarted, employerStats (array), employerNotStarted
+        // getStats returns: global: { total, not_started, cancelled, saved }, employer: { ... }
+
+        // We handle the updateProgress format here:
+        if (stats.globalStats) {
+            // Update step badges
+            // The globalStats is object/array: { stepId: count }
+            for (const [stepId, count] of Object.entries(stats.globalStats)) {
+                // Find global badge
+                const badge = document.querySelector(`.global-stat-badge[data-step-id="${stepId}"]`);
+                if(badge) badge.innerText = count;
+            }
+        }
+
+        if (typeof stats.globalNotStarted !== 'undefined') {
+            updateText('global-not-started-count', stats.globalNotStarted);
+        }
+
+        if (stats.employerStats && stats.employerId) {
+            for (const [stepId, count] of Object.entries(stats.employerStats)) {
+                 // Find employer badge inside the specific employer stats container
+                 const container = document.getElementById(`employer-stats-${stats.employerId}`);
+                 if (container) {
+                     const badge = container.querySelector(`.employer-stat-badge[data-step-id="${stepId}"]`);
+                     if(badge) badge.innerText = count;
+                 }
+            }
+        }
+        if (typeof stats.employerNotStarted !== 'undefined' && stats.employerId) {
+             updateText(`employer-not-started-${stats.employerId}`, stats.employerNotStarted);
+        }
+
+        // Handle standard getStats format (from finalize/cancel)
+        if (stats.global && typeof stats.global.total !== 'undefined') {
             updateText('global-total-count', stats.global.total);
             updateText('global-not-started-count', stats.global.not_started);
             updateText('global-cancelled-count', stats.global.cancelled);
             updateText('global-saved-count', stats.global.saved);
             updateText('global-employers-count', stats.global.employers_count);
         }
-
-        // Employer
-        if (stats.employer) {
+        if (stats.employer && typeof stats.employer.total !== 'undefined') {
             updateText(`employer-total-${stats.employer.id}`, stats.employer.total);
             updateText(`employer-not-started-${stats.employer.id}`, stats.employer.not_started);
             updateText(`employer-cancelled-${stats.employer.id}`, stats.employer.cancelled);
@@ -996,8 +1074,9 @@
                             toggleElement(`badge-completed-${id}`, true);
                             toggleElement(`badge-cancelled-${id}`, false);
                             Swal.fire('{{ __('Saved!') }}', '{{ __('Employee marked as completed.') }}', 'success');
+
+                            updateStatsUI(data.stats);
                             applyFilters();
-                            recalculateVisibleStats();
                         }
                     }
                 });
@@ -1042,8 +1121,9 @@
                             const stepsBtns = card.querySelectorAll('button[data-step-id]');
                             stepsBtns.forEach(btn => btn.disabled = false);
                             Swal.fire('{{ __('Restored!') }}', '{{ __('Employee is back to pending.') }}', 'success');
+
+                            updateStatsUI(data.stats);
                             applyFilters();
-                            recalculateVisibleStats();
                         }
                     }
                 });
@@ -1086,8 +1166,9 @@
                             toggleElement(`badge-completed-${id}`, false);
                             toggleElement(`badge-cancelled-${id}`, true);
                             Swal.fire('{{ __('Cancelled') }}', '{{ __('Registration cancelled.') }}', 'success');
+
+                            updateStatsUI(data.stats);
                             applyFilters();
-                            recalculateVisibleStats();
                         }
                     }
                 });
@@ -1171,7 +1252,7 @@
                             card.style.transform = 'scale(0.9)';
                             setTimeout(() => {
                                 card.remove();
-                                recalculateVisibleStats(); // Update stats after removal
+                                updateStatsUI(data.stats); // Update stats after removal
                             }, 500);
                         }
                         Swal.fire('{{ __('Deleted!') }}', '{{ __('Employee has been deleted.') }}', 'success');
@@ -1277,8 +1358,9 @@
                 card.dataset.isNotStarted = (highestId === '') ? 'true' : 'false';
 
                 // 3. Re-apply filters & stats
+                // Use the returned stats to update UI without refresh
+                updateStatsUI(data);
                 applyFilters();
-                recalculateVisibleStats();
 
             } else {
                 throw new Error(data.message || 'Unknown error');
