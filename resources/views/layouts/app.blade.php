@@ -1352,7 +1352,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Initialization ---
 
-    if (!selectAllCheckbox && employeeCheckboxes.length === 0) return;
+    // Note: We use Event Delegation for the individual checkboxes to support dynamic content (AJAX)
+    // The 'employeeCheckboxes' variable defined above is static. We will re-query it when needed inside updateUI.
 
     // Helper to extract rich data
     function getEmployeeData(cb) {
@@ -1366,40 +1367,52 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    // 1. Restore state from storage on load
-    const savedIds = window.getGlobalSelectedIds();
-    employeeCheckboxes.forEach(cb => {
-        if (savedIds.includes(String(cb.value))) {
-            cb.checked = true;
-        }
-    });
-    updateUI();
+    // Expose UI refresh globally (for AJAX loaded content)
+    window.refreshGlobalSelectionUI = function() {
+        const savedIds = window.getGlobalSelectedIds();
+        // Re-query checkboxes to include newly added ones
+        const currentCheckboxes = document.querySelectorAll('.employee-checkbox');
+        currentCheckboxes.forEach(cb => {
+            if (savedIds.includes(String(cb.value))) {
+                cb.checked = true;
+            } else {
+                cb.checked = false; // Ensure unchecked if not in state
+            }
+        });
+        updateUI();
+    };
 
-    // 2. Handle Individual Checkbox Changes
-    employeeCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function () {
-            const data = getEmployeeData(this);
-            if (this.checked) {
+    // 1. Restore state from storage on load
+    window.refreshGlobalSelectionUI();
+
+    // 2. Handle Individual Checkbox Changes (Event Delegation)
+    document.body.addEventListener('change', function (e) {
+        if (e.target.matches('.employee-checkbox')) {
+            const checkbox = e.target;
+            const data = getEmployeeData(checkbox);
+            if (checkbox.checked) {
                 addItems([data]);
             } else {
                 removeItemsByIds([data.id]);
             }
-        });
+        }
     });
 
     // 3. Handle "Select All" Checkbox
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function () {
-            const visibleItems = Array.from(employeeCheckboxes).map(cb => getEmployeeData(cb));
+            // Re-query currently visible checkboxes
+            const currentCheckboxes = document.querySelectorAll('.employee-checkbox');
+            const visibleItems = Array.from(currentCheckboxes).map(cb => getEmployeeData(cb));
             const visibleIds = visibleItems.map(item => item.id);
 
             if (this.checked) {
                 // Check all visible and add to storage
-                employeeCheckboxes.forEach(cb => cb.checked = true);
+                currentCheckboxes.forEach(cb => cb.checked = true);
                 addItems(visibleItems);
             } else {
                 // Uncheck all visible and remove from storage
-                employeeCheckboxes.forEach(cb => cb.checked = false);
+                currentCheckboxes.forEach(cb => cb.checked = false);
                 removeItemsByIds(visibleIds);
             }
         });
