@@ -132,10 +132,7 @@
 
                     fetch('{{ route('employees.update', $employee->id) }}', {
                         method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
+                        headers: { 'Accept': 'application/json' },
                         body: formData
                     })
                     .then(res => res.json())
