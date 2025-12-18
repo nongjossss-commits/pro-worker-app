@@ -84,11 +84,11 @@ public function reinstate(Employee $employee)
 
     public function index(Request $request)
 {
-    // Filter out 'registration_pending' status so they don't appear until finalized
+    // Filter out 'registration_pending' and 'registration_cancelled' statuses so they don't appear until finalized
     $query = Employee::query()
         ->whereNull('terminated_at')
         ->where(function($q) {
-            $q->where('status', '!=', 'registration_pending')
+            $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
               ->orWhereNull('status');
         });
 
@@ -588,7 +588,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $query = Employee::query()
                 ->whereNull('terminated_at')
                 ->where(function($q) {
-                    $q->where('status', '!=', 'registration_pending')
+                    $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
                       ->orWhereNull('status');
                 });
         }

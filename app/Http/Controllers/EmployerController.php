@@ -123,7 +123,12 @@ public function edit(Request $request, Employer $employer)
     $jobOwners = JobOwner::orderBy('name')->get();
     $staffUsers = User::role(['admin', 'staff', 'caretaker'])->orderBy('name')->get();
 
-    $employeeQuery = $employer->employees()->whereNull('terminated_at');
+    $employeeQuery = $employer->employees()
+        ->whereNull('terminated_at')
+        ->where(function($q) {
+            $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
+              ->orWhereNull('status');
+        });
 
     // --- START: ADDED FILTERING LOGIC ---
     if ($request->filled('search')) {
@@ -323,7 +328,12 @@ public function edit(Request $request, Employer $employer)
         if ($isHistoryExport) {
             $query = $employer->employees()->whereNotNull('terminated_at');
         } else {
-            $query = $employer->employees()->whereNull('terminated_at');
+            $query = $employer->employees()
+                ->whereNull('terminated_at')
+                ->where(function($q) {
+                    $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
+                      ->orWhereNull('status');
+                });
         }
 
         // Reuse the same filtering logic from the edit/history methods
