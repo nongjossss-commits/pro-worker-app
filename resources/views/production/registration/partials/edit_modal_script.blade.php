@@ -54,6 +54,26 @@
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalBtnText = submitBtn.innerText;
 
+        // --- Fix for Photo Upload ---
+        // Ensure the file from the dedicated input (which might be handled by cropper)
+        // is actually attached to the FormData if it's not automatically picked up.
+        // We look for 'employeePhotoInput' specifically as that's what the partial uses.
+        const photoInput = document.getElementById('employeePhotoInput');
+        if (photoInput && photoInput.files.length > 0) {
+            // Check if it's already in formData (it should be if name attribute matches)
+            // But if it was manipulated programmatically, sometimes it's safer to append explicitly
+            // especially if the name attribute was removed or manipulated.
+            // The form input has name="employeePhoto".
+            if (!formData.has('employeePhoto') || formData.get('employeePhoto').size === 0) {
+                formData.set('employeePhoto', photoInput.files[0]);
+            }
+        }
+
+        // Ensure _method is PUT if not present
+        if (!formData.has('_method')) {
+            formData.append('_method', 'PUT');
+        }
+
         submitBtn.disabled = true;
         submitBtn.innerText = 'Saving...';
 

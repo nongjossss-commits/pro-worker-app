@@ -1316,10 +1316,20 @@
             }
         }
 
+        // Get current search and filter params
+        const urlParams = new URLSearchParams(window.location.search);
+        const search = urlParams.get('search') || '';
+        const filter = urlParams.get('filter') || '';
+
         fetch(`/production/registration/progress/${employeeId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ step_id: stepId, completed: completed })
+            body: JSON.stringify({
+                step_id: stepId,
+                completed: completed,
+                search: search,
+                filter: filter
+            })
         })
         .then(res => {
             if (!res.ok) {

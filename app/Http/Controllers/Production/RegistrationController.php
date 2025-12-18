@@ -767,6 +767,24 @@ class RegistrationController extends Controller
                 $allQuery->withoutGlobalScopes()->whereNull('deleted_at');
             }
 
+            // --- APPLY SEARCH & FILTER FROM REQUEST ---
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $allQuery->where(function($q) use ($search) {
+                    $q->where('employeeNameTh', 'like', "%{$search}%")
+                      ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                      ->orWhere('employeePassport', 'like', "%{$search}%")
+                      ->orWhereHas('employer', function($q2) use ($search) {
+                          $q2->where('employerNameTh', 'like', "%{$search}%")
+                             ->orWhere('employerNameEn', 'like', "%{$search}%")
+                             ->orWhereHas('jobOwner', function($q3) use ($search) {
+                                 $q3->where('name', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            // We fetch the employees first to calculate stats in PHP (consistent with index method)
             $allEmployees = $allQuery->whereIn('status', ['registration_pending', 'registration_completed'])
                                     ->with('registrationSteps')
                                     ->get();
@@ -791,18 +809,10 @@ class RegistrationController extends Controller
                 }
             }
 
-            // Employer Stats
-            $empQuery = Employee::query();
-            if (method_exists($empQuery, 'withoutGlobalScopes')) {
-                $empQuery->withoutGlobalScopes()->whereNull('deleted_at');
-            }
+            // Employer Stats (Re-query from $allEmployees collection to respect search)
+            $employerEmployees = $allEmployees->where('employer_id', $employee->employer_id);
 
             $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $employerEmployees = $empQuery->where('employer_id', $employee->employer_id)
-                                        ->whereIn('status', ['registration_pending', 'registration_completed'])
-                                        ->with('registrationSteps')
-                                        ->get();
-
             $employerNotStarted = 0;
 
             foreach ($employerEmployees as $emp) {
