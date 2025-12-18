@@ -200,25 +200,52 @@
                     });
 
                     canvas.toBlob(function (blob) {
-                        if (!blob) return;
+                        if (!blob) {
+                            console.error('Canvas to Blob failed');
+                            if (typeof showToast === 'function') {
+                                showToast('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ', 'danger');
+                            } else {
+                                alert('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+                            }
+                            return;
+                        }
 
-                        const croppedImageUrl = URL.createObjectURL(blob);
-                        if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
+                        try {
+                            const croppedImageUrl = URL.createObjectURL(blob);
+                            if(employeePhotoPreview) {
+                                // Force reload by adding a timestamp to avoid caching issues (though Blob URL is unique usually)
+                                employeePhotoPreview.src = croppedImageUrl;
+                            }
 
-                        // Create a new File object
-                        const croppedFile = new File([blob], originalFile.name, {
-                            type: originalFile.type || 'image/jpeg',
-                            lastModified: Date.now()
-                        });
+                            // Create a new File object
+                            const croppedFile = new File([blob], originalFile.name, {
+                                type: originalFile.type || 'image/jpeg',
+                                lastModified: Date.now()
+                            });
 
-                        // Use a DataTransfer to create a FileList
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(croppedFile);
+                            // Use a DataTransfer to create a FileList
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(croppedFile);
 
-                        // Assign the FileList to the ACTUAL input for submission
-                        if(actualInput) actualInput.files = dataTransfer.files;
+                            // Assign the FileList to the ACTUAL input for submission
+                            if(actualInput) {
+                                actualInput.files = dataTransfer.files;
 
-                        cropperModal.hide();
+                                // Feedback to user
+                                if (typeof showToast === 'function') {
+                                    showToast('รูปภาพถูกเลือกแล้ว กรุณากดปุ่มบันทึกด้านล่างเพื่อยืนยันการแก้ไข', 'success');
+                                }
+                            } else {
+                                console.error('Actual input #employeePhotoInput not found');
+                            }
+
+                            cropperModal.hide();
+                        } catch (e) {
+                            console.error('Error handling cropped image:', e);
+                            if (typeof showToast === 'function') {
+                                showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                            }
+                        }
 
                     }, originalFile.type || 'image/jpeg');
                 });
