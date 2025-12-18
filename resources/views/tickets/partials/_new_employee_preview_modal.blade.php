@@ -142,7 +142,7 @@
                 {{-- Additional Work Permit Info --}}
                  <div class="row g-2 mb-3 bg-light p-2 rounded">
                     <div class="col-md-4">
-                        <label class="fw-bold small">เลข Name List:</label>
+                        <label class="fw-bold small">เลข RA จากระบบ outsource:</label>
                         <div id="preview_name_list" class="text-dark"></div>
                     </div>
                      <div class="col-md-4">

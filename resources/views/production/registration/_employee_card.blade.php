@@ -111,6 +111,79 @@
                         </div>
                     </div>
                 </div>
+
+            {{-- 3 Extra Fields (Editable) --}}
+            <div class="d-flex align-items-center gap-2 flex-wrap" x-data="{
+                isEditing: false,
+                nameList: '{{ $employee->name_list_number }}',
+                reqNo: '{{ $employee->request_number }}',
+                refId: '{{ $employee->employee_reference_id }}',
+                saveFields() {
+                    let formData = new FormData();
+                    formData.append('name_list_number', this.nameList);
+                    formData.append('request_number', this.reqNo);
+                    formData.append('employee_reference_id', this.refId);
+                    formData.append('_method', 'PUT');
+                    formData.append('_token', '{{ csrf_token() }}');
+
+                    // Minimal required fields to pass validation if controller is strict
+                    formData.append('employer_id', '{{ $employee->employer_id }}');
+                    formData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
+
+                    fetch('{{ route('employees.update', $employee->id) }}', {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json' },
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) {
+                            showToast('{{ __('Saved successfully') }}', 'success');
+                            this.isEditing = false;
+                        } else {
+                            showToast('{{ __('Error saving') }}', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('{{ __('Error saving') }}', 'danger');
+                    });
+                }
+            }">
+                <div class="d-flex gap-2">
+                    {{-- Field 1: Name List (Renamed to RA) --}}
+                    <div style="width: 140px;">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
+                        <div x-show="!isEditing" class="fw-bold text-dark border rounded px-2 py-1 bg-light" style="min-height: 31px;" x-text="nameList || '-'"></div>
+                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
+                    </div>
+                    {{-- Field 2: Request No --}}
+                    <div style="width: 140px;">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
+                        <div x-show="!isEditing" class="fw-bold text-dark border rounded px-2 py-1 bg-light" style="min-height: 31px;" x-text="reqNo || '-'"></div>
+                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
+                    </div>
+                    {{-- Field 3: Ref ID --}}
+                    <div style="width: 140px;">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
+                        <div x-show="!isEditing" class="fw-bold text-dark border rounded px-2 py-1 bg-light" style="min-height: 31px;" x-text="refId || '-'"></div>
+                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
+                    </div>
+                </div>
+
+                {{-- Action Buttons for 3 Fields --}}
+                <div class="mt-3">
+                    <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Fields">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button x-show="isEditing" @click="saveFields()" class="btn btn-sm btn-success rounded-circle" title="Save Fields">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button x-show="isEditing" @click="isEditing = false" class="btn btn-sm btn-outline-danger rounded-circle" title="Cancel">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
             </div>
 
             {{-- Actions --}}

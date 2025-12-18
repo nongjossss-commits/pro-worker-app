@@ -1174,7 +1174,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'pinkCardNo' => 'Pink Card No.',
             'tax_id_number' => 'Tax ID',
             'request_number' => 'Request Number',
-            'name_list_number' => 'Name List Number',
+            'name_list_number' => 'เลข RA จากระบบ outsource',
             'job_title' => 'Job Title',
             'job_description' => 'Job Description',
             'startDate' => 'Start Date',

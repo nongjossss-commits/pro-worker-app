@@ -233,6 +233,10 @@
             color: white;
             font-size: 10px;
         }
+
+        .form-check-input {
+            border: 2px solid #0d6efd !important;
+        }
     </style>
 </head>
 <body>
