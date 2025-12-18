@@ -264,12 +264,31 @@ class RegistrationController extends Controller
 
         // Apply Search (if global search is active)
         if ($request->has('search') && $request->search) {
-             $search = $request->search;
-             $query->where(function($q) use ($search) {
-                $q->where('employeeNameTh', 'like', "%{$search}%")
-                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%");
-             });
+            $search = $request->search;
+
+            // Check if search matches Employer Name (TH/EN) or Job Owner
+            // Note: We use case-insensitive check to match 'like' query behavior broadly
+            $employerMatches = false;
+            if (stripos($employer->employerNameTh, $search) !== false ||
+                stripos($employer->employerNameEn, $search) !== false) {
+                $employerMatches = true;
+            }
+
+            if (!$employerMatches && $employer->jobOwner && stripos($employer->jobOwner->name, $search) !== false) {
+                $employerMatches = true;
+            }
+
+            if ($employerMatches) {
+                // If the employer itself matches the search term, we do NOT filter employees by name.
+                // We show ALL employees for this employer (subject to other status filters above).
+            } else {
+                // Employer does not match, so user is searching for specific employee
+                $query->where(function($q) use ($search) {
+                    $q->where('employeeNameTh', 'like', "%{$search}%")
+                      ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                      ->orWhere('employeePassport', 'like', "%{$search}%");
+                });
+            }
         }
 
         // Apply Filter
