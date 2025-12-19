@@ -631,7 +631,34 @@ class ImportEmployeeController extends Controller
             }
         }
 
-        // 3. Reject other formats (Y-m-d, m/d/Y, etc.) as per user instruction
+        // 3. NEW: Handle English Month Formats (e.g., "1 jan 1995", "1 Jan 1995")
+        // Regex: Day (1-2 digits), Separator, Month (Text 3+ chars), Separator, Year (2 or 4 digits)
+        if (preg_match('/^(\d{1,2})[\/\-\.\s]+([a-zA-Z]{3,})[\/\-\.\s]+(\d{2,4})$/', $value, $matches)) {
+            try {
+                // Reconstruct to "Day Month Year" string for parsing
+                // Example: "1 jan 1995"
+                $day = $matches[1];
+                $monthStr = $matches[2];
+                $year = $matches[3];
+
+                $stringToParse = "$day $monthStr $year";
+
+                // Carbon parses standard formats like "1 jan 1995" very robustly
+                $date = Carbon::parse($stringToParse);
+
+                // Safety Check: Prevent logical overflows (e.g., "30 Feb" -> "2 Mar")
+                // We ensure the day we parsed matches the day in the input
+                if ($date->day !== (int)$day) {
+                    return null;
+                }
+
+                return $date->format('Y-m-d');
+            } catch (\Exception $e) {
+                // If parsing fails despite regex match, fall through to null
+            }
+        }
+
+        // 4. Reject other formats (Y-m-d, m/d/Y, etc.) as per user instruction
         return null;
     }
 
