@@ -556,6 +556,10 @@ if (typeof window.financialManager === 'undefined') {
                 const map = { installment: 'Installment', down_payment: 'Down Payment', full_payment: 'Full Payment' };
                 return map[type] || type;
             },
+            formatStatus(status) {
+                const map = { pending: 'Pending', partial: 'Partial', paid: 'Paid', overdue: 'Overdue' };
+                return map[status] || status;
+            },
             statusClass(status) {
                 const map = { pending: 'bg-secondary', partial: 'bg-warning text-dark', paid: 'bg-success', overdue: 'bg-danger' };
                 return map[status] || 'bg-light text-dark';
