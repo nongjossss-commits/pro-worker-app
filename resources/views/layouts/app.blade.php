@@ -1249,31 +1249,32 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
+// --- Global Selection Manager (Persists across pages/searches) ---
+const STORAGE_KEY = 'selectedEmployeeData';
+
+// Helper: Get all stored data
+window.getGlobalSelectedData = function() {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    try {
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.error('Error parsing selectedEmployeeData', e);
+        return [];
+    }
+};
+
+// Helper: Get just IDs (compatibility)
+window.getGlobalSelectedIds = function() {
+    return window.getGlobalSelectedData().map(item => item.id);
+};
+
 document.addEventListener('DOMContentLoaded', function () {
-    // --- Global Selection Manager (Persists across pages/searches) ---
     // Stores array of objects: { id: "1", employer_id: "5" }
-    const STORAGE_KEY = 'selectedEmployeeData';
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
     const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
     const bulkActionBar = document.querySelector('.bulk-action-bar');
     const selectedCountSpan = document.getElementById('selected-count');
     const bulkActionButton = bulkActionBar ? bulkActionBar.querySelector('button') : null;
-
-    // Helper: Get all stored data
-    window.getGlobalSelectedData = function() {
-        const stored = sessionStorage.getItem(STORAGE_KEY);
-        try {
-            return stored ? JSON.parse(stored) : [];
-        } catch (e) {
-            console.error('Error parsing selectedEmployeeData', e);
-            return [];
-        }
-    };
-
-    // Helper: Get just IDs (compatibility)
-    window.getGlobalSelectedIds = function() {
-        return window.getGlobalSelectedData().map(item => item.id);
-    };
 
     // Helper: Save data
     window.setGlobalSelectedData = function(data) {

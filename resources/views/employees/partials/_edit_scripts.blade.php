@@ -212,6 +212,11 @@
                     imageSmoothingQuality: 'high',
                 });
 
+                if (!canvas) {
+                    alert('เกิดข้อผิดพลาดในการตัดภาพ (Canvas creation failed). กรุณาลองใหม่อีกครั้ง');
+                    return;
+                }
+
                 canvas.toBlob(function (blob) {
                     if (!blob) return;
 
