@@ -273,6 +273,19 @@ class ProductionController extends Controller
             }
         }
 
+        // Check if we are updating financial data for a specific group
+        if ($request->has('financial_group_id') && $request->filled('financial_group_id')) {
+            $group = $production->financialGroups()->findOrFail($request->financial_group_id);
+            $group->update([
+                'financial_data' => $request->financial
+            ]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Financial settings updated.']);
+            }
+            return back()->with('success', 'Financial settings updated.');
+        }
+
         $production->update([
             'project_name' => $request->project_name,
             'description' => $request->description,

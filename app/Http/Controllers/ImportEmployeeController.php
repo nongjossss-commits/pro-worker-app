@@ -46,7 +46,13 @@ class ImportEmployeeController extends Controller
              }
         }
 
-        return view('employees.import', compact('employers', 'production'));
+        // Hydrate imported employees from session IDs if available (fix for max_packet crash)
+        $sessionImportedEmployees = collect();
+        if (session()->has('imported_employee_ids')) {
+            $sessionImportedEmployees = Employee::whereIn('id', session('imported_employee_ids'))->get();
+        }
+
+        return view('employees.import', compact('employers', 'production', 'sessionImportedEmployees'));
     }
 
     /**
@@ -590,7 +596,6 @@ class ImportEmployeeController extends Controller
 
             return back()->with('success', $msg)
                          ->with('import_errors', $errors)
-                         ->with('imported_employees', $importedEmployees)
                          ->with('imported_employee_ids', $importedEmployeeIds)
                          ->with('production_id', $productionId);
 
@@ -618,20 +623,46 @@ class ImportEmployeeController extends Controller
         }
 
         $value = trim((string)$value);
+        $day = null;
+        $month = null;
+        $year = null;
 
-        // 2. Strict D/M/Y Regex
-        // Supports 1/1/1999, 01/01/1999, 1-1-1999, 1.1.1999
+        // 2. Numeric Format: D/M/Y or D-M-Y or D.M.Y
         if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/', $value, $matches)) {
             $day = (int)$matches[1];
             $month = (int)$matches[2];
             $year = (int)$matches[3];
+        }
+        // 3. Text Month Format: D Mon Y (e.g., 1 Jan 1995, 14-Feb-2567)
+        elseif (preg_match('/^(\d{1,2})[\/\-\.\s]+([a-zA-Z]{3,})[\/\-\.\s]+(\d{4})$/', $value, $matches)) {
+            $day = (int)$matches[1];
+            $monthStr = strtolower($matches[2]);
+            $year = (int)$matches[3];
+
+            // Manual map to ensure accuracy and avoid Carbon guessing M/D vs D/M
+            $monthMap = [
+                'jan' => 1, 'feb' => 2, 'mar' => 3, 'apr' => 4, 'may' => 5, 'jun' => 6,
+                'jul' => 7, 'aug' => 8, 'sep' => 9, 'oct' => 10, 'nov' => 11, 'dec' => 12
+            ];
+
+            // Check first 3 chars
+            $prefix = substr($monthStr, 0, 3);
+            if (isset($monthMap[$prefix])) {
+                $month = $monthMap[$prefix];
+            }
+        }
+
+        if ($day && $month && $year) {
+            // Smart Buddhist Year Conversion (if Year > 2400, assume BE and convert to CE)
+            if ($year > 2400) {
+                $year -= 543;
+            }
 
             if (checkdate($month, $day, $year)) {
                 return Carbon::create($year, $month, $day)->format('Y-m-d');
             }
         }
 
-        // 3. Reject other formats (Y-m-d, m/d/Y, etc.) as per user instruction
         return null;
     }
 

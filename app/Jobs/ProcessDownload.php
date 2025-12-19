@@ -222,32 +222,21 @@ class ProcessDownload implements ShouldQueue
                 $employeeNameTh = $employee->employeeNameTh;
                 $employeeNameEn = $employee->employeeNameEn;
 
-                // Add separator page
-                $pdf->AddPage();
-
+                // Prepare Header Text
                 if ($hasThaiFont && $employeeNameTh) {
-                    $pdf->SetFont('THSarabunNew', 'B', 24);
                     // Convert UTF-8 to cp874 (TIS-620) for FPDF
-                    $displayName = @iconv('UTF-8', 'cp874//TRANSLIT', $employeeNameTh);
+                    $nameDisplay = @iconv('UTF-8', 'cp874//TRANSLIT', $employeeNameTh);
                 } else {
-                    $pdf->SetFont('Arial', 'B', 20);
-                    $displayName = $employeeNameEn ?? 'Employee ID: ' . $employee->id;
+                    $nameDisplay = $employeeNameEn ?? 'Employee ID: ' . $employee->id;
                     // Sanitize fallback
-                    $displayName = preg_replace('/[^\x20-\x7E]/', '', $displayName);
+                    $nameDisplay = preg_replace('/[^\x20-\x7E]/', '', $nameDisplay);
                 }
 
-                // Centered Name
-                $pdf->SetXY(0, 100);
-                $pdf->Cell(0, 10, $displayName, 0, 1, 'C');
-
-                // Add Subtitle (ID or Employer)
-                $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', 16);
-                $subText = "ID: " . $employee->id;
-                $pdf->Cell(0, 10, $subText, 0, 1, 'C');
+                $headerText = $nameDisplay . "   ID: " . $employee->id;
 
                 foreach ($this->selectedFiles as $fileType) {
                     try {
-                        $this->addFilesToPdf($pdf, $employee, $fileType);
+                        $this->addFilesToPdf($pdf, $employee, $fileType, $headerText, $hasThaiFont);
                     } catch (Throwable $e) {
                         Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
                     }
@@ -269,7 +258,7 @@ class ProcessDownload implements ShouldQueue
         }
     }
 
-    protected function addFilesToPdf($pdf, $employee, $fileType)
+    protected function addFilesToPdf($pdf, $employee, $fileType, $headerText, $hasThaiFont)
     {
         $attributes = $this->fileMap[$fileType] ?? [];
         if (!is_array($attributes)) {
@@ -293,6 +282,10 @@ class ProcessDownload implements ShouldQueue
                                     // Use original orientation
                                     $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                                     $pdf->useTemplate($tplIdx);
+
+                                    // Add Header
+                                    $this->drawHeader($pdf, $headerText, $hasThaiFont);
+
                                 } catch (Throwable $e) {
                                     // Log and skip bad pages
                                     Log::warning("Failed to import page $i of $originalFilePath: " . $e->getMessage());
@@ -312,8 +305,11 @@ class ProcessDownload implements ShouldQueue
                             $pageW = 210;
                             $pageH = 297;
                             $margin = 10;
+                            // Add extra top margin for header so image doesn't overlap
+                            $topMargin = 15;
+
                             $writableW = $pageW - ($margin * 2);
-                            $writableH = $pageH - ($margin * 2);
+                            $writableH = $pageH - ($margin + $topMargin);
 
                             // Get image dimensions
                             list($imgW, $imgH) = getimagesize($normalizedPath);
@@ -330,11 +326,14 @@ class ProcessDownload implements ShouldQueue
                                $newH = $writableW / $ratio;
                             }
 
-                            // Center the image
+                            // Center the image, respecting top margin
                             $x = ($pageW - $newW) / 2;
-                            $y = ($pageH - $newH) / 2;
+                            $y = $topMargin + ($writableH - $newH) / 2;
 
                             $pdf->Image($normalizedPath, $x, $y, $newW, $newH);
+
+                            // Add Header
+                            $this->drawHeader($pdf, $headerText, $hasThaiFont);
                         }
                     } catch (Throwable $e) {
                         Log::error("Failed to merge file $originalFilePath: " . $e->getMessage());
@@ -342,6 +341,21 @@ class ProcessDownload implements ShouldQueue
                 }
             }
         }
+    }
+
+    protected function drawHeader($pdf, $headerText, $hasThaiFont)
+    {
+        // Save current position
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
+
+        // Draw header at Top Left (10, 5)
+        $pdf->SetXY(10, 5);
+        $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', 'B', 14);
+        $pdf->Cell(0, 10, $headerText, 0, 0, 'L');
+
+        // Restore position
+        $pdf->SetXY($x, $y);
     }
 
     /**

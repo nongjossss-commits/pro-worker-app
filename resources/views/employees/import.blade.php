@@ -117,9 +117,9 @@
 </div>
 
 {{-- Imported Employees Summary Modal --}}
-@if(session('imported_employees'))
+@if(isset($sessionImportedEmployees) && $sessionImportedEmployees->isNotEmpty())
 @php
-    $importedIds = session('imported_employee_ids', collect(session('imported_employees'))->pluck('id')->toArray());
+    $importedIds = $sessionImportedEmployees->pluck('id')->toArray();
 @endphp
 <div class="modal fade" id="importedEmployeesModal" tabindex="-1" aria-labelledby="importedEmployeesModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -132,7 +132,7 @@
             </div>
             <div class="modal-body">
                 <div class="alert alert-success">
-                    {{ __('Successfully imported') }} <strong>{{ count(session('imported_employees')) }}</strong> {{ __('employees.') }}
+                    {{ __('Successfully imported') }} <strong>{{ $sessionImportedEmployees->count() }}</strong> {{ __('employees.') }}
                     {{ __('Please review the list below. You can edit individual records or use Advanced Edit for bulk changes.') }}
                 </div>
 
@@ -161,7 +161,7 @@
                             </tr>
                         </thead>
                         <tbody id="import-table-body">
-                            @foreach(session('imported_employees') as $employee)
+                            @foreach($sessionImportedEmployees as $employee)
                                 @include('employees.partials._import_table_row', ['employee' => $employee])
                             @endforeach
                         </tbody>
