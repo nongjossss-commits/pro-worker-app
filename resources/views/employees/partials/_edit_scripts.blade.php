@@ -140,6 +140,9 @@
             }
 
             cropperModalEl.addEventListener('shown.bs.modal', function () {
+                // Disable save button until cropper is ready
+                if(cropImageBtn) cropImageBtn.disabled = true;
+
                 // Destroy existing cropper if any to be safe
                 if (cropper) {
                     cropper.destroy();
@@ -148,10 +151,10 @@
 
                 // Ensure image is loaded and ready
                 if (imageToCrop.complete) {
-                    setTimeout(initCropper, 200);
+                    initCropper();
                 } else {
                     imageToCrop.onload = function() {
-                        setTimeout(initCropper, 200);
+                        initCropper();
                     };
                 }
             });
@@ -175,6 +178,13 @@
                         scalable: true,
                         cropBoxMovable: true,
                         cropBoxResizable: true,
+                        minCropBoxWidth: 50,
+                        minCropBoxHeight: 50,
+                        checkCrossOrigin: false,
+                        ready: function () {
+                            // Enable save button when cropper is ready
+                            if(cropImageBtn) cropImageBtn.disabled = false;
+                        },
                     });
                 } catch (err) {
                     console.error(err);
@@ -209,6 +219,8 @@
                 const canvas = cropper.getCroppedCanvas({
                     width: 300,
                     height: 360,
+                    minWidth: 200,
+                    minHeight: 200,
                     imageSmoothingQuality: 'high',
                 });
 
