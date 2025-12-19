@@ -328,10 +328,10 @@
                     <div class="card-header py-3 px-4 border-bottom {{ $employerHeaderClass }}" id="heading{{ $employer->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions (Using Grid for Alignment) --}}
-                    <div class="row align-items-xl-center g-3 mb-3">
+                    <div class="row align-items-lg-center g-3 mb-3">
 
                         {{-- Left: Identity --}}
-                        <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
+                        <div class="col-12 col-lg-auto d-flex align-items-center flex-wrap gap-3">
                             @can('edit-employees')
                             {{-- Select All for Employer --}}
                             <div class="form-check mb-0">
@@ -366,8 +366,8 @@
                         </div>
 
                         {{-- Right: Stats & Finance --}}
-                        <div class="col-12 col-xl text-xl-end">
-                            <div class="d-flex align-items-center justify-content-xl-end gap-2 flex-wrap">
+                        <div class="col-12 col-lg">
+                            <div class="d-flex align-items-center justify-content-lg-end gap-2 flex-wrap">
                                  {{-- Stats Badges (Fixed Widths for Alignment) --}}
                                  <div class="d-flex align-items-center gap-2 me-xl-3">
                                     {{-- Total --}}

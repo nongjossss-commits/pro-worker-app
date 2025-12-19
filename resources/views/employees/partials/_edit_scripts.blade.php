@@ -1,7 +1,139 @@
 <script>
+    // Global state for the active cropping session
+    window.cropperState = {
+        cropper: null,
+        originalFile: null,
+        targetInput: null,
+        targetPreview: null
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- One-time setup for Cropper Modal events ---
+        const cropperModalEl = document.getElementById('cropperModal');
+        const imageToCrop = document.getElementById('imageToCrop');
+        const cropImageBtn = document.getElementById('cropImageBtn');
+
+        if (cropperModalEl && imageToCrop && cropImageBtn) {
+            const cropperModal = new bootstrap.Modal(cropperModalEl);
+
+            // Initialize Cropper when modal is shown
+            cropperModalEl.addEventListener('shown.bs.modal', function() {
+                // Destroy previous instance if exists
+                if (window.cropperState.cropper) {
+                    window.cropperState.cropper.destroy();
+                }
+
+                // Ensure image is loaded
+                if (imageToCrop.complete) {
+                    initCropperInstance();
+                } else {
+                    imageToCrop.onload = initCropperInstance;
+                }
+            });
+
+            function initCropperInstance() {
+                try {
+                    window.cropperState.cropper = new Cropper(imageToCrop, {
+                        aspectRatio: 150 / 180,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 0.8,
+                        movable: true,
+                        zoomable: true,
+                        rotatable: true,
+                        scalable: true,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                    });
+                } catch (err) {
+                    console.error('Cropper init error:', err);
+                    alert('ไม่สามารถโหลดเครื่องมือตัดภาพได้');
+                }
+            }
+
+            // Clean up when modal is hidden
+            cropperModalEl.addEventListener('hidden.bs.modal', function() {
+                if (window.cropperState.cropper) {
+                    window.cropperState.cropper.destroy();
+                    window.cropperState.cropper = null;
+                }
+                imageToCrop.src = '';
+                // Clear state
+                window.cropperState.originalFile = null;
+            });
+
+            // Handle "Crop and Save" click
+            cropImageBtn.addEventListener('click', function() {
+                const state = window.cropperState;
+                if (!state.cropper) {
+                    alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
+                    return;
+                }
+
+                const canvas = state.cropper.getCroppedCanvas({
+                    width: 300,
+                    height: 360,
+                    imageSmoothingQuality: 'high',
+                });
+
+                if (!canvas) {
+                    alert('เกิดข้อผิดพลาดในการตัดภาพ');
+                    return;
+                }
+
+                canvas.toBlob(function(blob) {
+                    if (!blob) return;
+
+                    const croppedImageUrl = URL.createObjectURL(blob);
+                    if (state.targetPreview) {
+                        state.targetPreview.src = croppedImageUrl;
+                    }
+
+                    // Create a new File object
+                    const fileName = state.originalFile ? state.originalFile.name : 'photo.jpg';
+                    const fileType = state.originalFile ? (state.originalFile.type || 'image/jpeg') : 'image/jpeg';
+
+                    const croppedFile = new File([blob], fileName, {
+                        type: fileType,
+                        lastModified: Date.now()
+                    });
+
+                    // Assign to the actual file input
+                    if (state.targetInput) {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(croppedFile);
+                        state.targetInput.files = dataTransfer.files;
+
+                        // Dispatch change event to notify listeners (if any)
+                        state.targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    cropperModal.hide();
+
+                }, state.originalFile ? (state.originalFile.type || 'image/jpeg') : 'image/jpeg');
+            });
+
+            // Expose a helper to start cropping
+            window.startCropping = function(file, inputElement, previewElement) {
+                if (!file) return;
+
+                window.cropperState.originalFile = file;
+                window.cropperState.targetInput = inputElement;
+                window.cropperState.targetPreview = previewElement;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imageToCrop.src = e.target.result;
+                    cropperModal.show();
+                };
+                reader.readAsDataURL(file);
+            };
+        }
+    });
+
     // Define init function globally so it can be called from other scripts (like import modal)
     window.initEmployeeEditForm = function() {
-        // --- V6: Get all required elements ---
+        // --- Get all required elements ---
         const titleTh = document.getElementById('employeeTitleTh');
         const titleEn = document.getElementById('employeeTitleEn');
         const genderInput = document.getElementById('employeeGender');
@@ -97,7 +229,7 @@
         if(mouGroupSelect) mouGroupSelect.addEventListener('change', toggleMouGroupOther);
 
 
-        // --- V6: Logic Block 5: Insurance Conditional Fields ---
+        // --- Logic Block 5: Insurance Conditional Fields ---
         function toggleInsuranceVisibility() {
             if (!insuranceSelect || !socialContainer || !hospitalContainer || !privateContainer) return;
             const selectedType = insuranceSelect.value;
@@ -108,159 +240,32 @@
         if(insuranceSelect) insuranceSelect.addEventListener('change', toggleInsuranceVisibility);
 
 
-        // --- Logic Block 6: Photo Cropping ---
-        const cropperModalEl = document.getElementById('cropperModal');
-        if (cropperModalEl) {
-            // Retrieve existing instance or create new one to avoid stacking issues
-            let cropperModal = bootstrap.Modal.getInstance(cropperModalEl);
-            if (!cropperModal) {
-                cropperModal = new bootstrap.Modal(cropperModalEl);
-            }
-
-            const imageToCrop = document.getElementById('imageToCrop');
-            const cropImageBtn = document.getElementById('cropImageBtn');
-            let cropper;
-            let originalFile;
-
-            function handleFileSelect(event) {
-                if (event.target.files && event.target.files.length > 0) {
-                    originalFile = event.target.files[0];
+        // --- Logic Block 6: Photo Cropping Hook ---
+        function handleFileSelection(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                if (window.startCropping) {
+                    window.startCropping(e.target.files[0], actualInput, employeePhotoPreview);
                 } else {
-                    return;
+                    console.error('Cropper not initialized');
+                    alert('ระบบตัดภาพยังไม่พร้อมใช้งาน กรุณารีเฟรชหน้าเว็บ');
                 }
-
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    imageToCrop.src = e.target.result;
-                    cropperModal.show();
-                };
-                reader.readAsDataURL(originalFile);
-                // Clear the input value to allow re-selecting the same file
-                event.target.value = '';
+                // Reset value to allow re-selection
+                e.target.value = '';
             }
+        }
 
-            cropperModalEl.addEventListener('shown.bs.modal', function () {
-                // Destroy existing cropper if any to be safe
-                if (cropper) {
-                    cropper.destroy();
-                    cropper = null;
-                }
-
-                // Ensure image is loaded and ready
-                if (imageToCrop.complete) {
-                    setTimeout(initCropper, 200);
-                } else {
-                    imageToCrop.onload = function() {
-                        setTimeout(initCropper, 200);
-                    };
-                }
-            });
-
-            function initCropper() {
-                if (typeof Cropper === 'undefined') {
-                    alert('ไม่สามารถโหลดเครื่องมือตัดภาพได้ (Cropper.js) กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
-                    return;
-                }
-
-                try {
-                    cropper = new Cropper(imageToCrop, {
-                        aspectRatio: 150 / 180,
-                        viewMode: 1,
-                        dragMode: 'move',
-                        background: false,
-                        autoCropArea: 0.8,
-                        movable: true,
-                        zoomable: true,
-                        rotatable: true,
-                        scalable: true,
-                        cropBoxMovable: true,
-                        cropBoxResizable: true,
-                    });
-                } catch (err) {
-                    console.error(err);
-                    alert('เกิดข้อผิดพลาดในการเริ่มทำงาน Cropper: ' + err.message);
-                }
-            }
-
-            cropperModalEl.addEventListener('hidden.bs.modal', function () {
-                if (cropper) {
-                    cropper.destroy();
-                    cropper = null;
-                }
-                // Also clear the src to prevent flashing old image
-                imageToCrop.src = '';
-            });
-
-            // Prevent attaching multiple listeners if init runs multiple times
-            // Remove old listener if exists (requires named function, but here we use a simple flag or just replace logic)
-            // Simplest way for this context: remove old element and recreate button or just use onclick attribute.
-            // But let's stick to addEventListener and hope initEmployeeEditForm isn't called multiple times redundantly
-            // without full reload. Actually, it is called every time modal opens.
-            // So we SHOULD handle cleanup.
-            const newCropBtn = cropImageBtn.cloneNode(true);
-            cropImageBtn.parentNode.replaceChild(newCropBtn, cropImageBtn);
-
-            newCropBtn.addEventListener('click', function () {
-                if (!cropper) {
-                    alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
-                    return;
-                }
-
-                const canvas = cropper.getCroppedCanvas({
-                    width: 300,
-                    height: 360,
-                    imageSmoothingQuality: 'high',
-                });
-
-                if (!canvas) {
-                    alert('เกิดข้อผิดพลาดในการตัดภาพ (Canvas creation failed). กรุณาลองใหม่อีกครั้ง');
-                    return;
-                }
-
-                canvas.toBlob(function (blob) {
-                    if (!blob) return;
-
-                    const croppedImageUrl = URL.createObjectURL(blob);
-                    if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
-
-                    // Create a new File object
-                    const croppedFile = new File([blob], originalFile.name, {
-                        type: originalFile.type || 'image/jpeg',
-                        lastModified: Date.now()
-                    });
-
-                    // Use a DataTransfer to create a FileList
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(croppedFile);
-
-                    // Assign the FileList to the ACTUAL input for submission
-                    if(actualInput) {
-                        actualInput.files = dataTransfer.files;
-                    } else {
-                        console.error('Actual input for employee photo not found!');
-                    }
-
-                    // Hide the modal using the correct instance
-                    cropperModal.hide();
-
-                }, originalFile.type || 'image/jpeg');
-            });
-
-
-            if (triggerFileInput) {
-                 triggerFileInput.removeEventListener('change', handleFileSelect); // Attempt cleanup
-                 triggerFileInput.addEventListener('change', handleFileSelect);
-            }
-            if (triggerCameraInput) {
-                 triggerCameraInput.removeEventListener('change', handleFileSelect); // Attempt cleanup
-                 triggerCameraInput.addEventListener('change', handleFileSelect);
-            }
+        if (triggerFileInput) {
+             triggerFileInput.removeEventListener('change', handleFileSelection);
+             triggerFileInput.addEventListener('change', handleFileSelection);
+        }
+        if (triggerCameraInput) {
+             triggerCameraInput.removeEventListener('change', handleFileSelection);
+             triggerCameraInput.addEventListener('change', handleFileSelection);
         }
 
         // Cancel Button: If inside modal, close it. Else, history.back
         const cancelBtn = document.querySelector('.btn-cancel-edit');
         if (cancelBtn) {
-             // Clone to remove old listeners
              const newCancelBtn = cancelBtn.cloneNode(true);
              cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
@@ -284,7 +289,9 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Run once on load, but function is globally available for AJAX calls
-        window.initEmployeeEditForm();
+        // Run once on load
+        if (document.querySelector('#employeeEditForm')) {
+            window.initEmployeeEditForm();
+        }
     });
 </script>

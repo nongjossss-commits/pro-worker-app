@@ -187,6 +187,7 @@
                     </button>
                 </div>
             </div>
+            {{-- End Wrapper for Extra Fields --}}
             </div>
 
             {{-- Actions --}}
