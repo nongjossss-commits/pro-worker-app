@@ -75,7 +75,7 @@ class ImportEmployeeController extends Controller
 
         // --- EMPLOYER INFO HEADER SECTION (Rows 1-11) ---
         // We will create a layout mimicking the provided image roughly.
-        // We'll use columns A-L, merging as needed.
+        // We'll use columns A-P (increased from L), merging as needed.
 
         // Default Font
         $sheet->getParent()->getDefaultStyle()->getFont()->setName('Angsana New')->setSize(16);
@@ -85,18 +85,18 @@ class ImportEmployeeController extends Controller
         $sheet->mergeCells('B1:F1'); // Name Input
         $sheet->setCellValue('G1', 'เลขประจำตัวประชาชน');
         $sheet->setCellValue('G2', '/ทะเบียนนิติบุคคล');
-        $sheet->mergeCells('H1:L1'); // ID Input
-        $sheet->mergeCells('H2:L2'); // ID Input continuation if needed or just align
+        $sheet->mergeCells('H1:P1'); // ID Input extended
+        $sheet->mergeCells('H2:P2'); // ID Input continuation
 
         // Row 3: Business Type & Request No
         $sheet->setCellValue('A3', 'ประเภทธุรกิจ');
         $sheet->mergeCells('B3:F3'); // Business Input
         $sheet->setCellValue('G3', 'เลขคำขอ');
-        $sheet->mergeCells('H3:L3'); // Request Input
+        $sheet->mergeCells('H3:P3'); // Request Input extended
 
         // Row 4: Address
         $sheet->setCellValue('A4', 'ที่อยู่');
-        $sheet->mergeCells('B4:L4');
+        $sheet->mergeCells('B4:P4');
 
         // Row 5: Moo, Soi, Road
         $sheet->setCellValue('A5', 'หมู่ที่/อาคาร');
@@ -104,34 +104,33 @@ class ImportEmployeeController extends Controller
         $sheet->setCellValue('E5', 'ซอย');
         $sheet->mergeCells('F5:H5');
         $sheet->setCellValue('I5', 'ถนน');
-        $sheet->mergeCells('J5:L5');
+        $sheet->mergeCells('J5:P5');
 
         // Row 6: Subdistrict, District
         $sheet->setCellValue('A6', 'ตำบล/แขวง');
         $sheet->mergeCells('B6:E6');
         $sheet->setCellValue('F6', 'อำเภอ/เขต');
-        $sheet->mergeCells('G6:L6');
+        $sheet->mergeCells('G6:P6');
 
         // Row 7: Province, Zip
         $sheet->setCellValue('A7', 'จังหวัด');
         $sheet->mergeCells('B7:E7');
         $sheet->setCellValue('F7', 'รหัสไปรษณีย์');
-        $sheet->mergeCells('G7:L7');
+        $sheet->mergeCells('G7:P7');
 
         // Row 8: Tel, Email
         $sheet->setCellValue('A8', 'โทรศัพท์');
         $sheet->mergeCells('B8:E8');
         $sheet->setCellValue('F8', 'e-Mail');
-        $sheet->mergeCells('G8:L8');
+        $sheet->mergeCells('G8:P8');
 
         // Row 9-10: Requirement Block
-        // "มีความต้องการจ้างแรงงานต่างด้าว"
-        $sheet->mergeCells('I9:L9');
+        $sheet->mergeCells('I9:P9');
         $sheet->setCellValue('I9', 'มีความต้องการจ้างแรงงานต่างด้าว');
         $sheet->getStyle('I9')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFF0F0F0');
         $sheet->getStyle('I9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $sheet->mergeCells('I10:L10');
+        $sheet->mergeCells('I10:P10');
         $sheet->setCellValue('I10', 'สัญชาติ _________ จำนวน ____ คน');
         $sheet->getStyle('I10')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFF0F0F0');
         $sheet->getStyle('I10')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -141,13 +140,13 @@ class ImportEmployeeController extends Controller
 
         // Add Underlines (Bottom Border) to input cells for form look
         $inputCells = [
-            'B1:F1', 'H1:L2',
-            'B3:F3', 'H3:L3',
-            'B4:L4',
-            'B5:D5', 'F5:H5', 'J5:L5',
-            'B6:E6', 'G6:L6',
-            'B7:E7', 'G7:L7',
-            'B8:E8', 'G8:L8'
+            'B1:F1', 'H1:P2',
+            'B3:F3', 'H3:P3',
+            'B4:P4',
+            'B5:D5', 'F5:H5', 'J5:P5',
+            'B6:E6', 'G6:P6',
+            'B7:E7', 'G7:P7',
+            'B8:E8', 'G8:P8'
         ];
         foreach ($inputCells as $range) {
              $sheet->getStyle($range)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
@@ -155,20 +154,24 @@ class ImportEmployeeController extends Controller
 
         // --- DATA TABLE HEADERS (Row 12) ---
         $headerRow = 12;
-        // UPDATED COLUMNS based on User Request
+        // UPDATED COLUMNS
         $columns = [
-            'Photo (Insert Image)', // A
-            'Title (EN)',           // B - Swapped
-            'Name (EN)',            // C - Swapped
-            'Title (TH)',           // D - Swapped
-            'Name (TH)',            // E - Swapped
-            'Date of Birth (YYYY-MM-DD)', // F
-            'Nationality',          // G
-            'Passport Number',      // H
-            'Work Permit Number',   // I
-            'Work Permit Type',     // J
-            'Pink Card Number',     // K
-            'CI/PJ/TD/Inter'        // L
+            'Photo (Insert Image)',           // A
+            'Title (EN)',                     // B
+            'Name (EN)',                      // C
+            'Title (TH)',                     // D
+            'Name (TH)',                      // E
+            'Date of Birth (YYYY-MM-DD)',     // F
+            'Nationality',                    // G
+            'Passport Number',                // H
+            'Passport Expiry Date',           // I (New)
+            'Work Permit Number',             // J
+            'Work Permit Expiry Date',        // K (New)
+            'Work Permit Type',               // L
+            'Pink Card Number',               // M
+            'CI/PJ/TD/Inter',                 // N
+            'Visa Expiry Date',               // O (New)
+            '90-Day Report Date',             // P (New)
         ];
 
         foreach ($columns as $index => $header) {
@@ -195,30 +198,28 @@ class ImportEmployeeController extends Controller
         $endDataRow = 112; // 100 rows
 
         // Set dimensions
-        // Column A (Photo) Width ~ 30 (approx 210px width) - Increased for Portrait
         $sheet->getColumnDimension('A')->setWidth(30);
 
-        // Auto-size other columns (B to L)
-        foreach (range('B', 'L') as $col) {
+        // Auto-size other columns (B to P)
+        foreach (range('B', 'P') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         // --- DATA VALIDATION CONFIGURATION ---
         $validations = [
-            'B' => '"Mr.,Miss.,Mrs."', // Title EN (Swapped)
-            'D' => '"นาย,นางสาว,นาง"', // Title TH (Swapped)
-            'G' => '"ลาว,เมียนมา,กัมพูชา,เวียดนาม"', // Nationality (Using 'เมียนมา' to match DB)
-            'J' => '"MOU,มติต่ออายุในประเทศ,มติขึ้นทะเบียนใหม่,อื่นๆ ระบุ"', // WP Type
-            'L' => '"CI,PJ,TD,เล่มอินเตอร์"', // Passport Type
+            'B' => '"Mr.,Miss.,Mrs."', // Title EN
+            'D' => '"นาย,นางสาว,นาง"', // Title TH
+            'G' => '"ลาว,เมียนมา,กัมพูชา,เวียดนาม"', // Nationality
+            'L' => '"MOU,มติต่ออายุในประเทศ,มติขึ้นทะเบียนใหม่,อื่นๆ ระบุ"', // WP Type
+            'N' => '"CI,PJ,TD,เล่มอินเตอร์"', // Passport Type
         ];
 
         // Apply row formatting and validation
         for ($r = $startDataRow; $r <= $endDataRow; $r++) {
-            // Increased row height to 150 to support portrait photos
             $sheet->getRowDimension($r)->setRowHeight(150);
 
-            // Apply borders to all cells in the grid
-            $rowRange = "A{$r}:L{$r}";
+            // Apply borders to all cells in the grid (A to P)
+            $rowRange = "A{$r}:P{$r}";
             $sheet->getStyle($rowRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             $sheet->getStyle($rowRange)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
 
@@ -342,20 +343,24 @@ class ImportEmployeeController extends Controller
                 // F (6) = DOB
                 // G (7) = Nationality
                 // H (8) = Passport
-                // I (9) = WP
-                // J (10) = WP Type (MOU Group)
-                // K (11) = Pink Card
-                // L (12) = Book Type
+                // I (9) = Passport Expiry (New)
+                // J (10) = WP No
+                // K (11) = WP Expiry (New)
+                // L (12) = WP Type (Old J)
+                // M (13) = Pink Card (Old K)
+                // N (14) = Book Type (Old L)
+                // O (15) = Visa Expiry (New)
+                // P (16) = 90 Day Expiry (New)
 
                 $row = [];
-                // We read columns 2 (B) through 12 (L) for text data
-                for ($colIdx = 2; $colIdx <= 12; $colIdx++) {
+                // We read columns 2 (B) through 16 (P) for text data
+                for ($colIdx = 2; $colIdx <= 16; $colIdx++) {
                     $colLetter = Coordinate::stringFromColumnIndex($colIdx);
                     $val = $sheet->getCell($colLetter . $rowIdx)->getValue();
                     $row[] = trim((string)$val);
                 }
 
-                // Check if empty row
+                // Check if empty row (Checking Title EN, Name EN, Title TH)
                 if (empty($row[0]) && empty($row[1]) && empty($row[3])) {
                     continue;
                 }
@@ -368,24 +373,44 @@ class ImportEmployeeController extends Controller
                 $dobRaw = $row[4];
                 $nationality = $row[5];
                 $passport = $row[6];
-                $wp = $row[7];
-                $wpType = $row[8];
-                $pinkCard = $row[9];
-                $bookType = $row[10];
+                $passportExpiryRaw = $row[7];
+                $wp = $row[8];
+                $wpExpiryRaw = $row[9];
+                $wpType = $row[10];
+                $pinkCard = $row[11];
+                $bookType = $row[12];
+                $visaExpiryRaw = $row[13];
+                $ninetyDayRaw = $row[14];
 
-                 // Format Date
-                $dob = null;
-                if (!empty($dobRaw)) {
-                    $dobColLetter = 'F';
-                    if (Date::isDateTime($sheet->getCell($dobColLetter . $rowIdx))) {
-                         $dob = Carbon::instance(Date::excelToDateTimeObject($dobRaw))->format('Y-m-d');
-                    } else {
-                         try {
-                            $dob = Carbon::parse($dobRaw)->format('Y-m-d');
-                         } catch (\Exception $e) {
-                             $errors[] = "Row $rowIdx: Invalid Date format ($dobRaw).";
-                         }
-                    }
+                // Validate and Parse Dates
+                $dob = $this->parseDateStrict($dobRaw, $sheet->getCell('F' . $rowIdx));
+                if ($dobRaw && !$dob) {
+                    $errors[] = "Row $rowIdx: Invalid Date of Birth format ($dobRaw). Expected D/M/Y.";
+                    continue;
+                }
+
+                $passportExpiry = $this->parseDateStrict($passportExpiryRaw, $sheet->getCell('I' . $rowIdx));
+                if ($passportExpiryRaw && !$passportExpiry) {
+                    $errors[] = "Row $rowIdx: Invalid Passport Expiry format ($passportExpiryRaw). Expected D/M/Y.";
+                    continue;
+                }
+
+                $wpExpiry = $this->parseDateStrict($wpExpiryRaw, $sheet->getCell('K' . $rowIdx));
+                if ($wpExpiryRaw && !$wpExpiry) {
+                    $errors[] = "Row $rowIdx: Invalid Work Permit Expiry format ($wpExpiryRaw). Expected D/M/Y.";
+                    continue;
+                }
+
+                $visaExpiry = $this->parseDateStrict($visaExpiryRaw, $sheet->getCell('O' . $rowIdx));
+                if ($visaExpiryRaw && !$visaExpiry) {
+                    $errors[] = "Row $rowIdx: Invalid Visa Expiry format ($visaExpiryRaw). Expected D/M/Y.";
+                    continue;
+                }
+
+                $ninetyDay = $this->parseDateStrict($ninetyDayRaw, $sheet->getCell('P' . $rowIdx));
+                if ($ninetyDayRaw && !$ninetyDay) {
+                    $errors[] = "Row $rowIdx: Invalid 90-Day Report format ($ninetyDayRaw). Expected D/M/Y.";
+                    continue;
                 }
 
                 // Process Image from Column A
@@ -523,9 +548,13 @@ class ImportEmployeeController extends Controller
                     'employeeDob' => $dob,
                     'employeeNationality' => $nationality,
                     'employeePassport' => $passport,
+                    'passportExpiryDate' => $passportExpiry,
                     'employeeWorkPermit' => $wp,
+                    'workPermitExpiryDate' => $wpExpiry,
                     'workPermitMOUGroup' => $wpType,
                     'pinkCardNo' => $pinkCard,
+                    'visaExpiryDate' => $visaExpiry,
+                    'ninetyDayReportDate' => $ninetyDay,
                     'employeePhoto' => $photoPath,
                     'status' => $status,
                 ];
@@ -570,6 +599,40 @@ class ImportEmployeeController extends Controller
             Log::error($e);
             return back()->with('error', 'Import failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Strict Date Parser Helper
+     */
+    private function parseDateStrict($value, $cell = null)
+    {
+        if (empty($value)) return null;
+
+        // 1. Handle Excel Date Object (if cell is provided)
+        if ($cell && Date::isDateTime($cell)) {
+            try {
+                return Carbon::instance(Date::excelToDateTimeObject($value))->format('Y-m-d');
+            } catch (\Exception $e) {
+                // Fallthrough to string parsing
+            }
+        }
+
+        $value = trim((string)$value);
+
+        // 2. Strict D/M/Y Regex
+        // Supports 1/1/1999, 01/01/1999, 1-1-1999, 1.1.1999
+        if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/', $value, $matches)) {
+            $day = (int)$matches[1];
+            $month = (int)$matches[2];
+            $year = (int)$matches[3];
+
+            if (checkdate($month, $day, $year)) {
+                return Carbon::create($year, $month, $day)->format('Y-m-d');
+            }
+        }
+
+        // 3. Reject other formats (Y-m-d, m/d/Y, etc.) as per user instruction
+        return null;
     }
 
     /**
