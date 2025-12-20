@@ -141,11 +141,18 @@
 </div>
 
 @push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-<script>
-    // Initialize PDF.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+<!-- Load local PDF.js as module -->
+<script type="module">
+    import * as pdfjsLib from '{{ asset("js/libs/pdfjs/pdf.min.js") }}';
 
+    // Set worker source to local file
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '{{ asset("js/libs/pdfjs/pdf.worker.min.js") }}';
+
+    // Expose to window for Alpine to access
+    window.pdfjsLib = pdfjsLib;
+</script>
+
+<script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('pdfBuilder', () => ({
             pdfDoc: null,
@@ -220,11 +227,31 @@
             },
 
             async init() {
-                // Use the direct route to avoid Storage URL / CORS issues
+                // Wait for pdfjsLib to be available (since it's loaded as module)
+                const waitForPdfJs = () => new Promise(resolve => {
+                    if (window.pdfjsLib) return resolve();
+                    const i = setInterval(() => {
+                        if (window.pdfjsLib) {
+                            clearInterval(i);
+                            resolve();
+                        }
+                    }, 50);
+                });
+
+                await waitForPdfJs();
+
+                // Use the direct route
                 const url = '{{ route("admin.pdf-templates.file", $template) }}';
 
                 try {
-                    const loadingTask = pdfjsLib.getDocument(url);
+                    const loadingTask = window.pdfjsLib.getDocument({
+                        url: url,
+                        cMapUrl: 'https://unpkg.com/pdfjs-dist@4.0.379/cmaps/',
+                        cMapPacked: true,
+                        standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@4.0.379/standard_fonts/',
+                        withCredentials: true // Ensure cookies are sent
+                    });
+
                     this.pdfDoc = await loadingTask.promise;
                     this.totalPages = this.pdfDoc.numPages;
 
@@ -233,18 +260,24 @@
 
                 } catch (error) {
                     console.error('Error loading PDF:', error);
-                    // alert('Failed to load PDF file. Please check if the file is valid.'); // Squelch alert for better UX in case of minor glitches
-                    showToast('Failed to load PDF preview. Please check file validity.', 'danger');
+                    // Detailed error message for debugging
+                    let msg = 'Failed to load PDF preview. Please check file validity.';
+                    if (error.name) msg += ` (${error.name}: ${error.message})`;
+
+                    showToast(msg, 'danger');
                 }
 
                 // Setup Modal Listener
-                document.getElementById('saveStaticTextBtn').addEventListener('click', () => {
-                    if (this.currentEditIndex !== null) {
-                        this.items[this.currentEditIndex].text = document.getElementById('staticTextInput').value;
-                        bootstrap.Modal.getInstance(document.getElementById('staticTextModal')).hide();
-                        this.currentEditIndex = null;
-                    }
-                });
+                const staticSaveBtn = document.getElementById('saveStaticTextBtn');
+                if(staticSaveBtn) {
+                     staticSaveBtn.addEventListener('click', () => {
+                        if (this.currentEditIndex !== null) {
+                            this.items[this.currentEditIndex].text = document.getElementById('staticTextInput').value;
+                            bootstrap.Modal.getInstance(document.getElementById('staticTextModal')).hide();
+                            this.currentEditIndex = null;
+                        }
+                    });
+                }
             },
 
             async renderAllPages() {

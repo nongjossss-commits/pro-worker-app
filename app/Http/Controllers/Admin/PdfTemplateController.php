@@ -122,6 +122,9 @@ class PdfTemplateController extends Controller
             abort(404);
         }
 
-        return response()->file(Storage::disk('public')->path($path));
+        return response()->file(Storage::disk('public')->path($path), [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
+        ]);
     }
 }
