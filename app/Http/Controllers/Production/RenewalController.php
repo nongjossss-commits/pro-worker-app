@@ -507,6 +507,32 @@ class RenewalController extends Controller
         return back()->with('success', "Imported {$count} employees for renewal.");
     }
 
+    /**
+     * Display the Import View for Renewal Resolution.
+     */
+    public function importView(Request $request)
+    {
+        $employers = collect();
+        if (auth()->user()->can('view-employers')) {
+             $employers = Employer::orderBy('employerNameTh')->get(['id', 'employerNameTh', 'employerNameEn']);
+        } else {
+             $user = auth()->user();
+             if ($user->employer) {
+                 $employers = collect([$user->employer]);
+             }
+        }
+
+        $request->merge(['target_status' => 'renewal_pending']);
+
+        session()->flash('finish_route', route('production.renewal.index'));
+
+        return view('employees.import', [
+            'employers' => $employers,
+            'production' => null,
+            'back_route' => route('production.renewal.index'),
+        ]);
+    }
+
     public function create(Request $request)
     {
         if (!auth()->user()->can('edit-employees')) {

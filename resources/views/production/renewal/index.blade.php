@@ -217,6 +217,10 @@
                         <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
                     </a>
 
+                    <a href="{{ route('production.renewal.import') }}" class="btn btn-success fw-bold">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import') }}
+                    </a>
+
                     {{-- NEW IMPORT BUTTON FOR RENEWAL --}}
                     <button class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#importByExpiryModal">
                         <i class="bi bi-calendar-check me-1"></i> {{ __('Configuration / Import by Expiry') }}
