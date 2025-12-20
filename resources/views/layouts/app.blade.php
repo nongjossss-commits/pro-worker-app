@@ -362,6 +362,11 @@
                 @canany(['manage-roles', 'manage-settings'])
                 <hr>
                 <a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>{{ __('Roles & Permissions') }}</a>
+                @can('view-pdf-templates')
+                <a href="{{ route('admin.pdf-templates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.pdf-templates.*') ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-pdf-fill me-2"></i>{{ __('PDF Templates') }}
+                </a>
+                @endcan
                 @if(Route::has('admin.production.barriers.index'))
                 <a href="{{ route('admin.production.barriers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.production.barriers.*') ? 'active' : '' }}">
                     <i class="bi bi-bar-chart-steps me-2"></i>{{ __('Workflow Barriers') }}
