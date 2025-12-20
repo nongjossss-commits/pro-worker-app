@@ -38,11 +38,18 @@
         .company-address { font-size: 14px; color: #555; line-height: 1.4; }
         .tax-id { font-size: 14px; margin-top: 5px; }
 
-        .doc-title { text-align: right; }
-        .doc-title h1 { margin: 0 0 10px 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; color: #333; }
+        .doc-title { text-align: right; vertical-align: top; }
+        .doc-title h1 {
+            margin: 0 0 10px 0;
+            font-size: 20px; /* Reduced from 24px to prevent wrapping */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #333;
+            white-space: nowrap; /* Force single line */
+        }
         .meta-table { float: right; font-size: 14px; border-collapse: collapse; }
-        .meta-table td { padding: 2px 0 2px 10px; }
-        .meta-label { font-weight: bold; text-align: right; }
+        .meta-table td { padding: 3px 0 3px 15px; } /* Increased spacing */
+        .meta-label { font-weight: bold; text-align: right; color: #555; }
 
         /* Client Info */
         .client-box {
@@ -151,7 +158,8 @@
         <!-- Header -->
         <table class="header-table">
             <tr>
-                <td style="width: 60%;">
+                <!-- Increased width for company info to avoid cramping, but kept balance -->
+                <td style="width: 55%;">
                     @if($profile->logo_path)
                         <img src="{{ asset('storage/' . $profile->logo_path) }}" class="company-logo" alt="Logo">
                     @endif
@@ -160,7 +168,8 @@
                     @if($profile->tax_id)<div class="tax-id">Tax ID: {{ $profile->tax_id }}</div>@endif
                     @if($profile->phone)<div class="tax-id">Tel: {{ $profile->phone }}</div>@endif
                 </td>
-                <td style="width: 40%;" class="doc-title">
+                <!-- Widen the title column to support longer Thai/English titles on one line -->
+                <td style="width: 45%;" class="doc-title">
                     <h1>{{ $title ?? ucfirst($type) }}</h1>
                     <table class="meta-table">
                         <tr>
@@ -289,7 +298,7 @@
                 <!-- ADVANCE PAYMENT SECTION -->
                 @if($showAdvance && isset($advanceItems) && $advanceItems->isNotEmpty())
                     <tr>
-                        <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินทดรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
+                        <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
                     </tr>
                     @foreach($advanceItems as $index => $item)
                         <tr>

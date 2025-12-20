@@ -96,6 +96,18 @@ class ProductionDocumentController extends Controller
         // --- Mode Logic (Combined, Service Only, Advance Only) ---
         $mode = $request->query('mode', 'combined'); // Default to combined for legacy
 
+        // --- Document Title Logic ---
+        $titles = [
+            'quotation' => 'ใบเสนอราคา / Quotation',
+            'invoice' => 'ใบแจ้งหนี้ / Invoice',
+            'tax_invoice' => 'ใบกำกับภาษี / Tax Invoice',
+            'receipt' => 'ใบเสร็จรับเงิน / Receipt',
+            'advance_receipt' => 'ใบเสร็จรับเงินสำรองจ่าย / Advance Receipt',
+            'credit_note' => 'ใบลดหนี้ / Credit Note',
+        ];
+
+        $title = $titles[$type] ?? ucfirst($type);
+
         // Prepare data for the view
         $data = [
             'production' => $production,
@@ -103,6 +115,7 @@ class ProductionDocumentController extends Controller
             'company' => $companyProfile, // Keep for backward compat if any
             'billTo' => $billTo,
             'type' => $type,
+            'title' => $title, // Explicitly pass the title
             'date' => now(),
             'transactions' => $transactions,
             'financial' => $financialData,
@@ -120,12 +133,6 @@ class ProductionDocumentController extends Controller
         } elseif ($type === 'advance_receipt') {
             $view = 'documents.advance_receipt';
         }
-
-        // Use the generic view if the specific one doesn't exist?
-        // For now, I will ensure 'documents.tax_invoice' and 'documents.advance_receipt' are created.
-
-        // Fix: Map legacy views if needed or consolidate.
-        // The plan calls for updating 'tax_invoice.blade.php'.
 
         return view($view, $data);
     }
