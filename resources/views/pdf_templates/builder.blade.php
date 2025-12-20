@@ -141,10 +141,10 @@
 </div>
 
 @push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>
     // Initialize PDF.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
     document.addEventListener('alpine:init', () => {
         Alpine.data('pdfBuilder', () => ({
@@ -159,33 +159,64 @@
             isSaving: false,
             currentEditIndex: null,
 
-            // Available Fields
+            // Available Fields - Updated Comprehensive List
             fields: [
-                { key: 'employeeNameTh', label: 'ชื่อ (ไทย)' },
-                { key: 'employeeNameEn', label: 'Name (Eng)' },
-                { key: 'employeeTitleTh', label: 'คำนำหน้า (ไทย)' },
-                { key: 'gender', label: 'เพศ' },
-                { key: 'employeeDob', label: 'วันเกิด (YYYY-MM-DD)' },
-                { key: 'age', label: 'อายุ' },
-                { key: 'employeeNationality', label: 'สัญชาติ' },
+                // --- Employee Personal ---
+                { key: 'employeeNameTh', label: 'Employee Name (TH)' },
+                { key: 'employeeNameEn', label: 'Employee Name (EN)' },
+                { key: 'employeeTitleTh', label: 'Title (TH)' },
+                { key: 'employeeTitleEn', label: 'Title (EN)' },
+                { key: 'employeeGender', label: 'Gender' },
+                { key: 'employeeDob', label: 'Date of Birth' },
+                { key: 'age', label: 'Age' },
+                { key: 'employeeNationality', label: 'Nationality' },
+                { key: 'employeePhone', label: 'Phone' },
+                { key: 'email', label: 'Email' },
+                { key: 'father_name', label: 'Father Name' },
+                { key: 'mother_name', label: 'Mother Name' },
+
+                // --- Passport & Visa ---
                 { key: 'employeePassport', label: 'Passport No' },
-                { key: 'passportExpiryDate', label: 'Passport Expiry' },
-                { key: 'passportIssueDate', label: 'Passport Issue' },
+                { key: 'passportIssueDate', label: 'Passport Issue Date' },
+                { key: 'passportExpiryDate', label: 'Passport Expiry Date' },
+                { key: 'passportType', label: 'Passport Type (MM)' },
+                { key: 'passport_type_cambodia', label: 'Passport Type (KH)' },
+                { key: 'visaType', label: 'Visa Type' },
+                { key: 'visaExpiryDate', label: 'Visa Expiry Date' },
+                { key: 'pinkCardNo', label: 'Pink Card No' },
+
+                // --- Work Permit ---
                 { key: 'employeeWorkPermit', label: 'Work Permit No' },
                 { key: 'workPermitExpiryDate', label: 'Work Permit Expiry' },
-                { key: 'pinkCardNo', label: 'Pink Card No' },
-                { key: 'visaType', label: 'Visa Type' },
-                { key: 'visaExpiryDate', label: 'Visa Expiry' },
-                { key: 'employer.employerNameTh', label: 'นายจ้าง (ไทย)' },
-                { key: 'employer.employerNameEn', label: 'Employer (Eng)' },
-                { key: 'employer.employerPhone', label: 'เบอร์นายจ้าง' },
-                { key: 'employer.employerTaxId', label: 'เลขผู้เสียภาษีนายจ้าง' },
-                { key: 'employer.employerAddress', label: 'ที่อยู่นายจ้าง' }
+                { key: 'workPermitMOUGroup', label: 'MOU Group' },
+
+                // --- Job ---
+                { key: 'job_title', label: 'Job Title' },
+                { key: 'startDate', label: 'Start Date' },
+                { key: 'employee_id_number', label: 'Personal ID' },
+
+                // --- Insurance ---
+                { key: 'social_security_number', label: 'Social Security No' },
+                { key: 'insurance_detail', label: 'Hospital (SS Rights)' },
+                { key: 'insurance_detail_hospital', label: 'Hospital Name (Insurance)' },
+                { key: 'insurance_detail_private', label: 'Private Ins. Company' },
+
+                // --- Employer Data ---
+                { key: 'employer.employerNameTh', label: 'Employer Name (TH)' },
+                { key: 'employer.employerNameEn', label: 'Employer Name (EN)' },
+                { key: 'employer.employerPhone', label: 'Employer Phone' },
+                { key: 'employer.employerTaxId', label: 'Employer Tax ID' },
+                { key: 'employer.businessType', label: 'Business Type' },
+                { key: 'employer.regCapital', label: 'Registered Capital' },
+                { key: 'employer.signerNameTh', label: 'Signer Name' },
+                { key: 'employer.address_th', label: 'Employer Address (TH)' },
+                { key: 'employer.address_en', label: 'Employer Address (EN)' },
             ],
 
             get filteredFields() {
                 if (!this.searchQuery) return this.fields;
-                return this.fields.filter(f => f.label.toLowerCase().includes(this.searchQuery.toLowerCase()));
+                const q = this.searchQuery.toLowerCase();
+                return this.fields.filter(f => f.label.toLowerCase().includes(q));
             },
 
             async init() {
@@ -198,12 +229,12 @@
                     this.totalPages = this.pdfDoc.numPages;
 
                     // Render ALL pages sequentially
-                    // We wait for the first page to determine dimensions, then render rest
                     await this.renderAllPages();
 
                 } catch (error) {
                     console.error('Error loading PDF:', error);
-                    alert('Failed to load PDF file. Please check if the file is valid.');
+                    // alert('Failed to load PDF file. Please check if the file is valid.'); // Squelch alert for better UX in case of minor glitches
+                    showToast('Failed to load PDF preview. Please check file validity.', 'danger');
                 }
 
                 // Setup Modal Listener
