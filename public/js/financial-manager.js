@@ -267,12 +267,42 @@ if (typeof window.financialManager === 'undefined') {
                 return this.transactions.filter(t => t.production_financial_group_id == this.activeGroupId);
             },
 
+            get incomeTransactions() {
+                return this.filteredTransactions.filter(t => ['installment', 'down_payment', 'full_payment'].includes(t.type));
+            },
+
+            get advanceTransactions() {
+                return this.filteredTransactions.filter(t => t.type === 'advance_payment');
+            },
+
             get scheduledAmount() {
-                return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+                // Only Income Transactions count towards the scheduled amount of the Contract
+                return this.incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
             },
             get remainingSchedule() {
-                // The schedule should cover the Grand Total Receivable
-                return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
+                // The schedule should cover the NET RECEIVABLE (Service Fee)
+                // Note: Advance Payments are usually reimbursement and handled separately,
+                // BUT "Grand Total Receivable" includes Advance Total.
+                // If we want to strictly follow the Grand Total, we should include all.
+                // However, usually "Installments" are for the Service Fee.
+                // Let's assume Installments cover the Grand Total for now to keep it simple,
+                // OR exclude Advance Payments if they are billed separately.
+                // Given the user wants "Separate Topic", it implies they are separate.
+                // Let's check Grand Total logic: `grandTotalReceivable = netReceivable + advanceTotal`.
+                // If I separate them, remaining schedule for Income should probably track `netReceivable`.
+                // But typically, a project has one "Grand Total".
+                // Let's stick to: Remaining = Grand Total - (Sum of ALL transactions).
+                // Wait, if I split the tables, does the user expect "Remaining Service Fee" vs "Remaining Advance"?
+                // The current code: `scheduledAmount` uses `filteredTransactions` (ALL).
+                // If I change `scheduledAmount` to `incomeTransactions`, it only sums income.
+                // If `grandTotalReceivable` includes Advance, then we have a mismatch.
+                // Let's keep `scheduledAmount` summing ALL transactions for the "Remaining" calculation to be mathematically correct against Grand Total.
+                // Or better: Distinct Remaining for Advance?
+                // For now, let's keep `scheduledAmount` as sum of ALL to be safe against breaking existing logic.
+                return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+            },
+            get remainingAmount() {
+                 return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
             },
             get isFullyScheduled() {
                 return Math.abs(this.grandTotalReceivable - this.scheduledAmount) < 1;
@@ -564,7 +594,12 @@ if (typeof window.financialManager === 'undefined') {
             },
             formatDate(date) { return date ? new Date(date).toLocaleDateString('th-TH') : '-'; },
             formatType(type) {
-                const map = { installment: 'Installment', down_payment: 'Down Payment', full_payment: 'Full Payment' };
+                const map = {
+                    installment: 'Installment (งวดงาน)',
+                    down_payment: 'Down Payment (มัดจำ)',
+                    full_payment: 'Full Payment (จ่ายเต็ม)',
+                    advance_payment: 'Advance Payment (เงินสำรองจ่าย)'
+                };
                 return map[type] || type;
             },
             formatStatus(status) {

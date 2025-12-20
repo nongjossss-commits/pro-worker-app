@@ -267,6 +267,14 @@ if (typeof window.financialManager === 'undefined') {
                 return this.transactions.filter(t => t.production_financial_group_id == this.activeGroupId);
             },
 
+            get incomeTransactions() {
+                return this.filteredTransactions.filter(t => ['installment', 'down_payment', 'full_payment'].includes(t.type));
+            },
+
+            get advanceTransactions() {
+                return this.filteredTransactions.filter(t => t.type === 'advance_payment');
+            },
+
             get scheduledAmount() {
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
             },
@@ -564,7 +572,12 @@ if (typeof window.financialManager === 'undefined') {
             },
             formatDate(date) { return date ? new Date(date).toLocaleDateString('th-TH') : '-'; },
             formatType(type) {
-                const map = { installment: 'Installment', down_payment: 'Down Payment', full_payment: 'Full Payment' };
+                const map = {
+                    installment: 'Installment (งวดงาน)',
+                    down_payment: 'Down Payment (มัดจำ)',
+                    full_payment: 'Full Payment (จ่ายเต็ม)',
+                    advance_payment: 'Advance Payment (เงินสำรองจ่าย)'
+                };
                 return map[type] || type;
             },
             formatStatus(status) {

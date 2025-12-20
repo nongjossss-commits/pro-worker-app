@@ -141,7 +141,7 @@
                                 <tr class="text-muted small">
                                     <th>{{ __('Description') }}</th>
                                     <th style="width: 60px;">{{ __('Qty') }}</th>
-                                    <th style="width: 90px;">{{ __('Price') }}</th>
+                                    <th style="width: 140px;">{{ __('Price') }}</th>
                                     <th style="width: 20px;"></th>
                                 </tr>
                             </thead>
@@ -349,6 +349,10 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
+                    <!-- SECTION 1: Service Fees / Income -->
+                    <div class="bg-light px-3 py-2 fw-bold text-muted border-bottom text-xs text-uppercase">
+                        {{ __('Income / Service Fees') }}
+                    </div>
                     <table class="table table-hover align-middle mb-0 text-sm">
                         <thead class="bg-light">
                             <tr>
@@ -361,7 +365,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="t in filteredTransactions" :key="t.id">
+                            <template x-for="t in incomeTransactions" :key="t.id">
                                 <tr>
                                     <td class="ps-3">
                                         <div class="fw-bold" x-text="formatType(t.type)"></div>
@@ -388,11 +392,61 @@
                                     </td>
                                 </tr>
                             </template>
-                            <tr x-show="filteredTransactions.length === 0">
-                                <td colspan="6" class="text-center py-4 text-muted">No transactions recorded for this group.</td>
+                            <tr x-show="incomeTransactions.length === 0">
+                                <td colspan="6" class="text-center py-4 text-muted">No income transactions recorded.</td>
                             </tr>
                         </tbody>
                     </table>
+
+                    <!-- SECTION 2: Reserve Fund / Advance Payments -->
+                    <div class="bg-light px-3 py-2 fw-bold text-primary border-top border-bottom text-xs text-uppercase mt-2">
+                        {{ __('Reserve Fund / Advance Payments') }} (เงินสำรองจ่าย)
+                    </div>
+                    <table class="table table-hover align-middle mb-0 text-sm">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-3">{{ __('Description') }}</th>
+                                <th>{{ __('Due Date') }}</th>
+                                <th class="text-end">{{ __('Amount') }}</th>
+                                <th class="text-end">{{ __('Paid') }}</th>
+                                <th class="text-center">{{ __('Status') }}</th>
+                                <th class="text-end pe-3">{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="t in advanceTransactions" :key="t.id">
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-bold text-primary" x-text="formatType(t.type)"></div>
+                                        <div class="small text-muted" x-text="t.notes || '-'"></div>
+                                        <div x-show="t.slip_path" class="mt-1">
+                                            <a :href="'/storage/' + t.slip_path" target="_blank" class="badge bg-info text-decoration-none">View Slip</a>
+                                        </div>
+                                    </td>
+                                    <td x-text="formatDate(t.due_date)"></td>
+                                    <td class="text-end text-primary" x-text="formatCurrency(t.amount)"></td>
+                                    <td class="text-end" x-text="formatCurrency(t.paid_amount)"></td>
+                                    <td class="text-center">
+                                        <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-success py-0" @click="openPayModal(t)" title="Update Payment">
+                                                <i class="bi bi-cash"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="advanceTransactions.length === 0">
+                                <td colspan="6" class="text-center py-4 text-muted">No reserve fund transactions.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
                 </div>
             </div>
         </div>
@@ -553,6 +607,7 @@
                                 <option value="installment">Installment (งวดงาน)</option>
                                 <option value="down_payment">Down Payment (มัดจำ)</option>
                                 <option value="full_payment">Full Payment (จ่ายเต็ม)</option>
+                                <option value="advance_payment">Advance Payment (เงินสำรองจ่าย)</option>
                             </select>
                         </div>
                         <div class="mb-2">
