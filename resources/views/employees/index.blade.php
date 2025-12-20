@@ -112,7 +112,9 @@
             <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
             <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
             <li><a class="dropdown-item" href="#" id="bulk-send-production-btn"><i class="bi bi-clipboard-data me-2"></i>{{ __('Send to P Production') }}</a></li>
+            @can('manage-tickets')
             <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
+            @endcan
         </ul>
     </div>
     <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
@@ -580,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Create form to post to generation modal setup
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '{{ route("pdf-templates.generate.modal") }}'; // Route name needs to match
+            form.action = '{{ route("admin.pdf-templates.generate.modal") }}'; // Route name needs to match
 
             const csrf = document.createElement('input');
             csrf.type = 'hidden';
