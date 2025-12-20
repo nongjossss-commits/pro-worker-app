@@ -18,7 +18,7 @@ class PdfGeneratorService
     public function __construct()
     {
         // Path to Thai font
-        $this->fontPath = public_path('fonts/THSarabunNew.ttf');
+        $this->fontPath = public_path('fonts/THSarabunNew.php');
     }
 
     public function generateForEmployees(PdfTemplate $template, Collection $employees, $options = [])
@@ -70,10 +70,10 @@ class PdfGeneratorService
         // CHECK: Does the system have Thai fonts ready for FPDF?
         // If not, I should probably use a font that is available.
         // I'll try to add the font. If it fails, catch it.
-        try {
-             $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php'); // Assuming converted file exists
+        if (file_exists($this->fontPath)) {
+             $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
              $pdf->SetFont('THSarabunNew', '', 14);
-        } catch (\Exception $e) {
+        } else {
              $pdf->SetFont('Arial', '', 12); // Fallback
         }
 
@@ -111,7 +111,9 @@ class PdfGeneratorService
                     $pdf->SetXY($x, $y);
 
                     // Handle encoding for Thai if using standard FPDF (requires iconv)
-                    // $text = iconv('UTF-8', 'cp874', $text); // Example for Thai
+                    if (file_exists($this->fontPath)) {
+                        $text = iconv('UTF-8', 'cp874', $text);
+                    }
 
                     // Try to write
                     $pdf->Write(0, $text);

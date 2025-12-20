@@ -3,7 +3,7 @@
 @section('content')
 <div class="h-screen flex flex-col" x-data="pdfBuilder()">
     <!-- Toolbar -->
-    <div class="bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm z-10">
+    <div class="bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm z-10 sticky top-0">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.pdf-templates.index') }}" class="text-gray-500 hover:text-gray-700">
                 <i class="bi bi-arrow-left"></i> Back
@@ -11,16 +11,19 @@
             <h1 class="text-lg font-bold text-gray-800">{{ $template->name }} <span class="text-sm font-normal text-gray-500">(Builder Mode)</span></h1>
         </div>
         <div class="flex items-center gap-3">
-            <div class="text-sm text-gray-500">
-                Page <span x-text="currentPage"></span> / <span x-text="totalPages"></span>
+            <!-- Page Navigation (Jumping) -->
+            <div class="flex items-center gap-2" x-show="totalPages > 1">
+                <label class="text-sm text-gray-600">Go to Page:</label>
+                <select x-model="currentPage" @change="scrollToPage(currentPage)" class="form-select form-select-sm w-20">
+                    <template x-for="p in totalPages" :key="p">
+                        <option :value="p" x-text="p"></option>
+                    </template>
+                </select>
+                <span class="text-sm text-gray-500">of <span x-text="totalPages"></span></span>
             </div>
-            <button @click="prevPage()" class="btn btn-sm btn-light border" :disabled="currentPage <= 1">
-                <i class="bi bi-chevron-left"></i>
-            </button>
-            <button @click="nextPage()" class="btn btn-sm btn-light border" :disabled="currentPage >= totalPages">
-                <i class="bi bi-chevron-right"></i>
-            </button>
+
             <div class="border-l h-6 mx-2"></div>
+
             <button @click="saveMapping()" class="btn btn-primary btn-sm flex items-center gap-2" :disabled="isSaving">
                 <span x-show="isSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 <i class="bi bi-save" x-show="!isSaving"></i> Save Template
@@ -30,7 +33,7 @@
 
     <div class="flex flex-1 overflow-hidden h-[calc(100vh-64px)]">
         <!-- Sidebar -->
-        <div class="w-80 bg-gray-50 border-r flex flex-col overflow-y-auto">
+        <div class="w-80 bg-gray-50 border-r flex flex-col overflow-y-auto z-20 shadow-lg">
             <div class="p-4 border-b bg-white">
                 <h3 class="font-bold text-gray-700 mb-2">Data Fields</h3>
                 <input type="text" x-model="searchQuery" placeholder="Search fields..." class="form-control form-control-sm">
@@ -63,46 +66,56 @@
             </div>
         </div>
 
-        <!-- Canvas Area -->
-        <div class="flex-1 bg-gray-200 overflow-auto flex justify-center p-8 relative" id="canvas-container">
-            <div class="relative shadow-lg" :style="`width: ${canvasWidth}px; height: ${canvasHeight}px;`">
-                <!-- PDF Canvas -->
-                <canvas id="the-canvas" class="block bg-white"></canvas>
+        <!-- Canvas Area (Vertical Scroll) -->
+        <div class="flex-1 bg-gray-200 overflow-y-auto flex justify-center p-8 relative" id="main-scroll-container">
+            <div class="flex flex-col gap-8 pb-20">
+                <!-- Loop through pages -->
+                <template x-for="pageNum in totalPages" :key="pageNum">
+                    <div class="relative shadow-lg bg-white"
+                         :id="'page-container-' + pageNum"
+                         :style="`width: ${canvasWidth}px; height: ${canvasHeight}px;`">
 
-                <!-- Drop Overlay -->
-                <div class="absolute inset-0 z-10"
-                     @dragover.prevent
-                     @drop.prevent="drop($event)">
-
-                    <!-- Placed Items -->
-                    <template x-for="(item, index) in items" :key="index">
-                        <div x-show="item.page === currentPage"
-                             class="absolute border border-blue-500 bg-blue-100/50 hover:bg-blue-100/80 cursor-move group flex items-center px-1"
-                             :style="`left: ${item.x}%; top: ${item.y}%; width: ${item.w ?? 15}%; height: ${item.h ?? 3}%; font-size: ${item.fontSize ?? 12}px;`"
-                             @mousedown="startMove($event, index)">
-
-                            <!-- Resize Handles (Corners) -->
-                            <!-- Simplified: Just move for now, maybe resize later if requested -->
-
-                            <!-- Content -->
-                            <span class="truncate w-full select-none"
-                                  :class="{'text-blue-800 font-bold': item.type === 'db', 'text-gray-800': item.type === 'static'}"
-                                  x-text="item.type === 'static' ? (item.text || 'Static Text') : item.label"></span>
-
-                            <!-- Controls (Show on Hover) -->
-                            <div class="absolute -top-8 right-0 bg-white shadow rounded border flex gap-1 p-1 hidden group-hover:flex z-50">
-                                <template x-if="item.type === 'static'">
-                                    <button @click.stop="editStaticText(index)" class="p-1 hover:bg-gray-100 rounded text-blue-600" title="Edit Text">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                </template>
-                                <button @click.stop="deleteItem(index)" class="p-1 hover:bg-gray-100 rounded text-red-600" title="Remove">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
+                        <!-- Page Label -->
+                        <div class="absolute -top-6 left-0 text-sm font-bold text-gray-500">
+                            Page <span x-text="pageNum"></span>
                         </div>
-                    </template>
-                </div>
+
+                        <!-- PDF Canvas -->
+                        <canvas :id="'canvas-page-' + pageNum" class="block bg-white"></canvas>
+
+                        <!-- Drop Overlay -->
+                        <div class="absolute inset-0 z-10"
+                             @dragover.prevent
+                             @drop.prevent="drop($event, pageNum)">
+
+                            <!-- Placed Items for this Page -->
+                            <template x-for="(item, index) in items" :key="index">
+                                <div x-show="item.page === pageNum"
+                                     class="absolute border border-blue-500 bg-blue-100/50 hover:bg-blue-100/80 cursor-move group flex items-center px-1"
+                                     :style="`left: ${item.x}%; top: ${item.y}%; width: ${item.w ?? 15}%; height: ${item.h ?? 3}%; font-size: ${item.fontSize ?? 12}px;`"
+                                     @mousedown="startMove($event, index, pageNum)">
+
+                                    <!-- Content -->
+                                    <span class="truncate w-full select-none"
+                                          :class="{'text-blue-800 font-bold': item.type === 'db', 'text-gray-800': item.type === 'static'}"
+                                          x-text="item.type === 'static' ? (item.text || 'Static Text') : item.label"></span>
+
+                                    <!-- Controls -->
+                                    <div class="absolute -top-8 right-0 bg-white shadow rounded border flex gap-1 p-1 hidden group-hover:flex z-50">
+                                        <template x-if="item.type === 'static'">
+                                            <button @click.stop="editStaticText(index)" class="p-1 hover:bg-gray-100 rounded text-blue-600" title="Edit Text">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </template>
+                                        <button @click.stop="deleteItem(index)" class="p-1 hover:bg-gray-100 rounded text-red-600" title="Remove">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
@@ -136,7 +149,7 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('pdfBuilder', () => ({
             pdfDoc: null,
-            currentPage: 1,
+            currentPage: 1, // Currently viewed page (for jump)
             totalPages: 1,
             scale: 1.5,
             canvasWidth: 0,
@@ -167,7 +180,7 @@
                 { key: 'employer.employerNameEn', label: 'Employer (Eng)' },
                 { key: 'employer.employerPhone', label: 'เบอร์นายจ้าง' },
                 { key: 'employer.employerTaxId', label: 'เลขผู้เสียภาษีนายจ้าง' },
-                // Add more fields as needed
+                { key: 'employer.employerAddress', label: 'ที่อยู่นายจ้าง' }
             ],
 
             get filteredFields() {
@@ -176,15 +189,21 @@
             },
 
             async init() {
-                // Load PDF
-                const url = '{{ Storage::disk("public")->url($template->file_path) }}';
+                // Use the direct route to avoid Storage URL / CORS issues
+                const url = '{{ route("admin.pdf-templates.file", $template) }}';
+
                 try {
-                    this.pdfDoc = await pdfjsLib.getDocument(url).promise;
+                    const loadingTask = pdfjsLib.getDocument(url);
+                    this.pdfDoc = await loadingTask.promise;
                     this.totalPages = this.pdfDoc.numPages;
-                    this.renderPage(this.currentPage);
+
+                    // Render ALL pages sequentially
+                    // We wait for the first page to determine dimensions, then render rest
+                    await this.renderAllPages();
+
                 } catch (error) {
                     console.error('Error loading PDF:', error);
-                    alert('Failed to load PDF file.');
+                    alert('Failed to load PDF file. Please check if the file is valid.');
                 }
 
                 // Setup Modal Listener
@@ -197,14 +216,30 @@
                 });
             },
 
-            async renderPage(num) {
-                const page = await this.pdfDoc.getPage(num);
-                const viewport = page.getViewport({ scale: this.scale });
-                const canvas = document.getElementById('the-canvas');
-                const context = canvas.getContext('2d');
+            async renderAllPages() {
+                // Get first page to set global dimensions (assuming uniform page size for simplicity)
+                const page1 = await this.pdfDoc.getPage(1);
+                const viewport = page1.getViewport({ scale: this.scale });
 
                 this.canvasWidth = viewport.width;
                 this.canvasHeight = viewport.height;
+
+                // Wait for Alpine to render the DOM loops
+                await this.$nextTick();
+
+                for (let i = 1; i <= this.totalPages; i++) {
+                    await this.renderPage(i);
+                }
+            },
+
+            async renderPage(num) {
+                const page = await this.pdfDoc.getPage(num);
+                const viewport = page.getViewport({ scale: this.scale });
+                const canvas = document.getElementById('canvas-page-' + num);
+
+                if (!canvas) return; // Should not happen if loop matches
+
+                const context = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
@@ -215,17 +250,10 @@
                 await page.render(renderContext).promise;
             },
 
-            prevPage() {
-                if (this.currentPage > 1) {
-                    this.currentPage--;
-                    this.renderPage(this.currentPage);
-                }
-            },
-
-            nextPage() {
-                if (this.currentPage < this.totalPages) {
-                    this.currentPage++;
-                    this.renderPage(this.currentPage);
+            scrollToPage(pageNum) {
+                const el = document.getElementById('page-container-' + pageNum);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             },
 
@@ -234,7 +262,7 @@
                 event.dataTransfer.effectAllowed = 'copy';
             },
 
-            drop(event) {
+            drop(event, pageNum) {
                 const rect = event.target.getBoundingClientRect();
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
@@ -248,33 +276,31 @@
 
                     this.items.push({
                         type: data.type,
-                        key: data.key || null, // Only for DB fields
+                        key: data.key || null,
                         label: data.label,
                         text: data.type === 'static' ? 'Double click to edit' : null,
                         x: xPct,
                         y: yPct,
-                        w: 15, // Default width %
-                        h: 3,  // Default height %
-                        page: this.currentPage,
+                        w: 15,
+                        h: 3,
+                        page: pageNum, // Assign to correct page
                         fontSize: 12
                     });
 
-                    // If static, open edit immediately
                     if (data.type === 'static') {
                         this.editStaticText(this.items.length - 1);
                     }
 
                 } catch (e) {
-                    // Moving existing item logic could go here if using dragstart on existing items
                     console.error('Drop error', e);
                 }
             },
 
-            startMove(event, index) {
-                // Simple drag implementation for placed items
+            startMove(event, index, pageNum) {
                 const item = this.items[index];
                 const startX = event.clientX;
                 const startY = event.clientY;
+                // Calculate initial pixel position
                 const startLeft = (item.x / 100) * this.canvasWidth;
                 const startTop = (item.y / 100) * this.canvasHeight;
 
@@ -286,7 +312,7 @@
                     let newTop = startTop + dy;
 
                     // Boundaries
-                    newLeft = Math.max(0, Math.min(newLeft, this.canvasWidth - 20)); // Approximate width
+                    newLeft = Math.max(0, Math.min(newLeft, this.canvasWidth - 20));
                     newTop = Math.max(0, Math.min(newTop, this.canvasHeight - 10));
 
                     item.x = (newLeft / this.canvasWidth) * 100;
