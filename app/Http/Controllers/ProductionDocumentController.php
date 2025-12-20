@@ -11,16 +11,29 @@ class ProductionDocumentController extends Controller
 {
     public function show(Request $request, $id, $type)
     {
+        // Eager load advanceItems for the active group
         $production = ProductionOrder::with(['employer', 'items.employee', 'items'])->findOrFail($id);
 
-        // Basic Validation of type
-        if (!in_array($type, ['quotation', 'invoice', 'receipt', 'credit_note'])) {
+        // Basic Validation of type (Added 'tax_invoice' and 'advance_receipt')
+        if (!in_array($type, ['quotation', 'invoice', 'receipt', 'credit_note', 'tax_invoice', 'advance_receipt'])) {
             abort(404);
         }
 
+        // Handle Active Group & Advance Items
+        $groupId = $request->query('group_id');
+        $activeGroup = null;
+        if ($groupId) {
+            $activeGroup = $production->financialGroups()->with('advanceItems')->find($groupId);
+        }
+        // Fallback to first group if not specified
+        if (!$activeGroup) {
+            $activeGroup = $production->financialGroups()->with('advanceItems')->first();
+        }
+
+        $financialData = $activeGroup ? $activeGroup->financial_data : ($production->financial_data ?? []);
+        $advanceItems = $activeGroup ? $activeGroup->advanceItems : collect();
+
         // --- Header Logic ---
-        // Check if Custom Header is active in production data
-        $financialData = $production->financial_data ?? [];
         $customHeader = $financialData['custom_header'] ?? null;
 
         // If Custom Header exists and is not null, wrap it in an object similar to CompanyProfile
@@ -30,18 +43,17 @@ class ProductionDocumentController extends Controller
                 'address' => $customHeader['address'] ?? '',
                 'tax_id' => $customHeader['tax_id'] ?? '',
                 'phone' => $customHeader['phone'] ?? '',
-                'email' => $customHeader['email'] ?? '', // Optional
-                'logo' => $customHeader['logo'] ?? null,
+                'email' => $customHeader['email'] ?? '',
+                'logo_path' => $customHeader['logo'] ?? null,
             ];
         } else {
             // Fallback to System Profile
-            // Prefer the one saved in financial_data['profile_id'] if exists, else request param, else default
             $profileId = $financialData['profile_id'] ?? $request->query('profile_id');
-            $companyProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::first();
+            $companyProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::where('is_default', true)->first();
 
-            // Fallback dummy profile if none exists (Prevents view crash)
             if (!$companyProfile) {
-                $companyProfile = new CompanyProfile([
+                // Last resort: First available profile or dummy
+                $companyProfile = CompanyProfile::first() ?? new CompanyProfile([
                     'name' => 'Company Name (Default)',
                     'address' => 'Please configure a company profile in settings.',
                     'tax_id' => '0000000000000',
@@ -52,50 +64,68 @@ class ProductionDocumentController extends Controller
         }
 
         // --- Bill To Logic (Customer Override) ---
-        // Check if Customer Override is active in production data
         $customCustomer = $financialData['customer_override'] ?? null;
         $billTo = $production->employer; // Default
 
         if ($customCustomer) {
-            // Wrap in object to match Employer structure interface used in view
-            // Employer model uses: employerNameTh, employerAddress, employerPhone
-            // We map the override data to these keys for compatibility, or view can handle both.
-            // Let's create a generic object.
             $billTo = (object) [
                 'employerNameTh' => $customCustomer['name'] ?? 'Client Name',
                 'employerAddress' => $customCustomer['address'] ?? '',
                 'employerPhone' => $customCustomer['phone'] ?? '-',
-                'tax_id' => $customCustomer['tax_id'] ?? '-' // Employer model might not have tax_id accessor commonly used in view yet
+                'tax_id' => $customCustomer['tax_id'] ?? '-'
             ];
         }
 
-        // --- Filter Transactions Logic ---
+        // --- Transactions Logic ---
         $transactionsQuery = FinancialTransaction::where('production_order_id', $production->id);
+        if ($groupId) {
+             $transactionsQuery->where('production_financial_group_id', $groupId);
+        }
 
-        // If specific transaction IDs are passed, filter by them
         if ($request->has('transaction_ids')) {
             $ids = explode(',', $request->query('transaction_ids'));
             $transactionsQuery->whereIn('id', $ids);
         }
 
-        // For Receipt, usually only show 'paid' ones? Or user choice?
         if ($type === 'receipt' && !$request->has('transaction_ids')) {
              $transactionsQuery->where('status', 'paid');
         }
 
         $transactions = $transactionsQuery->orderBy('due_date')->get();
 
+        // --- Mode Logic (Combined, Service Only, Advance Only) ---
+        $mode = $request->query('mode', 'combined'); // Default to combined for legacy
+
         // Prepare data for the view
         $data = [
             'production' => $production,
             'company' => $companyProfile,
-            'billTo' => $billTo, // Pass the resolved Bill To entity
+            'billTo' => $billTo,
             'type' => $type,
             'date' => now(),
             'transactions' => $transactions,
-            'financial' => $financialData // Pass full financial data for easier access in view
+            'financial' => $financialData,
+            'advanceItems' => $advanceItems,
+            'activeGroup' => $activeGroup,
+            'mode' => $mode
         ];
 
-        return view('production.documents.' . $type, $data);
+        // Determine View
+        $view = 'documents.generic'; // Default
+        if (in_array($type, ['tax_invoice', 'invoice', 'receipt', 'quotation'])) {
+            // Re-use tax_invoice template for most structured docs, or specific ones if they exist
+            // I'll update tax_invoice to be the master template
+            $view = 'documents.tax_invoice';
+        } elseif ($type === 'advance_receipt') {
+            $view = 'documents.advance_receipt';
+        }
+
+        // Use the generic view if the specific one doesn't exist?
+        // For now, I will ensure 'documents.tax_invoice' and 'documents.advance_receipt' are created.
+
+        // Fix: Map legacy views if needed or consolidate.
+        // The plan calls for updating 'tax_invoice.blade.php'.
+
+        return view($view, $data);
     }
 }

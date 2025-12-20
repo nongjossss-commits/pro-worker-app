@@ -77,7 +77,7 @@
         .text-center { text-align: center; }
 
         /* Totals Section */
-        .totals-container { width: 40%; margin-left: auto; }
+        .totals-container { width: 45%; margin-left: auto; }
         table.totals-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         table.totals-table td { padding: 5px 0; }
         .total-label { text-align: left; color: #555; }
@@ -125,11 +125,22 @@
         }
         .btn { padding: 8px 15px; background: white; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px;}
         .btn:hover { background: #eee; }
+
+        /* New: Section Separator */
+        .section-header {
+            background-color: #e5e7eb;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 13px;
+            text-transform: uppercase;
+            margin-top: 10px;
+            border-bottom: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
     <div class="no-print action-bar">
-        <span>Document Preview</span>
+        <span>Document Preview ({{ ucfirst($mode ?? 'standard') }})</span>
         <div>
             <button class="btn" onclick="window.print()">Print / Save PDF</button>
             <button class="btn" onclick="window.close()" style="margin-left: 10px;">Close</button>
@@ -184,95 +195,160 @@
             @endif
         </div>
 
-        <!-- Items -->
+        <!-- Logic Setup -->
+        @php
+            $mode = $mode ?? 'combined'; // combined, service_only, advance_only
+            $showService = ($mode === 'combined' || $mode === 'service_only');
+            $showAdvance = ($mode === 'combined' || $mode === 'advance_only');
+
+            // Calc variables
+            $serviceTotal = 0;
+            $advanceTotal = 0;
+
+            // Service Fee Calculation (From Transactions or Financial Data)
+            // If viewing specific transactions, we sum them.
+            // If viewing general (no transaction_ids), we use the Group Total setting.
+
+            // NOTE: Transactions usually represent installments of the Service Fee.
+            // Advance items are separate.
+
+            if ($transactions->isNotEmpty()) {
+                $serviceTotal = $transactions->sum('amount');
+            } else {
+                // If no specific transactions, assume full project value for Quotation context
+                $serviceTotal = $financial['total_amount'] ?? 0;
+            }
+
+            // Re-calculate VAT breakdown for Service Fee
+            // Note: $financial['total_amount'] is usually Inc VAT if vat_included is true.
+            // We need consistent base for display.
+
+            $vatIncluded = $financial['vat_included'] ?? false;
+            $vatRate = $financial['vat_rate'] ?? 7;
+            $whtEnabled = $financial['wht_enabled'] ?? false;
+            $whtRate = $financial['wht_rate'] ?? 3;
+
+            // Deconstruct Service Fee
+            if ($vatIncluded) {
+                $totalServiceIncVat = $serviceTotal;
+                $serviceBase = $totalServiceIncVat / (1 + ($vatRate/100));
+                $serviceVat = $totalServiceIncVat - $serviceBase;
+            } else {
+                $serviceBase = $serviceTotal;
+                $serviceVat = $serviceBase * ($vatRate/100);
+                $totalServiceIncVat = $serviceBase + $serviceVat;
+            }
+
+            // Advance Calculation
+            if ($showAdvance && isset($advanceItems)) {
+                $advanceTotal = $advanceItems->sum('total');
+            }
+        @endphp
+
+        <!-- Items Table -->
         <table class="items-table">
             <thead>
                 <tr>
                     <th style="width: 5%;" class="text-center">#</th>
                     <th style="width: 60%;">Description</th>
+                    <th style="width: 10%;" class="text-center">Qty</th>
+                    <th style="width: 10%;" class="text-right">Unit Price</th>
                     <th style="width: 15%;" class="text-right">Amount</th>
                 </tr>
             </thead>
             <tbody>
-                @php $runningTotal = 0; @endphp
-                @forelse($transactions as $index => $t)
-                    @php $runningTotal += $t->amount; @endphp
+                <!-- SERVICE FEE SECTION -->
+                @if($showService)
                     <tr>
-                        <td class="text-center">{{ $index + 1 }}</td>
-                        <td>
-                            <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
-                            @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
-                            @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
-                        </td>
-                        <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                        <td colspan="5" class="section-header">Service Charges (ค่าบริการ)</td>
                     </tr>
-                @empty
+                    @forelse($transactions as $index => $t)
+                        <tr>
+                            <td class="text-center">{{ $index + 1 }}</td>
+                            <td>
+                                <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
+                                @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
+                                @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                            </td>
+                            <td class="text-center">1</td>
+                            <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                            <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                        </tr>
+                    @empty
+                        <!-- Fallback if no transactions (e.g. Quotation) -->
+                        <tr>
+                            <td class="text-center">1</td>
+                            <td>{{ $production->project_name ?? 'Service Fee for Recruitment' }}</td>
+                            <td class="text-center">1</td>
+                            <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
+                            <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
+                        </tr>
+                    @endforelse
+                @endif
+
+                <!-- ADVANCE PAYMENT SECTION -->
+                @if($showAdvance && isset($advanceItems) && $advanceItems->isNotEmpty())
                     <tr>
-                        <td class="text-center">1</td>
-                        <td>{{ $production->project_name ?? 'Service Fee' }}</td>
-                        <td class="text-right">{{ number_format($financial['total_amount'] ?? 0, 2) }}</td>
+                        <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินทดรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
                     </tr>
-                    @php $runningTotal = $financial['total_amount'] ?? 0; @endphp
-                @endforelse
+                    @foreach($advanceItems as $index => $item)
+                        <tr>
+                            <td class="text-center">{{ $index + 1 }}</td>
+                            <td>{{ $item->description }}</td>
+                            <td class="text-center">{{ $item->quantity }}</td>
+                            <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
+                            <td class="text-right">{{ number_format($item->total, 2) }}</td>
+                        </tr>
+                    @endforeach
+                @endif
             </tbody>
         </table>
 
         <!-- Calculations -->
         <div class="totals-container">
-            @php
-                // Logic:
-                // If displaying filtered transactions, we sum them up.
-                // We then re-calculate VAT/WHT based on the Group's RATIO settings.
-                // Or simply rely on the values if it matches the group total?
-                // Standard approach for partial billing:
-                // Base = Sum of Items
-                // Discount = (Group Discount / Group Total) * Base ?? 0 (Simplified: No discount on partials usually)
-
-                $baseAmount = $runningTotal; // This is GROSS usually
-                $discount = 0; // Hard to attribute partial discount, assume 0 for installments unless specific.
-
-                // If this is full generation (all transactions), apply group discount?
-                // Let's assume these transactions are NET of discount for simplicity or raw.
-                // Actually transactions usually store the "Amount to be paid".
-
-                // Let's recalculate tax logic based on settings:
-                $vatIncluded = $financial['vat_included'] ?? false;
-                $vatRate = $financial['vat_rate'] ?? 7;
-                $whtEnabled = $financial['wht_enabled'] ?? false;
-                $whtRate = $financial['wht_rate'] ?? 3;
-
-                if ($vatIncluded) {
-                    $totalIncVat = $baseAmount;
-                    $subtotal = $totalIncVat / (1 + ($vatRate/100));
-                    $vatAmount = $totalIncVat - $subtotal;
-                } else {
-                    $subtotal = $baseAmount;
-                    $vatAmount = $subtotal * ($vatRate/100);
-                    $totalIncVat = $subtotal + $vatAmount;
-                }
-
-                $whtAmount = $whtEnabled ? ($subtotal * ($whtRate/100)) : 0;
-                $netPayable = $totalIncVat - $whtAmount;
-            @endphp
-
             <table class="totals-table">
-                <tr>
-                    <td class="total-label">Subtotal @if($vatIncluded)(Excl. VAT)@endif</td>
-                    <td class="total-value">{{ number_format($subtotal, 2) }}</td>
-                </tr>
-                @if($vatRate > 0)
-                <tr>
-                    <td class="total-label">VAT ({{ $vatRate }}%)</td>
-                    <td class="total-value">{{ number_format($vatAmount, 2) }}</td>
-                </tr>
+                <!-- Service Fee Breakdown -->
+                @if($showService)
+                    <tr>
+                        <td class="total-label"><strong>Service Base (Excl. VAT)</strong></td>
+                        <td class="total-value">{{ number_format($serviceBase, 2) }}</td>
+                    </tr>
+                    @if($vatRate > 0)
+                    <tr>
+                        <td class="total-label">VAT ({{ $vatRate }}%)</td>
+                        <td class="total-value">{{ number_format($serviceVat, 2) }}</td>
+                    </tr>
+                    @endif
+                    <tr>
+                        <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total (Inc. VAT)</td>
+                        <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
+                    </tr>
                 @endif
+
+                <!-- Advance Breakdown -->
+                @if($showAdvance && $advanceTotal > 0)
+                    <tr>
+                        <td class="total-label" style="color: #ea580c;"><strong>Total Advance Payments</strong></td>
+                        <td class="total-value" style="color: #ea580c;">{{ number_format($advanceTotal, 2) }}</td>
+                    </tr>
+                @endif
+
+                <!-- Grand Total -->
+                @php
+                    $grandTotal = ($showService ? $totalServiceIncVat : 0) + ($showAdvance ? $advanceTotal : 0);
+                    $whtAmount = ($showService && $whtEnabled) ? ($serviceBase * ($whtRate/100)) : 0;
+                    $netPayable = $grandTotal - $whtAmount;
+                @endphp
+
                 <tr class="grand-total-row">
-                    <td>Total</td>
-                    <td class="total-value">{{ number_format($totalIncVat, 2) }}</td>
+                    <td>Grand Total</td>
+                    <td class="total-value">{{ number_format($grandTotal, 2) }}</td>
                 </tr>
-                @if($whtEnabled)
+
+                <!-- WHT -->
+                @if($showService && $whtEnabled)
                 <tr style="color: #EF4444;">
-                    <td class="total-label">Less WHT ({{ $whtRate }}%)</td>
+                    <td class="total-label">Less WHT ({{ $whtRate }}% on Service)</td>
                     <td class="total-value">-{{ number_format($whtAmount, 2) }}</td>
                 </tr>
                 <tr style="font-weight: bold; border-top: 1px dashed #ccc;">
@@ -285,7 +361,7 @@
 
         <!-- Thai Baht Text -->
         <div style="margin-top: 10px; font-style: italic; color: #666; font-size: 13px; text-align: right;">
-            ( {{ \App\Helpers\ThaiBaht::convert($totalIncVat) }} )
+            ( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )
         </div>
 
         <!-- Signatures -->

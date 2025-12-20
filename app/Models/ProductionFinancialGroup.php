@@ -29,4 +29,9 @@ class ProductionFinancialGroup extends Model
     {
         return $this->hasMany(FinancialTransaction::class, 'production_financial_group_id');
     }
+
+    public function advanceItems()
+    {
+        return $this->hasMany(FinancialAdvanceItem::class, 'production_financial_group_id');
+    }
 }
