@@ -240,6 +240,47 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/employer/{employer}/resolution-status', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionStatus'])->name('employer_resolution.update');
     });
 
+    // Renewal Resolution Routes (P Production > Renewal)
+    Route::prefix('production/renewal')->name('production.renewal.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('index');
+        Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees');
+        Route::post('/import/expiry', [App\Http\Controllers\Production\RenewalController::class, 'importByExpiry'])->name('import.expiry');
+        Route::get('/create', [App\Http\Controllers\Production\RenewalController::class, 'create'])->name('create');
+        Route::post('/store', [App\Http\Controllers\Production\RenewalController::class, 'store'])->name('store');
+
+        // Step Management
+        Route::post('/steps', [App\Http\Controllers\Production\RenewalController::class, 'storeStep'])->name('steps.store');
+        Route::put('/steps/{step}', [App\Http\Controllers\Production\RenewalController::class, 'updateStep'])->name('steps.update');
+        Route::delete('/steps/{step}', [App\Http\Controllers\Production\RenewalController::class, 'destroyStep'])->name('steps.destroy');
+
+        // Progress Updates
+        Route::post('/progress/{employee}', [App\Http\Controllers\Production\RenewalController::class, 'updateProgress'])->name('progress.update');
+
+        // Custom Fields
+        Route::post('/custom-fields/{employee}', [App\Http\Controllers\Production\RenewalController::class, 'storeCustomField'])->name('custom_fields.store');
+        Route::delete('/custom-fields/{field}', [App\Http\Controllers\Production\RenewalController::class, 'destroyCustomField'])->name('custom_fields.destroy');
+
+        // Employer Custom Fields
+        Route::post('/employer-custom-fields/{employer}', [App\Http\Controllers\Production\RenewalController::class, 'storeEmployerCustomField'])->name('employer_custom_fields.store');
+        Route::put('/employer-custom-fields/{field}', [App\Http\Controllers\Production\RenewalController::class, 'updateEmployerCustomField'])->name('employer_custom_fields.update');
+        Route::delete('/employer-custom-fields/{field}', [App\Http\Controllers\Production\RenewalController::class, 'destroyEmployerCustomField'])->name('employer_custom_fields.destroy');
+
+        // Finalize & Restore (NEW)
+        Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RenewalController::class, 'finalize'])->name('finalize');
+        Route::post('/{employee}/restore-state', [App\Http\Controllers\Production\RenewalController::class, 'restore'])->name('restore_state');
+        Route::post('/bulk-finalize', [App\Http\Controllers\Production\RenewalController::class, 'bulkFinalize'])->name('bulk_finalize');
+
+        // Cancel, Restore (General), Delete
+        Route::post('/{employee}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancel'])->name('cancel');
+        Route::post('/{employee}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restore'])->name('restore');
+        Route::delete('/{employee}/destroy', [App\Http\Controllers\Production\RenewalController::class, 'destroy'])->name('destroy');
+
+        // Employer Actions (NEW)
+        Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancelEmployer'])->name('cancel_employer');
+        Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreEmployer'])->name('restore_employer');
+        Route::post('/employer/{employer}/resolution-status', [App\Http\Controllers\Production\RenewalController::class, 'updateResolutionStatus'])->name('employer_resolution.update');
+    });
+
     Route::resource('production', \App\Http\Controllers\ProductionController::class);
 
     // Additional Production Routes
