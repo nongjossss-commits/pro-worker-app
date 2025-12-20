@@ -49,7 +49,10 @@ class RoleAndPermissionSeeder extends Seeder
             'manage-tickets',
             'use-chat',
             'view-finance',
-            'manage-finance'
+            'manage-finance',
+
+            // PDF Templates
+            'view-pdf-templates', 'create-pdf-templates', 'edit-pdf-templates', 'delete-pdf-templates',
             // END: Add new permissions
         ];
 
@@ -76,7 +79,8 @@ class RoleAndPermissionSeeder extends Seeder
             'manage-tickets',
             'use-chat',
             'view-finance',
-            'manage-finance'
+            'manage-finance',
+            'view-pdf-templates', 'create-pdf-templates', 'edit-pdf-templates' // Staff can manage templates
         ];
 
         $staffRole->syncPermissions($staffPermissions);

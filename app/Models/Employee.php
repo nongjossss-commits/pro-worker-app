@@ -221,6 +221,11 @@ class Employee extends Model
         return $this->hasMany(EmployeeCustomField::class);
     }
 
+    public function generatedDocuments()
+    {
+        return $this->hasMany(EmployeeGeneratedDocument::class);
+    }
+
     protected function daysSinceTermination(): Attribute
     {
         return Attribute::make(
