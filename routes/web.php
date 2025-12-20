@@ -168,6 +168,7 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
     // PDF Templates
+    Route::get('pdf-templates/{template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
     Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class);
     Route::get('pdf-templates/{template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
 

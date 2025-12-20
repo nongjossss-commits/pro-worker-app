@@ -111,4 +111,17 @@ class PdfTemplateController extends Controller
         return redirect()->route('admin.pdf-templates.index')
             ->with('success', 'Template deleted successfully.');
     }
+
+    public function file(PdfTemplate $template)
+    {
+        $this->authorize('view-pdf-templates');
+
+        $path = $template->file_path;
+
+        if (!Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path($path));
+    }
 }
