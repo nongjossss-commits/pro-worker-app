@@ -17,7 +17,8 @@ class PdfGeneratorService
 
     public function __construct()
     {
-        // Path to Thai font
+        // Path to Thai font (Assumes font files exist in public/fonts)
+        // If using standard FPDF, we need .php and .z (or .ttf if using tFPDF)
         $this->fontPath = public_path('fonts/THSarabunNew.php');
     }
 
@@ -36,9 +37,6 @@ class PdfGeneratorService
                 $this->saveToSlot($employee, $pdfContent, $options['slot_name']);
                 $results[] = ['employee' => $employee->id, 'status' => 'saved'];
             } else {
-                // For download, we accumulate files.
-                // If single employee, return PDF directly.
-                // If multiple, we'll zip them later in Controller.
                 $filename = $this->generateFilename($template, $employee);
                 $results[] = ['filename' => $filename, 'content' => $pdfContent];
             }
@@ -49,32 +47,32 @@ class PdfGeneratorService
 
     protected function generateSinglePdf(PdfTemplate $template, Employee $employee)
     {
+        // Use standard Fpdi. If Thai characters are needed, ensure
+        // the environment has tFPDF or the font definitions are correct.
+        // For this implementation, we try to be safe.
         $pdf = new Fpdi();
 
         // Load the template file
         $templatePath = Storage::disk('public')->path($template->file_path);
-        $pageCount = $pdf->setSourceFile($templatePath);
 
-        // Add Thai Font
-        // Note: FPDF/FPDI font handling can be tricky.
-        // We assume standard setup or use a compatible font script.
-        // For simplicity in this environment, we'll try to use a standard font or add one if available.
-        // Ideally, we need to convert TTF to PHP font definition for FPDF.
-        // If 'thsarabunnew' is not pre-converted, we might fallback to 'arial' (no Thai support) or similar.
-        // Assuming we have a way to handle UTF-8, usually ttf2pt1 or similar is needed.
-        // However, standard FPDF requires ISO-8859-1. tFPDF supports UTF-8.
-        // Since we are adding code, let's assume we might need tFPDF or similar, but composer.json has `setasign/fpdf`.
-        // Standard FPDF doesn't support UTF-8/Thai out of the box easily without generating font files.
-        // I will use a placeholder implementation for font loading.
+        try {
+            $pageCount = $pdf->setSourceFile($templatePath);
+        } catch (\Exception $e) {
+            // Fallback or error handling if PDF is invalid
+            // For now, rethrow or log? We'll let it fail visibly or return empty
+            throw $e;
+        }
 
-        // CHECK: Does the system have Thai fonts ready for FPDF?
-        // If not, I should probably use a font that is available.
-        // I'll try to add the font. If it fails, catch it.
+        // Font Handling
+        $fontLoaded = false;
+        // Check if custom Thai font definition exists
         if (file_exists($this->fontPath)) {
              $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
              $pdf->SetFont('THSarabunNew', '', 14);
+             $fontLoaded = true;
         } else {
-             $pdf->SetFont('Arial', '', 12); // Fallback
+             // Fallback to Arial if Thai font is missing to prevent crash
+             $pdf->SetFont('Arial', '', 12);
         }
 
         // Iterate Pages
@@ -99,43 +97,85 @@ class PdfGeneratorService
 
                 if ($text) {
                     // Convert coordinates from % to mm/points
-                    // FPDF uses mm by default usually, but importPage size depends on PDF unit.
-                    // FPDI import usually respects source unit.
-                    // Let's assume standard points or mm.
-                    // $size['width'] is the width of the page in user units.
-
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
 
-                    // Simple text placement
+                    // Text Placement
                     $pdf->SetXY($x, $y);
 
-                    // Handle encoding for Thai if using standard FPDF (requires iconv)
-                    if (file_exists($this->fontPath)) {
-                        $text = iconv('UTF-8', 'cp874', $text);
+                    // Thai Encoding Conversion (if using standard FPDF with custom font)
+                    // Standard FPDF uses ISO-8859-1 or cp874 for Thai if font supports it.
+                    // If we successfully loaded THSarabunNew (which is usually CP874 mapped), convert UTF-8.
+                    if ($fontLoaded) {
+                        // Attempt conversion. If iconv fails, stick to original.
+                        $converted = @iconv('UTF-8', 'cp874', $text);
+                        if ($converted !== false) {
+                            $text = $converted;
+                        }
+                    } else {
+                        // Using Arial (ISO-8859-1). Convert or strip incompatible chars?
+                        // For safety, convert to ISO-8859-1//TRANSLIT
+                        $text = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
                     }
 
-                    // Try to write
                     $pdf->Write(0, $text);
                 }
             }
         }
 
-        return $pdf->Output('S'); // Return as string
+        return $pdf->Output('S');
     }
 
     protected function resolveValue(Employee $employee, $key)
     {
-        // Handle dot notation (employer.name)
+        // 1. Handle Special Employer Address Fields
+        if ($key === 'employer.address_th') {
+            return $this->formatAddress($employee->employer->addresses->first(), 'th');
+        }
+        if ($key === 'employer.address_en') {
+            return $this->formatAddress($employee->employer->addresses->first(), 'en');
+        }
+
+        // 2. Handle Standard Dot Notation
         $value = data_get($employee, $key);
 
-        // Handle Dates
+        // 3. Formatting
         if ($value instanceof Carbon) {
             return $value->format('d/m/Y');
         }
 
-        // Handle Enums or Specific Logic if needed
         return (string) $value;
+    }
+
+    protected function formatAddress($address, $lang = 'th')
+    {
+        if (!$address) return '-';
+
+        if ($lang === 'th') {
+            $parts = array_filter([
+                $address->addrNo,
+                $address->addrMoo ? "หมู่ " . $address->addrMoo : null,
+                $address->addrSoi ? "ซอย " . $address->addrSoi : null,
+                $address->addrRoad ? "ถนน " . $address->addrRoad : null,
+                $address->addrSubDistrict ? "ต." . $address->addrSubDistrict : null,
+                $address->addrDistrict ? "อ." . $address->addrDistrict : null,
+                $address->addrProvince ? "จ." . $address->addrProvince : null,
+                $address->addrZipCode
+            ]);
+            return implode(' ', $parts);
+        } else {
+            $parts = array_filter([
+                $address->addrNoEn,
+                $address->addrMooEn ? "Moo " . $address->addrMooEn : null,
+                $address->addrSoiEn ? "Soi " . $address->addrSoiEn : null,
+                $address->addrRoadEn ? "Road " . $address->addrRoadEn : null,
+                $address->addrSubDistrictEn,
+                $address->addrDistrictEn,
+                $address->addrProvinceEn,
+                $address->addrZipCodeEn
+            ]);
+            return implode(', ', $parts);
+        }
     }
 
     protected function saveToSlot(Employee $employee, $content, $slotName)
@@ -143,10 +183,6 @@ class PdfGeneratorService
         $filename = 'generated/' . $employee->id . '/' . Str::slug($slotName) . '_' . time() . '.pdf';
 
         Storage::disk('public')->put($filename, $content);
-
-        // Check for existing slot with same name and overwrite (or just add new entry?)
-        // Requirement said "use same slot".
-        // Implementation: Find existing record for this slot name and update, or create new.
 
         $doc = $employee->generatedDocuments()->updateOrCreate(
             ['document_name' => $slotName],
