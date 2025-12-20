@@ -275,6 +275,16 @@ if (typeof window.financialManager === 'undefined') {
                 return this.filteredTransactions.filter(t => t.type === 'advance_payment');
             },
 
+            get advancePaid() {
+                // Sum 'paid_amount' of advance transactions
+                return this.advanceTransactions.reduce((sum, t) => sum + (parseFloat(t.paid_amount) || 0), 0);
+            },
+
+            get advanceRemaining() {
+                // Total Advance Expenses - Paid Advances
+                return Math.max(0, this.advanceTotal - this.advancePaid);
+            },
+
             get scheduledAmount() {
                 // Only Income Transactions count towards the scheduled amount of the Contract
                 return this.incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
