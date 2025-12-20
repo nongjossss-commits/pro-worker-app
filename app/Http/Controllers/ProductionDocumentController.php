@@ -99,7 +99,8 @@ class ProductionDocumentController extends Controller
         // Prepare data for the view
         $data = [
             'production' => $production,
-            'company' => $companyProfile,
+            'profile' => $companyProfile, // Fix: layout expects 'profile'
+            'company' => $companyProfile, // Keep for backward compat if any
             'billTo' => $billTo,
             'type' => $type,
             'date' => now(),

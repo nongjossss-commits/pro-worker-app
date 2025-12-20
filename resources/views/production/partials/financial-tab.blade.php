@@ -164,8 +164,12 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="text-end small fw-bold text-muted">
-                        Advance Total: <span x-text="formatCurrency(advanceTotal)"></span>
+                    <div class="d-flex justify-content-end align-items-center gap-3 small fw-bold">
+                         <div class="text-muted">Total: <span x-text="formatCurrency(advanceTotal)"></span></div>
+                         <div class="text-success">Paid: <span x-text="formatCurrency(advancePaid)"></span></div>
+                         <div :class="{'text-danger': advanceRemaining > 0, 'text-success': advanceRemaining <= 0}">
+                            Balance: <span x-text="formatCurrency(advanceRemaining)"></span>
+                         </div>
                     </div>
                 </div>
 
@@ -297,8 +301,8 @@
                             <i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Tax Invoice (ใบกำกับภาษี)') }}
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'combined')">{{ __('Combined (Service + Advance)') }}</a></li>
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'service_only')">{{ __('Service Fee Only') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'combined'); if(typeof bootstrap !== 'undefined') bootstrap.Dropdown.getInstance($el.closest('.dropdown').querySelector('.dropdown-toggle')).hide();">{{ __('Combined (Service + Advance)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'service_only'); if(typeof bootstrap !== 'undefined') bootstrap.Dropdown.getInstance($el.closest('.dropdown').querySelector('.dropdown-toggle')).hide();">{{ __('Service Fee Only') }}</a></li>
                         </ul>
                     </div>
 
@@ -307,10 +311,10 @@
                             <i class="bi bi-receipt me-2"></i>{{ __('Receipt / Invoice') }}
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'combined')">{{ __('Combined (Receipt)') }}</a></li>
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'service_only')">{{ __('Receipt (Service Fee)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'combined'); if(typeof bootstrap !== 'undefined') bootstrap.Dropdown.getInstance($el.closest('.dropdown').querySelector('.dropdown-toggle')).hide();">{{ __('Combined (Receipt)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'service_only'); if(typeof bootstrap !== 'undefined') bootstrap.Dropdown.getInstance($el.closest('.dropdown').querySelector('.dropdown-toggle')).hide();">{{ __('Receipt (Service Fee)') }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('advance_receipt', null, 'advance_only')">{{ __('Reimbursement Receipt (ใบเสร็จรับเงินทดรองจ่าย)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('advance_receipt', null, 'advance_only'); if(typeof bootstrap !== 'undefined') bootstrap.Dropdown.getInstance($el.closest('.dropdown').querySelector('.dropdown-toggle')).hide();">{{ __('Reimbursement Receipt (ใบเสร็จรับเงินทดรองจ่าย)') }}</a></li>
                         </ul>
                     </div>
                 </div>
