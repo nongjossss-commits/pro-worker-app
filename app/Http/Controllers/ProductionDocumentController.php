@@ -126,12 +126,13 @@ class ProductionDocumentController extends Controller
 
         // Determine View
         $view = 'documents.generic'; // Default
-        if (in_array($type, ['tax_invoice', 'invoice', 'receipt', 'quotation'])) {
-            // Re-use tax_invoice template for most structured docs, or specific ones if they exist
-            // I'll update tax_invoice to be the master template
-            $view = 'documents.tax_invoice';
-        } elseif ($type === 'advance_receipt') {
-            $view = 'documents.advance_receipt';
+
+        // Check if a specific view exists for this type
+        if (view()->exists('documents.' . $type)) {
+            $view = 'documents.' . $type;
+        } elseif (in_array($type, ['tax_invoice', 'invoice', 'receipt', 'quotation'])) {
+             // Fallback to tax_invoice if specific file missing (legacy safety)
+             $view = 'documents.tax_invoice';
         }
 
         return view($view, $data);

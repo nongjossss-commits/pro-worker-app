@@ -1,6 +1,6 @@
 @include('documents.layout', [
-    'type' => 'Tax Invoice',
-    'title' => 'ใบกำกับภาษี / Tax Invoice',
+    'type' => $type ?? 'Tax Invoice',
+    'title' => $title ?? 'ใบกำกับภาษี / Tax Invoice',
     'mode' => $mode ?? 'combined',
     'advanceItems' => $advanceItems ?? collect()
 ])
