@@ -1,1 +1,6 @@
-@include('documents.layout', ['type' => 'Receipt', 'title' => 'ใบเสร็จรับเงิน / Receipt'])
+@include('documents.layout', [
+    'type' => $type ?? 'Receipt',
+    'title' => $title ?? 'ใบเสร็จรับเงิน / Receipt',
+    'mode' => $mode ?? 'combined',
+    'advanceItems' => $advanceItems ?? collect()
+])

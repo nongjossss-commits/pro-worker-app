@@ -1,1 +1,6 @@
-@include('documents.layout', ['type' => 'Credit Note', 'title' => 'ใบลดหนี้ / Credit Note'])
+@include('documents.layout', [
+    'type' => $type ?? 'Credit Note',
+    'title' => $title ?? 'ใบลดหนี้ / Credit Note',
+    'mode' => $mode ?? 'combined',
+    'advanceItems' => $advanceItems ?? collect()
+])
