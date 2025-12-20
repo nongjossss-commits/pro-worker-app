@@ -27,7 +27,7 @@ class FinancialController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:0',
             'due_date' => 'nullable|date',
-            'type' => 'required|in:installment,down_payment,full_payment',
+            'type' => 'required|in:installment,down_payment,full_payment,advance_payment',
             'notes' => 'nullable|string',
             'financial_group_id' => 'required|exists:production_financial_groups,id'
         ]);
