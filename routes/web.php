@@ -167,6 +167,14 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
+    // PDF Templates
+    Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class);
+    Route::get('pdf-templates/{template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
+
+    // PDF Generation
+    Route::post('pdf-templates/generate', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'showGenerateModal'])->name('pdf-templates.generate.modal');
+    Route::post('pdf-templates/generate/process', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'process'])->name('pdf-templates.generate.process');
+
     Route::post('tickets/{ticket}/resolve', [TicketStatusController::class, 'resolve'])->name('tickets.resolve');
     Route::post('tickets/{ticket}/reject', [TicketStatusController::class, 'reject'])->name('tickets.reject');
     Route::post('tickets/{ticket}/forward', [TicketStatusController::class, 'forward'])->name('tickets.forward');
