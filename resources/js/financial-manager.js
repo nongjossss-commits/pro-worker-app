@@ -13,6 +13,9 @@ if (typeof window.financialManager === 'undefined') {
             employeeCount: initialData.employeeCount || 0,
             discount: 0,
 
+            // Advance Items
+            advanceItems: [],
+
             // Tax Settings
             vatIncluded: false,
             vatRate: 7,
@@ -32,12 +35,14 @@ if (typeof window.financialManager === 'undefined') {
             selectedAgentId: '',
 
             // Calculated values
-            totalAmount: 0,
-            baseTotal: 0,
-            subtotalAmount: 0,
+            totalAmount: 0, // Service Fee Inc VAT
+            baseTotal: 0, // Service Fee Gross
+            subtotalAmount: 0, // Service Fee Ex VAT
             vatAmount: 0,
             whtAmount: 0,
-            netReceivable: 0,
+            advanceTotal: 0, // No VAT
+            grandTotalReceivable: 0, // Net Receivable + Advance Total
+            netReceivable: 0, // Service Fee Total - WHT
 
             // Transaction State
             transactions: initialData.transactions || [],
@@ -60,8 +65,7 @@ if (typeof window.financialManager === 'undefined') {
                 if (this.financialGroups.length > 0) {
                     this.switchGroup(this.financialGroups[0].id);
                 } else {
-                    // Safety fallback: If no groups exist, user can add one.
-                    // Or auto-create?
+                    // Safety fallback
                 }
             },
 
@@ -77,6 +81,12 @@ if (typeof window.financialManager === 'undefined') {
                 this.fixedTotal = data.fixed_base_amount || 0;
                 this.pricingTiers = data.pricing_tiers || [];
                 this.discount = data.discount || 0;
+
+                // Load Advance Items (From relational data loaded in Blade via json_encode)
+                // Need to ensure the Controller loads `advanceItems` relation.
+                // Blade: financialGroups: {{ json_encode($production->financialGroups) }}
+                // If controller uses eager loading, `group.advance_items` should exist.
+                this.advanceItems = group.advance_items || [];
 
                 this.vatIncluded = !!data.vat_included;
                 this.vatRate = data.vat_rate || 7;
@@ -197,8 +207,17 @@ if (typeof window.financialManager === 'undefined') {
                 return this.pricingTiers.reduce((sum, t) => sum + parseInt(t.count || 0), 0);
             },
 
+            // --- Advance Logic ---
+            addAdvanceItem() {
+                this.advanceItems.push({ description: '', quantity: 1, unit_price: 0 });
+            },
+            removeAdvanceItem(index) {
+                this.advanceItems.splice(index, 1);
+                this.updateTotal();
+            },
+
             updateTotal() {
-                // 1. Calculate Gross Base
+                // 1. Calculate Gross Base (Service Fee)
                 let gross = 0;
                 if (this.pricingMode === 'per_head') {
                     gross = this.pricingTiers.reduce((sum, t) => sum + (parseFloat(t.price || 0) * parseFloat(t.count || 0)), 0);
@@ -207,10 +226,10 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 this.baseTotal = gross;
 
-                // 2. Apply Discount
+                // 2. Apply Discount (To Service Fee)
                 let netBase = Math.max(0, gross - (parseFloat(this.discount) || 0));
 
-                // 3. VAT Logic
+                // 3. VAT Logic (Only on Service Fee)
                 if (this.vatIncluded) {
                     // Formula: NetBase = Total (Inc VAT)
                     // Subtotal (Ex VAT) = Total / (1 + Rate)
@@ -232,8 +251,15 @@ if (typeof window.financialManager === 'undefined') {
                     this.whtAmount = 0;
                 }
 
-                // 5. Net Receivable (Total - WHT)
                 this.netReceivable = this.totalAmount - this.whtAmount;
+
+                // 5. Advance Payments (No VAT, No WHT)
+                this.advanceTotal = this.advanceItems.reduce((sum, item) => {
+                    return sum + ((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0));
+                }, 0);
+
+                // 6. Grand Total
+                this.grandTotalReceivable = this.netReceivable + this.advanceTotal;
             },
 
             get filteredTransactions() {
@@ -245,10 +271,11 @@ if (typeof window.financialManager === 'undefined') {
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
             },
             get remainingSchedule() {
-                return Math.max(0, this.totalAmount - this.scheduledAmount);
+                // The schedule should cover the Grand Total Receivable
+                return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
             },
             get isFullyScheduled() {
-                return Math.abs(this.totalAmount - this.scheduledAmount) < 1;
+                return Math.abs(this.grandTotalReceivable - this.scheduledAmount) < 1;
             },
             get headerNameDisplay() {
                 if (this.useCustomHeader) {
@@ -292,6 +319,8 @@ if (typeof window.financialManager === 'undefined') {
                         // Customer Override Data
                         customer_override: this.useCustomCustomer ? this.customCustomerData : null
                     },
+                    // Send Advance Items separately for robust sync
+                    advance_items: this.advanceItems,
                     financial_group_id: this.activeGroupId,
                     _method: 'PUT'
                 };
@@ -307,6 +336,7 @@ if (typeof window.financialManager === 'undefined') {
                     const group = this.financialGroups.find(g => g.id === this.activeGroupId);
                     if (group) {
                         group.financial_data = payload.financial;
+                        group.advance_items = this.advanceItems; // Update local state match
                     }
                     Swal.fire({
                         icon: 'success',
@@ -326,19 +356,7 @@ if (typeof window.financialManager === 'undefined') {
             // --- Agent Logic ---
             loadAgentData() {
                 if (!this.selectedAgentId) return;
-                // Need to find the selected option text in a way that works inside Alpine
-                // We'll trust the user to have bound the data attributes or fetch via ID if needed.
-                // Simplified: use a map or lookup if options aren't easily accessible via $el.
-                // Workaround: We will use a lookup object passed in or fetch it.
-                // For now, let's assume the DOM logic in the view still works if we use $refs or querySelector relative to $el
-                // But $el scope is the whole component.
-                // Let's use a simpler approach: Just use the ID and fetch, or rely on the view to have populated a data object.
-                // Actually, the view logic `const select = this.$el.querySelector('select')` works fine if we bind correctly.
-
-                // Let's try to get the element via document.querySelector inside the modal (scoped)
-                // Or better, just fetch the agent details? No, let's stick to DOM reading if it worked.
                 const select = document.querySelector(`#customCustomerModal-${this.productionId} select`);
-                // We need to ensure unique IDs for modals!
 
                 if(select) {
                     const option = select.options[select.selectedIndex];
@@ -381,13 +399,7 @@ if (typeof window.financialManager === 'undefined') {
 
             // --- Logo Upload ---
             uploadLogo() {
-                // Unique ref needed? `x-ref="logoInput"` works within the component scope.
-                const fileInput = this.$el.querySelector('input[type="file"]'); // Quick hack if ref fails
-                // Better: use x-ref="logoInput" and access via this.$refs.logoInput
-                // But $refs might be tricky if inside a loop.
-                // Let's assume standard behavior.
-                // Actually, inside the loop, refs are scoped to the `x-data` root.
-
+                const fileInput = this.$el.querySelector('input[type="file"]');
                 const file = this.$refs.logoInput ? this.$refs.logoInput.files[0] : null;
                 if (!file) return;
 
@@ -432,7 +444,6 @@ if (typeof window.financialManager === 'undefined') {
                 })
                 .then(res => {
                     if (!res.ok) {
-                         // Check if response is JSON, else throw text
                          const contentType = res.headers.get("content-type");
                          if (contentType && contentType.indexOf("application/json") !== -1) {
                              return res.json().then(err => { throw new Error(err.message || 'Server Error'); });
@@ -575,13 +586,16 @@ if (typeof window.financialManager === 'undefined') {
                 this.openDocument(this.documentTypeToGenerate, ids);
                 bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
             },
-            openDocument(type, transactionIds = null) {
+            openDocument(type, transactionIds = null, mode = null) {
                 let url = `/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
                 }
                 if (transactionIds) {
                     url += `&transaction_ids=${transactionIds}`;
+                }
+                if (mode) {
+                    url += `&mode=${mode}`;
                 }
                 window.open(url, '_blank');
             }

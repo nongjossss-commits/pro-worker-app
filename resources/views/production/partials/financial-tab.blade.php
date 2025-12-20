@@ -127,9 +127,51 @@
                     </div>
                 </div>
 
+                <!-- Advance Payments Section (NEW) -->
+                <div class="mb-3 border-top pt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label mb-0 fw-bold small text-primary">{{ __('Advance Payments / Expenses') }}</label>
+                        <button class="btn btn-sm btn-outline-primary py-0" style="font-size: 10px;" @click="addAdvanceItem()">
+                            <i class="bi bi-plus"></i> Add Item
+                        </button>
+                    </div>
+                    <div class="table-responsive border rounded p-2 mb-2 bg-light">
+                        <table class="table table-sm table-borderless mb-0">
+                            <thead>
+                                <tr class="text-muted small">
+                                    <th>{{ __('Description') }}</th>
+                                    <th style="width: 60px;">{{ __('Qty') }}</th>
+                                    <th style="width: 90px;">{{ __('Price') }}</th>
+                                    <th style="width: 20px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(item, index) in advanceItems" :key="index">
+                                    <tr>
+                                        <td><input type="text" class="form-control form-control-sm" x-model="item.description" placeholder="Visa, Medical..."></td>
+                                        <td><input type="number" class="form-control form-control-sm px-1" x-model="item.quantity" @input="updateTotal()"></td>
+                                        <td><input type="number" class="form-control form-control-sm px-1" x-model="item.unit_price" @input="updateTotal()"></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-link text-danger p-0" @click="removeAdvanceItem(index)">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="advanceItems.length === 0">
+                                    <td colspan="4" class="text-center text-muted small fst-italic py-2">No advance payments added.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end small fw-bold text-muted">
+                        Advance Total: <span x-text="formatCurrency(advanceTotal)"></span>
+                    </div>
+                </div>
+
                 <!-- VAT & WHT Settings -->
                 <div class="mb-3 border-top pt-3">
-                    <label class="form-label small text-muted">{{ __('Tax Settings') }}</label>
+                    <label class="form-label small text-muted">{{ __('Tax Settings (Service Fee Only)') }}</label>
 
                     <!-- VAT -->
                     <div class="d-flex align-items-center justify-content-between mb-2">
@@ -163,7 +205,7 @@
 
                 <!-- Save Pricing Button -->
                 <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSavingSettings || (pricingMode === 'per_head' && tierCountSum !== employeeCount)">
-                    <i class="bi bi-save me-1"></i> {{ __('Save Pricing Settings') }}
+                    <i class="bi bi-save me-1"></i> {{ __('Save Pricing & Advance Items') }}
                 </button>
             </div>
         </div>
@@ -173,7 +215,7 @@
             <div class="card-header bg-white fw-bold">{{ __('Financial Summary') }}</div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-1 small">
-                    <span class="text-muted">{{ __('Gross Amount') }}:</span>
+                    <span class="text-muted">{{ __('Service Fee (Gross)') }}:</span>
                     <span x-text="formatCurrency(baseTotal)"></span>
                 </div>
                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="discount > 0">
@@ -181,10 +223,8 @@
                     <span>- <span x-text="formatCurrency(discount)"></span></span>
                 </div>
 
-                <hr class="my-2">
-
                 <div class="d-flex justify-content-between mb-1">
-                    <span class="text-muted">{{ __('Base (Excl. VAT)') }}:</span>
+                    <span class="text-muted">{{ __('Service Base (Excl. VAT)') }}:</span>
                     <span x-text="formatCurrency(subtotalAmount)"></span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
@@ -193,8 +233,14 @@
                 </div>
 
                 <div class="d-flex justify-content-between mb-2 fw-bold bg-light p-1 rounded">
-                    <span>Total (Inc. VAT):</span>
+                    <span>Service Total (Inc. VAT):</span>
                     <span class="text-primary" x-text="formatCurrency(totalAmount)"></span>
+                </div>
+
+                 <!-- Advance Section in Summary -->
+                <div class="d-flex justify-content-between mb-1 text-info small" x-show="advanceTotal > 0">
+                    <span>+ Advance Payments (No VAT):</span>
+                    <span x-text="formatCurrency(advanceTotal)"></span>
                 </div>
 
                 <div x-show="whtEnabled" class="d-flex justify-content-between mb-1 text-danger small">
@@ -202,9 +248,11 @@
                     <span>- <span x-text="formatCurrency(whtAmount)"></span></span>
                 </div>
 
+                <hr class="my-2">
+
                 <div class="d-flex justify-content-between border-top pt-2 mt-2">
-                    <span class="fw-bold">{{ __('Net Receivable') }}:</span>
-                    <span class="fw-bold text-success" x-text="formatCurrency(netReceivable)"></span>
+                    <span class="fw-bold fs-6">{{ __('Grand Total Receivable') }}:</span>
+                    <span class="fw-bold fs-6 text-success" x-text="formatCurrency(grandTotalReceivable)"></span>
                 </div>
 
                 <hr>
@@ -223,7 +271,7 @@
         <!-- Document Center & Headers -->
         <div class="card shadow-sm border-0 mb-3">
             <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-printer me-2"></i>{{ __('Document Header') }}</span>
+                <span><i class="bi bi-printer me-2"></i>{{ __('Document Center') }}</span>
                 <button class="btn btn-xs btn-outline-secondary" @click="showCustomHeaderModal = true">
                     <i class="bi bi-pencil"></i> {{ __('Edit') }}
                 </button>
@@ -242,18 +290,29 @@
                     <button @click="openDocument('quotation')" class="btn btn-outline-secondary btn-sm text-start">
                         <i class="bi bi-file-earmark-text me-2"></i>{{ __('Quotation (ใบเสนอราคา)') }}
                     </button>
-                    <button @click="openSelectionModal('invoice')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-receipt me-2"></i>{{ __('Invoice (ใบแจ้งหนี้)') }}
-                    </button>
-                    <button @click="openSelectionModal('receipt')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-check-circle me-2"></i>{{ __('Receipt (ใบเสร็จรับเงิน)') }}
-                    </button>
-                     <button @click="openSelectionModal('tax_invoice')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Tax Invoice (ใบกำกับภาษี)') }}
-                    </button>
-                    <button @click="openSelectionModal('credit_note')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-file-earmark-minus me-2"></i>{{ __('Credit Note (ใบลดหนี้)') }}
-                    </button>
+
+                    <!-- Advanced Generation Dropdown -->
+                     <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Tax Invoice (ใบกำกับภาษี)') }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'combined')">{{ __('Combined (Service + Advance)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'service_only')">{{ __('Service Fee Only') }}</a></li>
+                        </ul>
+                    </div>
+
+                     <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-receipt me-2"></i>{{ __('Receipt / Invoice') }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'combined')">{{ __('Combined (Receipt)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'service_only')">{{ __('Receipt (Service Fee)') }}</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('advance_receipt', null, 'advance_only')">{{ __('Reimbursement Receipt (ใบเสร็จรับเงินทดรองจ่าย)') }}</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>

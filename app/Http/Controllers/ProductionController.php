@@ -181,7 +181,8 @@ class ProductionController extends Controller
      */
     public function edit($id)
     {
-        $production = ProductionOrder::with(['items.employee.employer', 'employer'])->findOrFail($id);
+        // Eager load advanceItems for the UI
+        $production = ProductionOrder::with(['items.employee.employer', 'employer', 'financialGroups.advanceItems'])->findOrFail($id);
 
         if ($production->status !== 'pre_production') {
             return redirect()->route('workflow.show', $production->id);
@@ -279,6 +280,21 @@ class ProductionController extends Controller
             $group->update([
                 'financial_data' => $request->financial
             ]);
+
+            // Sync Advance Items if provided
+            if ($request->has('advance_items') && is_array($request->advance_items)) {
+                $group->advanceItems()->delete(); // Simple wipe and replace for simplicity, or sync if IDs provided
+                foreach ($request->advance_items as $item) {
+                    if (!empty($item['description'])) {
+                        $group->advanceItems()->create([
+                            'description' => $item['description'],
+                            'quantity' => $item['quantity'] ?? 1,
+                            'unit_price' => $item['unit_price'] ?? 0,
+                            'total' => ($item['quantity'] ?? 1) * ($item['unit_price'] ?? 0),
+                        ]);
+                    }
+                }
+            }
 
             if ($request->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'Financial settings updated.']);
