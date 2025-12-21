@@ -147,265 +147,272 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     document.addEventListener('alpine:init', () => {
-        Alpine.data('pdfBuilder', () => ({
-            pdfDoc: null,
-            currentPage: 1, // Currently viewed page (for jump)
-            totalPages: 1,
-            scale: 1.5,
-            pageDimensions: {}, // Store width/height for each page index
-            items: @json($template->field_mapping ?? []),
-            searchQuery: '',
-            isSaving: false,
-            currentEditIndex: null,
+        Alpine.data('pdfBuilder', () => {
+            // PDF Document instance stored OUTSIDE the Alpine reactive object
+            // to prevent Proxy wrapping which breaks private class fields in PDF.js
+            let _pdfDoc = null;
 
-            // Available Fields - Updated Comprehensive List
-            fields: [
-                // --- Employee Personal ---
-                { key: 'employeeNameTh', label: 'Employee Name (TH)' },
-                { key: 'employeeNameEn', label: 'Employee Name (EN)' },
-                { key: 'employeeTitleTh', label: 'Title (TH)' },
-                { key: 'employeeTitleEn', label: 'Title (EN)' },
-                { key: 'employeeGender', label: 'Gender' },
-                { key: 'employeeDob', label: 'Date of Birth' },
-                { key: 'age', label: 'Age' },
-                { key: 'employeeNationality', label: 'Nationality' },
-                { key: 'employeePhone', label: 'Phone' },
-                { key: 'email', label: 'Email' },
-                { key: 'father_name', label: 'Father Name' },
-                { key: 'mother_name', label: 'Mother Name' },
+            return {
+                currentPage: 1, // Currently viewed page (for jump)
+                totalPages: 1,
+                scale: 1.5,
+                pageDimensions: {}, // Store width/height for each page index
+                items: @json($template->field_mapping ?? []),
+                searchQuery: '',
+                isSaving: false,
+                currentEditIndex: null,
 
-                // --- Passport & Visa ---
-                { key: 'employeePassport', label: 'Passport No' },
-                { key: 'passportIssueDate', label: 'Passport Issue Date' },
-                { key: 'passportExpiryDate', label: 'Passport Expiry Date' },
-                { key: 'passportType', label: 'Passport Type (MM)' },
-                { key: 'passport_type_cambodia', label: 'Passport Type (KH)' },
-                { key: 'visaType', label: 'Visa Type' },
-                { key: 'visaExpiryDate', label: 'Visa Expiry Date' },
-                { key: 'pinkCardNo', label: 'Pink Card No' },
+                // Available Fields - Updated Comprehensive List
+                fields: [
+                    // --- Employee Personal ---
+                    { key: 'employeeNameTh', label: 'Employee Name (TH)' },
+                    { key: 'employeeNameEn', label: 'Employee Name (EN)' },
+                    { key: 'employeeTitleTh', label: 'Title (TH)' },
+                    { key: 'employeeTitleEn', label: 'Title (EN)' },
+                    { key: 'employeeGender', label: 'Gender' },
+                    { key: 'employeeDob', label: 'Date of Birth' },
+                    { key: 'age', label: 'Age' },
+                    { key: 'employeeNationality', label: 'Nationality' },
+                    { key: 'employeePhone', label: 'Phone' },
+                    { key: 'email', label: 'Email' },
+                    { key: 'father_name', label: 'Father Name' },
+                    { key: 'mother_name', label: 'Mother Name' },
 
-                // --- Work Permit ---
-                { key: 'employeeWorkPermit', label: 'Work Permit No' },
-                { key: 'workPermitExpiryDate', label: 'Work Permit Expiry' },
-                { key: 'workPermitMOUGroup', label: 'MOU Group' },
+                    // --- Passport & Visa ---
+                    { key: 'employeePassport', label: 'Passport No' },
+                    { key: 'passportIssueDate', label: 'Passport Issue Date' },
+                    { key: 'passportExpiryDate', label: 'Passport Expiry Date' },
+                    { key: 'passportType', label: 'Passport Type (MM)' },
+                    { key: 'passport_type_cambodia', label: 'Passport Type (KH)' },
+                    { key: 'visaType', label: 'Visa Type' },
+                    { key: 'visaExpiryDate', label: 'Visa Expiry Date' },
+                    { key: 'pinkCardNo', label: 'Pink Card No' },
 
-                // --- Job ---
-                { key: 'job_title', label: 'Job Title' },
-                { key: 'startDate', label: 'Start Date' },
-                { key: 'employee_id_number', label: 'Personal ID' },
+                    // --- Work Permit ---
+                    { key: 'employeeWorkPermit', label: 'Work Permit No' },
+                    { key: 'workPermitExpiryDate', label: 'Work Permit Expiry' },
+                    { key: 'workPermitMOUGroup', label: 'MOU Group' },
 
-                // --- Insurance ---
-                { key: 'social_security_number', label: 'Social Security No' },
-                { key: 'insurance_detail', label: 'Hospital (SS Rights)' },
-                { key: 'insurance_detail_hospital', label: 'Hospital Name (Insurance)' },
-                { key: 'insurance_detail_private', label: 'Private Ins. Company' },
+                    // --- Job ---
+                    { key: 'job_title', label: 'Job Title' },
+                    { key: 'startDate', label: 'Start Date' },
+                    { key: 'employee_id_number', label: 'Personal ID' },
 
-                // --- Employer Data ---
-                { key: 'employer.employerNameTh', label: 'Employer Name (TH)' },
-                { key: 'employer.employerNameEn', label: 'Employer Name (EN)' },
-                { key: 'employer.employerPhone', label: 'Employer Phone' },
-                { key: 'employer.employerTaxId', label: 'Employer Tax ID' },
-                { key: 'employer.businessType', label: 'Business Type' },
-                { key: 'employer.regCapital', label: 'Registered Capital' },
-                { key: 'employer.signerNameTh', label: 'Signer Name' },
-                { key: 'employer.address_th', label: 'Employer Address (TH)' },
-                { key: 'employer.address_en', label: 'Employer Address (EN)' },
-            ],
+                    // --- Insurance ---
+                    { key: 'social_security_number', label: 'Social Security No' },
+                    { key: 'insurance_detail', label: 'Hospital (SS Rights)' },
+                    { key: 'insurance_detail_hospital', label: 'Hospital Name (Insurance)' },
+                    { key: 'insurance_detail_private', label: 'Private Ins. Company' },
 
-            get filteredFields() {
-                if (!this.searchQuery) return this.fields;
-                const q = this.searchQuery.toLowerCase();
-                return this.fields.filter(f => f.label.toLowerCase().includes(q));
-            },
+                    // --- Employer Data ---
+                    { key: 'employer.employerNameTh', label: 'Employer Name (TH)' },
+                    { key: 'employer.employerNameEn', label: 'Employer Name (EN)' },
+                    { key: 'employer.employerPhone', label: 'Employer Phone' },
+                    { key: 'employer.employerTaxId', label: 'Employer Tax ID' },
+                    { key: 'employer.businessType', label: 'Business Type' },
+                    { key: 'employer.regCapital', label: 'Registered Capital' },
+                    { key: 'employer.signerNameTh', label: 'Signer Name' },
+                    { key: 'employer.address_th', label: 'Employer Address (TH)' },
+                    { key: 'employer.address_en', label: 'Employer Address (EN)' },
+                ],
 
-            async init() {
-                // Use the direct route to avoid Storage URL / CORS issues
-                const url = '{{ route("admin.pdf-templates.file", $template) }}';
+                get filteredFields() {
+                    if (!this.searchQuery) return this.fields;
+                    const q = this.searchQuery.toLowerCase();
+                    return this.fields.filter(f => f.label.toLowerCase().includes(q));
+                },
 
-                try {
-                    const loadingTask = pdfjsLib.getDocument(url);
-                    this.pdfDoc = await loadingTask.promise;
-                    this.totalPages = this.pdfDoc.numPages;
+                async init() {
+                    // Use the direct route to avoid Storage URL / CORS issues
+                    const url = '{{ route("admin.pdf-templates.file", $template) }}';
 
-                    // Render ALL pages sequentially
-                    await this.renderAllPages();
+                    try {
+                        const loadingTask = pdfjsLib.getDocument(url);
+                        _pdfDoc = await loadingTask.promise; // Assign to local var
+                        this.totalPages = _pdfDoc.numPages;
 
-                } catch (error) {
-                    console.error('Error loading PDF:', error);
-                    // alert('Failed to load PDF file. Please check if the file is valid.'); // Squelch alert for better UX in case of minor glitches
-                    showToast('Failed to load PDF preview. Please check file validity.', 'danger');
-                }
+                        // Render ALL pages sequentially
+                        await this.renderAllPages();
 
-                // Setup Modal Listener
-                document.getElementById('saveStaticTextBtn').addEventListener('click', () => {
-                    if (this.currentEditIndex !== null) {
-                        this.items[this.currentEditIndex].text = document.getElementById('staticTextInput').value;
-                        bootstrap.Modal.getInstance(document.getElementById('staticTextModal')).hide();
-                        this.currentEditIndex = null;
+                    } catch (error) {
+                        console.error('Error loading PDF:', error);
+                        // alert('Failed to load PDF file. Please check if the file is valid.'); // Squelch alert for better UX in case of minor glitches
+                        showToast('Failed to load PDF preview. Please check file validity.', 'danger');
                     }
-                });
-            },
 
-            async renderAllPages() {
-                // No global dimension setting here anymore
-                // Wait for Alpine to render the DOM loops
-                await this.$nextTick();
-
-                for (let i = 1; i <= this.totalPages; i++) {
-                    await this.renderPage(i);
-                }
-            },
-
-            async renderPage(num) {
-                const page = await this.pdfDoc.getPage(num);
-                const viewport = page.getViewport({ scale: this.scale });
-
-                // Store dimensions for this specific page
-                this.pageDimensions[num] = {
-                    width: viewport.width,
-                    height: viewport.height
-                };
-
-                // Wait for Alpine to update DOM with new dimensions
-                await this.$nextTick();
-
-                const canvas = document.getElementById('canvas-page-' + num);
-
-                if (!canvas) return;
-
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-                await page.render(renderContext).promise;
-            },
-
-            scrollToPage(pageNum) {
-                const el = document.getElementById('page-container-' + pageNum);
-                if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            },
-
-            dragStart(event, data) {
-                event.dataTransfer.setData('text/plain', JSON.stringify(data));
-                event.dataTransfer.effectAllowed = 'copy';
-            },
-
-            drop(event, pageNum) {
-                const dims = this.pageDimensions[pageNum];
-                if (!dims) return;
-
-                const rect = event.target.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
-
-                // Convert to percentage relative to this page's dimensions
-                const xPct = (x / dims.width) * 100;
-                const yPct = (y / dims.height) * 100;
-
-                try {
-                    const data = JSON.parse(event.dataTransfer.getData('text/plain'));
-
-                    this.items.push({
-                        type: data.type,
-                        key: data.key || null,
-                        label: data.label,
-                        text: data.type === 'static' ? 'Double click to edit' : null,
-                        x: xPct,
-                        y: yPct,
-                        w: 15,
-                        h: 3,
-                        page: pageNum, // Assign to correct page
-                        fontSize: 12
+                    // Setup Modal Listener
+                    document.getElementById('saveStaticTextBtn').addEventListener('click', () => {
+                        if (this.currentEditIndex !== null) {
+                            this.items[this.currentEditIndex].text = document.getElementById('staticTextInput').value;
+                            bootstrap.Modal.getInstance(document.getElementById('staticTextModal')).hide();
+                            this.currentEditIndex = null;
+                        }
                     });
+                },
 
-                    if (data.type === 'static') {
-                        this.editStaticText(this.items.length - 1);
+                async renderAllPages() {
+                    // No global dimension setting here anymore
+                    // Wait for Alpine to render the DOM loops
+                    await this.$nextTick();
+
+                    for (let i = 1; i <= this.totalPages; i++) {
+                        await this.renderPage(i);
                     }
+                },
 
-                } catch (e) {
-                    console.error('Drop error', e);
-                }
-            },
+                async renderPage(num) {
+                    if (!_pdfDoc) return; // Guard clause
 
-            startMove(event, index, pageNum) {
-                const item = this.items[index];
-                const dims = this.pageDimensions[pageNum];
+                    const page = await _pdfDoc.getPage(num);
+                    const viewport = page.getViewport({ scale: this.scale });
 
-                if (!dims) return; // Should not happen
+                    // Store dimensions for this specific page
+                    this.pageDimensions[num] = {
+                        width: viewport.width,
+                        height: viewport.height
+                    };
 
-                const startX = event.clientX;
-                const startY = event.clientY;
-                // Calculate initial pixel position
-                const startLeft = (item.x / 100) * dims.width;
-                const startTop = (item.y / 100) * dims.height;
+                    // Wait for Alpine to update DOM with new dimensions
+                    await this.$nextTick();
 
-                const onMouseMove = (e) => {
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
+                    const canvas = document.getElementById('canvas-page-' + num);
 
-                    let newLeft = startLeft + dx;
-                    let newTop = startTop + dy;
+                    if (!canvas) return;
 
-                    // Boundaries
-                    newLeft = Math.max(0, Math.min(newLeft, dims.width - 20));
-                    newTop = Math.max(0, Math.min(newTop, dims.height - 10));
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
 
-                    item.x = (newLeft / dims.width) * 100;
-                    item.y = (newTop / dims.height) * 100;
-                };
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    await page.render(renderContext).promise;
+                },
 
-                const onMouseUp = () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                };
-
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-            },
-
-            deleteItem(index) {
-                this.items.splice(index, 1);
-            },
-
-            editStaticText(index) {
-                this.currentEditIndex = index;
-                const input = document.getElementById('staticTextInput');
-                input.value = this.items[index].text || '';
-                const modal = new bootstrap.Modal(document.getElementById('staticTextModal'));
-                modal.show();
-            },
-
-            async saveMapping() {
-                this.isSaving = true;
-                try {
-                    const response = await fetch('{{ route("admin.pdf-templates.update", $template) }}', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({ field_mapping: this.items })
-                    });
-
-                    if (response.ok) {
-                        showToast('Template saved successfully!', 'success');
-                    } else {
-                        throw new Error('Save failed');
+                scrollToPage(pageNum) {
+                    const el = document.getElementById('page-container-' + pageNum);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-                } catch (error) {
-                    showToast('Error saving template.', 'danger');
-                    console.error(error);
-                } finally {
-                    this.isSaving = false;
+                },
+
+                dragStart(event, data) {
+                    event.dataTransfer.setData('text/plain', JSON.stringify(data));
+                    event.dataTransfer.effectAllowed = 'copy';
+                },
+
+                drop(event, pageNum) {
+                    const dims = this.pageDimensions[pageNum];
+                    if (!dims) return;
+
+                    const rect = event.target.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+
+                    // Convert to percentage relative to this page's dimensions
+                    const xPct = (x / dims.width) * 100;
+                    const yPct = (y / dims.height) * 100;
+
+                    try {
+                        const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+
+                        this.items.push({
+                            type: data.type,
+                            key: data.key || null,
+                            label: data.label,
+                            text: data.type === 'static' ? 'Double click to edit' : null,
+                            x: xPct,
+                            y: yPct,
+                            w: 15,
+                            h: 3,
+                            page: pageNum, // Assign to correct page
+                            fontSize: 12
+                        });
+
+                        if (data.type === 'static') {
+                            this.editStaticText(this.items.length - 1);
+                        }
+
+                    } catch (e) {
+                        console.error('Drop error', e);
+                    }
+                },
+
+                startMove(event, index, pageNum) {
+                    const item = this.items[index];
+                    const dims = this.pageDimensions[pageNum];
+
+                    if (!dims) return; // Should not happen
+
+                    const startX = event.clientX;
+                    const startY = event.clientY;
+                    // Calculate initial pixel position
+                    const startLeft = (item.x / 100) * dims.width;
+                    const startTop = (item.y / 100) * dims.height;
+
+                    const onMouseMove = (e) => {
+                        const dx = e.clientX - startX;
+                        const dy = e.clientY - startY;
+
+                        let newLeft = startLeft + dx;
+                        let newTop = startTop + dy;
+
+                        // Boundaries
+                        newLeft = Math.max(0, Math.min(newLeft, dims.width - 20));
+                        newTop = Math.max(0, Math.min(newTop, dims.height - 10));
+
+                        item.x = (newLeft / dims.width) * 100;
+                        item.y = (newTop / dims.height) * 100;
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                },
+
+                deleteItem(index) {
+                    this.items.splice(index, 1);
+                },
+
+                editStaticText(index) {
+                    this.currentEditIndex = index;
+                    const input = document.getElementById('staticTextInput');
+                    input.value = this.items[index].text || '';
+                    const modal = new bootstrap.Modal(document.getElementById('staticTextModal'));
+                    modal.show();
+                },
+
+                async saveMapping() {
+                    this.isSaving = true;
+                    try {
+                        const response = await fetch('{{ route("admin.pdf-templates.update", $template) }}', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({ field_mapping: this.items })
+                        });
+
+                        if (response.ok) {
+                            showToast('Template saved successfully!', 'success');
+                        } else {
+                            throw new Error('Save failed');
+                        }
+                    } catch (error) {
+                        showToast('Error saving template.', 'danger');
+                        console.error(error);
+                    } finally {
+                        this.isSaving = false;
+                    }
                 }
-            }
-        }));
+            };
+        });
     });
 </script>
 
