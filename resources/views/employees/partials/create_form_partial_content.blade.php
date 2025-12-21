@@ -8,7 +8,7 @@
     <input type="hidden" name="employer_id" value="{{ $employer->id }}">
 @else
     <div class="row mb-4">
-        <div class="col-md-12" x-data="employerSelector()">
+        <div class="col-md-12" x-data="employerSelector()" @click.outside="open = false">
             <label for="employer_id" class="form-label">เลือกนายจ้าง <span class="text-danger">*</span></label>
 
             {{-- Hidden Input for Form Submission --}}
@@ -23,7 +23,6 @@
                            placeholder="พิมพ์เพื่อค้นหาชื่อนายจ้าง..."
                            x-model="search"
                            @focus="open = true"
-                           @click.away="open = false"
                            @keydown.escape="open = false"
                            :class="{'is-invalid': !selectedId && touched}">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
