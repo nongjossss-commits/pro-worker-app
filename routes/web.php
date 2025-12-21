@@ -240,6 +240,24 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/employer/{employer}/resolution-status', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionStatus'])->name('employer_resolution.update');
     });
 
+    // Renewal Resolution Routes (NEW)
+    Route::prefix('production/renewal')->name('production.renewal.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('index');
+        Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees');
+        Route::get('/import', [App\Http\Controllers\Production\RenewalController::class, 'importView'])->name('import');
+        Route::post('/configure-expiry', [App\Http\Controllers\Production\RenewalController::class, 'configureExpiry'])->name('configure_expiry');
+
+        // Actions
+        Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RenewalController::class, 'finalize'])->name('finalize');
+        Route::post('/{employee}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancel'])->name('cancel');
+        Route::post('/{employee}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restore'])->name('restore');
+        Route::delete('/{employee}/destroy', [App\Http\Controllers\Production\RenewalController::class, 'destroy'])->name('destroy');
+
+        // Employer Actions
+        Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancelEmployer'])->name('cancel_employer');
+        Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreEmployer'])->name('restore_employer');
+    });
+
     Route::resource('production', \App\Http\Controllers\ProductionController::class);
 
     // Additional Production Routes
