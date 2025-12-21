@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\ProductionOrder;
 use App\Models\SystemConfig;
+use App\Models\RegistrationStep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -25,10 +26,18 @@ class RenewalController extends Controller
      */
     public function index(Request $request)
     {
-        // --- 1. Global Employee Query (Lightweight) ---
+        // 1. Fetch Workflow Steps (Needed for stats calculation and view)
+        $steps = RegistrationStep::orderBy('order')->get();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+        $lastStepId = $steps->sortByDesc('order')->first()?->id;
+
+        // --- 2. Global Employee Query (Lightweight) ---
         $employeeQuery = Employee::query()
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->select('id', 'employer_id', 'status');
+            ->select('id', 'employer_id', 'status')
+            ->with(['registrationSteps' => function($q) {
+                $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id');
+            }]);
 
         if ($request->has('search') && $request->search) {
             $this->applySearchToQuery($employeeQuery, $request->search);
@@ -36,11 +45,12 @@ class RenewalController extends Controller
 
         $allEmployees = $employeeQuery->get();
 
-        // --- 2. Calculate Stats ---
+        // --- 3. Calculate Stats ---
         $totalEmployees = 0;
         $totalCancelled = 0;
         $totalSaved = 0;
-        $notStartedCount = 0; // Renewal might not have steps yet, but keeping structure
+        $notStartedCount = 0;
+        $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
         // Group by Employer
         $employeesByEmployer = $allEmployees->groupBy('employer_id');
@@ -53,33 +63,57 @@ class RenewalController extends Controller
                 $totalEmployees++;
                 if ($emp->status === 'renewal_completed') {
                     $totalSaved++;
-                } else {
-                    $notStartedCount++; // Pending
+                }
+
+                // Not Started Logic
+                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                    $notStartedCount++;
+                }
+
+                // Step Stats (Highest Step)
+                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($stepStats[$highestStep->id])) {
+                    $stepStats[$highestStep->id]++;
                 }
             }
         }
 
         $totalEmployers = $filteredEmployerIds->count();
 
-        // --- 3. Fetch Employers ---
+        // --- 4. Fetch Employers ---
         $employerQuery = Employer::whereIn('id', $filteredEmployerIds)
             ->with(['jobOwner', 'customFields']);
 
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
-            $filteredEmployerIds = $filteredEmployerIds->filter(function($empId) use ($employeesByEmployer, $filter) {
+            $filteredEmployerIds = $filteredEmployerIds->filter(function($empId) use ($employeesByEmployer, $filter, $stepOneId) {
                 $emps = $employeesByEmployer[$empId] ?? collect();
                 if ($filter === 'saved') return $emps->contains('status', 'renewal_completed');
                 if ($filter === 'cancelled') return $emps->contains('status', 'renewal_cancelled');
-                if ($filter === 'pending') return $emps->contains('status', 'renewal_pending');
-                return true;
+
+                if ($filter === 'not_started') {
+                    return $emps->contains(function($e) use ($stepOneId) {
+                         return $e->status !== 'renewal_cancelled' && !$e->registrationSteps->contains('id', $stepOneId);
+                    });
+                }
+
+                // Step Filter
+                if (is_numeric($filter)) {
+                    return $emps->contains(function($e) use ($filter) {
+                         if ($e->status === 'renewal_cancelled') return false;
+                         $h = $e->registrationSteps->sortByDesc('order')->first();
+                         return $h && $h->id == $filter;
+                    });
+                }
+
+                return true; // Default fallback
             });
             $employerQuery->whereIn('id', $filteredEmployerIds);
         }
 
         $employers = $employerQuery->get();
 
-        // --- 4. Process Employers ---
+        // --- 5. Process Employers ---
         foreach ($employers as $employer) {
             // Finance Order Logic
             $financeOrder = ProductionOrder::with('financialGroups.transactions')
@@ -107,6 +141,10 @@ class RenewalController extends Controller
 
             // Stats
             $myEmps = $employeesByEmployer[$employer->id] ?? collect();
+
+            // Initialize Employer Stats
+            $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            $empNotStarted = 0;
             $empActiveCount = 0;
             $empCancelledCount = 0;
             $empSavedCount = 0;
@@ -114,14 +152,27 @@ class RenewalController extends Controller
             foreach ($myEmps as $emp) {
                 if ($emp->status === 'renewal_cancelled') {
                     $empCancelledCount++;
-                } else {
-                    $empActiveCount++;
-                    if ($emp->status === 'renewal_completed') {
-                        $empSavedCount++;
-                    }
+                    continue;
+                }
+
+                $empActiveCount++;
+
+                if ($emp->status === 'renewal_completed') {
+                    $empSavedCount++;
+                }
+
+                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                    $empNotStarted++;
+                }
+
+                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($empStats[$highestStep->id])) {
+                    $empStats[$highestStep->id]++;
                 }
             }
 
+            $employer->stepStats = $empStats;
+            $employer->notStartedCount = $empNotStarted;
             $employer->activeEmployeesCount = $empActiveCount;
             $employer->cancelledCount = $empCancelledCount;
             $employer->savedCount = $empSavedCount;
@@ -144,7 +195,10 @@ class RenewalController extends Controller
             'cancelledEmployersCount',
             'notStartedCount',
             'employers',
-            'currentExpiryConfig'
+            'currentExpiryConfig',
+            'steps',
+            'stepStats',
+            'lastStepId'
         ));
     }
 
@@ -153,9 +207,12 @@ class RenewalController extends Controller
      */
     public function fetchEmployees(Request $request, Employer $employer)
     {
+        $steps = RegistrationStep::orderBy('order')->get();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
         $query = $employer->employees()
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->with(['customFields']);
+            ->with(['registrationSteps', 'customFields']);
 
         if ($request->has('search') && $request->search) {
             $this->applyEmployerSearchToQuery($query, $employer, $request->search);
@@ -165,14 +222,34 @@ class RenewalController extends Controller
             $filter = $request->filter;
             if ($filter === 'saved') $query->where('status', 'renewal_completed');
             elseif ($filter === 'cancelled') $query->where('status', 'renewal_cancelled');
-            elseif ($filter === 'pending') $query->where('status', 'renewal_pending');
+            elseif ($filter === 'not_started') {
+                 $query->where('status', '!=', 'renewal_cancelled')
+                       ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
+                           $q->where('registration_steps.id', $stepOneId);
+                       });
+            }
+            elseif (is_numeric($filter)) { // Step ID
+                 $query->where('status', '!=', 'renewal_cancelled');
+                 // We filter by highest step in PHP below
+            }
         }
 
         $employees = $query->get();
 
+        // Refine Filter in PHP if needed (for Exact Highest Step)
+        if ($request->has('filter') && is_numeric($request->filter)) {
+            $filterStepId = $request->filter;
+            $employees = $employees->filter(function($emp) use ($filterStepId) {
+                if ($emp->status === 'renewal_cancelled') return false;
+                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                return $highest && $highest->id == $filterStepId;
+            });
+        }
+
         return view('production.renewal._employee_list_content', [
             'employees' => $employees,
-            'employer' => $employer
+            'employer' => $employer,
+            'steps' => $steps
         ]);
     }
 
