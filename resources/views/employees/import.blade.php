@@ -72,7 +72,7 @@
                                 <input type="hidden" name="employer_id" value="{{ $selectedEmployerId }}">
                                 <input type="text" class="form-control bg-light" value="{{ $production->employer->employerNameTh ?? '' }} ({{ $production->employer->employerNameEn ?? '' }})" readonly>
                             @else
-                                <div x-data="importEmployerSelector()">
+                                <div x-data="importEmployerSelector()" @click.outside="open = false">
                                     {{-- Hidden Input for Form Submission --}}
                                     <input type="hidden" name="employer_id" :value="selectedId" required>
 
@@ -85,7 +85,6 @@
                                                    placeholder="{{ __('Type to search employer...') }}"
                                                    x-model="search"
                                                    @focus="open = true"
-                                                   @click.away="open = false"
                                                    @keydown.escape="open = false"
                                                    :class="{'is-invalid': !selectedId && touched}">
                                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
@@ -250,18 +249,18 @@
                     </table>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger me-auto" id="btn-cancel-import">
-                    <i class="bi bi-x-circle me-1"></i> {{ __('Cancel Import') }}
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-danger me-auto" id="btn-cancel-import">
+                    <i class="bi bi-trash me-1"></i> {{ __('Discard / Cancel') }}
                 </button>
                 @if(session('finish_route'))
-                    <a href="{{ session('finish_route') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
+                    <a href="{{ session('finish_route') }}" class="btn btn-success fw-bold px-4"><i class="bi bi-check-lg me-1"></i> {{ __('Confirm & Finish') }}</a>
                 @elseif(isset($back_route)) {{-- Fallback if passed directly --}}
-                    <a href="{{ $back_route }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
+                    <a href="{{ $back_route }}" class="btn btn-success fw-bold px-4"><i class="bi bi-check-lg me-1"></i> {{ __('Confirm & Finish') }}</a>
                 @elseif(session('production_id'))
-                    <a href="{{ route('production.edit', session('production_id')) }}" class="btn btn-primary px-4">{{ __('Finish & Return to Project') }}</a>
+                    <a href="{{ route('production.edit', session('production_id')) }}" class="btn btn-success fw-bold px-4"><i class="bi bi-check-lg me-1"></i> {{ __('Confirm & Return to Project') }}</a>
                 @else
-                    <a href="{{ route('employees.index') }}" class="btn btn-primary px-4">{{ __('Finish Import') }}</a>
+                    <a href="{{ route('employees.index') }}" class="btn btn-success fw-bold px-4"><i class="bi bi-check-lg me-1"></i> {{ __('Confirm & Finish') }}</a>
                 @endif
             </div>
         </div>
