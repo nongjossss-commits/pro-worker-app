@@ -277,7 +277,7 @@
                 $employerHeaderClass = $isEmployerCancelled ? 'bg-light' : 'bg-white';
             @endphp
 
-            <div class="d-flex align-items-start employer-card-container mb-4" id="employer-card-{{ $employer->id }}">
+            <div class="d-flex align-items-start employer-card-container mb-4" id="employer-card-{{ $employer->id }}" data-is-cancelled="{{ $isEmployerCancelled ? 'true' : 'false' }}">
                 {{-- Sequence Number (CSS Counter will handle number) --}}
                 <div class="employer-sequence-number me-3 pt-2"></div>
 
@@ -426,6 +426,10 @@
                                         </button>
                                     @endif
                                 @endcan
+
+                                <button class="btn btn-outline-secondary btn-sm ms-1" id="btn-employer-toggle-cancelled-{{ $employer->id }}" onclick="toggleEmployerCancelled({{ $employer->id }}); event.stopPropagation();" title="{{ __('Hide Cancelled Items') }}">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
 
                                 {{-- Collapse Chevron --}}
                                 <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
@@ -777,6 +781,57 @@
             }
         }
     });
+
+    // --- Global & Employer Cancelled Toggle ---
+    window.globalCancelledHidden = false; // Default: show cancelled
+    window.employerCancelledHidden = {}; // Per employer state
+
+    window.toggleGlobalCancelled = function() {
+        window.globalCancelledHidden = !window.globalCancelledHidden;
+        const btn = document.getElementById('btn-global-toggle-cancelled');
+
+        if (window.globalCancelledHidden) {
+            btn.innerHTML = '<i class="bi bi-eye-fill me-1"></i> {{ __('Show Cancelled') }}';
+            // Hide all cancelled employers
+            document.querySelectorAll('.employer-card-container[data-is-cancelled="true"]').forEach(el => el.classList.add('d-none'));
+            // Hide all cancelled employees globally
+            document.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.add('d-none'));
+        } else {
+            btn.innerHTML = '<i class="bi bi-eye-slash-fill me-1"></i> {{ __('Hide Cancelled') }}';
+            // Show all cancelled employers
+            document.querySelectorAll('.employer-card-container[data-is-cancelled="true"]').forEach(el => el.classList.remove('d-none'));
+            // Show all cancelled employees globally
+            document.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.remove('d-none'));
+        }
+    }
+
+    window.toggleEmployerCancelled = function(employerId) {
+        if (typeof window.employerCancelledHidden[employerId] === 'undefined') {
+            window.employerCancelledHidden[employerId] = false;
+        }
+
+        window.employerCancelledHidden[employerId] = !window.employerCancelledHidden[employerId];
+        const btn = document.getElementById(`btn-employer-toggle-cancelled-${employerId}`);
+        const listContainer = document.getElementById(`employee-list-${employerId}`);
+
+        if (window.employerCancelledHidden[employerId]) {
+            btn.innerHTML = '<i class="bi bi-eye"></i>';
+            btn.title = '{{ __('Show Cancelled Items') }}';
+            btn.classList.add('active', 'bg-secondary', 'text-white');
+            // Hide cancelled employees in this employer container
+            if (listContainer) {
+                listContainer.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.add('d-none'));
+            }
+        } else {
+            btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+            btn.title = '{{ __('Hide Cancelled Items') }}';
+            btn.classList.remove('active', 'bg-secondary', 'text-white');
+            // Show cancelled employees in this employer container
+            if (listContainer) {
+                listContainer.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.remove('d-none'));
+            }
+        }
+    }
 
     // --- Resolution Status & Note Functions ---
     // Make global for onclick
