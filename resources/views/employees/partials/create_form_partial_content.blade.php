@@ -57,6 +57,14 @@
         </div>
     </div>
 
+    @php
+        $employerOptions = $employers->map(fn($e) => [
+            'id' => $e->id,
+            'name_th' => $e->employerNameTh,
+            'name_en' => $e->employerNameEn,
+            'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
+        ]);
+    @endphp
     <script>
         function employerSelector() {
             return {
@@ -65,12 +73,7 @@
                 selectedId: '{{ old('employer_id') }}',
                 selectedName: '',
                 touched: false,
-                employers: @json($employers->map(fn($e) => [
-                    'id' => $e->id,
-                    'name_th' => $e->employerNameTh,
-                    'name_en' => $e->employerNameEn,
-                    'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
-                ])),
+                employers: @json($employerOptions),
 
                 init() {
                     // Pre-select if old value exists
