@@ -271,22 +271,178 @@ class RenewalController extends Controller
         $request->merge(['target_status' => 'renewal_pending']);
         session()->flash('finish_route', route('production.renewal.index'));
 
+        // Hydrate imported employees from session IDs if available (Restoring Preview Feature)
+        $sessionImportedEmployees = collect();
+        if (session()->has('imported_employee_ids')) {
+            $sessionImportedEmployees = Employee::whereIn('id', session('imported_employee_ids'))->get();
+        }
+
         return view('employees.import', [
             'employers' => $employers,
             'production' => null,
             'back_route' => route('production.renewal.index'),
+            'sessionImportedEmployees' => $sessionImportedEmployees,
         ]);
     }
 
     /**
-     * Import Store (Standard Excel Import)
-     * Reuses ImportEmployeeController but sets status to renewal_pending via request param
+     * Create View
      */
-    // Note: The standard ImportEmployeeController handles the import and redirection.
-    // We just need to ensure the form in `importView` posts to the right place or carries the status.
-    // The `employees.import` route uses `ImportEmployeeController`.
-    // We pass `target_status` in the request to `importView`, which `employees.import` view should respect if it uses it.
-    // If `employees.import` view uses `request('target_status')` to set a hidden field, we are good.
+    public function create(Request $request)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $employers = \App\Models\Employer::orderBy('employerNameTh')->get();
+        $selectedEmployer = null;
+
+        if ($request->has('employer_id')) {
+            $selectedEmployer = \App\Models\Employer::find($request->employer_id);
+        }
+
+        return view('production.renewal.create', [
+            'employers' => $employers,
+            'employer' => $selectedEmployer,
+            'formAction' => route('production.renewal.store')
+        ]);
+    }
+
+    /**
+     * Store a newly created renewal employee.
+     */
+    public function store(Request $request)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        // Copy of validation from EmployeeController@store
+        $validated = $request->validate([
+            'employer_id' => 'required|exists:employers,id',
+            'passportType' => 'nullable|string|max:255',
+            'employeeTitleTh' => 'nullable|string|max:255',
+            'employeeNameTh' => 'nullable|string|max:255',
+            'employeeTitleEn' => 'nullable|string|max:255',
+            'employeeNameEn' => 'required|string|max:255',
+            'father_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'employeeGender' => 'nullable|string|max:255',
+            'employeeDob' => 'nullable|date',
+            'employeeAge' => 'nullable|integer',
+            'employeePhone' => 'nullable|string|max:255',
+            'employeeNationality' => 'nullable|string|max:255',
+            'passport_type_cambodia' => 'nullable|string|max:255',
+            'employeePassport' => 'nullable|string|max:255',
+            'passport_issue_date' => 'nullable|date',
+            'passportExpiryDate' => 'nullable|date',
+            'pinkCardNo' => 'nullable|string|max:255',
+            'visaType' => 'nullable|string|max:255',
+            'visaExpiryDate' => 'nullable|date',
+            'job_title' => 'nullable|string|max:255',
+            'job_description' => 'nullable|string',
+            'startDate' => 'nullable|date',
+            'employeeWorkPermit' => 'nullable|string|max:255',
+            'workPermitExpiryDate' => 'nullable|date',
+            'workPermitType' => 'nullable|string|max:255',
+            'workPermitMOUGroup' => 'nullable|string|max:255',
+            'workPermitMOUGroupOther' => 'nullable|string|max:255',
+            'ninetyDayReportDate' => 'nullable|date',
+            'name_list_number' => 'nullable|string|max:255',
+            'request_number' => 'nullable|string|max:255',
+            'employee_id_number' => 'nullable|string|max:255',
+            'tax_id_number' => 'nullable|string|max:255',
+            'employer_employee_id' => 'nullable|string|max:255',
+            'employee_reference_id' => 'nullable|string|max:255',
+            'insurance_type' => 'nullable|string|max:255',
+            'insurance_detail' => 'nullable|string',
+            'insurance_expiry_date' => 'nullable|date',
+            'social_security_number' => 'nullable|string|max:255',
+            'insurance_detail_hospital' => 'nullable|string|max:255',
+            'insurance_detail_private' => 'nullable|string|max:255',
+            'insurance_expiry_date_private' => 'nullable|string|max:255',
+            'insurance_expiry_date_hospital' => 'nullable|string|max:255',
+            'insurance_detail_social' => 'nullable|string|max:255',
+            'employeeEmail' => 'nullable|email|max:255|unique:employees,email',
+            'employeePassword' => 'nullable|string|min:8',
+            'other_doc_1_desc' => 'nullable|string|max:255',
+            'other_doc_2_desc' => 'nullable|string|max:255',
+            'other_doc_3_desc' => 'nullable|string|max:255',
+            'other_doc_4_desc' => 'nullable|string|max:255',
+            'employeePhoto' => 'nullable|image|max:2048',
+            'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+        ]);
+
+        // Forced Status
+        $validated['status'] = 'renewal_pending';
+
+        // Insurance Mapping (Same as EmployeeController)
+        $validated['insuranceType'] = $validated['insurance_type'] ?? null;
+        if ($validated['insuranceType'] === 'ประกันสังคม') {
+            $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
+            $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+            $validated['insuranceCompany'] = null;
+            $validated['insuranceExpiryDate'] = null;
+        } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
+            $validated['insuranceCompany'] = $validated['insurance_detail_private'] ?? null;
+            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
+            $validated['socialSecurityNumber'] = null;
+            $validated['hospitalName'] = null;
+        } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
+            $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
+            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
+            $validated['socialSecurityNumber'] = null;
+            $validated['insuranceCompany'] = null;
+        } else {
+            $validated['socialSecurityNumber'] = null;
+            $validated['hospitalName'] = null;
+            $validated['insuranceCompany'] = null;
+            $validated['insuranceExpiryDate'] = null;
+        }
+
+        $validated['email'] = $validated['employeeEmail'] ?? null;
+        unset($validated['employeeEmail']);
+
+        if (!empty($validated['employeePassword'])) {
+            $validated['password'] = $validated['employeePassword'];
+        }
+        unset($validated['employeePassword']);
+
+        // File Uploads
+        $fileFields = [
+            'employeePhoto', 'insurance_document_path','insurance_document_path_private',
+            'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+            'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+        ];
+
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs("employee_files/{$validated['employer_id']}", $filename, 'public');
+                $validated[$field] = $path;
+            }
+        }
+
+        Employee::create($validated);
+
+        return redirect()->route('production.renewal.index')
+                         ->with('success', 'Renewal Employee created successfully.');
+    }
 
     /**
      * Save Configuration & Auto-Import by Expiry
