@@ -216,14 +216,6 @@ class Employee extends Model
                     ->withTimestamps();
     }
 
-    // --- New Relationships for Renewal Process ---
-    public function renewalSteps()
-    {
-        return $this->belongsToMany(RenewalStep::class, 'employee_renewal_status')
-                    ->withPivot('completed_at')
-                    ->withTimestamps();
-    }
-
     public function customFields()
     {
         return $this->hasMany(EmployeeCustomField::class);

@@ -343,9 +343,6 @@
                     <a href="{{ route('production.registration.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.registration.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
                         <i class="bi bi-person-lines-fill me-2"></i>{{ __('Registration Resolution') }}
                     </a>
-                    <a href="{{ route('production.renewal.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.renewal.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-                        <i class="bi bi-arrow-repeat me-2"></i>{{ __('Renewal Resolution') }}
-                    </a>
                 @endif
 
                 @can('view-importers')
