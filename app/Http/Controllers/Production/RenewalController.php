@@ -27,7 +27,7 @@ class RenewalController extends Controller
     public function index(Request $request)
     {
         // 1. Fetch Workflow Steps (Needed for stats calculation and view)
-        $steps = RegistrationStep::orderBy('order')->get();
+        $steps = RegistrationStep::renewal()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
         $lastStepId = $steps->sortByDesc('order')->first()?->id;
 
@@ -207,7 +207,7 @@ class RenewalController extends Controller
      */
     public function fetchEmployees(Request $request, Employer $employer)
     {
-        $steps = RegistrationStep::orderBy('order')->get();
+        $steps = RegistrationStep::renewal()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         $query = $employer->employees()
@@ -306,6 +306,72 @@ class RenewalController extends Controller
             'employer' => $selectedEmployer,
             'formAction' => route('production.renewal.store')
         ]);
+    }
+
+    /**
+     * Store a new renewal step.
+     */
+    public function storeStep(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $maxOrder = RegistrationStep::renewal()->max('order') ?? 0;
+
+        RegistrationStep::create([
+            'name' => $validated['name'],
+            'order' => $maxOrder + 1,
+            'type' => 'renewal',
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Update a step (rename/color).
+     */
+    public function updateStep(Request $request, RegistrationStep $step)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $step->update([
+            'name' => $validated['name'],
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Reorder steps.
+     */
+    public function reorderSteps(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'exists:registration_steps,id',
+        ]);
+
+        $order = $request->input('order');
+
+        DB::transaction(function () use ($order) {
+            foreach ($order as $index => $id) {
+                RegistrationStep::where('id', $id)->update(['order' => $index + 1]);
+            }
+        });
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Delete a step.
+     */
+    public function destroyStep(RegistrationStep $step)
+    {
+        $step->delete();
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -501,6 +567,108 @@ class RenewalController extends Controller
     }
 
     // --- Actions (Finalize, Cancel, etc.) ---
+
+    /**
+     * Update progress (Toggle a step for an employee).
+     */
+    public function updateProgress(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'step_id' => 'required|exists:registration_steps,id',
+                'completed' => 'required|boolean',
+            ]);
+
+            DB::beginTransaction();
+
+            if ($validated['completed']) {
+                $employee->registrationSteps()->syncWithoutDetaching([
+                    $validated['step_id'] => ['completed_at' => now()]
+                ]);
+            } else {
+                $employee->registrationSteps()->detach($validated['step_id']);
+            }
+
+            DB::commit();
+
+            // --- Recalculate Stats for Response (Highest Step Logic) ---
+            $allQuery = Employee::query();
+            if (method_exists($allQuery, 'withoutGlobalScopes')) {
+                $allQuery->withoutGlobalScopes()->whereNull('deleted_at');
+            }
+
+            if ($request->has('search') && $request->search) {
+                $this->applySearchToQuery($allQuery, $request->search);
+            }
+
+            $allEmployees = $allQuery->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                                    ->with('registrationSteps')
+                                    ->get();
+
+            $steps = RegistrationStep::renewal()->orderBy('order')->get();
+            $stepOneId = $steps->sortBy('order')->first()?->id;
+
+            $globalStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            $globalNotStarted = 0;
+
+            foreach ($allEmployees as $emp) {
+                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                    $globalNotStarted++;
+                }
+                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                if ($highest && isset($globalStats[$highest->id])) {
+                    $globalStats[$highest->id]++;
+                }
+            }
+
+            $empQuery = Employee::query();
+            if (method_exists($empQuery, 'withoutGlobalScopes')) {
+                $empQuery->withoutGlobalScopes()->whereNull('deleted_at');
+            }
+
+            $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
+                                        ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                                        ->with('registrationSteps');
+
+            if ($request->has('search') && $request->search) {
+                 $employer = $employee->employer;
+                 if (!$employer) $employer = Employer::find($employee->employer_id);
+                 if ($employer) $this->applyEmployerSearchToQuery($employerEmployeesQuery, $employer, $request->search);
+            }
+
+            $employerEmployees = $employerEmployeesQuery->get();
+            $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            $employerNotStarted = 0;
+
+            foreach ($employerEmployees as $emp) {
+                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                     $employerNotStarted++;
+                 }
+                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                 if ($highest && isset($employerStats[$highest->id])) {
+                     $employerStats[$highest->id]++;
+                 }
+            }
+
+            return response()->json([
+                'success' => true,
+                'globalStats' => $globalStats,
+                'globalNotStarted' => $globalNotStarted,
+                'employerStats' => $employerStats,
+                'employerNotStarted' => $employerNotStarted,
+                'employerId' => $employee->employer_id
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error updating renewal progress: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Server error'], 500);
+        }
+    }
 
     public function finalize(Request $request, Employee $employee)
     {

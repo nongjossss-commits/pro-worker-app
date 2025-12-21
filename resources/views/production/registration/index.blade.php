@@ -652,16 +652,26 @@
                                 </div>
                             </div>
 
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-primary btn-edit-step" onclick="toggleEditStep({{ $step->id }})">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-success d-none btn-save-step" onclick="saveStep({{ $step->id }})">
-                                    <i class="bi bi-check-lg"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'up')" title="{{ __('Move Up') }}">
+                                        <i class="bi bi-arrow-up"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'down')" title="{{ __('Move Down') }}">
+                                        <i class="bi bi-arrow-down"></i>
+                                    </button>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-step" onclick="toggleEditStep({{ $step->id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-success d-none btn-save-step" onclick="saveStep({{ $step->id }})">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </li>
                     @endforeach
@@ -1128,6 +1138,42 @@
                     timer: 1500,
                     showConfirmButton: false
                 }).then(() => location.reload());
+            }
+        });
+    }
+
+    window.moveStep = function(id, direction) {
+        const stepsList = document.getElementById('stepsList');
+        const currentItem = document.getElementById(`step-item-${id}`);
+
+        if (direction === 'up') {
+            const prevItem = currentItem.previousElementSibling;
+            if (prevItem) {
+                stepsList.insertBefore(currentItem, prevItem);
+            }
+        } else {
+            const nextItem = currentItem.nextElementSibling;
+            if (nextItem) {
+                stepsList.insertBefore(nextItem, currentItem);
+            }
+        }
+
+        // Collect new order
+        const newOrder = [];
+        stepsList.querySelectorAll('li').forEach(li => {
+            newOrder.push(li.id.replace('step-item-', ''));
+        });
+
+        // Save new order
+        fetch('{{ route("production.registration.steps.reorder") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ order: newOrder })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+               // Optional: Show toast
             }
         });
     }

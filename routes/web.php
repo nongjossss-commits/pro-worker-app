@@ -210,6 +210,7 @@ Route::middleware(['auth'])->group(function () {
         // Step Management
         Route::post('/steps', [App\Http\Controllers\Production\RegistrationController::class, 'storeStep'])->name('steps.store');
         Route::put('/steps/{step}', [App\Http\Controllers\Production\RegistrationController::class, 'updateStep'])->name('steps.update');
+        Route::post('/steps/reorder', [App\Http\Controllers\Production\RegistrationController::class, 'reorderSteps'])->name('steps.reorder');
         Route::delete('/steps/{step}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyStep'])->name('steps.destroy');
 
         // Progress Updates
@@ -248,6 +249,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees');
         Route::get('/import', [App\Http\Controllers\Production\RenewalController::class, 'importView'])->name('import');
         Route::post('/configure-expiry', [App\Http\Controllers\Production\RenewalController::class, 'configureExpiry'])->name('configure_expiry');
+        Route::post('/steps/reorder', [App\Http\Controllers\Production\RenewalController::class, 'reorderSteps'])->name('steps.reorder');
+
+        // Step Management (Missing in original file for Renewal, adding now for consistency)
+        Route::post('/steps', [App\Http\Controllers\Production\RenewalController::class, 'storeStep'])->name('steps.store');
+        Route::put('/steps/{step}', [App\Http\Controllers\Production\RenewalController::class, 'updateStep'])->name('steps.update');
+        Route::delete('/steps/{step}', [App\Http\Controllers\Production\RenewalController::class, 'destroyStep'])->name('steps.destroy');
+
+        // Progress Updates (Missing in original file, needed for Renewal toggle step)
+        Route::post('/progress/{employee}', [App\Http\Controllers\Production\RenewalController::class, 'updateProgress'])->name('progress.update');
 
         // Actions
         Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RenewalController::class, 'finalize'])->name('finalize');

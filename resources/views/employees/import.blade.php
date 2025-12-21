@@ -72,14 +72,92 @@
                                 <input type="hidden" name="employer_id" value="{{ $selectedEmployerId }}">
                                 <input type="text" class="form-control bg-light" value="{{ $production->employer->employerNameTh ?? '' }} ({{ $production->employer->employerNameEn ?? '' }})" readonly>
                             @else
-                                <select name="employer_id" id="employer_id" class="form-select @error('employer_id') is-invalid @enderror" required>
-                                    <option value="">-- {{ __('Select Employer') }} --</option>
-                                    @foreach($employers as $employer)
-                                        <option value="{{ $employer->id }}" {{ $selectedEmployerId == $employer->id ? 'selected' : '' }}>
-                                            {{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div x-data="importEmployerSelector()">
+                                    {{-- Hidden Input for Form Submission --}}
+                                    <input type="hidden" name="employer_id" :value="selectedId" required>
+
+                                    {{-- Searchable Dropdown --}}
+                                    <div class="position-relative">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                            <input type="text"
+                                                   class="form-control @error('employer_id') is-invalid @enderror"
+                                                   placeholder="{{ __('Type to search employer...') }}"
+                                                   x-model="search"
+                                                   @focus="open = true"
+                                                   @click.away="open = false"
+                                                   @keydown.escape="open = false"
+                                                   :class="{'is-invalid': !selectedId && touched}">
+                                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
+                                        </div>
+
+                                        {{-- Selected Display --}}
+                                        <div class="form-text text-success fw-bold mt-1" x-show="selectedName">
+                                            <i class="bi bi-check-circle-fill me-1"></i> {{ __('Selected') }}: <span x-text="selectedName"></span>
+                                        </div>
+
+                                        {{-- Dropdown List --}}
+                                        <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
+                                             style="z-index: 1050; max-height: 250px; overflow-y: auto;"
+                                             x-show="open"
+                                             x-transition
+                                             style="display: none;">
+                                            <ul class="list-group list-group-flush">
+                                                <template x-for="emp in filteredEmployers" :key="emp.id">
+                                                    <li class="list-group-item list-group-item-action cursor-pointer"
+                                                        @click="selectEmployer(emp)">
+                                                        <div class="fw-bold" x-text="emp.name_th"></div>
+                                                        <div class="small text-muted" x-text="emp.name_en"></div>
+                                                    </li>
+                                                </template>
+                                                <li class="list-group-item text-muted text-center" x-show="filteredEmployers.length === 0">
+                                                    {{ __('No results found') }}
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                    function importEmployerSelector() {
+                                        return {
+                                            search: '',
+                                            open: false,
+                                            selectedId: '{{ $selectedEmployerId }}',
+                                            selectedName: '',
+                                            touched: false,
+                                            employers: @json($employers->map(fn($e) => [
+                                                'id' => $e->id,
+                                                'name_th' => $e->employerNameTh,
+                                                'name_en' => $e->employerNameEn,
+                                                'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
+                                            ])),
+
+                                            init() {
+                                                if (this.selectedId) {
+                                                    const found = this.employers.find(e => e.id == this.selectedId);
+                                                    if (found) {
+                                                        this.selectEmployer(found, false);
+                                                    }
+                                                }
+                                            },
+
+                                            get filteredEmployers() {
+                                                if (this.search === '') return this.employers;
+                                                const term = this.search.toLowerCase();
+                                                return this.employers.filter(e => e.search_str.includes(term));
+                                            },
+
+                                            selectEmployer(emp, close = true) {
+                                                this.selectedId = emp.id;
+                                                this.selectedName = emp.name_th + ' (' + emp.name_en + ')';
+                                                this.search = emp.name_th;
+                                                if(close) this.open = false;
+                                                this.touched = true;
+                                            }
+                                        }
+                                    }
+                                </script>
                             @endif
 
                             @error('employer_id')
