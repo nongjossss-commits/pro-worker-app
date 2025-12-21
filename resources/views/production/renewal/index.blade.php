@@ -213,10 +213,9 @@
 
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
                     @can('edit-employees')
-                    <button type="button" class="btn btn-warning text-white fw-bold d-none">
-                        {{-- Hidden New Employee Button as Renewal usually comes from existing data or Import --}}
+                    <a href="{{ route('production.renewal.create') }}" class="btn btn-warning text-white fw-bold">
                         <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
-                    </button>
+                    </a>
                     <a href="{{ route('production.renewal.import') }}" class="btn btn-success fw-bold">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import Employees') }}
                     </a>
