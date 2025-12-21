@@ -243,6 +243,8 @@ Route::middleware(['auth'])->group(function () {
     // Renewal Resolution Routes (NEW)
     Route::prefix('production/renewal')->name('production.renewal.')->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Production\RenewalController::class, 'create'])->name('create');
+        Route::post('/store', [App\Http\Controllers\Production\RenewalController::class, 'store'])->name('store');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees');
         Route::get('/import', [App\Http\Controllers\Production\RenewalController::class, 'importView'])->name('import');
         Route::post('/configure-expiry', [App\Http\Controllers\Production\RenewalController::class, 'configureExpiry'])->name('configure_expiry');
