@@ -480,7 +480,9 @@
 
             if(cropImageBtn) {
                 cropImageBtn.addEventListener('click', function () {
-                    if (!cropper || !currentEmployeeId) {
+                    // Added check for currentOriginalFile to prevent errors if file reference is lost
+                    if (!cropper || !currentEmployeeId || !currentOriginalFile) {
+                        console.error('Missing crop context (cropper, employeeId, or file).');
                         return;
                     }
 
@@ -499,8 +501,12 @@
                             previewImg.src = croppedImageUrl;
                         }
 
-                        const croppedFile = new File([blob], currentOriginalFile.name, {
-                            type: currentOriginalFile.type || 'image/jpeg',
+                        // Use a fallback name if currentOriginalFile.name is missing (safety)
+                        const fileName = currentOriginalFile.name || 'cropped-image.jpg';
+                        const fileType = currentOriginalFile.type || 'image/jpeg';
+
+                        const croppedFile = new File([blob], fileName, {
+                            type: fileType,
                             lastModified: Date.now()
                         });
 

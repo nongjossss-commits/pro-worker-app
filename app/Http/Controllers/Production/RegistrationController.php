@@ -30,7 +30,7 @@ class RegistrationController extends Controller
     public function index(Request $request)
     {
         // 2. Fetch Workflow Steps (Needed for stats calculation and view)
-        $steps = RegistrationStep::orderBy('order')->get();
+        $steps = RegistrationStep::registration()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
         $lastStepId = $steps->sortByDesc('order')->first()?->id;
 
@@ -242,7 +242,7 @@ class RegistrationController extends Controller
      */
     public function fetchEmployees(Request $request, Employer $employer)
     {
-        $steps = RegistrationStep::orderBy('order')->get();
+        $steps = RegistrationStep::registration()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         // Apply the same base status filter as the index method to ensure consistency
@@ -661,11 +661,12 @@ class RegistrationController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        $maxOrder = RegistrationStep::max('order') ?? 0;
+        $maxOrder = RegistrationStep::registration()->max('order') ?? 0;
 
         RegistrationStep::create([
             'name' => $validated['name'],
             'order' => $maxOrder + 1,
+            'type' => 'registration',
         ]);
 
         return response()->json(['success' => true]);
@@ -693,6 +694,27 @@ class RegistrationController extends Controller
     public function destroyStep(RegistrationStep $step)
     {
         $step->delete();
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Reorder steps.
+     */
+    public function reorderSteps(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'exists:registration_steps,id',
+        ]);
+
+        $order = $request->input('order');
+
+        DB::transaction(function () use ($order) {
+            foreach ($order as $index => $id) {
+                RegistrationStep::where('id', $id)->update(['order' => $index + 1]);
+            }
+        });
+
         return response()->json(['success' => true]);
     }
 
@@ -739,7 +761,7 @@ class RegistrationController extends Controller
                                     ->with('registrationSteps')
                                     ->get();
 
-            $steps = RegistrationStep::orderBy('order')->get();
+            $steps = RegistrationStep::registration()->orderBy('order')->get();
             // Determine step 1 ID for "Not Started" logic
             $stepOneId = $steps->sortBy('order')->first()?->id;
 
@@ -1059,7 +1081,7 @@ class RegistrationController extends Controller
         $allStatuses = ['registration_pending', 'registration_completed', 'registration_cancelled'];
 
         // Get Steps info
-        $steps = RegistrationStep::orderBy('order')->get();
+        $steps = RegistrationStep::registration()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         // --- GLOBAL STATS ---
