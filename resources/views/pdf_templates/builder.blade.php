@@ -73,7 +73,7 @@
                 <template x-for="pageNum in totalPages" :key="pageNum">
                     <div class="relative shadow-lg bg-white"
                          :id="'page-container-' + pageNum"
-                         :style="`width: ${canvasWidth}px; height: ${canvasHeight}px;`">
+                         :style="pageDimensions[pageNum] ? `width: ${pageDimensions[pageNum].width}px; height: ${pageDimensions[pageNum].height}px;` : 'min-height: 200px;'">
 
                         <!-- Page Label -->
                         <div class="absolute -top-6 left-0 text-sm font-bold text-gray-500">
@@ -141,10 +141,10 @@
 </div>
 
 @push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
     // Initialize PDF.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     document.addEventListener('alpine:init', () => {
         Alpine.data('pdfBuilder', () => ({
@@ -152,8 +152,7 @@
             currentPage: 1, // Currently viewed page (for jump)
             totalPages: 1,
             scale: 1.5,
-            canvasWidth: 0,
-            canvasHeight: 0,
+            pageDimensions: {}, // Store width/height for each page index
             items: @json($template->field_mapping ?? []),
             searchQuery: '',
             isSaving: false,
@@ -248,13 +247,7 @@
             },
 
             async renderAllPages() {
-                // Get first page to set global dimensions (assuming uniform page size for simplicity)
-                const page1 = await this.pdfDoc.getPage(1);
-                const viewport = page1.getViewport({ scale: this.scale });
-
-                this.canvasWidth = viewport.width;
-                this.canvasHeight = viewport.height;
-
+                // No global dimension setting here anymore
                 // Wait for Alpine to render the DOM loops
                 await this.$nextTick();
 
@@ -266,9 +259,19 @@
             async renderPage(num) {
                 const page = await this.pdfDoc.getPage(num);
                 const viewport = page.getViewport({ scale: this.scale });
+
+                // Store dimensions for this specific page
+                this.pageDimensions[num] = {
+                    width: viewport.width,
+                    height: viewport.height
+                };
+
+                // Wait for Alpine to update DOM with new dimensions
+                await this.$nextTick();
+
                 const canvas = document.getElementById('canvas-page-' + num);
 
-                if (!canvas) return; // Should not happen if loop matches
+                if (!canvas) return;
 
                 const context = canvas.getContext('2d');
                 canvas.height = viewport.height;
@@ -294,13 +297,16 @@
             },
 
             drop(event, pageNum) {
+                const dims = this.pageDimensions[pageNum];
+                if (!dims) return;
+
                 const rect = event.target.getBoundingClientRect();
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
 
-                // Convert to percentage relative to canvas
-                const xPct = (x / this.canvasWidth) * 100;
-                const yPct = (y / this.canvasHeight) * 100;
+                // Convert to percentage relative to this page's dimensions
+                const xPct = (x / dims.width) * 100;
+                const yPct = (y / dims.height) * 100;
 
                 try {
                     const data = JSON.parse(event.dataTransfer.getData('text/plain'));
@@ -329,11 +335,15 @@
 
             startMove(event, index, pageNum) {
                 const item = this.items[index];
+                const dims = this.pageDimensions[pageNum];
+
+                if (!dims) return; // Should not happen
+
                 const startX = event.clientX;
                 const startY = event.clientY;
                 // Calculate initial pixel position
-                const startLeft = (item.x / 100) * this.canvasWidth;
-                const startTop = (item.y / 100) * this.canvasHeight;
+                const startLeft = (item.x / 100) * dims.width;
+                const startTop = (item.y / 100) * dims.height;
 
                 const onMouseMove = (e) => {
                     const dx = e.clientX - startX;
@@ -343,11 +353,11 @@
                     let newTop = startTop + dy;
 
                     // Boundaries
-                    newLeft = Math.max(0, Math.min(newLeft, this.canvasWidth - 20));
-                    newTop = Math.max(0, Math.min(newTop, this.canvasHeight - 10));
+                    newLeft = Math.max(0, Math.min(newLeft, dims.width - 20));
+                    newTop = Math.max(0, Math.min(newTop, dims.height - 10));
 
-                    item.x = (newLeft / this.canvasWidth) * 100;
-                    item.y = (newTop / this.canvasHeight) * 100;
+                    item.x = (newLeft / dims.width) * 100;
+                    item.y = (newTop / dims.height) * 100;
                 };
 
                 const onMouseUp = () => {
