@@ -225,19 +225,21 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     document.addEventListener('alpine:init', () => {
-        Alpine.data('pdfBuilder', () => ({
-            _pdfDoc: null,
-            currentPage: 1,
-            totalPages: 1,
-            scale: 1.5,
-            pageDimensions: {},
-            items: @json($template->field_mapping ?? []),
-            searchQuery: '',
-            isSaving: false,
-            editingIndex: null,
+        Alpine.data('pdfBuilder', () => {
+            let _pdfDoc = null; // Store PDF doc outside Alpine reactive scope to avoid Proxy issues
 
-            // Raw Fields Data
-            rawFields: [
+            return {
+                currentPage: 1,
+                totalPages: 1,
+                scale: 1.5,
+                pageDimensions: {},
+                items: @json($template->field_mapping ?? []),
+                searchQuery: '',
+                isSaving: false,
+                editingIndex: null,
+
+                // Raw Fields Data
+                rawFields: [
                 // Employee Personal
                 { group: 'Employee Personal', key: 'employeeNameTh', label: 'Name (TH)' },
                 { group: 'Employee Personal', key: 'employeeNameEn', label: 'Name (EN)' },
@@ -296,8 +298,8 @@
                 const url = '{{ route("admin.pdf-templates.file", $template) }}';
                 try {
                     const loadingTask = pdfjsLib.getDocument(url);
-                    this._pdfDoc = await loadingTask.promise;
-                    this.totalPages = this._pdfDoc.numPages;
+                    _pdfDoc = await loadingTask.promise;
+                    this.totalPages = _pdfDoc.numPages;
                     await this.renderAllPages();
                 } catch (error) {
                     console.error('Error loading PDF:', error);
@@ -313,8 +315,8 @@
             },
 
             async renderPage(num) {
-                if (!this._pdfDoc) return;
-                const page = await this._pdfDoc.getPage(num);
+                if (!_pdfDoc) return;
+                const page = await _pdfDoc.getPage(num);
                 const viewport = page.getViewport({ scale: this.scale });
 
                 this.pageDimensions[num] = { width: viewport.width, height: viewport.height };
@@ -485,7 +487,8 @@
                     this.isSaving = false;
                 }
             }
-        }));
+        }; // Return object end
+        });
     });
 </script>
 
