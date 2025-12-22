@@ -293,6 +293,11 @@
             },
 
             async init() {
+                // Handle null or undefined items
+                if (!this.items) {
+                    this.items = [];
+                }
+
                 // Ensure page numbers are integers for correct comparison
                 // Also handle potential stringified JSON if DB returns string
                 if (typeof this.items === 'string') {
@@ -303,7 +308,11 @@
                     }
                 }
 
-                this.items = this.items.map(item => ({ ...item, page: parseInt(item.page) }));
+                // Defensive map: ensure item exists and has a page
+                this.items = this.items.map(item => ({
+                    ...item,
+                    page: item.page ? parseInt(item.page) : 1
+                }));
 
                 const url = '{{ route("admin.pdf-templates.file", $template) }}';
                 try {
@@ -487,22 +496,26 @@
             async saveMapping() {
                 this.isSaving = true;
                 try {
+                    // Ensure items is a clean array
+                    const itemsToSave = JSON.parse(JSON.stringify(this.items));
+
                     const response = await fetch('{{ route("admin.pdf-templates.update", $template) }}', {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
-                        body: JSON.stringify({ field_mapping: this.items })
+                        body: JSON.stringify({ field_mapping: itemsToSave })
                     });
 
                     if (response.ok) {
                         showToast('Template saved successfully!', 'success');
                     } else {
-                        throw new Error('Save failed');
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Save failed');
                     }
                 } catch (error) {
-                    showToast('Error saving template.', 'danger');
+                    showToast('Error saving template: ' + error.message, 'danger');
                     console.error(error);
                 } finally {
                     this.isSaving = false;

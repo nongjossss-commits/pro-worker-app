@@ -73,10 +73,14 @@ class PdfGenerationController extends Controller
         $employees = Employee::with('employer')->whereIn('id', $request->employees)->get();
         $template = PdfTemplate::findOrFail($request->template_id);
 
-        $results = $this->pdfService->generateForEmployees($template, $employees, [
-            'output_type' => $request->output_type,
-            'slot_name' => $request->slot_name ?? null,
-        ]);
+        try {
+            $results = $this->pdfService->generateForEmployees($template, $employees, [
+                'output_type' => $request->output_type,
+                'slot_name' => $request->slot_name ?? null,
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('danger', $e->getMessage());
+        }
 
         if ($request->output_type === 'save_to_slot') {
             return redirect()->route('employees.index')

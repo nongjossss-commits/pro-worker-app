@@ -55,8 +55,10 @@ class PdfGeneratorService
 
         try {
             $pageCount = $pdf->setSourceFile($templatePath);
+        } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
+            throw new \Exception('This PDF file uses an unsupported compression format (likely PDF 1.5+). Please open the file in a PDF viewer, choose "Print to PDF", and try uploading the new file.');
         } catch (\Exception $e) {
-            throw $e;
+            throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
         }
 
         // Font Handling
