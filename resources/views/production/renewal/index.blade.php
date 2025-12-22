@@ -63,7 +63,7 @@
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         {{-- Total Employees --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm" style="background-color: #FBBF24; border: none;"> {{-- Yellow-ish --}}
+            <div class="card text-white h-100 shadow-sm cursor-pointer" onclick="window.location.href = window.location.pathname;" style="background-color: #FBBF24; border: none;"> {{-- Yellow-ish --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-total-count">{{ $totalEmployees }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
