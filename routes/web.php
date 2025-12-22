@@ -169,14 +169,11 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
 
     // PDF Generation
     Route::post('pdf-templates/generate', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'showGenerateModal'])->name('pdf-templates.generate.modal');
-    Route::get('pdf-templates/generate', function () {
-        return redirect()->route('employees.index')->with('error', 'Please select employees to generate PDF.');
-    });
     Route::post('pdf-templates/generate/process', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'process'])->name('pdf-templates.generate.process');
 
     // PDF Templates
     Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
-    Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->except(['show']);
+    Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class);
     Route::get('pdf-templates/{pdf_template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
 
     Route::post('tickets/{ticket}/resolve', [TicketStatusController::class, 'resolve'])->name('tickets.resolve');
