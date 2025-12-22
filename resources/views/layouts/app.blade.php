@@ -31,6 +31,17 @@
     <meta name="apple-mobile-web-app-title" content="PWL System">
     <link rel="apple-touch-icon" href="{{ asset('images/icons/icon-192x192.png') }}">
 
+    <!-- Tailwind CSS (Scoped/Utility) for Components using it -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            prefix: '', // No prefix to match component code
+            corePlugins: {
+               preflight: false, // Disable preflight to avoid conflict with Bootstrap
+            }
+        }
+    </script>
+
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -582,6 +593,9 @@
 
     {{-- Chat Widget Component --}}
     @include('components.chat-widget')
+
+    {{-- Document Scanner Component (Global) --}}
+    @include('components.document-scanner')
 
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
 

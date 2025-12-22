@@ -389,7 +389,7 @@
                     <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> {{ __('Reply / Send Message') }}</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
-                        <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
+                        <input type="file" multiple class="d-none" id="general-attachment-input" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
 
                         {{-- Determine the correct route --}}
                         @php
@@ -423,9 +423,14 @@
                                     </button>
                                 </div>
                                 <div class="col-md-4">
-                                    <button type="button" class="btn btn-outline-secondary w-100" @click="triggerFileInput" :disabled="isUploading">
-                                        <i class="bi bi-file-earmark-arrow-up me-2"></i> {{ __('Attach File/Image') }}
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerScanner" :disabled="isUploading">
+                                            <i class="bi bi-camera me-1"></i> {{ __('Scan') }}
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerFileInput" :disabled="isUploading">
+                                            <i class="bi bi-file-earmark-arrow-up me-1"></i> {{ __('File') }}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 

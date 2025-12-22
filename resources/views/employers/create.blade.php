@@ -185,7 +185,12 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }}</label>
-                <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
+                <div class="input-group input-group-sm">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_company' } }))">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
                 @error('employer_doc_company')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -201,14 +206,24 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }}</label>
-                <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
+                <div class="input-group input-group-sm">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_lease' } }))">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
                 @error('employer_doc_lease')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
                 <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }}</label>
-                <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
+                <div class="input-group input-group-sm">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_construction' } }))">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
                 @error('employer_doc_construction')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -217,7 +232,12 @@
         <div class="row mb-3">
             <div class="col-md-4">
                 <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1</label>
-                <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
+                <div class="input-group input-group-sm">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_1' } }))">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
                 <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_1_desc') is-invalid @enderror" id="employer_doc_other_1_desc" name="employer_doc_other_1_desc" value="{{ old('employer_doc_other_1_desc') }}" placeholder="{{ __('Specify description...') }}">
                 @error('employer_doc_other_1')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -225,7 +245,12 @@
             </div>
             <div class="col-md-4">
                 <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2</label>
-                <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
+                <div class="input-group input-group-sm">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_2' } }))">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
                 <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_2_desc') is-invalid @enderror" id="employer_doc_other_2_desc" name="employer_doc_other_2_desc" value="{{ old('employer_doc_other_2_desc') }}" placeholder="{{ __('Specify description...') }}">
                 @error('employer_doc_other_2')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -233,7 +258,12 @@
             </div>
             <div class="col-md-4">
                 <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3</label>
-                <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
+                <div class="input-group input-group-sm">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_3' } }))">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
                 <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_3_desc') is-invalid @enderror" id="employer_doc_other_3_desc" name="employer_doc_other_3_desc" value="{{ old('employer_doc_other_3_desc') }}" placeholder="{{ __('Specify description...') }}">
                 @error('employer_doc_other_3')
                     <div class="invalid-feedback">{{ $message }}</div>

@@ -397,8 +397,13 @@
                         <a href="{{ asset('storage/' . $employee->{$docField}) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
                     </div>
                 @endif
-                <input type="file" class="form-control form-control-sm" id="{{ $docField }}" name="{{ $docField }}">
-                    @if(in_array($i, $descSlots))
+                <div class="input-group input-group-sm">
+                    <input type="file" class="form-control form-control-sm" id="{{ $docField }}" name="{{ $docField }}">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $docField }}' } }))">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
+                @if(in_array($i, $descSlots))
                     <input type="text" class="form-control form-control-sm mt-2" name="{{ $descField }}" placeholder="คำอธิบาย..." value="{{ old($descField, $employee->{$descField}) }}">
                 @endif
             </div>

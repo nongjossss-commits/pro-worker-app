@@ -498,6 +498,16 @@ function hybridAttachmentManager(config = {}) {
             this.$refs.generalFileInput.click();
         },
 
+        triggerScanner() {
+            // Target the general file input ID if possible, but since it's inside Alpine x-ref, we can pass a dummy or handle the event manually.
+            // However, the scanner writes to an ID. Let's give the file input an ID.
+            // Or better, let's create a temporary input ID for the scanner to write to, and then we manually trigger handleGeneralFileUpload
+            // The scanner component writes to `input.files`.
+            // Let's assume the view has given an ID to x-ref="generalFileInput" or we can pass a unique ID.
+            // For now, let's dispatch the event with a known ID that we will add to the input in the view.
+            document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'general-attachment-input' } }));
+        },
+
         async handleGeneralFileUpload(event) {
             const files = event.target.files;
             if (files.length === 0) return;

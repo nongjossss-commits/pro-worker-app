@@ -69,7 +69,12 @@
                     <div class="col-md-4 d-flex flex-column justify-content-center align-items-center">
                         <label for="modal_employeePhoto" class="form-label">รูปภาพพนักงาน</label>
                         <img id="modal_employeePhotoPreview" :src="newEmployeeForm.photo_preview_url || 'https://placehold.co/150x180/f8fafc/6c757d?text=Photo'" class="img-thumbnail mb-2" style="width: 150px; height: 180px; object-fit: cover;">
-                        <input type="file" class="form-control form-control-sm w-75" id="modal_employeePhoto" accept="image/*" @change="handleFileUpload($event, 'employeePhoto', '#modal_employeePhotoPreview')">
+                        <div class="input-group input-group-sm w-75">
+                            <input type="file" class="form-control form-control-sm" id="modal_employeePhoto" accept="image/*" @change="handleFileUpload($event, 'employeePhoto', '#modal_employeePhotoPreview')">
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'modal_employeePhoto', previewId: 'modal_employeePhotoPreview' } }))">
+                                <i class="bi bi-camera"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -211,21 +216,45 @@
                     <div class="row">
                         <div class="col-md-4 mb-3"><label class="form-label">เลขประกันสังคม</label><input type="text" class="form-control" x-model="newEmployeeForm.social_security_number"></div>
                         <div class="col-md-4 mb-3"><label class="form-label">สิทธิ์โรงพยาบาล</label><input type="text" class="form-control" x-model="newEmployeeForm.insurance_detail_social"></div>
-                        <div class="col-md-4 mb-3"><label class="form-label">แนบไฟล์เอกสาร</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'insurance_document_path_social')"></div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">แนบไฟล์เอกสาร</label>
+                            <div class="input-group input-group-sm">
+                                <input type="file" class="form-control form-control-sm" id="insurance_document_path_social_input" @change="handleFileUpload($event, 'insurance_document_path_social')">
+                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_social_input' } }))">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div :class="{'d-none': newEmployeeForm.insurance_type !== 'ประกันโรงพยาบาล'}">
                     <div class="row">
                         <div class="col-md-4 mb-3"><label class="form-label">ชื่อโรงพยาบาล</label><input type="text" class="form-control" x-model="newEmployeeForm.insurance_detail_hospital"></div>
                         <div class="col-md-4 mb-3"><label class="form-label">วันหมดอายุ</label><input type="date" class="form-control" x-model="newEmployeeForm.insurance_expiry_date_hospital"></div>
-                        <div class="col-md-4 mb-3"><label class="form-label">แนบไฟล์เอกสาร</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'insurance_document_path_hospital')"></div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">แนบไฟล์เอกสาร</label>
+                            <div class="input-group input-group-sm">
+                                <input type="file" class="form-control form-control-sm" id="insurance_document_path_hospital_input" @change="handleFileUpload($event, 'insurance_document_path_hospital')">
+                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_hospital_input' } }))">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div :class="{'d-none': newEmployeeForm.insurance_type !== 'ประกันเอกชน'}">
                     <div class="row">
                         <div class="col-md-4 mb-3"><label class="form-label">บริษัทประกัน</label><input type="text" class="form-control" x-model="newEmployeeForm.insurance_detail_private"></div>
                         <div class="col-md-4 mb-3"><label class="form-label">วันหมดอายุ</label><input type="date" class="form-control" x-model="newEmployeeForm.insurance_expiry_date_private"></div>
-                        <div class="col-md-4 mb-3"><label class="form-label">แนบไฟล์เอกสาร</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'insurance_document_path_private')"></div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">แนบไฟล์เอกสาร</label>
+                            <div class="input-group input-group-sm">
+                                <input type="file" class="form-control form-control-sm" id="insurance_document_path_private_input" @change="handleFileUpload($event, 'insurance_document_path_private')">
+                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_private_input' } }))">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -239,34 +268,43 @@
                 <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร</h5>
                 <hr class="mb-4">
                 <div class="row">
-                    <div class="col-md-4 mb-3"><label class="form-label">1. พาสปอร์ต</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_1')"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">2. วีซ่า</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_2')"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">3. ใบเสร็จ Work Permit</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_3')"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">4. บัตรชมพู</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_4')"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">5. ทร. 38</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_5')"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">6. รายงานตัว 90 วัน</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_6')"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">7. ใบแจ้งที่พักอาศัย</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_7')"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">8. เอกสารบ้านเกิด</label><input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_8')"></div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">9. เอกสารอื่นๆ 1</label>
-                        <input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_9')">
-                        <input type="text" class="form-control form-control-sm mt-2" x-model="newEmployeeForm.other_doc_1_desc" placeholder="คำอธิบาย...">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">10. เอกสารอื่นๆ 2</label>
-                        <input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_10')">
-                        <input type="text" class="form-control form-control-sm mt-2" x-model="newEmployeeForm.other_doc_2_desc" placeholder="คำอธิบาย...">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">11. เอกสารอื่นๆ 3</label>
-                        <input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_11')">
-                        <input type="text" class="form-control form-control-sm mt-2" x-model="newEmployeeForm.other_doc_3_desc" placeholder="คำอธิบาย...">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">12. เอกสารอื่นๆ 4</label>
-                        <input type="file" class="form-control form-control-sm" @change="handleFileUpload($event, 'employee_doc_12')">
-                        <input type="text" class="form-control form-control-sm mt-2" x-model="newEmployeeForm.other_doc_4_desc" placeholder="คำอธิบาย...">
-                    </div>
+                    @foreach(range(1, 8) as $i)
+                        @php
+                            $labels = [
+                                1 => '1. พาสปอร์ต', 2 => '2. วีซ่า', 3 => '3. ใบเสร็จ Work Permit',
+                                4 => '4. บัตรชมพู', 5 => '5. ทร. 38', 6 => '6. รายงานตัว 90 วัน',
+                                7 => '7. ใบแจ้งที่พักอาศัย', 8 => '8. เอกสารบ้านเกิด'
+                            ];
+                        @endphp
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ $labels[$i] }}</label>
+                            <div class="input-group input-group-sm">
+                                <input type="file" class="form-control form-control-sm" id="employee_doc_{{ $i }}_input" @change="handleFileUpload($event, 'employee_doc_{{ $i }}')">
+                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employee_doc_{{ $i }}_input' } }))">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+
+                    @foreach(range(1, 4) as $i)
+                        @php
+                            $docIndex = $i + 8;
+                            $label = "$docIndex. เอกสารอื่นๆ $i";
+                            $modelKey = "other_doc_{$i}_desc";
+                            $fileKey = "employee_doc_$docIndex";
+                        @endphp
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ $label }}</label>
+                            <div class="input-group input-group-sm">
+                                <input type="file" class="form-control form-control-sm" id="{{ $fileKey }}_input" @change="handleFileUpload($event, '{{ $fileKey }}')">
+                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $fileKey }}_input' } }))">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                            <input type="text" class="form-control form-control-sm mt-2" x-model="newEmployeeForm.{{ $modelKey }}" placeholder="คำอธิบาย...">
+                        </div>
+                    @endforeach
                 </div>
             </div>
             <div class="modal-footer">
