@@ -75,48 +75,48 @@ class PdfTemplateController extends Controller
             ->with('success', 'Template uploaded. Please configure fields.');
     }
 
-    public function builder(PdfTemplate $template)
+    public function builder(PdfTemplate $pdf_template)
     {
-        $this->authorize('edit-pdf-templates', $template);
+        $this->authorize('edit-pdf-templates', $pdf_template);
 
-        return view('pdf_templates.builder', compact('template'));
+        return view('pdf_templates.builder', ['template' => $pdf_template]);
     }
 
-    public function update(Request $request, PdfTemplate $template)
+    public function update(Request $request, PdfTemplate $pdf_template)
     {
-        $this->authorize('edit-pdf-templates', $template);
+        $this->authorize('edit-pdf-templates', $pdf_template);
 
         $request->validate([
             'field_mapping' => 'nullable|array',
         ]);
 
-        $template->update([
+        $pdf_template->update([
             'field_mapping' => $request->field_mapping ?? [],
         ]);
 
         return response()->json(['success' => true]);
     }
 
-    public function destroy(PdfTemplate $template)
+    public function destroy(PdfTemplate $pdf_template)
     {
-        $this->authorize('delete-pdf-templates', $template);
+        $this->authorize('delete-pdf-templates', $pdf_template);
 
-        if (Storage::disk('public')->exists($template->file_path)) {
+        if (Storage::disk('public')->exists($pdf_template->file_path)) {
             // Soft delete, so maybe don't delete file immediately?
             // Model uses SoftDeletes, so we just delete the record.
         }
 
-        $template->delete();
+        $pdf_template->delete();
 
         return redirect()->route('admin.pdf-templates.index')
             ->with('success', 'Template deleted successfully.');
     }
 
-    public function file(PdfTemplate $template)
+    public function file(PdfTemplate $pdf_template)
     {
         $this->authorize('view-pdf-templates');
 
-        $path = $template->file_path;
+        $path = $pdf_template->file_path;
 
         if (!Storage::disk('public')->exists($path)) {
             abort(404);
