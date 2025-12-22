@@ -87,11 +87,11 @@ class PdfTemplateController extends Controller
         $this->authorize('edit-pdf-templates', $template);
 
         $request->validate([
-            'field_mapping' => 'required|array',
+            'field_mapping' => 'nullable|array',
         ]);
 
         $template->update([
-            'field_mapping' => $request->field_mapping,
+            'field_mapping' => $request->field_mapping ?? [],
         ]);
 
         return response()->json(['success' => true]);
