@@ -580,15 +580,6 @@ document.addEventListener('DOMContentLoaded', function() {
                  bottomBar.classList.add('mt-4', 'border-top', 'pt-3');
              }
 
-             // DISABLE SAVE BUTTON TEMPORARILY to prevent phantom clicks or double events
-             const saveBtn = content.querySelector('button[type="submit"]');
-             if(saveBtn) {
-                 saveBtn.disabled = true;
-                 setTimeout(() => {
-                     saveBtn.disabled = false;
-                 }, 800); // 800ms delay safety
-             }
-
              // Define success callback for the bulk edit form script
              window.onBulkEditSuccess = function() {
                 actionModal.hide();
