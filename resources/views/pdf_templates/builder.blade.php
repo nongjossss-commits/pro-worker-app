@@ -143,9 +143,9 @@
                                             <i class="bi bi-gear"></i>
                                         </button>
 
-                                        <!-- Delete Button -->
-                                        <button @click.stop="deleteItem(index)" class="p-1 hover:bg-gray-100 rounded text-red-600" title="Remove">
-                                            <i class="bi bi-trash"></i>
+                                        <!-- Delete Button (Red Trash Can) -->
+                                        <button @click.stop="deleteItem(index)" class="p-1 hover:bg-red-50 rounded text-red-600 bg-white border border-red-200 shadow-sm" title="Remove">
+                                            <i class="bi bi-trash-fill text-lg"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -233,6 +233,7 @@
                 totalPages: 1,
                 scale: 1.5,
                 pageDimensions: {},
+                // Fix Persistence: Ensure we parse the JSON safely if it's already a string, or use as is
                 items: @json($template->field_mapping ?? []),
                 searchQuery: '',
                 isSaving: false,
@@ -293,6 +294,15 @@
 
             async init() {
                 // Ensure page numbers are integers for correct comparison
+                // Also handle potential stringified JSON if DB returns string
+                if (typeof this.items === 'string') {
+                    try {
+                        this.items = JSON.parse(this.items);
+                    } catch(e) {
+                        this.items = [];
+                    }
+                }
+
                 this.items = this.items.map(item => ({ ...item, page: parseInt(item.page) }));
 
                 const url = '{{ route("admin.pdf-templates.file", $template) }}';
@@ -452,10 +462,21 @@
             },
 
             deleteItem(index) {
-                if(confirm('Remove this field?')) {
-                    this.items.splice(index, 1);
-                    this.editingIndex = null;
-                }
+                Swal.fire({
+                    title: 'Remove Field?',
+                    text: 'Are you sure you want to remove this field from the template?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, remove it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.items.splice(index, 1);
+                        this.editingIndex = null;
+                        Swal.fire('Removed!', 'The field has been removed.', 'success');
+                    }
+                });
             },
 
             openSettings(index) {
