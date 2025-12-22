@@ -489,10 +489,17 @@ class RegistrationController extends Controller
 
         session()->flash('finish_route', route('production.registration.index'));
 
+        // Hydrate imported employees from session IDs if available (Restoring Preview Feature)
+        $sessionImportedEmployees = collect();
+        if (session()->has('imported_employee_ids')) {
+            $sessionImportedEmployees = Employee::whereIn('id', session('imported_employee_ids'))->get();
+        }
+
         return view('employees.import', [
             'employers' => $employers,
             'production' => null,
             'back_route' => route('production.registration.index'),
+            'sessionImportedEmployees' => $sessionImportedEmployees,
         ]);
     }
 
