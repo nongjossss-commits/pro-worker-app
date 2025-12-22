@@ -41,7 +41,8 @@ class RegistrationController extends Controller
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
             ->select('id', 'employer_id', 'status') // Lightweight Select
             ->with(['registrationSteps' => function($q) {
-                $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id'); // Lightweight Relation
+                $q->where('type', 'registration')
+                  ->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id'); // Lightweight Relation
             }]);
 
         // Apply Search (Same logic as before)
@@ -248,7 +249,9 @@ class RegistrationController extends Controller
         // Apply the same base status filter as the index method to ensure consistency
         $query = $employer->employees()
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
-            ->with(['registrationSteps', 'customFields']); // Load everything needed for the card
+            ->with(['registrationSteps' => function ($q) {
+                $q->where('type', 'registration');
+            }, 'customFields']); // Load everything needed for the card
 
         // Apply Search (if global search is active)
         if ($request->has('search') && $request->search) {
@@ -765,7 +768,9 @@ class RegistrationController extends Controller
             }
 
             $allEmployees = $allQuery->whereIn('status', ['registration_pending', 'registration_completed'])
-                                    ->with('registrationSteps')
+                                    ->with(['registrationSteps' => function ($q) {
+                                        $q->where('type', 'registration');
+                                    }])
                                     ->get();
 
             $steps = RegistrationStep::registration()->orderBy('order')->get();
@@ -796,7 +801,9 @@ class RegistrationController extends Controller
 
             $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
                                         ->whereIn('status', ['registration_pending', 'registration_completed'])
-                                        ->with('registrationSteps');
+                                        ->with(['registrationSteps' => function ($q) {
+                                            $q->where('type', 'registration');
+                                        }]);
 
             if ($request->has('search') && $request->search) {
                  $employer = $employee->employer;

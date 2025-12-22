@@ -36,7 +36,8 @@ class RenewalController extends Controller
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
             ->select('id', 'employer_id', 'status')
             ->with(['registrationSteps' => function($q) {
-                $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id');
+                $q->where('type', 'renewal')
+                  ->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id');
             }]);
 
         if ($request->has('search') && $request->search) {
@@ -212,7 +213,9 @@ class RenewalController extends Controller
 
         $query = $employer->employees()
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->with(['registrationSteps', 'customFields']);
+            ->with(['registrationSteps' => function ($q) {
+                $q->where('type', 'renewal');
+            }, 'customFields']);
 
         if ($request->has('search') && $request->search) {
             $this->applyEmployerSearchToQuery($query, $employer, $request->search);
@@ -606,7 +609,9 @@ class RenewalController extends Controller
             }
 
             $allEmployees = $allQuery->whereIn('status', ['renewal_pending', 'renewal_completed'])
-                                    ->with('registrationSteps')
+                                    ->with(['registrationSteps' => function ($q) {
+                                        $q->where('type', 'renewal');
+                                    }])
                                     ->get();
 
             $steps = RegistrationStep::renewal()->orderBy('order')->get();
@@ -632,7 +637,9 @@ class RenewalController extends Controller
 
             $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
                                         ->whereIn('status', ['renewal_pending', 'renewal_completed'])
-                                        ->with('registrationSteps');
+                                        ->with(['registrationSteps' => function ($q) {
+                                            $q->where('type', 'renewal');
+                                        }]);
 
             if ($request->has('search') && $request->search) {
                  $employer = $employee->employer;
