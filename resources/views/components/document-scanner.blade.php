@@ -1,7 +1,7 @@
 <!-- resources/views/components/document-scanner.blade.php -->
 <div x-data="documentScanner()"
      x-show="isOpen"
-     @open-document-scanner.window="openScanner($event.detail)"
+     @open-document-scanner.document="openScanner($event.detail)"
      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90"
      style="display: none;"
      x-transition:enter="transition ease-out duration-300"
@@ -168,6 +168,11 @@
             activeDragIndex: -1,
 
             init() {
+                // Check if already loaded
+                if(typeof cv !== 'undefined') {
+                    this.cvLoaded = true;
+                }
+
                 document.addEventListener('opencv-loaded', () => {
                     this.cvLoaded = true;
                     console.log('OpenCV Loaded');
@@ -194,27 +199,31 @@
                 this.capturedImages = [];
                 this.view = 'camera';
 
+                // Check OpenCV status but don't block camera
+                if(!this.cvLoaded && typeof cv !== 'undefined') {
+                     this.cvLoaded = true;
+                }
+
                 if(!this.cvLoaded) {
+                     // Try waiting a bit, but don't block indefinitely
                      this.isLoading = true;
-                     this.loadingMessage = 'กำลังโหลดระบบประมวลผลภาพ...';
-                     // Check regularly if loaded
+                     this.loadingMessage = 'กำลังเตรียมระบบสแกนเอกสาร...';
+
+                     let attempts = 0;
                      let checkInterval = setInterval(() => {
+                         attempts++;
                          if(typeof cv !== 'undefined') {
                              this.cvLoaded = true;
                              this.isLoading = false;
                              clearInterval(checkInterval);
                              this.startCamera();
-                         }
-                     }, 500);
-
-                     // Fallback timeout
-                     setTimeout(() => {
-                         if(!this.cvLoaded && this.isLoading) {
+                         } else if (attempts > 20) { // Wait max 2 seconds
+                             clearInterval(checkInterval);
                              this.isLoading = false;
-                             alert('Cannot load Image Processing Engine (OpenCV). Basic features only.');
+                             console.warn('OpenCV not loaded yet, starting camera anyway.');
                              this.startCamera();
                          }
-                     }, 10000);
+                     }, 100);
                 } else {
                     this.startCamera();
                 }
