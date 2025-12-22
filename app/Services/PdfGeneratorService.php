@@ -14,12 +14,13 @@ use Illuminate\Support\Collection;
 class PdfGeneratorService
 {
     protected $fontPath;
+    protected $signatureService;
 
-    public function __construct()
+    public function __construct(SignatureGeneratorService $signatureService)
     {
         // Path to Thai font (Assumes font files exist in public/fonts)
-        // If using standard FPDF, we need .php and .z (or .ttf if using tFPDF)
         $this->fontPath = public_path('fonts/THSarabunNew.php');
+        $this->signatureService = $signatureService;
     }
 
     public function generateForEmployees(PdfTemplate $template, Collection $employees, $options = [])
@@ -47,9 +48,6 @@ class PdfGeneratorService
 
     protected function generateSinglePdf(PdfTemplate $template, Employee $employee)
     {
-        // Use standard Fpdi. If Thai characters are needed, ensure
-        // the environment has tFPDF or the font definitions are correct.
-        // For this implementation, we try to be safe.
         $pdf = new Fpdi();
 
         // Load the template file
@@ -58,69 +56,96 @@ class PdfGeneratorService
         try {
             $pageCount = $pdf->setSourceFile($templatePath);
         } catch (\Exception $e) {
-            // Fallback or error handling if PDF is invalid
-            // For now, rethrow or log? We'll let it fail visibly or return empty
             throw $e;
         }
 
         // Font Handling
         $fontLoaded = false;
-        // Check if custom Thai font definition exists
         if (file_exists($this->fontPath)) {
              $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
              $pdf->SetFont('THSarabunNew', '', 14);
              $fontLoaded = true;
         } else {
-             // Fallback to Arial if Thai font is missing to prevent crash
              $pdf->SetFont('Arial', '', 12);
         }
 
-        // Iterate Pages
-        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-            $templateId = $pdf->importPage($pageNo);
-            $size = $pdf->getTemplateSize($templateId);
+        // Generate Signatures for this session (Consistent per person)
+        $employeeSignature = $this->signatureService->generate('EMP-' . $employee->id);
 
-            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-            $pdf->useTemplate($templateId);
+        // Employer Signature: Use Employer ID.
+        // Note: In real app, we might check if employer has a REAL uploaded signature first.
+        // For now, we generate one procedurally for consistency.
+        $employerSignature = $this->signatureService->generate('EMPR-' . $employee->employer_id);
 
-            // Filter items for this page
-            $items = collect($template->field_mapping)->where('page', $pageNo);
+        // Save temp files for FPDF to read
+        $tempEmpSigPath = tempnam(sys_get_temp_dir(), 'sig_emp_');
+        file_put_contents($tempEmpSigPath, $employeeSignature);
 
-            foreach ($items as $item) {
-                $text = '';
+        $tempEmprSigPath = tempnam(sys_get_temp_dir(), 'sig_empr_');
+        file_put_contents($tempEmprSigPath, $employerSignature);
 
-                if ($item['type'] === 'static') {
-                    $text = $item['text'] ?? '';
-                } elseif ($item['type'] === 'db') {
-                    $text = $this->resolveValue($employee, $item['key']);
-                }
+        try {
+            // Iterate Pages
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
 
-                if ($text) {
-                    // Convert coordinates from % to mm/points
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($templateId);
+
+                // Filter items for this page
+                $items = collect($template->field_mapping)->where('page', $pageNo);
+
+                foreach ($items as $item) {
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
 
-                    // Text Placement
-                    $pdf->SetXY($x, $y);
+                    // Handle Signatures
+                    if (isset($item['type']) && $item['type'] === 'signature') {
+                        $w = ($item['w'] / 100) * $size['width'];
+                        $h = ($item['h'] / 100) * $size['height'];
 
-                    // Thai Encoding Conversion (if using standard FPDF with custom font)
-                    // Standard FPDF uses ISO-8859-1 or cp874 for Thai if font supports it.
-                    // If we successfully loaded THSarabunNew (which is usually CP874 mapped), convert UTF-8.
-                    if ($fontLoaded) {
-                        // Attempt conversion. If iconv fails, stick to original.
-                        $converted = @iconv('UTF-8', 'cp874', $text);
-                        if ($converted !== false) {
-                            $text = $converted;
-                        }
-                    } else {
-                        // Using Arial (ISO-8859-1). Convert or strip incompatible chars?
-                        // For safety, convert to ISO-8859-1//TRANSLIT
-                        $text = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
+                        $sigPath = ($item['signatureGroup'] ?? 'employee') === 'employer'
+                                   ? $tempEmprSigPath
+                                   : $tempEmpSigPath;
+
+                        // Place image
+                        $pdf->Image($sigPath, $x, $y, $w, $h, 'PNG');
+                        continue;
                     }
 
-                    $pdf->Write(0, $text);
+                    // Handle Text
+                    $text = '';
+                    if ($item['type'] === 'static') {
+                        $text = $item['text'] ?? '';
+                    } elseif ($item['type'] === 'db') {
+                        $text = $this->resolveValue($employee, $item['key']);
+                    }
+
+                    if ($text) {
+                        $pdf->SetXY($x, $y);
+
+                        // Font Size Handling
+                        $fontSize = $item['fontSize'] ?? 12;
+                        $pdf->SetFontSize($fontSize);
+
+                        if ($fontLoaded) {
+                            $converted = @iconv('UTF-8', 'cp874', $text);
+                            if ($converted !== false) {
+                                $text = $converted;
+                            }
+                        } else {
+                            $text = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
+                        }
+
+                        $pdf->Write(0, $text);
+                    }
                 }
             }
+        } finally {
+            // Cleanup temp files
+            if (file_exists($tempEmpSigPath)) unlink($tempEmpSigPath);
+            if (file_exists($tempEmprSigPath)) unlink($tempEmprSigPath);
         }
 
         return $pdf->Output('S');
@@ -184,12 +209,17 @@ class PdfGeneratorService
 
         Storage::disk('public')->put($filename, $content);
 
-        $doc = $employee->generatedDocuments()->updateOrCreate(
-            ['document_name' => $slotName],
+        // Ensure we check if relation exists or model exists
+        // Assuming EmployeeGeneratedDocument model exists based on trace
+        $doc = \App\Models\EmployeeGeneratedDocument::updateOrCreate(
+            [
+                'employee_id' => $employee->id,
+                'document_name' => $slotName
+            ],
             [
                 'file_path' => $filename,
                 'generated_at' => now(),
-                'created_by' => auth()->id(),
+                'created_by' => auth()->id() ?? 0,
             ]
         );
 
