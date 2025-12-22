@@ -58,23 +58,25 @@
 
                         <!-- Slot Name Configuration -->
                         <div class="mb-4 p-3 bg-light rounded border" x-show="outputType === 'save_to_slot'" x-transition>
-                            <label class="form-label fw-bold">Slot Name</label>
+                            <label class="form-label fw-bold">Select Attachment Slot</label>
                             <p class="text-sm text-gray-500 mb-2">
-                                Enter a name for this document slot (e.g., "Work Permit 2024").
-                                If a slot with this name exists, it will be overwritten.
+                                Choose where to attach this document on the record.
+                                Note: This will overwrite any existing file in the selected slot.
                             </p>
 
-                            <!-- Autocomplete / Suggestions could go here -->
-                            <input type="text" name="slot_name" class="form-control"
-                                   :required="outputType === 'save_to_slot'"
-                                   placeholder="e.g. Visa Application Form"
-                                   list="slotSuggestions">
-
-                            <datalist id="slotSuggestions">
-                                @foreach($existingSlots as $slot)
-                                    <option value="{{ $slot }}">
-                                @endforeach
-                            </datalist>
+                            <select name="slot_name" class="form-select" :required="outputType === 'save_to_slot'">
+                                <option value="">-- Select Slot --</option>
+                                <optgroup label="Employee Documents">
+                                    @for($i = 1; $i <= 10; $i++)
+                                        <option value="employee_doc_{{ $i }}">Employee Other Document {{ $i }}</option>
+                                    @endfor
+                                </optgroup>
+                                <optgroup label="Employer Documents">
+                                    @for($i = 1; $i <= 3; $i++)
+                                        <option value="employer_doc_other_{{ $i }}">Employer Other Document {{ $i }}</option>
+                                    @endfor
+                                </optgroup>
+                            </select>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
