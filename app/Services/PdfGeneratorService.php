@@ -25,7 +25,7 @@ class PdfGeneratorService
 
     public function generateForEmployees(PdfTemplate $template, Collection $employees, $options = [])
     {
-        // Options: 'output_type' => 'download' | 'save_to_slot' | 'raw_content'
+        // Options: 'output_type' => 'download' | 'save_to_slot'
         //          'slot_name' => string (required if save_to_slot)
 
         $outputType = $options['output_type'] ?? 'download';
@@ -33,20 +33,12 @@ class PdfGeneratorService
 
         foreach ($employees as $employee) {
             $pdfContent = $this->generateSinglePdf($template, $employee);
-            $filename = $this->generateFilename($template, $employee);
 
             if ($outputType === 'save_to_slot') {
-                // Legacy support (though controller now handles saving directly)
                 $this->saveToSlot($employee, $pdfContent, $options['slot_name']);
                 $results[] = ['employee' => $employee->id, 'status' => 'saved'];
-            } elseif ($outputType === 'raw_content') {
-                $results[] = [
-                    'employee_id' => $employee->id,
-                    'filename' => $filename,
-                    'content' => $pdfContent
-                ];
             } else {
-                // Download
+                $filename = $this->generateFilename($template, $employee);
                 $results[] = ['filename' => $filename, 'content' => $pdfContent];
             }
         }
@@ -215,11 +207,12 @@ class PdfGeneratorService
 
     protected function saveToSlot(Employee $employee, $content, $slotName)
     {
-        // This is kept for legacy compatibility but is largely bypassed by 'raw_content' option
         $filename = 'generated/' . $employee->id . '/' . Str::slug($slotName) . '_' . time() . '.pdf';
 
         Storage::disk('public')->put($filename, $content);
 
+        // Ensure we check if relation exists or model exists
+        // Assuming EmployeeGeneratedDocument model exists based on trace
         $doc = \App\Models\EmployeeGeneratedDocument::updateOrCreate(
             [
                 'employee_id' => $employee->id,
