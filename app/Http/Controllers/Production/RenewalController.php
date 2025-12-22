@@ -66,12 +66,14 @@ class RenewalController extends Controller
                 }
 
                 // Not Started Logic
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                // IMPORTANT: Filter by 'renewal' type steps
+                if ($stepOneId && !$emp->registrationSteps->where('type', 'renewal')->contains('id', $stepOneId)) {
                     $notStartedCount++;
                 }
 
                 // Step Stats (Highest Step)
-                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                // IMPORTANT: Filter by 'renewal' type steps
+                $highestStep = $emp->registrationSteps->where('type', 'renewal')->sortByDesc('order')->first();
                 if ($highestStep && isset($stepStats[$highestStep->id])) {
                     $stepStats[$highestStep->id]++;
                 }
@@ -161,11 +163,11 @@ class RenewalController extends Controller
                     $empSavedCount++;
                 }
 
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                if ($stepOneId && !$emp->registrationSteps->where('type', 'renewal')->contains('id', $stepOneId)) {
                     $empNotStarted++;
                 }
 
-                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                $highestStep = $emp->registrationSteps->where('type', 'renewal')->sortByDesc('order')->first();
                 if ($highestStep && isset($empStats[$highestStep->id])) {
                     $empStats[$highestStep->id]++;
                 }
@@ -241,7 +243,7 @@ class RenewalController extends Controller
             $filterStepId = $request->filter;
             $employees = $employees->filter(function($emp) use ($filterStepId) {
                 if ($emp->status === 'renewal_cancelled') return false;
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                $highest = $emp->registrationSteps->where('type', 'renewal')->sortByDesc('order')->first();
                 return $highest && $highest->id == $filterStepId;
             });
         }
@@ -616,10 +618,10 @@ class RenewalController extends Controller
             $globalNotStarted = 0;
 
             foreach ($allEmployees as $emp) {
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                if ($stepOneId && !$emp->registrationSteps->where('type', 'renewal')->contains('id', $stepOneId)) {
                     $globalNotStarted++;
                 }
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                $highest = $emp->registrationSteps->where('type', 'renewal')->sortByDesc('order')->first();
                 if ($highest && isset($globalStats[$highest->id])) {
                     $globalStats[$highest->id]++;
                 }
@@ -645,10 +647,10 @@ class RenewalController extends Controller
             $employerNotStarted = 0;
 
             foreach ($employerEmployees as $emp) {
-                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                 if ($stepOneId && !$emp->registrationSteps->where('type', 'renewal')->contains('id', $stepOneId)) {
                      $employerNotStarted++;
                  }
-                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                 $highest = $emp->registrationSteps->where('type', 'renewal')->sortByDesc('order')->first();
                  if ($highest && isset($employerStats[$highest->id])) {
                      $employerStats[$highest->id]++;
                  }

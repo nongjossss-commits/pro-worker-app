@@ -18,7 +18,9 @@
     }
 
     // Determine Highest Completed Step for Filtering
-    $highestStep = $employee->registrationSteps->sortByDesc('order')->first();
+    // Filter steps to only include those relevant to the current view (passed via $steps)
+    $validStepIds = $steps->pluck('id');
+    $highestStep = $employee->registrationSteps->whereIn('id', $validStepIds)->sortByDesc('order')->first();
     $highestStepId = $highestStep ? $highestStep->id : '';
     // Determine if "Not Started" (only if active status and no steps)
     $isNotStarted = (!$isCompleted && !$isCancelled && !$highestStep);
