@@ -44,7 +44,7 @@
         @include('tickets.partials._basket_form_inputs')
 
         {{-- Hidden File Input for general attachments --}}
-        <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
+        <input type="file" multiple class="d-none" id="general-attachment-input" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
 
         <div class="row">
             {{-- Column 1: Main Information (Left Side) --}}
@@ -129,9 +129,14 @@
                             <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading || !contextEmployerId" title="กรุณาเลือกนายจ้างก่อน">
                                 <i class="bi bi-person-plus me-2"></i> แจ้งเข้าลูกจ้างใหม่
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" @click="triggerFileInput" :disabled="isUploading" title="แนบไฟล์ทั่วไป">
-                                <i class="bi bi-file-earmark-arrow-up me-2"></i> แนบไฟล์/รูปภาพ
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerScanner" :disabled="isUploading" title="สแกนเอกสาร">
+                                    <i class="bi bi-camera me-2"></i> สแกน
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerFileInput" :disabled="isUploading" title="แนบไฟล์ทั่วไป">
+                                    <i class="bi bi-file-earmark-arrow-up me-2"></i> ไฟล์
+                                </button>
+                            </div>
                         </div>
                         <hr>
 

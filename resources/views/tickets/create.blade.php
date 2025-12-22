@@ -37,7 +37,7 @@
         @include('tickets.partials._basket_form_inputs')
 
         {{-- V2.4-S7: Hidden File Input (Triggered by the button) --}}
-        <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
+        <input type="file" multiple class="d-none" id="general-attachment-input" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
 
         <div class="row">
             {{-- Column 1: Main Information (Left Side) --}}
@@ -87,9 +87,14 @@
                             <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
                                 <i class="bi bi-person-plus me-2"></i> {{ __('Attach New Employee/Register') }}
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" @click="triggerFileInput" :disabled="isUploading">
-                                <i class="bi bi-file-earmark-arrow-up me-2"></i> {{ __('Attach File/Image') }}
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerScanner" :disabled="isUploading">
+                                    <i class="bi bi-camera me-2"></i> {{ __('Scan') }}
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerFileInput" :disabled="isUploading">
+                                    <i class="bi bi-file-earmark-arrow-up me-2"></i> {{ __('Attach File') }}
+                                </button>
+                            </div>
                         </div>
                         <hr>
 

@@ -397,62 +397,41 @@
 <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
 <hr class="mb-4">
 <div class="row">
-    <div class="col-md-4 mb-3"><label for="employee_doc_1" class="form-label">1. พาสปอร์ต</label><input type="file" class="form-control form-control-sm" id="employee_doc_1" name="employee_doc_1"></div>
-    <div class="col-md-4 mb-3"><label for="employee_doc_2" class="form-label">2. วีซ่า</label><input type="file" class="form-control form-control-sm" id="employee_doc_2" name="employee_doc_2"></div>
-    <div class="col-md-4 mb-3"><label for="employee_doc_3" class="form-label">3. ใบเสร็จ Work Permit</label><input type="file" class="form-control form-control-sm" id="employee_doc_3" name="employee_doc_3"></div>
-    <div class="col-md-4 mb-3"><label for="employee_doc_4" class="form-label">4. บัตรชมพู</label><input type="file" class="form-control form-control-sm" id="employee_doc_4" name="employee_doc_4"></div>
-    <div class="col-md-4 mb-3"><label for="employee_doc_5" class="form-label">5. ทร. 38</label><input type="file" class="form-control form-control-sm" id="employee_doc_5" name="employee_doc_5"></div>
-    <div class="col-md-4 mb-3"><label for="employee_doc_6" class="form-label">6. รายงานตัว 90 วัน</label><input type="file" class="form-control form-control-sm" id="employee_doc_6" name="employee_doc_6"></div>
-    <div class="col-md-4 mb-3"><label for="employee_doc_7" class="form-label">7. ใบแจ้งที่พักอาศัย</label><input type="file" class="form-control form-control-sm" id="employee_doc_7" name="employee_doc_7"></div>
-    <div class="col-md-4 mb-3"><label for="employee_doc_8" class="form-label">8. เอกสารบ้านเกิด</label><input type="file" class="form-control form-control-sm" id="employee_doc_8" name="employee_doc_8"></div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_9" class="form-label">9. เอกสารอื่นๆ 1</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_9" name="employee_doc_9">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_1_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_1_desc') }}">
-    </div>
+    @php
+        $docs = [
+            1 => '1. พาสปอร์ต', 2 => '2. วีซ่า', 3 => '3. ใบเสร็จ Work Permit', 4 => '4. บัตรชมพู',
+            5 => '5. ทร. 38', 6 => '6. รายงานตัว 90 วัน', 7 => '7. ใบแจ้งที่พักอาศัย', 8 => '8. เอกสารบ้านเกิด'
+        ];
+    @endphp
+
+    @foreach($docs as $i => $label)
+        <div class="col-md-4 mb-3">
+            <label for="employee_doc_{{ $i }}" class="form-label">{{ $label }}</label>
+            <div class="input-group input-group-sm">
+                <input type="file" class="form-control form-control-sm" id="employee_doc_{{ $i }}" name="employee_doc_{{ $i }}">
+                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employee_doc_{{ $i }}' } }))">
+                    <i class="bi bi-camera"></i>
+                </button>
+            </div>
+        </div>
+    @endforeach
+
+    @for($i = 1; $i <= 10; $i++)
+        @php
+            $docIndex = $i + 8;
+            $fieldName = "employee_doc_" . $docIndex;
+            $descName = "other_doc_" . $i . "_desc";
+            $label = "เอกสารอื่นๆ " . $i; // Matches 9 to 18
+        @endphp
         <div class="col-md-6 mb-3">
-        <label for="employee_doc_10" class="form-label">10. เอกสารอื่นๆ 2</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_10" name="employee_doc_10">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_2_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_2_desc') }}">
-    </div>
-        <div class="col-md-6 mb-3">
-        <label for="employee_doc_11" class="form-label">11. เอกสารอื่นๆ 3</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_11" name="employee_doc_11">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_3_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_3_desc') }}">
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_12" class="form-label">12. เอกสารอื่นๆ 4</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_12" name="employee_doc_12">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_4_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_4_desc') }}">
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_13" class="form-label">13. เอกสารอื่นๆ 5</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_13" name="employee_doc_13">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_5_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_5_desc') }}">
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_14" class="form-label">14. เอกสารอื่นๆ 6</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_14" name="employee_doc_14">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_6_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_6_desc') }}">
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_15" class="form-label">15. เอกสารอื่นๆ 7</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_15" name="employee_doc_15">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_7_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_7_desc') }}">
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_16" class="form-label">16. เอกสารอื่นๆ 8</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_16" name="employee_doc_16">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_8_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_8_desc') }}">
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_17" class="form-label">17. เอกสารอื่นๆ 9</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_17" name="employee_doc_17">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_9_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_9_desc') }}">
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="employee_doc_18" class="form-label">18. เอกสารอื่นๆ 10</label>
-        <input type="file" class="form-control form-control-sm" id="employee_doc_18" name="employee_doc_18">
-        <input type="text" class="form-control form-control-sm mt-2" name="other_doc_10_desc" placeholder="คำอธิบาย..." value="{{ old('other_doc_10_desc') }}">
-    </div>
+            <label for="{{ $fieldName }}" class="form-label">{{ $docIndex }}. {{ $label }}</label>
+            <div class="input-group input-group-sm">
+                <input type="file" class="form-control form-control-sm" id="{{ $fieldName }}" name="{{ $fieldName }}">
+                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $fieldName }}' } }))">
+                    <i class="bi bi-camera"></i>
+                </button>
+            </div>
+            <input type="text" class="form-control form-control-sm mt-2" name="{{ $descName }}" placeholder="คำอธิบาย..." value="{{ old($descName) }}">
+        </div>
+    @endfor
 </div>
