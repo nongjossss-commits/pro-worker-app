@@ -307,10 +307,14 @@
     </form>
 
     <script>
-        // Use DOMContentLoaded to ensure robust element finding
-        document.addEventListener('DOMContentLoaded', function() {
+        // Define initialization function globally so it can be called after AJAX injection
+        window.initBulkEditForm = function() {
             const container = document.getElementById('bulk-edit-wrapper');
             if (!container) return;
+
+            // Prevent double initialization if listeners are already attached
+            if (container.dataset.initialized === 'true') return;
+            container.dataset.initialized = 'true';
 
             console.log('Bulk Edit Script Initialized');
 
@@ -391,7 +395,10 @@
             let cropper = null;
 
             const cropperModalEl = container.querySelector('#cropperModal'); // Scope to container
-            const cropperModal = new bootstrap.Modal(cropperModalEl);
+            let cropperModal = bootstrap.Modal.getInstance(cropperModalEl);
+            if (!cropperModal) {
+                cropperModal = new bootstrap.Modal(cropperModalEl);
+            }
             const imageToCrop = container.querySelector('#imageToCrop');
             const cropImageBtn = container.querySelector('#cropImageBtn');
             const globalTriggerFile = container.querySelector('#globalTriggerFile');
@@ -529,7 +536,11 @@
             // --- 4. BATCH SAVE LOGIC (Fixing the 20/100 Limit) ---
             const form = container.querySelector('#bulkEditForm');
             if (form) {
-                form.addEventListener('submit', function(e) {
+                // Remove existing listener to prevent duplicates if re-initialized
+                const newForm = form.cloneNode(true);
+                form.parentNode.replaceChild(newForm, form);
+
+                newForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     startBatchUpload(this);
                 });
@@ -553,7 +564,12 @@
 
                 // 2. Show Progress Modal
                 const progressModalEl = container.querySelector('#progressModal');
-                const progressModal = new bootstrap.Modal(progressModalEl);
+                // Check if modal instance already exists
+                let progressModal = bootstrap.Modal.getInstance(progressModalEl);
+                if (!progressModal) {
+                    progressModal = new bootstrap.Modal(progressModalEl);
+                }
+
                 const progressBar = container.querySelector('#saveProgressBar');
                 const progressText = container.querySelector('#saveProgressText');
                 const errorText = container.querySelector('#saveErrorText');
@@ -650,7 +666,7 @@
                     }, 1000);
                 }
             }
-        });
+        };
     </script>
 
     {{-- Cropper Modal (Moved to end for Z-Index safety) --}}
@@ -707,4 +723,12 @@
     <input type="file" style="display:none;" id="globalTriggerCamera" accept="image/*" capture="environment">
 
 </div>
+<script>
+    // Auto-init if not loaded via AJAX (fallback)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', window.initBulkEditForm);
+    } else {
+        window.initBulkEditForm();
+    }
+</script>
 @endsection

@@ -958,30 +958,72 @@
             const checkboxes = document.querySelectorAll(`.employee-checkbox[data-employer-id="${employerId}"]`);
 
             checkboxes.forEach(cb => {
-                // Check if the wrapper row is visible
+                // Determine if employee is eligible for selection
                 const cardWrapper = document.getElementById(`employee-card-${cb.value}`);
-                const isVisible = cardWrapper && !cardWrapper.classList.contains('d-none');
+                // Only filter by d-none if it was applied by the filter system (not just because accordion is closed)
+                // The filter system applies d-none to non-matching items.
+                // An accordion collapse applies display:none to the parent container, not the item itself usually,
+                // but if the item itself has d-none, it's filtered out.
+                const isFilteredOut = cardWrapper && cardWrapper.classList.contains('d-none');
 
-                // Explicitly check status data attribute to prevent selecting non-pending (Saved/Cancelled)
-                // even if they are somehow visible or accessible.
-                const status = cardWrapper.dataset.status;
-                const isPending = (status === 'registration_pending');
+                // Explicitly check status data attribute.
+                // Renewal uses 'renewal_pending' status primarily.
+                // Also check 'registration_pending' for compatibility if reused.
+                const status = cardWrapper ? cardWrapper.dataset.status : '';
+                const isPending = (status === 'renewal_pending' || status === 'registration_pending');
 
-                if (isVisible && isPending) {
+                if (!isFilteredOut && isPending) {
                     if(cb.checked !== isChecked) {
                         cb.checked = isChecked;
                         // Dispatch change event to trigger global listener
                         cb.dispatchEvent(new Event('change', { bubbles: true }));
                     }
-                } else {
-                    // If hidden or not pending, do not select.
-                    // If unchecking the master, uncheck these too to be safe/clean state.
-                    if (!isChecked) {
-                        cb.checked = false;
-                        cb.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
                 }
             });
+        }
+    });
+
+    // Global Select All Listener (Custom for Renewal Page)
+    document.addEventListener('change', function(e) {
+        if (e.target.id === 'select-all-checkbox') {
+            const isChecked = e.target.checked;
+
+            // 1. Trigger all Employer Select All checkboxes
+            const employerSelectAlls = document.querySelectorAll('.employer-select-all');
+            employerSelectAlls.forEach(masterCb => {
+                masterCb.checked = isChecked;
+                masterCb.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        }
+    });
+
+    // Sync Employer Select All state when individual employees change
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('employee-checkbox')) {
+            const employerId = e.target.dataset.employerId;
+            if (!employerId) return;
+
+            const masterCb = document.querySelector(`.employer-select-all[data-employer-id="${employerId}"]`);
+            if (masterCb) {
+                const allCheckboxes = document.querySelectorAll(`.employee-checkbox[data-employer-id="${employerId}"]`);
+                // Filter only relevant ones (pending & visible) to check against
+                const relevantCheckboxes = Array.from(allCheckboxes).filter(cb => {
+                    const cardWrapper = document.getElementById(`employee-card-${cb.value}`);
+                    const isFilteredOut = cardWrapper && cardWrapper.classList.contains('d-none');
+                    const status = cardWrapper ? cardWrapper.dataset.status : '';
+                    const isPending = (status === 'renewal_pending' || status === 'registration_pending');
+                    return !isFilteredOut && isPending;
+                });
+
+                if (relevantCheckboxes.length > 0) {
+                    const allChecked = relevantCheckboxes.every(cb => cb.checked);
+                    masterCb.checked = allChecked;
+                    masterCb.indeterminate = !allChecked && relevantCheckboxes.some(cb => cb.checked);
+                } else {
+                    masterCb.checked = false;
+                    masterCb.indeterminate = false;
+                }
+            }
         }
     });
 

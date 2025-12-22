@@ -611,6 +611,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
                 actionModalBody.appendChild(newScript);
              });
+
+            // Trigger initialization for the bulk edit form
+            if (typeof window.initBulkEditForm === 'function') {
+                window.initBulkEditForm();
+            }
         });
     }
 
