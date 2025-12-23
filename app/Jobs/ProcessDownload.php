@@ -146,10 +146,10 @@ class ProcessDownload implements ShouldQueue
                 $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
                 $rawName = $prefix . $employee->employeeNameEn;
             } else {
-                $rawName = $employee->employeeNameTh ?? 'Employee_' . $employee->id;
+                $rawName = $employee->employeeNameTh ?? 'Employee';
             }
 
-            $safeName = $this->sanitizeFileName($rawName);
+            $safeName = $this->sanitizeFileName($rawName) . '_' . $employee->id;
 
             // If singleFolder is true, we use an empty folder name (root),
             // but we might want to prefix the file with the employee name to avoid collisions.
