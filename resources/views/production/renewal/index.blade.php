@@ -1092,7 +1092,7 @@
         e.preventDefault();
         const name = document.getElementById('newStepName').value;
 
-        fetch('{{ route("production.registration.steps.store") }}', {
+        fetch('{{ route("production.renewal.steps.store") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ name: name })
@@ -1122,7 +1122,7 @@
             confirmButtonText: '{{ __('Yes, delete it!') }}'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`/production/registration/steps/${id}`, {
+                fetch(`/production/renewal/steps/${id}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -1149,7 +1149,7 @@
         const item = document.getElementById(`step-item-${id}`);
         const newName = item.querySelector('.step-edit-input').value;
 
-        fetch(`/production/registration/steps/${id}`, {
+        fetch(`/production/renewal/steps/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ name: newName })
@@ -1481,7 +1481,7 @@
         }
 
         // Reuse registration progress route for now as steps are shared
-        fetch(`/production/registration/progress/${employeeId}` + window.location.search, {
+        fetch(`/production/renewal/progress/${employeeId}` + window.location.search, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ step_id: stepId, completed: completed })
