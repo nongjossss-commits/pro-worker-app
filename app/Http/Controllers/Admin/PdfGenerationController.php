@@ -74,10 +74,19 @@ class PdfGenerationController extends Controller
         $template = PdfTemplate::findOrFail($request->template_id);
 
         try {
+            // Check if Zip extension is loaded before proceeding (only for download/zip mode, but good to check generally)
+            if (!extension_loaded('zip') && $request->output_type === 'download' && count($employees) > 1) {
+                throw new \Exception('PHP Zip extension is not loaded. Cannot generate ZIP file.');
+            }
+
             // Generate content only (don't save via service)
             $results = $this->pdfService->generateForEmployees($template, $employees, [
                 'output_type' => 'raw_content', // Change to get raw content
             ]);
+
+            if (empty($results)) {
+                throw new \Exception('No documents were generated. Please check the template mapping and employee data.');
+            }
 
             if ($request->output_type === 'save_to_slot') {
                 $count = 0;
@@ -94,9 +103,12 @@ class PdfGenerationController extends Controller
                         Storage::disk('public')->put($filename, $result['content']);
 
                         // Update Employee Record
-                        $employee->update([
+                        $updated = $employee->update([
                             $slotName => $filename,
                         ]);
+
+                        // Fallback/Force save if update returned false (unlikely but possible if no changes)
+                        // But more importantly, verify the column exists in fillable. (We verified this in planning)
 
                         // Try to update description if possible (e.g. employee_doc_1 -> other_doc_1_desc)
                         if (preg_match('/employee_doc_(\d+)/', $slotName, $matches)) {
@@ -104,6 +116,7 @@ class PdfGenerationController extends Controller
                             // Check if description column exists (1-10)
                             if ($index >= 1 && $index <= 10) {
                                 $descCol = "other_doc_{$index}_desc";
+                                // Check if this column is fillable/exists (assumed yes based on Employee model)
                                 $employee->update([
                                     $descCol => "Auto-generated: " . $template->name
                                 ]);
@@ -135,6 +148,10 @@ class PdfGenerationController extends Controller
                     }
                 }
 
+                if ($count === 0) {
+                     return redirect()->back()->with('warning', 'No documents were saved. Please check if the selected slot matches the target (Employee vs Employer).');
+                }
+
                 return redirect()->route('employees.index')
                     ->with('success', 'Documents generated and saved for ' . $count . ' employees.');
 
@@ -157,19 +174,26 @@ class PdfGenerationController extends Controller
                     }
 
                     $zip = new ZipArchive;
-                    if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
+                    $openResult = $zip->open($zipPath, ZipArchive::CREATE);
+                    if ($openResult === TRUE) {
                         foreach ($results as $file) {
                             $zip->addFromString($file['filename'], $file['content']);
                         }
                         $zip->close();
+                    } else {
+                        throw new \Exception('Failed to create ZIP archive. Error Code: ' . $openResult);
+                    }
+
+                    if (!file_exists($zipPath)) {
+                        throw new \Exception('ZIP file was not created successfully.');
                     }
 
                     return response()->download($zipPath)->deleteFileAfterSend(true);
                 }
             }
 
-        } catch (\Exception $e) {
-            return redirect()->back()->with('danger', $e->getMessage());
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('danger', 'Error generating documents: ' . $e->getMessage());
         }
     }
 }

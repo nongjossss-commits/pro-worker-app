@@ -32,22 +32,30 @@ class PdfGeneratorService
         $results = [];
 
         foreach ($employees as $employee) {
-            $pdfContent = $this->generateSinglePdf($template, $employee);
-            $filename = $this->generateFilename($template, $employee);
+            try {
+                $pdfContent = $this->generateSinglePdf($template, $employee);
+                $filename = $this->generateFilename($template, $employee);
 
-            if ($outputType === 'save_to_slot') {
-                // Legacy support (though controller now handles saving directly)
-                $this->saveToSlot($employee, $pdfContent, $options['slot_name']);
-                $results[] = ['employee' => $employee->id, 'status' => 'saved'];
-            } elseif ($outputType === 'raw_content') {
-                $results[] = [
-                    'employee_id' => $employee->id,
-                    'filename' => $filename,
-                    'content' => $pdfContent
-                ];
-            } else {
-                // Download
-                $results[] = ['filename' => $filename, 'content' => $pdfContent];
+                if ($outputType === 'save_to_slot') {
+                    // Legacy support (though controller now handles saving directly)
+                    $this->saveToSlot($employee, $pdfContent, $options['slot_name']);
+                    $results[] = ['employee' => $employee->id, 'status' => 'saved'];
+                } elseif ($outputType === 'raw_content') {
+                    $results[] = [
+                        'employee_id' => $employee->id,
+                        'filename' => $filename,
+                        'content' => $pdfContent
+                    ];
+                } else {
+                    // Download
+                    $results[] = ['filename' => $filename, 'content' => $pdfContent];
+                }
+            } catch (\Exception $e) {
+                // If one employee fails, we can either abort everything or skip.
+                // Aborting ensures the user knows something went wrong.
+                // However, with clearer error messages, we can improve this loop.
+                // For now, let's rethrow with context.
+                throw new \Exception("Error processing employee {$employee->employeeNameEn} (ID: {$employee->id}): " . $e->getMessage());
             }
         }
 
