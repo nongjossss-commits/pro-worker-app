@@ -344,7 +344,12 @@
             <label for="insurance_document_path_private" class="form-label">แนบไฟล์เอกสารประกัน
                 @if(isset($missingFields) && in_array('insurance_document_path_private', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            @if($employee->insurance_document_path_private) <div class="mb-2"><a href="{{ asset('storage/' . $employee->insurance_document_path_private) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a></div> @endif
+            @if($employee->insurance_document_path_private)
+                <div class="mb-2 d-flex gap-1">
+                    <a href="{{ asset('storage/' . $employee->insurance_document_path_private) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                </div>
+            @endif
             <input type="file" class="form-control form-control-sm" name="insurance_document_path_private">
         </div>
     </div>
@@ -393,8 +398,9 @@
                     @if(isset($missingFields) && in_array($docField, $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
                 </label>
                 @if($employee->{$docField})
-                    <div class="mb-2">
+                    <div class="mb-2 d-flex gap-1">
                         <a href="{{ asset('storage/' . $employee->{$docField}) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                        <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => $docField]) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @endif
                 <div class="input-group input-group-sm">
