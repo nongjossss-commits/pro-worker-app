@@ -536,4 +536,41 @@ public function edit(Request $request, Employer $employer)
         return redirect()->route('employers.index')
                          ->with('highlight_employer', $employer->id);
     }
+
+    /**
+     * Download a document as PDF (converting images if necessary).
+     */
+    public function downloadDocumentAsPdf(Employer $employer, $field)
+    {
+        $allowedFields = [
+            'employer_doc_company',
+            'employer_doc_lease',
+            'employer_doc_construction',
+            'employer_doc_other_1',
+            'employer_doc_other_2',
+            'employer_doc_other_3'
+        ];
+
+        if (!in_array($field, $allowedFields)) {
+            abort(404, 'Document type not found.');
+        }
+
+        $this->authorize('view-employers');
+
+        $filePath = $employer->{$field};
+        $disk = 'public';
+
+        if (!$filePath || !Storage::disk($disk)->exists($filePath)) {
+            abort(404, 'File not found.');
+        }
+
+        $mimeType = Storage::disk($disk)->mimeType($filePath);
+
+        // If it's already a PDF, download it directly
+        if ($mimeType === 'application/pdf') {
+            return Storage::disk($disk)->download($filePath);
+        }
+
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath);
+    }
 }

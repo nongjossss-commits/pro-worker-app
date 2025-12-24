@@ -183,8 +183,9 @@
             <div class="col-md-6">
                 <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }}</label>
                 @if($employer->employer_doc_company)
-                    <div class="mb-2">
-                         <a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                         <div class="mb-2 d-flex gap-1">
+                             <a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                             <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @endif
                 <div class="input-group input-group-sm">
@@ -209,8 +210,9 @@
             <div class="col-md-6">
                 <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }}</label>
                 @if($employer->employer_doc_lease)
-                    <div class="mb-2">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                        <div class="mb-2 d-flex gap-1">
+                            <a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @endif
                 <div class="input-group input-group-sm">
@@ -226,8 +228,9 @@
             <div class="col-md-6">
                 <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }}</label>
                 @if($employer->employer_doc_construction)
-                    <div class="mb-2">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                        <div class="mb-2 d-flex gap-1">
+                            <a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @endif
                 <div class="input-group input-group-sm">
@@ -245,8 +248,9 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1</label>
                 @if($employer->employer_doc_other_1)
-                    <div class="mb-2">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                        <div class="mb-2 d-flex gap-1">
+                            <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @endif
                 <div class="input-group input-group-sm">
@@ -263,8 +267,9 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2</label>
                 @if($employer->employer_doc_other_2)
-                    <div class="mb-2">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                        <div class="mb-2 d-flex gap-1">
+                            <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @endif
                 <div class="input-group input-group-sm">
@@ -281,8 +286,9 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3</label>
                 @if($employer->employer_doc_other_3)
-                    <div class="mb-2">
-                        <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                        <div class="mb-2 d-flex gap-1">
+                            <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @endif
                 <div class="input-group input-group-sm">

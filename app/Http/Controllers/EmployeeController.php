@@ -832,76 +832,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return Storage::disk($disk)->download($filePath);
         }
 
-        // If it's an image, convert to PDF
-        if (str_starts_with($mimeType, 'image/')) {
-            $fullPath = Storage::disk($disk)->path($filePath);
-
-            // Create PDF using FPDF (assuming it's available via service container or global class)
-            // Note: Since 'setasign/fpdf' is in composer, FPDF class should be available.
-            $pdf = new \FPDF();
-            $pdf->AddPage();
-
-            // Get image dimensions
-            list($width, $height) = getimagesize($fullPath);
-
-            // Calculate dimensions to fit in A4 (210mm x 297mm)
-            // A4 size in mm
-            $pdfWidth = 210;
-            $pdfHeight = 297;
-
-            // Margins (10mm)
-            $margin = 10;
-            $maxWidth = $pdfWidth - (2 * $margin);
-            $maxHeight = $pdfHeight - (2 * $margin);
-
-            // Calculate scale factor
-            $widthScale = $maxWidth / $width;
-            $heightScale = $maxHeight / $height;
-            $scale = min($widthScale, $heightScale);
-
-            // Convert pixels to mm roughly (approximate since getimagesize returns pixels)
-            // However, FPDF Image() takes width/height in user units (mm by default).
-            // So we need to ensure we pass the correct scaled width/height.
-            // But wait, FPDF's Image() method logic:
-            // If we provide width (and 0 height), it scales proportionally.
-            // Let's just fit it to width unless it exceeds height.
-
-            // Logic: Calculate new dimensions in mm based on pixels is tricky without DPI.
-            // Better approach: Let FPDF handle scaling by restricting width/height.
-
-            // Convert pixels to mm? No, just use the ratio.
-            // FPDF AddPage defaults to A4 portrait.
-            // We want to fit the image into the page area.
-
-            $finalW = 0;
-            $finalH = 0;
-
-            // Simple logic:
-            // 1. Convert px to mm assuming 72dpi? Or just use ratio.
-            // Actually, we can just say: "Fit this image into this box ($maxWidth x $maxHeight)".
-            // FPDF doesn't have a "fit" helper, we calculate it.
-            // We need the aspect ratio.
-            $aspectRatio = $width / $height;
-
-            if ($maxWidth / $maxHeight > $aspectRatio) {
-                // Limited by height
-                $finalH = $maxHeight;
-                $finalW = $maxHeight * $aspectRatio;
-            } else {
-                // Limited by width
-                $finalW = $maxWidth;
-                $finalH = $maxWidth / $aspectRatio;
-            }
-
-            $pdf->Image($fullPath, $margin, $margin, $finalW, $finalH);
-
-            return response($pdf->Output('S', basename($filePath) . '.pdf'))
-                ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'attachment; filename="' . basename($filePath) . '.pdf"');
-        }
-
-        // If unsupported type, just download original
-        return Storage::disk($disk)->download($filePath);
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath);
     }
 
     /**

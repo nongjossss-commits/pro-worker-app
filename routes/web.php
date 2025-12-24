@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
     Route::post('employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
+    Route::get('/employers/{employer}/documents/{field}/pdf', [EmployerController::class, 'downloadDocumentAsPdf'])->name('employers.documents.pdf');
     Route::post('employees/{employee}/reinstate', [EmployeeController::class, 'reinstate'])->name('employees.reinstate');
     Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
     Route::delete('/employees/{employee}/force-delete', [EmployeeController::class, 'forceDelete'])->name('employees.forceDelete')->withTrashed();
@@ -79,6 +80,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->name('employees.history');
     Route::get('/employees/{employee}/documents/{field}', [EmployeeController::class, 'serveDocument'])->name('employees.documents.serve');
     Route::get('/employees/{employee}/documents/{field}/pdf', [EmployeeController::class, 'downloadDocumentAsPdf'])->name('employees.documents.pdf');
+    Route::get('custom-fields/{id}/pdf', [App\Http\Controllers\CustomFieldController::class, 'downloadCustomFieldPdf'])->name('custom-fields.pdf');
 
     // Import Routes
     Route::get('employees/import', [App\Http\Controllers\ImportEmployeeController::class, 'index'])->name('employees.import_view');

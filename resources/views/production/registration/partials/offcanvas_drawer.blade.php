@@ -58,9 +58,14 @@
                             <i class="bi bi-paperclip text-muted"></i>
                             <span class="small text-secondary text-truncate" style="max-width: 150px;">Attachment</span>
                         </div>
-                        <a href="/storage/${field.file_path}" target="_blank" class="btn btn-sm btn-success text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="View File">
-                            <i class="bi bi-eye-fill"></i>
-                        </a>
+                        <div class="d-flex gap-1">
+                            <a href="/storage/${field.file_path}" target="_blank" class="btn btn-sm btn-success text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="View File">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                            <a href="/custom-fields/${field.id}/pdf?type=${context}" target="_blank" class="btn btn-sm btn-danger text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="Download PDF">
+                                <i class="bi bi-file-earmark-pdf-fill"></i>
+                            </a>
+                        </div>
                     </div>
                     ${field.field_value ? `<div class="small text-muted fst-italic text-break mt-1">${field.field_value}</div>` : ''}
                  `;
