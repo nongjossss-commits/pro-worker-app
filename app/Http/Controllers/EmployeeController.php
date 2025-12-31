@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class EmployeeController extends Controller
 {
@@ -1323,55 +1329,104 @@ public function create(Request $request) // เพิ่ม Request $request เ
             array_unshift($selectedColumns, 'employeePhoto');
         }
 
-        // Generate HTML Table for Excel
-        $html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
-        $html .= '<head>';
-        $html .= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
-        $html .= '<style>';
-        $html .= 'table { border-collapse: collapse; width: 100%; }';
-        $html .= 'th { background-color: #f2f2f2; border: 1px solid #000000; text-align: center; vertical-align: middle; font-weight: bold; padding: 10px; }';
-        $html .= 'td { border: 1px solid #000000; text-align: center; vertical-align: middle; padding: 5px; }'; // Center all content vertically and horizontally
-        $html .= '</style>';
-        $html .= '</head>';
-        $html .= '<body>';
-        $html .= '<table>';
+        // Create new Spreadsheet
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-        // Header Row
-        $html .= '<tr>';
+        // Style the header row
+        $headerRow = 1;
+        $columnIndex = 1;
         foreach ($selectedColumns as $col) {
             $label = $columnLabels[$col] ?? $col;
-            $html .= '<th>' . $label . '</th>';
-        }
-        $html .= '</tr>';
+            $cell = $sheet->getCell([$columnIndex, $headerRow]);
+            $cell->setValue($label);
 
-        // Data Rows
+            // Header styling
+            $sheet->getStyle([$columnIndex, $headerRow])->applyFromArray([
+                'font' => ['bold' => true],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FFF2F2F2'], // Light gray
+                ],
+            ]);
+
+            // Set default width
+            if ($col === 'employeePhoto') {
+                $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(20); // Approx 100px-ish width
+            } else {
+                $sheet->getColumnDimensionByColumn($columnIndex)->setAutoSize(true);
+            }
+
+            $columnIndex++;
+        }
+
+        // Add Data Rows
+        $currentRow = 2;
         foreach ($employees as $employee) {
-            $html .= '<tr>';
+            $columnIndex = 1;
+
+            // Set row height if photo column exists to accommodate the image
+            if ($hasPhoto) {
+                $sheet->getRowDimension($currentRow)->setRowHeight(90); // Approx 120px height
+            } else {
+                $sheet->getRowDimension($currentRow)->setRowHeight(20);
+            }
+
             foreach ($selectedColumns as $col) {
+                $cellAddress = $sheet->getCell([$columnIndex, $currentRow])->getCoordinate();
+                $cell = $sheet->getCell([$columnIndex, $currentRow]);
+
+                // Common cell styling
+                $sheet->getStyle($cellAddress)->applyFromArray([
+                    'alignment' => [
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'wrapText' => true
+                    ],
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                    ]
+                ]);
+
                 if ($col === 'employeePhoto') {
-                    $photoUrl = $employee->photo_url;
-                    // Use full URL for the image. Excel needs an absolute URL or embedded data.
-                    // Since this is a web app, public URL is best.
-                    // Added explicit cell dimensions to enforce row height in Excel
-                    $html .= '<td style="width: 110px; height: 130px;">';
-                    $html .= '<img src="' . $photoUrl . '" width="100" height="120" style="display: block; margin: auto;">';
-                    $html .= '</td>';
+                    // Embed Image
+                    if ($employee->employeePhoto && Storage::disk('public')->exists($employee->employeePhoto)) {
+                        $path = Storage::disk('public')->path($employee->employeePhoto);
+
+                        $drawing = new Drawing();
+                        $drawing->setName('Employee Photo');
+                        $drawing->setDescription('Employee Photo');
+                        $drawing->setPath($path);
+                        $drawing->setCoordinates($cellAddress);
+                        $drawing->setHeight(120); // 120px height to match previous HTML
+                        // Center image in cell roughly
+                        $drawing->setOffsetX(5);
+                        $drawing->setOffsetY(5);
+                        $drawing->setWorksheet($sheet);
+                    } else {
+                        $cell->setValue('No Photo');
+                    }
+
                 } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'])) {
                     // Format Dates
                     $val = $employee->$col ? \Carbon\Carbon::parse($employee->$col)->format('d/m/Y') : '-';
-                    $html .= '<td>' . $val . '</td>';
+                    $cell->setValue($val);
                 } elseif ($col === 'employeeAge') {
-                    // Use accessor
-                    $html .= '<td>' . $employee->age . '</td>';
+                    $cell->setValue($employee->age);
                 } elseif ($col === 'employeeGender') {
-                     // Use accessor or raw
-                    $html .= '<td>' . ($employee->gender ?? $employee->employeeGender) . '</td>';
+                    $cell->setValue($employee->gender ?? $employee->employeeGender);
                 } elseif ($col === 'employerNameTh') {
-                    $html .= '<td>' . ($employee->employer->employerNameTh ?? '-') . '</td>';
+                    $cell->setValue($employee->employer->employerNameTh ?? '-');
                 } elseif ($col === 'employerNameEn') {
-                    $html .= '<td>' . ($employee->employer->employerNameEn ?? '-') . '</td>';
+                    $cell->setValue($employee->employer->employerNameEn ?? '-');
                 } elseif ($col === 'employerAddressTh') {
-                    // Get the first address (or specific type if implemented later)
                     $address = $employee->employer->addresses->first();
                     $fullAddress = '-';
                     if ($address) {
@@ -1387,7 +1442,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         ]);
                         $fullAddress = implode(' ', $parts);
                     }
-                    $html .= '<td>' . $fullAddress . '</td>';
+                    $cell->setValue($fullAddress);
                 } elseif ($col === 'employerAddressEn') {
                     $address = $employee->employer->addresses->first();
                     $fullAddress = '-';
@@ -1404,21 +1459,24 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         ]);
                         $fullAddress = implode(', ', $parts);
                     }
-                    $html .= '<td>' . $fullAddress . '</td>';
+                    $cell->setValue($fullAddress);
                 } else {
-                    $html .= '<td>' . ($employee->$col ?? '-') . '</td>';
+                    $cell->setValue($employee->$col ?? '-');
                 }
+
+                $columnIndex++;
             }
-            $html .= '</tr>';
+            $currentRow++;
         }
 
-        $html .= '</table>';
-        $html .= '</body></html>';
+        $fileName = "advanced_employee_export_" . date('Y-m-d_H-i') . ".xlsx";
 
-        $fileName = "advanced_employee_export_" . date('Y-m-d_H-i') . ".xls";
+        $writer = new Xlsx($spreadsheet);
 
-        return response($html)
-            ->header('Content-Type', 'application/vnd.ms-excel')
-            ->header('Content-Disposition', "attachment; filename=\"{$fileName}\"");
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 }
