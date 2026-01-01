@@ -239,6 +239,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_expiry_date_private' => 'nullable|string|max:255',
             'insurance_expiry_date_hospital' => 'nullable|string|max:255',
             'insurance_detail_social' => 'nullable|string|max:255',
+            'medical_hospital_name' => 'nullable|string|max:255',
             'employeeEmail' => 'nullable|email|max:255|unique:employees,email',
             'employeePassword' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
@@ -254,6 +255,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'medical_certificate_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
@@ -310,7 +312,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // --- V6: Step 3: Unified File Upload Loop ---
         $fileFields = [
-            'employeePhoto', 'insurance_document_path','insurance_document_path_private',
+            'employeePhoto', 'insurance_document_path','insurance_document_path_private', 'medical_certificate_path',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
             'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
@@ -405,6 +407,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_expiry_date_hospital' => 'nullable|string|max:255',
             'insurance_detail_private' => 'nullable|string|max:255',
             'insurance_detail_social' => 'nullable|string|max:255',
+            'medical_hospital_name' => 'nullable|string|max:255',
             'employeeEmail' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
             'password' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
@@ -420,6 +423,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'medical_certificate_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
@@ -519,7 +523,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $validated = $data;
         // --- V-6: Step 3: Define ALL 18 File Fields ---
         $fileFields = [
-            'employeePhoto', 'insurance_document_path','insurance_document_path_private',
+            'employeePhoto', 'insurance_document_path','insurance_document_path_private', 'medical_certificate_path',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
             'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
@@ -808,6 +812,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_17', 'employee_doc_18',
             'insurance_document_path',
             'insurance_document_path_private',
+            'medical_certificate_path',
             // Legacy fields
             'passport_file_path', 'visa_file_path', 'work_permit_file_path',
             'pink_card_file_path', 'insurance_attachment_path'
@@ -858,6 +863,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
             'employee_doc_17', 'employee_doc_18',
             'insurance_document_path_private',
+            'medical_certificate_path',
             // Keep old fields for backward compatibility if needed
             'passport_file_path', 'visa_file_path', 'work_permit_file_path',
             'pink_card_file_path', 'insurance_attachment_path'

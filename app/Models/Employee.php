@@ -141,6 +141,8 @@ class Employee extends Model
         'work_permit_file_path',
         'pink_card_file_path',
         'insurance_attachment_path',
+        'medical_certificate_path',
+        'medical_hospital_name',
     ];
 
     protected $casts = [

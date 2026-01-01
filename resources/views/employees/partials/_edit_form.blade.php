@@ -288,6 +288,29 @@
             </select>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="medical_certificate_path" class="form-label">ใบรับรองแพทย์ (Medical Certificate)</label>
+            @if($employee->medical_certificate_path)
+                <div class="mb-2 d-flex gap-1">
+                    <a href="{{ asset('storage/' . $employee->medical_certificate_path) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
+                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                </div>
+            @endif
+            <div class="input-group input-group-sm">
+                <input type="file" class="form-control form-control-sm" id="medical_certificate_path" name="medical_certificate_path">
+                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'medical_certificate_path' } }))">
+                    <i class="bi bi-camera"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="medical_hospital_name" class="form-label">โรงพยาบาลที่ตรวจโรค (Hospital Name)</label>
+            <input type="text" class="form-control" id="medical_hospital_name" name="medical_hospital_name" value="{{ old('medical_hospital_name', $employee->medical_hospital_name) }}">
+        </div>
+    </div>
+
     {{-- Social Security Container --}}
     <div id="insuranceSocialSecurity" class="d-none">
             <div class="row">
