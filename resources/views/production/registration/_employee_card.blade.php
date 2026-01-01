@@ -157,19 +157,19 @@
                     {{-- Field 1: Name List (Renamed to RA) --}}
                     <div style="width: 140px;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
-                        <div x-show="!isEditing" class="fw-bold text-dark border rounded px-2 py-1 bg-light" style="min-height: 31px;" x-text="nameList || '-'"></div>
+                        <div x-show="!isEditing" class="small text-dark border rounded px-2 py-1 bg-light text-break" style="min-height: 31px;" x-text="nameList || '-'"></div>
                         <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
                     </div>
                     {{-- Field 2: Request No --}}
                     <div style="width: 140px;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
-                        <div x-show="!isEditing" class="fw-bold text-dark border rounded px-2 py-1 bg-light" style="min-height: 31px;" x-text="reqNo || '-'"></div>
+                        <div x-show="!isEditing" class="small text-dark border rounded px-2 py-1 bg-light text-break" style="min-height: 31px;" x-text="reqNo || '-'"></div>
                         <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
                     </div>
                     {{-- Field 3: Ref ID --}}
                     <div style="width: 140px;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
-                        <div x-show="!isEditing" class="fw-bold text-dark border rounded px-2 py-1 bg-light" style="min-height: 31px;" x-text="refId || '-'"></div>
+                        <div x-show="!isEditing" class="small text-dark border rounded px-2 py-1 bg-light text-break" style="min-height: 31px;" x-text="refId || '-'"></div>
                         <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
                     </div>
                 </div>
