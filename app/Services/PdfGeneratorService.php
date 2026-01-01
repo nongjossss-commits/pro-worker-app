@@ -208,6 +208,12 @@ class PdfGeneratorService
             return $outputPath;
         }
 
+        \Illuminate\Support\Facades\Log::error('PDF Normalization Failed', [
+            'command' => $cmd,
+            'output' => $output,
+            'return_var' => $returnVar
+        ]);
+
         return false;
     }
 
