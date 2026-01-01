@@ -149,7 +149,7 @@ class PdfGenerationController extends Controller
                 }
 
                 if ($count === 0) {
-                     return redirect()->back()->with('warning', 'No documents were saved. Please check if the selected slot matches the target (Employee vs Employer).');
+                     return redirect()->route('employees.index')->with('warning', 'No documents were saved. Please check if the selected slot matches the target (Employee vs Employer).');
                 }
 
                 return redirect()->route('employees.index')
@@ -193,7 +193,7 @@ class PdfGenerationController extends Controller
             }
 
         } catch (\Throwable $e) {
-            return redirect()->back()->with('danger', 'Error generating documents: ' . $e->getMessage());
+            return redirect()->route('employees.index')->with('danger', 'Error generating documents: ' . $e->getMessage());
         }
     }
 }
