@@ -1359,7 +1359,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
             // Set default width
             if ($col === 'employeePhoto') {
-                $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(20); // Approx 100px-ish width
+                $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(18); // Adjusted width for better framing
             } else {
                 $sheet->getColumnDimensionByColumn($columnIndex)->setAutoSize(true);
             }
@@ -1405,10 +1405,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $drawing->setDescription('Employee Photo');
                         $drawing->setPath($path);
                         $drawing->setCoordinates($cellAddress);
-                        $drawing->setHeight(120); // 120px height to match previous HTML
+                        $drawing->setHeight(100); // 100px height to prevent overflow (row height is ~120px)
                         // Center image in cell roughly
-                        $drawing->setOffsetX(5);
-                        $drawing->setOffsetY(5);
+                        $drawing->setOffsetX(28); // Horizontally center (~30-35px based on col width 18)
+                        $drawing->setOffsetY(10); // Vertically center (10px padding top/bottom)
                         $drawing->setWorksheet($sheet);
                     } else {
                         $cell->setValue('No Photo');
