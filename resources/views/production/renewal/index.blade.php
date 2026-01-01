@@ -1168,9 +1168,40 @@
         });
     }
 
+    // Helper for submitting step reorder
+    function submitReorder(order, behavior) {
+        fetch('{{ route("production.renewal.steps.reorder") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({
+                order: order,
+                handle_step_one_behavior: behavior
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+               if (behavior === 'auto_tick') {
+                   Swal.fire({
+                        icon: 'success',
+                        title: '{{ __('Updated!') }}',
+                        text: '{{ __('Order updated and employees processed.') }}',
+                        timer: 1500,
+                        showConfirmButton: false
+                   }).then(() => location.reload());
+               }
+               // For 'none', silent success or toast
+            }
+        });
+    }
+
     window.moveStep = function(id, direction) {
         const stepsList = document.getElementById('stepsList');
         const currentItem = document.getElementById(`step-item-${id}`);
+
+        // Capture current first item ID before move
+        const firstLi = stepsList.querySelector('li');
+        const currentFirstId = firstLi ? firstLi.id.replace('step-item-', '') : null;
 
         if (direction === 'up') {
             const prevItem = currentItem.previousElementSibling;
@@ -1190,18 +1221,39 @@
             newOrder.push(li.id.replace('step-item-', ''));
         });
 
-        // Save new order
-        fetch('{{ route("production.renewal.steps.reorder") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ order: newOrder })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-               // Optional: Show toast
-            }
-        });
+        // Capture new first item ID
+        const newFirstId = newOrder[0];
+
+        // Check if Step 1 has changed
+        if (currentFirstId && newFirstId && currentFirstId !== newFirstId) {
+            Swal.fire({
+                title: '{{ __('Change First Step?') }}',
+                text: '{{ __('You are changing the first step. Select how to handle existing active employees:') }}',
+                icon: 'warning',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: '{{ __('Auto-tick New Step 1') }}', // Choice 1
+                denyButtonText: '{{ __('Just Move (No Data Change)') }}', // Choice 2
+                cancelButtonText: '{{ __('Cancel') }}',
+                confirmButtonColor: '#3085d6',
+                denyButtonColor: '#6c757d',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Choice 1: Auto-tick
+                    submitReorder(newOrder, 'auto_tick');
+                } else if (result.isDenied) {
+                    // Choice 2: Just Move
+                    submitReorder(newOrder, 'none');
+                } else {
+                    // Cancel: Revert DOM change by reloading
+                    location.reload();
+                }
+            });
+        } else {
+            // Standard move (Step 1 didn't change)
+            submitReorder(newOrder, 'none');
+        }
     }
 
     // --- Employee Actions (Updated for Immediate DOM Feedback & Stats) ---

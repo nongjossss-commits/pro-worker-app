@@ -352,11 +352,34 @@ class RenewalController extends Controller
         $request->validate([
             'order' => 'required|array',
             'order.*' => 'exists:registration_steps,id',
+            'handle_step_one_behavior' => 'nullable|string|in:auto_tick,none',
         ]);
 
         $order = $request->input('order');
+        $behavior = $request->input('handle_step_one_behavior', 'none');
 
-        DB::transaction(function () use ($order) {
+        DB::transaction(function () use ($order, $behavior) {
+            // Handle Step 1 Change Logic
+            if ($behavior === 'auto_tick') {
+                $oldStepOne = RegistrationStep::renewal()->orderBy('order')->first();
+                $newStepOneId = $order[0] ?? null;
+
+                if ($oldStepOne && $newStepOneId && $oldStepOne->id != $newStepOneId) {
+                    // Find active employees (those who have the OLD Step 1 completed)
+                    $employeesToUpdate = Employee::whereHas('registrationSteps', function($q) use ($oldStepOne) {
+                        $q->where('registration_steps.id', $oldStepOne->id);
+                    })->get();
+
+                    // Sync the NEW Step 1 for them
+                    foreach ($employeesToUpdate as $emp) {
+                        $emp->registrationSteps()->syncWithoutDetaching([
+                            $newStepOneId => ['completed_at' => now()]
+                        ]);
+                    }
+                }
+            }
+
+            // Update Orders
             foreach ($order as $index => $id) {
                 RegistrationStep::where('id', $id)->update(['order' => $index + 1]);
             }
