@@ -140,6 +140,26 @@
             <p class="form-control-plaintext">{{ $employee->insurance_type ?? 'N/A' }}</p>
         </div>
 
+        <div class="col-md-4">
+            <label class="form-label fw-bold">ใบรับรองแพทย์</label>
+            @if($employee->medical_certificate_path)
+                <p class="form-control-plaintext">
+                    <a href="{{ Storage::disk('public')->url($employee->medical_certificate_path) }}" target="_blank" class="btn btn-success btn-sm text-white">
+                        <i class="bi bi-eye-fill"></i> ดูเอกสาร
+                    </a>
+                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path']) }}" target="_blank" class="btn btn-danger btn-sm text-white ms-1">
+                        <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                    </a>
+                </p>
+            @else
+                <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
+            @endif
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold">โรงพยาบาลที่ตรวจโรค</label>
+            <p class="form-control-plaintext">{{ $employee->medical_hospital_name ?? '-' }}</p>
+        </div>
+
         @if($employee->insurance_type === 'ประกันสังคม')
             <div class="col-md-4">
                 <label class="form-label fw-bold">เลขประกันสังคม</label>

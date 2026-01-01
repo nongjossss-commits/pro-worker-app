@@ -326,6 +326,23 @@
         </select>
     </div>
 </div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label for="medical_certificate_path" class="form-label">ใบรับรองแพทย์ (Medical Certificate)</label>
+        <div class="input-group input-group-sm">
+            <input type="file" class="form-control form-control-sm" id="medical_certificate_path" name="medical_certificate_path">
+             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'medical_certificate_path' } }))">
+                <i class="bi bi-camera"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="medical_hospital_name" class="form-label">โรงพยาบาลที่ตรวจโรค (Hospital Name)</label>
+        <input type="text" class="form-control" id="medical_hospital_name" name="medical_hospital_name" value="{{ old('medical_hospital_name') }}">
+    </div>
+</div>
+
 {{-- Social Security Container --}}
 <div id="insuranceSocialSecurity" class="d-none">
         <div class="row">
