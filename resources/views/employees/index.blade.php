@@ -582,7 +582,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // Create form to post to generation modal setup
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '{{ route("admin.pdf-templates.generate.modal") }}'; // Route name needs to match
+            // Use relative path to avoid protocol mismatch (http vs https) redirects which strip POST data
+            form.action = '{{ route("admin.pdf-templates.generate.modal", [], false) }}';
 
             const csrf = document.createElement('input');
             csrf.type = 'hidden';
