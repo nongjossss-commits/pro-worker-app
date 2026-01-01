@@ -267,6 +267,20 @@ if (typeof window.financialManager === 'undefined') {
                 return this.transactions.filter(t => t.production_financial_group_id == this.activeGroupId);
             },
 
+            get modalFilteredTransactions() {
+                // If generating 'advance_receipt', only show advance_payment transactions
+                if (this.documentTypeToGenerate === 'advance_receipt') {
+                    return this.filteredTransactions.filter(t => t.type === 'advance_payment');
+                }
+                // If generating tax_invoice or receipt, usually we want Service Fee types,
+                // but sometimes we might want to issue a tax invoice for an advance.
+                // For flexibility, let's show all or maybe exclude advance if confusing?
+                // Request says "Billing should match installment...".
+                // Let's show ALL for generic types to allow maximum flexibility,
+                // BUT if it's strictly 'advance_receipt', filtering makes sense.
+                return this.filteredTransactions;
+            },
+
             get incomeTransactions() {
                 return this.filteredTransactions.filter(t => ['installment', 'down_payment', 'full_payment'].includes(t.type));
             },
@@ -596,7 +610,15 @@ if (typeof window.financialManager === 'undefined') {
             generateSelectedDocument() {
                 if (this.selectedTransactionIds.length === 0) return;
                 const ids = this.selectedTransactionIds.join(',');
-                this.openDocument(this.documentTypeToGenerate, ids);
+
+                // If generating advance receipt for specific transactions, force mode to 'advance_only'
+                // to prevent rendering of Service Fee headers or confusing layout logic
+                let mode = null;
+                if (this.documentTypeToGenerate === 'advance_receipt') {
+                    mode = 'advance_only';
+                }
+
+                this.openDocument(this.documentTypeToGenerate, ids, mode);
                 bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
             },
             openDocument(type, transactionIds = null, mode = null) {

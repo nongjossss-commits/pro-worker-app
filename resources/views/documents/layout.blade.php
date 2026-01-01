@@ -207,31 +207,55 @@
         <!-- Logic Setup -->
         @php
             $mode = $mode ?? 'combined'; // combined, service_only, advance_only
+
+            // 1. Classify Transactions (if filtering/selection is used)
+            $serviceTransactions = collect();
+            $advanceTransactions = collect();
+            $hasSpecificTransactions = $transactions->isNotEmpty();
+
+            if ($hasSpecificTransactions) {
+                // Split logic
+                $serviceTransactions = $transactions->filter(fn($t) => in_array($t->type, ['installment', 'down_payment', 'full_payment']));
+                $advanceTransactions = $transactions->filter(fn($t) => $t->type === 'advance_payment');
+            }
+
+            // 2. Determine Display Logic
+            // Show Service Section IF:
+            // - Mode allows it ('combined' OR 'service_only')
+            // - AND (We are in "Project View" [no specific transactions] OR We have specific Service transactions to show)
             $showService = ($mode === 'combined' || $mode === 'service_only');
+            if ($hasSpecificTransactions && $serviceTransactions->isEmpty()) {
+                $showService = false; // Hide service section if we only selected advance payments
+            }
+
+            // Show Advance Section IF:
+            // - Mode allows it ('combined' OR 'advance_only')
+            // - AND (We have specific Advance transactions OR We are in "Project View" and have planned items)
             $showAdvance = ($mode === 'combined' || $mode === 'advance_only');
 
-            // Calc variables
+            // 3. Calculate Totals
             $serviceTotal = 0;
             $advanceTotal = 0;
 
-            // Service Fee Calculation (From Transactions or Financial Data)
-            // If viewing specific transactions, we sum them.
-            // If viewing general (no transaction_ids), we use the Group Total setting.
-
-            // NOTE: Transactions usually represent installments of the Service Fee.
-            // Advance items are separate.
-
-            if ($transactions->isNotEmpty()) {
-                $serviceTotal = $transactions->sum('amount');
-            } else {
-                // If no specific transactions, assume full project value for Quotation context
+            // Service Fee Calculation
+            if ($hasSpecificTransactions) {
+                $serviceTotal = $serviceTransactions->sum('amount');
+            } elseif ($showService) {
+                // If no specific transactions, assume full project value for Quotation/Project context
                 $serviceTotal = $financial['total_amount'] ?? 0;
             }
 
-            // Re-calculate VAT breakdown for Service Fee
-            // Note: $financial['total_amount'] is usually Inc VAT if vat_included is true.
-            // We need consistent base for display.
+            // Advance Calculation
+            // Scenario A: Specific Advance Transactions selected (e.g. Receipt for Deposit)
+            // Scenario B: Project View (Quotation) -> Sum of planned items
+            if ($advanceTransactions->isNotEmpty()) {
+                $advanceTotal = $advanceTransactions->sum('amount');
+            } elseif ($showAdvance && !$hasSpecificTransactions && isset($advanceItems)) {
+                 // Only show planned items sum if NO specific transactions are selected
+                 $advanceTotal = $advanceItems->sum('total');
+            }
 
+            // 4. VAT & Tax Logic
             $vatIncluded = $financial['vat_included'] ?? false;
             $vatRate = $financial['vat_rate'] ?? 7;
             $whtEnabled = $financial['wht_enabled'] ?? false;
@@ -246,11 +270,6 @@
                 $serviceBase = $serviceTotal;
                 $serviceVat = $serviceBase * ($vatRate/100);
                 $totalServiceIncVat = $serviceBase + $serviceVat;
-            }
-
-            // Advance Calculation
-            if ($showAdvance && isset($advanceItems)) {
-                $advanceTotal = $advanceItems->sum('total');
             }
         @endphp
 
@@ -268,23 +287,29 @@
             <tbody>
                 <!-- SERVICE FEE SECTION -->
                 @if($showService)
-                    <tr>
-                        <td colspan="5" class="section-header">Service Charges (ค่าบริการ)</td>
-                    </tr>
-                    @forelse($transactions as $index => $t)
+                    @if($hasSpecificTransactions || ($mode !== 'service_only'))
+                       <!-- Show Header if mixed content or specific transactions -->
                         <tr>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td>
-                                <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
-                                @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
-                                @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
-                            </td>
-                            <td class="text-center">1</td>
-                            <td class="text-right">{{ number_format($t->amount, 2) }}</td>
-                            <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                            <td colspan="5" class="section-header">Service Charges (ค่าบริการ)</td>
                         </tr>
-                    @empty
-                        <!-- Fallback if no transactions (e.g. Quotation) -->
+                    @endif
+
+                    @if($hasSpecificTransactions)
+                         @foreach($serviceTransactions as $index => $t)
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>
+                                    <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
+                                    @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
+                                    @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                </td>
+                                <td class="text-center">1</td>
+                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <!-- Fallback: Full Project Summary (Quotation Style) -->
                         <tr>
                             <td class="text-center">1</td>
                             <td>{{ $production->project_name ?? 'Service Fee for Recruitment' }}</td>
@@ -292,23 +317,45 @@
                             <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
                             <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
                         </tr>
-                    @endforelse
+                    @endif
                 @endif
 
                 <!-- ADVANCE PAYMENT SECTION -->
-                @if($showAdvance && isset($advanceItems) && $advanceItems->isNotEmpty())
-                    <tr>
-                        <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
-                    </tr>
-                    @foreach($advanceItems as $index => $item)
-                        <tr>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td>{{ $item->description }}</td>
-                            <td class="text-center">{{ $item->quantity }}</td>
-                            <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                            <td class="text-right">{{ number_format($item->total, 2) }}</td>
+                @if($showAdvance)
+                    <!-- CASE 1: Specific Advance Transactions (Actual Receipts) -->
+                    @if($advanceTransactions->isNotEmpty())
+                         <tr>
+                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย)</td>
                         </tr>
-                    @endforeach
+                        @foreach($advanceTransactions as $index => $t)
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>
+                                    <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
+                                    @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
+                                </td>
+                                <td class="text-center">1</td>
+                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                            </tr>
+                        @endforeach
+
+                    <!-- CASE 2: Planned Items List (Quotation / Project Overview) -->
+                    <!-- Only show if NO specific transactions were selected -->
+                    @elseif(!$hasSpecificTransactions && isset($advanceItems) && $advanceItems->isNotEmpty())
+                        <tr>
+                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
+                        </tr>
+                        @foreach($advanceItems as $index => $item)
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>{{ $item->description }}</td>
+                                <td class="text-center">{{ $item->quantity }}</td>
+                                <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
+                                <td class="text-right">{{ number_format($item->total, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    @endif
                 @endif
             </tbody>
         </table>

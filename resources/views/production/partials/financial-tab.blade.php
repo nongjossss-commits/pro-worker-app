@@ -303,6 +303,8 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'combined'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Combined (Service + Advance)') }}</a></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'service_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Service Fee Only') }}</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openSelectionModal('tax_invoice'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Select Installment(s)...') }}</a></li>
                         </ul>
                     </div>
 
@@ -313,8 +315,10 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'combined'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Combined (Receipt)') }}</a></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'service_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Receipt (Service Fee)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openSelectionModal('receipt'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Select Installment(s)...') }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('advance_receipt', null, 'advance_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Advance Receipt (ใบเสร็จรับเงินสำรองจ่าย)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('advance_receipt', null, 'advance_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Advance Receipt (Total List)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openSelectionModal('advance_receipt'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Advance Receipt (Select Transaction)') }}</a></li>
                         </ul>
                     </div>
                 </div>
@@ -677,15 +681,19 @@
                 </div>
                 <div class="modal-body">
                     <div class="list-group list-group-flush mb-3">
-                        <template x-for="t in filteredTransactions" :key="t.id">
+                        <template x-for="t in modalFilteredTransactions" :key="t.id">
                             <label class="list-group-item px-0 py-2 d-flex gap-2">
                                 <input class="form-check-input" type="checkbox" :value="t.id" x-model="selectedTransactionIds">
                                 <div class="small">
                                     <div class="fw-bold" x-text="formatType(t.type)"></div>
                                     <div class="text-muted" x-text="formatCurrency(t.amount)"></div>
+                                    <div class="text-muted" style="font-size: 0.75rem;" x-text="t.notes"></div>
                                 </div>
                             </label>
                         </template>
+                        <div x-show="modalFilteredTransactions.length === 0" class="text-center text-muted py-3">
+                            No transactions available for this type.
+                        </div>
                     </div>
                     <button class="btn btn-primary btn-sm w-100" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
                         Generate
