@@ -15,6 +15,7 @@ class PdfGeneratorService
 {
     protected $fontPath;
     protected $signatureService;
+    protected $tempFiles = [];
 
     public function __construct(SignatureGeneratorService $signatureService)
     {
@@ -69,14 +70,6 @@ class PdfGeneratorService
         // Load the template file
         $templatePath = Storage::disk('public')->path($template->file_path);
 
-        try {
-            $pageCount = $pdf->setSourceFile($templatePath);
-        } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
-            throw new \Exception('This PDF file uses an unsupported compression format (likely PDF 1.5+). Please open the file in a PDF viewer, choose "Print to PDF", and try uploading the new file.');
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
-        }
-
         // Font Handling
         $fontLoaded = false;
         if (file_exists($this->fontPath)) {
@@ -87,22 +80,39 @@ class PdfGeneratorService
              $pdf->SetFont('Arial', '', 12);
         }
 
-        // Generate Signatures for this session (Consistent per person)
-        $employeeSignature = $this->signatureService->generate('EMP-' . $employee->id);
-
-        // Employer Signature: Use Employer ID.
-        // Note: In real app, we might check if employer has a REAL uploaded signature first.
-        // For now, we generate one procedurally for consistency.
-        $employerSignature = $this->signatureService->generate('EMPR-' . $employee->employer_id);
-
-        // Save temp files for FPDF to read
-        $tempEmpSigPath = tempnam(sys_get_temp_dir(), 'sig_emp_');
-        file_put_contents($tempEmpSigPath, $employeeSignature);
-
-        $tempEmprSigPath = tempnam(sys_get_temp_dir(), 'sig_empr_');
-        file_put_contents($tempEmprSigPath, $employerSignature);
-
         try {
+            try {
+                $pageCount = $pdf->setSourceFile($templatePath);
+            } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
+                // Try to normalize the PDF using Python script
+                $normalizedPath = $this->tryNormalizePdf($templatePath);
+                if ($normalizedPath) {
+                    try {
+                        $pageCount = $pdf->setSourceFile($normalizedPath);
+                        $this->tempFiles[] = $normalizedPath; // Mark for deletion
+                    } catch (\Exception $ex) {
+                        throw new \Exception('Automatic PDF repair failed. Please use "Print to PDF". Original error: ' . $e->getMessage());
+                    }
+                } else {
+                    throw new \Exception('This PDF file uses an unsupported compression format (likely PDF 1.5+). Please open the file in a PDF viewer, choose "Print to PDF", and try uploading the new file.');
+                }
+            } catch (\Exception $e) {
+                throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
+            }
+
+            // Generate Signatures for this session (Consistent per person)
+            $employeeSignature = $this->signatureService->generate('EMP-' . $employee->id);
+
+            // Employer Signature: Use Employer ID.
+            $employerSignature = $this->signatureService->generate('EMPR-' . $employee->employer_id);
+
+            // Save temp files for FPDF to read
+            $tempEmpSigPath = tempnam(sys_get_temp_dir(), 'sig_emp_');
+            file_put_contents($tempEmpSigPath, $employeeSignature);
+
+            $tempEmprSigPath = tempnam(sys_get_temp_dir(), 'sig_empr_');
+            file_put_contents($tempEmprSigPath, $employerSignature);
+
             // Iterate Pages
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                 $templateId = $pdf->importPage($pageNo);
@@ -160,13 +170,45 @@ class PdfGeneratorService
                     }
                 }
             }
+
+            // Output PDF content
+            $content = $pdf->Output('S');
+
         } finally {
-            // Cleanup temp files
-            if (file_exists($tempEmpSigPath)) unlink($tempEmpSigPath);
-            if (file_exists($tempEmprSigPath)) unlink($tempEmprSigPath);
+            // Cleanup temp files (Signatures)
+            if (isset($tempEmpSigPath) && file_exists($tempEmpSigPath)) @unlink($tempEmpSigPath);
+            if (isset($tempEmprSigPath) && file_exists($tempEmprSigPath)) @unlink($tempEmprSigPath);
+
+            // Cleanup normalized PDF files
+            foreach ($this->tempFiles as $tempFile) {
+                if (file_exists($tempFile)) @unlink($tempFile);
+            }
+            $this->tempFiles = []; // Reset for next call
         }
 
-        return $pdf->Output('S');
+        return $content;
+    }
+
+    protected function tryNormalizePdf($inputPath)
+    {
+        $outputPath = tempnam(sys_get_temp_dir(), 'norm_') . '.pdf';
+        $scriptPath = base_path('scripts/normalize_pdf.py');
+
+        // Check if script exists
+        if (!file_exists($scriptPath)) {
+            return false;
+        }
+
+        // Construct command
+        $cmd = "python3 " . escapeshellarg($scriptPath) . " " . escapeshellarg($inputPath) . " " . escapeshellarg($outputPath) . " 2>&1";
+
+        exec($cmd, $output, $returnVar);
+
+        if ($returnVar === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
+            return $outputPath;
+        }
+
+        return false;
     }
 
     protected function resolveValue(Employee $employee, $key)
