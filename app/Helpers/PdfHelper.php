@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class PdfHelper
 {
@@ -67,5 +68,46 @@ class PdfHelper
 
         // Fallback
         return Storage::disk($disk)->download($filePath);
+    }
+
+    /**
+     * Get the PDF version from the file header.
+     *
+     * @param string $filePath
+     * @return float|null
+     */
+    public static function getVersion(string $filePath): ?float
+    {
+        if (!File::exists($filePath)) {
+            return null;
+        }
+
+        // Read the first line (or first few bytes)
+        $handle = fopen($filePath, 'rb');
+        if (!$handle) {
+            return null;
+        }
+
+        $header = fgets($handle); // e.g., %PDF-1.4
+        fclose($handle);
+
+        if (preg_match('/%PDF-(\d\.\d)/', $header, $matches)) {
+            return (float) $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if the PDF version is compatible.
+     *
+     * @param string $filePath
+     * @param float $maxVersion
+     * @return bool
+     */
+    public static function isCompatible(string $filePath, float $maxVersion = 1.4): bool
+    {
+        $version = self::getVersion($filePath);
+        return $version !== null && $version <= $maxVersion;
     }
 }
