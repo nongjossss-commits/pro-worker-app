@@ -280,8 +280,7 @@ class NotificationController extends Controller
                     $fileField = 'insurance_document_path_private';
                 } else {
                     $fieldToUpdate = 'insurance_expiry_date';
-                    // Fix: Reverted to 'insurance_attachment_path' as 'insurance_document_path' column is missing in some environments
-                    $fileField = 'insurance_attachment_path';
+                    $fileField = 'insurance_document_path';
                 }
                 break;
             case 'employer_document_expiry':
