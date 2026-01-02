@@ -59,17 +59,25 @@
             <p class="form-control-plaintext">{{ $employer->employerEmail ?? 'N/A' }}</p>
         </div>
         <div class="col-md-6">
-            <label class="form-label fw-bold">เบอร์โทรศัพท์</label>
-            <p class="form-control-plaintext">{{ $employer->employerPhone ?? 'N/A' }}</p>
-        </div>
-    </div>
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label class="form-label fw-bold">รหัสผ่านสำหรับนายจ้าง</label>
+            <label class="form-label fw-bold">รหัสสำหรับอีเมล</label>
             <p class="form-control-plaintext">{{ $employer->employerPassword ?? 'N/A' }}</p>
         </div>
     </div>
     <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">RE Code</label>
+            <p class="form-control-plaintext">{{ $employer->outsource_re_code ?? 'N/A' }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">รหัสสำหรับเข้าระบบ Outsource</label>
+            <p class="form-control-plaintext">{{ $employer->outsource_password ?? 'N/A' }}</p>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">เบอร์โทรศัพท์</label>
+            <p class="form-control-plaintext">{{ $employer->employerPhone ?? 'N/A' }}</p>
+        </div>
         <div class="col-md-6">
             <label class="form-label fw-bold">โรงพยาบาลประกันสังคม</label>
             <p class="form-control-plaintext">{{ $employer->socialSecurityHospital ?? 'N/A' }}</p>
@@ -79,12 +87,22 @@
 
     <div class="row mb-3">
         <div class="col-md-6">
-            <label class="form-label fw-bold">ผู้มีอำนาจลงนาม (ไทย)</label>
+            <label class="form-label fw-bold">ผู้มีอำนาจลงนาม 1 (ไทย)</label>
             <p class="form-control-plaintext">{{ $employer->signerNameTh ?? 'N/A' }}</p>
         </div>
         <div class="col-md-6">
-            <label class="form-label fw-bold">ผู้มีอำนาจลงนาม (อังกฤษ)</label>
+            <label class="form-label fw-bold">ผู้มีอำนาจลงนาม 1 (อังกฤษ)</label>
             <p class="form-control-plaintext">{{ $employer->signerNameEn ?? 'N/A' }}</p>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">ผู้มีอำนาจลงนาม 2 (ไทย)</label>
+            <p class="form-control-plaintext">{{ $employer->signerNameTh2 ?? 'N/A' }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">ผู้มีอำนาจลงนาม 2 (อังกฤษ)</label>
+            <p class="form-control-plaintext">{{ $employer->signerNameEn2 ?? 'N/A' }}</p>
         </div>
     </div>
     <div class="row mb-3">
