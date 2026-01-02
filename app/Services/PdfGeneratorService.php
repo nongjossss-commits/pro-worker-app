@@ -85,16 +85,15 @@ class PdfGeneratorService
                 $pageCount = $pdf->setSourceFile($templatePath);
             } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
                 // Try to normalize the PDF using Python script
-                $normalizedPath = $this->tryNormalizePdf($templatePath);
-                if ($normalizedPath) {
-                    try {
+                try {
+                    $normalizedPath = $this->tryNormalizePdf($templatePath);
+                    if ($normalizedPath) {
                         $pageCount = $pdf->setSourceFile($normalizedPath);
                         $this->tempFiles[] = $normalizedPath; // Mark for deletion
-                    } catch (\Exception $ex) {
-                        throw new \Exception('Automatic PDF repair failed. Please use "Print to PDF". Original error: ' . $e->getMessage());
                     }
-                } else {
-                    throw new \Exception('This PDF file uses an unsupported compression format (likely PDF 1.5+). Please open the file in a PDF viewer, choose "Print to PDF", and try uploading the new file.');
+                } catch (\Exception $ex) {
+                    // This now catches the specific "Missing Python dependency" error
+                    throw new \Exception('Automatic PDF repair failed. ' . $ex->getMessage());
                 }
             } catch (\Exception $e) {
                 throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
@@ -196,7 +195,7 @@ class PdfGeneratorService
 
         // Check if script exists
         if (!file_exists($scriptPath)) {
-            return false;
+            throw new \Exception('PDF Repair script missing: ' . $scriptPath);
         }
 
         // Construct command
@@ -217,10 +216,11 @@ class PdfGeneratorService
 
         // Check for common errors to provide a better hint
         if (str_contains($errorOutput, 'ModuleNotFoundError')) {
-            throw new \Exception('PDF Repair failed: Missing Python dependency. Please install pypdf (pip install pypdf). Detail: ' . $errorOutput);
+            throw new \Exception('Missing Python dependency. Please install pypdf (pip install pypdf). Detail: ' . $errorOutput);
         }
 
-        return false;
+        // If it failed for another reason, throw that too
+        throw new \Exception('Repair script failed (Code: ' . $returnVar . '). Detail: ' . $errorOutput);
     }
 
     protected function resolveValue(Employee $employee, $key)
