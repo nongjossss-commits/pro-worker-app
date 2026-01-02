@@ -208,11 +208,17 @@ class PdfGeneratorService
             return $outputPath;
         }
 
+        $errorOutput = implode("\n", $output);
         \Illuminate\Support\Facades\Log::error('PDF Normalization Failed', [
             'command' => $cmd,
             'output' => $output,
             'return_var' => $returnVar
         ]);
+
+        // Check for common errors to provide a better hint
+        if (str_contains($errorOutput, 'ModuleNotFoundError')) {
+            throw new \Exception('PDF Repair failed: Missing Python dependency. Please install pypdf (pip install pypdf). Detail: ' . $errorOutput);
+        }
 
         return false;
     }
