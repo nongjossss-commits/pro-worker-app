@@ -11,10 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->string('medical_certificate_path')->nullable()->after('insurance_attachment_path');
-            $table->string('medical_hospital_name')->nullable()->after('medical_certificate_path');
-        });
+        // Add medical_certificate_path
+        if (!Schema::hasColumn('employees', 'medical_certificate_path')) {
+            Schema::table('employees', function (Blueprint $table) {
+                if (Schema::hasColumn('employees', 'insurance_document_path')) {
+                    $table->string('medical_certificate_path')->nullable()->after('insurance_document_path');
+                } else {
+                    $table->string('medical_certificate_path')->nullable();
+                }
+            });
+        }
+
+        // Add medical_hospital_name
+        if (!Schema::hasColumn('employees', 'medical_hospital_name')) {
+            Schema::table('employees', function (Blueprint $table) {
+                if (Schema::hasColumn('employees', 'medical_certificate_path')) {
+                    $table->string('medical_hospital_name')->nullable()->after('medical_certificate_path');
+                } else {
+                    $table->string('medical_hospital_name')->nullable();
+                }
+            });
+        }
     }
 
     /**
@@ -23,7 +40,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->dropColumn(['medical_certificate_path', 'medical_hospital_name']);
+            if (Schema::hasColumn('employees', 'medical_hospital_name')) {
+                $table->dropColumn('medical_hospital_name');
+            }
+            if (Schema::hasColumn('employees', 'medical_certificate_path')) {
+                $table->dropColumn('medical_certificate_path');
+            }
         });
     }
 };
