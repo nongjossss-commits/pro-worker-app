@@ -118,6 +118,25 @@
             </div>
         </div>
 
+ <div class="row mb-3">
+ <div class="col-md-6">
+ <label for="employerPhone" class="form-label">{{ __('Phone Number') }}</label>
+ <input type="text" class="form-control @error('employerPhone') is-invalid @enderror" id="employerPhone" name="employerPhone" value="{{ old('employerPhone', $employer->employerPhone ?? '') }}">
+ @error('employerPhone')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ <div class="col-md-6">
+ <label for="socialSecurityHospital" class="form-label">{{ __('Social Security Hospital') }}</label>
+ <input type="text" class="form-control @error('socialSecurityHospital') is-invalid @enderror" id="socialSecurityHospital" name="socialSecurityHospital" value="{{ old('socialSecurityHospital', $employer->socialSecurityHospital ?? '') }}">
+ @error('socialSecurityHospital')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ </div>
+
+ <!-- System Access Group -->
+ <h5 class="mb-3 text-primary mt-4">System Access & Outsource</h5>
         <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
@@ -127,25 +146,26 @@
  @enderror
  </div>
  <div class="col-md-6">
- <label for="employerPhone" class="form-label">{{ __('Phone Number') }}</label>
- <input type="text" class="form-control @error('employerPhone') is-invalid @enderror" id="employerPhone" name="employerPhone" value="{{ old('employerPhone', $employer->employerPhone ?? '') }}">
- @error('employerPhone')
+ <label for="employerPassword" class="form-label">{{ __('Email Password (รหัสสำหรับอีเมล)') }}</label>
+ <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
+ <small class="text-muted d-block">{{ __('Leave blank to keep current password') }}</small>
+ @error('employerPassword')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
  </div>
  <div class="row mb-3">
  <div class="col-md-6">
- <label for="employerPassword" class="form-label">{{ __('Password (for Employer)') }}</label>
- <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
- @error('employerPassword')
+ <label for="outsource_re_code" class="form-label">{{ __('RE Code') }}</label>
+ <input type="text" class="form-control @error('outsource_re_code') is-invalid @enderror" id="outsource_re_code" name="outsource_re_code" value="{{ old('outsource_re_code', $employer->outsource_re_code) }}">
+ @error('outsource_re_code')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
  <div class="col-md-6">
- <label for="socialSecurityHospital" class="form-label">{{ __('Social Security Hospital') }}</label>
- <input type="text" class="form-control @error('socialSecurityHospital') is-invalid @enderror" id="socialSecurityHospital" name="socialSecurityHospital" value="{{ old('socialSecurityHospital', $employer->socialSecurityHospital ?? '') }}">
- @error('socialSecurityHospital')
+ <label for="outsource_password" class="form-label">{{ __('Outsource Password (รหัสสำหรับเข้าระบบ Outsource)') }}</label>
+ <input type="text" class="form-control @error('outsource_password') is-invalid @enderror" id="outsource_password" name="outsource_password" value="{{ old('outsource_password', $employer->outsource_password) }}">
+ @error('outsource_password')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
@@ -202,6 +222,22 @@
                 <label for="employer_doc_company_expiry" class="form-label">{{ __('Expiry Date') }}</label>
                 <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry', $employer->employer_doc_company_expiry) }}">
                 @error('employer_doc_company_expiry')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="signerNameTh2" class="form-label">{{ __('Authorized Signatory 2 (Thai)') }}</label>
+                <input type="text" class="form-control @error('signerNameTh2') is-invalid @enderror" id="signerNameTh2" name="signerNameTh2" value="{{ old('signerNameTh2', $employer->signerNameTh2 ?? '') }}">
+                @error('signerNameTh2')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6">
+                <label for="signerNameEn2" class="form-label">{{ __('Authorized Signatory 2 (English)') }}</label>
+                <input type="text" class="form-control @error('signerNameEn2') is-invalid @enderror" id="signerNameEn2" name="signerNameEn2" value="{{ old('signerNameEn2', $employer->signerNameEn2 ?? '') }}">
+                @error('signerNameEn2')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>

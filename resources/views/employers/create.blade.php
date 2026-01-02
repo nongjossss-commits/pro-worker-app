@@ -107,27 +107,11 @@
             </div>
         </div>
 
-<div class="row mb-3">
- <div class="col-md-6">
- <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
- <input type="email" class="form-control @error('employerEmail') is-invalid @enderror" id="employerEmail" name="employerEmail" value="{{ old('employerEmail', $employer->employerEmail ?? '') }}">
- @error('employerEmail')
- <div class="invalid-feedback">{{ $message }}</div>
- @enderror
- </div>
+ <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerPhone" class="form-label">{{ __('Phone Number') }}</label>
  <input type="text" class="form-control @error('employerPhone') is-invalid @enderror" id="employerPhone" name="employerPhone" value="{{ old('employerPhone', $employer->employerPhone ?? '') }}">
  @error('employerPhone')
- <div class="invalid-feedback">{{ $message }}</div>
- @enderror
- </div>
- </div>
- <div class="row mb-3">
- <div class="col-md-6">
- <label for="employerPassword" class="form-label">{{ __('Password (for Employer)') }}</label>
- <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
- @error('employerPassword')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
  </div>
@@ -139,18 +123,69 @@
  @enderror
  </div>
  </div>
+
+ <!-- System Access Group -->
+ <h5 class="mb-3 text-primary mt-4">System Access & Outsource</h5>
+<div class="row mb-3">
+ <div class="col-md-6">
+ <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
+ <input type="email" class="form-control @error('employerEmail') is-invalid @enderror" id="employerEmail" name="employerEmail" value="{{ old('employerEmail', $employer->employerEmail ?? '') }}">
+ @error('employerEmail')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ <div class="col-md-6">
+ <label for="employerPassword" class="form-label">{{ __('Email Password (รหัสสำหรับอีเมล)') }}</label>
+ <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
+ @error('employerPassword')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ </div>
+ <div class="row mb-3">
+ <div class="col-md-6">
+ <label for="outsource_re_code" class="form-label">{{ __('RE Code') }}</label>
+ <input type="text" class="form-control @error('outsource_re_code') is-invalid @enderror" id="outsource_re_code" name="outsource_re_code" value="{{ old('outsource_re_code') }}">
+ @error('outsource_re_code')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ <div class="col-md-6">
+ <label for="outsource_password" class="form-label">{{ __('Outsource Password (รหัสสำหรับเข้าระบบ Outsource)') }}</label>
+ <input type="text" class="form-control @error('outsource_password') is-invalid @enderror" id="outsource_password" name="outsource_password" value="{{ old('outsource_password') }}">
+ @error('outsource_password')
+ <div class="invalid-feedback">{{ $message }}</div>
+ @enderror
+ </div>
+ </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="signerNameTh" class="form-label">{{ __('Authorized Signatory (Thai)') }}</label>
+                <label for="signerNameTh" class="form-label">{{ __('Authorized Signatory 1 (Thai)') }}</label>
                 <input type="text" class="form-control @error('signerNameTh') is-invalid @enderror" id="signerNameTh" name="signerNameTh" value="{{ old('signerNameTh') }}">
                 @error('signerNameTh')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="signerNameEn" class="form-label">{{ __('Authorized Signatory (English)') }}</label>
+                <label for="signerNameEn" class="form-label">{{ __('Authorized Signatory 1 (English)') }}</label>
                 <input type="text" class="form-control @error('signerNameEn') is-invalid @enderror" id="signerNameEn" name="signerNameEn" value="{{ old('signerNameEn') }}">
                 @error('signerNameEn')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="signerNameTh2" class="form-label">{{ __('Authorized Signatory 2 (Thai)') }}</label>
+                <input type="text" class="form-control @error('signerNameTh2') is-invalid @enderror" id="signerNameTh2" name="signerNameTh2" value="{{ old('signerNameTh2') }}">
+                @error('signerNameTh2')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6">
+                <label for="signerNameEn2" class="form-label">{{ __('Authorized Signatory 2 (English)') }}</label>
+                <input type="text" class="form-control @error('signerNameEn2') is-invalid @enderror" id="signerNameEn2" name="signerNameEn2" value="{{ old('signerNameEn2') }}">
+                @error('signerNameEn2')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
