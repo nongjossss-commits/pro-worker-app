@@ -815,7 +815,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'medical_certificate_path',
             // Legacy fields
             'passport_file_path', 'visa_file_path', 'work_permit_file_path',
-            'pink_card_file_path', 'insurance_attachment_path'
+            'pink_card_file_path'
         ];
 
         if (!in_array($field, $allowedFields)) {
@@ -864,9 +864,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_doc_17', 'employee_doc_18',
             'insurance_document_path_private',
             'medical_certificate_path',
+            'insurance_document_path',
             // Keep old fields for backward compatibility if needed
             'passport_file_path', 'visa_file_path', 'work_permit_file_path',
-            'pink_card_file_path', 'insurance_attachment_path'
+            'pink_card_file_path'
         ];
 
         if (!in_array($field, $allowedFields)) {

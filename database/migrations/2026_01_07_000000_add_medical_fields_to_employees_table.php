@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->string('medical_certificate_path')->nullable()->after('insurance_attachment_path');
+            $table->string('medical_certificate_path')->nullable()->after('insurance_document_path');
             $table->string('medical_hospital_name')->nullable()->after('medical_certificate_path');
         });
     }

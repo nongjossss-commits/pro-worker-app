@@ -28,7 +28,7 @@ class ProcessDownload implements ShouldQueue
     // Map frontend checkbox values to model attributes
     protected $fileMap = [
         'photo' => 'employeePhoto',
-        'insurance' => ['insurance_attachment_path', 'insurance_document_path', 'insurance_document_path_private', 'social_security_file', 'insurance_file'],
+        'insurance' => ['insurance_document_path', 'insurance_document_path_private', 'social_security_file', 'insurance_file'],
         'passport' => ['passport_file_path', 'employee_doc_1'],
         'visa' => ['visa_file_path', 'employee_doc_2'],
         'work_permit' => ['work_permit_file_path', 'employee_doc_3'],
