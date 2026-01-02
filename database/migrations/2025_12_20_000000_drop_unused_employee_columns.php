@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('employees', function (Blueprint $table) {
             // Drop Legacy Identification Columns
-            $table->dropColumn([
+            $columnsToDrop = [
                 'namelistNo',
                 'requestNo',
                 'workerRefNo',
@@ -21,10 +21,7 @@ return new class extends Migration
                 'companyWorkerId',
                 'socialSecurityNo',
                 'taxIdNo',
-            ]);
-
-            // Drop Legacy Document Columns
-            $table->dropColumn([
+                // Legacy Document Columns
                 'document_1',
                 'document_2',
                 'document_3',
@@ -34,10 +31,15 @@ return new class extends Migration
                 'document_description_5',
                 'document_6',
                 'document_description_6',
-            ]);
+                // Duplicate Column
+                'visa_type',
+            ];
 
-            // Drop Duplicate/Redundant Column (keeping 'visaType')
-            $table->dropColumn('visa_type');
+            foreach ($columnsToDrop as $column) {
+                if (Schema::hasColumn('employees', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 
@@ -47,28 +49,28 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            // Restore Legacy Identification Columns
-            $table->string('namelistNo')->nullable();
-            $table->string('requestNo')->nullable();
-            $table->string('workerRefNo')->nullable();
-            $table->string('personalId')->nullable();
-            $table->string('companyWorkerId')->nullable();
-            $table->string('socialSecurityNo')->nullable();
-            $table->string('taxIdNo')->nullable();
+            // Restore Legacy Identification Columns if they don't exist
+            if (!Schema::hasColumn('employees', 'namelistNo')) $table->string('namelistNo')->nullable();
+            if (!Schema::hasColumn('employees', 'requestNo')) $table->string('requestNo')->nullable();
+            if (!Schema::hasColumn('employees', 'workerRefNo')) $table->string('workerRefNo')->nullable();
+            if (!Schema::hasColumn('employees', 'personalId')) $table->string('personalId')->nullable();
+            if (!Schema::hasColumn('employees', 'companyWorkerId')) $table->string('companyWorkerId')->nullable();
+            if (!Schema::hasColumn('employees', 'socialSecurityNo')) $table->string('socialSecurityNo')->nullable();
+            if (!Schema::hasColumn('employees', 'taxIdNo')) $table->string('taxIdNo')->nullable();
 
             // Restore Legacy Document Columns
-            $table->string('document_1')->nullable();
-            $table->string('document_2')->nullable();
-            $table->string('document_3')->nullable();
-            $table->string('document_4')->nullable();
-            $table->string('document_description_4')->nullable();
-            $table->string('document_5')->nullable();
-            $table->string('document_description_5')->nullable();
-            $table->string('document_6')->nullable();
-            $table->string('document_description_6')->nullable();
+            if (!Schema::hasColumn('employees', 'document_1')) $table->string('document_1')->nullable();
+            if (!Schema::hasColumn('employees', 'document_2')) $table->string('document_2')->nullable();
+            if (!Schema::hasColumn('employees', 'document_3')) $table->string('document_3')->nullable();
+            if (!Schema::hasColumn('employees', 'document_4')) $table->string('document_4')->nullable();
+            if (!Schema::hasColumn('employees', 'document_description_4')) $table->string('document_description_4')->nullable();
+            if (!Schema::hasColumn('employees', 'document_5')) $table->string('document_5')->nullable();
+            if (!Schema::hasColumn('employees', 'document_description_5')) $table->string('document_description_5')->nullable();
+            if (!Schema::hasColumn('employees', 'document_6')) $table->string('document_6')->nullable();
+            if (!Schema::hasColumn('employees', 'document_description_6')) $table->string('document_description_6')->nullable();
 
             // Restore Duplicate Column
-            $table->string('visa_type')->nullable();
+            if (!Schema::hasColumn('employees', 'visa_type')) $table->string('visa_type')->nullable();
         });
     }
 };
