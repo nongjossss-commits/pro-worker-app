@@ -1,5 +1,5 @@
-const { PDFDocument } = require('pdf-lib');
-const fs = require('fs').promises;
+import { PDFDocument } from 'pdf-lib';
+import { promises as fs } from 'fs';
 
 async function normalizePdf() {
     const args = process.argv.slice(2);
