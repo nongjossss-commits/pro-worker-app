@@ -197,34 +197,32 @@ class PdfGeneratorService
         $scriptExists = file_exists($scriptPath);
 
         // Define strategies to try
-        $strategies = [];
+        $strategies = [
+            // Strategy 1: Ghostscript (Preferred for stability/speed if installed)
+            // Supports: Windows (gswin64c, gswin32c) and Linux/Mac (gs)
+            'gswin64c' => ['type' => 'gs'],
+            'gswin32c' => ['type' => 'gs'],
+            'gs'       => ['type' => 'gs'],
 
-        // Strategy 0: Detected Ghostscript (High Priority)
-        $detectedGs = $this->detectGhostscriptPath();
-        if ($detectedGs) {
-            $strategies['detected_gs'] = ['type' => 'gs', 'bin' => $detectedGs];
-        }
-
-        // Strategy 1: Ghostscript (Preferred for stability/speed if installed in PATH)
-        $strategies['gswin64c'] = ['type' => 'gs', 'bin' => 'gswin64c'];
-        $strategies['gswin32c'] = ['type' => 'gs', 'bin' => 'gswin32c'];
-        $strategies['gs']       = ['type' => 'gs', 'bin' => 'gs'];
-
-        // Strategy 2: Python (Fallback if script exists)
-        $strategies['py']       = ['type' => 'python', 'bin' => 'py'];
-        $strategies['python']   = ['type' => 'python', 'bin' => 'python'];
-        $strategies['python3']  = ['type' => 'python', 'bin' => 'python3'];
+            // Strategy 2: Python (Fallback if script exists)
+            // Supports: Windows (py, python) and Linux/Mac (python3, python)
+            'py'       => ['type' => 'python'], // Windows launcher
+            'python'   => ['type' => 'python'],
+            'python3'  => ['type' => 'python'],
+        ];
 
         $errors = [];
 
-        foreach ($strategies as $key => $config) {
+        foreach ($strategies as $bin => $config) {
             $cmd = '';
-            $bin = $config['bin'];
 
             if ($config['type'] === 'gs') {
                 // Ghostscript command to normalize PDF to 1.4
+                // -sDEVICE=pdfwrite: Use PDF writer device
+                // -dCompatibilityLevel=1.4: Force version 1.4
+                // -dNOPAUSE -dQUIET -dBATCH: Non-interactive modes
                 $cmd = sprintf(
-                    '"%s" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
+                    '%s -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
                     $bin,
                     escapeshellarg($outputPath),
                     escapeshellarg($inputPath)
@@ -239,74 +237,42 @@ class PdfGeneratorService
                     escapeshellarg($outputPath)
                 );
             } else {
-                continue; // Skip
+                continue; // Skip if script missing for python strategy
             }
 
             // Execute
             exec($cmd, $output, $returnVar);
 
             // Check success
+            // Note: Ghostscript returns 0 on success. Python script also returns 0 on success.
+            // Check if output file exists and has content.
             if ($returnVar === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
                 return $outputPath;
             }
 
-            // Collect errors for debugging
+            // Collect errors for debugging if all fail
             $errorOutput = implode("\n", $output);
 
-            // Clean up error message for display
+            // Filter out "command not found" type errors to keep logs clean
+            // In Windows "is not recognized" or Linux "not found"
             if (empty($errorOutput) ||
                 str_contains($errorOutput, 'is not recognized') ||
                 str_contains($errorOutput, 'not found')) {
-                $errors[] = "$bin: Not found/installed.";
+                $errors[] = "$bin: Not installed or not found in PATH.";
             } else {
-                $errors[] = "$bin: Failed (Code $returnVar).";
+                $errors[] = "$bin: Failed (Code $returnVar). Output: $errorOutput";
             }
 
+            // Clean up potentially failed empty file
             if (file_exists($outputPath)) @unlink($outputPath);
         }
 
-        // Improved Error Message in Thai
+        // If we reach here, all strategies failed
+        $errorMsg = "Could not repair PDF. Attempts:\n" . implode("\n", $errors);
+
         Log::error('PDF Normalization Failed', ['errors' => $errors]);
 
-        throw new \Exception("ระบบไม่สามารถซ่อมแซมไฟล์ PDF ได้อัตโนมัติ (Automatic Repair Failed).\n\nสาเหตุ: ไม่พบโปรแกรม Ghostscript ในเครื่อง\n\nวิธีแก้ไข: กรุณารันไฟล์ 'install_pdf_tools.bat' ที่อยู่ในโฟลเดอร์ของโปรแกรมเพื่อติดตั้งเครื่องมือเสริม\n\nTechnical Details:\n" . implode("\n", $errors));
-    }
-
-    /**
-     * Attempts to find the Ghostscript executable in standard Windows installation paths.
-     */
-    protected function detectGhostscriptPath()
-    {
-        // Only relevant for Windows environments
-        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-            return null;
-        }
-
-        $programFiles = $_SERVER['ProgramFiles'] ?? 'C:\Program Files';
-        $gsRoot = $programFiles . '\gs';
-
-        if (is_dir($gsRoot)) {
-            $dirs = scandir($gsRoot);
-            // Sort reverse to get highest version first (e.g. gs10.03.0 before gs9.55)
-            rsort($dirs);
-
-            foreach ($dirs as $dir) {
-                if ($dir === '.' || $dir === '..') continue;
-
-                // Check for 64-bit binary
-                $binPath = $gsRoot . '\\' . $dir . '\\bin\\gswin64c.exe';
-                if (file_exists($binPath)) {
-                    return $binPath;
-                }
-
-                // Check for 32-bit binary as fallback
-                $binPath32 = $gsRoot . '\\' . $dir . '\\bin\\gswin32c.exe';
-                if (file_exists($binPath32)) {
-                    return $binPath32;
-                }
-            }
-        }
-
-        return null;
+        throw new \Exception($errorMsg . "\n\nSuggestion: Install Ghostscript or Python (with pypdf), or save your PDF template as 'PDF Version 1.4' using a PDF editor.");
     }
 
     protected function resolveValue(Employee $employee, $key)
