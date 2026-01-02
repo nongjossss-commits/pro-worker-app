@@ -1,7 +1,7 @@
 <!-- resources/views/components/document-scanner.blade.php -->
 <div x-data="documentScanner()"
      x-show="isOpen"
-     @open-document-scanner.window="openScanner($event.detail)"
+     @open-document-scanner.document="openScanner($event.detail)"
      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90"
      style="display: none;"
      x-transition:enter="transition ease-out duration-300"
