@@ -21,6 +21,7 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
-        "bootstrap": "^5.3.8"
+        "bootstrap": "^5.3.8",
+        "pdf-lib": "^1.17.1"
     }
 }

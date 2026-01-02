@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Helpers\PdfHelper;
+use App\Services\PdfGeneratorService;
 
 class PdfTemplateController extends Controller
 {
@@ -50,7 +51,7 @@ class PdfTemplateController extends Controller
         return view('pdf_templates.create', compact('employers'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, PdfGeneratorService $pdfService)
     {
         $this->authorize('create-pdf-templates');
 
@@ -62,22 +63,50 @@ class PdfTemplateController extends Controller
         ]);
 
         $file = $request->file('file');
+        $filePath = $file->getRealPath();
 
         // Validate PDF Version (Must be <= 1.4 for FPDI compatibility)
-        // We do this before storing to avoid saving bad files.
-        // Since we need to read the file, valid upload is assumed by validation rules.
-        if (!PdfHelper::isCompatible($file->getRealPath(), 1.4)) {
-            $version = PdfHelper::getVersion($file->getRealPath()) ?? 'Unknown';
-            return back()->withErrors([
-                'file' => "The uploaded PDF is version {$version}. The system requires PDF Version 1.4 or lower. Please open your PDF in a PDF editor (like Acrobat) and 'Save As' -> 'PDF 1.4'."
-            ])->withInput();
-        }
+        // If not compatible, try to normalize immediately
+        if (!PdfHelper::isCompatible($filePath, 1.4)) {
+            try {
+                // Attempt to normalize the temp file directly
+                $normalizedPath = $pdfService->tryNormalizePdf($filePath);
 
-        $path = $file->store('pdf_templates', 'public');
+                // If normalization fails, tryNormalizePdf might return null depending on implementation
+                // (Though currently it throws Exception on failure, adding check for safety)
+                if (!$normalizedPath || !file_exists($normalizedPath)) {
+                     throw new \Exception("Normalization process failed to produce a valid file.");
+                }
+
+                // If normalization returned a path, we use that for storage
+                // Manual storage logic for normalized file
+                $filename = $file->hashName();
+                $storePath = 'pdf_templates/' . $filename;
+
+                // Move normalized file to public storage
+                Storage::disk('public')->put($storePath, file_get_contents($normalizedPath));
+
+                // Clean up temp normalized file
+                @unlink($normalizedPath);
+
+                // Use this path for the model creation
+                $finalPath = $storePath;
+
+            } catch (\Exception $e) {
+                // If normalization fails, fall back to the error message
+                $version = PdfHelper::getVersion($filePath) ?? 'Unknown';
+                return back()->withErrors([
+                    'file' => "The uploaded PDF is version {$version}. The system attempted to repair it but failed: " . $e->getMessage()
+                ])->withInput();
+            }
+        } else {
+            // Compatible, store normally
+            $finalPath = $file->store('pdf_templates', 'public');
+        }
 
         $template = PdfTemplate::create([
             'name' => $request->name,
-            'file_path' => $path,
+            'file_path' => $finalPath,
             'type' => $request->type,
             'employer_id' => $request->type === 'employer' ? $request->employer_id : null,
             'created_by' => Auth::id(),
