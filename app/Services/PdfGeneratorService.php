@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class PdfGeneratorService
 {
@@ -84,7 +85,7 @@ class PdfGeneratorService
             try {
                 $pageCount = $pdf->setSourceFile($templatePath);
             } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
-                // Try to normalize the PDF using Python script
+                // Try to normalize the PDF using Ghostscript or Python
                 try {
                     $normalizedPath = $this->tryNormalizePdf($templatePath);
                     if ($normalizedPath) {
@@ -92,8 +93,7 @@ class PdfGeneratorService
                         $this->tempFiles[] = $normalizedPath; // Mark for deletion
                     }
                 } catch (\Exception $ex) {
-                    // This now catches the specific "Missing Python dependency" error
-                    throw new \Exception('Automatic PDF repair failed. ' . $ex->getMessage());
+                     throw new \Exception('Automatic PDF repair failed. ' . $ex->getMessage());
                 }
             } catch (\Exception $e) {
                 throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
@@ -194,33 +194,85 @@ class PdfGeneratorService
         $scriptPath = base_path('scripts/normalize_pdf.py');
 
         // Check if script exists
-        if (!file_exists($scriptPath)) {
-            throw new \Exception('PDF Repair script missing: ' . $scriptPath);
+        $scriptExists = file_exists($scriptPath);
+
+        // Define strategies to try
+        $strategies = [
+            // Strategy 1: Ghostscript (Preferred for stability/speed if installed)
+            // Supports: Windows (gswin64c, gswin32c) and Linux/Mac (gs)
+            'gswin64c' => ['type' => 'gs'],
+            'gswin32c' => ['type' => 'gs'],
+            'gs'       => ['type' => 'gs'],
+
+            // Strategy 2: Python (Fallback if script exists)
+            // Supports: Windows (py, python) and Linux/Mac (python3, python)
+            'py'       => ['type' => 'python'], // Windows launcher
+            'python'   => ['type' => 'python'],
+            'python3'  => ['type' => 'python'],
+        ];
+
+        $errors = [];
+
+        foreach ($strategies as $bin => $config) {
+            $cmd = '';
+
+            if ($config['type'] === 'gs') {
+                // Ghostscript command to normalize PDF to 1.4
+                // -sDEVICE=pdfwrite: Use PDF writer device
+                // -dCompatibilityLevel=1.4: Force version 1.4
+                // -dNOPAUSE -dQUIET -dBATCH: Non-interactive modes
+                $cmd = sprintf(
+                    '%s -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
+                    $bin,
+                    escapeshellarg($outputPath),
+                    escapeshellarg($inputPath)
+                );
+            } elseif ($config['type'] === 'python' && $scriptExists) {
+                // Python command
+                $cmd = sprintf(
+                    '%s %s %s %s 2>&1',
+                    $bin,
+                    escapeshellarg($scriptPath),
+                    escapeshellarg($inputPath),
+                    escapeshellarg($outputPath)
+                );
+            } else {
+                continue; // Skip if script missing for python strategy
+            }
+
+            // Execute
+            exec($cmd, $output, $returnVar);
+
+            // Check success
+            // Note: Ghostscript returns 0 on success. Python script also returns 0 on success.
+            // Check if output file exists and has content.
+            if ($returnVar === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
+                return $outputPath;
+            }
+
+            // Collect errors for debugging if all fail
+            $errorOutput = implode("\n", $output);
+
+            // Filter out "command not found" type errors to keep logs clean
+            // In Windows "is not recognized" or Linux "not found"
+            if (empty($errorOutput) ||
+                str_contains($errorOutput, 'is not recognized') ||
+                str_contains($errorOutput, 'not found')) {
+                $errors[] = "$bin: Not installed or not found in PATH.";
+            } else {
+                $errors[] = "$bin: Failed (Code $returnVar). Output: $errorOutput";
+            }
+
+            // Clean up potentially failed empty file
+            if (file_exists($outputPath)) @unlink($outputPath);
         }
 
-        // Construct command
-        $cmd = "python3 " . escapeshellarg($scriptPath) . " " . escapeshellarg($inputPath) . " " . escapeshellarg($outputPath) . " 2>&1";
+        // If we reach here, all strategies failed
+        $errorMsg = "Could not repair PDF. Attempts:\n" . implode("\n", $errors);
 
-        exec($cmd, $output, $returnVar);
+        Log::error('PDF Normalization Failed', ['errors' => $errors]);
 
-        if ($returnVar === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
-            return $outputPath;
-        }
-
-        $errorOutput = implode("\n", $output);
-        \Illuminate\Support\Facades\Log::error('PDF Normalization Failed', [
-            'command' => $cmd,
-            'output' => $output,
-            'return_var' => $returnVar
-        ]);
-
-        // Check for common errors to provide a better hint
-        if (str_contains($errorOutput, 'ModuleNotFoundError')) {
-            throw new \Exception('Missing Python dependency. Please install pypdf (pip install pypdf). Detail: ' . $errorOutput);
-        }
-
-        // If it failed for another reason, throw that too
-        throw new \Exception('Repair script failed (Code: ' . $returnVar . '). Detail: ' . $errorOutput);
+        throw new \Exception($errorMsg . "\n\nSuggestion: Install Ghostscript or Python (with pypdf), or save your PDF template as 'PDF Version 1.4' using a PDF editor.");
     }
 
     protected function resolveValue(Employee $employee, $key)
