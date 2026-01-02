@@ -86,14 +86,8 @@ class PdfGeneratorService
             try {
                 $pageCount = $pdf->setSourceFile($templatePath);
             } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
-
-                // Immediate check for version incompatibility to provide a clean error
-                $version = PdfHelper::getVersion($templatePath);
-                if ($version && $version > 1.4) {
-                     throw new \Exception("The PDF template '{$template->name}' is version {$version}, but the system requires version 1.4 or lower. Please open this template in a PDF editor and save it as 'PDF 1.4' (Acrobat 5.x compatible).");
-                }
-
-                // Try to normalize the PDF using Ghostscript or Python
+                // If FPDI fails, it's likely a version or structure issue.
+                // Try to normalize unconditionally.
                 try {
                     $normalizedPath = $this->tryNormalizePdf($templatePath);
                     if ($normalizedPath) {
@@ -101,12 +95,24 @@ class PdfGeneratorService
                         $this->tempFiles[] = $normalizedPath; // Mark for deletion
                     }
                 } catch (\Exception $ex) {
-                     // If normalization failed, assume it's because of the version mismatch and missing tools
+                     // If normalization failed
+                     $version = PdfHelper::getVersion($templatePath);
                      $verString = $version ?? 'Unknown';
-                     throw new \Exception("PDF Incompatible: The template '{$template->name}' is too new (Version {$verString}). " . $ex->getMessage());
+                     throw new \Exception("PDF Incompatible: The template '{$template->name}' is too new (Version {$verString}) and automatic repair failed. " . $ex->getMessage());
                 }
             } catch (\Exception $e) {
-                throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
+                 // Other FPDI errors: try normalization as fallback too
+                 try {
+                    $normalizedPath = $this->tryNormalizePdf($templatePath);
+                    if ($normalizedPath) {
+                        $pageCount = $pdf->setSourceFile($normalizedPath);
+                        $this->tempFiles[] = $normalizedPath; // Mark for deletion
+                    } else {
+                        throw $e; // Rethrow original if normalization didn't return a path (shouldn't happen if no exception)
+                    }
+                 } catch (\Exception $ex) {
+                     throw new \Exception('Failed to process PDF template: ' . $e->getMessage() . ' | Repair attempt: ' . $ex->getMessage());
+                 }
             }
 
             // Generate Signatures for this session (Consistent per person)
@@ -198,12 +204,35 @@ class PdfGeneratorService
         return $content;
     }
 
-    protected function tryNormalizePdf($inputPath)
+    public function tryNormalizePdf($inputPath)
     {
         $outputPath = tempnam(sys_get_temp_dir(), 'norm_') . '.pdf';
-        $scriptPath = base_path('scripts/normalize_pdf.py');
 
-        // Check if script exists
+        // Strategy 0: Node.js (pdf-lib) - preferred strategy now
+        $nodeScriptPath = base_path('scripts/normalize_pdf.js');
+        if (file_exists($nodeScriptPath)) {
+            $cmd = sprintf(
+                'node %s %s %s 2>&1',
+                escapeshellarg($nodeScriptPath),
+                escapeshellarg($inputPath),
+                escapeshellarg($outputPath)
+            );
+
+            exec($cmd, $output, $returnVar);
+
+            if ($returnVar === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
+                return $outputPath;
+            }
+
+            Log::warning('Node.js PDF normalization failed', [
+                'cmd' => $cmd,
+                'return' => $returnVar,
+                'output' => $output
+            ]);
+        }
+
+        // Fallback strategies: Ghostscript or Python
+        $scriptPath = base_path('scripts/normalize_pdf.py');
         $scriptExists = file_exists($scriptPath);
 
         // Define strategies to try
@@ -278,8 +307,8 @@ class PdfGeneratorService
         }
 
         // If we reach here, all strategies failed
-        $errorMsg = "Automatic PDF repair failed. The system attempted to convert the PDF to version 1.4 but could not find the necessary tools (Ghostscript or Python).\n\n" .
-                    "SOLUTION: Please open your PDF template in a PDF editor and save it specifically as 'PDF Version 1.4' (Acrobat 5.x compatible).";
+        $errorMsg = "Automatic PDF repair failed. The system attempted to convert the PDF to version 1.4 but could not find the necessary tools (Node.js, Ghostscript, or Python).\n\n" .
+                    "SOLUTION: Please ensure 'node' is installed and 'pdf-lib' is added to package.json.";
 
         Log::error('PDF Normalization Failed', ['errors' => $errors]);
 
