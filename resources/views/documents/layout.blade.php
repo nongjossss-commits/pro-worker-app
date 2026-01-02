@@ -206,7 +206,11 @@
 
         <!-- Logic Setup -->
         @php
+            use Illuminate\Support\Str;
+
             $mode = $mode ?? 'combined'; // combined, service_only, advance_only
+            // Receipt Context: If true, show 'paid_amount' if available. If false (Invoice), show 'amount'.
+            $isReceiptContext = Str::contains($type, ['Receipt', 'Tax Invoice']);
 
             // 1. Classify Transactions (if filtering/selection is used)
             $serviceTransactions = collect();
@@ -239,9 +243,13 @@
 
             // Service Fee Calculation
             if ($hasSpecificTransactions) {
-                $serviceTotal = $serviceTransactions->sum('amount');
+                // Sum based on context
+                $serviceTotal = $serviceTransactions->sum(function($t) use ($isReceiptContext) {
+                    return $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
+                });
             } elseif ($showService) {
                 // If no specific transactions, assume full project value for Quotation/Project context
+                // For Receipts in Project Context (Rare?), we might still use total_amount
                 $serviceTotal = $financial['total_amount'] ?? 0;
             }
 
@@ -249,7 +257,9 @@
             // Scenario A: Specific Advance Transactions selected (e.g. Receipt for Deposit)
             // Scenario B: Project View (Quotation) -> Sum of planned items
             if ($advanceTransactions->isNotEmpty()) {
-                $advanceTotal = $advanceTransactions->sum('amount');
+                 $advanceTotal = $advanceTransactions->sum(function($t) use ($isReceiptContext) {
+                    return $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
+                });
             } elseif ($showAdvance && !$hasSpecificTransactions && isset($advanceItems)) {
                  // Only show planned items sum if NO specific transactions are selected
                  $advanceTotal = $advanceItems->sum('total');
@@ -264,7 +274,7 @@
             // Deconstruct Service Fee
             if ($vatIncluded) {
                 $totalServiceIncVat = $serviceTotal;
-                $serviceBase = $totalServiceIncVat / (1 + ($vatRate/100));
+                $serviceBase = ($vatRate > 0) ? $totalServiceIncVat / (1 + ($vatRate/100)) : $totalServiceIncVat;
                 $serviceVat = $totalServiceIncVat - $serviceBase;
             } else {
                 $serviceBase = $serviceTotal;
@@ -296,16 +306,22 @@
 
                     @if($hasSpecificTransactions)
                          @foreach($serviceTransactions as $index => $t)
+                            @php
+                                $amount = $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
+                            @endphp
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>
                                     <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
                                     @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
                                     @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                    @if($isReceiptContext && $t->amount > $amount)
+                                        <br><span class="badge" style="font-size: 10px; background: #eee; padding: 2px 4px; border-radius: 4px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
+                                    @endif
                                 </td>
                                 <td class="text-center">1</td>
-                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
-                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                                <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                <td class="text-right">{{ number_format($amount, 2) }}</td>
                             </tr>
                         @endforeach
                     @else
@@ -328,15 +344,21 @@
                             <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย)</td>
                         </tr>
                         @foreach($advanceTransactions as $index => $t)
+                            @php
+                                $amount = $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
+                            @endphp
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>
                                     <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
                                     @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
+                                     @if($isReceiptContext && $t->amount > $amount)
+                                        <br><span class="badge" style="font-size: 10px; background: #eee; padding: 2px 4px; border-radius: 4px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
+                                    @endif
                                 </td>
                                 <td class="text-center">1</td>
-                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
-                                <td class="text-right">{{ number_format($t->amount, 2) }}</td>
+                                <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                <td class="text-right">{{ number_format($amount, 2) }}</td>
                             </tr>
                         @endforeach
 
