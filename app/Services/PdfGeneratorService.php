@@ -7,6 +7,7 @@ use App\Models\PdfTemplate;
 use setasign\Fpdi\Fpdi;
 use setasign\Fpdi\PdfParser\StreamReader;
 use Illuminate\Support\Facades\Storage;
+use App\Helpers\PdfHelper;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -85,6 +86,13 @@ class PdfGeneratorService
             try {
                 $pageCount = $pdf->setSourceFile($templatePath);
             } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
+
+                // Immediate check for version incompatibility to provide a clean error
+                $version = PdfHelper::getVersion($templatePath);
+                if ($version && $version > 1.4) {
+                     throw new \Exception("The PDF template '{$template->name}' is version {$version}, but the system requires version 1.4 or lower. Please open this template in a PDF editor and save it as 'PDF 1.4' (Acrobat 5.x compatible).");
+                }
+
                 // Try to normalize the PDF using Ghostscript or Python
                 try {
                     $normalizedPath = $this->tryNormalizePdf($templatePath);
@@ -93,7 +101,9 @@ class PdfGeneratorService
                         $this->tempFiles[] = $normalizedPath; // Mark for deletion
                     }
                 } catch (\Exception $ex) {
-                     throw new \Exception('Automatic PDF repair failed. ' . $ex->getMessage());
+                     // If normalization failed, assume it's because of the version mismatch and missing tools
+                     $verString = $version ?? 'Unknown';
+                     throw new \Exception("PDF Incompatible: The template '{$template->name}' is too new (Version {$verString}). " . $ex->getMessage());
                 }
             } catch (\Exception $e) {
                 throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
@@ -268,11 +278,12 @@ class PdfGeneratorService
         }
 
         // If we reach here, all strategies failed
-        $errorMsg = "Could not repair PDF. Attempts:\n" . implode("\n", $errors);
+        $errorMsg = "Automatic PDF repair failed. The system attempted to convert the PDF to version 1.4 but could not find the necessary tools (Ghostscript or Python).\n\n" .
+                    "SOLUTION: Please open your PDF template in a PDF editor and save it specifically as 'PDF Version 1.4' (Acrobat 5.x compatible).";
 
         Log::error('PDF Normalization Failed', ['errors' => $errors]);
 
-        throw new \Exception($errorMsg . "\n\nSuggestion: Install Ghostscript or Python (with pypdf), or save your PDF template as 'PDF Version 1.4' using a PDF editor.");
+        throw new \Exception($errorMsg);
     }
 
     protected function resolveValue(Employee $employee, $key)

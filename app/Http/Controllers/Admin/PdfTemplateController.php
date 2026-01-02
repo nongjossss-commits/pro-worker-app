@@ -8,6 +8,7 @@ use App\Models\PdfTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Helpers\PdfHelper;
 
 class PdfTemplateController extends Controller
 {
@@ -60,7 +61,19 @@ class PdfTemplateController extends Controller
             'employer_id' => 'required_if:type,employer|nullable|exists:employers,id',
         ]);
 
-        $path = $request->file('file')->store('pdf_templates', 'public');
+        $file = $request->file('file');
+
+        // Validate PDF Version (Must be <= 1.4 for FPDI compatibility)
+        // We do this before storing to avoid saving bad files.
+        // Since we need to read the file, valid upload is assumed by validation rules.
+        if (!PdfHelper::isCompatible($file->getRealPath(), 1.4)) {
+            $version = PdfHelper::getVersion($file->getRealPath()) ?? 'Unknown';
+            return back()->withErrors([
+                'file' => "The uploaded PDF is version {$version}. The system requires PDF Version 1.4 or lower. Please open your PDF in a PDF editor (like Acrobat) and 'Save As' -> 'PDF 1.4'."
+            ])->withInput();
+        }
+
+        $path = $file->store('pdf_templates', 'public');
 
         $template = PdfTemplate::create([
             'name' => $request->name,
