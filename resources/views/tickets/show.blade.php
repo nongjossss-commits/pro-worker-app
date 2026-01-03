@@ -86,14 +86,7 @@
                         <div class="list-group mb-3">
                             @foreach($attachments->existing_employees as $item)
                                 @php $employee = $item->employee; @endphp
-                                <div class="list-group-item d-flex align-items-center gap-3 py-2"
-                                     draggable="true"
-                                     @dragstart="startDragGlobal($event, 'employee', {
-                                        id: {{ $employee->id }},
-                                        title: '{{ $employee->employeeNameTh }}',
-                                        subtitle: '{{ $employee->employeeNameEn }}',
-                                        url: '{{ route('employees.show', $employee->id) }}'
-                                     })">
+                                <div class="list-group-item d-flex align-items-center gap-3 py-2">
                                     <div class="form-check mb-0">
                                         <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}">
                                     </div>
@@ -105,7 +98,7 @@
                                     @if($employee->trashed())
                                         <span class="badge bg-danger me-2">{{ __('Deleted/Terminated') }}</span>
                                     @endif
-                                    <div class="ms-auto btn-group">
+                                    <div class="ms-auto btn-group align-items-center">
                                         {{-- Preview Button --}}
                                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}">
                                             <i class="bi bi-search"></i>
@@ -124,6 +117,17 @@
                                             </button>
                                         </form>
                                         @endif
+                                        <span class="btn btn-sm btn-light border cursor-grab ms-1"
+                                              draggable="true"
+                                              ondragstart="startDragGlobal(event, 'employee', {
+                                                id: {{ $employee->id }},
+                                                title: '{{ $employee->employeeNameTh }}',
+                                                subtitle: '{{ $employee->employeeNameEn }}',
+                                                url: '{{ route('employees.show', $employee->id) }}'
+                                             })"
+                                             title="{{ __('Drag') }}">
+                                            <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
+                                        </span>
                                     </div>
                                 </div>
                             @endforeach
@@ -136,14 +140,7 @@
                         <div class="list-group mb-3 border border-warning rounded">
                             @foreach($attachments->external_employees as $item)
                                 @php $employee = $item->employee; @endphp
-                                <div class="list-group-item d-flex align-items-center gap-3 py-2 bg-light"
-                                     draggable="true"
-                                     @dragstart="startDragGlobal($event, 'employee', {
-                                        id: {{ $employee->id }},
-                                        title: '{{ $employee->employeeNameTh }}',
-                                        subtitle: '{{ $employee->employeeNameEn }}',
-                                        url: '{{ route('employees.show', $employee->id) }}'
-                                     })">
+                                <div class="list-group-item d-flex align-items-center gap-3 py-2 bg-light">
                                     {{-- External employees don't have bulk actions for now --}}
                                     <div class="position-relative">
                                         <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
@@ -158,7 +155,7 @@
                                         </small>
                                     </span>
 
-                                    <div class="ms-auto btn-group">
+                                    <div class="ms-auto btn-group align-items-center">
                                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}">
                                             <i class="bi bi-search"></i>
                                         </button>
@@ -175,6 +172,17 @@
                                             </button>
                                         </form>
                                         @endif
+                                        <span class="btn btn-sm btn-light border cursor-grab ms-1"
+                                              draggable="true"
+                                              ondragstart="startDragGlobal(event, 'employee', {
+                                                id: {{ $employee->id }},
+                                                title: '{{ $employee->employeeNameTh }}',
+                                                subtitle: '{{ $employee->employeeNameEn }}',
+                                                url: '{{ route('employees.show', $employee->id) }}'
+                                             })"
+                                             title="{{ __('Drag') }}">
+                                            <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
+                                        </span>
                                     </div>
                                 </div>
                             @endforeach
@@ -202,13 +210,7 @@
                                     window.newEmployeeDataMap['{{ $mapKey }}'] = @json($newEmployee);
                                 </script>
 
-                                <div class="list-group-item py-2 d-flex align-items-center"
-                                     draggable="true"
-                                     @dragstart="startDragGlobal($event, 'new_employee_draft', {
-                                        title: 'New: {{ $newEmployee->employeeNameTh }}',
-                                        subtitle: 'Passport: {{ $newEmployee->employeePassport ?? 'N/A' }}',
-                                        data: @json($newEmployee)
-                                     })">
+                                <div class="list-group-item py-2 d-flex align-items-center">
                                     <div class="flex-grow-1">
                                         {{-- Display Both Thai and English names --}}
                                         <strong>{{ $newEmployee->employeeTitleTh ?? '' }}{{ $newEmployee->employeeNameTh }}</strong>
@@ -251,7 +253,7 @@
                                             @endforeach
                                         </div>
                                     </div>
-                                    <div class="ms-auto btn-group">
+                                    <div class="ms-auto btn-group align-items-center">
                                         {{-- Preview Button --}}
                                         <button type="button" class="btn btn-sm btn-outline-info" onclick="openNewEmployeePreview('{{ $mapKey }}')">
                                             <i class="bi bi-search"></i>
@@ -270,6 +272,16 @@
                                             </button>
                                         </form>
                                         @endif
+                                        <span class="btn btn-sm btn-light border cursor-grab ms-1"
+                                              draggable="true"
+                                              ondragstart="startDragGlobal(event, 'new_employee_draft', {
+                                                title: 'New: {{ $newEmployee->employeeNameTh }}',
+                                                subtitle: 'Passport: {{ $newEmployee->employeePassport ?? 'N/A' }}',
+                                                data: @json($newEmployee)
+                                             })"
+                                             title="{{ __('Drag') }}">
+                                            <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
+                                        </span>
                                     </div>
                                 </div>
                             @endforeach
@@ -282,14 +294,7 @@
                         <div class="list-group mb-3">
                             @foreach($attachments->files as $item)
                                 @php $file = $item->data; @endphp
-                                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2"
-                                     draggable="true"
-                                     @dragstart="startDragGlobal($event, 'file', {
-                                        title: '{{ $file->name }}',
-                                        subtitle: '{{ formatBytes($file->size) }}',
-                                        url: '{{ $file->url ?? '#' }}',
-                                        mime: '{{ $file->mime ?? 'application/octet-stream' }}'
-                                     })">
+                                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2">
                                     <a href="{{ $file->url ?? '#' }}" @if($file->url) target="_blank" @endif class="text-decoration-none text-body flex-grow-1">
                                         @if($file->url)
                                             <span><i class="bi bi-file-earmark-text me-2"></i> {{ $file->name }}</span>
@@ -311,6 +316,17 @@
                                         </button>
                                     </form>
                                     @endif
+                                    <span class="btn btn-sm btn-light border cursor-grab ms-1"
+                                          draggable="true"
+                                          ondragstart="startDragGlobal(event, 'file', {
+                                            title: '{{ $file->name }}',
+                                            subtitle: '{{ formatBytes($file->size) }}',
+                                            url: '{{ $file->url ?? '#' }}',
+                                            mime: '{{ $file->mime ?? 'application/octet-stream' }}'
+                                         })"
+                                         title="{{ __('Drag') }}">
+                                        <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
+                                    </span>
                                 </div>
                             @endforeach
                         </div>

@@ -24,9 +24,7 @@
     ];
 @endphp
 
-<tr id="notification-row-{{ $notification->id }}" draggable="true"
-    data-drag-payload="{{ json_encode($payload) }}"
-    ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
+<tr id="notification-row-{{ $notification->id }}" data-drag-payload="{{ json_encode($payload) }}">
     <td>
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)
@@ -36,6 +34,12 @@
         @endif
     </td>
     <td>{{ $itemNumber }}</td>
+    <td>
+        <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+           draggable="true"
+           ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(document.getElementById('notification-row-{{ $notification->id }}').dataset.dragPayload))"
+           title="Drag"></i>
+    </td>
     <td>
         @if($employee)
             <div class="d-flex align-items-center">

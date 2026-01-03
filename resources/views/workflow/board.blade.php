@@ -117,8 +117,6 @@
                                 <template x-for="item in getItems({{ $barrier->id }}, true)" :key="item.id">
                                     <div class="card mb-2 shadow-sm employee-card-draggable"
                                          :class="{ 'border-primary': selectedItems.includes(item.id) }"
-                                         draggable="true"
-                                         @dragstart="dragStart($event, item)"
                                          @click.ctrl="toggleSelection(item.id)"
                                          @click.shift="toggleSelection(item.id)">
 
@@ -139,6 +137,14 @@
                                                         </template>
                                                     </div>
                                                 </div>
+                                                {{-- Drag Handle --}}
+                                                <div class="d-flex align-items-end">
+                                                    <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+                                                       draggable="true"
+                                                       @dragstart="dragStart($event, item)"
+                                                       @click.stop
+                                                       title="{{ __('Drag') }}"></i>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -153,8 +159,6 @@
                                 <template x-for="item in getItems({{ $barrier->id }}, false)" :key="item.id">
                                     <div class="card mb-2 shadow-sm employee-card-draggable"
                                          :class="{ 'border-primary': selectedItems.includes(item.id) }"
-                                         draggable="true"
-                                         @dragstart="dragStart($event, item)"
                                          @click.ctrl="toggleSelection(item.id)"
                                          @click.shift="toggleSelection(item.id)">
 
@@ -180,6 +184,14 @@
                                                             <span class="badge bg-secondary" style="font-size: 0.6rem;" x-text="step.label"></span>
                                                         </template>
                                                     </div>
+                                                </div>
+                                                {{-- Drag Handle --}}
+                                                <div class="d-flex align-items-end">
+                                                    <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+                                                       draggable="true"
+                                                       @dragstart="dragStart($event, item)"
+                                                       @click.stop
+                                                       title="{{ __('Drag') }}"></i>
                                                 </div>
                                             </div>
                                         </div>

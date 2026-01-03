@@ -55,9 +55,7 @@
     ];
 @endphp
 
-<div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item" draggable="true"
-     data-drag-payload="{{ json_encode($payload) }}"
-     ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(this.dataset.dragPayload))">
+<div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item" data-drag-payload="{{ json_encode($payload) }}">
     <div class="d-flex align-items-start gap-3">
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)
@@ -160,6 +158,14 @@
                                 <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-sm btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                             @endif
                             <a href="#" class="btn btn-sm btn-outline-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+
+                            {{-- Drag Handle --}}
+                            <a href="#" class="btn btn-sm btn-light border cursor-grab"
+                               draggable="true"
+                               ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(document.getElementById('notification-item-{{ $notification->id }}').dataset.dragPayload))"
+                               title="Drag">
+                                <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
+                            </a>
                         @endif
                     </div>
                 </div>
