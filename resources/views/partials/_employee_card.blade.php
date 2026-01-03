@@ -7,6 +7,19 @@
     // Generate the drag source URL. Use the 'dragUrl' prop if provided (for custom anchors like in Groups),
     // otherwise fallback to a standard hash link on the current page.
     $dragSourceUrl = $dragUrl ?? (request()->fullUrlWithQuery(['highlight_employee' => $employee->id]) . '#' . $cardId);
+
+    $dragPayload = [
+        'id' => $employee->id,
+        'title' => $employee->employeeNameEn ?? $employee->employeeNameTh,
+        'title_th' => $employee->employeeNameTh,
+        'title_en' => $employee->employeeNameEn,
+        'subtitle' => $employee->job_title ?? 'N/A',
+        'photo_url' => $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png'),
+        'url' => $dragSourceUrl,
+        'source_menu' => $sourceMenu,
+        'employer_name' => $employerName,
+        'nationality' => $employee->employeeNationality
+    ];
 @endphp
 
 <div id="{{ $cardId }}" class="employee-card card mb-3">
@@ -94,18 +107,8 @@
                     @include('admin.trash._action_buttons', ['modelName' => 'employees', 'item' => $employee])
                     <span class="btn btn-sm btn-light border cursor-grab ms-1"
                           draggable="true"
-                          ondragstart="startDragGlobal(event, 'employee', {
-                            id: {{ $employee->id }},
-                            title: '{{ $employee->employeeNameEn ?? $employee->employeeNameTh }}',
-                            title_th: '{{ $employee->employeeNameTh }}',
-                            title_en: '{{ $employee->employeeNameEn }}',
-                            subtitle: '{{ $employee->job_title ?? 'N/A' }}',
-                            photo_url: '{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}',
-                            url: '{{ $dragSourceUrl }}',
-                            source_menu: '{{ $sourceMenu }}',
-                            employer_name: '{{ $employerName }}',
-                            nationality: '{{ $employee->employeeNationality }}'
-                         })"
+                          data-drag-payload="{{ json_encode($dragPayload) }}"
+                          ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
                          title="{{ __('Drag') }}">
                         <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
                     </span>
@@ -124,18 +127,8 @@
                     @endif
                     <span class="btn btn-sm btn-light border cursor-grab ms-1"
                           draggable="true"
-                          ondragstart="startDragGlobal(event, 'employee', {
-                            id: {{ $employee->id }},
-                            title: '{{ $employee->employeeNameEn ?? $employee->employeeNameTh }}',
-                            title_th: '{{ $employee->employeeNameTh }}',
-                            title_en: '{{ $employee->employeeNameEn }}',
-                            subtitle: '{{ $employee->job_title ?? 'N/A' }}',
-                            photo_url: '{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}',
-                            url: '{{ $dragSourceUrl }}',
-                            source_menu: '{{ $sourceMenu }}',
-                            employer_name: '{{ $employerName }}',
-                            nationality: '{{ $employee->employeeNationality }}'
-                         })"
+                          data-drag-payload="{{ json_encode($dragPayload) }}"
+                          ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
                          title="{{ __('Drag') }}">
                         <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
                     </span>

@@ -73,14 +73,7 @@
     @if($currentView === 'card')
         <div class="list-group">
             @forelse($employees as $employee)
-                <div class="position-relative" draggable="true"
-                     data-drag-payload="{{ json_encode([
-                        'id' => $employee->id,
-                        'title' => $employee->employeeFullName,
-                        'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
-                        'url' => route('employees.history') . '?highlight_employee=' . $employee->id
-                     ]) }}"
-                     ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
+                <div class="position-relative">
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
                 </div>
             @empty
@@ -93,6 +86,7 @@
                 <thead class="table-light">
                     <tr>
                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="history-select-all-checkbox-table"></th>
+                        <th style="width: 1%;"></th>
                         <th scope="col">Employee</th>
                         <th scope="col">Employer</th>
                         <th scope="col">Terminated Date</th>
@@ -102,15 +96,20 @@
                 </thead>
                 <tbody id="historyTableBody">
                     @forelse($employees as $employee)
-                    <tr id="history-row-{{ $employee->id }}" draggable="true"
-                        data-drag-payload="{{ json_encode([
-                            'id' => $employee->id,
-                            'title' => $employee->employeeFullName,
-                            'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
-                            'url' => route('employees.history') . '?highlight_employee=' . $employee->id
-                        ]) }}"
-                        ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
+                    <tr id="history-row-{{ $employee->id }}">
                         <td><input class="form-check-input history-employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
+                        <td style="width: 1%;">
+                             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+                                draggable="true"
+                                data-drag-payload="{{ json_encode([
+                                    'id' => $employee->id,
+                                    'title' => $employee->employeeFullName,
+                                    'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
+                                    'url' => route('employees.history') . '?highlight_employee=' . $employee->id
+                                ]) }}"
+                                ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
+                                title="{{ __('Drag') }}"></i>
+                        </td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <img src="{{ $employee->photo_url }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">

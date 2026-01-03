@@ -40,6 +40,7 @@
             <thead class="table-light">
                 <tr>
                     <th>ID</th>
+                    <th style="width: 1%;"></th>
                     <th>{{ __('Subject') }}</th>
                     <th>{{ __('Company/Employer') }}</th>
                     <th>{{ __('Status') }}</th>
@@ -50,17 +51,20 @@
             </thead>
             <tbody>
                 @forelse ($tickets as $ticket)
-                <tr class="{{ $ticket->admin_unread_count > 0 ? 'table-info' : '' }}"
-                    draggable="true"
-                    data-drag-payload="{{ json_encode([
-                        'id' => $ticket->id,
-                        'title' => $ticket->subject,
-                        'subtitle' => 'Ticket #' . $ticket->id,
-                        'url' => route('admin.tickets.show', $ticket)
-                    ]) }}"
-                    ondragstart="window.startDragGlobal(event, 'ticket', JSON.parse(this.dataset.dragPayload))"
-                    style="cursor: grab;">
+                <tr class="{{ $ticket->admin_unread_count > 0 ? 'table-info' : '' }}">
                     <td>{{ $ticket->id }}</td>
+                    <td>
+                        <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+                           draggable="true"
+                           data-drag-payload="{{ json_encode([
+                                'id' => $ticket->id,
+                                'title' => $ticket->subject,
+                                'subtitle' => 'Ticket #' . $ticket->id,
+                                'url' => route('admin.tickets.show', $ticket)
+                           ]) }}"
+                           ondragstart="window.startDragGlobal(event, 'ticket', JSON.parse(this.dataset.dragPayload))"
+                           title="{{ __('Drag') }}"></i>
+                    </td>
                     <td>
                         {{ Str::limit($ticket->subject, 50) }}
                         @if($ticket->admin_unread_count > 0)
