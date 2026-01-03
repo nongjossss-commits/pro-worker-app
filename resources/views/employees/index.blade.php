@@ -90,9 +90,7 @@
 
 <div class="bulk-action-bar mb-3 align-items-center gap-2"
      style="display: none;"
-     id="bulkActionBar"
-     draggable="true"
-     ondragstart="window.startDragBulk(event)">
+     id="bulkActionBar">
     <div class="form-check mb-0">
         <input class="form-check-input" type="checkbox" id="select-all-checkbox">
         <label class="form-check-label" for="select-all-checkbox">
@@ -130,13 +128,7 @@
     @if($currentView === 'card')
         <div class="list-group">
             @forelse($employees as $employee)
-                <div draggable="true"
-                     ondragstart="window.startDragGlobal(event, 'employee', {
-                        id: {{ $employee->id }},
-                        name: '{{ addslashes($employee->employeeNameTh) }} ({{ addslashes($employee->employeeNameEn) }})',
-                        subtitle: '{{ $employee->employeeNationality }}',
-                        url: '{{ route('employees.show', $employee->id) }}'
-                     })">
+                <div>
                 @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => true])
                 </div>
             @empty
@@ -150,6 +142,7 @@
                 <thead class="table-light">
                     <tr>
                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
+                        <th style="width: 1%;"></th> {{-- Drag Handle Column --}}
                         <th scope="col">{{ __('Employee') }}</th>
                         <th scope="col">{{ __('All Nationalities') }}</th>
                         <th scope="col">{{ __('Employers') }}</th>
@@ -161,15 +154,20 @@
                 </thead>
                 <tbody>
                     @forelse($employees as $employee)
-                    <tr draggable="true"
-                        ondragstart="window.startDragGlobal(event, 'employee', {
-                            id: {{ $employee->id }},
-                            name: '{{ addslashes($employee->employeeNameTh) }} ({{ addslashes($employee->employeeNameEn) }})',
-                            subtitle: '{{ $employee->employeeNationality }}',
-                            url: '{{ route('employees.show', $employee->id) }}'
-                        })"
-                        style="cursor: grab;">
+                    <tr>
                         <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}" data-name-th="{{ $employee->employeeNameTh }}" data-name-en="{{ $employee->employeeNameEn }}" data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}"></td>
+                        <td>
+                            <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+                               draggable="true"
+                               ondragstart="window.startDragGlobal(event, 'employee', {
+                                    id: {{ $employee->id }},
+                                    name: '{{ addslashes($employee->employeeNameTh) }} ({{ addslashes($employee->employeeNameEn) }})',
+                                    subtitle: '{{ $employee->employeeNationality }}',
+                                    url: '{{ route('employees.show', $employee->id) }}'
+                                })"
+                               title="{{ __('Drag') }}">
+                            </i>
+                        </td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">
@@ -214,7 +212,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted">{{ __('No employees found') }}</td>
+                        <td colspan="9" class="text-center text-muted">{{ __('No employees found') }}</td>
                     </tr>
                     @endforelse
                 </tbody>

@@ -192,6 +192,7 @@
                                     <tr>
                                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-employer"></th>
                                         <th style="width: 1%;">#</th>
+                                        <th style="width: 1%;"></th>
                                         <th>{{ __('Employee Name') }} / {{ __('Document') }}</th>
                                         <th>{{ __('Nationality') }}</th>
                                         <th>{{ __('Employer') }}</th>
@@ -207,7 +208,7 @@
                                         @endphp
                                         @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $itemNumber])
                                     @empty
-                                        <tr><td colspan="8" class="text-center text-muted py-4">{{ __('No data found') }}</td></tr>
+                                        <tr><td colspan="9" class="text-center text-muted py-4">{{ __('No data found') }}</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
@@ -238,6 +239,7 @@
                                     <tr>
                                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-std"></th>
                                         <th style="width: 1%;">#</th>
+                                        <th style="width: 1%;"></th>
                                         <th>{{ __('Employee Name') }}</th>
                                         <th>{{ __('Nationality') }}</th>
                                         <th>{{ __('Employer') }}</th>
@@ -253,7 +255,7 @@
                                         @endphp
                                         @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $itemNumber])
                                     @empty
-                                        <tr><td colspan="8" class="text-center text-muted py-4">{{ __('No data found') }}</td></tr>
+                                        <tr><td colspan="9" class="text-center text-muted py-4">{{ __('No data found') }}</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
