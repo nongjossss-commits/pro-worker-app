@@ -22,14 +22,7 @@
 @section('content')
 
 {{-- Employer Info Form --}}
-<div class="content-section" draggable="true"
-     data-drag-payload="{{ json_encode([
-        'id' => $employer->id,
-        'title' => $employer->employerNameTh,
-        'subtitle' => $employer->employerNameEn,
-        'url' => request()->fullUrl()
-     ]) }}"
-     ondragstart="window.startDragGlobal(event, 'employer', JSON.parse(this.dataset.dragPayload))">
+<div class="content-section">
     <h2 class="mb-4">{{ __('Edit Employer') }}</h2>
     <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
@@ -539,6 +532,7 @@
                     <thead>
                         <tr>
                             <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
+                            <th style="width: 1%;"></th>
                             <th style="width: 5%;">#</th>
                             <th style="width: 10%;">Photo</th>
                             <th style="width: 25%;">Name (EN)</th>
@@ -550,19 +544,28 @@
                     </thead>
                     <tbody>
                         @forelse($employees as $employee)
-                            <tr id="employee-row-{{ $employee->id }}" draggable="true"
-                                data-drag-payload="{{ json_encode([
-                                    'id' => $employee->id,
-                                    'title' => $employee->employeeFullName,
-                                    'subtitle' => $employer->employerNameTh,
-                                    'photo_url' => $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC',
-                                    'url' => request()->fullUrl() . '#employee-row-' . $employee->id,
-                                    'employer_name' => $employer->employerNameTh,
-                                    'nationality' => $employee->employeeNationality
-                                ]) }}"
-                                ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
-                                {{-- DEFINITIVE FIX: Add checkbox for bulk actions --}}
-                                <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}"></td>
+                            <tr id="employee-row-{{ $employee->id }}">
+                                <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employer-id="{{ $employer->id }}"></td>
+                                <td>
+                                    <span class="cursor-grab"
+                                          draggable="true"
+                                          data-drag-payload="{{ json_encode([
+                                              'id' => $employee->id,
+                                              'title' => $employee->employeeNameEn ?? $employee->employeeNameTh,
+                                              'title_th' => $employee->employeeNameTh,
+                                              'title_en' => $employee->employeeNameEn,
+                                              'subtitle' => $employee->job_title ?? 'N/A',
+                                              'photo_url' => $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png'),
+                                              'url' => request()->fullUrl() . '#employee-row-' . $employee->id,
+                                              'source_menu' => 'Employer Info',
+                                              'employer_name' => $employer->employerNameTh,
+                                              'nationality' => $employee->employeeNationality
+                                          ]) }}"
+                                          ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
+                                         title="{{ __('Drag') }}">
+                                        <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
+                                    </span>
+                                </td>
                                 <td>{{ $employees->firstItem() + $loop->index }}</td>
                                 <td class="align-middle text-center" style="width: 60px;">
                                     @if($employee->employeePhoto)
@@ -595,7 +598,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-3">{{ __('No employees found matching criteria') }}</td>
+                                <td colspan="9" class="text-center text-muted py-3">{{ __('No employees found matching criteria') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

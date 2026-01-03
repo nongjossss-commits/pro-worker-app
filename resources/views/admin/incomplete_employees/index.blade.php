@@ -111,6 +111,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
+                                <th style="width: 1%;"></th>
                                 <th scope="col">{{ __('Employee') }}</th>
                                 <th scope="col">{{ __('Nationality') }}</th>
                                 <th scope="col">{{ __('Employer') }}</th>
@@ -122,20 +123,26 @@
                         </thead>
                         <tbody>
                             @foreach($employees as $employee)
-                            <tr draggable="true"
-                                ondragstart="window.startDragGlobal(event, 'employee', {
-                                    id: {{ $employee->id }},
-                                    title: '{{ $employee->employeeNameEn ?? $employee->employeeNameTh }}',
-                                    title_th: '{{ $employee->employeeNameTh }}',
-                                    title_en: '{{ $employee->employeeNameEn }}',
-                                    subtitle: '{{ $employee->job_title ?? 'N/A' }}',
-                                    photo_url: '{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}',
-                                    url: '{{ route('employers.edit', $employee->employer_id) . '?highlight_employee=' . $employee->id . '#employee-card-' . $employee->id }}',
-                                    source_menu: '{{ __('Incomplete Data') }}',
-                                    employer_name: '{{ optional($employee->employer)->employerNameTh }}',
-                                    nationality: '{{ $employee->employeeNationality }}'
-                                })">
+                            <tr>
                                 <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}"></td>
+                                <td>
+                                    <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+                                       draggable="true"
+                                       data-drag-payload="{{ json_encode([
+                                            'id' => $employee->id,
+                                            'title' => $employee->employeeNameEn ?? $employee->employeeNameTh,
+                                            'title_th' => $employee->employeeNameTh,
+                                            'title_en' => $employee->employeeNameEn,
+                                            'subtitle' => $employee->job_title ?? 'N/A',
+                                            'photo_url' => $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png'),
+                                            'url' => route('employers.edit', $employee->employer_id) . '?highlight_employee=' . $employee->id . '#employee-card-' . $employee->id,
+                                            'source_menu' => __('Incomplete Data'),
+                                            'employer_name' => optional($employee->employer)->employerNameTh,
+                                            'nationality' => $employee->employeeNationality
+                                       ]) }}"
+                                       ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
+                                       title="{{ __('Drag') }}"></i>
+                                </td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 0.75rem;">
