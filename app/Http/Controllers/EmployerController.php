@@ -73,6 +73,8 @@ class EmployerController extends Controller
             'employerEmail' => 'nullable|email|max:255|unique:employers,employerEmail',
             'employerPassword' => 'nullable|string|max:255',
             'employerPhone' => 'nullable|string|max:255',
+            'outsource_re_code' => 'nullable|string|max:255',
+            'outsource_password' => 'nullable|string|max:255',
             'socialSecurityHospital' => 'nullable|string|max:255',
             'businessType' => 'required|string|max:255',
             'signerNameTh' => 'nullable|string|max:255',
@@ -110,9 +112,10 @@ class EmployerController extends Controller
             }
         }
 
-        if (!empty($validated['employerPassword'])) {
-            $validated['employerPassword'] = Hash::make($validated['employerPassword']);
-        }
+        // Password is now stored as plain text per user requirement
+        // if (!empty($validated['employerPassword'])) {
+        //     $validated['employerPassword'] = Hash::make($validated['employerPassword']);
+        // }
 
         Employer::create($validated);
         return redirect()->route('employers.index')->with('success', 'Employer created successfully.');
@@ -216,6 +219,8 @@ public function edit(Request $request, Employer $employer)
             'employerEmail' => ['nullable', 'email', 'max:255', Rule::unique('employers', 'employerEmail')->ignore($employer->id)],
             'employerPassword' => 'nullable|string|max:255',
             'employerPhone' => 'nullable|string|max:255',
+            'outsource_re_code' => 'nullable|string|max:255',
+            'outsource_password' => 'nullable|string|max:255',
             'socialSecurityHospital' => 'nullable|string|max:255',
             'businessType' => 'required|string|max:255',
             'signerNameTh' => 'nullable|string|max:255',
@@ -251,11 +256,10 @@ public function edit(Request $request, Employer $employer)
             }
         }
 
-        if (!empty($validated['employerPassword'])) {
-            $validated['employerPassword'] = Hash::make($validated['employerPassword']);
-        } else {
-            unset($validated['employerPassword']);
-        }
+        // Password is now stored as plain text per user requirement
+        // if (!empty($validated['employerPassword'])) {
+        //     $validated['employerPassword'] = Hash::make($validated['employerPassword']);
+        // }
 
         $employer->update($validated);
         return redirect()->route('employers.index')->with('success', 'Employer updated successfully.');

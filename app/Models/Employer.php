@@ -40,6 +40,8 @@ class Employer extends Model
         'employerEmail',
         'employerPassword',
         'employerPhone',
+        'outsource_re_code',
+        'outsource_password',
         'socialSecurityHospital',
         'businessType',
         'signerNameTh',
