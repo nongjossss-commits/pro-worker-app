@@ -147,8 +147,7 @@
  </div>
  <div class="col-md-6">
  <label for="employerPassword" class="form-label">{{ __('Email Password (รหัสสำหรับอีเมล)') }}</label>
- <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="">
- <small class="text-muted d-block">{{ __('Leave blank to keep current password') }}</small>
+ <input type="text" class="form-control @error('employerPassword') is-invalid @enderror" id="employerPassword" name="employerPassword" value="{{ old('employerPassword', $employer->employerPassword) }}">
  @error('employerPassword')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror
@@ -178,6 +177,22 @@
             <div class="col-md-6">
                 <label for="signerNameEn" class="form-label">{{ __('Authorized Signatory (English)') }}</label>
                 <input type="text" class="form-control" id="signerNameEn" name="signerNameEn" value="{{ old('signerNameEn', $employer->signerNameEn) }}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="signerNameTh2" class="form-label">{{ __('Authorized Signatory 2 (Thai)') }}</label>
+                <input type="text" class="form-control @error('signerNameTh2') is-invalid @enderror" id="signerNameTh2" name="signerNameTh2" value="{{ old('signerNameTh2', $employer->signerNameTh2 ?? '') }}">
+                @error('signerNameTh2')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6">
+                <label for="signerNameEn2" class="form-label">{{ __('Authorized Signatory 2 (English)') }}</label>
+                <input type="text" class="form-control @error('signerNameEn2') is-invalid @enderror" id="signerNameEn2" name="signerNameEn2" value="{{ old('signerNameEn2', $employer->signerNameEn2 ?? '') }}">
+                @error('signerNameEn2')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
         </div>
         <div class="row mb-3">
@@ -222,22 +237,6 @@
                 <label for="employer_doc_company_expiry" class="form-label">{{ __('Expiry Date') }}</label>
                 <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry', $employer->employer_doc_company_expiry) }}">
                 @error('employer_doc_company_expiry')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="signerNameTh2" class="form-label">{{ __('Authorized Signatory 2 (Thai)') }}</label>
-                <input type="text" class="form-control @error('signerNameTh2') is-invalid @enderror" id="signerNameTh2" name="signerNameTh2" value="{{ old('signerNameTh2', $employer->signerNameTh2 ?? '') }}">
-                @error('signerNameTh2')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="col-md-6">
-                <label for="signerNameEn2" class="form-label">{{ __('Authorized Signatory 2 (English)') }}</label>
-                <input type="text" class="form-control @error('signerNameEn2') is-invalid @enderror" id="signerNameEn2" name="signerNameEn2" value="{{ old('signerNameEn2', $employer->signerNameEn2 ?? '') }}">
-                @error('signerNameEn2')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>

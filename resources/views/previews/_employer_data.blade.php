@@ -60,7 +60,7 @@
         </div>
         <div class="col-md-6">
             <label class="form-label fw-bold">รหัสสำหรับอีเมล</label>
-            <p class="form-control-plaintext">{{ $employer->employerPassword ?? 'N/A' }}</p>
+            <p class="form-control-plaintext text-break">{{ $employer->employerPassword ?? 'N/A' }}</p>
         </div>
     </div>
     <div class="row mb-3">
@@ -70,7 +70,7 @@
         </div>
         <div class="col-md-6">
             <label class="form-label fw-bold">รหัสสำหรับเข้าระบบ Outsource</label>
-            <p class="form-control-plaintext">{{ $employer->outsource_password ?? 'N/A' }}</p>
+            <p class="form-control-plaintext text-break">{{ $employer->outsource_password ?? 'N/A' }}</p>
         </div>
     </div>
     <div class="row mb-3">
