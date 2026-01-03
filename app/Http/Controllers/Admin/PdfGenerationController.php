@@ -32,29 +32,41 @@ class PdfGenerationController extends Controller
             return redirect()->back()->with('error', 'No employees selected.');
         }
 
-        // Fetch Templates
-        $query = PdfTemplate::query();
+        // Fetch Employers for filtering (if admin/staff)
         $user = Auth::user();
+        $employers = collect();
+        if ($user->hasRole('admin') || $user->hasRole('staff') || $user->hasRole('caretaker')) {
+             $query = Employer::select('id', 'employerNameTh', 'employerNameEn');
+             if ($user->hasRole('caretaker')) {
+                 $query->where('assigned_staff_id', $user->id);
+             }
+             $employers = $query->orderBy('employerNameTh')->get();
+        }
+
+        // Fetch Initial Templates (Global by default or user specific)
+        $query = PdfTemplate::query();
         if ($user->hasRole('employer')) {
              $query->where(function($q) use ($user) {
                  $q->where('type', 'global')
                    ->orWhere('employer_id', $user->employer->id);
              });
         } elseif ($user->hasRole('caretaker')) {
+             // By default show global + their employers
              $query->where(function($q) use ($user) {
                  $q->where('type', 'global')
                    ->orWhereIn('employer_id', Employer::where('assigned_staff_id', $user->id)->pluck('id'));
              });
+        } else {
+            // Admin/Staff: Default to Global only to avoid clutter, or all?
+            // Let's default to global to match the "filter" UX.
+            $query->where('type', 'global');
         }
         $templates = $query->latest()->get();
-
-        // existingSlots no longer needed with hardcoded select
-        $existingSlots = [];
 
         return view('pdf_templates.generate_modal', [
             'employees' => $employeeIds,
             'templates' => $templates,
-            'existingSlots' => $existingSlots
+            'employers' => $employers
         ]);
     }
 
@@ -107,18 +119,23 @@ class PdfGenerationController extends Controller
                             $slotName => $filename,
                         ]);
 
-                        // Fallback/Force save if update returned false (unlikely but possible if no changes)
-                        // But more importantly, verify the column exists in fillable. (We verified this in planning)
+                        // Handle Description Update:
+                        // Mapping:
+                        // employee_doc_9  -> other_doc_1_desc
+                        // ...
+                        // employee_doc_18 -> other_doc_10_desc
 
-                        // Try to update description if possible (e.g. employee_doc_1 -> other_doc_1_desc)
                         if (preg_match('/employee_doc_(\d+)/', $slotName, $matches)) {
-                            $index = $matches[1];
-                            // Check if description column exists (1-10)
-                            if ($index >= 1 && $index <= 10) {
-                                $descCol = "other_doc_{$index}_desc";
-                                // Check if this column is fillable/exists (assumed yes based on Employee model)
+                            $index = (int)$matches[1];
+                            // Check if it falls in the "Other Document" range (9-18)
+                            if ($index >= 9 && $index <= 18) {
+                                $descIndex = $index - 8; // 9->1, 10->2...
+                                $descCol = "other_doc_{$descIndex}_desc";
+
+                                // Check if description exists in fillable is not easily possible here without loading model details
+                                // But based on code review, other_doc_1_desc to other_doc_10_desc exist.
                                 $employee->update([
-                                    $descCol => "Auto-generated: " . $template->name
+                                    $descCol => $template->name // Use Template Name as description
                                 ]);
                             }
                         }

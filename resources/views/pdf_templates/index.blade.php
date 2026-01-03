@@ -11,6 +11,134 @@
         @endcan
     </div>
 
+    {{-- Filter Section --}}
+    @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff') || auth()->user()->hasRole('caretaker'))
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body bg-light rounded">
+            <form action="{{ route('admin.pdf-templates.index') }}" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">Filter by Employer / Type</label>
+                    {{-- Reusing the searchable dropdown pattern --}}
+                    @php
+                        $selectedId = request('employer_id');
+                        $selectedName = '';
+                        if($selectedId === 'global') {
+                            $selectedName = 'Global Templates Only';
+                        } elseif($selectedId && $employer = $employers->firstWhere('id', $selectedId)) {
+                            $selectedName = $employer->employerNameTh . ' (' . $employer->employerNameEn . ')';
+                        }
+
+                        // Prepare options: Global + Employers
+                        // We structure options to include a specialized 'Global' entry
+                        $employerOptions = collect([
+                            [
+                                'id' => 'global',
+                                'name_th' => 'Global Templates Only (ส่วนกลาง)',
+                                'name_en' => 'Global',
+                                'search_str' => 'global templates only ส่วนกลาง'
+                            ]
+                        ])->merge(
+                            $employers->map(fn($e) => [
+                                'id' => $e->id,
+                                'name_th' => $e->employerNameTh,
+                                'name_en' => $e->employerNameEn,
+                                'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
+                            ])
+                        );
+                    @endphp
+
+                    <div x-data="filterEmployerSelector()" @click.outside="open = false">
+                        <input type="hidden" name="employer_id" :value="selectedId">
+
+                        <div class="position-relative">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text"
+                                       class="form-control border-start-0 ps-0"
+                                       placeholder="Type to search employer or select Global..."
+                                       x-model="search"
+                                       @focus="open = true"
+                                       @keydown.escape="open = false"
+                                       autocomplete="off">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
+                            </div>
+
+                            <div class="form-text text-primary fw-bold mt-1" x-show="selectedName" style="display: none;">
+                                <i class="bi bi-check-circle-fill me-1"></i> Filtering: <span x-text="selectedName"></span>
+                            </div>
+
+                            <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                 style="z-index: 1050; max-height: 250px; overflow-y: auto; display: none;"
+                                 x-show="open"
+                                 x-transition>
+                                <ul class="list-group list-group-flush">
+                                    <template x-for="opt in filteredOptions" :key="opt.id">
+                                        <li class="list-group-item list-group-item-action cursor-pointer d-flex justify-content-between align-items-center"
+                                            @click="selectOption(opt)">
+                                            <div>
+                                                <div class="fw-bold" x-text="opt.name_th"></div>
+                                                <div class="small text-muted" x-text="opt.name_en"></div>
+                                            </div>
+                                            <i class="bi bi-check2 text-primary" x-show="selectedId == opt.id"></i>
+                                        </li>
+                                    </template>
+                                    <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">
+                                        No results found
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter me-1"></i> Filter
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ route('admin.pdf-templates.index') }}" class="btn btn-outline-secondary w-100">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        function filterEmployerSelector() {
+            return {
+                search: '',
+                open: false,
+                selectedId: '{{ $selectedId }}',
+                selectedName: '{{ addslashes($selectedName) }}',
+                options: @json($employerOptions),
+
+                init() {
+                    // Pre-fill search box if value selected
+                    if(this.selectedName) {
+                        this.search = this.selectedName;
+                    }
+                },
+
+                get filteredOptions() {
+                    if (this.search === '') return this.options;
+                    const term = this.search.toLowerCase();
+                    return this.options.filter(o => o.search_str.includes(term));
+                },
+
+                selectOption(opt) {
+                    this.selectedId = opt.id;
+                    this.selectedName = opt.name_th + ' (' + opt.name_en + ')';
+                    this.search = opt.name_th; // Show Thai name in input
+                    this.open = false;
+                }
+            }
+        }
+    </script>
+    @endpush
+    @endif
+
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">

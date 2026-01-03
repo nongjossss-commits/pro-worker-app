@@ -13,32 +13,111 @@ use App\Services\PdfGeneratorService;
 
 class PdfTemplateController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('view-pdf-templates');
 
         $query = PdfTemplate::query();
 
-        // Filter by type or employer if needed
-        // Admin sees all, Staff sees all, Employer sees theirs + global
-
         $user = Auth::user();
-        if ($user->hasRole('employer')) {
-             $query->where(function($q) use ($user) {
-                 $q->where('type', 'global')
-                   ->orWhere('employer_id', $user->employer->id);
-             });
-        } elseif ($user->hasRole('caretaker')) {
-             // Caretaker sees global + their assigned employers
+
+        // Admin/Staff filtering logic
+        if ($user->hasRole('admin') || $user->hasRole('staff')) {
+            if ($request->filled('employer_id')) {
+                if ($request->employer_id === 'global') {
+                    $query->where('type', 'global');
+                } else {
+                    $query->where('employer_id', $request->employer_id);
+                }
+            }
+        }
+        // Employer Role Logic
+        elseif ($user->hasRole('employer')) {
+            $query->where(function($q) use ($user) {
+                $q->where('type', 'global')
+                  ->orWhere('employer_id', $user->employer->id);
+            });
+            // Employer can also filter their own view if they want, but usually they just see theirs + global.
+            // If they select 'global' filter:
+            if ($request->employer_id === 'global') {
+                 $query->where('type', 'global');
+            } elseif ($request->employer_id === 'my_org') {
+                 $query->where('employer_id', $user->employer->id);
+            }
+        }
+        // Caretaker Role Logic
+        elseif ($user->hasRole('caretaker')) {
              $query->where(function($q) use ($user) {
                  $q->where('type', 'global')
                    ->orWhereIn('employer_id', Employer::where('assigned_staff_id', $user->id)->pluck('id'));
              });
+
+            if ($request->filled('employer_id')) {
+                if ($request->employer_id === 'global') {
+                    $query->where('type', 'global');
+                } else {
+                    // verify it's an allowed employer
+                    $allowed = Employer::where('assigned_staff_id', $user->id)->where('id', $request->employer_id)->exists();
+                    if ($allowed) {
+                        $query->where('employer_id', $request->employer_id);
+                    }
+                }
+            }
         }
 
-        $templates = $query->latest()->paginate(10);
+        $templates = $query->latest()->paginate(10)->withQueryString();
 
-        return view('pdf_templates.index', compact('templates'));
+        // Prepare employers list for filter dropdown (if admin/staff)
+        $employers = [];
+        if ($user->hasRole('admin') || $user->hasRole('staff') || $user->hasRole('caretaker')) {
+             // Optimize: only select necessary columns
+             $empQuery = Employer::select('id', 'employerNameTh', 'employerNameEn');
+             if ($user->hasRole('caretaker')) {
+                 $empQuery->where('assigned_staff_id', $user->id);
+             }
+             $employers = $empQuery->orderBy('employerNameTh')->get();
+        }
+
+        return view('pdf_templates.index', compact('templates', 'employers'));
+    }
+
+    public function listTemplates(Request $request)
+    {
+        $this->authorize('view-pdf-templates');
+
+        $user = Auth::user();
+        $query = PdfTemplate::query();
+        $employerId = $request->query('employer_id');
+
+        // Logic:
+        // If employer_id is provided (and valid), show Global + That Employer's templates.
+        // If employer_id is 'global' or empty, show ONLY Global templates.
+
+        // However, user said: "When selecting employer... show that employer's templates... (and imply global too)".
+        // Wait, strictly speaking: "Select employer... show that employer's templates...".
+        // Usually you always want access to Global templates too.
+
+        if ($employerId && $employerId !== 'global') {
+            $query->where(function($q) use ($employerId) {
+                $q->where('type', 'global')
+                  ->orWhere('employer_id', $employerId);
+            });
+        } else {
+            $query->where('type', 'global');
+        }
+
+        // Additional Security Scope
+        if ($user->hasRole('employer')) {
+            // Can only see global or OWN employer
+            $query->where(function($q) use ($user) {
+                 $q->where('type', 'global')
+                   ->orWhere('employer_id', $user->employer->id);
+            });
+        }
+
+        $templates = $query->latest()->get(['id', 'name', 'type']);
+
+        return response()->json($templates);
     }
 
     public function create()
