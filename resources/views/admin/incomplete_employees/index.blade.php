@@ -57,13 +57,13 @@
             <div class="d-flex align-items-center gap-2">
                 {{-- View Toggle --}}
                 <div class="btn-group btn-group-sm">
-                    <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
-                    <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
+                    <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['view' => 'card', 'page' => 1])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
+                    <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['view' => 'table', 'page' => 1])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
                 </div>
                 {{-- Per Page Toggle --}}
                 <div class="btn-group btn-group-sm">
                     @foreach($perPageOptions as $option)
-                        <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
+                        <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['per_page' => $option, 'page' => 1])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
                     @endforeach
                 </div>
             </div>
