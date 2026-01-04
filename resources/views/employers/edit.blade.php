@@ -162,32 +162,86 @@
  @enderror
  </div>
  </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="signerNameTh" class="form-label">{{ __('Authorized Signatory (Thai)') }}</label>
-                <input type="text" class="form-control" id="signerNameTh" name="signerNameTh" value="{{ old('signerNameTh', $employer->signerNameTh) }}">
-            </div>
-            <div class="col-md-6">
-                <label for="signerNameEn" class="form-label">{{ __('Authorized Signatory (English)') }}</label>
-                <input type="text" class="form-control" id="signerNameEn" name="signerNameEn" value="{{ old('signerNameEn', $employer->signerNameEn) }}">
+
+        <h5 class="mb-3 text-primary mt-4">{{ __('Authorized Signatories') }}</h5>
+        <!-- Signer 1 -->
+        <div class="card bg-light mb-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">Signer 1</h6>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="signerNameTh" class="form-label">{{ __('Name (Thai)') }}</label>
+                        <input type="text" class="form-control" id="signerNameTh" name="signerNameTh" value="{{ old('signerNameTh', $employer->signerNameTh) }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="signerNameEn" class="form-label">{{ __('Name (English)') }}</label>
+                        <input type="text" class="form-control" id="signerNameEn" name="signerNameEn" value="{{ old('signerNameEn', $employer->signerNameEn) }}">
+                    </div>
+                </div>
+                <!-- Signature 1 -->
+                <div class="mb-3" x-data="{ action: 'keep' }">
+                     <label class="form-label">{{ __('Signature') }}</label>
+                     @if($employer->signature_1_path)
+                        <div class="mb-2 p-2 border rounded bg-white" style="max-width: 200px;">
+                            <img src="{{ Storage::url($employer->signature_1_path) }}" alt="Signature 1" style="max-width: 100%; height: auto;">
+                        </div>
+                     @endif
+                     <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="signature_1_action" id="sig1_keep" value="keep" x-model="action" checked>
+                        <label class="btn btn-outline-secondary" for="sig1_keep">Keep Current</label>
+
+                        <input type="radio" class="btn-check" name="signature_1_action" id="sig1_gen" value="generate" x-model="action">
+                        <label class="btn btn-outline-primary" for="sig1_gen">Auto Generate</label>
+
+                        <input type="radio" class="btn-check" name="signature_1_action" id="sig1_upload" value="upload" x-model="action">
+                        <label class="btn btn-outline-info" for="sig1_upload">Upload File</label>
+                    </div>
+                    <div x-show="action === 'upload'" class="mt-2">
+                        <input type="file" name="signature_1_file" class="form-control form-control-sm" accept="image/png, image/jpeg">
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="signerNameTh2" class="form-label">{{ __('Authorized Signatory 2 (Thai)') }}</label>
-                <input type="text" class="form-control @error('signerNameTh2') is-invalid @enderror" id="signerNameTh2" name="signerNameTh2" value="{{ old('signerNameTh2', $employer->signerNameTh2 ?? '') }}">
-                @error('signerNameTh2')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="col-md-6">
-                <label for="signerNameEn2" class="form-label">{{ __('Authorized Signatory 2 (English)') }}</label>
-                <input type="text" class="form-control @error('signerNameEn2') is-invalid @enderror" id="signerNameEn2" name="signerNameEn2" value="{{ old('signerNameEn2', $employer->signerNameEn2 ?? '') }}">
-                @error('signerNameEn2')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+
+        <!-- Signer 2 -->
+        <div class="card bg-light mb-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">Signer 2 (Optional)</h6>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="signer_2_name_th" class="form-label">{{ __('Name (Thai)') }}</label>
+                        <input type="text" class="form-control" id="signer_2_name_th" name="signer_2_name_th" value="{{ old('signer_2_name_th', $employer->signer_2_name_th) }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="signer_2_name_en" class="form-label">{{ __('Name (English)') }}</label>
+                        <input type="text" class="form-control" id="signer_2_name_en" name="signer_2_name_en" value="{{ old('signer_2_name_en', $employer->signer_2_name_en) }}">
+                    </div>
+                </div>
+                 <!-- Signature 2 -->
+                 <div class="mb-3" x-data="{ action: 'keep' }">
+                     <label class="form-label">{{ __('Signature') }}</label>
+                     @if($employer->signature_2_path)
+                        <div class="mb-2 p-2 border rounded bg-white" style="max-width: 200px;">
+                            <img src="{{ Storage::url($employer->signature_2_path) }}" alt="Signature 2" style="max-width: 100%; height: auto;">
+                        </div>
+                     @endif
+                     <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="signature_2_action" id="sig2_keep" value="keep" x-model="action" checked>
+                        <label class="btn btn-outline-secondary" for="sig2_keep">Keep Current</label>
+
+                        <input type="radio" class="btn-check" name="signature_2_action" id="sig2_gen" value="generate" x-model="action">
+                        <label class="btn btn-outline-primary" for="sig2_gen">Auto Generate</label>
+
+                        <input type="radio" class="btn-check" name="signature_2_action" id="sig2_upload" value="upload" x-model="action">
+                        <label class="btn btn-outline-info" for="sig2_upload">Upload File</label>
+                    </div>
+                    <div x-show="action === 'upload'" class="mt-2">
+                        <input type="file" name="signature_2_file" class="form-control form-control-sm" accept="image/png, image/jpeg">
+                    </div>
+                </div>
             </div>
         </div>
+
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="regCapital" class="form-label">{{ __('Registered Capital') }}</label>

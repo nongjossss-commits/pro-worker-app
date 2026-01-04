@@ -39,6 +39,7 @@ class Employee extends Model
     protected $fillable = [
         'employer_id',
         'status', // Added status
+        'signature_path', // Added for persistence
         'english_prefix',
         'employeeNameTh',
         'employeeNameEn',

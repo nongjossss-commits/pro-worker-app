@@ -8,7 +8,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use App\Models\Employee; // <-- เพิ่มบรรทัดนี้
+use App\Models\Employee;
+use App\Services\SignatureGeneratorService; // Import Service
 use Illuminate\Support\Facades\Hash;
 
 class EmployerController extends Controller
@@ -24,11 +25,8 @@ class EmployerController extends Controller
         $this->middleware('permission:delete-employers', ['only' => ['destroy']]);
     }
 
-    public function index(Request $request) // <-- เพิ่ม Request $request
+    public function index(Request $request)
     {
-        // $employers = Employer::with('jobOwner')->latest()->paginate(10); // <-- ลบแถวนี้
-
-        // --- START: เพิ่ม Logic การค้นหา ---
         $query = Employer::with(['jobOwner', 'assignedStaff'])->latest();
 
         if ($request->filled('search')) {
@@ -46,10 +44,8 @@ class EmployerController extends Controller
                   });
             });
         }
-        // --- END: เพิ่ม Logic การค้นหา ---
 
         $perPage = $request->input('per_page', 10);
-        // เพิ่ม withQueryString() เพื่อให้ pagination จำค่า search
         $employers = $query->paginate($perPage)->withQueryString();
 
         return view('employers.index', compact('employers'));
@@ -65,10 +61,10 @@ class EmployerController extends Controller
 
     public function store(Request $request)
     {
+        // Validation with new fields
         $validated = $request->validate([
             'employerNameTh' => 'required|string|max:255',
             'employerNameEn' => 'nullable|string|max:255',
-            // 'employerId' will be auto-generated
             'employerTaxId' => 'nullable|string|max:255',
             'employerEmail' => 'nullable|email|max:255|unique:employers,employerEmail',
             'employerPassword' => 'nullable|string|max:255',
@@ -79,6 +75,8 @@ class EmployerController extends Controller
             'businessType' => 'required|string|max:255',
             'signerNameTh' => 'nullable|string|max:255',
             'signerNameEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
             'businessTypeEn' => 'nullable|string|max:255',
             'regCapital' => 'nullable|numeric',
             'regDate' => 'nullable|date',
@@ -95,16 +93,19 @@ class EmployerController extends Controller
             'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
             'assigned_staff_id' => 'nullable|exists:users,id',
+            // Signatures
+            'signature_1_file' => 'nullable|image|max:2048',
+            'signature_2_file' => 'nullable|image|max:2048',
         ]);
 
-        // Generate a unique random Employer ID
+        // Generate ID
         do {
             $randomId = 'EMP-' . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
         } while (Employer::where('employerId', $randomId)->exists());
 
         $validated['employerId'] = $randomId;
 
-        // Handle new document uploads
+        // Handle docs
         $docFields = ['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'];
         foreach ($docFields as $field) {
             if ($request->hasFile($field)) {
@@ -112,102 +113,105 @@ class EmployerController extends Controller
             }
         }
 
-        // Password is now stored as plain text per user requirement
-        // if (!empty($validated['employerPassword'])) {
-        //     $validated['employerPassword'] = Hash::make($validated['employerPassword']);
-        // }
+        // Handle Signatures Uploads
+        if ($request->hasFile('signature_1_file')) {
+            $validated['signature_1_path'] = $request->file('signature_1_file')->store('signatures/employers', 'public');
+        }
+        if ($request->hasFile('signature_2_file')) {
+            $validated['signature_2_path'] = $request->file('signature_2_file')->store('signatures/employers', 'public');
+        }
+
+        // Remove file inputs from array before create
+        unset($validated['signature_1_file']);
+        unset($validated['signature_2_file']);
 
         Employer::create($validated);
         return redirect()->route('employers.index')->with('success', 'Employer created successfully.');
     }
 
-public function edit(Request $request, Employer $employer)
-{
-    $jobOwners = JobOwner::orderBy('name')->get();
-    $staffUsers = User::role(['admin', 'staff', 'caretaker'])->orderBy('name')->get();
+    public function edit(Request $request, Employer $employer)
+    {
+        $jobOwners = JobOwner::orderBy('name')->get();
+        $staffUsers = User::role(['admin', 'staff', 'caretaker'])->orderBy('name')->get();
 
-    $employeeQuery = $employer->employees()
-        ->whereNull('terminated_at')
-        ->where(function($q) {
-            $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
-              ->orWhereNull('status');
-        });
-
-    // --- START: ADDED FILTERING LOGIC ---
-    if ($request->filled('search')) {
-        $searchTerm = '%' . $request->input('search') . '%';
-        $employeeQuery->where(function ($q) use ($searchTerm) {
-            $q->where('employeeNameTh', 'like', $searchTerm)
-              ->orWhere('employeeNameEn', 'like', $searchTerm)
-              ->orWhere('employeePassport', 'like', $searchTerm)
-              ->orWhere('pinkCardNo', 'like', $searchTerm);
-        });
-    }
-
-    if ($request->filled('nationality')) {
-        $employeeQuery->where('employeeNationality', $request->input('nationality'));
-    }
-
-    if ($request->filled('mou_group')) {
-        $employeeQuery->where('workPermitMOUGroup', $request->input('mou_group'));
-    }
-
-    if ($request->filled('insurance_type')) {
-        $insuranceType = $request->input('insurance_type');
-        if ($insuranceType === 'none') {
-            $employeeQuery->where(function ($q) {
-                $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+        $employeeQuery = $employer->employees()
+            ->whereNull('terminated_at')
+            ->where(function($q) {
+                $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
+                  ->orWhereNull('status');
             });
-        } else {
-            $employeeQuery->where('insurance_type', $insuranceType);
-        }
-    }
 
-    if ($request->filled('pink_card')) {
-        if ($request->input('pink_card') === 'yes') {
-            $employeeQuery->where(function ($q) {
-                $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
-            });
-        } elseif ($request->input('pink_card') === 'no') {
-            $employeeQuery->where(function ($q) {
-                $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+        // Filter Logic
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
+            $employeeQuery->where(function ($q) use ($searchTerm) {
+                $q->where('employeeNameTh', 'like', $searchTerm)
+                  ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('pinkCardNo', 'like', $searchTerm);
             });
         }
+
+        if ($request->filled('nationality')) {
+            $employeeQuery->where('employeeNationality', $request->input('nationality'));
+        }
+
+        if ($request->filled('mou_group')) {
+            $employeeQuery->where('workPermitMOUGroup', $request->input('mou_group'));
+        }
+
+        if ($request->filled('insurance_type')) {
+            $insuranceType = $request->input('insurance_type');
+            if ($insuranceType === 'none') {
+                $employeeQuery->where(function ($q) {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+                });
+            } else {
+                $employeeQuery->where('insurance_type', $insuranceType);
+            }
+        }
+
+        if ($request->filled('pink_card')) {
+            if ($request->input('pink_card') === 'yes') {
+                $employeeQuery->where(function ($q) {
+                    $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', '');
+                });
+            } elseif ($request->input('pink_card') === 'no') {
+                $employeeQuery->where(function ($q) {
+                    $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+                });
+            }
+        }
+
+        if ($request->filled('work_permit_expiry_date')) {
+            $employeeQuery->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
+        }
+
+        if ($request->filled('passport_type_myanmar')) {
+            $employeeQuery->where('passportType', $request->input('passport_type_myanmar'));
+        }
+
+        if ($request->filled('passport_type_cambodia')) {
+            $employeeQuery->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
+        }
+
+        $perPageOptions = [10, 25, 50];
+        $currentPerPage = $request->input('per_page', 10);
+        $employees = $employeeQuery->paginate($currentPerPage)->withQueryString();
+        $currentView = $request->input('view', 'card');
+        $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
+
+        return view('employers.edit', compact(
+            'employer',
+            'jobOwners',
+            'staffUsers',
+            'employees',
+            'terminatedEmployees',
+            'perPageOptions',
+            'currentView',
+            'currentPerPage'
+        ));
     }
-
-    if ($request->filled('work_permit_expiry_date')) {
-        $employeeQuery->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
-    }
-
-    if ($request->filled('passport_type_myanmar')) {
-        $employeeQuery->where('passportType', $request->input('passport_type_myanmar'));
-    }
-
-    if ($request->filled('passport_type_cambodia')) {
-        $employeeQuery->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
-    }
-    // --- END: ADDED FILTERING LOGIC ---
-
-    $perPageOptions = [10, 25, 50];
-    $currentPerPage = $request->input('per_page', 10);
-
-    // Added withQueryString() to preserve filters on pagination
-    $employees = $employeeQuery->paginate($currentPerPage)->withQueryString();
-
-    $currentView = $request->input('view', 'card');
-    $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
-
-    return view('employers.edit', compact(
-        'employer',
-        'jobOwners',
-        'staffUsers',
-        'employees',
-        'terminatedEmployees',
-        'perPageOptions',
-        'currentView',
-        'currentPerPage'
-    ));
-}
 
     public function update(Request $request, Employer $employer)
     {
@@ -225,6 +229,8 @@ public function edit(Request $request, Employer $employer)
             'businessType' => 'required|string|max:255',
             'signerNameTh' => 'nullable|string|max:255',
             'signerNameEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
             'businessTypeEn' => 'nullable|string|max:255',
             'regCapital' => 'nullable|numeric',
             'regDate' => 'nullable|date',
@@ -241,25 +247,60 @@ public function edit(Request $request, Employer $employer)
             'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
             'assigned_staff_id' => 'nullable|exists:users,id',
+            // Signatures
+            'signature_1_action' => 'nullable|in:keep,generate,upload',
+            'signature_1_file' => 'nullable|required_if:signature_1_action,upload|image|max:2048',
+            'signature_2_action' => 'nullable|in:keep,generate,upload',
+            'signature_2_file' => 'nullable|required_if:signature_2_action,upload|image|max:2048',
         ]);
 
-        // Handle new document uploads
+        // Handle docs
         $docFields = ['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'];
         foreach ($docFields as $field) {
             if ($request->hasFile($field)) {
-                // Delete old file if it exists
                 if ($employer->{$field}) {
                     Storage::disk('public')->delete($employer->{$field});
                 }
-                // Store new file
                 $validated[$field] = $request->file($field)->store('employer_documents', 'public');
             }
         }
 
-        // Password is now stored as plain text per user requirement
-        // if (!empty($validated['employerPassword'])) {
-        //     $validated['employerPassword'] = Hash::make($validated['employerPassword']);
-        // }
+        // Handle Signatures
+        $sigService = app(SignatureGeneratorService::class);
+
+        // Signer 1
+        $sig1Action = $request->input('signature_1_action', 'keep');
+        if ($sig1Action === 'upload' && $request->hasFile('signature_1_file')) {
+             if ($employer->signature_1_path) Storage::disk('public')->delete($employer->signature_1_path);
+             $validated['signature_1_path'] = $request->file('signature_1_file')->store('signatures/employers', 'public');
+        } elseif ($sig1Action === 'generate') {
+             if ($employer->signature_1_path) Storage::disk('public')->delete($employer->signature_1_path);
+             $seed = 'EMPR-' . $employer->id . '-1-' . time();
+             $content = $sigService->generate($seed);
+             $path = 'signatures/employers/emp_' . $employer->id . '_sig1_' . time() . '.png';
+             Storage::disk('public')->put($path, $content);
+             $validated['signature_1_path'] = $path;
+        }
+
+        // Signer 2
+        $sig2Action = $request->input('signature_2_action', 'keep');
+        if ($sig2Action === 'upload' && $request->hasFile('signature_2_file')) {
+             if ($employer->signature_2_path) Storage::disk('public')->delete($employer->signature_2_path);
+             $validated['signature_2_path'] = $request->file('signature_2_file')->store('signatures/employers', 'public');
+        } elseif ($sig2Action === 'generate') {
+             if ($employer->signature_2_path) Storage::disk('public')->delete($employer->signature_2_path);
+             $seed = 'EMPR-' . $employer->id . '-2-' . time();
+             $content = $sigService->generate($seed);
+             $path = 'signatures/employers/emp_' . $employer->id . '_sig2_' . time() . '.png';
+             Storage::disk('public')->put($path, $content);
+             $validated['signature_2_path'] = $path;
+        }
+
+        // Cleanup fields not in DB
+        unset($validated['signature_1_action']);
+        unset($validated['signature_1_file']);
+        unset($validated['signature_2_action']);
+        unset($validated['signature_2_file']);
 
         $employer->update($validated);
         return redirect()->route('employers.index')->with('success', 'Employer updated successfully.');
@@ -267,7 +308,6 @@ public function edit(Request $request, Employer $employer)
 
     public function destroy(Employer $employer)
     {
-        // Delete associated files from storage
         if ($employer->document_company_registration) {
             Storage::disk('public')->delete($employer->document_company_registration);
         }
@@ -282,13 +322,10 @@ public function edit(Request $request, Employer $employer)
         return redirect()->route('employers.index')->with('success', 'Employer deleted successfully.');
     }
 
-    // Other methods like export, filter etc.
-
     public function filterHistory(Request $request, Employer $employer)
     {
         $query = $employer->employees()->whereNotNull('terminated_at');
 
-        // Implement search
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
             $query->where(function ($q) use ($searchTerm) {
@@ -298,16 +335,12 @@ public function edit(Request $request, Employer $employer)
             });
         }
 
-        // Paginate results and preserve query string
         $terminatedEmployees = $query->paginate(10)->withQueryString();
 
-        // Add authorization and computed data to each employee object
         $terminatedEmployees->getCollection()->transform(function ($employee) {
             $employee->can_restore = auth()->user()->can('restore-employees');
             $employee->can_force_delete = auth()->user()->can('force-delete-employees');
-            // FIX: Generate a full, correct URL for the employee photo
             $employee->photo_url = $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-avatar.png');
-            // ADD: Calculate days since termination
             $employee->days_since_termination = floor($employee->terminated_at ? \Carbon\Carbon::parse($employee->terminated_at)->diffInDays(\Carbon\Carbon::now()) : 0);
             return $employee;
         });
@@ -317,16 +350,14 @@ public function edit(Request $request, Employer $employer)
 
     public function exportHistory(Request $request, Employer $employer)
     {
-        // Add a 'history' flag to the request and call the main export method.
         $request->merge(['history' => true]);
         return $this->exportEmployees($request, $employer);
     }
 
     public function exportEmployees(Request $request, Employer $employer)
     {
-        $this->authorize('view-employees'); // Or a more specific permission if available
+        $this->authorize('view-employees');
 
-        // Determine the scope: active or terminated (history) employees
         $isHistoryExport = $request->has('history');
 
         if ($isHistoryExport) {
@@ -340,7 +371,6 @@ public function edit(Request $request, Employer $employer)
                 });
         }
 
-        // Reuse the same filtering logic from the edit/history methods
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
             $query->where(function ($q) use ($searchTerm) {
@@ -444,19 +474,13 @@ public function edit(Request $request, Employer $employer)
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Exports the filtered list of employers to a CSV file.
-     */
     public function export(Request $request)
     {
         $this->authorize('view-employers');
-
         $query = Employer::with('jobOwner')->latest();
 
-        // --- START: ใช้ Logic การค้นหาเดียวกับ index ---
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
-
             $query->where(function($q) use ($searchTerm) {
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
@@ -465,10 +489,8 @@ public function edit(Request $request, Employer $employer)
                   });
             });
         }
-        // --- END: ใช้ Logic การค้นหาเดียวกับ index ---
 
         $employers = $query->get();
-
         $fileName = 'employers_export_' . date('Y-m-d') . '.csv';
 
         $headers = [
@@ -487,7 +509,6 @@ public function edit(Request $request, Employer $employer)
 
         $callback = function() use($employers, $columns) {
             $file = fopen('php://output', 'w');
-            // Add BOM to support UTF-8 in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, $columns);
 
@@ -509,16 +530,9 @@ public function edit(Request $request, Employer $employer)
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Provides a JSON list of employers for API calls.
-     */
     public function listApi(Request $request)
     {
-        // This endpoint is used in contexts where a user needs to select an employer.
-        // We can reuse the 'manage-tickets' permission as it's a good proxy
-        // for "is an admin or staff member".
         $this->authorize('view-employers');
-
         $query = Employer::query();
 
         if ($request->filled('search')) {
@@ -531,7 +545,6 @@ public function edit(Request $request, Employer $employer)
         }
 
         $employers = $query->select(['id', 'employerNameTh', 'employerId'])->take(10)->get();
-
         return response()->json($employers);
     }
 
@@ -541,9 +554,6 @@ public function edit(Request $request, Employer $employer)
                          ->with('highlight_employer', $employer->id);
     }
 
-    /**
-     * Download a document as PDF (converting images if necessary).
-     */
     public function downloadDocumentAsPdf(Employer $employer, $field)
     {
         $allowedFields = [
@@ -560,7 +570,6 @@ public function edit(Request $request, Employer $employer)
         }
 
         $this->authorize('view-employers');
-
         $filePath = $employer->{$field};
         $disk = 'public';
 
@@ -570,7 +579,6 @@ public function edit(Request $request, Employer $employer)
 
         $mimeType = Storage::disk($disk)->mimeType($filePath);
 
-        // If it's already a PDF, download it directly
         if ($mimeType === 'application/pdf') {
             return Storage::disk($disk)->download($filePath);
         }
