@@ -120,7 +120,7 @@
                                         <template x-if="item.type === 'signature'">
                                             <div class="w-full text-center text-purple-800">
                                                 <i class="bi bi-pen"></i>
-                                                <span class="text-xs block" x-text="item.signatureGroup === 'employer' ? '(Employer)' : '(Employee)'"></span>
+                                                <span class="text-xs block" x-text="getSignatureLabel(item.signatureGroup)"></span>
                                             </div>
                                         </template>
 
@@ -128,6 +128,7 @@
                                         <template x-if="item.type !== 'signature'">
                                             <span class="truncate w-full"
                                                   :class="{'text-blue-800 font-bold': item.type === 'db', 'text-gray-800': item.type === 'static'}"
+                                                  :style="item.align === 'center' ? 'text-align: center;' : ''"
                                                   x-text="item.type === 'static' ? (item.text || 'Static Text') : item.label"></span>
                                         </template>
                                     </div>
@@ -180,30 +181,41 @@
                             <div class="mb-3">
                                 <label class="form-label">Signature Group</label>
                                 <select x-model="items[editingIndex].signatureGroup" class="form-select">
-                                    <option value="employee">Employee (Unique per person)</option>
-                                    <option value="employer">Employer (Consistent)</option>
+                                    <option value="employee">Employee</option>
+                                    <option value="employer">Employer 1 (Signer 1)</option>
+                                    <option value="employer_2">Employer 2 (Signer 2)</option>
+                                    <option value="witness_1">Witness 1</option>
+                                    <option value="witness_2">Witness 2</option>
+                                    <option value="witness_3">Witness 3</option>
+                                    <option value="witness_4">Witness 4</option>
                                 </select>
-                                <div class="form-text text-xs text-muted mt-1">
-                                    'Employee' will generate a unique signature for each employee.<br>
-                                    'Employer' will use the single stored employer signature.
-                                </div>
                             </div>
                         </div>
                     </template>
 
                     <!-- Text Field Settings (DB & Static) -->
                     <template x-if="items[editingIndex]?.type === 'db' || items[editingIndex]?.type === 'static'">
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="autoFitToggle" x-model="items[editingIndex].autoFit">
-                                <label class="form-check-label" for="autoFitToggle">Auto-fit Text</label>
+                        <div>
+                             <div class="mb-3">
+                                <label class="form-label">Alignment</label>
+                                <select x-model="items[editingIndex].align" class="form-select">
+                                    <option value="left">Left (Default)</option>
+                                    <option value="center">Center</option>
+                                </select>
                             </div>
-                            <div class="form-text text-xs text-muted">
-                                If enabled, text font size will shrink to fit within the box width.
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoFitToggle" x-model="items[editingIndex].autoFit">
+                                    <label class="form-check-label" for="autoFitToggle">Auto-fit / Fit to Height</label>
+                                </div>
+                                <div class="form-text text-xs text-muted">
+                                    If enabled, font size will adjust to fit the box height.
+                                </div>
                             </div>
                         </div>
                     </template>
-                     <template x-if="items[editingIndex]?.type === 'db' || items[editingIndex]?.type === 'static'">
+                     <template x-if="(items[editingIndex]?.type === 'db' || items[editingIndex]?.type === 'static') && !items[editingIndex]?.autoFit">
                         <div class="mb-3">
                              <label class="form-label">Font Size (px)</label>
                              <input type="number" x-model="items[editingIndex].fontSize" class="form-control" min="8" max="72">
@@ -273,9 +285,22 @@
                 { group: 'Employer Data', key: 'employer.employerNameTh', label: 'Company Name (TH)' },
                 { group: 'Employer Data', key: 'employer.employerNameEn', label: 'Company Name (EN)' },
                 { group: 'Employer Data', key: 'employer.employerTaxId', label: 'Tax ID' },
-                { group: 'Employer Data', key: 'employer.signerNameTh', label: 'Authorized Signer' },
+                { group: 'Employer Data', key: 'employer.signerNameTh', label: 'Authorized Signer 1 (TH)' },
+                { group: 'Employer Data', key: 'employer.signerNameEn', label: 'Authorized Signer 1 (EN)' },
+                { group: 'Employer Data', key: 'employer.signer_2_name_th', label: 'Authorized Signer 2 (TH)' },
+                { group: 'Employer Data', key: 'employer.signer_2_name_en', label: 'Authorized Signer 2 (EN)' },
                 { group: 'Employer Data', key: 'employer.address_th', label: 'Address (TH)' },
                 { group: 'Employer Data', key: 'employer.address_en', label: 'Address (EN)' },
+
+                // Witnesses
+                { group: 'Global Witnesses', key: 'witness_1.name_th', label: 'Witness 1 Name (TH)' },
+                { group: 'Global Witnesses', key: 'witness_1.name_en', label: 'Witness 1 Name (EN)' },
+                { group: 'Global Witnesses', key: 'witness_2.name_th', label: 'Witness 2 Name (TH)' },
+                { group: 'Global Witnesses', key: 'witness_2.name_en', label: 'Witness 2 Name (EN)' },
+                { group: 'Global Witnesses', key: 'witness_3.name_th', label: 'Witness 3 Name (TH)' },
+                { group: 'Global Witnesses', key: 'witness_3.name_en', label: 'Witness 3 Name (EN)' },
+                { group: 'Global Witnesses', key: 'witness_4.name_th', label: 'Witness 4 Name (TH)' },
+                { group: 'Global Witnesses', key: 'witness_4.name_en', label: 'Witness 4 Name (EN)' },
             ],
 
             get filteredGroups() {
@@ -392,6 +417,7 @@
                         page: pageNum,
                         fontSize: 12,
                         autoFit: true, // Default to true
+                        align: 'left', // Default align
                         signatureGroup: data.type === 'signature' ? 'employee' : null
                     });
 
@@ -491,6 +517,19 @@
             openSettings(index) {
                 this.editingIndex = index;
                 new bootstrap.Modal(document.getElementById('itemSettingsModal')).show();
+            },
+
+            getSignatureLabel(group) {
+                const labels = {
+                    'employee': '(Employee)',
+                    'employer': '(Signer 1)',
+                    'employer_2': '(Signer 2)',
+                    'witness_1': '(Witness 1)',
+                    'witness_2': '(Witness 2)',
+                    'witness_3': '(Witness 3)',
+                    'witness_4': '(Witness 4)'
+                };
+                return labels[group] || '(Unknown)';
             },
 
             async saveMapping() {

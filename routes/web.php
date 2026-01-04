@@ -195,6 +195,10 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
 
     // Business Types
     Route::resource('business-types', \App\Http\Controllers\Admin\BusinessTypeController::class)->only(['index', 'store', 'destroy']);
+
+    // Global Witnesses Management
+    Route::get('/witnesses', [App\Http\Controllers\Admin\GlobalWitnessController::class, 'index'])->name('witnesses.index');
+    Route::put('/witnesses/{id}', [App\Http\Controllers\Admin\GlobalWitnessController::class, 'update'])->name('witnesses.update');
 });
 
 // === Production & Workflow Admin Routes ===

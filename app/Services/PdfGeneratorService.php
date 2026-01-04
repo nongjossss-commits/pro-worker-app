@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\PdfTemplate;
+use App\Models\GlobalWitness;
 use setasign\Fpdi\Fpdi;
 use setasign\Fpdi\PdfParser\StreamReader;
 use Illuminate\Support\Facades\Storage;
@@ -40,7 +41,6 @@ class PdfGeneratorService
                 $filename = $this->generateFilename($template, $employee);
 
                 if ($outputType === 'save_to_slot') {
-                    // Legacy support (though controller now handles saving directly)
                     $this->saveToSlot($employee, $pdfContent, $options['slot_name']);
                     $results[] = ['employee' => $employee->id, 'status' => 'saved'];
                 } elseif ($outputType === 'raw_content') {
@@ -50,14 +50,9 @@ class PdfGeneratorService
                         'content' => $pdfContent
                     ];
                 } else {
-                    // Download
                     $results[] = ['filename' => $filename, 'content' => $pdfContent];
                 }
             } catch (\Exception $e) {
-                // If one employee fails, we can either abort everything or skip.
-                // Aborting ensures the user knows something went wrong.
-                // However, with clearer error messages, we can improve this loop.
-                // For now, let's rethrow with context.
                 throw new \Exception("Error processing employee {$employee->employeeNameEn} (ID: {$employee->id}): " . $e->getMessage());
             }
         }
@@ -68,11 +63,8 @@ class PdfGeneratorService
     protected function generateSinglePdf(PdfTemplate $template, Employee $employee)
     {
         $pdf = new Fpdi();
-
-        // Load the template file
         $templatePath = Storage::disk('public')->path($template->file_path);
 
-        // Font Handling
         $fontLoaded = false;
         if (file_exists($this->fontPath)) {
              $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
@@ -83,51 +75,85 @@ class PdfGeneratorService
         }
 
         try {
-            try {
-                $pageCount = $pdf->setSourceFile($templatePath);
-            } catch (\setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException $e) {
-                // If FPDI fails, it's likely a version or structure issue.
-                // Try to normalize unconditionally.
-                try {
-                    $normalizedPath = $this->tryNormalizePdf($templatePath);
-                    if ($normalizedPath) {
-                        $pageCount = $pdf->setSourceFile($normalizedPath);
-                        $this->tempFiles[] = $normalizedPath; // Mark for deletion
-                    }
-                } catch (\Exception $ex) {
-                     // If normalization failed
-                     $version = PdfHelper::getVersion($templatePath);
-                     $verString = $version ?? 'Unknown';
-                     throw new \Exception("PDF Incompatible: The template '{$template->name}' is too new (Version {$verString}) and automatic repair failed. " . $ex->getMessage());
+            $pageCount = $pdf->setSourceFile($templatePath);
+        } catch (\Exception $e) {
+             try {
+                $normalizedPath = $this->tryNormalizePdf($templatePath);
+                if ($normalizedPath) {
+                    $pageCount = $pdf->setSourceFile($normalizedPath);
+                    $this->tempFiles[] = $normalizedPath;
+                } else {
+                    throw $e;
                 }
-            } catch (\Exception $e) {
-                 // Other FPDI errors: try normalization as fallback too
-                 try {
-                    $normalizedPath = $this->tryNormalizePdf($templatePath);
-                    if ($normalizedPath) {
-                        $pageCount = $pdf->setSourceFile($normalizedPath);
-                        $this->tempFiles[] = $normalizedPath; // Mark for deletion
-                    } else {
-                        throw $e; // Rethrow original if normalization didn't return a path (shouldn't happen if no exception)
-                    }
-                 } catch (\Exception $ex) {
-                     throw new \Exception('Failed to process PDF template: ' . $e->getMessage() . ' | Repair attempt: ' . $ex->getMessage());
-                 }
+             } catch (\Exception $ex) {
+                 throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
+             }
+        }
+
+        // --- Signature Logic ---
+        $tempSigPaths = [];
+
+        // 1. Employee Signature (Persist Check)
+        if (!$employee->signature_path || !Storage::disk('public')->exists($employee->signature_path)) {
+            // Generate and save
+            $seed = 'EMP-' . $employee->id . '-' . time();
+            $content = $this->signatureService->generate($seed);
+            $filename = 'signatures/employees/emp_' . $employee->id . '_' . time() . '.png';
+            Storage::disk('public')->put($filename, $content);
+            $employee->update(['signature_path' => $filename]);
+        }
+        $empSigPath = Storage::disk('public')->path($employee->signature_path);
+
+        // 2. Employer Signatures (Check file -> Generate Fallback)
+        $employer = $employee->employer;
+
+        // Signer 1
+        $emprSig1Path = null;
+        if ($employer->signature_1_path && Storage::disk('public')->exists($employer->signature_1_path)) {
+            $emprSig1Path = Storage::disk('public')->path($employer->signature_1_path);
+        } else {
+             // Generate temporary
+             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-1');
+             $temp = tempnam(sys_get_temp_dir(), 'sig_empr1_');
+             file_put_contents($temp, $content);
+             $emprSig1Path = $temp;
+             $tempSigPaths[] = $temp;
+        }
+
+        // Signer 2
+        $emprSig2Path = null;
+        if ($employer->signature_2_path && Storage::disk('public')->exists($employer->signature_2_path)) {
+            $emprSig2Path = Storage::disk('public')->path($employer->signature_2_path);
+        } else {
+             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-2');
+             $temp = tempnam(sys_get_temp_dir(), 'sig_empr2_');
+             file_put_contents($temp, $content);
+             $emprSig2Path = $temp;
+             $tempSigPaths[] = $temp;
+        }
+
+        // 3. Witness Signatures
+        // Pre-load all global witnesses
+        $globalWitnesses = GlobalWitness::all()->keyBy('alias'); // alias: witness_1, witness_2...
+
+        $witnessSigPaths = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $alias = "witness_{$i}";
+            $witness = $globalWitnesses->get($alias);
+
+            if ($witness && $witness->signature_path && Storage::disk('public')->exists($witness->signature_path)) {
+                $witnessSigPaths[$alias] = Storage::disk('public')->path($witness->signature_path);
+            } else {
+                // Generate consistent temp signature for this alias if missing
+                $content = $this->signatureService->generate('WITNESS-' . $alias . '-' . date('Ymd'));
+                $temp = tempnam(sys_get_temp_dir(), 'sig_' . $alias . '_');
+                file_put_contents($temp, $content);
+                $witnessSigPaths[$alias] = $temp;
+                $tempSigPaths[] = $temp;
             }
+        }
 
-            // Generate Signatures for this session (Consistent per person)
-            $employeeSignature = $this->signatureService->generate('EMP-' . $employee->id);
-
-            // Employer Signature: Use Employer ID.
-            $employerSignature = $this->signatureService->generate('EMPR-' . $employee->employer_id);
-
-            // Save temp files for FPDF to read
-            $tempEmpSigPath = tempnam(sys_get_temp_dir(), 'sig_emp_');
-            file_put_contents($tempEmpSigPath, $employeeSignature);
-
-            $tempEmprSigPath = tempnam(sys_get_temp_dir(), 'sig_empr_');
-            file_put_contents($tempEmprSigPath, $employerSignature);
-
+        try {
             // Iterate Pages
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                 $templateId = $pdf->importPage($pageNo);
@@ -136,28 +162,34 @@ class PdfGeneratorService
                 $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $pdf->useTemplate($templateId);
 
-                // Filter items for this page
                 $items = collect($template->field_mapping)->where('page', $pageNo);
 
                 foreach ($items as $item) {
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
 
-                    // Handle Signatures
+                    // --- Handle Signatures ---
                     if (isset($item['type']) && $item['type'] === 'signature') {
                         $w = ($item['w'] / 100) * $size['width'];
                         $h = ($item['h'] / 100) * $size['height'];
 
-                        $sigPath = ($item['signatureGroup'] ?? 'employee') === 'employer'
-                                   ? $tempEmprSigPath
-                                   : $tempEmpSigPath;
+                        $group = $item['signatureGroup'] ?? 'employee';
+                        $targetPath = null;
 
-                        // Place image
-                        $pdf->Image($sigPath, $x, $y, $w, $h, 'PNG');
+                        if ($group === 'employee') $targetPath = $empSigPath;
+                        elseif ($group === 'employer') $targetPath = $emprSig1Path;
+                        elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                        elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
+
+                        if ($targetPath && file_exists($targetPath)) {
+                            // FPDF Image supports PNG/JPG. If path is real, it works.
+                            // If temp, it works.
+                            $pdf->Image($targetPath, $x, $y, $w, $h, 'PNG');
+                        }
                         continue;
                     }
 
-                    // Handle Text
+                    // --- Handle Text ---
                     $text = '';
                     if ($item['type'] === 'static') {
                         $text = $item['text'] ?? '';
@@ -166,39 +198,61 @@ class PdfGeneratorService
                     }
 
                     if ($text) {
-                        $pdf->SetXY($x, $y);
-
-                        // Font Size Handling
+                        // Font Size & Positioning Logic
+                        // Default size
                         $fontSize = $item['fontSize'] ?? 12;
-                        $pdf->SetFontSize($fontSize);
 
-                        if ($fontLoaded) {
-                            $converted = @iconv('UTF-8', 'cp874', $text);
-                            if ($converted !== false) {
-                                $text = $converted;
-                            }
-                        } else {
-                            $text = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
+                        // 1. Check Auto-Fit (Fit to Height)
+                        if (!empty($item['autoFit'])) {
+                            $boxH = ($item['h'] / 100) * $size['height'];
+                            // Conversion: 1 pt = 1/72 inch. 1 unit ~ 1mm (approx in FPDF default).
+                            // A rough heuristic: Font size (pt) ~ Box Height (mm) * 2
+                            // But accurate math depends on PDF unit. Assuming mm (default FPDF).
+                            // 14pt font ~= 5mm height visually.
+                            // So $fontSize = $boxH * 2.8;
+                            $fontSize = $boxH * 2.5;
                         }
 
-                        $pdf->Write(0, $text);
+                        $pdf->SetFontSize($fontSize);
+
+                        // 2. Encoding
+                        if ($fontLoaded) {
+                            $encodedText = @iconv('UTF-8', 'cp874', $text);
+                            if ($encodedText === false) $encodedText = $text;
+                        } else {
+                            $encodedText = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
+                        }
+
+                        // 3. Alignment (Center vs Left)
+                        $boxW = ($item['w'] / 100) * $size['width'];
+                        $align = $item['align'] ?? 'left';
+                        $textX = $x;
+
+                        if ($align === 'center') {
+                            $textWidth = $pdf->GetStringWidth($encodedText);
+                            // Center in box: X + (BoxW - TextW) / 2
+                            $textX = $x + ($boxW - $textWidth) / 2;
+                        }
+
+                        // Adjust Y to vertical center roughly (fonts draw from baseline)
+                        // This is tricky without font metrics, but typically adding 70% of height works
+                        $pdf->SetXY($textX, $y + (($item['h'] / 100) * $size['height'] / 4)); // Small offset
+
+                        $pdf->Write(0, $encodedText);
                     }
                 }
             }
-
-            // Output PDF content
             $content = $pdf->Output('S');
 
         } finally {
-            // Cleanup temp files (Signatures)
-            if (isset($tempEmpSigPath) && file_exists($tempEmpSigPath)) @unlink($tempEmpSigPath);
-            if (isset($tempEmprSigPath) && file_exists($tempEmprSigPath)) @unlink($tempEmprSigPath);
-
-            // Cleanup normalized PDF files
+            // Cleanup temp files
+            foreach ($tempSigPaths as $path) {
+                if (file_exists($path)) @unlink($path);
+            }
             foreach ($this->tempFiles as $tempFile) {
                 if (file_exists($tempFile)) @unlink($tempFile);
             }
-            $this->tempFiles = []; // Reset for next call
+            $this->tempFiles = [];
         }
 
         return $content;
@@ -317,7 +371,23 @@ class PdfGeneratorService
 
     protected function resolveValue(Employee $employee, $key)
     {
-        // 1. Handle Special Employer Address Fields
+        // 1. Handle Witness Fields
+        if (str_starts_with($key, 'witness_')) {
+            // key format: witness_1.name_th
+            $parts = explode('.', $key);
+            if (count($parts) === 2) {
+                $alias = $parts[0];
+                $field = $parts[1]; // name_th or name_en
+                $witness = GlobalWitness::where('alias', $alias)->first();
+                return $witness ? $witness->{$field} : '';
+            }
+        }
+
+        // 2. Handle Employer Signer 2
+        if ($key === 'employer.signer_2_name_th') return $employee->employer->signer_2_name_th;
+        if ($key === 'employer.signer_2_name_en') return $employee->employer->signer_2_name_en;
+
+        // 3. Handle Special Employer Address Fields
         if ($key === 'employer.address_th') {
             return $this->formatAddress($employee->employer->addresses->first(), 'th');
         }
@@ -325,10 +395,10 @@ class PdfGeneratorService
             return $this->formatAddress($employee->employer->addresses->first(), 'en');
         }
 
-        // 2. Handle Standard Dot Notation
+        // 4. Handle Standard Dot Notation
         $value = data_get($employee, $key);
 
-        // 3. Formatting
+        // 5. Formatting
         if ($value instanceof Carbon) {
             return $value->format('d/m/Y');
         }
@@ -369,23 +439,12 @@ class PdfGeneratorService
 
     protected function saveToSlot(Employee $employee, $content, $slotName)
     {
-        // This is kept for legacy compatibility but is largely bypassed by 'raw_content' option
         $filename = 'generated/' . $employee->id . '/' . Str::slug($slotName) . '_' . time() . '.pdf';
-
         Storage::disk('public')->put($filename, $content);
-
         $doc = \App\Models\EmployeeGeneratedDocument::updateOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'document_name' => $slotName
-            ],
-            [
-                'file_path' => $filename,
-                'generated_at' => now(),
-                'created_by' => auth()->id() ?? 0,
-            ]
+            ['employee_id' => $employee->id, 'document_name' => $slotName],
+            ['file_path' => $filename, 'generated_at' => now(), 'created_by' => auth()->id() ?? 0]
         );
-
         return $doc;
     }
 
