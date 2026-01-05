@@ -39,14 +39,32 @@
             <div x-show="view === 'camera'" class="w-full h-full relative bg-black flex flex-col">
                 <video x-ref="video" class="w-full h-full object-contain bg-black" autoplay playsinline></video>
 
+                <!-- Flash Effect -->
+                <div x-show="flash"
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-80"
+                     x-transition:leave="transition ease-in duration-300"
+                     x-transition:leave-start="opacity-80"
+                     x-transition:leave-end="opacity-0"
+                     class="absolute inset-0 bg-white pointer-events-none z-50"></div>
+
                 <!-- Camera Controls -->
-                <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-center">
-                    <div class="text-white text-sm" x-show="capturedImages.length > 0">
-                        <span class="badge bg-primary rounded-pill fs-6" x-text="capturedImages.length"></span> Pages
+                <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-center z-40">
+                    <div class="text-white text-sm cursor-pointer hover:underline" @click="if(capturedImages.length > 0) view = 'review'">
+                        <div class="flex items-center gap-2">
+                             <div class="relative" x-show="capturedImages.length > 0">
+                                <img :src="capturedImages[capturedImages.length-1]?.cropped" class="w-10 h-10 rounded border border-white object-cover">
+                                <span class="absolute -top-2 -right-2 badge bg-primary rounded-pill fs-7" x-text="capturedImages.length"></span>
+                            </div>
+                            <span x-show="capturedImages.length === 0">No images</span>
+                        </div>
                     </div>
 
-                    <button @click="captureImage()" class="btn btn-light rounded-circle p-3 shadow-lg border-4 border-gray-300" style="width: 70px; height: 70px;">
-                        <div class="w-full h-full bg-danger rounded-circle"></div>
+                    <button @click="captureImage()" :disabled="isProcessing" class="btn btn-light rounded-circle p-1 shadow-lg border-4 border-gray-300 relative" style="width: 70px; height: 70px;">
+                         <div class="w-full h-full bg-danger rounded-circle flex items-center justify-center">
+                             <span x-show="isProcessing" class="spinner-border spinner-border-sm text-white" role="status" aria-hidden="true"></span>
+                         </div>
                     </button>
 
                     <button @click="finishCapture()" class="btn btn-success text-white fw-bold px-4 rounded-pill" x-show="capturedImages.length > 0">
@@ -60,9 +78,10 @@
             <div x-show="view === 'review'" class="w-full h-full flex flex-col bg-gray-100">
                 <div class="flex-grow overflow-y-auto p-3">
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        <template x-for="(img, index) in capturedImages" :key="index">
+                        <template x-for="(img, index) in capturedImages" :key="img.id">
                             <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-shadow">
-                                <img :src="img.src" class="w-full h-40 object-contain bg-gray-50 border rounded cursor-pointer" @click="startCrop(index)">
+                                <!-- Show CROPPED version -->
+                                <img :src="img.cropped" class="w-full h-40 object-contain bg-gray-50 border rounded cursor-pointer" @click="startEdit(index)">
 
                                 <div class="absolute top-1 right-1 flex gap-1">
                                     <button @click.stop="removeImage(index)" class="btn btn-sm btn-danger rounded-circle shadow-sm p-1 leading-none w-6 h-6 flex items-center justify-center">
@@ -70,7 +89,7 @@
                                     </button>
                                 </div>
                                 <div class="absolute bottom-1 right-1">
-                                     <button @click.stop="startCrop(index)" class="btn btn-sm btn-primary shadow-sm py-1 px-2 text-xs rounded-pill">
+                                     <button @click.stop="startEdit(index)" class="btn btn-sm btn-primary shadow-sm py-1 px-2 text-xs rounded-pill">
                                         <i class="bi bi-crop"></i> ปรับแต่ง
                                     </button>
                                 </div>
@@ -106,10 +125,10 @@
                         <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
 
                         <!-- Handles -->
-                        <circle :cx="corners[0].x" :cy="corners[0].y" r="8" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(0, $event)" @touchstart="startDrag(0, $event)" />
-                        <circle :cx="corners[1].x" :cy="corners[1].y" r="8" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(1, $event)" @touchstart="startDrag(1, $event)" />
-                        <circle :cx="corners[2].x" :cy="corners[2].y" r="8" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(2, $event)" @touchstart="startDrag(2, $event)" />
-                        <circle :cx="corners[3].x" :cy="corners[3].y" r="8" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(3, $event)" @touchstart="startDrag(3, $event)" />
+                        <circle :cx="corners[0].x" :cy="corners[0].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(0, $event)" @touchstart="startDrag(0, $event)" />
+                        <circle :cx="corners[1].x" :cy="corners[1].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(1, $event)" @touchstart="startDrag(1, $event)" />
+                        <circle :cx="corners[2].x" :cy="corners[2].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(2, $event)" @touchstart="startDrag(2, $event)" />
+                        <circle :cx="corners[3].x" :cy="corners[3].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(3, $event)" @touchstart="startDrag(3, $event)" />
                     </svg>
                 </div>
 
@@ -121,11 +140,11 @@
                         ลากจุดทั้ง 4 มุมเพื่อปรับตำแหน่งเอกสาร
                     </div>
                     <div>
-                         <button @click="autoDetect()" class="btn btn-outline-info me-2">
-                            <i class="bi bi-magic"></i> Auto
+                         <button @click="resetToFull()" class="btn btn-outline-light me-2">
+                            <i class="bi bi-arrows-fullscreen"></i> Reset
                         </button>
-                        <button @click="applyCrop()" class="btn btn-primary">
-                            <i class="bi bi-check-lg"></i> ยืนยัน
+                        <button @click="saveCropEdit()" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> บันทึกแก้ไข
                         </button>
                     </div>
                 </div>
@@ -135,7 +154,7 @@
     </div>
 </div>
 
-<!-- Load Libraries -->
+<!-- Load Libraries (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script async src="https://docs.opencv.org/4.x/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
 
@@ -144,17 +163,20 @@
         Alpine.data('documentScanner', () => ({
             isOpen: false,
             isLoading: false,
+            isProcessing: false,
             loadingMessage: '',
             view: 'camera', // camera, review, crop
             targetInputId: null,
             targetPreviewId: null,
+            flash: false,
 
             // Camera
             stream: null,
 
             // Data
-            capturedImages: [], // { src: dataUrl, original: dataUrl }
-            currentCropIndex: -1,
+            // Structure: { id, original: dataUrl, cropped: dataUrl, corners: [{x,y}...] }
+            capturedImages: [],
+            currentEditIndex: -1,
 
             // Cropping State
             cvLoaded: false,
@@ -183,7 +205,7 @@
             getHeaderTitle() {
                 if(this.view === 'camera') return 'ถ่ายภาพเอกสาร';
                 if(this.view === 'review') return 'ตรวจสอบเอกสาร';
-                if(this.view === 'crop') return 'จัดมุมเอกสาร';
+                if(this.view === 'crop') return 'ปรับมุมเอกสาร';
                 return 'Document Scanner';
             },
 
@@ -249,7 +271,14 @@
                 }
             },
 
+            // --- SMART CAPTURE LOGIC ---
+
             captureImage() {
+                if (this.isProcessing) return;
+                this.isProcessing = true;
+                this.flash = true;
+                setTimeout(() => this.flash = false, 150);
+
                 const video = this.$refs.video;
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
@@ -257,13 +286,159 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0);
 
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                this.capturedImages.push({
-                    src: dataUrl,
-                    original: dataUrl // Keep original for re-cropping
-                });
+                const originalDataUrl = canvas.toDataURL('image/jpeg', 0.9);
 
-                // Optional: Flash effect or sound
+                // PROCESS IMAGE
+                try {
+                    if (typeof cv !== 'undefined') {
+                        // 1. Detect Edges
+                        const src = cv.imread(canvas);
+                        const { corners, found } = this.detectDocument(src);
+
+                        // 2. Warp (Crop)
+                        const croppedDataUrl = this.performWarp(src, corners, canvas.width, canvas.height);
+
+                        // 3. Store
+                        this.capturedImages.push({
+                            id: Date.now(),
+                            original: originalDataUrl,
+                            cropped: croppedDataUrl,
+                            corners: corners, // Store scaled to original image
+                            isFound: found
+                        });
+
+                        src.delete();
+                    } else {
+                        // Fallback
+                        this.capturedImages.push({
+                            id: Date.now(),
+                            original: originalDataUrl,
+                            cropped: originalDataUrl,
+                            corners: this.getDefaultCorners(canvas.width, canvas.height),
+                            isFound: false
+                        });
+                    }
+                } catch (e) {
+                    console.error("Capture Processing Error:", e);
+                    // Fallback on error
+                    this.capturedImages.push({
+                        id: Date.now(),
+                        original: originalDataUrl,
+                        cropped: originalDataUrl,
+                        corners: this.getDefaultCorners(canvas.width, canvas.height),
+                        isFound: false
+                    });
+                } finally {
+                    this.isProcessing = false;
+                    // Optional: Brief success sound or haptic feedback
+                }
+            },
+
+            detectDocument(src) {
+                const dst = new cv.Mat();
+                cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
+                cv.GaussianBlur(dst, dst, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                cv.Canny(dst, dst, 75, 200);
+
+                let contours = new cv.MatVector();
+                let hierarchy = new cv.Mat();
+                cv.findContours(dst, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+                let maxArea = 0;
+                let biggestContour = null;
+                let width = src.cols;
+                let height = src.rows;
+                let found = false;
+
+                for(let i = 0; i < contours.size(); ++i) {
+                    let cnt = contours.get(i);
+                    let area = cv.contourArea(cnt);
+                    // Filter: must be reasonably large (> 10% of image roughly)
+                    if (area > (width * height * 0.1)) {
+                        let peri = cv.arcLength(cnt, true);
+                        let approx = new cv.Mat();
+                        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+
+                        if (approx.rows === 4 && area > maxArea) {
+                            maxArea = area;
+                            biggestContour = approx;
+                            found = true;
+                        } else {
+                            approx.delete();
+                        }
+                    }
+                }
+
+                let corners = [];
+                if (biggestContour) {
+                     const points = [];
+                    for(let i=0; i<4; i++) {
+                        points.push({
+                            x: biggestContour.data32S[i*2],
+                            y: biggestContour.data32S[i*2+1]
+                        });
+                    }
+                    corners = this.sortPoints(points);
+                    biggestContour.delete();
+                } else {
+                    corners = this.getDefaultCorners(width, height);
+                }
+
+                dst.delete();
+                contours.delete();
+                hierarchy.delete();
+
+                return { corners, found };
+            },
+
+            performWarp(src, corners, width, height) {
+                 // Convert corners array to flat array for OpenCV
+                 const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    corners[0].x, corners[0].y,
+                    corners[1].x, corners[1].y,
+                    corners[2].x, corners[2].y,
+                    corners[3].x, corners[3].y
+                ]);
+
+                // Calculate dimensions of the new cropped image
+                const wTop = Math.hypot(corners[1].x - corners[0].x, corners[1].y - corners[0].y);
+                const wBot = Math.hypot(corners[2].x - corners[3].x, corners[2].y - corners[3].y);
+                const hLeft = Math.hypot(corners[3].x - corners[0].x, corners[3].y - corners[0].y);
+                const hRight = Math.hypot(corners[2].x - corners[1].x, corners[2].y - corners[1].y);
+
+                const maxWidth = Math.max(wTop, wBot);
+                const maxHeight = Math.max(hLeft, hRight);
+
+                const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    0, 0,
+                    maxWidth, 0,
+                    maxWidth, maxHeight,
+                    0, maxHeight
+                ]);
+
+                const M = cv.getPerspectiveTransform(srcTri, dstTri);
+                const dst = new cv.Mat();
+                cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+                // Draw to temp canvas
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = maxWidth;
+                tempCanvas.height = maxHeight;
+                cv.imshow(tempCanvas, dst);
+                const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
+
+                srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
+                return dataUrl;
+            },
+
+            getDefaultCorners(w, h) {
+                const pad = 40; // Indent slightly so user sees handles
+                return [
+                    {x: pad, y: pad},
+                    {x: w-pad, y: pad},
+                    {x: w-pad, y: h-pad},
+                    {x: pad, y: h-pad}
+                ];
             },
 
             finishCapture() {
@@ -279,30 +454,29 @@
                 }
             },
 
-            // --- CROP LOGIC ---
+            // --- EDIT / CROP LOGIC ---
 
-            startCrop(index) {
-                this.currentCropIndex = index;
+            startEdit(index) {
+                this.currentEditIndex = index;
                 this.view = 'crop';
+                const item = this.capturedImages[index];
 
                 this.$nextTick(() => {
-                    this.loadImageForCrop(this.capturedImages[index].src);
+                    this.loadImageForCrop(item.original, item.corners);
                 });
             },
 
-            loadImageForCrop(src) {
+            loadImageForCrop(src, savedCorners) {
                 const img = new Image();
                 img.onload = () => {
                     this.imageWidth = img.width;
                     this.imageHeight = img.height;
 
                     const canvas = this.$refs.cropCanvas;
-                    // Fit canvas to screen while maintaining aspect ratio
                     const container = this.$refs.cropContainer;
-                    const containerW = container.clientWidth;
-                    const containerH = container.clientHeight;
 
-                    const scale = Math.min(containerW / img.width, containerH / img.height) * 0.9;
+                    // Simple fit logic
+                    const scale = Math.min(container.clientWidth / img.width, container.clientHeight / img.height) * 0.9;
 
                     this.canvasWidth = img.width * scale;
                     this.canvasHeight = img.height * scale;
@@ -316,82 +490,17 @@
                     this.scaleX = this.canvasWidth / this.imageWidth;
                     this.scaleY = this.canvasHeight / this.imageHeight;
 
-                    // Initialize corners (default to full image)
-                    // If we had auto-detection, we would set them here
-                    this.autoDetect();
+                    // Restore corners (Deep copy to avoid modifying state directly until save)
+                    // Scale saved corners (which are in original image coordinates) to canvas coordinates
+                    this.corners = savedCorners.map(c => ({
+                        x: c.x * this.scaleX,
+                        y: c.y * this.scaleY
+                    }));
                 };
                 img.src = src;
             },
 
-            autoDetect() {
-                if(typeof cv === 'undefined') {
-                    this.resetCorners();
-                    return;
-                }
-
-                try {
-                    const src = cv.imread(this.$refs.cropCanvas);
-                    const dst = new cv.Mat();
-
-                    // Preprocessing
-                    cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
-                    cv.GaussianBlur(dst, dst, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-                    cv.Canny(dst, dst, 75, 200);
-
-                    // Find Contours
-                    let contours = new cv.MatVector();
-                    let hierarchy = new cv.Mat();
-                    cv.findContours(dst, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
-
-                    let maxArea = 0;
-                    let biggestContour = null;
-
-                    for(let i = 0; i < contours.size(); ++i) {
-                        let cnt = contours.get(i);
-                        let area = cv.contourArea(cnt);
-                        if (area > 5000) { // Min area filter
-                            let peri = cv.arcLength(cnt, true);
-                            let approx = new cv.Mat();
-                            cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-
-                            if (approx.rows === 4 && area > maxArea) {
-                                maxArea = area;
-                                biggestContour = approx;
-                            } else {
-                                approx.delete();
-                            }
-                        }
-                    }
-
-                    if (biggestContour) {
-                        // Extract points from contour
-                        const points = [];
-                        for(let i=0; i<4; i++) {
-                            points.push({
-                                x: biggestContour.data32S[i*2],
-                                y: biggestContour.data32S[i*2+1]
-                            });
-                        }
-
-                        // Sort points to TL, TR, BR, BL
-                        this.corners = this.sortPoints(points);
-                        biggestContour.delete();
-                    } else {
-                        this.resetCorners();
-                    }
-
-                    src.delete();
-                    dst.delete();
-                    contours.delete();
-                    hierarchy.delete();
-
-                } catch(e) {
-                    console.error("OpenCV Auto Detect Error:", e);
-                    this.resetCorners();
-                }
-            },
-
-            resetCorners() {
+            resetToFull() {
                 const w = this.canvasWidth;
                 const h = this.canvasHeight;
                 const pad = 20;
@@ -403,18 +512,61 @@
                 ];
             },
 
+            saveCropEdit() {
+                if (typeof cv === 'undefined') return;
+                const item = this.capturedImages[this.currentEditIndex];
+
+                try {
+                    // 1. Convert current canvas corners back to Original Image coordinates
+                    const realCorners = this.corners.map(c => ({
+                        x: c.x / this.scaleX,
+                        y: c.y / this.scaleY
+                    }));
+
+                    // 2. Perform Warp on Original Image
+                    // We need to load the original image into a Mat
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+
+                        const src = cv.imread(canvas);
+                        const newCroppedUrl = this.performWarp(src, realCorners, img.width, img.height);
+                        src.delete();
+
+                        // 3. Update State
+                        this.capturedImages[this.currentEditIndex].cropped = newCroppedUrl;
+                        this.capturedImages[this.currentEditIndex].corners = realCorners;
+
+                        // 4. Return to review
+                        this.view = 'review';
+                    };
+                    img.src = item.original;
+
+                } catch(e) {
+                    console.error("Save Edit Error", e);
+                    alert("Failed to process crop.");
+                }
+            },
+
+            cancelCrop() {
+                this.view = 'review';
+            },
+
+            // --- UTILS ---
+
             sortPoints(points) {
-                // Basic sorting logic for 4 points
-                // 1. Sort by Y to separate Top (2) and Bottom (2)
+                 // Sort top (y)
                 points.sort((a,b) => a.y - b.y);
-                const top = points.slice(0, 2).sort((a,b) => a.x - b.x); // TL, TR
-                const bottom = points.slice(2, 4).sort((a,b) => b.x - a.x); // BR, BL (Note: BR is usually right-most, but strict order: TL, TR, BR, BL)
+                const top = points.slice(0, 2).sort((a,b) => a.x - b.x);
+                const bottom = points.slice(2, 4).sort((a,b) => b.x - a.x); // Note: BR is usually right-most
+                // Re-sort bottom by x ascending for standard check (BL, BR)
+                bottom.sort((a,b) => a.x - b.x);
 
-                // Let's standard: TL, TR, BR, BL
-                // Re-sort bottom by x ascending for standard check
-                bottom.sort((a,b) => a.x - b.x); // BL, BR
-
-                return [top[0], top[1], bottom[1], bottom[0]];
+                return [top[0], top[1], bottom[1], bottom[0]]; // TL, TR, BR, BL
             },
 
             getPolygonPoints() {
@@ -452,75 +604,18 @@
                 this.activeDragIndex = -1;
             },
 
-            applyCrop() {
-                if (typeof cv === 'undefined') return;
-
-                try {
-                    const src = cv.imread(this.$refs.cropCanvas);
-
-                    // Source points (from handles)
-                    // Scale handles back to original image size
-                    const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-                        this.corners[0].x / this.scaleX, this.corners[0].y / this.scaleY,
-                        this.corners[1].x / this.scaleX, this.corners[1].y / this.scaleY,
-                        this.corners[2].x / this.scaleX, this.corners[2].y / this.scaleY,
-                        this.corners[3].x / this.scaleX, this.corners[3].y / this.scaleY
-                    ]);
-
-                    // Destination points (Rectangular)
-                    // Calculate width/height based on maximum distance
-                    const widthTop = Math.hypot(this.corners[1].x - this.corners[0].x, this.corners[1].y - this.corners[0].y) / this.scaleX;
-                    const widthBottom = Math.hypot(this.corners[2].x - this.corners[3].x, this.corners[2].y - this.corners[3].y) / this.scaleX;
-                    const maxWidth = Math.max(widthTop, widthBottom);
-
-                    const heightLeft = Math.hypot(this.corners[3].x - this.corners[0].x, this.corners[3].y - this.corners[0].y) / this.scaleY;
-                    const heightRight = Math.hypot(this.corners[2].x - this.corners[1].x, this.corners[2].y - this.corners[1].y) / this.scaleY;
-                    const maxHeight = Math.max(heightLeft, heightRight);
-
-                    const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-                        0, 0,
-                        maxWidth, 0,
-                        maxWidth, maxHeight,
-                        0, maxHeight
-                    ]);
-
-                    const M = cv.getPerspectiveTransform(srcTri, dstTri);
-                    const dst = new cv.Mat();
-                    cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-
-                    cv.imshow(this.$refs.cropCanvas, dst);
-
-                    // Update captured image
-                    const dataUrl = this.$refs.cropCanvas.toDataURL('image/jpeg', 0.95);
-                    this.capturedImages[this.currentCropIndex].src = dataUrl;
-
-                    // Cleanup
-                    src.delete(); dst.delete(); M.delete(); srcTri.delete(); dstTri.delete();
-
-                    this.cancelCrop();
-
-                } catch(e) {
-                    console.error('Crop Error', e);
-                    alert('Error processing image');
-                }
-            },
-
-            cancelCrop() {
-                this.view = 'review';
-            },
-
             // --- FINALIZATION ---
 
             async finalizeProcess() {
                 this.isLoading = true;
-                this.loadingMessage = 'Processing Files...';
+                this.loadingMessage = 'Generating Output...';
 
                 try {
                     const dt = new DataTransfer();
 
                     if(this.capturedImages.length === 1) {
-                        // Single Image -> JPG
-                        const file = await this.urlToFile(this.capturedImages[0].src, 'scanned_doc.jpg', 'image/jpeg');
+                        // Single Image -> JPG (Use the CROPPED version)
+                        const file = await this.urlToFile(this.capturedImages[0].cropped, 'scanned_doc.jpg', 'image/jpeg');
                         dt.items.add(file);
 
                     } else if (this.capturedImages.length > 1) {
@@ -529,7 +624,7 @@
                         const doc = new jsPDF();
 
                         for (let i = 0; i < this.capturedImages.length; i++) {
-                            const imgData = this.capturedImages[i].src;
+                            const imgData = this.capturedImages[i].cropped;
                             if (i > 0) doc.addPage();
 
                             const props = doc.getImageProperties(imgData);
@@ -555,7 +650,7 @@
                     // Handle Preview (Optional)
                     if (this.targetPreviewId && this.capturedImages.length === 1) {
                          const preview = document.getElementById(this.targetPreviewId);
-                         if(preview) preview.src = this.capturedImages[0].src;
+                         if(preview) preview.src = this.capturedImages[0].cropped;
                     }
 
                     this.closeScanner();
