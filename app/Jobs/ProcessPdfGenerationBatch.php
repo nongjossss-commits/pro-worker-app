@@ -23,16 +23,16 @@ class ProcessPdfGenerationBatch implements ShouldQueue
     protected $outputType; // 'download' or 'save_to_slot'
     protected $slotName;
     protected $userId;
-    protected $batchId; // Custom UUID for temp folder organization
+    protected $customBatchId; // Custom UUID for temp folder organization
 
-    public function __construct($employeeIds, $templateId, $outputType, $slotName, $userId, $batchId)
+    public function __construct($employeeIds, $templateId, $outputType, $slotName, $userId, $customBatchId)
     {
         $this->employeeIds = $employeeIds;
         $this->templateId = $templateId;
         $this->outputType = $outputType;
         $this->slotName = $slotName;
         $this->userId = $userId;
-        $this->batchId = $batchId;
+        $this->customBatchId = $customBatchId;
     }
 
     public function handle(PdfGeneratorService $pdfService)
@@ -113,8 +113,8 @@ class ProcessPdfGenerationBatch implements ShouldQueue
     protected function handleDownloadStorage($content, $filename)
     {
         // Store in a temp folder dedicated to this batch UUID
-        // storage/app/public/temp/batches/{batchId}/{filename}
-        $path = 'temp/batches/' . $this->batchId . '/' . $filename;
+        // storage/app/public/temp/batches/{customBatchId}/{filename}
+        $path = 'temp/batches/' . $this->customBatchId . '/' . $filename;
         Storage::disk('public')->put($path, $content);
     }
 }
