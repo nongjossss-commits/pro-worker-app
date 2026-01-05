@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class PdfGenerationController extends Controller
 {
@@ -93,6 +95,15 @@ class PdfGenerationController extends Controller
         $userId = Auth::id();
         $batchId = (string) Str::uuid(); // Unique ID for this operation
 
+        // Hybrid Strategy:
+        // If count < 25, run SYNCHRONOUSLY to ensure immediate feedback/success.
+        // If count >= 25, run via QUEUE/BATCH to prevent timeout.
+        if (count($employeeIds) < 25) {
+            return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName);
+        }
+
+        // --- ASYNC BATCH MODE (For > 25 employees) ---
+
         // Chunk size for batch processing
         $chunkSize = 50;
         $chunks = array_chunk($employeeIds, $chunkSize);
@@ -126,6 +137,65 @@ class PdfGenerationController extends Controller
 
         } catch (\Throwable $e) {
             return redirect()->route('employees.index')->with('danger', 'Error starting batch process: ' . $e->getMessage());
+        }
+    }
+
+    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName)
+    {
+        try {
+            $employees = Employee::with('employer')->whereIn('id', $employeeIds)->get();
+            $template = PdfTemplate::findOrFail($templateId);
+
+            if ($outputType === 'save_to_slot') {
+                $results = $this->pdfService->generateForEmployees($template, $employees, [
+                    'output_type' => 'save_to_slot',
+                    'slot_name' => $slotName
+                ]);
+
+                // Filter out errors
+                $successCount = collect($results)->where('status', 'saved')->count();
+                $errorCount = count($results) - $successCount;
+
+                $msg = "Successfully attached {$successCount} documents.";
+                if ($errorCount > 0) {
+                    $msg .= " (Failed: {$errorCount})";
+                }
+
+                return redirect()->route('employees.index')->with($errorCount > 0 ? 'warning' : 'success', $msg);
+
+            } else {
+                // Download Mode: Generate content and ZIP immediately
+                $results = $this->pdfService->generateForEmployees($template, $employees, [
+                    'output_type' => 'raw_content'
+                ]);
+
+                if (empty($results)) {
+                    return redirect()->back()->with('danger', 'Failed to generate any documents.');
+                }
+
+                // Create Zip
+                $zipName = 'export_' . date('Ymd_His') . '.zip';
+                $zipPath = storage_path('app/public/temp/' . $zipName);
+                if (!is_dir(dirname($zipPath))) mkdir(dirname($zipPath), 0755, true);
+
+                $zip = new ZipArchive;
+                if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+                    foreach ($results as $item) {
+                        if (isset($item['filename']) && isset($item['content'])) {
+                            $zip->addFromString($item['filename'], $item['content']);
+                        }
+                    }
+                    $zip->close();
+                } else {
+                    throw new \Exception("Could not create ZIP file.");
+                }
+
+                return response()->download($zipPath)->deleteFileAfterSend(true);
+            }
+
+        } catch (\Throwable $e) {
+            \Log::error("Sync PDF Gen Error: " . $e->getMessage());
+            return redirect()->route('employees.index')->with('danger', 'Generation Failed: ' . $e->getMessage());
         }
     }
 }
