@@ -62,6 +62,10 @@ class ProcessPdfGenerationBatch implements ShouldQueue
             foreach ($results as $result) {
                 if (isset($result['content']) && isset($result['filename'])) {
                     $this->handleDownloadStorage($result['content'], $result['filename']);
+                } elseif (isset($result['status']) && $result['status'] === 'error') {
+                    // Handle Error: Write to a text file in the same temp folder
+                    $errorFilename = 'error_emp_' . ($result['employee_id'] ?? 'unknown') . '.txt';
+                    $this->handleDownloadStorage($result['message'] ?? 'Unknown Error', $errorFilename);
                 }
             }
         }
