@@ -157,6 +157,23 @@ public function reinstate(Employee $employee)
         $query->where('passport_type_cambodia', $request->input('passport_type_cambodia'))
               ->where('employeeNationality', 'กัมพูชา');
     }
+
+    if ($request->filled('bank_account_status')) {
+        $status = $request->input('bank_account_status');
+        if ($status === 'opened') {
+            // Opened: Both bank name and account number must be present
+            $query->whereNotNull('bank_name')->where('bank_name', '!=', '')
+                  ->whereNotNull('bank_account_number')->where('bank_account_number', '!=', '');
+        } elseif ($status === 'not_opened') {
+            // Not Opened: Either one is missing
+            $query->where(function ($q) {
+                $q->whereNull('bank_name')
+                  ->orWhere('bank_name', '')
+                  ->orWhereNull('bank_account_number')
+                  ->orWhere('bank_account_number', '');
+            });
+        }
+    }
     // --- END: ADDED FILTERING LOGIC ---
 
     $totalEmployees = (clone $query)->count();
@@ -240,6 +257,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_expiry_date_hospital' => 'nullable|string|max:255',
             'insurance_detail_social' => 'nullable|string|max:255',
             'medical_hospital_name' => 'nullable|string|max:255',
+            'outsource_code' => 'nullable|string|max:255',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:255',
             'employeeEmail' => 'nullable|email|max:255|unique:employees,email',
             'employeePassword' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
@@ -408,6 +428,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_detail_private' => 'nullable|string|max:255',
             'insurance_detail_social' => 'nullable|string|max:255',
             'medical_hospital_name' => 'nullable|string|max:255',
+            'outsource_code' => 'nullable|string|max:255',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:255',
             'employeeEmail' => 'nullable|email|max:255|unique:employees,email,' . $employee->id,
             'password' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
@@ -1320,7 +1343,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_detail_private' => 'Private Company',
             'insurance_expiry_date_private' => 'Private Expiry',
             'email' => 'Email',
-            'password' => 'Password',
+            'password' => 'รหัสสำหรับอีเมล',
+            'outsource_code' => 'รหัสสำหรับระบบ Outsource',
+            'bank_name' => 'ชื่อธนาคาร',
+            'bank_account_number' => 'เลขบัญชีธนาคาร',
             'employerNameTh' => 'Employer Name (TH)',
             'employerNameEn' => 'Employer Name (EN)',
             'employerAddressTh' => 'Employer Address (TH)',

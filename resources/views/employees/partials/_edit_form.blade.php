@@ -269,6 +269,12 @@
             <div class="col-md-4 mb-3"><label for="employee_reference_id" class="form-label">เลขอ้างอิงคนงาน
                 @if(isset($missingFields) && in_array('employee_reference_id', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label><input type="text" class="form-control" id="employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id', $employee->employee_reference_id) }}"></div>
+        <div class="col-md-4 mb-3"><label for="bank_name" class="form-label">ชื่อธนาคาร
+                @if(isset($missingFields) && in_array('bank_name', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label><input type="text" class="form-control" id="bank_name" name="bank_name" value="{{ old('bank_name', $employee->bank_name) }}"></div>
+        <div class="col-md-4 mb-3"><label for="bank_account_number" class="form-label">เลขบัญชีธนาคาร
+                @if(isset($missingFields) && in_array('bank_account_number', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label><input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ old('bank_account_number', $employee->bank_account_number) }}"></div>
     </div>
 
 
@@ -381,19 +387,25 @@
     <h5 class="mt-4"><i class="bi bi-lock-fill"></i> 6. ข้อมูลการเข้าสู่ระบบ (Login Information)</h5>
     <hr class="mb-4">
     <div class="row">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-4 mb-3">
             <label for="employeeEmail" class="form-label">อีเมล
                 @if(isset($missingFields) && in_array('email', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', $employee->email) }}">
         </div>
-        <div class="col-md-6 mb-3">
-            <label for="password" class="form-label">รหัสผ่าน (Password)
+        <div class="col-md-4 mb-3">
+            <label for="password" class="form-label">รหัสสำหรับอีเมล
                 @if(isset($missingFields) && in_array('password', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="password" name="password"
                     value="{{ $employee->password }}" placeholder="กรอกรหัสผ่าน">
             {{-- Note: type="text" creates a plain text box as requested --}}
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="outsource_code" class="form-label">รหัสสำหรับระบบ Outsource
+                @if(isset($missingFields) && in_array('outsource_code', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label>
+            <input type="text" class="form-control" id="outsource_code" name="outsource_code" value="{{ old('outsource_code', $employee->outsource_code) }}">
         </div>
     </div>
 

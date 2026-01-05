@@ -67,6 +67,11 @@
                 <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>{{ __('TD Book') }}</option>
                 <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('Inter Book') }}</option>
             </select>
+            <select name="bank_account_status" class="form-select form-select-sm" style="width: auto;">
+                <option value="">-- สถานะบัญชีธนาคาร --</option>
+                <option value="opened" {{ request('bank_account_status') == 'opened' ? 'selected' : '' }}>เปิดบัญชีแล้ว</option>
+                <option value="not_opened" {{ request('bank_account_status') == 'not_opened' ? 'selected' : '' }}>ยังไม่เปิดบัญชี</option>
+            </select>
             <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
             <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
             <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">{{ __('Clear') }}</a>
