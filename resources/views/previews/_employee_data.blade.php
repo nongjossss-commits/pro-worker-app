@@ -128,6 +128,8 @@
         <div class="col-md-4"><label class="form-label fw-bold">รหัสคนงาน (บริษัท)</label><p class="form-control-plaintext">{{ $employee->employer_employee_id ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขบัตรชมพู</label><p class="form-control-plaintext">{{ $employee->pinkCardNo ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขประจำตัวผู้เสียภาษี</label><p class="form-control-plaintext">{{ $employee->tax_id_number ?? 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">ชื่อธนาคาร</label><p class="form-control-plaintext">{{ $employee->bank_name ?? 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">เลขบัญชีธนาคาร</label><p class="form-control-plaintext">{{ $employee->bank_account_number ?? 'N/A' }}</p></div>
     </div>
 
     <hr class="my-4">

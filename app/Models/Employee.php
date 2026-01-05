@@ -126,6 +126,9 @@ class Employee extends Model
         'pink_card_file_path',
         'medical_certificate_path',
         'medical_hospital_name',
+        'outsource_code',
+        'bank_name',
+        'bank_account_number',
     ];
 
     protected $casts = [

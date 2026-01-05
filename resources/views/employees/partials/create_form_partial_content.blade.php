@@ -309,6 +309,8 @@
         <div class="col-md-4 mb-3"><label for="tax_id_number" class="form-label">เลขประจำตัวผู้เสียภาษี</label><input type="text" class="form-control" id="tax_id_number" name="tax_id_number" value="{{ old('tax_id_number') }}"></div>
         <div class="col-md-4 mb-3"><label for="employer_employee_id" class="form-label">รหัสคนงาน - ของนายจ้าง</label><input type="text" class="form-control" id="employer_employee_id" name="employer_employee_id" value="{{ old('employer_employee_id') }}"></div>
         <div class="col-md-4 mb-3"><label for="employee_reference_id" class="form-label">เลขอ้างอิงคนงาน</label><input type="text" class="form-control" id="employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id') }}"></div>
+        <div class="col-md-4 mb-3"><label for="bank_name" class="form-label">ชื่อธนาคาร</label><input type="text" class="form-control" id="bank_name" name="bank_name" value="{{ old('bank_name') }}"></div>
+        <div class="col-md-4 mb-3"><label for="bank_account_number" class="form-label">เลขบัญชีธนาคาร</label><input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ old('bank_account_number') }}"></div>
 </div>
 
 
@@ -400,13 +402,17 @@
 <h5 class="mt-4"><i class="bi bi-lock-fill"></i> 6. ข้อมูลการเข้าสู่ระบบ (Login Information)</h5>
 <hr class="mb-4">
 <div class="row">
-    <div class="col-md-6 mb-3">
+    <div class="col-md-4 mb-3">
         <label for="employeeEmail" class="form-label">อีเมล</label>
         <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail') }}">
     </div>
-    <div class="col-md-6 mb-3">
-        <label for="employeePassword" class="form-label">รหัสผ่าน</label>
+    <div class="col-md-4 mb-3">
+        <label for="employeePassword" class="form-label">รหัสสำหรับอีเมล</label>
         <input type="text" class="form-control" id="employeePassword" name="employeePassword">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label for="outsource_code" class="form-label">รหัสสำหรับระบบ Outsource</label>
+        <input type="text" class="form-control" id="outsource_code" name="outsource_code" value="{{ old('outsource_code') }}">
     </div>
 </div>
 
