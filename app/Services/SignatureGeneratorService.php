@@ -24,84 +24,45 @@ class SignatureGeneratorService
         mt_srand(crc32($seed));
 
         // 3. Ink Color (Variations of Dark Blue/Black)
-        $r = mt_rand(0, 30);
-        $g = mt_rand(0, 30);
-        $b = mt_rand(50, 120);
+        $r = mt_rand(0, 40);
+        $g = mt_rand(0, 40);
+        $b = mt_rand(60, 140);
         $inkColor = imagecolorallocate($image, $r, $g, $b);
 
-        // 4. Styles (To create variety across different people)
-        // Style 0: Flowing (Wide curves)
-        // Style 1: Compact (Tight loops)
-        // Style 2: Sharp (More erratic angles)
-        $style = mt_rand(0, 2);
+        // 4. Styles Selection
+        // Expanded styles to mimic human variation more closely
+        // 0: Flowing (Standard curves)
+        // 1: Compact (Tight loops)
+        // 2: Sharp (Erratic/Doctor style)
+        // 3: Cursive-like (Simulate handwriting with connected loops)
+        // 4: Big Loops (Large, expressive circular motions)
+        // 5: Horizontal Dash (Lazy signer)
+        $style = mt_rand(0, 5);
 
-        // Base thickness (1 to 3)
-        $thickness = mt_rand(2, 3);
+        // Base thickness (Varied slightly more)
+        $thickness = mt_rand(2, 4);
 
-        // 5. Generate Points
-        $points = [];
-
-        // Start Point (Left side, random vertical offset)
-        $startX = mt_rand(10, 40);
-        $startY = mt_rand($height / 2 - 10, $height / 2 + 30);
-        $points[] = ['x' => $startX, 'y' => $startY];
-
-        // Number of main strokes/segments
-        $numSegments = mt_rand(4, 7);
-
-        $currentX = $startX;
-        $currentY = $startY;
-
-        for ($i = 0; $i < $numSegments; $i++) {
-            // Target X moves right
-            $segmentWidth = ($width - 50) / $numSegments;
-            $endX = $currentX + mt_rand($segmentWidth * 0.8, $segmentWidth * 1.5);
-            $endY = mt_rand($height / 2 - 40, $height / 2 + 40);
-
-            // Control Points (Bezier) - Vary based on style
-            $cp1X = $currentX + mt_rand(10, 50);
-            $cp2X = $endX - mt_rand(10, 50);
-
-            if ($style === 1) { // Compact loops
-                $cp1Y = $currentY + mt_rand(-100, 100);
-                $cp2Y = $endY + mt_rand(-100, 100);
-                // Occasionally loop back
-                if (mt_rand(0, 2) === 0) {
-                   $cp1X -= 30;
-                }
-            } elseif ($style === 2) { // Sharp
-                 $cp1Y = $currentY + mt_rand(-60, 60);
-                 $cp2Y = $endY + mt_rand(-60, 60);
-            } else { // Flowing
-                 $cp1Y = $currentY + mt_rand(-30, 30);
-                 $cp2Y = $endY + mt_rand(-30, 30);
-            }
-
-            // Draw Segment
-            $this->drawBezier($image, $inkColor, $currentX, $currentY, $cp1X, $cp1Y, $cp2X, $cp2Y, $endX, $endY, $thickness);
-
-            $currentX = $endX;
-            $currentY = $endY;
+        // 5. Generate Content based on Style
+        switch ($style) {
+            case 3: // Cursive-like
+                $this->generateCursiveStyle($image, $inkColor, $width, $height, $thickness);
+                break;
+            case 4: // Big Loops
+                $this->generateBigLoopsStyle($image, $inkColor, $width, $height, $thickness);
+                break;
+            case 5: // Horizontal Dash / Lazy
+                $this->generateLazyStyle($image, $inkColor, $width, $height, $thickness);
+                break;
+            case 2: // Sharp
+                $this->generateSharpStyle($image, $inkColor, $width, $height, $thickness);
+                break;
+            default: // 0 & 1 & fallback
+                $this->generateStandardStyle($image, $inkColor, $width, $height, $thickness, $style);
+                break;
         }
 
-        // 6. Optional: Initial Loop (The "Circle" start)
-        if (mt_rand(0, 1)) {
-            $this->drawOval($image, $inkColor, $startX, $startY, mt_rand(15, 30), mt_rand(10, 25));
-        }
-
-        // 7. Optional: Underline or Strike-through
-        if (mt_rand(0, 3) > 0) { // 75% chance
-            $lineY = $currentY + mt_rand(10, 30);
-            $lineXEnd = $currentX + mt_rand(-20, 20);
-            // Simple swooping underline
-             $this->drawBezier($image, $inkColor,
-                $startX, $lineY,
-                $startX + 50, $lineY + 10,
-                $lineXEnd - 50, $lineY + 5,
-                $lineXEnd, $lineY,
-                $thickness - 1
-            );
-        }
+        // 6. Common Embellishments (Underline / Strike / Dots)
+        $this->addEmbellishments($image, $inkColor, $width, $height, $thickness);
 
         ob_start();
         imagepng($image);
@@ -111,9 +72,218 @@ class SignatureGeneratorService
         return $imageData;
     }
 
+    /**
+     * Style: Cursive-like (Simulates connected handwriting)
+     */
+    private function generateCursiveStyle($image, $color, $width, $height, $thickness)
+    {
+        $startX = mt_rand(20, 50);
+        $startY = mt_rand($height / 2, $height / 2 + 20);
+
+        $currentX = $startX;
+        $currentY = $startY;
+
+        // Number of "letters" or humps
+        $letters = mt_rand(5, 12);
+
+        for ($i = 0; $i < $letters; $i++) {
+            // Determine "letter" type: 0=hump(m/n), 1=loop_high(l/h), 2=loop_low(g/y/j), 3=sharp(t/i)
+            $type = mt_rand(0, 3);
+            $widthStep = mt_rand(15, 30);
+
+            $endX = $currentX + $widthStep;
+            $endY = $startY + mt_rand(-5, 5); // Return mostly to baseline
+
+            // Control points depend on letter type
+            $cp1X = $currentX + 5;
+            $cp2X = $endX - 5;
+
+            if ($type == 0) { // Hump (m/n)
+                $cp1Y = $currentY - mt_rand(15, 25);
+                $cp2Y = $endY - mt_rand(15, 25);
+            } elseif ($type == 1) { // High loop (l/k/h)
+                $cp1Y = $currentY - mt_rand(40, 60);
+                $cp2Y = $endY - mt_rand(10, 30);
+                // Shift CP1 back to create loop
+                $cp1X -= 10;
+            } elseif ($type == 2) { // Low loop (g/y)
+                $cp1Y = $currentY + mt_rand(30, 60);
+                $cp2Y = $endY + mt_rand(30, 60);
+                $cp1X += 10; // Wide bottom
+            } else { // Sharp/Small (i/e)
+                $cp1Y = $currentY - mt_rand(10, 15);
+                $cp2Y = $endY - mt_rand(10, 15);
+            }
+
+            $this->drawBezier($image, $color, $currentX, $currentY, $cp1X, $cp1Y, $cp2X, $cp2Y, $endX, $endY, $thickness);
+
+            $currentX = $endX;
+            $currentY = $endY;
+        }
+    }
+
+    /**
+     * Style: Big Loops (Large expressive circles)
+     */
+    private function generateBigLoopsStyle($image, $color, $width, $height, $thickness)
+    {
+        $cx = mt_rand(40, 60);
+        $cy = $height / 2;
+
+        $numLoops = mt_rand(3, 5);
+
+        $currentX = $cx;
+        $currentY = $cy;
+
+        for ($i = 0; $i < $numLoops; $i++) {
+            $nextX = $currentX + mt_rand(40, 70);
+            $nextY = $cy + mt_rand(-10, 10);
+
+            // Large circular control points
+            $cp1X = $currentX + mt_rand(10, 30);
+            $cp1Y = $currentY - mt_rand(40, 80); // Go high
+
+            $cp2X = $nextX - mt_rand(10, 30);
+            $cp2Y = $nextY + mt_rand(40, 80); // Go low (creating spiral effect)
+
+            if ($i % 2 == 0) {
+                 // Swap Y polarity for alternating loops
+                 $temp = $cp1Y;
+                 $cp1Y = $currentY + mt_rand(40, 80);
+                 $cp2Y = $nextY - mt_rand(40, 80);
+            }
+
+            $this->drawBezier($image, $color, $currentX, $currentY, $cp1X, $cp1Y, $cp2X, $cp2Y, $nextX, $nextY, $thickness);
+
+            $currentX = $nextX;
+            $currentY = $nextY;
+        }
+    }
+
+    /**
+     * Style: Sharp / Jagged
+     */
+    private function generateSharpStyle($image, $color, $width, $height, $thickness)
+    {
+        $points = [];
+        $startX = mt_rand(20, 40);
+        $startY = mt_rand($height/2 - 10, $height/2 + 10);
+
+        $currentX = $startX;
+        $currentY = $startY;
+
+        $segments = mt_rand(8, 15);
+
+        for ($i = 0; $i < $segments; $i++) {
+            $nextX = $currentX + mt_rand(10, 30);
+            $nextY = $startY + mt_rand(-30, 30); // Wild vertical variance
+
+            // Almost straight lines (control points near the line)
+            $this->drawBezier($image, $color,
+                $currentX, $currentY,
+                $currentX + 5, $currentY + mt_rand(-5, 5),
+                $nextX - 5, $nextY + mt_rand(-5, 5),
+                $nextX, $nextY,
+                $thickness
+            );
+
+            $currentX = $nextX;
+            $currentY = $nextY;
+        }
+    }
+
+    /**
+     * Style: Lazy / Horizontal Dash
+     */
+    private function generateLazyStyle($image, $color, $width, $height, $thickness)
+    {
+        $startX = mt_rand(30, 50);
+        $startY = $height / 2 + mt_rand(-10, 10);
+        $endX = $width - mt_rand(30, 60);
+        $endY = $startY + mt_rand(-10, 10);
+
+        // Just one or two long swoops
+        $midX = ($startX + $endX) / 2;
+
+        $this->drawBezier($image, $color,
+            $startX, $startY,
+            $midX, $startY - mt_rand(10, 30), // slight arc up
+            $midX, $startY + mt_rand(10, 30), // or down
+            $endX, $endY,
+            $thickness
+        );
+
+        // Maybe a small dot or dash at the end
+        if (mt_rand(0, 1)) {
+             $this->drawOval($image, $color, $endX + 10, $endY, 3, 3);
+        }
+    }
+
+    /**
+     * Style: Standard / Flowing / Compact (Refined Original)
+     */
+    private function generateStandardStyle($image, $color, $width, $height, $thickness, $subStyle)
+    {
+        $startX = mt_rand(10, 40);
+        $startY = mt_rand($height / 2 - 10, $height / 2 + 30);
+
+        $numSegments = mt_rand(4, 7);
+        $currentX = $startX;
+        $currentY = $startY;
+
+        for ($i = 0; $i < $numSegments; $i++) {
+            $segmentWidth = ($width - 50) / $numSegments;
+            $endX = $currentX + mt_rand($segmentWidth * 0.8, $segmentWidth * 1.5);
+            $endY = mt_rand($height / 2 - 40, $height / 2 + 40);
+
+            $cp1X = $currentX + mt_rand(10, 50);
+            $cp2X = $endX - mt_rand(10, 50);
+
+            if ($subStyle === 1) { // Compact loops
+                $cp1Y = $currentY + mt_rand(-100, 100);
+                $cp2Y = $endY + mt_rand(-100, 100);
+                if (mt_rand(0, 2) === 0) $cp1X -= 30;
+            } else { // Flowing
+                 $cp1Y = $currentY + mt_rand(-40, 40);
+                 $cp2Y = $endY + mt_rand(-40, 40);
+            }
+
+            $this->drawBezier($image, $color, $currentX, $currentY, $cp1X, $cp1Y, $cp2X, $cp2Y, $endX, $endY, $thickness);
+
+            $currentX = $endX;
+            $currentY = $endY;
+        }
+    }
+
+    /**
+     * Add underlines, strikethroughs, or dots
+     */
+    private function addEmbellishments($image, $color, $width, $height, $thickness)
+    {
+        // 1. Initial Loop (The "Circle" start) - 40% chance
+        if (mt_rand(0, 10) < 4) {
+            $this->drawOval($image, $color, mt_rand(30, 60), mt_rand($height/2 - 20, $height/2 + 20), mt_rand(15, 30), mt_rand(15, 30));
+        }
+
+        // 2. Underline - 60% chance
+        if (mt_rand(0, 10) < 6) {
+            $lineY = mt_rand($height/2 + 20, $height - 20);
+            $startX = mt_rand(20, 50);
+            $endX = $width - mt_rand(20, 60);
+
+            $this->drawBezier($image, $color,
+                $startX, $lineY,
+                $startX + 50, $lineY + 10,
+                $endX - 50, $lineY + 5,
+                $endX, $lineY - 5,
+                max(1, $thickness - 1)
+            );
+        }
+    }
+
     private function drawBezier($image, $color, $x0, $y0, $x1, $y1, $x2, $y2, $x3, $y3, $thickness = 1)
     {
-        $steps = 40; // Smoother
+        $steps = 50;
         $prevX = $x0;
         $prevY = $y0;
 
@@ -128,7 +298,6 @@ class SignatureGeneratorService
             $x = $uuu * $x0 + 3 * $uu * $t * $x1 + 3 * $u * $tt * $x2 + $ttt * $x3;
             $y = $uuu * $y0 + 3 * $uu * $t * $y1 + 3 * $u * $tt * $y2 + $ttt * $y3;
 
-            // Draw with thickness
             $this->drawThickLine($image, $prevX, $prevY, $x, $y, $color, $thickness);
 
             $prevX = $x;
@@ -142,20 +311,15 @@ class SignatureGeneratorService
             return;
         }
 
-        // Simple thickness by offsetting
-        // ideally we would calculate perpendicular vector, but for signatures simple offsets work ok
+        // Simulated thickness by drawing multiple lines
         for ($i = -floor($thickness/2); $i <= floor($thickness/2); $i++) {
-             for ($j = -floor($thickness/2); $j <= floor($thickness/2); $j++) {
-                imageline($image, (int)$x1+$i, (int)$y1+$j, (int)$x2+$i, (int)$y2+$j, $color);
-             }
+             imageline($image, (int)$x1+$i, (int)$y1+$i, (int)$x2+$i, (int)$y2+$i, $color);
+             imageline($image, (int)$x1+$i, (int)$y1-$i, (int)$x2+$i, (int)$y2-$i, $color);
         }
     }
 
     private function drawOval($image, $color, $cx, $cy, $w, $h) {
-        // Approximate oval with 4 bezier curves or just use imageellipse if available (it is)
-        // But we want it 'hand drawn' look, so maybe slightly broken oval
-        imageellipse($image, $cx, $cy, $w, $h, $color);
-        // Retrace with slight offset for thickness
-        imageellipse($image, $cx, $cy, $w+1, $h+1, $color);
+        imageellipse($image, (int)$cx, (int)$cy, (int)$w, (int)$h, $color);
+        imageellipse($image, (int)$cx, (int)$cy, (int)$w+1, (int)$h+1, $color);
     }
 }

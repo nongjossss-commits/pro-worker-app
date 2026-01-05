@@ -224,8 +224,9 @@ class PdfGeneratorService
                         }
 
                         // 3. Alignment (Center vs Left)
+                        // Requirement: Default to center, but allow overrides.
                         $boxW = ($item['w'] / 100) * $size['width'];
-                        $align = $item['align'] ?? 'left';
+                        $align = $item['align'] ?? 'center'; // Default changed to center as per user request
                         $textX = $x;
 
                         if ($align === 'center') {
@@ -234,10 +235,32 @@ class PdfGeneratorService
                             $textX = $x + ($boxW - $textWidth) / 2;
                         }
 
-                        // Adjust Y to vertical center roughly (fonts draw from baseline)
-                        // This is tricky without font metrics, but typically adding 70% of height works
-                        $pdf->SetXY($textX, $y + (($item['h'] / 100) * $size['height'] / 4)); // Small offset
+                        // 4. Vertical Alignment (Bottom Anchor)
+                        // Requirement: Anchor text to the bottom edge of the box so users can align it precisely.
+                        // Standard FPDF Write() prints text *below* the current Y position.
+                        // To align text so its baseline is near the bottom of the box, we need to set the Y position
+                        // such that (Y + LineHeight) ≈ BoxBottom.
+                        // Note: $fontSize is in points (pt), coordinates are usually in user units (often mm).
+                        // 1 pt = 0.3528 mm.
 
+                        $boxH = ($item['h'] / 100) * $size['height'];
+                        $bottomY = $y + $boxH;
+
+                        // Calculate appropriate Line Height (usually ~1.2x font size)
+                        // Converting font size (pt) to user units (approx) for calculation
+                        // Assuming 1 unit = 1mm for standard FPDF.
+                        $fontSizeInUnits = $fontSize / 2.83; // 2.83 pts per mm
+                        $lineHeight = $fontSizeInUnits * 1.0;
+
+                        // We want the text to sit on the bottom line.
+                        // If we Write at $textY, the text appears in the band [$textY, $textY + $lineHeight].
+                        // So we want $textY + $lineHeight = $bottomY.
+                        // Thus $textY = $bottomY - $lineHeight.
+
+                        // Adding a tiny padding (0.5mm) so it doesn't touch the line exactly
+                        $textY = $bottomY - $lineHeight - 0.5;
+
+                        $pdf->SetXY($textX, $textY);
                         $pdf->Write(0, $encodedText);
                     }
                 }
