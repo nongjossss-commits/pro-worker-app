@@ -63,8 +63,11 @@ class PdfGeneratorService
                 if ($outputType === 'save_to_slot') {
                     $results[] = ['employee' => $employee->id, 'status' => 'error', 'message' => $e->getMessage()];
                 } elseif ($outputType === 'raw_content') {
-                    // For raw content (Job), returning null or empty might be handled by caller
-                     // do nothing, caller handles empty results?
+                    $results[] = [
+                        'employee_id' => $employee->id,
+                        'status' => 'error',
+                        'message' => $e->getMessage()
+                    ];
                 }
                 // If simple download, maybe throwing is better to alert user?
                 // For now, rethrow to ensure synchronous errors are seen.
