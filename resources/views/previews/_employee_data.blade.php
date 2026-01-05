@@ -113,7 +113,8 @@
         <div class="col-md-4"><label class="form-label fw-bold">วันเริ่มงาน</label><p class="form-control-plaintext">{{ $employee->startDate ? $employee->startDate->format('d/m/Y') : 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เบอร์โทรศัพท์</label><p class="form-control-plaintext">{{ $employee->employeePhone ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">อีเมล</label><p class="form-control-plaintext">{{ $employee->email ?? 'N/A' }}</p></div>
-        <div class="col-md-4"><label class="form-label fw-bold">รหัสผ่าน / หมายเหตุ</label><p class="form-control-plaintext">{{ $employee->password ?? 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">รหัสผ่านสำหรับอีเมล</label><p class="form-control-plaintext">{{ $employee->password ?? 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">รหัสผ่าน ระบบ outsource</label><p class="form-control-plaintext">{{ $employee->outsource_code ?? 'N/A' }}</p></div>
     </div>
 
     <hr class="my-4">
