@@ -19,14 +19,14 @@ class FinalizePdfBatch implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $batchId;
+    protected $customBatchId;
     protected $userId;
     protected $outputType;
     protected $totalEmployees;
 
-    public function __construct($batchId, $userId, $outputType, $totalEmployees)
+    public function __construct($customBatchId, $userId, $outputType, $totalEmployees)
     {
-        $this->batchId = $batchId;
+        $this->customBatchId = $customBatchId;
         $this->userId = $userId;
         $this->outputType = $outputType;
         $this->totalEmployees = $totalEmployees;
@@ -48,7 +48,7 @@ class FinalizePdfBatch implements ShouldQueue
 
     protected function finalizeDownload($user)
     {
-        $tempDir = 'temp/batches/' . $this->batchId;
+        $tempDir = 'temp/batches/' . $this->customBatchId;
         $fullTempPath = storage_path('app/public/' . $tempDir);
 
         if (!File::exists($fullTempPath) || File::isEmptyDirectory($fullTempPath)) {
