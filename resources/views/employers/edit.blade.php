@@ -14,6 +14,12 @@
         from { background-color: #fef9c3; } /* A light yellow */
         to { background-color: transparent; }
     }
+    canvas#signature-pad {
+        touch-action: none; /* Prevent scrolling when drawing on touch devices */
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        cursor: crosshair;
+    }
 </style>
 @endpush
 
@@ -165,7 +171,7 @@
 
         <h5 class="mb-3 text-primary mt-4">{{ __('Authorized Signatories') }}</h5>
         <!-- Signer 1 -->
-        <div class="card bg-light mb-3">
+        <div class="card bg-light mb-3" x-data="signatureField('signature_1', '{{ $employer->signature_1_path ? Storage::url($employer->signature_1_path) : '' }}')">
             <div class="card-body">
                 <h6 class="card-title text-muted fw-bold">Signer 1</h6>
                 <div class="row mb-3">
@@ -178,33 +184,40 @@
                         <input type="text" class="form-control" id="signerNameEn" name="signerNameEn" value="{{ old('signerNameEn', $employer->signerNameEn) }}">
                     </div>
                 </div>
-                <!-- Signature 1 -->
-                <div class="mb-3" x-data="{ action: 'keep' }">
-                     <label class="form-label">{{ __('Signature') }}</label>
-                     @if($employer->signature_1_path)
-                        <div class="mb-2 p-2 border rounded bg-white" style="max-width: 200px;">
-                            <img src="{{ Storage::url($employer->signature_1_path) }}" alt="Signature 1" style="max-width: 100%; height: auto;">
+
+                <!-- Hidden Inputs for State Persistence -->
+                <input type="hidden" name="signature_1_action" x-model="action">
+                <input type="hidden" name="signature_1_base64" x-model="base64">
+                <div x-ref="fileInputContainer" class="d-none"></div>
+
+                <!-- Preview and Trigger -->
+                <div class="d-flex flex-column flex-md-row align-items-start gap-3 mt-2">
+                     <div class="d-flex flex-column">
+                        <label class="form-label small text-muted mb-1">{{ __('Signature Preview') }}</label>
+                        <div class="border rounded bg-white d-flex justify-content-center align-items-center overflow-hidden position-relative" style="width: 180px; height: 100px;">
+                             <template x-if="previewUrl">
+                                 <img :src="previewUrl" class="img-fluid" style="max-height: 100%;">
+                             </template>
+                             <template x-if="!previewUrl">
+                                 <span class="text-muted small italic">{{ __('No Signature') }}</span>
+                             </template>
+                             <template x-if="action !== 'keep' && action !== ''">
+                                 <span class="position-absolute top-0 end-0 badge bg-warning text-dark m-1" style="font-size: 0.6rem;">{{ __('Pending Save') }}</span>
+                             </template>
                         </div>
-                     @endif
-                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="signature_1_action" id="sig1_keep" value="keep" x-model="action" checked>
-                        <label class="btn btn-outline-secondary" for="sig1_keep">Keep Current</label>
-
-                        <input type="radio" class="btn-check" name="signature_1_action" id="sig1_gen" value="generate" x-model="action">
-                        <label class="btn btn-outline-primary" for="sig1_gen">Auto Generate</label>
-
-                        <input type="radio" class="btn-check" name="signature_1_action" id="sig1_upload" value="upload" x-model="action">
-                        <label class="btn btn-outline-info" for="sig1_upload">Upload File</label>
-                    </div>
-                    <div x-show="action === 'upload'" class="mt-2">
-                        <input type="file" name="signature_1_file" class="form-control form-control-sm" accept="image/png, image/jpeg">
-                    </div>
+                     </div>
+                     <div class="mt-md-4">
+                        <button type="button" class="btn btn-outline-primary" @click="$dispatch('open-signature-modal', { field: 'signature_1', currentAction: action, currentUrl: previewUrl, currentBase64: base64 })">
+                            <i class="bi bi-pen me-2"></i> {{ __('Signature Settings') }}
+                        </button>
+                        <div class="form-text mt-1">{{ __('Click to edit, upload, or draw signature.') }}</div>
+                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Signer 2 -->
-        <div class="card bg-light mb-3">
+        <div class="card bg-light mb-3" x-data="signatureField('signature_2', '{{ $employer->signature_2_path ? Storage::url($employer->signature_2_path) : '' }}')">
             <div class="card-body">
                 <h6 class="card-title text-muted fw-bold">Signer 2 (Optional)</h6>
                 <div class="row mb-3">
@@ -217,28 +230,35 @@
                         <input type="text" class="form-control" id="signer_2_name_en" name="signer_2_name_en" value="{{ old('signer_2_name_en', $employer->signer_2_name_en) }}">
                     </div>
                 </div>
-                 <!-- Signature 2 -->
-                 <div class="mb-3" x-data="{ action: 'keep' }">
-                     <label class="form-label">{{ __('Signature') }}</label>
-                     @if($employer->signature_2_path)
-                        <div class="mb-2 p-2 border rounded bg-white" style="max-width: 200px;">
-                            <img src="{{ Storage::url($employer->signature_2_path) }}" alt="Signature 2" style="max-width: 100%; height: auto;">
-                        </div>
-                     @endif
-                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="signature_2_action" id="sig2_keep" value="keep" x-model="action" checked>
-                        <label class="btn btn-outline-secondary" for="sig2_keep">Keep Current</label>
 
-                        <input type="radio" class="btn-check" name="signature_2_action" id="sig2_gen" value="generate" x-model="action">
-                        <label class="btn btn-outline-primary" for="sig2_gen">Auto Generate</label>
+                 <!-- Hidden Inputs for State Persistence -->
+                 <input type="hidden" name="signature_2_action" x-model="action">
+                 <input type="hidden" name="signature_2_base64" x-model="base64">
+                 <div x-ref="fileInputContainer" class="d-none"></div>
 
-                        <input type="radio" class="btn-check" name="signature_2_action" id="sig2_upload" value="upload" x-model="action">
-                        <label class="btn btn-outline-info" for="sig2_upload">Upload File</label>
-                    </div>
-                    <div x-show="action === 'upload'" class="mt-2">
-                        <input type="file" name="signature_2_file" class="form-control form-control-sm" accept="image/png, image/jpeg">
-                    </div>
-                </div>
+                 <!-- Preview and Trigger -->
+                 <div class="d-flex flex-column flex-md-row align-items-start gap-3 mt-2">
+                      <div class="d-flex flex-column">
+                         <label class="form-label small text-muted mb-1">{{ __('Signature Preview') }}</label>
+                         <div class="border rounded bg-white d-flex justify-content-center align-items-center overflow-hidden position-relative" style="width: 180px; height: 100px;">
+                              <template x-if="previewUrl">
+                                  <img :src="previewUrl" class="img-fluid" style="max-height: 100%;">
+                              </template>
+                              <template x-if="!previewUrl">
+                                  <span class="text-muted small italic">{{ __('No Signature') }}</span>
+                              </template>
+                              <template x-if="action !== 'keep' && action !== ''">
+                                <span class="position-absolute top-0 end-0 badge bg-warning text-dark m-1" style="font-size: 0.6rem;">{{ __('Pending Save') }}</span>
+                            </template>
+                         </div>
+                      </div>
+                      <div class="mt-md-4">
+                         <button type="button" class="btn btn-outline-primary" @click="$dispatch('open-signature-modal', { field: 'signature_2', currentAction: action, currentUrl: previewUrl, currentBase64: base64 })">
+                             <i class="bi bi-pen me-2"></i> {{ __('Signature Settings') }}
+                         </button>
+                         <div class="form-text mt-1">{{ __('Click to edit, upload, or draw signature.') }}</div>
+                      </div>
+                 </div>
             </div>
         </div>
 
@@ -394,6 +414,7 @@
     </form>
 </div>
 
+<!-- ... Address Lists ... -->
 <div id="addressListsContainer" data-url="{{ route('addresses.thai_data') }}">
     {{-- Registered Address Section --}}
     <div class="content-section mt-4">
@@ -715,10 +736,279 @@
     </div>
 </div>
 
+<!-- Signature Settings Modal -->
+<div class="modal fade" id="signatureSettingsModal" tabindex="-1" aria-labelledby="signatureSettingsModalLabel" aria-hidden="true" x-data="signatureModalController">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="signatureSettingsModalLabel">{{ __('Signature Settings') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" :class="{ 'active': activeTab === 'generate' }" @click="activeTab = 'generate'" type="button">{{ __('Auto Generate') }}</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" :class="{ 'active': activeTab === 'upload' }" @click="activeTab = 'upload'" type="button">{{ __('Upload File') }}</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" :class="{ 'active': activeTab === 'draw' }" @click="activeTab = 'draw'" type="button">{{ __('Draw Signature') }}</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Auto Generate Tab -->
+                    <div class="tab-pane fade" :class="{ 'show active': activeTab === 'generate' }">
+                        <div class="text-center p-4 border rounded bg-light">
+                             <p class="mb-3">{{ __('A signature will be automatically generated and saved for this user.') }}</p>
+                             <div class="alert alert-info small mb-0">
+                                <i class="bi bi-info-circle me-1"></i> {{ __('If a generated signature already exists, it will be kept unless you choose to regenerate.') }}
+                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Tab -->
+                    <div class="tab-pane fade" :class="{ 'show active': activeTab === 'upload' }">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Upload Signature Image') }}</label>
+                            <input type="file" class="form-control" accept="image/png, image/jpeg" @change="handleFileSelect">
+                            <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Draw Tab -->
+                    <div class="tab-pane fade" :class="{ 'show active': activeTab === 'draw' }">
+                        <div class="mb-2">
+                             <label class="form-label">{{ __('Draw Signature below') }}</label>
+                             <div class="position-relative">
+                                 <canvas id="signature-pad" width="450" height="200" class="bg-white w-100"></canvas>
+                             </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearCanvas">
+                                <i class="bi bi-eraser"></i> {{ __('Clear') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-primary" @click="saveSettings">{{ __('Save Temporary') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('signatureField', (fieldName, initialUrl) => ({
+            action: 'keep', // keep, generate, upload, draw
+            base64: '',
+            previewUrl: initialUrl || '',
+
+            init() {
+                // Listen for save event from the modal
+                window.addEventListener('signature-saved', (event) => {
+                    if (event.detail.field === fieldName) {
+                        this.action = event.detail.action;
+                        this.base64 = event.detail.base64 || '';
+
+                        // Update preview
+                        if (this.action === 'draw' && this.base64) {
+                            this.previewUrl = this.base64;
+                        } else if (this.action === 'upload' && event.detail.file) {
+                             // Create a local preview for the uploaded file
+                             const reader = new FileReader();
+                             reader.onload = (e) => { this.previewUrl = e.target.result; };
+                             reader.readAsDataURL(event.detail.file);
+
+                             // Move the file input to this component's container so it gets submitted with the form
+                             const container = this.$refs.fileInputContainer;
+                             container.innerHTML = ''; // clear previous
+                             // We need to clone the file input from the modal, but we can't easily clone file inputs with value.
+                             // Instead, we will grab the actual element from the modal and move it here.
+                             if (event.detail.fileInputEl) {
+                                 // Rename it to match the controller expectation
+                                 event.detail.fileInputEl.name = fieldName + '_file';
+                                 event.detail.fileInputEl.classList.add('d-none'); // hide it
+                                 container.appendChild(event.detail.fileInputEl);
+                             }
+                        } else if (this.action === 'generate') {
+                            // We can't easily show a preview of server-generated signature before saving
+                            // Show a placeholder
+                            this.previewUrl = ''; // Clear it or show a placeholder icon
+                            // Maybe set a placeholder image via JS? For now, the text "No Signature" or "Pending" will show.
+                        }
+                    }
+                });
+            }
+        }));
+
+        Alpine.data('signatureModalController', () => ({
+            activeTab: 'generate',
+            targetField: '',
+            canvas: null,
+            ctx: null,
+            isDrawing: false,
+            uploadedFile: null,
+            uploadedFileInput: null,
+            modalInstance: null,
+
+            init() {
+                this.modalInstance = new bootstrap.Modal(document.getElementById('signatureSettingsModal'));
+
+                window.addEventListener('open-signature-modal', (event) => {
+                    this.targetField = event.detail.field;
+                    const currentAction = event.detail.currentAction;
+
+                    // Set initial tab based on current action
+                    if (currentAction === 'keep') this.activeTab = 'generate'; // Default to generate if keeping
+                    else if (currentAction === 'draw') this.activeTab = 'draw';
+                    else if (currentAction === 'upload') this.activeTab = 'upload';
+                    else this.activeTab = currentAction; // fallback
+
+                    this.modalInstance.show();
+
+                    // Init canvas after modal is shown
+                    setTimeout(() => {
+                        this.initCanvas();
+                        if (currentAction === 'draw' && event.detail.currentBase64) {
+                            this.loadCanvas(event.detail.currentBase64);
+                        }
+                    }, 500);
+                });
+            },
+
+            initCanvas() {
+                this.canvas = document.getElementById('signature-pad');
+                this.ctx = this.canvas.getContext('2d');
+                this.ctx.lineWidth = 2;
+                this.ctx.lineCap = 'round';
+                this.ctx.strokeStyle = '#000';
+
+                const getPos = (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+
+                    let clientX, clientY;
+                    if (e.changedTouches) {
+                         clientX = e.changedTouches[0].clientX;
+                         clientY = e.changedTouches[0].clientY;
+                    } else {
+                         clientX = e.clientX;
+                         clientY = e.clientY;
+                    }
+
+                    return {
+                        x: (clientX - rect.left) * scaleX,
+                        y: (clientY - rect.top) * scaleY
+                    };
+                };
+
+                // Mouse Events
+                this.canvas.onmousedown = (e) => {
+                    this.isDrawing = true;
+                    this.ctx.beginPath();
+                    const pos = getPos(e);
+                    this.ctx.moveTo(pos.x, pos.y);
+                };
+                this.canvas.onmousemove = (e) => {
+                    if (this.isDrawing) {
+                        const pos = getPos(e);
+                        this.ctx.lineTo(pos.x, pos.y);
+                        this.ctx.stroke();
+                    }
+                };
+                this.canvas.onmouseup = () => { this.isDrawing = false; };
+                this.canvas.onmouseout = () => { this.isDrawing = false; };
+
+                // Touch Events
+                this.canvas.ontouchstart = (e) => {
+                    e.preventDefault();
+                    this.isDrawing = true;
+                    this.ctx.beginPath();
+                    const pos = getPos(e);
+                    this.ctx.moveTo(pos.x, pos.y);
+                };
+                this.canvas.ontouchmove = (e) => {
+                    if (this.isDrawing) {
+                        e.preventDefault();
+                        const pos = getPos(e);
+                        this.ctx.lineTo(pos.x, pos.y);
+                        this.ctx.stroke();
+                    }
+                };
+                this.canvas.ontouchend = () => { this.isDrawing = false; };
+            },
+
+            clearCanvas() {
+                if(this.ctx) this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            },
+
+            loadCanvas(base64) {
+                 const img = new Image();
+                 img.onload = () => {
+                     this.clearCanvas();
+                     this.ctx.drawImage(img, 0, 0);
+                 };
+                 img.src = base64;
+            },
+
+            handleFileSelect(e) {
+                if (e.target.files.length > 0) {
+                    this.uploadedFile = e.target.files[0];
+                    this.uploadedFileInput = e.target; // Keep reference to move it later
+                }
+            },
+
+            saveSettings() {
+                let eventData = {
+                    field: this.targetField,
+                    action: this.activeTab,
+                };
+
+                let replacementInput = null;
+                let originalParent = null;
+
+                if (this.activeTab === 'draw') {
+                    eventData.base64 = this.canvas.toDataURL('image/png');
+                } else if (this.activeTab === 'upload') {
+                    if (this.uploadedFile && this.uploadedFileInput) {
+                        eventData.file = this.uploadedFile;
+                        eventData.fileInputEl = this.uploadedFileInput; // Send the element itself
+
+                        // Prepare replacement BEFORE dispatching event (which moves the original)
+                        originalParent = this.uploadedFileInput.parentElement;
+                        if (originalParent) {
+                             replacementInput = this.uploadedFileInput.cloneNode(true);
+                             replacementInput.value = ''; // clear value
+                             replacementInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                        }
+                    }
+                }
+
+                window.dispatchEvent(new CustomEvent('signature-saved', { detail: eventData }));
+                this.modalInstance.hide();
+
+                // Clear state
+                this.clearCanvas();
+                this.uploadedFile = null;
+
+                // If we moved the input, put the replacement back
+                if (replacementInput && originalParent) {
+                     originalParent.appendChild(replacementInput);
+                }
+                this.uploadedFileInput = null;
+            }
+        }));
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
         // --- Business Type Logic ---
         const businessTypeSelect = document.getElementById('business_type_select');

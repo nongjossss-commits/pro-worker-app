@@ -248,10 +248,12 @@ class EmployerController extends Controller
             'job_owner_id' => 'required|exists:job_owners,id',
             'assigned_staff_id' => 'nullable|exists:users,id',
             // Signatures
-            'signature_1_action' => 'nullable|in:keep,generate,upload',
+            'signature_1_action' => 'nullable|in:keep,generate,upload,draw',
             'signature_1_file' => 'nullable|required_if:signature_1_action,upload|image|max:2048',
-            'signature_2_action' => 'nullable|in:keep,generate,upload',
+            'signature_1_base64' => 'nullable|string',
+            'signature_2_action' => 'nullable|in:keep,generate,upload,draw',
             'signature_2_file' => 'nullable|required_if:signature_2_action,upload|image|max:2048',
+            'signature_2_base64' => 'nullable|string',
         ]);
 
         // Handle docs
@@ -280,6 +282,16 @@ class EmployerController extends Controller
              $path = 'signatures/employers/emp_' . $employer->id . '_sig1_' . time() . '.png';
              Storage::disk('public')->put($path, $content);
              $validated['signature_1_path'] = $path;
+        } elseif ($sig1Action === 'draw' && $request->filled('signature_1_base64')) {
+             $base64Image = $request->input('signature_1_base64');
+             if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
+                 if ($employer->signature_1_path) Storage::disk('public')->delete($employer->signature_1_path);
+                 $data = substr($base64Image, strpos($base64Image, ',') + 1);
+                 $data = base64_decode($data);
+                 $path = 'signatures/employers/emp_' . $employer->id . '_sig1_' . time() . '.' . strtolower($type[1]);
+                 Storage::disk('public')->put($path, $data);
+                 $validated['signature_1_path'] = $path;
+             }
         }
 
         // Signer 2
@@ -294,13 +306,25 @@ class EmployerController extends Controller
              $path = 'signatures/employers/emp_' . $employer->id . '_sig2_' . time() . '.png';
              Storage::disk('public')->put($path, $content);
              $validated['signature_2_path'] = $path;
+        } elseif ($sig2Action === 'draw' && $request->filled('signature_2_base64')) {
+             $base64Image = $request->input('signature_2_base64');
+             if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
+                 if ($employer->signature_2_path) Storage::disk('public')->delete($employer->signature_2_path);
+                 $data = substr($base64Image, strpos($base64Image, ',') + 1);
+                 $data = base64_decode($data);
+                 $path = 'signatures/employers/emp_' . $employer->id . '_sig2_' . time() . '.' . strtolower($type[1]);
+                 Storage::disk('public')->put($path, $data);
+                 $validated['signature_2_path'] = $path;
+             }
         }
 
         // Cleanup fields not in DB
         unset($validated['signature_1_action']);
         unset($validated['signature_1_file']);
+        unset($validated['signature_1_base64']);
         unset($validated['signature_2_action']);
         unset($validated['signature_2_file']);
+        unset($validated['signature_2_base64']);
 
         $employer->update($validated);
         return redirect()->route('employers.index')->with('success', 'Employer updated successfully.');
