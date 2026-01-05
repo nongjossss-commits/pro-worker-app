@@ -3,18 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\FinalizePdfBatch;
-use App\Jobs\ProcessPdfGenerationBatch;
 use App\Models\Employee;
 use App\Models\PdfTemplate;
 use App\Models\Employer;
 use App\Services\PdfGeneratorService;
-use Illuminate\Bus\Batch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
 class PdfGenerationController extends Controller
@@ -92,61 +87,25 @@ class PdfGenerationController extends Controller
         $templateId = $request->template_id;
         $outputType = $request->output_type;
         $slotName = $request->slot_name;
-        $userId = Auth::id();
-        $batchId = (string) Str::uuid(); // Unique ID for this operation
 
-        // Hybrid Strategy:
-        // If count < 25, run SYNCHRONOUSLY to ensure immediate feedback/success.
-        // If count >= 25, run via QUEUE/BATCH to prevent timeout.
-        if (count($employeeIds) < 25) {
-            return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName);
-        }
-
-        // --- ASYNC BATCH MODE (For > 25 employees) ---
-
-        // Chunk size for batch processing
-        $chunkSize = 50;
-        $chunks = array_chunk($employeeIds, $chunkSize);
-        $totalCount = count($employeeIds);
-
-        $jobs = [];
-        foreach ($chunks as $chunk) {
-            $jobs[] = new ProcessPdfGenerationBatch(
-                $chunk,
-                $templateId,
-                $outputType,
-                $slotName,
-                $userId,
-                $batchId
-            );
-        }
-
-        try {
-            Bus::batch($jobs)
-                ->name('PDF Generation - ' . $batchId)
-                ->then(function (Batch $batch) use ($batchId, $userId, $outputType, $totalCount) {
-                    dispatch(new FinalizePdfBatch($batchId, $userId, $outputType, $totalCount));
-                })
-                ->dispatch();
-
-            $message = $outputType === 'download'
-                ? 'Processing started. You will receive a notification with the download link shortly.'
-                : 'Processing started. Documents will be attached to employee records in the background.';
-
-            return redirect()->route('employees.index')->with('success', $message);
-
-        } catch (\Throwable $e) {
-            return redirect()->route('employees.index')->with('danger', 'Error starting batch process: ' . $e->getMessage());
-        }
+        // Force Synchronous Processing for ALL counts
+        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName);
     }
 
     protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName)
     {
+        // Increase limits for large batches (e.g. 500 records)
+        set_time_limit(0);
+        ini_set('memory_limit', '-1');
+
         try {
-            $employees = Employee::with('employer')->whereIn('id', $employeeIds)->get();
             $template = PdfTemplate::findOrFail($templateId);
 
+            // Efficiently fetch employees with relationships
+            $employees = Employee::with('employer')->whereIn('id', $employeeIds)->get();
+
             if ($outputType === 'save_to_slot') {
+                // 'save_to_slot' is already memory efficient in service
                 $results = $this->pdfService->generateForEmployees($template, $employees, [
                     'output_type' => 'save_to_slot',
                     'slot_name' => $slotName
@@ -164,30 +123,49 @@ class PdfGenerationController extends Controller
                 return redirect()->route('employees.index')->with($errorCount > 0 ? 'warning' : 'success', $msg);
 
             } else {
-                // Download Mode: Generate content and ZIP immediately
-                $results = $this->pdfService->generateForEmployees($template, $employees, [
-                    'output_type' => 'raw_content'
-                ]);
+                // Download Mode: Stream content to ZIP to save memory
+                // Do NOT use generateForEmployees (which accumulates content in array)
 
-                if (empty($results)) {
-                    return redirect()->back()->with('danger', 'Failed to generate any documents.');
-                }
-
-                // Create Zip
                 $zipName = 'export_' . date('Ymd_His') . '.zip';
                 $zipPath = storage_path('app/public/temp/' . $zipName);
                 if (!is_dir(dirname($zipPath))) mkdir(dirname($zipPath), 0755, true);
 
                 $zip = new ZipArchive;
                 if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
-                    foreach ($results as $item) {
-                        if (isset($item['filename']) && isset($item['content'])) {
-                            $zip->addFromString($item['filename'], $item['content']);
+
+                    $errorLog = "";
+                    $generatedCount = 0;
+
+                    foreach ($employees as $employee) {
+                        try {
+                            // Generate Single PDF
+                            $content = $this->pdfService->generateSinglePdf($template, $employee);
+                            $filename = $this->pdfService->generateFilename($template, $employee);
+
+                            // Add to Zip
+                            $zip->addFromString($filename, $content);
+                            $generatedCount++;
+
+                            // Explicitly free memory if possible (though PHP 8 is usually smart)
+                            unset($content);
+
+                        } catch (\Throwable $e) {
+                            $errorLog .= "Error for Employee ID {$employee->id} ({$employee->employeeNameEn}): " . $e->getMessage() . "\n";
                         }
                     }
+
+                    // Add error log if any
+                    if (!empty($errorLog)) {
+                        $zip->addFromString('_generation_errors.txt', $errorLog);
+                    }
+
                     $zip->close();
                 } else {
                     throw new \Exception("Could not create ZIP file.");
+                }
+
+                if ($generatedCount === 0 && !empty($errorLog)) {
+                     return redirect()->route('employees.index')->with('danger', 'Generation Failed. See error log in next attempt or check system logs.');
                 }
 
                 return response()->download($zipPath)->deleteFileAfterSend(true);

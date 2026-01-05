@@ -80,7 +80,7 @@ class PdfGeneratorService
         return $results;
     }
 
-    protected function generateSinglePdf(PdfTemplate $template, Employee $employee)
+    public function generateSinglePdf(PdfTemplate $template, Employee $employee)
     {
         $pdf = new Fpdi();
         $templatePath = Storage::disk('public')->path($template->file_path);
@@ -535,7 +535,7 @@ class PdfGeneratorService
         return $doc;
     }
 
-    protected function generateFilename(PdfTemplate $template, Employee $employee)
+    public function generateFilename(PdfTemplate $template, Employee $employee)
     {
         // Fixed: Append Employee ID to ensure uniqueness for duplicate names
         return Str::slug($template->name . '-' . $employee->employeeNameEn . '-' . $employee->id) . '.pdf';
