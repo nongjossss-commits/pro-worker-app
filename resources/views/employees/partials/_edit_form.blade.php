@@ -379,7 +379,12 @@
                     <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                 </div>
             @endif
-            <input type="file" class="form-control form-control-sm" name="insurance_document_path_private">
+            <div class="input-group input-group-sm">
+                <input type="file" class="form-control form-control-sm" id="insurance_document_path_private" name="insurance_document_path_private">
+                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_private' } }))">
+                    <i class="bi bi-camera"></i>
+                </button>
+            </div>
         </div>
     </div>
 
