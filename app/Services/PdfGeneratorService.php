@@ -41,7 +41,7 @@ class PdfGeneratorService
                 $filename = $this->generateFilename($template, $employee);
 
                 if ($outputType === 'save_to_slot') {
-                    $this->saveToSlot($employee, $pdfContent, $options['slot_name']);
+                    $this->saveToSlot($employee, $pdfContent, $options['slot_name'], $template);
                     $results[] = ['employee' => $employee->id, 'status' => 'saved'];
                 } elseif ($outputType === 'raw_content') {
                     $results[] = [
@@ -53,7 +53,24 @@ class PdfGeneratorService
                     $results[] = ['filename' => $filename, 'content' => $pdfContent];
                 }
             } catch (\Exception $e) {
-                throw new \Exception("Error processing employee {$employee->employeeNameEn} (ID: {$employee->id}): " . $e->getMessage());
+                // If this is a batch process (save_to_slot or raw_content might be batch),
+                // we want to catch individual errors so the whole batch doesn't fail.
+                // However, if it's a synchronous single download, we might want to rethrow?
+                // For now, consistent behavior: log and maybe return error status.
+                // But the Controller expects simple array.
+                Log::error("PDF Generation Error (Emp ID: {$employee->id}): " . $e->getMessage());
+
+                if ($outputType === 'save_to_slot') {
+                    $results[] = ['employee' => $employee->id, 'status' => 'error', 'message' => $e->getMessage()];
+                } elseif ($outputType === 'raw_content') {
+                    // For raw content (Job), returning null or empty might be handled by caller
+                     // do nothing, caller handles empty results?
+                }
+                // If simple download, maybe throwing is better to alert user?
+                // For now, rethrow to ensure synchronous errors are seen.
+                if ($outputType === 'download') {
+                    throw $e;
+                }
             }
         }
 
@@ -460,19 +477,64 @@ class PdfGeneratorService
         }
     }
 
-    protected function saveToSlot(Employee $employee, $content, $slotName)
+    protected function saveToSlot(Employee $employee, $content, $slotName, PdfTemplate $template = null)
     {
-        $filename = 'generated/' . $employee->id . '/' . Str::slug($slotName) . '_' . time() . '.pdf';
-        Storage::disk('public')->put($filename, $content);
+        // 1. Determine Path and Model logic similar to the old Batch Job
+        // This ensures the files go where the UI expects them (e.g. employee_files/{id})
+
+        $filePath = null;
+
+        if (str_starts_with($slotName, 'employee_doc_')) {
+            // Standard Employee Documents
+            // Path: employee_files/{id}/{slotName}_{timestamp}.pdf
+            $filePath = 'employee_files/' . $employee->id . '/' . $slotName . '_' . time() . '.pdf';
+            Storage::disk('public')->put($filePath, $content);
+
+            // Update Employee Record
+            $employee->update([$slotName => $filePath]);
+
+            // Update Description if applicable (slots 9-18 map to other_doc_1..10)
+            if ($template && preg_match('/employee_doc_(\d+)/', $slotName, $matches)) {
+                $index = (int)$matches[1];
+                if ($index >= 9 && $index <= 18) {
+                    $descIndex = $index - 8;
+                    $employee->update(["other_doc_{$descIndex}_desc" => $template->name]);
+                }
+            }
+
+        } elseif (str_starts_with($slotName, 'employer_doc_other_')) {
+            // Employer Documents (attached via Employee context)
+            if ($employee->employer) {
+                $employer = $employee->employer;
+                $filePath = 'employer_documents/' . $employer->id . '/' . $slotName . '_' . $employee->id . '_' . time() . '.pdf';
+                Storage::disk('public')->put($filePath, $content);
+
+                $employer->update([$slotName => $filePath]);
+
+                if ($template && preg_match('/employer_doc_other_(\d+)/', $slotName, $matches)) {
+                    $index = $matches[1];
+                    $employer->update(["employer_doc_other_{$index}_desc" => "Auto: " . $employee->employeeNameEn . " - " . $template->name]);
+                }
+            }
+        } else {
+            // Fallback for unknown slots (e.g. generated/) - mostly for audit history
+            $filePath = 'generated/' . $employee->id . '/' . Str::slug($slotName) . '_' . time() . '.pdf';
+            Storage::disk('public')->put($filePath, $content);
+        }
+
+        // 2. Also Create Log Entry in EmployeeGeneratedDocument (New System)
+        // This keeps the audit log intact while ensuring the UI (Old System) works.
         $doc = \App\Models\EmployeeGeneratedDocument::updateOrCreate(
             ['employee_id' => $employee->id, 'document_name' => $slotName],
-            ['file_path' => $filename, 'generated_at' => now(), 'created_by' => auth()->id() ?? 0]
+            ['file_path' => $filePath, 'generated_at' => now(), 'created_by' => auth()->id() ?? 0]
         );
+
         return $doc;
     }
 
     protected function generateFilename(PdfTemplate $template, Employee $employee)
     {
-        return Str::slug($template->name . '-' . $employee->employeeNameEn) . '.pdf';
+        // Fixed: Append Employee ID to ensure uniqueness for duplicate names
+        return Str::slug($template->name . '-' . $employee->employeeNameEn . '-' . $employee->id) . '.pdf';
     }
 }
