@@ -1,33 +1,29 @@
-import { PDFDocument } from 'pdf-lib';
-import { promises as fs } from 'fs';
+const { PDFDocument } = require('pdf-lib');
+const fs = require('fs');
 
-async function normalizePdf() {
-    const args = process.argv.slice(2);
-    if (args.length < 2) {
-        console.error('Usage: node normalize_pdf.js <input_path> <output_path>');
-        process.exit(1);
+async function normalize() {
+  try {
+    const inputPath = process.argv[2];
+    const outputPath = process.argv[3];
+
+    if (!inputPath || !outputPath) {
+      console.error("Usage: node normalize_pdf.js <input> <output>");
+      process.exit(1);
     }
 
-    const inputPath = args[0];
-    const outputPath = args[1];
+    const pdfBytes = fs.readFileSync(inputPath);
+    // Load and save - this essentially normalizes the PDF structure
+    const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 
-    try {
-        const pdfBytes = await fs.readFile(inputPath);
+    // Convert to standard PDF structure
+    const pdfBytesSaved = await pdfDoc.save();
 
-        // Load the PDF document
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-
-        // Save the PDF with useObjectStreams: false to maximize compatibility (v1.4-like structure)
-        const pdfBytesNormalized = await pdfDoc.save({ useObjectStreams: false });
-
-        await fs.writeFile(outputPath, pdfBytesNormalized);
-
-        console.log('PDF normalized successfully');
-        process.exit(0);
-    } catch (error) {
-        console.error('Error normalizing PDF:', error);
-        process.exit(1);
-    }
+    fs.writeFileSync(outputPath, pdfBytesSaved);
+    console.log("PDF normalized successfully");
+  } catch (e) {
+    console.error("Error normalizing PDF:", e);
+    process.exit(1);
+  }
 }
 
-normalizePdf();
+normalize();

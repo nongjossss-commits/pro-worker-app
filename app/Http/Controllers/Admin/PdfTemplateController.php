@@ -115,7 +115,7 @@ class PdfTemplateController extends Controller
             });
         }
 
-        $templates = $query->latest()->get(['id', 'name', 'type']);
+        $templates = $query->latest()->get(['id', 'name', 'type', 'meta_data']);
 
         return response()->json($templates);
     }
@@ -190,6 +190,7 @@ class PdfTemplateController extends Controller
             'employer_id' => $request->type === 'employer' ? $request->employer_id : null,
             'created_by' => Auth::id(),
             'field_mapping' => [], // Initialize empty
+            'meta_data' => ['auto_prefix_titles' => false], // Default setting
         ]);
 
         return redirect()->route('admin.pdf-templates.builder', $template)
@@ -209,10 +210,12 @@ class PdfTemplateController extends Controller
 
         $request->validate([
             'field_mapping' => 'nullable|array',
+            'meta_data' => 'nullable|array',
         ]);
 
         $pdf_template->update([
             'field_mapping' => $request->field_mapping ?? [],
+            'meta_data' => $request->meta_data ?? [],
         ]);
 
         return response()->json(['success' => true]);

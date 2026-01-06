@@ -24,6 +24,10 @@
 
             <div class="border-l h-6 mx-2"></div>
 
+            <button type="button" @click="openTemplateSettings()" class="btn btn-outline-secondary btn-sm flex items-center gap-2">
+                <i class="bi bi-sliders"></i> Settings
+            </button>
+
             <button @click="saveMapping()" class="btn btn-primary btn-sm flex items-center gap-2" :disabled="isSaving">
                 <span x-show="isSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 <i class="bi bi-save" x-show="!isSaving"></i> Save Template
@@ -158,7 +162,7 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
+    <!-- Item Settings Modal -->
     <div class="modal fade" id="itemSettingsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" x-data="{ currentItem: {} }">
@@ -229,6 +233,40 @@
             </div>
         </div>
     </div>
+
+    <!-- Template Settings Modal -->
+    <div class="modal fade" id="templateSettingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Template Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info border-0 d-flex align-items-center mb-4">
+                        <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                        <div>
+                            These settings apply globally to this template when generating documents.
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch p-3 border rounded bg-light mb-3">
+                        <input class="form-check-input" type="checkbox" id="autoPrefixToggle" x-model="metaData.auto_prefix_titles">
+                        <label class="form-check-label fw-bold" for="autoPrefixToggle">
+                            Auto-Prefix Titles
+                        </label>
+                        <div class="text-muted small mt-1">
+                            Automatically add "Mr./Ms." or "นาย/นาง/นางสาว" to names if missing.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @push('scripts')
@@ -247,6 +285,8 @@
                 pageDimensions: {},
                 // Fix Persistence: Ensure we parse the JSON safely if it's already a string, or use as is
                 items: @json($template->field_mapping ?? []),
+                metaData: @json($template->meta_data ?? ['auto_prefix_titles' => false]),
+
                 searchQuery: '',
                 isSaving: false,
                 editingIndex: null,
@@ -321,6 +361,11 @@
                 // Handle null or undefined items
                 if (!this.items) {
                     this.items = [];
+                }
+
+                // Initial Meta Data check
+                if (!this.metaData) {
+                    this.metaData = { auto_prefix_titles: false };
                 }
 
                 // Ensure page numbers are integers for correct comparison
@@ -519,6 +564,10 @@
                 new bootstrap.Modal(document.getElementById('itemSettingsModal')).show();
             },
 
+            openTemplateSettings() {
+                new bootstrap.Modal(document.getElementById('templateSettingsModal')).show();
+            },
+
             getSignatureLabel(group) {
                 const labels = {
                     'employee': '(Employee)',
@@ -537,6 +586,7 @@
                 try {
                     // Ensure items is a clean array
                     const itemsToSave = JSON.parse(JSON.stringify(this.items));
+                    const metaDataToSave = JSON.parse(JSON.stringify(this.metaData));
 
                     const response = await fetch('{{ route("admin.pdf-templates.update", $template) }}', {
                         method: 'PUT',
@@ -544,7 +594,10 @@
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
-                        body: JSON.stringify({ field_mapping: itemsToSave })
+                        body: JSON.stringify({
+                            field_mapping: itemsToSave,
+                            meta_data: metaDataToSave
+                        })
                     });
 
                     if (response.ok) {

@@ -214,7 +214,7 @@ class PdfGeneratorService
                     if ($item['type'] === 'static') {
                         $text = $item['text'] ?? '';
                     } elseif ($item['type'] === 'db') {
-                        $text = $this->resolveValue($employee, $item['key']);
+                        $text = $this->resolveValue($employee, $item['key'], $template);
                     }
 
                     if ($text) {
@@ -412,7 +412,7 @@ class PdfGeneratorService
         throw new \Exception($errorMsg);
     }
 
-    protected function resolveValue(Employee $employee, $key)
+    protected function resolveValue(Employee $employee, $key, PdfTemplate $template = null)
     {
         // 1. Handle Witness Fields
         if (str_starts_with($key, 'witness_')) {
@@ -441,12 +441,82 @@ class PdfGeneratorService
         // 4. Handle Standard Dot Notation
         $value = data_get($employee, $key);
 
-        // 5. Formatting
+        // 5. Auto-Prefix Logic (NEW)
+        if ($template && !empty($template->meta_data['auto_prefix_titles'])) {
+            $value = $this->applyAutoPrefix($employee, $key, $value);
+        }
+
+        // 6. Formatting
         if ($value instanceof Carbon) {
             return $value->format('d/m/Y');
         }
 
         return (string) $value;
+    }
+
+    protected function applyAutoPrefix(Employee $employee, $key, $value)
+    {
+        // Only apply to name fields
+        if (!in_array($key, ['employeeNameTh', 'employeeNameEn'])) {
+            return $value;
+        }
+
+        // Get Gender via Title or Explicit Gender
+        // Heuristic: If Title contains 'นาย', it's male. 'นาง', 'นางสาว' is female.
+        $titleTh = $employee->employeeTitleTh;
+        $isMale = str_contains($titleTh, 'นาย') || strtolower($employee->employeeGender) === 'male' || strtolower($employee->employeeGender) === 'ชาย';
+        $isFemale = str_contains($titleTh, 'นาง') || strtolower($employee->employeeGender) === 'female' || strtolower($employee->employeeGender) === 'หญิง';
+
+        // Thai Name
+        if ($key === 'employeeNameTh') {
+            // Check if already prefixed
+            $prefixes = ['นาย', 'นาง', 'นางสาว', 'ด.ช.', 'ด.ญ.'];
+            $alreadyPrefixed = false;
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($value, $prefix)) {
+                    $alreadyPrefixed = true;
+                    break;
+                }
+            }
+
+            if (!$alreadyPrefixed) {
+                if ($isMale) return 'นาย ' . $value;
+                if ($isFemale) {
+                    // Default to Mrs (Nang) or Miss (Nang Sao)? Use title if available, else guess.
+                    // If title is explicitly 'นางสาว', use it.
+                    if (str_contains($titleTh, 'นางสาว')) return 'นางสาว ' . $value;
+                    if (str_contains($titleTh, 'นาง')) return 'นาง ' . $value;
+                    // Fallback default
+                    return 'นาง ' . $value;
+                }
+            }
+        }
+
+        // English Name
+        if ($key === 'employeeNameEn') {
+            $prefixes = ['Mr.', 'Mrs.', 'Ms.', 'Miss'];
+            $alreadyPrefixed = false;
+            foreach ($prefixes as $prefix) {
+                // Check case-insensitive
+                if (stripos($value, $prefix) === 0) {
+                    $alreadyPrefixed = true;
+                    break;
+                }
+            }
+
+            if (!$alreadyPrefixed) {
+                if ($isMale) return 'Mr. ' . $value;
+                if ($isFemale) {
+                     // Check EN title if exists
+                     $titleEn = $employee->employeeTitleEn ?? '';
+                     if (stripos($titleEn, 'Miss') !== false) return 'Miss ' . $value;
+                     if (stripos($titleEn, 'Mrs') !== false) return 'Mrs. ' . $value;
+                     return 'Ms. ' . $value;
+                }
+            }
+        }
+
+        return $value;
     }
 
     protected function formatAddress($address, $lang = 'th')

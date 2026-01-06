@@ -111,6 +111,13 @@ class PdfGenerationController extends Controller
                     'slot_name' => $slotName
                 ]);
 
+                // Detect AJAX request (using checks like expectsJson or X-Requested-With header)
+                // In Laravel, request()->expectsJson() or request()->ajax() handles this.
+                if (request()->expectsJson() || request()->ajax()) {
+                    return response()->json($results);
+                }
+
+                // Fallback for standard form submit
                 // Filter out errors
                 $successCount = collect($results)->where('status', 'saved')->count();
                 $errorCount = count($results) - $successCount;
@@ -173,6 +180,13 @@ class PdfGenerationController extends Controller
 
         } catch (\Throwable $e) {
             \Log::error("Sync PDF Gen Error: " . $e->getMessage());
+
+            if (request()->expectsJson() || request()->ajax()) {
+                 return response()->json([
+                     ['status' => 'error', 'message' => $e->getMessage()]
+                 ], 500);
+            }
+
             return redirect()->route('employees.index')->with('danger', 'Generation Failed: ' . $e->getMessage());
         }
     }

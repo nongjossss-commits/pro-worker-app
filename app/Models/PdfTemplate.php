@@ -16,11 +16,13 @@ class PdfTemplate extends Model
         'type',
         'employer_id',
         'field_mapping',
+        'meta_data',
         'created_by',
     ];
 
     protected $casts = [
         'field_mapping' => 'array',
+        'meta_data' => 'array',
     ];
 
     public function employer()

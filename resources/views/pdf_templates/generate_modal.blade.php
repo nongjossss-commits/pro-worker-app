@@ -15,12 +15,12 @@
                         You have selected <strong>{{ count($employees) }}</strong> employees.
                     </div>
 
-                    <form action="{{ route('admin.pdf-templates.generate.process') }}" method="POST" id="generateForm">
+                    <form action="{{ route('admin.pdf-templates.generate.process') }}" method="POST" id="generateForm" @submit.prevent="handleSubmit">
                         @csrf
 
-                        <!-- Hidden Employee IDs -->
+                        <!-- Hidden Employee IDs (Used for Sync Download) -->
                         @foreach($employees as $id)
-                            <input type="hidden" name="employees[]" value="{{ $id }}">
+                            <input type="hidden" name="employees[]" value="{{ $id }}" class="hidden-employee-id">
                         @endforeach
 
                         {{-- Section 1: Select Employer (For Filtering Templates) --}}
@@ -130,7 +130,7 @@
                                 Note: This will overwrite any existing file in the selected slot.
                             </p>
 
-                            <select name="slot_name" class="form-select" :required="outputType === 'save_to_slot'">
+                            <select name="slot_name" class="form-select" :required="outputType === 'save_to_slot'" x-model="slotName">
                                 <option value="">-- Select Slot --</option>
                                 <optgroup label="Employee Documents (เอกสารลูกจ้าง)">
                                     {{-- Adjusted mapping based on user request and DB schema --}}
@@ -159,6 +159,36 @@
             </div>
         </div>
     </div>
+
+    {{-- Progress Modal (For Save to Slot) --}}
+    <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body text-center p-5">
+                    <div class="mb-4">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <h5 class="modal-title fw-bold mb-3">Processing Documents...</h5>
+
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div id="saveProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+
+                    <p class="text-muted mb-0" id="saveProgressText">Preparing...</p>
+
+                    <div class="mt-3 d-none" id="saveErrorDetails">
+                        <div class="alert alert-danger text-start small">
+                            <strong>Errors occurred:</strong>
+                            <ul id="errorList" class="mb-0 ps-3"></ul>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()">Reload Page</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -167,35 +197,23 @@
         Alpine.data('pdfGenerator', () => ({
             outputType: 'download',
             isProcessing: false,
-            // Templates loaded initially from server or empty
+            slotName: '',
             templates: @json($templates),
             selectedTemplateId: '',
             isLoadingTemplates: false,
-
-            // Global State for Employer Selection (shared with child component via $dispatch if needed, but here simple ref)
-            selectedEmployerId: 'global', // Default
+            selectedEmployerId: 'global',
 
             init() {
-                // Listen for employer selection event
                 window.addEventListener('employer-selected', (e) => {
                     this.selectedEmployerId = e.detail.id;
                     this.fetchTemplates();
-                });
-
-                document.getElementById('generateForm').addEventListener('submit', () => {
-                    this.isProcessing = true;
-                    if (this.outputType === 'download') {
-                        setTimeout(() => this.isProcessing = false, 3000);
-                    }
                 });
             },
 
             fetchTemplates() {
                 this.isLoadingTemplates = true;
-                this.selectedTemplateId = ''; // Reset selection
-
+                this.selectedTemplateId = '';
                 const url = `{{ route('admin.pdf-templates.list') }}?employer_id=${this.selectedEmployerId}`;
-
                 fetch(url)
                     .then(res => res.json())
                     .then(data => {
@@ -205,8 +223,130 @@
                     .catch(err => {
                         console.error(err);
                         this.isLoadingTemplates = false;
-                        // Fallback or alert?
                     });
+            },
+
+            handleSubmit(e) {
+                if (this.isProcessing) return;
+
+                // 1. Download Mode: Submit form normally (synchronous)
+                if (this.outputType === 'download') {
+                    this.isProcessing = true;
+                    e.target.submit();
+                    // Reset button after delay since download doesn't reload page
+                    setTimeout(() => this.isProcessing = false, 5000);
+                    return;
+                }
+
+                // 2. Save to Slot Mode: AJAX Batch Processing
+                if (this.outputType === 'save_to_slot') {
+                    this.startBatchProcessing(e.target);
+                }
+            },
+
+            async startBatchProcessing(form) {
+                this.isProcessing = true;
+                const employeeInputs = form.querySelectorAll('.hidden-employee-id');
+                const employeeIds = Array.from(employeeInputs).map(i => i.value);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+                if (employeeIds.length === 0) {
+                    alert('No employees selected.');
+                    this.isProcessing = false;
+                    return;
+                }
+
+                // Show Modal
+                const modalEl = document.getElementById('progressModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+
+                const progressBar = document.getElementById('saveProgressBar');
+                const progressText = document.getElementById('saveProgressText');
+                const errorDiv = document.getElementById('saveErrorDetails');
+                const errorList = document.getElementById('errorList');
+
+                // Reset UI
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                progressBar.classList.remove('bg-danger', 'bg-success');
+                progressText.textContent = 'Starting...';
+                errorDiv.classList.add('d-none');
+                errorList.innerHTML = '';
+
+                // Batch Config
+                const BATCH_SIZE = 5;
+                const total = employeeIds.length;
+                let processed = 0;
+                let failed = 0;
+
+                for (let i = 0; i < total; i += BATCH_SIZE) {
+                    const chunk = employeeIds.slice(i, i + BATCH_SIZE);
+
+                    progressText.textContent = `Processing batch ${Math.ceil((i+1)/BATCH_SIZE)} of ${Math.ceil(total/BATCH_SIZE)}...`;
+
+                    try {
+                        const response = await fetch('{{ route("admin.pdf-templates.generate.process") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                employees: chunk,
+                                template_id: this.selectedTemplateId,
+                                output_type: 'save_to_slot',
+                                slot_name: this.slotName
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        // Check for partial errors in result array if backend returns array
+                        // Or check if response was not OK
+                        if (!response.ok) throw new Error('Network error');
+
+                        // Backend returns array of results
+                        if (Array.isArray(result)) {
+                            result.forEach(r => {
+                                if (r.status === 'error') {
+                                    failed++;
+                                    const li = document.createElement('li');
+                                    li.textContent = `Emp ID ${r.employee}: ${r.message}`;
+                                    errorList.appendChild(li);
+                                }
+                            });
+                        }
+
+                    } catch (err) {
+                        console.error(err);
+                        failed += chunk.length; // Assume whole chunk failed
+                        const li = document.createElement('li');
+                        li.textContent = `Batch error: ${err.message}`;
+                        errorList.appendChild(li);
+                    }
+
+                    processed += chunk.length;
+                    const percent = Math.round((processed / total) * 100);
+                    progressBar.style.width = `${percent}%`;
+                    progressBar.textContent = `${percent}%`;
+                }
+
+                // Completion
+                if (failed > 0) {
+                    progressText.textContent = `Completed with ${failed} errors.`;
+                    progressBar.classList.add('bg-danger');
+                    errorDiv.classList.remove('d-none');
+                    // Enable close
+                    this.isProcessing = false;
+                } else {
+                    progressText.textContent = 'All documents generated successfully!';
+                    progressBar.classList.add('bg-success');
+                    setTimeout(() => {
+                        window.location.href = '{{ route("employees.index") }}';
+                    }, 1500);
+                }
             }
         }));
 
