@@ -15,7 +15,7 @@
     </div>
 
     <div class="card shadow-sm">
-        <div class="card-body">
+        <div class="card-body" x-data="{ projectType: '{{ $isIndependent ? 'independent' : 'employer' }}' }">
             <form action="{{ route('production.store') }}" method="POST" id="createProjectForm">
                 @csrf
 
@@ -36,7 +36,8 @@
                         <div class="d-flex gap-3 mt-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="type" id="typeEmployer" value="employer"
-                                    {{ $isIndependent ? 'disabled' : 'checked' }}>
+                                    x-model="projectType"
+                                    {{ $isIndependent ? 'disabled' : '' }}>
                                 <label class="form-check-label" for="typeEmployer">
                                     Standard (Single Employer)
                                     @if($isIndependent) <small class="text-danger d-block">(Disabled: Mixed employers selected)</small> @endif
@@ -44,7 +45,7 @@
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="type" id="typeIndependent" value="independent"
-                                    {{ $isIndependent ? 'checked' : '' }}>
+                                    x-model="projectType">
                                 <label class="form-check-label" for="typeIndependent">
                                     Independent (Multiple/No Employer)
                                 </label>
@@ -54,22 +55,60 @@
                 </div>
 
                 {{-- Employer Selection (Only visible if Standard) --}}
-                <div class="mb-4" id="employerSelectionDiv" style="{{ $isIndependent ? 'display:none;' : '' }}">
+                <div class="mb-4" x-show="projectType === 'employer'" style="display: none;">
                     <label class="form-label fw-bold">Select Employer</label>
-                    <select name="employer_id" class="form-select" {{ $isIndependent ? '' : 'required' }}>
-                        <option value="">-- Choose Employer --</option>
-                        @if($preSelectedEmployees->isNotEmpty() && $employerId)
-                             <option value="{{ $employerId }}" selected>
-                                 {{ $preSelectedEmployees->first()->employer->employerNameTh ?? $preSelectedEmployees->first()->employer->employerNameEn ?? 'Selected Employer' }}
-                             </option>
-                        @elseif(isset($employers) && $employers->isNotEmpty())
-                            @foreach($employers as $emp)
-                                <option value="{{ $emp->id }}" {{ $employerId == $emp->id ? 'selected' : '' }}>
-                                    {{ $emp->employerNameTh }} ({{ $emp->employerNameEn }}) - {{ $emp->employerId }}
-                                </option>
-                            @endforeach
-                        @endif
-                    </select>
+
+                    @php
+                        $initVal = '';
+                        $initText = '';
+                        if ($preSelectedEmployees->isNotEmpty() && $employerId) {
+                            $initVal = $employerId;
+                            $initText = $preSelectedEmployees->first()->employer->employerNameTh ?? $preSelectedEmployees->first()->employer->employerNameEn ?? 'Selected Employer';
+                        } elseif($employerId) {
+                            // Try to find in passed employers list (first 200)
+                            $found = isset($employers) ? $employers->firstWhere('id', $employerId) : null;
+                            if($found) {
+                                $initVal = $found->id;
+                                $initText = $found->employerNameTh . ' (' . $found->employerNameEn . ')';
+                            }
+                        }
+                    @endphp
+
+                    {{--
+                        We bind 'required' to the expression 'projectType === "employer"'.
+                        However, standard blade component :required="..." evaluates at server side.
+                        We need client side dynamic required.
+                        The component's 'required' prop sets the initial state.
+                        To make it dynamic, we need to pass a JS expression to x-bind:required on the input inside the component.
+                        Since we can't easily modify the component to accept raw JS string for x-bind,
+                        we will rely on the fact that if hidden, HTML5 validation is often suppressed or we handle it.
+                        BUT, standard 'required' on a hidden element prevents form submission in some browsers.
+
+                        The Searchable Select component uses x-bind:required="required && !value".
+                        'required' there is a JS variable initialized from blade prop.
+
+                        We can wrap the component or modify it to observe parent state? No, encapsulated.
+
+                        Cleanest fix: The component exposes the input.
+                        Actually, the component accepts `required` as a boolean.
+                        If we want it dynamic, we should use Alpine to toggle it.
+                        The component has `x-data="{ required: ... }"`.
+                        We can use `$watch` in the parent or simple conditional rendering?
+                        Conditional rendering `x-if` removes it from DOM, solving validation.
+                    --}}
+
+                    <template x-if="projectType === 'employer'">
+                        <x-input-searchable-select
+                            name="employer_id"
+                            placeholder="Type to search employer..."
+                            apiUrl="{{ route('api-web.employers.list') }}"
+                            :initialValue="$initVal"
+                            :initialText="$initText"
+                            :required="true"
+                        />
+                    </template>
+                    {{-- Note: x-if creates a new scope. The component should still work. --}}
+
                     <div class="form-text">For Standard projects, all employees must belong to this employer.</div>
                 </div>
 
@@ -122,23 +161,4 @@
 {{-- Include Action Modals for Previews etc. --}}
 @include('partials._employee_action_modals')
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const typeRadios = document.querySelectorAll('input[name="type"]');
-        const employerDiv = document.getElementById('employerSelectionDiv');
-        const employerSelect = employerDiv.querySelector('select');
-
-        typeRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'employer') {
-                    employerDiv.style.display = 'block';
-                    employerSelect.required = true;
-                } else {
-                    employerDiv.style.display = 'none';
-                    employerSelect.required = false;
-                }
-            });
-        });
-    });
-</script>
 @endsection
