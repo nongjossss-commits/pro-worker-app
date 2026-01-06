@@ -321,7 +321,7 @@ class PdfGeneratorService
         $outputPath = tempnam(sys_get_temp_dir(), 'norm_') . '.pdf';
 
         // Strategy 0: Node.js (pdf-lib) - preferred strategy now
-        $nodeScriptPath = base_path('scripts/normalize_pdf.js');
+        $nodeScriptPath = base_path('scripts/normalize_pdf.cjs');
         if (file_exists($nodeScriptPath)) {
             $cmd = sprintf(
                 'node %s %s %s 2>&1',
