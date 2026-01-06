@@ -89,6 +89,9 @@
             <li><a class="dropdown-item" href="#" id="incomplete-bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
             <li><a class="dropdown-item" href="#" id="incomplete-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
             <li><a class="dropdown-item" href="#" id="incomplete-bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
+            @can('manage-tickets')
+            <li><a class="dropdown-item" href="#" id="incomplete-bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
+            @endcan
         </x-bulk-action-bar>
 
         @if($currentView === 'card')
@@ -300,6 +303,43 @@
                 const modalEl = document.getElementById('selectTargetEmployerModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
+            });
+        }
+
+        // Automated PDF
+        const bulkGeneratePdfBtn = document.getElementById('incomplete-bulk-generate-pdf-btn');
+        if (bulkGeneratePdfBtn) {
+            bulkGeneratePdfBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                // Create form to post to generation modal setup
+                const form = document.createElement('form');
+                form.method = 'POST';
+                // Use relative path to avoid protocol mismatch (http vs https) redirects which strip POST data
+                form.action = '{{ route("admin.pdf-templates.generate.modal", [], false) }}';
+
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = document.querySelector('meta[name="csrf-token"]').content;
+                form.appendChild(csrf);
+
+                selected.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'employees[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
             });
         }
     });
