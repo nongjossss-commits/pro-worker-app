@@ -109,7 +109,7 @@
                             <!-- Placed Items -->
                             <template x-for="(item, index) in items" :key="index">
                                 <div x-show="parseInt(item.page) === pageNum"
-                                     class="absolute border cursor-move group flex items-center px-1 overflow-hidden"
+                                     class="absolute border cursor-move group flex items-end px-1"
                                      :class="{
                                         'border-blue-500 bg-blue-100/50 hover:bg-blue-100/80': item.type === 'db',
                                         'border-gray-500 bg-gray-100/50 hover:bg-gray-100/80': item.type === 'static',
@@ -119,10 +119,10 @@
                                      @mousedown.self="startMove($event, index, pageNum)">
 
                                     <!-- Content -->
-                                    <div class="w-full h-full flex items-center pointer-events-none select-none">
+                                    <div class="w-full h-full flex items-end pointer-events-none select-none">
                                         <!-- Signature Icon/Preview -->
                                         <template x-if="item.type === 'signature'">
-                                            <div class="w-full text-center text-purple-800">
+                                            <div class="w-full text-center text-purple-800 pb-1">
                                                 <i class="bi bi-pen"></i>
                                                 <span class="text-xs block" x-text="getSignatureLabel(item.signatureGroup)"></span>
                                             </div>
@@ -130,19 +130,36 @@
 
                                         <!-- Text Content -->
                                         <template x-if="item.type !== 'signature'">
-                                            <span class="truncate w-full"
+                                            <span class="truncate w-full leading-none mb-[2px]"
                                                   :class="{'text-blue-800 font-bold': item.type === 'db', 'text-gray-800': item.type === 'static'}"
                                                   :style="item.align === 'center' ? 'text-align: center;' : ''"
                                                   x-text="item.type === 'static' ? (item.text || 'Static Text') : item.label"></span>
                                         </template>
                                     </div>
 
-                                    <!-- Resize Handle -->
-                                    <div class="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-gray-400 cursor-nwse-resize z-20"
-                                         @mousedown.stop="startResize($event, index, pageNum)"></div>
+                                    <!-- Resize Handles (8 directions) -->
+                                    <!-- Corners -->
+                                    <div class="resize-handle absolute top-0 left-0 w-2 h-2 bg-white border border-gray-400 cursor-nwse-resize z-20 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 'nw')"></div>
+                                    <div class="resize-handle absolute top-0 right-0 w-2 h-2 bg-white border border-gray-400 cursor-nesw-resize z-20 translate-x-1/2 -translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 'ne')"></div>
+                                    <div class="resize-handle absolute bottom-0 right-0 w-2 h-2 bg-white border border-gray-400 cursor-nwse-resize z-20 translate-x-1/2 translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 'se')"></div>
+                                    <div class="resize-handle absolute bottom-0 left-0 w-2 h-2 bg-white border border-gray-400 cursor-nesw-resize z-20 -translate-x-1/2 translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 'sw')"></div>
+
+                                    <!-- Sides -->
+                                    <div class="resize-handle absolute top-0 left-1/2 w-2 h-2 bg-white border border-gray-400 cursor-ns-resize z-20 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 'n')"></div>
+                                    <div class="resize-handle absolute top-1/2 right-0 w-2 h-2 bg-white border border-gray-400 cursor-ew-resize z-20 translate-x-1/2 -translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 'e')"></div>
+                                    <div class="resize-handle absolute bottom-0 left-1/2 w-2 h-2 bg-white border border-gray-400 cursor-ns-resize z-20 -translate-x-1/2 translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 's')"></div>
+                                    <div class="resize-handle absolute top-1/2 left-0 w-2 h-2 bg-white border border-gray-400 cursor-ew-resize z-20 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                                         @mousedown.stop="startResize($event, index, pageNum, 'w')"></div>
 
                                     <!-- Controls -->
-                                    <div class="absolute -top-8 right-0 bg-white shadow rounded border flex gap-1 p-1 hidden group-hover:flex z-50">
+                                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-white shadow-lg rounded border flex gap-1 p-1 hidden group-hover:flex z-50">
                                         <!-- Settings Button (Context Aware) -->
                                         <button @click.stop="openSettings(index)" class="p-1 hover:bg-gray-100 rounded text-gray-600" title="Settings">
                                             <i class="bi bi-gear"></i>
@@ -510,26 +527,58 @@
                 document.addEventListener('mouseup', onMouseUp);
             },
 
-            startResize(event, index, pageNum) {
+            startResize(event, index, pageNum, direction) {
                 const item = this.items[index];
                 const dims = this.pageDimensions[pageNum];
                 const startX = event.clientX;
                 const startY = event.clientY;
-                const startW = (item.w / 100) * dims.width;
-                const startH = (item.h / 100) * dims.height;
+
+                // Current Pixel Values
+                const currentLeftPx = (item.x / 100) * dims.width;
+                const currentTopPx = (item.y / 100) * dims.height;
+                const currentWidthPx = (item.w / 100) * dims.width;
+                const currentHeightPx = (item.h / 100) * dims.height;
 
                 const onMouseMove = (e) => {
                     const dx = e.clientX - startX;
                     const dy = e.clientY - startY;
-                    let newW = startW + dx;
-                    let newH = startH + dy;
 
-                    // Minimum sizes
-                    newW = Math.max(20, newW);
-                    newH = Math.max(10, newH);
+                    let newLeft = currentLeftPx;
+                    let newTop = currentTopPx;
+                    let newWidth = currentWidthPx;
+                    let newHeight = currentHeightPx;
 
-                    item.w = (newW / dims.width) * 100;
-                    item.h = (newH / dims.height) * 100;
+                    // Handle different directions
+                    if (direction.includes('e')) {
+                        newWidth = Math.max(20, currentWidthPx + dx);
+                    }
+                    if (direction.includes('s')) {
+                        newHeight = Math.max(10, currentHeightPx + dy);
+                    }
+                    if (direction.includes('w')) {
+                        // For West, we change Left AND Width
+                        // If we move mouse left (-dx), width increases, left decreases
+                        const proposedWidth = currentWidthPx - dx;
+                        if (proposedWidth >= 20) {
+                            newWidth = proposedWidth;
+                            newLeft = currentLeftPx + dx;
+                        }
+                    }
+                    if (direction.includes('n')) {
+                        // For North, we change Top AND Height
+                        // If we move mouse up (-dy), height increases, top decreases
+                        const proposedHeight = currentHeightPx - dy;
+                        if (proposedHeight >= 10) {
+                            newHeight = proposedHeight;
+                            newTop = currentTopPx + dy;
+                        }
+                    }
+
+                    // Normalize to percentages
+                    item.x = (newLeft / dims.width) * 100;
+                    item.y = (newTop / dims.height) * 100;
+                    item.w = (newWidth / dims.width) * 100;
+                    item.h = (newHeight / dims.height) * 100;
                 };
 
                 const onMouseUp = () => {
