@@ -133,6 +133,9 @@
         <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
         <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
         <li><a class="dropdown-item" href="#" id="bulk-send-production-btn"><i class="bi bi-clipboard-data me-2"></i>{{ __('Send to P Production') }}</a></li>
+        @can('manage-tickets')
+        <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
+        @endcan
     </x-bulk-action-bar>
 
     <!-- Groups Tabs (Server Side) -->
@@ -737,6 +740,43 @@
                 }
 
                 window.location.href = url;
+            });
+        }
+
+        // Handle Bulk Generate PDF
+        const bulkGeneratePdfBtn = document.getElementById('bulk-generate-pdf-btn');
+        if (bulkGeneratePdfBtn) {
+            bulkGeneratePdfBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds(); // Use global helper because this page uses standardized checkboxes/logic
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                // Create form to post to generation modal setup
+                const form = document.createElement('form');
+                form.method = 'POST';
+                // Use relative path to avoid protocol mismatch (http vs https) redirects which strip POST data
+                form.action = '{{ route("admin.pdf-templates.generate.modal", [], false) }}';
+
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = document.querySelector('meta[name="csrf-token"]').content;
+                form.appendChild(csrf);
+
+                selected.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'employees[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
             });
         }
     });
