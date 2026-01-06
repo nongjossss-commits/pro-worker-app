@@ -114,15 +114,30 @@ class PdfGeneratorService
         $tempSigPaths = [];
 
         // 1. Employee Signature (Persist Check)
+        // Per user request: Signatures must be random every time for documents.
+        // We will ALWAYS generate a new one here if we want per-document uniqueness,
+        // BUT the legacy logic was: Check if exists -> Use it.
+        // To fulfill "Random New Every Time for Employees creating documents", we should regenerate it
+        // OR simply generate a temp one for this PDF without saving it to the profile.
+        // DECISION: Generate a unique temp signature for this PDF instance. Do not overwrite profile unless empty.
+
+        $empSigPath = null;
+        // Option A: Use existing if set? User said "Random new every time".
+        // This implies ignoring the saved profile signature for the document generation.
+        // Let's generate a fresh one for the PDF.
+        $seed = 'EMP-' . $employee->id . '-' . uniqid(more_entropy: true);
+        $content = $this->signatureService->generate($seed);
+        $temp = tempnam(sys_get_temp_dir(), 'sig_emp_');
+        file_put_contents($temp, $content);
+        $empSigPath = $temp;
+        $tempSigPaths[] = $temp;
+
+        // Also update the profile if it was empty, so they have *something*
         if (!$employee->signature_path || !Storage::disk('public')->exists($employee->signature_path)) {
-            // Generate and save
-            $seed = 'EMP-' . $employee->id . '-' . time();
-            $content = $this->signatureService->generate($seed);
-            $filename = 'signatures/employees/emp_' . $employee->id . '_' . time() . '.png';
-            Storage::disk('public')->put($filename, $content);
-            $employee->update(['signature_path' => $filename]);
+             $filename = 'signatures/employees/emp_' . $employee->id . '_' . time() . '.png';
+             Storage::disk('public')->put($filename, $content);
+             $employee->update(['signature_path' => $filename]);
         }
-        $empSigPath = Storage::disk('public')->path($employee->signature_path);
 
         // 2. Employer Signatures (Check file -> Generate Fallback)
         $employer = $employee->employer;
@@ -132,8 +147,8 @@ class PdfGeneratorService
         if ($employer->signature_1_path && Storage::disk('public')->exists($employer->signature_1_path)) {
             $emprSig1Path = Storage::disk('public')->path($employer->signature_1_path);
         } else {
-             // Generate temporary
-             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-1');
+             // Generate temporary unique
+             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-1-' . uniqid());
              $temp = tempnam(sys_get_temp_dir(), 'sig_empr1_');
              file_put_contents($temp, $content);
              $emprSig1Path = $temp;
@@ -145,7 +160,7 @@ class PdfGeneratorService
         if ($employer->signature_2_path && Storage::disk('public')->exists($employer->signature_2_path)) {
             $emprSig2Path = Storage::disk('public')->path($employer->signature_2_path);
         } else {
-             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-2');
+             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-2-' . uniqid());
              $temp = tempnam(sys_get_temp_dir(), 'sig_empr2_');
              file_put_contents($temp, $content);
              $emprSig2Path = $temp;
@@ -164,8 +179,8 @@ class PdfGeneratorService
             if ($witness && $witness->signature_path && Storage::disk('public')->exists($witness->signature_path)) {
                 $witnessSigPaths[$alias] = Storage::disk('public')->path($witness->signature_path);
             } else {
-                // Generate consistent temp signature for this alias if missing
-                $content = $this->signatureService->generate('WITNESS-' . $alias . '-' . date('Ymd'));
+                // Generate random temp signature for witness too
+                $content = $this->signatureService->generate('WITNESS-' . $alias . '-' . uniqid());
                 $temp = tempnam(sys_get_temp_dir(), 'sig_' . $alias . '_');
                 file_put_contents($temp, $content);
                 $witnessSigPaths[$alias] = $temp;

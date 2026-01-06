@@ -5,10 +5,10 @@ namespace App\Services;
 class SignatureGeneratorService
 {
     /**
-     * Generate a unique, consistent signature image for a given seed.
-     * Now expanded to 100 distinct engine variations for maximum diversity.
+     * Generate a unique, highly diverse signature image.
+     * Expands to >1,000 distinct variations by mixing engines, modifiers, and embellishments.
      *
-     * @param string $seed Unique identifier (e.g., 'EMP-123')
+     * @param string $seed Unique identifier (e.g., 'EMP-123-TIMESTAMP')
      * @param int $width Width of the signature canvas
      * @param int $height Height of the signature canvas
      * @return string Raw image data (PNG format)
@@ -21,70 +21,142 @@ class SignatureGeneratorService
         $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
         imagefill($image, 0, 0, $transparent);
 
-        // 2. Seed RNG for consistency
+        // 2. Seed RNG for controlled randomness (consistency if seed is static, random if seed varies)
         mt_srand(crc32($seed) + strlen($seed));
 
-        // 3. Ink Color (Variations of Blue/Black/Grey/Mixed)
-        $colorType = mt_rand(0, 100);
-        if ($colorType < 60) {
-            // Standard Blue Ballpoint variations
-            $r = mt_rand(0, 40);
-            $g = mt_rand(0, 40);
-            $b = mt_rand(100, 200);
-        } elseif ($colorType < 90) {
-            // Black/Dark Grey variations
-            $val = mt_rand(0, 60);
-            $r = $val; $g = $val; $b = $val + mt_rand(0, 10);
-        } else {
-            // Rare Inks (Purple-ish, Green-ish - very subtle)
-            $r = mt_rand(0, 50);
-            $g = mt_rand(0, 50);
-            $b = mt_rand(0, 50);
-            if (mt_rand(0,1)) $r += 50; // Red tint
-            if (mt_rand(0,1)) $g += 50; // Green tint
-        }
-        $inkColor = imagecolorallocate($image, $r, $g, $b);
+        // 3. Selection of "DNA" components (Mixing & Matching)
+        // Total Combinations = Engines(100) * Colors(10) * Thickness(5) * Slant(5) * Embellishments(10) > 250,000
+        $engineId = mt_rand(0, 99);
+        $colorId = mt_rand(0, 9);
+        $thicknessId = mt_rand(0, 4);
+        $slantId = mt_rand(0, 4);
+        $embellishId = mt_rand(0, 9);
 
-        // 4. Base Parameters
-        $thickness = mt_rand(2, 5);
-        $slant = (mt_rand(-30, 80) / 100); // Slant factor
+        // 4. Resolve Parameters
+        $inkColor = $this->resolveColor($image, $colorId);
+        $thickness = $this->resolveThickness($thicknessId);
+        $slant = $this->resolveSlant($slantId);
 
-        // 5. Select Engine (0 to 99)
-        $engine = mt_rand(0, 99);
+        // 5. Execute Engine
+        // Dispatch to Engine Families based on first digit (0-9)
+        $family = (int)($engineId / 10);
+        $subType = $engineId % 10;
 
-        // Dispatch to Engine Families
-        if ($engine < 10) {
-            $this->familyClassic($image, $inkColor, $width, $height, $thickness, $slant, $engine);
-        } elseif ($engine < 20) {
-            $this->familyGeometric($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } elseif ($engine < 30) {
-            $this->familyThai($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } elseif ($engine < 40) {
-            $this->familyMyanmar($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } elseif ($engine < 50) {
-            $this->familyOrganic($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } elseif ($engine < 60) {
-            $this->familyRising($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } elseif ($engine < 70) {
-            $this->familyChaos($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } elseif ($engine < 80) {
-            $this->familyStructured($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } elseif ($engine < 90) {
-            $this->familyMixed($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
-        } else {
-            $this->familyGrand($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        switch ($family) {
+            case 0: $this->familyClassic($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 1: $this->familyGeometric($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 2: $this->familyThai($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 3: $this->familyMyanmar($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 4: $this->familyOrganic($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 5: $this->familyRising($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 6: $this->familyChaos($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 7: $this->familyStructured($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 8: $this->familyMixed($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
+            case 9: $this->familyGrand($image, $inkColor, $width, $height, $thickness, $slant, $subType); break;
         }
 
-        // 6. Global Embellishments (Underlines, Dots, etc)
-        // More variety in embellishments too
-        $this->addEmbellishments($image, $inkColor, $width, $height, $thickness);
+        // 6. Apply Global Embellishments
+        $this->applyEmbellishments($image, $inkColor, $width, $height, $thickness, $embellishId);
 
+        // 7. Output
         ob_start();
         imagepng($image);
         $imageData = ob_get_clean();
         imagedestroy($image);
 
         return $imageData;
+    }
+
+    // ==========================================
+    // PARAMETER RESOLVERS
+    // ==========================================
+
+    private function resolveColor($image, $id)
+    {
+        // 10 Distinct Color Palettes
+        switch ($id) {
+            case 0: return imagecolorallocate($image, 0, 0, 139); // Dark Blue
+            case 1: return imagecolorallocate($image, 0, 0, 0);   // Pure Black
+            case 2: return imagecolorallocate($image, 25, 25, 112); // Midnight Blue
+            case 3: return imagecolorallocate($image, 60, 60, 60); // Dark Grey
+            case 4: return imagecolorallocate($image, 0, 0, 205); // Medium Blue
+            case 5: return imagecolorallocate($image, 30, 30, 30); // Soft Black
+            case 6: return imagecolorallocate($image, 70, 70, 90); // Blue Grey
+            case 7: return imagecolorallocate($image, 0, 51, 102); // Navy
+            case 8: return imagecolorallocate($image, 50, 0, 0);   // Dark Red/Brown ink
+            case 9: return imagecolorallocate($image, 0, 50, 0);   // Dark Green ink
+            default: return imagecolorallocate($image, 0, 0, 0);
+        }
+    }
+
+    private function resolveThickness($id)
+    {
+        // 0=Fine, 4=Heavy
+        return $id + 1; // Returns 1 to 5
+    }
+
+    private function resolveSlant($id)
+    {
+        // Slant factor for engines that support it
+        switch ($id) {
+            case 0: return -0.3; // Back slant
+            case 1: return 0.0;  // Upright
+            case 2: return 0.3;  // Slight forward
+            case 3: return 0.6;  // Heavy forward
+            case 4: return (mt_rand(-5, 5) / 10); // Random
+            default: return 0;
+        }
+    }
+
+    private function applyEmbellishments($image, $color, $width, $height, $thickness, $type)
+    {
+        $yBase = $height - mt_rand(10, 30);
+        $thick = max(1, $thickness - 1);
+
+        switch ($type) {
+            case 0: // Single Underline
+                $this->drawThickLine($image, 40, $yBase, $width-40, $yBase, $color, $thick);
+                break;
+            case 1: // Double Underline
+                $this->drawThickLine($image, 40, $yBase, $width-40, $yBase, $color, $thick);
+                $this->drawThickLine($image, 50, $yBase+5, $width-50, $yBase+5, $color, $thick);
+                break;
+            case 2: // Dots at end
+                $this->drawOval($image, $color, $width-40, $height/2, 4, 4);
+                $this->drawOval($image, $color, $width-25, $height/2, 4, 4);
+                break;
+            case 3: // Strike-through (Subtle)
+                $mid = $height/2;
+                $this->drawThickLine($image, 60, $mid, $width-60, $mid, $color, 1);
+                break;
+            case 4: // Circle Frame (Rough)
+                $this->drawOval($image, $color, $width/2, $height/2, $width-20, $height-20);
+                break;
+            case 5: // ZigZag Underline
+                $currX = 40;
+                $currY = $yBase;
+                while($currX < $width-40) {
+                    $this->drawThickLine($image, $currX, $currY, $currX+10, $currY-5, $color, $thick);
+                    $this->drawThickLine($image, $currX+10, $currY-5, $currX+20, $currY, $color, $thick);
+                    $currX += 20;
+                }
+                break;
+            case 6: // Cross X at start
+                $this->drawThickLine($image, 20, $height/2-10, 40, $height/2+10, $color, $thick);
+                $this->drawThickLine($image, 40, $height/2-10, 20, $height/2+10, $color, $thick);
+                break;
+            case 7: // Top Line
+                $this->drawThickLine($image, 40, 20, $width-40, 20, $color, $thick);
+                break;
+            case 8: // Messy Dots Everywhere
+                for($i=0; $i<5; $i++) {
+                    $this->drawOval($image, $color, mt_rand(20, $width-20), mt_rand(20, $height-20), 2, 2);
+                }
+                break;
+            case 9: // None (Clean)
+                // Do nothing
+                break;
+        }
     }
 
     // ==========================================
@@ -121,6 +193,9 @@ class SignatureGeneratorService
             $h = $baseSize + mt_rand(-10, 20);
             $x = $cx + ($i * 20) - 40;
             $y = $cy + mt_rand(-10, 10);
+
+            // Apply slant offset
+            $x += $y * ($slant * 0.1);
 
             switch ($subType) {
                 case 0: // Circles Only
@@ -181,8 +256,11 @@ class SignatureGeneratorService
             $h = mt_rand(30, 50);
             $headSize = mt_rand(5, 10);
 
+            // Apply Slant
+            $skew = ($slant * 5);
+
             // Draw "Head" (Loop)
-            $headX = $currX + $headSize;
+            $headX = $currX + $headSize + $skew;
             $headY = $baseY + ($subType % 2 == 0 ? -$h/2 : $h/2); // Top or bottom loop
 
             // Draw the loop
@@ -194,22 +272,22 @@ class SignatureGeneratorService
                     $this->drawBezier($image, $color, $currX, $baseY+$h, $currX, $baseY-$h, $currX+$w, $baseY-$h, $currX+$w, $baseY+$h, $thickness);
                     break;
                 case 1: // Standard Loop + Vertical
-                    $this->drawThickLine($image, $headX + $headSize, $headY, $headX + $headSize, $baseY + $h/2, $color, $thickness);
+                    $this->drawThickLine($image, $headX + $headSize, $headY, $headX + $headSize + $skew, $baseY + $h/2, $color, $thickness);
                     break;
                 case 2: // Loop + Zigzag
                     $this->drawThickLine($image, $headX, $headY, $currX + $w/2, $baseY - $h, $color, $thickness);
                     $this->drawThickLine($image, $currX + $w/2, $baseY - $h, $currX + $w, $baseY, $color, $thickness);
                     break;
                 case 3: // Rolling (Mhor Maa)
-                    $this->drawOval($image, $color, $currX, $baseY, $w, $w);
-                    $this->drawOval($image, $color, $currX+$w/2, $baseY, $w, $w);
+                    $this->drawOval($image, $color, $currX+$skew, $baseY, $w, $w);
+                    $this->drawOval($image, $color, $currX+$w/2+$skew, $baseY, $w, $w);
                     break;
                 case 4: // Sharp Peak (Tor Tao)
                     $this->drawBezier($image, $color, $currX, $baseY, $currX+$w/2, $baseY-$h*1.5, $currX+$w/2, $baseY-$h*0.5, $currX+$w, $baseY, $thickness);
                     break;
                 case 5: // Long Tail (Phor Pla)
-                    $this->drawOval($image, $color, $currX, $baseY, $headSize*2, $headSize*2);
-                    $this->drawThickLine($image, $currX+$headSize, $baseY, $currX+$headSize, $baseY-$h*1.2, $color, $thickness);
+                    $this->drawOval($image, $color, $currX+$skew, $baseY, $headSize*2, $headSize*2);
+                    $this->drawThickLine($image, $currX+$headSize, $baseY, $currX+$headSize+$skew*2, $baseY-$h*1.2, $color, $thickness);
                     break;
                 case 6: // Complex Knot
                     $this->drawSpiral($image, $color, $currX, $baseY, $w, $thickness);
@@ -571,18 +649,6 @@ class SignatureGeneratorService
     // ==========================================
     // UTILS
     // ==========================================
-
-    private function addEmbellishments($image, $color, $width, $height, $thickness)
-    {
-        if (mt_rand(0, 100) < 60) {
-            $y = $height - mt_rand(10, 30);
-            $this->drawThickLine($image, 40, $y, $width-40, $y, $color, max(1, $thickness-1));
-        }
-        if (mt_rand(0, 100) < 30) {
-             $this->drawOval($image, $color, $width-40, $height/2, 5, 5);
-             $this->drawOval($image, $color, $width-20, $height/2, 5, 5);
-        }
-    }
 
     private function drawBezier($image, $color, $x0, $y0, $x1, $y1, $x2, $y2, $x3, $y3, $thickness = 1)
     {
