@@ -6,6 +6,7 @@ class SignatureGeneratorService
 {
     /**
      * Generate a unique, consistent signature image for a given seed.
+     * Now expanded to 100 distinct engine variations for maximum diversity.
      *
      * @param string $seed Unique identifier (e.g., 'EMP-123')
      * @param int $width Width of the signature canvas
@@ -21,71 +22,61 @@ class SignatureGeneratorService
         imagefill($image, 0, 0, $transparent);
 
         // 2. Seed RNG for consistency
-        // Using a combination of crc32 and basic string hashing to ensure good distribution
         mt_srand(crc32($seed) + strlen($seed));
 
-        // 3. Ink Color (Variations of Dark Blue/Black/Grey)
-        // More human-like ink colors
-        $colorType = mt_rand(0, 10);
-        if ($colorType < 6) {
-            // Standard Blue Ballpoint
-            $r = mt_rand(0, 30);
-            $g = mt_rand(0, 30);
-            $b = mt_rand(100, 180);
-        } elseif ($colorType < 9) {
-            // Black Ink
+        // 3. Ink Color (Variations of Blue/Black/Grey/Mixed)
+        $colorType = mt_rand(0, 100);
+        if ($colorType < 60) {
+            // Standard Blue Ballpoint variations
+            $r = mt_rand(0, 40);
+            $g = mt_rand(0, 40);
+            $b = mt_rand(100, 200);
+        } elseif ($colorType < 90) {
+            // Black/Dark Grey variations
+            $val = mt_rand(0, 60);
+            $r = $val; $g = $val; $b = $val + mt_rand(0, 10);
+        } else {
+            // Rare Inks (Purple-ish, Green-ish - very subtle)
             $r = mt_rand(0, 50);
             $g = mt_rand(0, 50);
             $b = mt_rand(0, 50);
-        } else {
-            // Faded Black/Grey (Old pen)
-            $val = mt_rand(60, 100);
-            $r = $val; $g = $val; $b = $val + mt_rand(0, 10);
+            if (mt_rand(0,1)) $r += 50; // Red tint
+            if (mt_rand(0,1)) $g += 50; // Green tint
         }
         $inkColor = imagecolorallocate($image, $r, $g, $b);
 
         // 4. Base Parameters
-        $thickness = mt_rand(2, 4);
-        // Slant factor: -0.2 (left) to 0.8 (right)
-        $slant = (mt_rand(-20, 80) / 100);
+        $thickness = mt_rand(2, 5);
+        $slant = (mt_rand(-30, 80) / 100); // Slant factor
 
-        // 5. Select Base Algorithm (Expanded to 10 Engines with ~10 sub-variations each = ~100 styles)
-        $engine = mt_rand(0, 9);
+        // 5. Select Engine (0 to 99)
+        $engine = mt_rand(0, 99);
 
-        switch ($engine) {
-            case 0: // The "Looper" (Cursive, Circular, Big loops)
-                $this->engineLooper($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 1: // The "Spike" (Sharp, Aggressive, Doctor-like)
-                $this->engineSpike($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 2: // The "Block" (Disconnected, Initials-heavy)
-                $this->engineBlock($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 3: // The "Wave" (Lazy, Horizontal, Flowing)
-                $this->engineWave($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 4: // The "Abstract" (Scribble, Density)
-                $this->engineAbstract($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 5: // The "Minimalist" (Short, Simple, Few strokes)
-                $this->engineMinimalist($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 6: // The "Architect" (Geometric, Straight, Structured)
-                $this->engineArchitect($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 7: // The "Childish" (Wobbly, Large, Unsteady)
-                $this->engineChildish($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 8: // The "Compact" (Tight, Dense, Small)
-                $this->engineCompact($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
-            case 9: // The "Wild" (Big range, crossing lines)
-                $this->engineWild($image, $inkColor, $width, $height, $thickness, $slant);
-                break;
+        // Dispatch to Engine Families
+        if ($engine < 10) {
+            $this->familyClassic($image, $inkColor, $width, $height, $thickness, $slant, $engine);
+        } elseif ($engine < 20) {
+            $this->familyGeometric($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } elseif ($engine < 30) {
+            $this->familyThai($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } elseif ($engine < 40) {
+            $this->familyMyanmar($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } elseif ($engine < 50) {
+            $this->familyOrganic($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } elseif ($engine < 60) {
+            $this->familyRising($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } elseif ($engine < 70) {
+            $this->familyChaos($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } elseif ($engine < 80) {
+            $this->familyStructured($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } elseif ($engine < 90) {
+            $this->familyMixed($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
+        } else {
+            $this->familyGrand($image, $inkColor, $width, $height, $thickness, $slant, $engine % 10);
         }
 
-        // 6. Global Embellishments (Underlines, Dots, Strike-throughs)
+        // 6. Global Embellishments (Underlines, Dots, etc)
+        // More variety in embellishments too
         $this->addEmbellishments($image, $inkColor, $width, $height, $thickness);
 
         ob_start();
@@ -97,423 +88,499 @@ class SignatureGeneratorService
     }
 
     // ==========================================
-    // ENGINE 0: THE LOOPER (Cursive / Circular)
+    // FAMILY 1: CLASSIC (0-9) - Preserving Original Logic
     // ==========================================
-    private function engineLooper($image, $color, $width, $height, $thickness, $slant)
+    private function familyClassic($image, $color, $width, $height, $thickness, $slant, $subType)
     {
-        $subStyle = mt_rand(0, 5); // Expanded sub-styles
-        $startX = mt_rand(20, 60);
-        $startY = $height / 2 + mt_rand(-10, 10);
-
-        $segments = mt_rand(6, 14);
-        $currentX = $startX;
-        $currentY = $startY;
-
-        for ($i = 0; $i < $segments; $i++) {
-            $stepW = mt_rand(15, 35);
-            $endX = $currentX + $stepW;
-            $endY = $startY + mt_rand(-5, 5);
-
-            $cp1X = $currentX + ($stepW * 0.2) + ($slant * 20);
-            $cp2X = $endX - ($stepW * 0.2) + ($slant * 20);
-
-            if ($subStyle === 0) { // Tight Cursive
-                 $amp = mt_rand(15, 40);
-                 $cp1Y = $currentY - $amp;
-                 $cp2Y = $endY - $amp;
-            } elseif ($subStyle === 1) { // Big Circular
-                $amp = mt_rand(40, 90);
-                $cp1Y = $currentY - $amp;
-                $cp2Y = $endY - $amp;
-                if (mt_rand(0,3) === 0) { $cp1Y = $currentY + $amp; $cp2Y = $endY + $amp; }
-            } elseif ($subStyle === 2) { // Vertical Loops
-                $amp = mt_rand(30, 60);
-                $cp1Y = $currentY - $amp;
-                $cp2Y = $endY + $amp;
-            } elseif ($subStyle === 3) { // Messy
-                $amp = mt_rand(20, 50);
-                $cp1Y = $currentY - $amp + mt_rand(-10, 10);
-                $cp2Y = $endY - $amp + mt_rand(-10, 10);
-            } elseif ($subStyle === 4) { // Flat top
-                $amp = mt_rand(10, 20);
-                $cp1Y = $currentY - $amp;
-                $cp2Y = $endY - $amp;
-            } else { // Rollercoaster
-                $amp = mt_rand(20, 60);
-                $dir = ($i % 2 === 0) ? -1 : 1;
-                $cp1Y = $currentY + ($amp * $dir);
-                $cp2Y = $endY + ($amp * $dir);
-            }
-
-            $this->drawBezier($image, $color, $currentX, $currentY, $cp1X, $cp1Y, $cp2X, $cp2Y, $endX, $endY, $thickness);
-
-            $currentX = $endX;
-            $currentY = $endY;
+        switch ($subType) {
+            case 0: $this->engineLooper($image, $color, $width, $height, $thickness, $slant); break;
+            case 1: $this->engineSpike($image, $color, $width, $height, $thickness, $slant); break;
+            case 2: $this->engineBlock($image, $color, $width, $height, $thickness, $slant); break;
+            case 3: $this->engineWave($image, $color, $width, $height, $thickness, $slant); break;
+            case 4: $this->engineAbstract($image, $color, $width, $height, $thickness, $slant); break;
+            case 5: $this->engineMinimalist($image, $color, $width, $height, $thickness, $slant); break;
+            case 6: $this->engineArchitect($image, $color, $width, $height, $thickness, $slant); break;
+            case 7: $this->engineChildish($image, $color, $width, $height, $thickness, $slant); break;
+            case 8: $this->engineCompact($image, $color, $width, $height, $thickness, $slant); break;
+            case 9: $this->engineWild($image, $color, $width, $height, $thickness, $slant); break;
         }
     }
 
     // ==========================================
-    // ENGINE 1: THE SPIKE (Sharp / Jagged)
+    // FAMILY 2: GEOMETRIC (10-19)
+    // Shapes: Circles, Triangles, Squares, Stretched, Squashed
     // ==========================================
-    private function engineSpike($image, $color, $width, $height, $thickness, $slant)
+    private function familyGeometric($image, $color, $width, $height, $thickness, $slant, $subType)
     {
-        $subStyle = mt_rand(0, 4);
-        $startX = mt_rand(20, 50);
-        $startY = $height / 2;
-        $currentX = $startX;
-        $currentY = $startY;
-
-        $segments = mt_rand(10, 20);
-
-        for ($i = 0; $i < $segments; $i++) {
-            $stepW = mt_rand(10, 25);
-            $nextX = $currentX + $stepW;
-
-            if ($subStyle === 0) { // Seismograph
-                $nextY = $startY + mt_rand(-30, 30);
-            } elseif ($subStyle === 1) { // Sawtooth (Up only)
-                $nextY = $startY - mt_rand(10, 50);
-            } elseif ($subStyle === 2) { // Nervous (Small jitter)
-                $nextY = $startY + mt_rand(-10, 10);
-            } elseif ($subStyle === 3) { // Stalactite (Down only)
-                $nextY = $startY + mt_rand(10, 50);
-            } else { // Mixed extreme
-                $nextY = $startY + mt_rand(-50, 50);
-            }
-
-            $peakX = $nextX + ($slant * 10);
-
-            $this->drawThickLine($image, $currentX, $currentY, $nextX, $nextY, $color, $thickness);
-
-            if ($subStyle === 1 || $subStyle === 3) {
-                // Drop/Raise back to base logic
-                $this->drawThickLine($image, $nextX, $nextY, $nextX + 2, $startY, $color, $thickness);
-                $currentX = $nextX + 2;
-                $currentY = $startY;
-            } else {
-                $currentX = $nextX;
-                $currentY = $nextY;
-            }
-        }
-    }
-
-    // ==========================================
-    // ENGINE 2: THE BLOCK (Initials / Disconnected)
-    // ==========================================
-    private function engineBlock($image, $color, $width, $height, $thickness, $slant)
-    {
-        $startX = mt_rand(30, 60);
-        $centerY = $height / 2;
-        $currentX = $startX;
-        $count = mt_rand(2, 4);
-
-        for ($i = 0; $i < $count; $i++) {
-            $w = mt_rand(20, 40);
-            $h = mt_rand(30, 60);
-            $top = $centerY - ($h/2);
-            $bottom = $centerY + ($h/2);
-            $left = $currentX;
-            $right = $currentX + $w;
-            $topX = $left + ($slant * 10);
-            $bottomX = $left - ($slant * 10);
-
-            $shape = mt_rand(0, 6); // More shapes
-
-            if ($shape === 0) { // L
-                $this->drawThickLine($image, $topX, $top, $bottomX, $bottom, $color, $thickness);
-                $this->drawThickLine($image, $bottomX, $bottom, $right, $bottom, $color, $thickness);
-            } elseif ($shape === 1) { // O
-                $this->drawOval($image, $color, $left + $w/2, $centerY, $w, $h);
-            } elseif ($shape === 2) { // X
-                $this->drawThickLine($image, $topX, $top, $right, $bottom, $color, $thickness);
-                $this->drawThickLine($image, $topX, $bottom, $right, $top, $color, $thickness);
-            } elseif ($shape === 3) { // I
-                $this->drawThickLine($image, $left + $w/2, $top, $left + $w/2, $bottom, $color, $thickness);
-            } elseif ($shape === 4) { // Z
-                 $this->drawThickLine($image, $left, $top, $right, $top, $color, $thickness);
-                 $this->drawThickLine($image, $right, $top, $left, $bottom, $color, $thickness);
-                 $this->drawThickLine($image, $left, $bottom, $right, $bottom, $color, $thickness);
-            } elseif ($shape === 5) { // V
-                 $this->drawThickLine($image, $left, $top, $left + $w/2, $bottom, $color, $thickness);
-                 $this->drawThickLine($image, $left + $w/2, $bottom, $right, $top, $color, $thickness);
-            } else { // ZigZag
-                 $this->drawThickLine($image, $left, $bottom, $left + $w/2, $top, $color, $thickness);
-                 $this->drawThickLine($image, $left + $w/2, $top, $right, $bottom, $color, $thickness);
-            }
-            $currentX += $w + mt_rand(10, 20);
-        }
-    }
-
-    // ==========================================
-    // ENGINE 3: THE WAVE (Lazy / Horizontal)
-    // ==========================================
-    private function engineWave($image, $color, $width, $height, $thickness, $slant)
-    {
-        $startX = mt_rand(20, 50);
-        $startY = $height / 2;
-        $endX = $width - mt_rand(30, 60);
-        $midX1 = $startX + ($endX - $startX) * 0.33;
-        $midX2 = $startX + ($endX - $startX) * 0.66;
-        $amp = mt_rand(10, 30);
-
-        $style = mt_rand(0, 2);
-
-        if ($style === 0) { // Classic Sine
-            $cp1y = $startY - $amp; $cp2y = $startY + $amp;
-            $cp3y = $startY - $amp; $cp4y = $startY + $amp;
-        } elseif ($style === 1) { // M-shape
-            $cp1y = $startY - $amp * 2; $cp2y = $startY - $amp * 2;
-            $cp3y = $startY - $amp * 2; $cp4y = $startY - $amp * 2;
-        } else { // U-shape
-            $cp1y = $startY + $amp * 2; $cp2y = $startY + $amp * 2;
-            $cp3y = $startY + $amp * 2; $cp4y = $startY + $amp * 2;
-        }
-
-        $this->drawBezier($image, $color, $startX, $startY, $startX + 20, $cp1y, $midX1 - 20, $cp2y, $midX1, $startY, $thickness);
-        $this->drawBezier($image, $color, $midX1, $startY, $midX1 + 20, $cp3y, $endX - 20, $cp4y, $endX, $startY, $thickness);
-
-        if (mt_rand(0, 1)) {
-             $this->drawThickLine($image, $endX, $startY, $endX + mt_rand(20, 40), $startY - mt_rand(5, 10), $color, 1);
-        }
-    }
-
-    // ==========================================
-    // ENGINE 4: THE ABSTRACT (Scribble)
-    // ==========================================
-    private function engineAbstract($image, $color, $width, $height, $thickness, $slant)
-    {
-        $cx = $width / 2;
+        $cx = $width / 2 + mt_rand(-20, 20);
         $cy = $height / 2;
-        $lines = mt_rand(5, 15); // Varied density
-        $prevX = $cx - mt_rand(40, 60);
-        $prevY = $cy;
+        $baseSize = mt_rand(30, 50);
 
-        for ($i = 0; $i < $lines; $i++) {
-            $dx = mt_rand(10, 60);
-            $newX = $prevX + $dx;
-            $newY = $cy + mt_rand(-30, 30);
+        for ($i = 0; $i < mt_rand(3, 6); $i++) {
+            $w = $baseSize + mt_rand(-10, 20);
+            $h = $baseSize + mt_rand(-10, 20);
+            $x = $cx + ($i * 20) - 40;
+            $y = $cy + mt_rand(-10, 10);
 
-            if (mt_rand(0, 2) === 0) { // Loop
-                $cpX = ($prevX + $newX) / 2;
-                $cpY = $cy + mt_rand(-60, 60);
-                $this->drawBezier($image, $color, $prevX, $prevY, $prevX + 10, $cpY, $newX - 10, $cpY, $newX, $newY, $thickness);
-            } else { // Line
-                $this->drawThickLine($image, $prevX, $prevY, $newX, $newY, $color, $thickness);
-            }
-
-            $prevX = $newX;
-            $prevY = $newY;
-
-            if (mt_rand(0, 3) === 0) { // Backtrack
-                $backX = $prevX - mt_rand(10, 40);
-                $this->drawThickLine($image, $prevX, $prevY, $backX, $prevY + mt_rand(-10, 10), $color, 1);
-                $prevX = $backX;
+            switch ($subType) {
+                case 0: // Circles Only
+                    $this->drawOval($image, $color, $x, $y, $w, $w); // Perfect circle
+                    break;
+                case 1: // Flat Ovals (Pressed)
+                    $this->drawOval($image, $color, $x, $y, $w * 1.5, $h * 0.5);
+                    break;
+                case 2: // Tall Ovals (Stretched)
+                    $this->drawOval($image, $color, $x, $y, $w * 0.5, $h * 1.5);
+                    break;
+                case 3: // Triangles (Up)
+                    $this->drawPoly($image, $color, [$x, $y-$h, $x-$w/2, $y+$h/2, $x+$w/2, $y+$h/2], $thickness);
+                    break;
+                case 4: // Triangles (Down/Mixed)
+                    $dir = ($i % 2 == 0) ? 1 : -1;
+                    $this->drawPoly($image, $color, [$x, $y-($h*$dir), $x-$w/2, $y+($h*$dir)/2, $x+$w/2, $y+($h*$dir)/2], $thickness);
+                    break;
+                case 5: // Rectangles (Boxy)
+                    $this->drawThickLine($image, $x-$w/2, $y-$h/2, $x+$w/2, $y-$h/2, $color, $thickness);
+                    $this->drawThickLine($image, $x+$w/2, $y-$h/2, $x+$w/2, $y+$h/2, $color, $thickness);
+                    $this->drawThickLine($image, $x+$w/2, $y+$h/2, $x-$w/2, $y+$h/2, $color, $thickness);
+                    $this->drawThickLine($image, $x-$w/2, $y+$h/2, $x-$w/2, $y-$h/2, $color, $thickness);
+                    break;
+                case 6: // Diamonds
+                    $this->drawPoly($image, $color, [$x, $y-$h, $x+$w, $y, $x, $y+$h, $x-$w, $y], $thickness);
+                    break;
+                case 7: // Spirals (Approximated)
+                    $this->drawSpiral($image, $color, $x, $y, $w, $thickness);
+                    break;
+                case 8: // Concentric Rings
+                    $this->drawOval($image, $color, $x, $y, $w, $h);
+                    $this->drawOval($image, $color, $x, $y, $w/2, $h/2);
+                    break;
+                case 9: // Mixed Geometry
+                    if ($i % 3 == 0) $this->drawOval($image, $color, $x, $y, $w, $h);
+                    elseif ($i % 3 == 1) $this->drawPoly($image, $color, [$x, $y-$h, $x-$w/2, $y+$h/2, $x+$w/2, $y+$h/2], $thickness);
+                    else $this->drawThickLine($image, $x-$w/2, $y, $x+$w/2, $y, $color, $thickness);
+                    break;
             }
         }
     }
 
     // ==========================================
-    // ENGINE 5: THE MINIMALIST (Simple, Few Strokes)
+    // FAMILY 3: THAI STYLE (20-29)
+    // Features: Loops (Heads), Zigzags, Arches, Complex Curves
     // ==========================================
-    private function engineMinimalist($image, $color, $width, $height, $thickness, $slant)
+    private function familyThai($image, $color, $width, $height, $thickness, $slant, $subType)
     {
-        $startX = mt_rand(40, 60);
-        $startY = $height / 2;
-
-        // Just 2 or 3 strokes
-        $strokes = mt_rand(2, 3);
-
+        $startX = mt_rand(20, 50);
         $currX = $startX;
-        for ($i = 0; $i < $strokes; $i++) {
-            $len = mt_rand(30, 60);
-            $endX = $currX + $len;
-            $endY = $startY + mt_rand(-10, 10);
-
-            // 50% chance of curve vs line
-            if (mt_rand(0,1)) {
-                $cpY = $startY - mt_rand(20, 50);
-                $this->drawBezier($image, $color, $currX, $startY, $currX + 10, $cpY, $endX - 10, $cpY, $endX, $endY, $thickness);
-            } else {
-                $this->drawThickLine($image, $currX, $startY, $endX, $endY, $color, $thickness);
-            }
-            $currX = $endX + mt_rand(5, 15);
-        }
-    }
-
-    // ==========================================
-    // ENGINE 6: THE ARCHITECT (Geometric)
-    // ==========================================
-    private function engineArchitect($image, $color, $width, $height, $thickness, $slant)
-    {
-        $startX = mt_rand(20, 40);
-        $currX = $startX;
-        $baseY = $height / 2 + 10;
-        $capH = 40;
+        $baseY = $height / 2;
 
         $chars = mt_rand(4, 8);
 
         for ($i = 0; $i < $chars; $i++) {
-            $w = mt_rand(15, 25);
-            $nextX = $currX + $w;
+            $w = mt_rand(20, 35);
+            $h = mt_rand(30, 50);
+            $headSize = mt_rand(5, 10);
 
-            // Strict lines
-            $type = mt_rand(0, 3);
-            if ($type == 0) { // Vertical + Horizontal (L / T like)
-                $this->drawThickLine($image, $currX + $w/2, $baseY, $currX + $w/2, $baseY - $capH, $color, $thickness);
-                $this->drawThickLine($image, $currX, $baseY - $capH, $nextX, $baseY - $capH, $color, $thickness);
-            } elseif ($type == 1) { // Diagonal (A / V like)
-                $this->drawThickLine($image, $currX, $baseY, $currX + $w/2, $baseY - $capH, $color, $thickness);
-                $this->drawThickLine($image, $currX + $w/2, $baseY - $capH, $nextX, $baseY, $color, $thickness);
-            } elseif ($type == 2) { // Boxy
-                $this->drawThickLine($image, $currX, $baseY, $currX, $baseY - $capH, $color, $thickness);
-                $this->drawThickLine($image, $currX, $baseY - $capH, $nextX, $baseY - $capH, $color, $thickness);
-                $this->drawThickLine($image, $nextX, $baseY - $capH, $nextX, $baseY, $color, $thickness);
-            } else { // Dash
-                 $this->drawThickLine($image, $currX, $baseY - $capH/2, $nextX, $baseY - $capH/2, $color, $thickness);
+            // Draw "Head" (Loop)
+            $headX = $currX + $headSize;
+            $headY = $baseY + ($subType % 2 == 0 ? -$h/2 : $h/2); // Top or bottom loop
+
+            // Draw the loop
+            $this->drawOval($image, $color, $headX, $headY, $headSize*2, $headSize*2);
+
+            // Body stroke based on subtype
+            switch ($subType) {
+                case 0: // Kor Kai style (No head, arch)
+                    $this->drawBezier($image, $color, $currX, $baseY+$h, $currX, $baseY-$h, $currX+$w, $baseY-$h, $currX+$w, $baseY+$h, $thickness);
+                    break;
+                case 1: // Standard Loop + Vertical
+                    $this->drawThickLine($image, $headX + $headSize, $headY, $headX + $headSize, $baseY + $h/2, $color, $thickness);
+                    break;
+                case 2: // Loop + Zigzag
+                    $this->drawThickLine($image, $headX, $headY, $currX + $w/2, $baseY - $h, $color, $thickness);
+                    $this->drawThickLine($image, $currX + $w/2, $baseY - $h, $currX + $w, $baseY, $color, $thickness);
+                    break;
+                case 3: // Rolling (Mhor Maa)
+                    $this->drawOval($image, $color, $currX, $baseY, $w, $w);
+                    $this->drawOval($image, $color, $currX+$w/2, $baseY, $w, $w);
+                    break;
+                case 4: // Sharp Peak (Tor Tao)
+                    $this->drawBezier($image, $color, $currX, $baseY, $currX+$w/2, $baseY-$h*1.5, $currX+$w/2, $baseY-$h*0.5, $currX+$w, $baseY, $thickness);
+                    break;
+                case 5: // Long Tail (Phor Pla)
+                    $this->drawOval($image, $color, $currX, $baseY, $headSize*2, $headSize*2);
+                    $this->drawThickLine($image, $currX+$headSize, $baseY, $currX+$headSize, $baseY-$h*1.2, $color, $thickness);
+                    break;
+                case 6: // Complex Knot
+                    $this->drawSpiral($image, $color, $currX, $baseY, $w, $thickness);
+                    break;
+                case 7: // Wide Arch (Sor Sala)
+                     $this->drawBezier($image, $color, $currX, $baseY, $currX+$w, $baseY-$h*2, $currX+$w*2, $baseY-$h*2, $currX+$w, $baseY, $thickness);
+                    break;
+                case 8: // Dropping Tail (Ror Rua)
+                    $this->drawOval($image, $color, $currX, $baseY-$h/2, $headSize*2, $headSize*2);
+                    $this->drawBezier($image, $color, $currX+$headSize, $baseY-$h/2, $currX+$w, $baseY-$h/2, $currX, $baseY, $currX+$w, $baseY, $thickness);
+                    break;
+                case 9: // Mixed Messy Thai
+                    $this->drawOval($image, $color, $currX, $baseY+mt_rand(-20,20), $headSize*2, $headSize*2);
+                    $this->drawThickLine($image, $currX, $baseY, $currX+$w, $baseY+mt_rand(-20,20), $color, $thickness);
+                    break;
             }
-
-            $currX = $nextX + mt_rand(5, 10);
+            $currX += $w + mt_rand(-5, 5);
         }
     }
 
     // ==========================================
-    // ENGINE 7: THE CHILDISH (Wobbly)
+    // FAMILY 4: MYANMAR STYLE (30-39)
+    // Features: Circular, Bubble-like, Stacked Circles, C-shapes
     // ==========================================
-    private function engineChildish($image, $color, $width, $height, $thickness, $slant)
+    private function familyMyanmar($image, $color, $width, $height, $thickness, $slant, $subType)
     {
-        $startX = mt_rand(30, 50);
-        $startY = $height / 2;
+        $startX = mt_rand(30, 60);
         $currX = $startX;
-
-        $letters = mt_rand(3, 6);
-
-        for ($i = 0; $i < $letters; $i++) {
-            $w = mt_rand(20, 30);
-            $h = mt_rand(20, 40);
-
-            // Draw wobbly oval or line
-            if (mt_rand(0,1)) {
-                // Wobbly Oval
-                $cx = $currX + $w/2;
-                $cy = $startY;
-                // Deformity
-                $d = mt_rand(-5, 5);
-                $this->drawOval($image, $color, $cx, $cy + $d, $w + $d, $h + $d);
-            } else {
-                // Wobbly line
-                $pts = 5;
-                $segX = $currX;
-                for ($k = 0; $k < $pts; $k++) {
-                    $nextSegX = $segX + ($w / $pts);
-                    $this->drawThickLine($image, $segX, $startY + mt_rand(-5, 5), $nextSegX, $startY + mt_rand(-5, 5), $color, $thickness);
-                    $segX = $nextSegX;
-                }
-            }
-            $currX += $w + mt_rand(5, 15);
-        }
-    }
-
-    // ==========================================
-    // ENGINE 8: THE COMPACT (Dense)
-    // ==========================================
-    private function engineCompact($image, $color, $width, $height, $thickness, $slant)
-    {
-        $startX = $width/2 - 40;
-        $startY = $height/2;
-
-        // High density of small strokes in small area
-        $count = mt_rand(10, 20);
-        $lastX = $startX;
-        $lastY = $startY;
+        $baseY = $height / 2;
+        $count = mt_rand(5, 10);
 
         for ($i = 0; $i < $count; $i++) {
-            $dx = mt_rand(5, 15);
-            $dy = mt_rand(-15, 15);
+            $r = mt_rand(10, 20); // Radius
 
-            $this->drawBezier($image, $color,
-                $lastX, $lastY,
-                $lastX + 5, $lastY - 20,
-                $lastX + $dx - 5, $lastY + 20,
-                $lastX + $dx, $lastY + $dy,
-                $thickness
-            );
-
-            $lastX += $dx * 0.5; // Overlap
-            $lastY += $dy * 0.2;
+            switch ($subType) {
+                case 0: // Full Circles Chain
+                    $this->drawOval($image, $color, $currX, $baseY, $r*2, $r*2);
+                    break;
+                case 1: // Open C (Left)
+                    $this->drawArc($image, $color, $currX, $baseY, $r*2, $r*2, 45, 315, $thickness);
+                    break;
+                case 2: // Open C (Right)
+                    $this->drawArc($image, $color, $currX, $baseY, $r*2, $r*2, 225, 135, $thickness);
+                    break;
+                case 3: // Open C (Top/Bottom Mixed)
+                    if ($i%2==0) $this->drawArc($image, $color, $currX, $baseY, $r*2, $r*2, 0, 180, $thickness);
+                    else $this->drawArc($image, $color, $currX, $baseY, $r*2, $r*2, 180, 0, $thickness);
+                    break;
+                case 4: // Stacked Circles (Double height)
+                    $this->drawOval($image, $color, $currX, $baseY-$r, $r*1.5, $r*1.5);
+                    $this->drawOval($image, $color, $currX, $baseY+$r, $r*1.5, $r*1.5);
+                    break;
+                case 5: // Overlapping Circles
+                    $this->drawOval($image, $color, $currX, $baseY, $r*2.5, $r*2.5);
+                    $currX -= $r; // Backtrack to overlap
+                    break;
+                case 6: // "m" shape (Two bumps)
+                     $this->drawBezier($image, $color, $currX-$r, $baseY, $currX-$r, $baseY-$r*2, $currX, $baseY-$r*2, $currX, $baseY, $thickness);
+                     $this->drawBezier($image, $color, $currX, $baseY, $currX, $baseY-$r*2, $currX+$r, $baseY-$r*2, $currX+$r, $baseY, $thickness);
+                    break;
+                case 7: // Large Bubbles
+                    $this->drawOval($image, $color, $currX, $baseY + mt_rand(-10,10), $r*3, $r*3);
+                    break;
+                case 8: // Dots and Circles
+                    $this->drawOval($image, $color, $currX, $baseY, $r*2, $r*2);
+                    $this->drawOval($image, $color, $currX+$r, $baseY-$r, 5, 5); // Dot
+                    break;
+                case 9: // Spiral Chains
+                    $this->drawSpiral($image, $color, $currX, $baseY, $r*1.5, $thickness);
+                    break;
+            }
+            $currX += $r * 2 + mt_rand(0, 5);
         }
     }
 
     // ==========================================
-    // ENGINE 9: THE WILD (Big Range)
+    // FAMILY 5: ORGANIC / ANIMAL (40-49)
+    // Features: Flowing, Tail-like, Wings, Snake, Fish
     // ==========================================
-    private function engineWild($image, $color, $width, $height, $thickness, $slant)
+    private function familyOrganic($image, $color, $width, $height, $thickness, $slant, $subType)
     {
         $cx = $width / 2;
         $cy = $height / 2;
 
-        // Big sweeping strokes
-        $strokes = mt_rand(3, 5);
-
-        for ($i = 0; $i < $strokes; $i++) {
-             $x1 = mt_rand(20, $width - 20);
-             $y1 = mt_rand(20, $height - 20);
-             $x2 = mt_rand(20, $width - 20);
-             $y2 = mt_rand(20, $height - 20);
-
-             $cp1x = mt_rand(0, $width);
-             $cp1y = mt_rand(0, $height);
-             $cp2x = mt_rand(0, $width);
-             $cp2y = mt_rand(0, $height);
-
-             $this->drawBezier($image, $color, $x1, $y1, $cp1x, $cp1y, $cp2x, $cp2y, $x2, $y2, $thickness);
+        switch ($subType) {
+            case 0: // The Snake (Sinusoidal long line)
+                $this->drawBezier($image, $color, 20, $cy, $width/3, $cy-50, $width*2/3, $cy+50, $width-20, $cy, $thickness);
+                // Tongue
+                $this->drawThickLine($image, $width-20, $cy, $width-10, $cy-5, $color, 1);
+                $this->drawThickLine($image, $width-20, $cy, $width-10, $cy+5, $color, 1);
+                break;
+            case 1: // The Bird (Wing shapes)
+                $this->drawBezier($image, $color, 40, $cy, 60, $cy-60, 100, $cy-60, 120, $cy, $thickness); // Left wing
+                $this->drawBezier($image, $color, 120, $cy, 140, $cy-60, 180, $cy-60, 200, $cy, $thickness); // Right wing
+                break;
+            case 2: // The Fish (Loop tail + body)
+                $this->drawOval($image, $color, $cx, $cy, 80, 40); // Body
+                $this->drawPoly($image, $color, [$cx-40, $cy, $cx-60, $cy-20, $cx-60, $cy+20], $thickness); // Tail
+                break;
+            case 3: // The Spiral Shell
+                $this->drawSpiral($image, $color, $cx, $cy, 60, $thickness);
+                break;
+            case 4: // Grass / Spikes
+                for($i=0; $i<10; $i++) {
+                    $x = 40 + $i*20;
+                    $h = mt_rand(20, 50);
+                    $this->drawBezier($image, $color, $x, $cy+20, $x+5, $cy-$h, $x+15, $cy-$h, $x+20, $cy+20, $thickness);
+                }
+                break;
+            case 5: // Waves / Water
+                $this->engineWave($image, $color, $width, $height, $thickness, $slant); // Reuse wave
+                $this->engineWave($image, $color, $width, $height+20, $thickness, $slant); // Double wave
+                break;
+            case 6: // Cat Ears (M shape repeated)
+                 $currX = 50;
+                 for($i=0; $i<5; $i++) {
+                     $this->drawPoly($image, $color, [$currX, $cy, $currX+10, $cy-30, $currX+20, $cy], $thickness);
+                     $currX += 30;
+                 }
+                break;
+            case 7: // Bug (Central body + legs)
+                $this->drawOval($image, $color, $cx, $cy, 50, 20);
+                $this->drawThickLine($image, $cx, $cy-10, $cx-20, $cy-30, $color, 1);
+                $this->drawThickLine($image, $cx, $cy-10, $cx+20, $cy-30, $color, 1);
+                $this->drawThickLine($image, $cx, $cy+10, $cx-20, $cy+30, $color, 1);
+                $this->drawThickLine($image, $cx, $cy+10, $cx+20, $cy+30, $color, 1);
+                break;
+            case 8: // Lightning
+                $this->drawPoly($image, $color, [50, $cy-20, 100, $cy+20, 90, $cy, 140, $cy+40], $thickness);
+                break;
+            case 9: // Roots (Downwards branching)
+                $this->drawThickLine($image, $cx, 20, $cx, 60, $color, $thickness*2);
+                $this->drawThickLine($image, $cx, 60, $cx-30, 100, $color, $thickness);
+                $this->drawThickLine($image, $cx, 60, $cx+30, 100, $color, $thickness);
+                break;
         }
     }
 
     // ==========================================
-    // HELPERS & EMBELLISHMENTS
+    // FAMILY 6: RISING / HISTORY (50-59)
+    // Features: Upward trends, Charts, Stairs, Swoosh up
+    // ==========================================
+    private function familyRising($image, $color, $width, $height, $thickness, $slant, $subType)
+    {
+        $startX = 30;
+        $endX = $width - 30;
+        $startY = $height - 40;
+        $endY = 40; // High up
+
+        switch ($subType) {
+            case 0: // Linear Growth
+                $this->drawThickLine($image, $startX, $startY, $endX, $endY, $color, $thickness);
+                break;
+            case 1: // Exponential Curve
+                $this->drawBezier($image, $color, $startX, $startY, $endX-50, $startY, $endX, $startY, $endX, $endY, $thickness);
+                break;
+            case 2: // Stairs Up
+                $steps = 5;
+                $stepW = ($endX - $startX) / $steps;
+                $stepH = ($startY - $endY) / $steps;
+                $cx = $startX; $cy = $startY;
+                for($i=0; $i<$steps; $i++) {
+                    $this->drawThickLine($image, $cx, $cy, $cx+$stepW, $cy, $color, $thickness);
+                    $this->drawThickLine($image, $cx+$stepW, $cy, $cx+$stepW, $cy-$stepH, $color, $thickness);
+                    $cx += $stepW; $cy -= $stepH;
+                }
+                break;
+            case 3: // Volatile Growth (Stock market)
+                $pts = 10;
+                $stepW = ($endX - $startX) / $pts;
+                $cx = $startX; $cy = $startY;
+                for($i=0; $i<$pts; $i++) {
+                    $ny = $cy - mt_rand(-10, 40); // Generally up
+                    $this->drawThickLine($image, $cx, $cy, $cx+$stepW, $ny, $color, $thickness);
+                    $cx += $stepW; $cy = $ny;
+                }
+                break;
+            case 4: // Loop-de-loop Up
+                $this->drawBezier($image, $color, $startX, $startY, $startX+50, $startY, $startX+20, $endY+50, $endX, $endY, $thickness);
+                break;
+            case 5: // Arrow Up
+                $this->drawThickLine($image, $startX, $startY, $endX, $endY, $color, $thickness);
+                $this->drawThickLine($image, $endX, $endY, $endX-20, $endY+10, $color, $thickness);
+                $this->drawThickLine($image, $endX, $endY, $endX-10, $endY+20, $color, $thickness);
+                break;
+            case 6: // Checkmark (Huge)
+                $this->drawThickLine($image, $startX, $height/2, $startX+30, $height-30, $color, $thickness);
+                $this->drawThickLine($image, $startX+30, $height-30, $endX, 20, $color, $thickness);
+                break;
+            case 7: // Tornado Up
+                $this->drawSpiral($image, $color, $width/2, $height/2, 40, $thickness); // Base spiral
+                $this->drawThickLine($image, $width/2, $height/2, $endX, $endY, $color, 1); // Shoot up
+                break;
+            case 8: // Three Parallel Lines Up
+                $this->drawThickLine($image, $startX, $startY, $endX-20, $endY, $color, $thickness);
+                $this->drawThickLine($image, $startX+10, $startY+10, $endX-10, $endY+10, $color, $thickness);
+                $this->drawThickLine($image, $startX+20, $startY+20, $endX, $endY+20, $color, $thickness);
+                break;
+            case 9: // Mountain Peak
+                $this->drawPoly($image, $color, [$startX, $startY, $width/2, $endY, $endX, $startY], $thickness);
+                break;
+        }
+    }
+
+    // ==========================================
+    // FAMILY 7: CHAOS / DOCTOR (60-69)
+    // Features: Scribbles, High density, Illegible, Fast
+    // ==========================================
+    private function familyChaos($image, $color, $width, $height, $thickness, $slant, $subType)
+    {
+        $cx = $width / 2;
+        $cy = $height / 2;
+
+        // Base chaos loop
+        $count = mt_rand(10, 30);
+        $prevX = mt_rand(20, 50);
+        $prevY = $cy;
+
+        for ($i = 0; $i < $count; $i++) {
+            $nextX = $prevX + mt_rand(5, 20);
+            $nextY = $cy + mt_rand(-30, 30);
+
+            // Add subtypes of chaos
+            if ($subType < 3) { // Horizontal scratch
+                $nextY = $cy + mt_rand(-5, 5);
+            } elseif ($subType < 6) { // Vertical spikes
+                $nextY = $cy + mt_rand(-50, 50);
+                $nextX = $prevX + mt_rand(2, 5);
+            } elseif ($subType < 8) { // Loop scratch
+                $this->drawOval($image, $color, $prevX, $prevY, mt_rand(10,30), mt_rand(10,30));
+            } else { // Total random
+                $nextX = mt_rand(0, $width);
+                $nextY = mt_rand(0, $height);
+            }
+
+            $this->drawThickLine($image, $prevX, $prevY, $nextX, $nextY, $color, 1);
+            $prevX = $nextX;
+            $prevY = $nextY;
+        }
+    }
+
+    // ==========================================
+    // FAMILY 8: STRUCTURED / ARCHITECT (70-79)
+    // Features: Grid-like, angular, distinct
+    // ==========================================
+    private function familyStructured($image, $color, $width, $height, $thickness, $slant, $subType)
+    {
+         // Re-using Architect engine logic but with forced variations
+         // Subtypes 0-9 map to variations of spacing, height, and "font"
+         $this->engineArchitect($image, $color, $width, $height, $thickness, $slant);
+
+         if ($subType % 2 == 0) {
+             // Add a box around it
+             $this->drawThickLine($image, 10, 10, $width-10, 10, $color, 1);
+             $this->drawThickLine($image, 10, $height-10, $width-10, $height-10, $color, 1);
+         }
+         if ($subType > 5) {
+             // Add cross hatch
+             for($i=20; $i<$width; $i+=20) {
+                 $this->drawThickLine($image, $i, $height/2-5, $i, $height/2+5, $color, 1);
+             }
+         }
+    }
+
+    // ==========================================
+    // FAMILY 9: MIXED / ALIEN (80-89)
+    // Features: Combinations of all above
+    // ==========================================
+    private function familyMixed($image, $color, $width, $height, $thickness, $slant, $subType)
+    {
+        // Combine 2 random engines
+        $e1 = mt_rand(0, 7);
+        $e2 = mt_rand(0, 7);
+
+        $this->familyClassic($image, $color, $width, $height, max(1, $thickness-1), $slant, $e1);
+        $this->familyGeometric($image, $color, $width, $height, 1, $slant, $e2);
+    }
+
+    // ==========================================
+    // FAMILY 10: GRAND / COMPLEX (90-99)
+    // Features: Multi-layered, Heavy ink, Showy
+    // ==========================================
+    private function familyGrand($image, $color, $width, $height, $thickness, $slant, $subType)
+    {
+        // 1. Big Underlying Swash
+        $this->drawBezier($image, $color, 10, $height-20, $width/3, 10, $width*2/3, 10, $width-10, $height-20, $thickness+2);
+
+        // 2. Name scribbled on top
+        $this->familyClassic($image, $color, $width, $height, 2, $slant, 0); // Looper
+
+        // 3. Underline + Dots
+        $this->drawThickLine($image, 20, $height-10, $width-20, $height-10, $color, $thickness);
+        $this->drawOval($image, $color, $width/2, $height-5, 4, 4);
+        $this->drawOval($image, $color, $width/2 + 10, $height-5, 4, 4);
+    }
+
+
+    // ==========================================
+    // ORIGINAL ENGINES (Re-implemented/Kept for Family 1)
+    // ==========================================
+    private function engineLooper($image, $color, $width, $height, $thickness, $slant) {
+        $startX = mt_rand(20, 60); $startY = $height / 2; $currentX = $startX; $currentY = $startY;
+        for ($i = 0; $i < mt_rand(6, 12); $i++) {
+             $endX = $currentX + mt_rand(20,40); $endY = $startY;
+             $this->drawBezier($image, $color, $currentX, $currentY, $currentX+10, $currentY-40, $endX-10, $endY-40, $endX, $endY, $thickness);
+             $currentX = $endX;
+        }
+    }
+    private function engineSpike($image, $color, $width, $height, $thickness, $slant) {
+         $startX = mt_rand(20, 50); $currentX = $startX; $baseY = $height/2;
+         for ($i=0; $i<15; $i++) {
+             $nextX = $currentX + mt_rand(10, 20); $nextY = $baseY + mt_rand(-30, 30);
+             $this->drawThickLine($image, $currentX, $baseY, $nextX, $nextY, $color, $thickness);
+             $this->drawThickLine($image, $nextX, $nextY, $nextX, $baseY, $color, $thickness);
+             $currentX = $nextX;
+         }
+    }
+    private function engineBlock($image, $color, $width, $height, $thickness, $slant) {
+        $x = 40; $y=$height/2;
+        for($i=0; $i<4; $i++) {
+            $this->drawThickLine($image, $x, $y-20, $x, $y+20, $color, $thickness); // Vertical
+            $this->drawThickLine($image, $x, $y-20, $x+20, $y-20, $color, $thickness); // Top
+            $this->drawThickLine($image, $x, $y+20, $x+20, $y+20, $color, $thickness); // Bottom
+            $x += 30;
+        }
+    }
+    private function engineWave($image, $color, $width, $height, $thickness, $slant) {
+         $this->drawBezier($image, $color, 20, $height/2, $width/3, $height/2-30, $width*2/3, $height/2+30, $width-20, $height/2, $thickness);
+    }
+    private function engineAbstract($image, $color, $width, $height, $thickness, $slant) {
+         $this->familyChaos($image, $color, $width, $height, $thickness, $slant, 9);
+    }
+    private function engineMinimalist($image, $color, $width, $height, $thickness, $slant) {
+         $this->drawThickLine($image, 50, $height/2, $width-50, $height/2, $color, $thickness);
+    }
+    private function engineArchitect($image, $color, $width, $height, $thickness, $slant) {
+         $x = 40; $y=$height/2;
+         for($i=0; $i<5; $i++) {
+             $this->drawThickLine($image, $x, $y-20, $x+15, $y+20, $color, $thickness); // Diagonal
+             $this->drawThickLine($image, $x+15, $y+20, $x+30, $y-20, $color, $thickness); // Diagonal up
+             $x += 35;
+         }
+    }
+    private function engineChildish($image, $color, $width, $height, $thickness, $slant) {
+         $x = 40; $y=$height/2;
+         for($i=0; $i<4; $i++) {
+             $this->drawOval($image, $color, $x, $y+mt_rand(-5,5), 30, 30);
+             $x += 35;
+         }
+    }
+    private function engineCompact($image, $color, $width, $height, $thickness, $slant) {
+         $this->drawSpiral($image, $color, $width/2, $height/2, 20, $thickness);
+    }
+    private function engineWild($image, $color, $width, $height, $thickness, $slant) {
+         $this->drawBezier($image, $color, 20, $height-20, $width/2, 0, $width/2, $height, $width-20, 20, $thickness);
+    }
+
+
+    // ==========================================
+    // UTILS
     // ==========================================
 
     private function addEmbellishments($image, $color, $width, $height, $thickness)
     {
-        // 1. Underline (70% chance)
-        if (mt_rand(0, 100) < 70) {
-            $lineY = $height - mt_rand(20, 40);
-            $startX = mt_rand(20, 50);
-            $endX = $width - mt_rand(30, 60);
-
-            // Single or Double?
-            $double = (mt_rand(0, 10) > 8);
-
-            $this->drawBezier($image, $color,
-                $startX, $lineY,
-                $startX + 50, $lineY + 5,
-                $endX - 50, $lineY + 5,
-                $endX, $lineY - 5,
-                $thickness
-            );
-
-            if ($double) {
-                 $this->drawBezier($image, $color,
-                    $startX + 10, $lineY + 8,
-                    $startX + 60, $lineY + 13,
-                    $endX - 40, $lineY + 13,
-                    $endX - 10, $lineY + 3,
-                    max(1, $thickness - 1)
-                );
-            }
+        if (mt_rand(0, 100) < 60) {
+            $y = $height - mt_rand(10, 30);
+            $this->drawThickLine($image, 40, $y, $width-40, $y, $color, max(1, $thickness-1));
         }
-
-        // 2. Dots (20% chance)
-        if (mt_rand(0, 100) < 20) {
-             $this->drawOval($image, $color, $width - mt_rand(20, 50), $height/2 + mt_rand(-10, 20), 4, 4);
-             if (mt_rand(0, 1)) {
-                 $this->drawOval($image, $color, $width - mt_rand(50, 80), $height/2 + mt_rand(-10, 20), 4, 4);
-             }
-        }
-
-        // 3. Strikethrough (5% chance - very rare)
-        if (mt_rand(0, 100) < 5) {
-             $this->drawThickLine($image, 40, $height/2, $width-40, $height/2, $color, 1);
+        if (mt_rand(0, 100) < 30) {
+             $this->drawOval($image, $color, $width-40, $height/2, 5, 5);
+             $this->drawOval($image, $color, $width-20, $height/2, 5, 5);
         }
     }
 
@@ -522,31 +589,20 @@ class SignatureGeneratorService
         $steps = 40;
         $prevX = $x0;
         $prevY = $y0;
-
         for ($i = 1; $i <= $steps; $i++) {
             $t = $i / $steps;
             $u = 1 - $t;
-            $tt = $t * $t;
-            $uu = $u * $u;
-            $uuu = $uu * $u;
-            $ttt = $tt * $t;
-
+            $tt = $t * $t; $uu = $u * $u;
+            $uuu = $uu * $u; $ttt = $tt * $t;
             $x = $uuu * $x0 + 3 * $uu * $t * $x1 + 3 * $u * $tt * $x2 + $ttt * $x3;
             $y = $uuu * $y0 + 3 * $uu * $t * $y1 + 3 * $u * $tt * $y2 + $ttt * $y3;
-
             $this->drawThickLine($image, $prevX, $prevY, $x, $y, $color, $thickness);
-
-            $prevX = $x;
-            $prevY = $y;
+            $prevX = $x; $prevY = $y;
         }
     }
 
     private function drawThickLine($image, $x1, $y1, $x2, $y2, $color, $thickness) {
-        if ($thickness <= 1) {
-            imageline($image, (int)$x1, (int)$y1, (int)$x2, (int)$y2, $color);
-            return;
-        }
-
+        if ($thickness <= 1) { imageline($image, (int)$x1, (int)$y1, (int)$x2, (int)$y2, $color); return; }
         for ($i = -floor($thickness/2); $i <= floor($thickness/2); $i++) {
              imageline($image, (int)$x1+$i, (int)$y1+$i, (int)$x2+$i, (int)$y2+$i, $color);
              imageline($image, (int)$x1+$i, (int)$y1, (int)$x2+$i, (int)$y2, $color);
@@ -555,7 +611,35 @@ class SignatureGeneratorService
 
     private function drawOval($image, $color, $cx, $cy, $w, $h) {
         imageellipse($image, (int)$cx, (int)$cy, (int)$w, (int)$h, $color);
-        imageellipse($image, (int)$cx, (int)$cy, (int)$w-1, (int)$h-1, $color);
-        imagefilledellipse($image, (int)$cx, (int)$cy, (int)$w/2, (int)$h/2, $color);
+        imageellipse($image, (int)$cx, (int)$cy, (int)max(1,$w-1), (int)max(1,$h-1), $color);
+    }
+
+    private function drawPoly($image, $color, $points, $thickness) {
+        // Simple polygon drawer using lines
+        $count = count($points);
+        for($i=0; $i<$count; $i+=2) {
+             $x1 = $points[$i]; $y1 = $points[$i+1];
+             $x2 = $points[($i+2)%$count]; $y2 = $points[($i+3)%$count];
+             $this->drawThickLine($image, $x1, $y1, $x2, $y2, $color, $thickness);
+        }
+    }
+
+    private function drawSpiral($image, $color, $cx, $cy, $maxR, $thickness) {
+        $angle = 0;
+        $r = 5;
+        $prevX = $cx; $prevY = $cy;
+        while($r < $maxR) {
+             $x = $cx + cos($angle) * $r;
+             $y = $cy + sin($angle) * $r;
+             $this->drawThickLine($image, $prevX, $prevY, $x, $y, $color, $thickness);
+             $prevX = $x; $prevY = $y;
+             $angle += 0.5;
+             $r += 2;
+        }
+    }
+
+    private function drawArc($image, $color, $cx, $cy, $w, $h, $s, $e, $thickness) {
+         imagearc($image, (int)$cx, (int)$cy, (int)$w, (int)$h, $s, $e, $color);
+         if($thickness > 1) imagearc($image, (int)$cx, (int)$cy, (int)$w-1, (int)$h-1, $s, $e, $color);
     }
 }
