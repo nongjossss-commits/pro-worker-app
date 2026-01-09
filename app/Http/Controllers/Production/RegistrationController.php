@@ -39,8 +39,13 @@ class RegistrationController extends Controller
         // We only fetch ID, Status, EmployerID to keep it fast.
         $employeeQuery = Employee::query()
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
-            ->select('id', 'employer_id', 'status') // Lightweight Select
-            ->with(['registrationSteps' => function($q) {
+            ->select('id', 'employer_id', 'status'); // Lightweight Select
+
+        if (auth()->user()->can('manage-tickets')) {
+            $employeeQuery->withoutGlobalScope('employerTenancy');
+        }
+
+        $employeeQuery->with(['registrationSteps' => function($q) {
                 $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id'); // Lightweight Relation
             }]);
 
@@ -94,6 +99,10 @@ class RegistrationController extends Controller
         // --- 3. Fetch Employers (Optimization: No 'employees' eager load) ---
         $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
             ->with(['jobOwner', 'customFields']);
+
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
 
         // Apply Server-Side Filtering to the Employer List if 'filter' param is present
         // Note: The filter logic here is slightly complex because we need to know WHICH employers have matching employees.
@@ -240,14 +249,25 @@ class RegistrationController extends Controller
     /**
      * AJAX Method to fetch employee list for an employer.
      */
-    public function fetchEmployees(Request $request, Employer $employer)
+    public function fetchEmployees(Request $request, $employerId)
     {
+        $employerQuery = Employer::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
+        $employer = $employerQuery->withTrashed()->findOrFail($employerId);
+
         $steps = RegistrationStep::registration()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         // Apply the same base status filter as the index method to ensure consistency
-        $query = $employer->employees()
-            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+        $query = $employer->employees();
+
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $query->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
             ->with(['registrationSteps', 'customFields']); // Load everything needed for the card
 
         // Apply Search (if global search is active)
@@ -750,13 +770,19 @@ class RegistrationController extends Controller
     /**
      * Update progress (Toggle a step for an employee).
      */
-    public function updateProgress(Request $request, Employee $employee)
+    public function updateProgress(Request $request, $employeeId)
     {
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
         try {
+            $employeeQuery = Employee::query();
+            if (auth()->user()->can('manage-tickets')) {
+                $employeeQuery->withoutGlobalScope('employerTenancy');
+            }
+            $employee = $employeeQuery->findOrFail($employeeId);
+
             $validated = $request->validate([
                 'step_id' => 'required|exists:registration_steps,id',
                 'completed' => 'required|boolean',
@@ -778,9 +804,10 @@ class RegistrationController extends Controller
             // Global Stats
             // Ensure no global scope issues, but handle if method doesn't exist just in case
             $allQuery = Employee::query();
-            if (method_exists($allQuery, 'withoutGlobalScopes')) {
-                $allQuery->withoutGlobalScopes()->whereNull('deleted_at');
+            if (auth()->user()->can('manage-tickets')) {
+                $allQuery->withoutGlobalScope('employerTenancy');
             }
+            $allQuery->whereNull('deleted_at');
 
             if ($request->has('search') && $request->search) {
                 $this->applySearchToQuery($allQuery, $request->search);
@@ -812,9 +839,10 @@ class RegistrationController extends Controller
 
             // Employer Stats
             $empQuery = Employee::query();
-            if (method_exists($empQuery, 'withoutGlobalScopes')) {
-                $empQuery->withoutGlobalScopes()->whereNull('deleted_at');
+            if (auth()->user()->can('manage-tickets')) {
+                $empQuery->withoutGlobalScope('employerTenancy');
             }
+            $empQuery->whereNull('deleted_at');
 
             $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
                                         ->whereIn('status', ['registration_pending', 'registration_completed'])
@@ -824,7 +852,11 @@ class RegistrationController extends Controller
                  $employer = $employee->employer;
                  // If the employee relation is not loaded or null, fetch it
                  if (!$employer) {
-                     $employer = Employer::find($employee->employer_id);
+                     $employerQuery = Employer::query();
+                     if (auth()->user()->can('manage-tickets')) {
+                         $employerQuery->withoutGlobalScope('employerTenancy');
+                     }
+                     $employer = $employerQuery->find($employee->employer_id);
                  }
                  if ($employer) {
                      $this->applyEmployerSearchToQuery($employerEmployeesQuery, $employer, $request->search);
@@ -859,7 +891,7 @@ class RegistrationController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error updating progress for employee {$employee->id}: " . $e->getMessage());
+            Log::error("Error updating progress for employee {$employeeId}: " . $e->getMessage());
             // Return JSON even on fatal error
             return response()->json([
                 'success' => false,
@@ -867,7 +899,7 @@ class RegistrationController extends Controller
             ], 500);
         } catch (\Throwable $e) { // Catch fatal errors (PHP 7+)
              DB::rollBack();
-             Log::error("Fatal Error updating progress for employee {$employee->id}: " . $e->getMessage());
+             Log::error("Fatal Error updating progress for employee {$employeeId}: " . $e->getMessage());
              return response()->json([
                  'success' => false,
                  'message' => 'Fatal Error: ' . $e->getMessage()
@@ -1116,6 +1148,9 @@ class RegistrationController extends Controller
         // --- GLOBAL STATS ---
         // Use standard query to respect any relevant scopes (like tenancy)
         $globalQuery = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $globalQuery->withoutGlobalScope('employerTenancy');
+        }
 
         if ($request && $request->has('search') && $request->search) {
             $this->applySearchToQuery($globalQuery, $request->search);
@@ -1156,10 +1191,18 @@ class RegistrationController extends Controller
 
         // --- EMPLOYER STATS (If requested) ---
         if ($employerId) {
-            $empQuery = Employee::query()->where('employer_id', $employerId);
+            $empQuery = Employee::query();
+            if (auth()->user()->can('manage-tickets')) {
+                $empQuery->withoutGlobalScope('employerTenancy');
+            }
+            $empQuery->where('employer_id', $employerId);
 
             if ($request && $request->has('search') && $request->search) {
-                 $employer = Employer::find($employerId);
+                 $employerQuery = Employer::query();
+                 if (auth()->user()->can('manage-tickets')) {
+                     $employerQuery->withoutGlobalScope('employerTenancy');
+                 }
+                 $employer = $employerQuery->find($employerId);
                  if ($employer) {
                      $this->applyEmployerSearchToQuery($empQuery, $employer, $request->search);
                  }
