@@ -92,7 +92,7 @@ class RegistrationController extends Controller
         $totalEmployers = $filteredEmployerIds->count();
 
         // --- 3. Fetch Employers (Optimization: No 'employees' eager load) ---
-        $employerQuery = Employer::whereIn('id', $filteredEmployerIds)
+        $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
             ->with(['jobOwner', 'customFields']);
 
         // Apply Server-Side Filtering to the Employer List if 'filter' param is present
