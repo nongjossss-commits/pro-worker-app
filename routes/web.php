@@ -212,7 +212,7 @@ Route::middleware(['auth'])->group(function () {
     // MOVED ABOVE 'production' resource to prevent route masking
     Route::prefix('production/registration')->name('production.registration.')->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('index');
-        Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RegistrationController::class, 'fetchEmployees'])->name('employer.employees');
+        Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RegistrationController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
         Route::get('/import', [App\Http\Controllers\Production\RegistrationController::class, 'importView'])->name('import');
         Route::get('/create', [App\Http\Controllers\Production\RegistrationController::class, 'create'])->name('create');
         Route::post('/store', [App\Http\Controllers\Production\RegistrationController::class, 'store'])->name('store');
@@ -256,7 +256,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\Production\RenewalController::class, 'create'])->name('create');
         Route::post('/store', [App\Http\Controllers\Production\RenewalController::class, 'store'])->name('store');
-        Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees');
+        Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
         Route::get('/import', [App\Http\Controllers\Production\RenewalController::class, 'importView'])->name('import');
         Route::post('/configure-expiry', [App\Http\Controllers\Production\RenewalController::class, 'configureExpiry'])->name('configure_expiry');
         Route::post('/steps/reorder', [App\Http\Controllers\Production\RenewalController::class, 'reorderSteps'])->name('steps.reorder');

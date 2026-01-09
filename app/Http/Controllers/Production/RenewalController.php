@@ -81,7 +81,7 @@ class RenewalController extends Controller
         $totalEmployers = $filteredEmployerIds->count();
 
         // --- 4. Fetch Employers ---
-        $employerQuery = Employer::whereIn('id', $filteredEmployerIds)
+        $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
             ->with(['jobOwner', 'customFields']);
 
         if ($request->has('filter') && $request->filter) {
