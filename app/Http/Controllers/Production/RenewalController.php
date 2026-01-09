@@ -34,8 +34,13 @@ class RenewalController extends Controller
         // --- 2. Global Employee Query (Lightweight) ---
         $employeeQuery = Employee::query()
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->select('id', 'employer_id', 'status')
-            ->with(['registrationSteps' => function($q) {
+            ->select('id', 'employer_id', 'status');
+
+        if (auth()->user()->can('manage-tickets')) {
+            $employeeQuery->withoutGlobalScope('employerTenancy');
+        }
+
+        $employeeQuery->with(['registrationSteps' => function($q) {
                 $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id');
             }]);
 
@@ -83,6 +88,10 @@ class RenewalController extends Controller
         // --- 4. Fetch Employers ---
         $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
             ->with(['jobOwner', 'customFields']);
+
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
 
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
@@ -205,13 +214,24 @@ class RenewalController extends Controller
     /**
      * AJAX Method to fetch employee list for an employer.
      */
-    public function fetchEmployees(Request $request, Employer $employer)
+    public function fetchEmployees(Request $request, $employerId)
     {
+        $employerQuery = Employer::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
+        $employer = $employerQuery->withTrashed()->findOrFail($employerId);
+
         $steps = RegistrationStep::renewal()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
-        $query = $employer->employees()
-            ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
+        $query = $employer->employees();
+
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $query->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
             ->with(['registrationSteps', 'customFields']);
 
         if ($request->has('search') && $request->search) {
@@ -594,13 +614,19 @@ class RenewalController extends Controller
     /**
      * Update progress (Toggle a step for an employee).
      */
-    public function updateProgress(Request $request, Employee $employee)
+    public function updateProgress(Request $request, $employeeId)
     {
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
         try {
+            $employeeQuery = Employee::query();
+            if (auth()->user()->can('manage-tickets')) {
+                $employeeQuery->withoutGlobalScope('employerTenancy');
+            }
+            $employee = $employeeQuery->findOrFail($employeeId);
+
             $validated = $request->validate([
                 'step_id' => 'required|exists:registration_steps,id',
                 'completed' => 'required|boolean',
@@ -620,9 +646,10 @@ class RenewalController extends Controller
 
             // --- Recalculate Stats for Response (Highest Step Logic) ---
             $allQuery = Employee::query();
-            if (method_exists($allQuery, 'withoutGlobalScopes')) {
-                $allQuery->withoutGlobalScopes()->whereNull('deleted_at');
+            if (auth()->user()->can('manage-tickets')) {
+                $allQuery->withoutGlobalScope('employerTenancy');
             }
+            $allQuery->whereNull('deleted_at');
 
             if ($request->has('search') && $request->search) {
                 $this->applySearchToQuery($allQuery, $request->search);
@@ -649,9 +676,10 @@ class RenewalController extends Controller
             }
 
             $empQuery = Employee::query();
-            if (method_exists($empQuery, 'withoutGlobalScopes')) {
-                $empQuery->withoutGlobalScopes()->whereNull('deleted_at');
+            if (auth()->user()->can('manage-tickets')) {
+                $empQuery->withoutGlobalScope('employerTenancy');
             }
+            $empQuery->whereNull('deleted_at');
 
             $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
                                         ->whereIn('status', ['renewal_pending', 'renewal_completed'])
@@ -659,7 +687,13 @@ class RenewalController extends Controller
 
             if ($request->has('search') && $request->search) {
                  $employer = $employee->employer;
-                 if (!$employer) $employer = Employer::find($employee->employer_id);
+                 if (!$employer) {
+                     $employerQuery = Employer::query();
+                     if (auth()->user()->can('manage-tickets')) {
+                         $employerQuery->withoutGlobalScope('employerTenancy');
+                     }
+                     $employer = $employerQuery->find($employee->employer_id);
+                 }
                  if ($employer) $this->applyEmployerSearchToQuery($employerEmployeesQuery, $employer, $request->search);
             }
 
