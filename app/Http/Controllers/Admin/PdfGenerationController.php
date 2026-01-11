@@ -172,7 +172,10 @@ class PdfGenerationController extends Controller
                 }
 
                 if ($generatedCount === 0 && !empty($errorLog)) {
-                     return redirect()->route('employees.index')->with('danger', 'Generation Failed. See error log in next attempt or check system logs.');
+                     // Expose the error log in the flash message so the user knows WHY it failed.
+                     // Truncate if too long (though session flash can handle reasonably large strings)
+                     $errorMessage = "Generation Failed. Details:\n" . $errorLog;
+                     return redirect()->route('employees.index')->with('danger', $errorMessage);
                 }
 
                 return response()->download($zipPath)->deleteFileAfterSend(true);
