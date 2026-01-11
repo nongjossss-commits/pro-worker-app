@@ -101,8 +101,15 @@ class PdfGenerationController extends Controller
         try {
             $template = PdfTemplate::findOrFail($templateId);
 
-            // Efficiently fetch employees with relationships
-            $employees = Employee::with('employer')->whereIn('id', $employeeIds)->get();
+            // Efficiently fetch employees with relationships (include Trashed for consistency)
+            $employees = Employee::withTrashed()->with('employer')->whereIn('id', $employeeIds)->get();
+
+            if ($employees->isEmpty()) {
+                if (request()->expectsJson() || request()->ajax()) {
+                    return response()->json([], 200); // Empty result is valid but means nothing happened
+                }
+                return redirect()->route('employees.index')->with('warning', 'No valid employees found for generation.');
+            }
 
             if ($outputType === 'save_to_slot') {
                 // 'save_to_slot' is already memory efficient in service
@@ -171,10 +178,12 @@ class PdfGenerationController extends Controller
                     throw new \Exception("Could not create ZIP file.");
                 }
 
-                if ($generatedCount === 0 && !empty($errorLog)) {
+                if ($generatedCount === 0) {
                      // Expose the error log in the flash message so the user knows WHY it failed.
-                     // Truncate if too long (though session flash can handle reasonably large strings)
-                     $errorMessage = "Generation Failed. Details:\n" . $errorLog;
+                     $errorMessage = "No documents could be generated.";
+                     if (!empty($errorLog)) {
+                         $errorMessage .= " Details:\n" . $errorLog;
+                     }
                      return redirect()->route('employees.index')->with('danger', $errorMessage);
                 }
 
