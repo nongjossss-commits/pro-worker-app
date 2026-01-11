@@ -25,7 +25,6 @@ if (typeof window.financialManager === 'undefined') {
             // Custom Header Data
             showCustomHeaderModal: false,
             useCustomHeader: false,
-            headerMode: 'central', // 'central' or 'employer'
             customHeader: { name:'', address:'', tax_id:'', phone:'', logo:'' },
             selectedProfileId: '',
 
@@ -97,21 +96,6 @@ if (typeof window.financialManager === 'undefined') {
                 this.useCustomHeader = !!data.custom_header;
                 this.customHeader = data.custom_header || { name:'', address:'', tax_id:'', phone:'', logo:'' };
                 this.selectedProfileId = data.profile_id || '';
-
-                // Determine initial header mode based on saved data
-                if(this.selectedProfileId) {
-                    this.headerMode = 'central';
-                } else if(this.useCustomHeader && !this.selectedProfileId) {
-                    // Could be manual override OR employer data.
-                    // We default to 'employer' if it looks like one, or 'central' + override toggle?
-                    // User requested separation. Let's assume if custom header exists without profile ID, it might be Employer mode context
-                    // OR user toggled Manual Override on Central.
-                    // For simplicity, let's default to 'central' with override unless we track origin.
-                    // But if user wants "Employer Side" distinct, let's default to 'central' as standard.
-                    this.headerMode = 'central';
-                } else {
-                    this.headerMode = 'central';
-                }
 
                 this.useCustomCustomer = !!data.customer_override;
                 this.customCustomerData = data.customer_override || { name:'', address:'', tax_id:'', phone:'' };
@@ -409,60 +393,6 @@ if (typeof window.financialManager === 'undefined') {
                     this.useCustomCustomer = true;
                     Swal.fire({ icon: 'success', title: 'Agent Data Loaded', timer: 1500, showConfirmButton: false });
                 }
-            },
-
-            // --- Employer Header Logic ---
-            loadEmployerHeader(employer) {
-                if(!employer) return;
-
-                // We need more details than just name/id usually found in search result.
-                // Assuming the search result might contain enough, or we fetch.
-                // If search result from API is just basic info, we might need to fetch full details.
-                // The api-web/employers/list returns: id, employerNameTh, employerNameEn.
-                // We need address, tax_id, phone, logo.
-
-                // Let's fetch the full employer details
-                // Since there is no dedicated JSON show endpoint, we might rely on a new one or try to use what we have.
-                // Checking code: EmployerController doesn't have a JSON show.
-                // BUT, we can try to assume search result has extra data IF we modify the controller?
-                // Or we use `api-web/employer/employees?employer_id=X` which gives employee list... not useful.
-                // Let's try to assume we need to fetch.
-                // Wait, if I cannot modify backend easily to add new endpoint,
-                // I can use the `employers/{employer}` HTML page? No.
-                // `employers/{employer}/edit` is HTML.
-
-                // Let's assume for now I will use what I have or request user if I can add endpoint.
-                // I'll add a fetch to `employers/{id}/edit`? No too heavy.
-
-                // HACK: I will use the Search API to return more data if I can?
-                // The search API `api-web/employers/list` is likely in `EmployerController@listApi`.
-                // Let's assume I can modify that controller to return more fields.
-
-                // For now, I'll optimistically use fields from `employer` object passed in,
-                // and if missing, I'll clear them.
-
-                this.customHeader.name = employer.employerNameTh || employer.employerNameEn;
-                // Address construction
-                let addr = employer.employerAddress || '';
-                if(employer.employerProvince) addr += ' ' + employer.employerProvince;
-                this.customHeader.address = addr;
-
-                this.customHeader.tax_id = employer.employerTaxId || '';
-                this.customHeader.phone = employer.employerPhone || '';
-                this.customHeader.logo = employer.company_logo || ''; // Assuming field name
-
-                // If fields are missing in search result, we might need to fetch.
-                // Ideally, I should update the `listApi` to include these.
-
-                this.useCustomHeader = true; // Set this to true so it saves as custom_header
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Employer Data Loaded',
-                    text: 'Header updated with employer details.',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
             },
 
             // --- Profile Logic ---
