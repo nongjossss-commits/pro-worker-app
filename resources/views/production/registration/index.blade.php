@@ -272,7 +272,7 @@
     </div>
 
     {{-- Employers List --}}
-    <div class="accordion" id="employersAccordion">
+    <div class="accordion d-flex flex-column" id="employersAccordion">
         @foreach($employers as $employer)
             @php
                 $isEmployerCancelled = $employer->financeOrder && $employer->financeOrder->status === 'registration_resolution_cancelled';
