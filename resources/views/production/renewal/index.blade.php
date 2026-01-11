@@ -517,7 +517,6 @@
                     </div>
                 </div>
             </div> {{-- End card --}}
-            </div> {{-- End d-flex wrapper --}}
 
             {{-- Finance Modal for this Employer --}}
             <div class="modal fade" id="financeModal-{{ $employer->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
