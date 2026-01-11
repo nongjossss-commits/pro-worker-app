@@ -173,7 +173,7 @@
         <!-- Signer 1 -->
         <div class="card bg-light mb-3" x-data="signatureField('signature_1', '{{ $employer->signature_1_path ? Storage::url($employer->signature_1_path) : '' }}')">
             <div class="card-body">
-                <h6 class="card-title text-muted fw-bold">{{ __('Signer 1') }}</h6>
+                <h6 class="card-title text-muted fw-bold">Signer 1</h6>
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="signerNameTh" class="form-label">{{ __('Name (Thai)') }}</label>
@@ -219,7 +219,7 @@
         <!-- Signer 2 -->
         <div class="card bg-light mb-3" x-data="signatureField('signature_2', '{{ $employer->signature_2_path ? Storage::url($employer->signature_2_path) : '' }}')">
             <div class="card-body">
-                <h6 class="card-title text-muted fw-bold">{{ __('Signer 2 (Optional)') }}</h6>
+                <h6 class="card-title text-muted fw-bold">Signer 2 (Optional)</h6>
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="signer_2_name_th" class="form-label">{{ __('Name (Thai)') }}</label>
@@ -860,13 +860,7 @@
             modalInstance: null,
 
             init() {
-                // Ensure bootstrap is available, fallback to window.bootstrap if needed
-                const bootstrapInstance = window.bootstrap || (typeof bootstrap !== 'undefined' ? bootstrap : null);
-                if (bootstrapInstance) {
-                    this.modalInstance = new bootstrapInstance.Modal(document.getElementById('signatureSettingsModal'));
-                } else {
-                    console.error('Bootstrap not found!');
-                }
+                this.modalInstance = new bootstrap.Modal(document.getElementById('signatureSettingsModal'));
 
                 window.addEventListener('open-signature-modal', (event) => {
                     this.targetField = event.detail.field;
@@ -878,16 +872,7 @@
                     else if (currentAction === 'upload') this.activeTab = 'upload';
                     else this.activeTab = currentAction; // fallback
 
-                    if (this.modalInstance) {
-                        this.modalInstance.show();
-                    } else {
-                         // Retry initialization if it failed earlier
-                         const bs = window.bootstrap || (typeof bootstrap !== 'undefined' ? bootstrap : null);
-                         if (bs) {
-                             this.modalInstance = new bs.Modal(document.getElementById('signatureSettingsModal'));
-                             this.modalInstance.show();
-                         }
-                    }
+                    this.modalInstance.show();
 
                     // Init canvas after modal is shown
                     setTimeout(() => {
