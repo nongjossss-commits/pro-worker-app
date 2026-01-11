@@ -278,7 +278,7 @@
     </div>
 
     {{-- Employers List --}}
-    <div class="accordion" id="employersAccordion">
+    <div class="accordion d-flex flex-column" id="employersAccordion">
         @foreach($employers as $employer)
             @php
                 $isEmployerCancelled = $employer->financeOrder && $employer->financeOrder->status === 'registration_resolution_cancelled';
@@ -286,7 +286,7 @@
                 $employerHeaderClass = $isEmployerCancelled ? 'bg-light' : 'bg-white';
             @endphp
 
-            <div class="d-flex align-items-start employer-card-container mb-4" id="employer-card-{{ $employer->id }}" data-is-cancelled="{{ $isEmployerCancelled ? 'true' : 'false' }}">
+            <div class="d-flex align-items-start employer-card-container w-100 mb-4" id="employer-card-{{ $employer->id }}" data-is-cancelled="{{ $isEmployerCancelled ? 'true' : 'false' }}">
                 {{-- Sequence Number (CSS Counter will handle number) --}}
                 <div class="employer-sequence-number me-3 pt-2"></div>
 
