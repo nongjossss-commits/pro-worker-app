@@ -484,70 +484,29 @@
                     <button type="button" class="btn-close" @click="showCustomHeaderModal = false"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Header Mode Selection -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Select Header Source</label>
-                        <div class="d-flex gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="headerMode" id="headerModeCentral" value="central" x-model="headerMode">
-                                <label class="form-check-label" for="headerModeCentral">
-                                    Central Templates (ส่วนกลาง)
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="headerMode" id="headerModeEmployer" value="employer" x-model="headerMode">
-                                <label class="form-check-label" for="headerModeEmployer">
-                                    Employer Template (นายจ้าง)
-                                </label>
-                            </div>
-                        </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" :id="'useCustomHeaderToggle-' + productionId" x-model="useCustomHeader">
+                        <label class="form-check-label fw-bold" :for="'useCustomHeaderToggle-' + productionId">Use Custom Header (Manual Override)</label>
                     </div>
 
-                    <hr class="my-2">
-
-                    <!-- Mode A: Central -->
-                    <div x-show="headerMode === 'central'">
-                        <div class="alert alert-info small py-2 mb-2">
-                            Select a saved Company Profile from the system.
+                    <div x-show="!useCustomHeader">
+                        <div class="alert alert-info small">
+                            Using Default Company Profile. <br>
+                            You can configure global profiles in Settings.
                         </div>
-                        <select class="form-select form-select-sm" x-model="selectedProfileId" @change="useCustomHeader = false">
-                            <option value="">-- Default Profile --</option>
+                        <select class="form-select form-select-sm" x-model="selectedProfileId">
+                            <option value="">Default Profile</option>
                             @foreach(\App\Models\CompanyProfile::all() as $p)
                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <!-- Mode B: Employer -->
-                    <div x-show="headerMode === 'employer'">
-                        <div class="alert alert-warning small py-2 mb-2">
-                            Search for an Employer to use their details as the header.
+                    <div x-show="useCustomHeader">
+                        <div class="mb-2">
+                            <label class="form-label small">Company Name</label>
+                            <input type="text" class="form-control form-control-sm" x-model="customHeader.name">
                         </div>
-
-                        <div class="mb-3" @item-selected.window="if($event.detail.name === 'employer_header_search') loadEmployerHeader($event.detail.item)">
-                             <x-input-searchable-select
-                                name="employer_header_search"
-                                placeholder="Type Employer Name..."
-                                apiUrl="{{ route('api-web.employers.list') }}"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Manual Override / Details View (Always visible if Employer Mode or Custom Toggle) -->
-                    <div class="mt-3 border-top pt-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label small fw-bold text-muted">Header Details (Editable)</label>
-                            <div class="form-check form-switch" x-show="headerMode === 'central'">
-                                <input class="form-check-input" type="checkbox" id="manualOverride" x-model="useCustomHeader">
-                                <label class="form-check-label small" for="manualOverride">Manual Override</label>
-                            </div>
-                        </div>
-
-                        <div x-show="useCustomHeader || headerMode === 'employer'">
-                            <div class="mb-2">
-                                <label class="form-label small">Company Name</label>
-                                <input type="text" class="form-control form-control-sm" x-model="customHeader.name">
-                            </div>
                         <div class="mb-2">
                             <label class="form-label small">Address</label>
                             <textarea class="form-control form-control-sm" rows="3" x-model="customHeader.address"></textarea>

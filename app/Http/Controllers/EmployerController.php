@@ -559,10 +559,8 @@ class EmployerController extends Controller
         $this->authorize('view-employers');
         $query = Employer::query();
 
-        $term = $request->input('query') ?? $request->input('search');
-
-        if ($term) {
-            $searchTerm = '%' . $term . '%';
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->input('search') . '%';
             $query->where(function($q) use ($searchTerm) {
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
@@ -570,43 +568,7 @@ class EmployerController extends Controller
             });
         }
 
-        // Return more fields to support financial header auto-fill
-        // Eager load addresses since Employer uses MorphMany Address
-        $employers = $query->select([
-            'id',
-            'employerNameTh',
-            'employerNameEn',
-            'employerId',
-            'employerTaxId',
-            'employerPhone'
-        ])->with(['addresses'])->take(10)->get();
-
-        // Transform to include a flattened address for convenience
-        $employers->transform(function($emp) {
-            // Priority: 'company' type, then first available
-            $address = $emp->addresses->firstWhere('type', 'company') ?? $emp->addresses->first();
-
-            $addrStr = '';
-            if ($address) {
-                // Construct Thai address string
-                $parts = [];
-                if($address->addrNo) $parts[] = $address->addrNo;
-                if($address->addrMoo) $parts[] = 'หมู่ ' . $address->addrMoo;
-                if($address->addrSoi) $parts[] = 'ซอย ' . $address->addrSoi;
-                if($address->addrRoad) $parts[] = 'ถนน ' . $address->addrRoad;
-                if($address->addrSubDistrict) $parts[] = 'ต.' . $address->addrSubDistrict;
-                if($address->addrDistrict) $parts[] = 'อ.' . $address->addrDistrict;
-                if($address->addrProvince) $parts[] = 'จ.' . $address->addrProvince;
-                if($address->addrZipCode) $parts[] = $address->addrZipCode;
-                $addrStr = implode(' ', $parts);
-            }
-
-            $emp->employerAddress = $addrStr;
-            // Clear relationship to keep payload clean if needed, or keep it
-            unset($emp->addresses);
-            return $emp;
-        });
-
+        $employers = $query->select(['id', 'employerNameTh', 'employerId'])->take(10)->get();
         return response()->json($employers);
     }
 
