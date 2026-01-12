@@ -103,10 +103,15 @@ class PdfGeneratorService
                     $pageCount = $pdf->setSourceFile($normalizedPath);
                     $this->tempFiles[] = $normalizedPath;
                 } else {
+                    // Should not happen as tryNormalize throws on failure
                     throw $e;
                 }
              } catch (\Exception $ex) {
-                 throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
+                 // Include both original error and repair error for better debugging
+                 $msg = 'Failed to process PDF template: ' . $e->getMessage();
+                 $msg .= ' | Automatic repair also failed: ' . $ex->getMessage();
+
+                 throw new \Exception($msg);
              }
         }
 
@@ -323,6 +328,16 @@ class PdfGeneratorService
         // Strategy 0: Node.js (pdf-lib) - preferred strategy now
         $nodeScriptPath = base_path('scripts/normalize_pdf.cjs');
         if (file_exists($nodeScriptPath)) {
+
+            // Check if node_modules exists to avoid silent failures or generic errors
+            $nodeModulesPath = base_path('node_modules/pdf-lib');
+            if (!file_exists($nodeModulesPath)) {
+                $errorMsg = "Node.js dependency 'pdf-lib' is missing. Please run 'npm install' to enable PDF repair.";
+                Log::error($errorMsg);
+                // Throw immediately so we don't try other strategies that will also fail or are less preferred
+                throw new \Exception($errorMsg);
+            }
+
             $cmd = sprintf(
                 'node %s %s %s 2>&1',
                 escapeshellarg($nodeScriptPath),
