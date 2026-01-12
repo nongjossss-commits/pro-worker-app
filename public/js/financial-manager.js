@@ -267,6 +267,20 @@ if (typeof window.financialManager === 'undefined') {
                 return this.transactions.filter(t => t.production_financial_group_id == this.activeGroupId);
             },
 
+            get modalFilteredTransactions() {
+                // If generating 'advance_receipt', only show advance_payment transactions
+                if (this.documentTypeToGenerate === 'advance_receipt') {
+                    return this.filteredTransactions.filter(t => t.type === 'advance_payment');
+                }
+                // If generating tax_invoice or receipt, usually we want Service Fee types,
+                // but sometimes we might want to issue a tax invoice for an advance.
+                // For flexibility, let's show all or maybe exclude advance if confusing?
+                // Request says "Billing should match installment...".
+                // Let's show ALL for generic types to allow maximum flexibility,
+                // BUT if it's strictly 'advance_receipt', filtering makes sense.
+                return this.filteredTransactions;
+            },
+
             get incomeTransactions() {
                 return this.filteredTransactions.filter(t => ['installment', 'down_payment', 'full_payment'].includes(t.type));
             },
@@ -275,44 +289,12 @@ if (typeof window.financialManager === 'undefined') {
                 return this.filteredTransactions.filter(t => t.type === 'advance_payment');
             },
 
-            get advancePaid() {
-                // Sum 'paid_amount' of advance transactions
-                return this.advanceTransactions.reduce((sum, t) => sum + (parseFloat(t.paid_amount) || 0), 0);
-            },
-
-            get advanceRemaining() {
-                // Total Advance Expenses - Paid Advances
-                return Math.max(0, this.advanceTotal - this.advancePaid);
-            },
-
             get scheduledAmount() {
-                // Only Income Transactions count towards the scheduled amount of the Contract
-                return this.incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-            },
-            get remainingSchedule() {
-                // The schedule should cover the NET RECEIVABLE (Service Fee)
-                // Note: Advance Payments are usually reimbursement and handled separately,
-                // BUT "Grand Total Receivable" includes Advance Total.
-                // If we want to strictly follow the Grand Total, we should include all.
-                // However, usually "Installments" are for the Service Fee.
-                // Let's assume Installments cover the Grand Total for now to keep it simple,
-                // OR exclude Advance Payments if they are billed separately.
-                // Given the user wants "Separate Topic", it implies they are separate.
-                // Let's check Grand Total logic: `grandTotalReceivable = netReceivable + advanceTotal`.
-                // If I separate them, remaining schedule for Income should probably track `netReceivable`.
-                // But typically, a project has one "Grand Total".
-                // Let's stick to: Remaining = Grand Total - (Sum of ALL transactions).
-                // Wait, if I split the tables, does the user expect "Remaining Service Fee" vs "Remaining Advance"?
-                // The current code: `scheduledAmount` uses `filteredTransactions` (ALL).
-                // If I change `scheduledAmount` to `incomeTransactions`, it only sums income.
-                // If `grandTotalReceivable` includes Advance, then we have a mismatch.
-                // Let's keep `scheduledAmount` summing ALL transactions for the "Remaining" calculation to be mathematically correct against Grand Total.
-                // Or better: Distinct Remaining for Advance?
-                // For now, let's keep `scheduledAmount` as sum of ALL to be safe against breaking existing logic.
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
             },
-            get remainingAmount() {
-                 return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
+            get remainingSchedule() {
+                // The schedule should cover the Grand Total Receivable
+                return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
             },
             get isFullyScheduled() {
                 return Math.abs(this.grandTotalReceivable - this.scheduledAmount) < 1;
@@ -628,7 +610,15 @@ if (typeof window.financialManager === 'undefined') {
             generateSelectedDocument() {
                 if (this.selectedTransactionIds.length === 0) return;
                 const ids = this.selectedTransactionIds.join(',');
-                this.openDocument(this.documentTypeToGenerate, ids);
+
+                // If generating advance receipt for specific transactions, force mode to 'advance_only'
+                // to prevent rendering of Service Fee headers or confusing layout logic
+                let mode = null;
+                if (this.documentTypeToGenerate === 'advance_receipt') {
+                    mode = 'advance_only';
+                }
+
+                this.openDocument(this.documentTypeToGenerate, ids, mode);
                 bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
             },
             openDocument(type, transactionIds = null, mode = null) {
