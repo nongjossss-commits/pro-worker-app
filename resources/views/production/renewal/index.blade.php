@@ -535,6 +535,7 @@
                     </div>
                 </div>
             </div>
+            </div> {{-- End employer-card-container --}}
         @endforeach
     </div>
 </div>
