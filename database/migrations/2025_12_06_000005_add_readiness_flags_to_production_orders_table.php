@@ -12,10 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('production_orders', function (Blueprint $table) {
-            $table->timestamp('document_ready_at')->nullable()->after('financial_data');
-            $table->unsignedBigInteger('document_ready_by')->nullable()->after('document_ready_at');
-            $table->timestamp('financial_approved_at')->nullable()->after('document_ready_by');
-            $table->unsignedBigInteger('financial_approved_by')->nullable()->after('financial_approved_at');
+            if (!Schema::hasColumn('production_orders', 'document_ready_at')) {
+                $table->timestamp('document_ready_at')->nullable()->after('financial_data');
+            }
+            if (!Schema::hasColumn('production_orders', 'document_ready_by')) {
+                $table->unsignedBigInteger('document_ready_by')->nullable()->after('document_ready_at'); // Note: 'after' works best if the previous column exists.
+            }
+            if (!Schema::hasColumn('production_orders', 'financial_approved_at')) {
+                $table->timestamp('financial_approved_at')->nullable()->after('document_ready_by');
+            }
+            if (!Schema::hasColumn('production_orders', 'financial_approved_by')) {
+                $table->unsignedBigInteger('financial_approved_by')->nullable()->after('financial_approved_at');
+            }
         });
     }
 
@@ -25,12 +33,24 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('production_orders', function (Blueprint $table) {
-            $table->dropColumn([
-                'document_ready_at',
-                'document_ready_by',
-                'financial_approved_at',
-                'financial_approved_by'
-            ]);
+            $columnsToDrop = [];
+
+            if (Schema::hasColumn('production_orders', 'document_ready_at')) {
+                $columnsToDrop[] = 'document_ready_at';
+            }
+            if (Schema::hasColumn('production_orders', 'document_ready_by')) {
+                $columnsToDrop[] = 'document_ready_by';
+            }
+            if (Schema::hasColumn('production_orders', 'financial_approved_at')) {
+                $columnsToDrop[] = 'financial_approved_at';
+            }
+            if (Schema::hasColumn('production_orders', 'financial_approved_by')) {
+                $columnsToDrop[] = 'financial_approved_by';
+            }
+
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 };
