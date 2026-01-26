@@ -12,6 +12,7 @@ class ProductionOrder extends Model
 
     protected $fillable = [
         'employer_id',
+        'work_type_id', // NEW
         'type', // 'employer' or 'independent'
         'project_name',
         'description',
@@ -40,6 +41,11 @@ class ProductionOrder extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function workType()
+    {
+        return $this->belongsTo(WorkType::class);
     }
 
     public function items()

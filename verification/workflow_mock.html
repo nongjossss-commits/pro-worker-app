@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Verification</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* Mocking app.css styles */
+        :root { --bs-primary: #F97316; --bs-success: #10B981; }
+        .bg-gradient { background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0)); }
+        .cursor-pointer { cursor: pointer; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid py-4">
+    <!-- Scoreboard -->
+    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 bg-primary bg-gradient">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">5</h1>
+                    <p class="fs-5 fw-light mb-0">Active Projects</p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 bg-success bg-gradient">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">12</h1>
+                    <p class="fs-5 fw-light mb-0">Total Employees</p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 bg-white">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h5 class="text-muted fw-bold mb-2">Notify In / Change Employer</h5>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <span class="badge bg-light text-dark border">Step 1</span>
+                        <span class="badge bg-light text-dark border">Step 2</span>
+                        <span class="badge bg-light text-dark border">Step 3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <ul class="nav nav-pills gap-2">
+            <li class="nav-item"><a class="nav-link active fw-bold shadow-sm" href="#">Notify In</a></li>
+            <li class="nav-item"><a class="nav-link bg-white border text-secondary" href="#">Notify Out</a></li>
+            <li class="nav-item"><a class="nav-link bg-white border text-secondary" href="#">MOU Import</a></li>
+        </ul>
+        <button class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-plus-lg me-1"></i> Add Job</button>
+    </div>
+
+    <!-- Accordion -->
+    <div class="accordion" id="workflowAccordion">
+        <!-- Item 1 -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-bottom-0 py-3">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1">
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary" style="width: 48px; height: 48px;">
+                            <i class="bi bi-building fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">ABC Company Ltd.</h5>
+                            <div class="text-muted small">Notify In • 2 mins ago</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-2"><i class="bi bi-people-fill me-1"></i> 3</span>
+                        <button class="btn btn-light btn-sm rounded-circle"><i class="bi bi-chevron-down"></i></button>
+                    </div>
+                </div>
+            </div>
+            <!-- Expanded Body -->
+            <div class="card-body bg-light border-top">
+                <!-- Group Header -->
+                <div class="d-flex align-items-center mb-2 mt-2 px-2">
+                    <h6 class="fw-bold text-dark mb-0">Batch 1</h6>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary ms-2 rounded-pill">2</span>
+                </div>
+                <!-- Table -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="table-responsive rounded">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Employee</th>
+                                    <th class="text-center">Step 1</th>
+                                    <th class="text-center">Step 2</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="ps-3">1</td>
+                                    <td>
+                                        <div class="fw-bold">Mr. John Doe</div>
+                                        <div class="small text-muted">Myanmar</div>
+                                    </td>
+                                    <td class="text-center"><input type="checkbox" class="form-check-input" checked></td>
+                                    <td class="text-center"><input type="checkbox" class="form-check-input"></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-link text-success"><i class="bi bi-check-circle"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

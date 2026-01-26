@@ -3,98 +3,344 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductionOrder;
-use App\Models\ProductionItem; // Added
-use App\Models\WorkflowStep; // Added
+use App\Models\ProductionItem;
+use App\Models\WorkflowStep;
+use App\Models\WorkType;
+use App\Models\WorkTypeStep;
+use App\Models\Employee;
+use App\Models\Employer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class WorkflowController extends Controller
 {
     /**
-     * Display a listing of Active Production Orders (Workflow).
+     * Display the main Workflow Dashboard with Tabs.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = ProductionOrder::with('employer')
-                    ->where('status', '!=', 'pre_production') // Active, Completed, Cancelled
-                    ->withCount('items')
-                    ->latest()
-                    ->paginate(15);
+        // 1. Get Tabs (Work Types)
+        $tabs = WorkType::orderBy('order')->get();
 
-        return view('workflow.index', compact('orders'));
-    }
-
-    /**
-     * Display the specified resource (The Kanban/Board View).
-     */
-    public function show($id)
-    {
-        $production = ProductionOrder::with(['items.employee', 'employer', 'items.steps'])->findOrFail($id);
-
-        if ($production->status === 'pre_production') {
-            return redirect()->route('production.edit', $production->id);
+        if ($tabs->isEmpty()) {
+            $this->seedDefaultWorkTypes();
+            $tabs = WorkType::orderBy('order')->get();
         }
 
-        return view('workflow.board', compact('production'));
+        // 2. Determine Active Tab
+        $activeTabSlug = $request->query('tab', $tabs->first()?->slug);
+        $activeTab = $tabs->where('slug', $activeTabSlug)->first();
+
+        // 3. Query Orders for this Tab
+        $query = ProductionOrder::with(['employer', 'workType'])
+            ->where('status', '!=', 'pre_production'); // Active workflows
+
+        if ($activeTab) {
+            $query->where('work_type_id', $activeTab->id);
+        } else {
+            // "All" or "General" view - maybe show uncategorized?
+            // For now, if no tab matches, show nothing or all.
+            // Let's assume we always have a tab if seeded.
+        }
+
+        // Search
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('project_name', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function($e) use ($search) {
+                      $e->where('employerNameTh', 'like', "%{$search}%")
+                        ->orWhere('employerNameEn', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $orders = $query->latest('updated_at')->paginate(15);
+
+        // 4. Calculate Scoreboard Stats (For the Active Tab)
+        // Total Projects
+        $stats = [
+            'total_projects' => $orders->total(),
+            'total_employees' => 0,
+            'completed_employees' => 0,
+        ];
+
+        // We need a separate query for totals across all pages
+        if ($activeTab) {
+            $statsQuery = ProductionOrder::where('work_type_id', $activeTab->id)
+                ->where('status', '!=', 'pre_production');
+
+            $stats['total_projects'] = $statsQuery->count();
+
+            // Join items to get employee counts
+            // This might be heavy, optimise later if needed
+            $itemsQuery = ProductionItem::whereIn('production_order_id', $statsQuery->select('id'));
+            $stats['total_employees'] = $itemsQuery->count();
+            // Assuming we have a way to know if item is "completed" - for now just count items
+        }
+
+        // Steps for the active tab (to display columns/settings)
+        $steps = $activeTab ? $activeTab->steps : collect();
+
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps'));
     }
 
     /**
-     * API: Bulk Add Step (Create Fields)
+     * Fetch Items (Employees) for a specific Order (Card).
+     * AJAX for Accordion/Drawer content.
      */
-    public function bulkStoreStep(Request $request)
+    public function fetchOrderItems(Request $request, $orderId)
+    {
+        $order = ProductionOrder::with(['workType.steps'])->findOrFail($orderId);
+
+        $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
+            ->where('production_order_id', $orderId)
+            // Grouping logic: Order by Group Name then ID
+            ->orderBy('group_name') // Nulls first usually
+            ->orderBy('id')
+            ->get();
+
+        // Group the items collection by group_name for easier view rendering
+        $groupedItems = $items->groupBy('group_name');
+
+        return view('workflow.partials.order_items', compact('order', 'groupedItems'));
+    }
+
+    /**
+     * Toggle a WorkTypeStep for a ProductionItem.
+     */
+    public function toggleStep(Request $request, $itemId)
     {
         $request->validate([
-            'item_ids' => 'required|array',
-            'item_ids.*' => 'exists:production_items,id',
-            'step_type' => 'required|in:text,date,file',
-            'label' => 'required|string|max:255',
-            'value' => 'nullable'
+            'step_id' => 'required|exists:work_type_steps,id',
+            'completed' => 'required|boolean'
         ]);
 
-        foreach ($request->item_ids as $id) {
-            WorkflowStep::create([
-                'production_item_id' => $id,
-                'step_type' => $request->step_type,
-                'label' => $request->label,
-                'value_text' => $request->step_type === 'text' ? $request->value : null,
-                'value_date' => $request->step_type === 'date' ? $request->value : null,
-                'created_by' => auth()->id()
+        $item = ProductionItem::findOrFail($itemId);
+
+        if ($request->completed) {
+            $item->completedWorkTypeSteps()->syncWithoutDetaching([
+                $request->step_id => [
+                    'completed_at' => now(),
+                    'completed_by' => auth()->id()
+                ]
             ]);
+        } else {
+            $item->completedWorkTypeSteps()->detach($request->step_id);
         }
 
         return response()->json(['success' => true]);
     }
 
     /**
-     * Show a specific item detail (Step tracker).
+     * Update Group Name (Batch) for an Item.
      */
-    public function showItem($item_id)
+    public function updateGroup(Request $request, $itemId)
     {
-        $item = ProductionItem::with(['steps', 'employee', 'order'])->findOrFail($item_id);
-        return view('workflow.item_detail', compact('item'));
+        $request->validate(['group_name' => 'nullable|string|max:255']);
+
+        $item = ProductionItem::findOrFail($itemId);
+        $item->update(['group_name' => $request->group_name]);
+
+        return response()->json(['success' => true]);
     }
 
     /**
-     * Store a new step for an item.
+     * API: Search Employees for "Notify In" (Resigned Status / Terminated).
      */
-    public function storeStep(Request $request, $item_id)
+    public function searchResignedEmployees(Request $request)
     {
-        $item = ProductionItem::findOrFail($item_id);
+        $search = $request->query('q');
 
+        // "Notify Out" usually results in termination (terminated_at != null).
+        // So we search for employees who are effectively "out" of the system (history).
+        $query = Employee::query()
+             ->whereNotNull('terminated_at') // Filter for terminated/resigned employees
+             ->with('employer');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
+
+        $employees = $query->limit(20)->get();
+
+        return response()->json($employees);
+    }
+
+    /**
+     * API: Fetch Active Employees for an Employer (Notify Out).
+     */
+    public function fetchEmployerActiveEmployees($employerId)
+    {
+        $employees = Employee::where('employer_id', $employerId)
+            ->whereNull('terminated_at') // Active
+            ->limit(100)
+            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport']);
+
+        return response()->json($employees);
+    }
+
+    /**
+     * Store (Create) a new Workflow Job / Add Employees.
+     */
+    public function store(Request $request)
+    {
         $request->validate([
-            'step_type' => 'required|in:text,date,file',
-            'label' => 'required|string|max:255',
-            'value' => 'nullable'
+            'work_type_id' => 'required|exists:work_types,id',
+            'employer_id' => 'required|exists:employers,id',
+            // 'items' => array of employee IDs or new data
         ]);
 
-        WorkflowStep::create([
-            'production_item_id' => $item->id,
-            'step_type' => $request->step_type,
-            'label' => $request->label,
-            'value_text' => $request->step_type === 'text' ? $request->value : null,
-            'value_date' => $request->step_type === 'date' ? $request->value : null,
-            'created_by' => auth()->id()
-        ]);
+        $workType = WorkType::findOrFail($request->work_type_id);
 
-        return back()->with('success', 'Step added successfully');
+        // Logic: Find or Create Order
+        $order = null;
+
+        if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
+            // Single Card per Employer
+            $order = ProductionOrder::firstOrCreate(
+                [
+                    'employer_id' => $request->employer_id,
+                    'work_type_id' => $workType->id,
+                    'status' => 'active' // Or whatever active status is
+                ],
+                [
+                    'type' => 'employer',
+                    'project_name' => $workType->name . ' - ' . Employer::find($request->employer_id)->employerNameTh,
+                    'created_by' => auth()->id()
+                ]
+            );
+        } else {
+            // MOU / Other: Always Create New
+            $order = ProductionOrder::create([
+                'employer_id' => $request->employer_id,
+                'work_type_id' => $workType->id,
+                'type' => 'employer',
+                'project_name' => $request->project_name ?? ($workType->name . ' - ' . now()->format('d/m/Y')),
+                'status' => 'active',
+                'created_by' => auth()->id()
+            ]);
+        }
+
+        // Add Items
+        if ($request->has('employee_ids')) {
+            $ids = $request->employee_ids; // Expecting array
+            $groupName = $request->group_name ?? null;
+
+            foreach ($ids as $empId) {
+                // Check if already in this order?
+                $exists = ProductionItem::where('production_order_id', $order->id)
+                            ->where('employee_id', $empId)
+                            ->exists();
+
+                if (!$exists) {
+                    ProductionItem::create([
+                        'production_order_id' => $order->id,
+                        'employee_id' => $empId,
+                        'group_name' => $groupName
+                    ]);
+                }
+            }
+        }
+
+        // Handle Manual New Employee (MOU/Draft)
+        if ($request->filled('new_employee.name_en') || $request->filled('new_employee.name_th')) {
+            ProductionItem::create([
+                'production_order_id' => $order->id,
+                'employee_id' => null,
+                'new_employee_data' => $request->new_employee,
+                'group_name' => $request->group_name ?? null
+            ]);
+        }
+
+        return redirect()->route('workflow.index', ['tab' => $workType->slug])
+                         ->with('success', 'Job updated successfully.');
+    }
+
+    /**
+     * Finalize/Complete an Item (Logic depends on WorkType).
+     */
+    public function finalizeItem(Request $request, $itemId)
+    {
+        $item = ProductionItem::with(['order.workType', 'employee'])->findOrFail($itemId);
+        $slug = $item->order->workType->slug ?? '';
+
+        DB::transaction(function () use ($item, $slug) {
+            if ($slug === 'notify_in') {
+                // Transfer to new Employer and Activate
+                if ($item->employee) {
+                    $item->employee->update([
+                        'employer_id' => $item->order->employer_id,
+                        'status' => null, // Active
+                        'terminated_at' => null,
+                        'termination_reason' => null
+                    ]);
+                }
+            } elseif ($slug === 'notify_out') {
+                // Terminate / Resign
+                if ($item->employee) {
+                    $item->employee->update([
+                        'terminated_at' => now(),
+                        'status' => 'resigned'
+                    ]);
+                }
+            }
+            // For MOU, maybe just mark as imported/done?
+
+            // Mark the item itself as completed (if we had a status column on ProductionItem)
+            // For now, we assume the action on the Employee model is the "Result".
+        });
+
+        return response()->json(['success' => true]);
+    }
+
+    // ... keep existing show/showItem methods if needed, or remove if fully replaced.
+    // I will keep show() but redirect it or repurpose it.
+    // Actually show() was the board view. User wants new UI. I should probably remove the old Board view reference in index.
+
+    private function seedDefaultWorkTypes()
+    {
+        $types = [
+            [
+                'name' => 'แจ้งเข้า / เปลี่ยนนายจ้าง',
+                'slug' => 'notify_in',
+                'is_system' => true,
+                'order' => 1,
+                'steps' => ['รับเอกสาร', 'ยื่นเรื่อง', 'รออนุมัติ', 'รับเล่มคืน', 'แจ้งผล']
+            ],
+            [
+                'name' => 'แจ้งออก',
+                'slug' => 'notify_out',
+                'is_system' => true,
+                'order' => 2,
+                'steps' => ['รับเอกสาร', 'แจ้งออกระบบ', 'คืนนายจ้าง']
+            ],
+            [
+                'name' => 'MOU นำเข้า',
+                'slug' => 'mou_import',
+                'is_system' => true,
+                'order' => 3,
+                'steps' => ['Name List', 'Calling Visa', 'Stamp Visa', 'Work Permit', 'Card']
+            ]
+        ];
+
+        foreach ($types as $typeData) {
+            $steps = $typeData['steps'];
+            unset($typeData['steps']);
+
+            $workType = WorkType::create($typeData);
+
+            foreach ($steps as $index => $stepName) {
+                WorkTypeStep::create([
+                    'work_type_id' => $workType->id,
+                    'name' => $stepName,
+                    'order' => $index + 1
+                ]);
+            }
+        }
     }
 }
