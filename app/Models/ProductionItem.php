@@ -13,6 +13,7 @@ class ProductionItem extends Model
     protected $fillable = [
         'production_order_id',
         'employee_id', // Nullable now
+        'group_name', // NEW: Group/Batch name
         'new_employee_data', // JSON for temp employees
     ];
 
@@ -30,9 +31,18 @@ class ProductionItem extends Model
         return $this->belongsTo(Employee::class);
     }
 
+    // Legacy / Ad-hoc fields
     public function steps()
     {
         // Ordered chronologically
         return $this->hasMany(WorkflowStep::class)->orderBy('created_at', 'asc');
+    }
+
+    // NEW: Checklist Steps from WorkType
+    public function completedWorkTypeSteps()
+    {
+        return $this->belongsToMany(WorkTypeStep::class, 'production_item_step')
+                    ->withPivot('completed_at', 'completed_by')
+                    ->withTimestamps();
     }
 }
