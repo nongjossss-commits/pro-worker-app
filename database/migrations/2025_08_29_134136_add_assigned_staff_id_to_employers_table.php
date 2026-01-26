@@ -11,13 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('employers', function (Blueprint $table) {
-            $table->foreignId('assigned_staff_id')
-                  ->nullable()
-                  ->after('job_owner_id')
-                  ->constrained('users')
-                  ->nullOnDelete();
-        });
+        if (!Schema::hasColumn('employers', 'assigned_staff_id')) {
+            Schema::table('employers', function (Blueprint $table) {
+                $column = $table->foreignId('assigned_staff_id')
+                    ->nullable();
+
+                if (Schema::hasColumn('employers', 'job_owner_id')) {
+                    $column->after('job_owner_id');
+                }
+
+                $column->constrained('users')
+                    ->nullOnDelete();
+            });
+        }
     }
 
     /**
@@ -25,9 +31,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('employers', function (Blueprint $table) {
-            $table->dropForeign(['assigned_staff_id']);
-            $table->dropColumn('assigned_staff_id');
-        });
+        if (Schema::hasColumn('employers', 'assigned_staff_id')) {
+            Schema::table('employers', function (Blueprint $table) {
+                $table->dropForeign(['assigned_staff_id']);
+                $table->dropColumn('assigned_staff_id');
+            });
+        }
     }
 };

@@ -12,11 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employers', function (Blueprint $table) {
-            $table->string('employerNameEn')->nullable()->after('employerNameTh');
-            $table->string('minimum_wage')->nullable()->after('regDate');
-            $table->string('document_company_registration')->nullable()->after('minimum_wage');
-            $table->string('document_vat_registration')->nullable()->after('document_company_registration');
-            $table->string('document_map')->nullable()->after('document_vat_registration');
+            if (!Schema::hasColumn('employers', 'employerNameEn')) {
+                $table->string('employerNameEn')->nullable()->after('employerNameTh');
+            }
+            if (!Schema::hasColumn('employers', 'minimum_wage')) {
+                $table->string('minimum_wage')->nullable()->after('regDate');
+            }
+            if (!Schema::hasColumn('employers', 'document_company_registration')) {
+                $table->string('document_company_registration')->nullable()->after('minimum_wage');
+            }
+            if (!Schema::hasColumn('employers', 'document_vat_registration')) {
+                $table->string('document_vat_registration')->nullable()->after('document_company_registration');
+            }
+            if (!Schema::hasColumn('employers', 'document_map')) {
+                $table->string('document_map')->nullable()->after('document_vat_registration');
+            }
         });
     }
 
@@ -26,13 +36,24 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('employers', function (Blueprint $table) {
-            $table->dropColumn([
+            $columns = [
                 'employerNameEn',
                 'minimum_wage',
                 'document_company_registration',
                 'document_vat_registration',
                 'document_map',
-            ]);
+            ];
+
+            $toDrop = [];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('employers', $column)) {
+                    $toDrop[] = $column;
+                }
+            }
+
+            if (!empty($toDrop)) {
+                $table->dropColumn($toDrop);
+            }
         });
     }
 };
