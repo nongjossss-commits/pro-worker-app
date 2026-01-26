@@ -27,30 +27,6 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-9">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <h6 class="fw-bold text-muted mb-3">Progress by Barrier (Status)</h6>
-                    <div class="d-flex gap-4">
-                        @foreach($barriers as $barrier)
-                            @php
-                                $count = $production->items->where('current_barrier_id', $barrier->id)->count();
-                            @endphp
-                            <div class="text-center">
-                                <div class="fs-4 fw-bold text-{{ $barrier->color }}">{{ $count }}</div>
-                                <div class="small text-muted">{{ $barrier->name }}</div>
-                            </div>
-                        @endforeach
-                        <div class="text-center">
-                            <div class="fs-4 fw-bold text-secondary">
-                                {{ $production->items->whereNull('current_barrier_id')->count() }}
-                            </div>
-                            <div class="small text-muted">No Status</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Tracking Table -->
@@ -65,7 +41,6 @@
                         <tr>
                             <th class="ps-4">Employee</th>
                             <th>Passport</th>
-                            <th>Current Status (Barrier)</th>
                             <th>Latest Update</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
@@ -78,15 +53,6 @@
                                     <div class="small text-muted">{{ $item->employee->fullname_en ?? '-' }}</div>
                                 </td>
                                 <td>{{ $item->employee->employeePassport ?? '-' }}</td>
-                                <td>
-                                    @if($item->currentBarrier)
-                                        <span class="badge bg-{{ $item->currentBarrier->color }} fs-6">
-                                            {{ $item->currentBarrier->name }}
-                                        </span>
-                                    @else
-                                        <span class="badge bg-light text-dark border">Pending Start</span>
-                                    @endif
-                                </td>
                                 <td>
                                     {{ $item->updated_at->diffForHumans() }}
                                 </td>

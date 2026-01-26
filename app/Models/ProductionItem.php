@@ -14,7 +14,6 @@ class ProductionItem extends Model
         'production_order_id',
         'employee_id', // Nullable now
         'new_employee_data', // JSON for temp employees
-        'current_barrier_id',
     ];
 
     protected $casts = [
@@ -29,11 +28,6 @@ class ProductionItem extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
-    }
-
-    public function currentBarrier()
-    {
-        return $this->belongsTo(WorkflowBarrier::class, 'current_barrier_id');
     }
 
     public function steps()

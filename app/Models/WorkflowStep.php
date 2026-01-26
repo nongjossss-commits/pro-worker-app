@@ -16,7 +16,6 @@ class WorkflowStep extends Model
         'value_text',
         'value_date',
         'file_path',
-        'barrier_id',
         'created_by',
     ];
 
@@ -27,11 +26,6 @@ class WorkflowStep extends Model
     public function item()
     {
         return $this->belongsTo(ProductionItem::class, 'production_item_id');
-    }
-
-    public function barrier()
-    {
-        return $this->belongsTo(WorkflowBarrier::class, 'barrier_id');
     }
 
     public function creator()

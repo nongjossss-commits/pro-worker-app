@@ -8,7 +8,6 @@ use App\Models\Employer;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\WorkflowBarrier;
 
 class ProductionController extends Controller
 {

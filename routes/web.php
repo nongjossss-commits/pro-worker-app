@@ -201,11 +201,6 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     Route::put('/witnesses/{id}', [App\Http\Controllers\Admin\GlobalWitnessController::class, 'update'])->name('witnesses.update');
 });
 
-// === Production & Workflow Admin Routes ===
-Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin/production')->name('admin.production.')->group(function () {
-    Route::resource('barriers', \App\Http\Controllers\Admin\WorkflowBarrierController::class)->except(['create', 'show', 'edit']);
-});
-
 // === Production & Workflow User Routes ===
 Route::middleware(['auth'])->group(function () {
     // Registration Resolution Routes (P Production > Registration)
@@ -308,7 +303,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
 
     // Workflow API Routes
-    Route::post('workflow/api/update-barrier', [\App\Http\Controllers\WorkflowController::class, 'updateItemBarrier'])->name('workflow.api.update_barrier');
     Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
 });
 
