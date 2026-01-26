@@ -26,10 +26,6 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">
-                        <span class="text-muted">Status</span>
-                        <span class="badge bg-primary">{{ $item->currentBarrier->name ?? 'Pending' }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
                         <span class="text-muted">Order ID</span>
                         <span>#{{ $item->order->id }}</span>
                     </li>

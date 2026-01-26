@@ -381,11 +381,6 @@
                     <i class="bi bi-file-earmark-pdf-fill me-2"></i>{{ __('PDF Templates') }}
                 </a>
                 @endcan
-                @if(Route::has('admin.production.barriers.index'))
-                <a href="{{ route('admin.production.barriers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.production.barriers.*') ? 'active' : '' }}">
-                    <i class="bi bi-bar-chart-steps me-2"></i>{{ __('Workflow Barriers') }}
-                </a>
-                @endif
                 @endcanany
                 @can('view-trash')
                     <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.trash.index') ? 'active' : '' }}" href="{{ route('admin.trash.index') }}">

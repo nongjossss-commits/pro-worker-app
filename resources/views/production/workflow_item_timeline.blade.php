@@ -16,13 +16,6 @@
             </h3>
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-secondary">{{ $item->employee->employer->name_th ?? 'Unknown Employer' }}</span>
-                @if($item->currentBarrier)
-                    <span class="badge bg-{{ $item->currentBarrier->color }}">
-                        Current Status: {{ $item->currentBarrier->name }}
-                    </span>
-                @else
-                    <span class="badge bg-light text-dark border">No Status Set</span>
-                @endif
             </div>
         </div>
         <div>
@@ -44,12 +37,7 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between mb-2">
                                         <div>
-                                            @if($step->step_type === 'barrier')
-                                                <span class="badge bg-{{ $step->barrier->color ?? 'dark' }} mb-1">Status Update</span>
-                                                <h5 class="fw-bold text-{{ $step->barrier->color ?? 'dark' }} mb-0">
-                                                    <i class="bi bi-flag-fill me-2"></i>{{ $step->barrier->name }}
-                                                </h5>
-                                            @elseif($step->step_type === 'text')
+                                            @if($step->step_type === 'text')
                                                 <span class="badge bg-info mb-1">Note</span>
                                                 <h6 class="fw-bold mb-0">{{ $step->label ?? 'Note' }}</h6>
                                             @elseif($step->step_type === 'date')
@@ -118,10 +106,6 @@
                         </button>
                         <button class="btn btn-outline-secondary text-start" data-bs-toggle="modal" data-bs-target="#addFileModal">
                             <i class="bi bi-paperclip me-2"></i>Attach Document
-                        </button>
-                        <hr>
-                        <button class="btn btn-success fw-bold text-start" data-bs-toggle="modal" data-bs-target="#addBarrierModal">
-                            <i class="bi bi-shield-lock me-2"></i>Update Status (Barrier)
                         </button>
                     </div>
                 </div>
@@ -217,43 +201,6 @@
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-secondary">Upload</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- 4. Add Barrier Modal -->
-<div class="modal fade" id="addBarrierModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form action="{{ route('workflow.item.step.store', $item->id) }}" method="POST">
-            @csrf
-            <input type="hidden" name="step_type" value="barrier">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold text-success">Update Status (Place Barrier)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">Setting a barrier updates the official status of this employee in the workflow.</p>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Select Status</label>
-                        <select name="barrier_id" class="form-select" required>
-                            @php
-                                $barriers = \App\Models\WorkflowBarrier::orderBy('sequence')->get();
-                            @endphp
-                            @foreach($barriers as $barrier)
-                                <option value="{{ $barrier->id }}">{{ $barrier->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Note (Optional)</label>
-                        <textarea name="value_text" class="form-control" rows="2" placeholder="Any remarks for this status update..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Update Status</button>
                 </div>
             </div>
         </form>

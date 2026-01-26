@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ProductionOrder;
 use App\Models\ProductionItem; // Added
-use App\Models\WorkflowBarrier;
 use App\Models\WorkflowStep; // Added
 use Illuminate\Http\Request;
 
@@ -29,41 +28,13 @@ class WorkflowController extends Controller
      */
     public function show($id)
     {
-        $production = ProductionOrder::with(['items.employee', 'items.currentBarrier', 'employer', 'items.steps'])->findOrFail($id);
+        $production = ProductionOrder::with(['items.employee', 'employer', 'items.steps'])->findOrFail($id);
 
         if ($production->status === 'pre_production') {
             return redirect()->route('production.edit', $production->id);
         }
 
-        $barriers = WorkflowBarrier::orderBy('sequence')->get();
-
-        // Ensure items without a barrier are assigned to the first one
-        if ($barriers->isNotEmpty()) {
-            $firstBarrierId = $barriers->first()->id;
-            foreach ($production->items as $item) {
-                if (!$item->current_barrier_id) {
-                    $item->update(['current_barrier_id' => $firstBarrierId]);
-                }
-            }
-        }
-
-        return view('workflow.board', compact('production', 'barriers'));
-    }
-
-    /**
-     * API: Update Item Barrier (Drag & Drop)
-     */
-    public function updateItemBarrier(Request $request)
-    {
-        $request->validate([
-            'item_id' => 'required|exists:production_items,id',
-            'barrier_id' => 'required|exists:workflow_barriers,id'
-        ]);
-
-        $item = ProductionItem::findOrFail($request->item_id);
-        $item->update(['current_barrier_id' => $request->barrier_id]);
-
-        return response()->json(['success' => true]);
+        return view('workflow.board', compact('production'));
     }
 
     /**

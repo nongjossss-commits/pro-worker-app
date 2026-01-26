@@ -2,11 +2,10 @@
 
 @section('content')
 @php
-    // Prepare data for AlpineJS to avoid complex Blade/Json parsing issues
-    $boardItems = $production->items->map(function($item) use ($barriers) {
+    // Prepare data for AlpineJS
+    $boardItems = $production->items->map(function($item) {
         return [
             'id' => $item->id,
-            'barrier_id' => $item->current_barrier_id ?? ($barriers->isNotEmpty() ? $barriers->first()->id : null),
             'is_new' => $item->employee_id ? false : true,
             'name' => $item->employee ? ($item->employee->fullname_th ?? $item->employee->name_th) : ($item->new_employee_data['name_th'] ?? 'New Employee'),
             'photo_url' => $item->employee ? $item->employee->avatar_url : null,
@@ -67,143 +66,50 @@
                 </div>
             </div>
         </div>
-        @foreach($barriers as $barrier)
-        <div class="col-md">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid var(--bs-{{ $barrier->color }}) !important;">
-                <div class="card-body py-2">
-                    <h6 class="text-muted mb-1 small text-truncate">{{ $barrier->name }}</h6>
-                    <h4 class="fw-bold mb-0" x-text="getItemsCount({{ $barrier->id }})">0</h4>
-                </div>
-            </div>
-        </div>
-        @endforeach
     </div>
 
-    {{-- Board Area --}}
+    {{-- Items List (Replaces Board) --}}
     <div class="flex-grow-1 overflow-auto">
-        <div class="d-flex gap-3 h-100 pb-3" style="min-width: 100%;">
-
-            @if($barriers->isEmpty())
-                <div class="w-100 d-flex flex-column align-items-center justify-content-center text-muted" style="height: 400px;">
-                    <i class="bi bi-kanban display-1 mb-3 opacity-50"></i>
-                    <h4 class="fw-bold">{{ __('No Workflow Barriers Defined') }}</h4>
-                    <p>{{ __('Please contact an Administrator to set up workflow barriers (statuses).') }}</p>
-                    @role('admin')
-                        <a href="{{ route('admin.production.barriers.index') }}" class="btn btn-primary mt-2">
-                            <i class="bi bi-gear-fill me-1"></i> {{ __('Configure Barriers') }}
-                        </a>
-                    @endrole
-                </div>
-            @endif
-
-            {{-- Loop through Barriers (Columns) --}}
-            @foreach($barriers as $barrier)
-                <div class="card bg-light border-0 shadow-sm" style="min-width: 300px; max-width: 300px;">
-                    <div class="card-header bg-transparent fw-bold border-0 d-flex justify-content-between">
-                        <span class="d-flex align-items-center">
-                            <span class="badge bg-{{ $barrier->color }} me-2 rounded-circle p-1" style="width: 10px; height: 10px;"> </span>
-                            {{ $barrier->name }}
-                        </span>
-                        <span class="badge bg-secondary rounded-pill" x-text="getItemsCount({{ $barrier->id }})">0</span>
-                    </div>
-                    <div class="card-body p-2 overflow-auto custom-scrollbar"
-                         @dragover.prevent
-                         @drop="dropItem($event, {{ $barrier->id }})">
-
-                        {{-- New / Imported Section --}}
-                        <template x-if="getItems({{ $barrier->id }}, true).length > 0">
-                            <div>
-                                <div class="small fw-bold text-primary mb-2 mt-2 border-bottom pb-1">{{ __('New / Imported') }}</div>
-                                <template x-for="item in getItems({{ $barrier->id }}, true)" :key="item.id">
-                                    <div class="card mb-2 shadow-sm employee-card-draggable"
-                                         :class="{ 'border-primary': selectedItems.includes(item.id) }"
-                                         @click.ctrl="toggleSelection(item.id)"
-                                         @click.shift="toggleSelection(item.id)">
-
-                                        <div class="card-body p-2">
-                                            <div class="d-flex gap-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" :value="item.id" x-model="selectedItems" @click.stop>
-                                                </div>
-                                                <div class="flex-grow-1" @click="openItemDetail(item)">
-                                                    <div class="d-flex align-items-center mb-1">
-                                                        <img :src="item.photo_url || '/images/default-avatar.png'" class="rounded-circle me-2" width="24" height="24">
-                                                        <div class="fw-bold small text-truncate" style="max-width: 120px;" x-text="item.name"></div>
-                                                    </div>
-                                                    <div class="badge bg-info text-dark mb-1" style="font-size: 0.6rem;">{{ __('New Entry') }}</div>
-                                                    <div class="d-flex gap-1 mt-1 flex-wrap">
-                                                        <template x-for="step in item.steps" :key="step.id">
-                                                            <span class="badge bg-secondary" style="font-size: 0.6rem;" x-text="step.label"></span>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                                {{-- Drag Handle --}}
-                                                <div class="d-flex align-items-end">
-                                                    <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
-                                                       draggable="true"
-                                                       @dragstart="dragStart($event, item)"
-                                                       @click.stop
-                                                       title="{{ __('Drag') }}"></i>
-                                                </div>
-                                            </div>
+        <div class="row g-3">
+            <template x-for="item in items" :key="item.id">
+                <div class="col-md-4 col-lg-3">
+                    <div class="card shadow-sm h-100"
+                         :class="{ 'border-primary': selectedItems.includes(item.id) }"
+                         @click.ctrl="toggleSelection(item.id)"
+                         @click.shift="toggleSelection(item.id)">
+                        <div class="card-body">
+                            <div class="d-flex gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" :value="item.id" x-model="selectedItems" @click.stop>
+                                </div>
+                                <div class="flex-grow-1" @click="openItemDetail(item)" style="cursor: pointer;">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <img :src="item.photo_url || '/images/default-avatar.png'" class="rounded-circle me-2" width="40" height="40">
+                                        <div>
+                                            <div class="fw-bold text-truncate" style="max-width: 150px;" x-text="item.name"></div>
+                                            <template x-if="item.is_new">
+                                                <div class="badge bg-info text-dark" style="font-size: 0.7rem;">{{ __('New Entry') }}</div>
+                                            </template>
                                         </div>
                                     </div>
-                                </template>
-                            </div>
-                        </template>
 
-                        {{-- Existing Section --}}
-                        <template x-if="getItems({{ $barrier->id }}, false).length > 0">
-                            <div>
-                                <div class="small fw-bold text-secondary mb-2 mt-2 border-bottom pb-1">{{ __('Existing Database') }}</div>
-                                <template x-for="item in getItems({{ $barrier->id }}, false)" :key="item.id">
-                                    <div class="card mb-2 shadow-sm employee-card-draggable"
-                                         :class="{ 'border-primary': selectedItems.includes(item.id) }"
-                                         @click.ctrl="toggleSelection(item.id)"
-                                         @click.shift="toggleSelection(item.id)">
-
-                                        <div class="card-body p-2">
-                                            <div class="d-flex gap-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" :value="item.id" x-model="selectedItems" @click.stop>
-                                                </div>
-                                                <div class="flex-grow-1" @click="openItemDetail(item)">
-                                                    <div class="d-flex align-items-center mb-1">
-                                                        <img :src="item.photo_url || '/images/default-avatar.png'" class="rounded-circle me-2" width="24" height="24">
-                                                        <div class="fw-bold small text-truncate" style="max-width: 120px;" x-text="item.name"></div>
-                                                    </div>
-
-                                                    @if($production->type === 'independent')
-                                                        <div class="small text-muted mb-1" style="font-size: 0.75rem;">
-                                                            <i class="bi bi-building"></i> <span x-text="item.employer_name"></span>
-                                                        </div>
-                                                    @endif
-
-                                                    <div class="d-flex gap-1 mt-1 flex-wrap">
-                                                        <template x-for="step in item.steps" :key="step.id">
-                                                            <span class="badge bg-secondary" style="font-size: 0.6rem;" x-text="step.label"></span>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                                {{-- Drag Handle --}}
-                                                <div class="d-flex align-items-end">
-                                                    <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
-                                                       draggable="true"
-                                                       @dragstart="dragStart($event, item)"
-                                                       @click.stop
-                                                       title="{{ __('Drag') }}"></i>
-                                                </div>
-                                            </div>
+                                    @if($production->type === 'independent')
+                                        <div class="small text-muted mb-2">
+                                            <i class="bi bi-building"></i> <span x-text="item.employer_name"></span>
                                         </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
+                                    @endif
 
+                                    <div class="d-flex gap-1 mt-2 flex-wrap">
+                                        <template x-for="step in item.steps" :key="step.id">
+                                            <span class="badge bg-secondary" style="font-size: 0.7rem;" x-text="step.label"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            @endforeach
-
+            </template>
         </div>
     </div>
 
@@ -259,18 +165,6 @@
             bulkStepValue: '',
             csrfToken: document.querySelector('meta[name="csrf-token"]').content,
 
-            getItems(barrierId, isNew = null) {
-                let filtered = this.items.filter(i => i.barrier_id == barrierId);
-                if (isNew !== null) {
-                    filtered = filtered.filter(i => i.is_new === isNew);
-                }
-                return filtered;
-            },
-
-            getItemsCount(barrierId) {
-                return this.getItems(barrierId).length;
-            },
-
             toggleSelection(id) {
                 if (this.selectedItems.includes(id)) {
                     this.selectedItems = this.selectedItems.filter(i => i !== id);
@@ -281,36 +175,6 @@
 
             clearSelection() {
                 this.selectedItems = [];
-            },
-
-            dragStart(e, item) {
-                e.dataTransfer.setData('item_id', item.id);
-                e.dataTransfer.effectAllowed = 'move';
-            },
-
-            dropItem(e, barrierId) {
-                const itemId = e.dataTransfer.getData('item_id');
-                const item = this.items.find(i => i.id == itemId);
-                if (item && item.barrier_id != barrierId) {
-                    const originalBarrierId = item.barrier_id;
-                    item.barrier_id = barrierId; // Optimistic update
-
-                    fetch('{{ route('workflow.api.update_barrier') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': this.csrfToken
-                        },
-                        body: JSON.stringify({ item_id: itemId, barrier_id: barrierId })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if(!data.success) {
-                            item.barrier_id = originalBarrierId; // Revert
-                            alert('Failed to update status');
-                        }
-                    });
-                }
             },
 
             openBulkStepModal(type) {
@@ -341,7 +205,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        // Reload page to reflect changes (simplest way to update nested steps)
+                        // Reload page to reflect changes
                         window.location.reload();
                     } else {
                         alert('Failed to create fields');
