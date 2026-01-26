@@ -312,6 +312,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Workflow API Routes
     Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
+
+    // Workflow Configuration Routes (Steps)
+    Route::post('workflow/steps', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.steps.store');
+    Route::put('workflow/steps/{id}', [\App\Http\Controllers\WorkflowController::class, 'updateStep'])->name('workflow.steps.update');
+    Route::delete('workflow/steps/{id}', [\App\Http\Controllers\WorkflowController::class, 'destroyStep'])->name('workflow.steps.destroy');
+    Route::post('workflow/steps/reorder', [\App\Http\Controllers\WorkflowController::class, 'reorderSteps'])->name('workflow.steps.reorder');
 });
 
 use App\Http\Controllers\Admin\NotificationSettingController;

@@ -189,41 +189,45 @@ class WorkflowController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'work_type_id' => 'required|exists:work_types,id',
-            'employer_id' => 'required|exists:employers,id',
-            // 'items' => array of employee IDs or new data
-        ]);
-
-        $workType = WorkType::findOrFail($request->work_type_id);
-
-        // Logic: Find or Create Order
         $order = null;
 
-        if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
-            // Single Card per Employer
-            $order = ProductionOrder::firstOrCreate(
-                [
+        if ($request->filled('production_order_id')) {
+            $order = ProductionOrder::findOrFail($request->production_order_id);
+        } else {
+            $request->validate([
+                'work_type_id' => 'required|exists:work_types,id',
+                'employer_id' => 'required|exists:employers,id',
+                // 'items' => array of employee IDs or new data
+            ]);
+
+            $workType = WorkType::findOrFail($request->work_type_id);
+
+            // Logic: Find or Create Order
+            if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
+                // Single Card per Employer
+                $order = ProductionOrder::firstOrCreate(
+                    [
+                        'employer_id' => $request->employer_id,
+                        'work_type_id' => $workType->id,
+                        'status' => 'active' // Or whatever active status is
+                    ],
+                    [
+                        'type' => 'employer',
+                        'project_name' => $workType->name . ' - ' . Employer::find($request->employer_id)->employerNameTh,
+                        'created_by' => auth()->id()
+                    ]
+                );
+            } else {
+                // MOU / Other: Always Create New
+                $order = ProductionOrder::create([
                     'employer_id' => $request->employer_id,
                     'work_type_id' => $workType->id,
-                    'status' => 'active' // Or whatever active status is
-                ],
-                [
                     'type' => 'employer',
-                    'project_name' => $workType->name . ' - ' . Employer::find($request->employer_id)->employerNameTh,
+                    'project_name' => $request->project_name ?? ($workType->name . ' - ' . now()->format('d/m/Y')),
+                    'status' => 'active',
                     'created_by' => auth()->id()
-                ]
-            );
-        } else {
-            // MOU / Other: Always Create New
-            $order = ProductionOrder::create([
-                'employer_id' => $request->employer_id,
-                'work_type_id' => $workType->id,
-                'type' => 'employer',
-                'project_name' => $request->project_name ?? ($workType->name . ' - ' . now()->format('d/m/Y')),
-                'status' => 'active',
-                'created_by' => auth()->id()
-            ]);
+                ]);
+            }
         }
 
         // Add Items
@@ -257,7 +261,9 @@ class WorkflowController extends Controller
             ]);
         }
 
-        return redirect()->route('workflow.index', ['tab' => $workType->slug])
+        $slug = $order->workType->slug ?? ($request->work_type_id ? WorkType::find($request->work_type_id)->slug : 'notify_in');
+
+        return redirect()->route('workflow.index', ['tab' => $slug])
                          ->with('success', 'Job updated successfully.');
     }
 
@@ -342,5 +348,56 @@ class WorkflowController extends Controller
                 ]);
             }
         }
+    }
+
+    public function show($id)
+    {
+        $order = ProductionOrder::with('workType')->findOrFail($id);
+        // Redirect to the tab that contains this order
+        return redirect()->route('workflow.index', ['tab' => $order->workType->slug]);
+    }
+
+    // --- Step Configuration Methods ---
+
+    public function storeStep(Request $request)
+    {
+        $request->validate([
+            'work_type_id' => 'required|exists:work_types,id',
+            'name' => 'required|string|max:255',
+        ]);
+
+        $maxOrder = WorkTypeStep::where('work_type_id', $request->work_type_id)->max('order') ?? 0;
+
+        WorkTypeStep::create([
+            'work_type_id' => $request->work_type_id,
+            'name' => $request->name,
+            'order' => $maxOrder + 1
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function updateStep(Request $request, $id)
+    {
+        $request->validate(['name' => 'required|string|max:255']);
+        WorkTypeStep::findOrFail($id)->update(['name' => $request->name]);
+        return response()->json(['success' => true]);
+    }
+
+    public function destroyStep($id)
+    {
+        WorkTypeStep::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function reorderSteps(Request $request)
+    {
+        $request->validate(['order' => 'required|array']);
+
+        foreach ($request->order as $index => $id) {
+            WorkTypeStep::where('id', $id)->update(['order' => $index + 1]);
+        }
+
+        return response()->json(['success' => true]);
     }
 }
