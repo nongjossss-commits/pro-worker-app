@@ -12,11 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employers', function (Blueprint $table) {
-            $table->string('signerNameTh')->nullable()->after('businessType');
-            $table->string('signerNameEn')->nullable()->after('signerNameTh');
-            $table->string('businessTypeEn')->nullable()->after('signerNameEn');
-            $table->string('regCapital')->nullable()->after('businessTypeEn');
-            $table->date('regDate')->nullable()->after('regCapital');
+            if (!Schema::hasColumn('employers', 'signerNameTh')) {
+                $table->string('signerNameTh')->nullable()->after('businessType');
+            }
+            if (!Schema::hasColumn('employers', 'signerNameEn')) {
+                $table->string('signerNameEn')->nullable()->after('signerNameTh');
+            }
+            if (!Schema::hasColumn('employers', 'businessTypeEn')) {
+                $table->string('businessTypeEn')->nullable()->after('signerNameEn');
+            }
+            if (!Schema::hasColumn('employers', 'regCapital')) {
+                $table->string('regCapital')->nullable()->after('businessTypeEn');
+            }
+            if (!Schema::hasColumn('employers', 'regDate')) {
+                $table->date('regDate')->nullable()->after('regCapital');
+            }
         });
     }
 
@@ -26,13 +36,24 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('employers', function (Blueprint $table) {
-            $table->dropColumn([
+            $columns = [
                 'signerNameTh',
                 'signerNameEn',
                 'businessTypeEn',
                 'regCapital',
                 'regDate',
-            ]);
+            ];
+
+            $toDrop = [];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('employers', $column)) {
+                    $toDrop[] = $column;
+                }
+            }
+
+            if (!empty($toDrop)) {
+                $table->dropColumn($toDrop);
+            }
         });
     }
 };
