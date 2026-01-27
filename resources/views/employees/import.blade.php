@@ -180,6 +180,8 @@
                         <div class="d-flex justify-content-between">
                             @if(isset($back_route))
                                 <a href="{{ $back_route }}" class="btn btn-light">{{ __('Back') }}</a>
+                            @elseif(request('return_to') === 'workflow' && isset($production))
+                                <a href="{{ route('workflow.index', ['tab' => $production->workType->slug ?? '']) }}" class="btn btn-light">{{ __('Back to Workflow') }}</a>
                             @elseif(isset($production))
                                 <a href="{{ route('production.edit', $production->id) }}" class="btn btn-light">{{ __('Back to Project') }}</a>
                             @else
@@ -255,6 +257,8 @@
                 </button>
                 @if(session('finish_route'))
                     <a href="{{ session('finish_route') }}" class="btn btn-success fw-bold px-4"><i class="bi bi-check-lg me-1"></i> {{ __('Confirm & Finish') }}</a>
+                @elseif(request('return_to') === 'workflow' && isset($production))
+                    <a href="{{ route('workflow.index', ['tab' => $production->workType->slug ?? '']) }}" class="btn btn-success fw-bold px-4"><i class="bi bi-check-lg me-1"></i> {{ __('Confirm & Return to Workflow') }}</a>
                 @elseif(isset($back_route)) {{-- Fallback if passed directly --}}
                     <a href="{{ $back_route }}" class="btn btn-success fw-bold px-4"><i class="bi bi-check-lg me-1"></i> {{ __('Confirm & Finish') }}</a>
                 @elseif(session('production_id'))

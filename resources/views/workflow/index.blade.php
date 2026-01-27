@@ -124,6 +124,11 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><a class="dropdown-item" href="#" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')"><i class="bi bi-person-plus me-2"></i>{{ __('Add Employee') }}</a></li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}">
+                                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Import Employees') }}
+                                        </a>
+                                    </li>
                                     {{-- <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>{{ __('Edit Details') }}</a></li> --}}
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>{{ __('Delete') }}</a></li>
