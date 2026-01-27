@@ -309,23 +309,32 @@
 {{-- Manage Team Modal --}}
 <div class="modal fade" id="manageTeamModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">{{ __('Manage Team') }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-people-fill me-2"></i>{{ __('Manage Workflow Team') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" id="team_item_id">
-                <div id="team-loading" class="text-center py-3">
-                    <div class="spinner-border text-primary" role="status"></div>
+
+                <div class="mb-4">
+                    <label for="workflow_team_name" class="form-label fw-bold text-dark">{{ __('Team Name / Batch') }}</label>
+                    <input type="text" class="form-control form-control-lg" id="workflow_team_name" placeholder="{{ __('e.g., Batch 1, Arrived 25/10') }}">
+                    <div class="form-text text-muted">{{ __('Assign a group name to organize employees in this job.') }}</div>
                 </div>
-                <div id="team-list" class="d-none">
-                    <!-- Teams loaded here -->
+
+                <div id="existing-teams-wrapper" class="d-none">
+                    <h6 class="fw-bold text-secondary mb-3 small text-uppercase">{{ __('Existing Teams in this Job') }}</h6>
+                    <div class="d-flex flex-wrap gap-2" id="existing-teams-list">
+                        <!-- Chips loaded via JS -->
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-primary" onclick="saveItemTeam()">{{ __('Save') }}</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-primary px-4" onclick="saveItemTeam()">
+                    <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
+                </button>
             </div>
         </div>
     </div>
@@ -602,67 +611,62 @@
         });
     }
 
-    // --- Manage Team JS ---
-    window.openManageTeamModal = function(itemId, employerId) {
+    // --- Manage Team JS (Workflow Batch) ---
+    window.openManageTeamModal = function(itemId, btn) {
+        const groupName = btn.dataset.groupName || '';
+        const orderId = btn.dataset.orderId;
+
         document.getElementById('team_item_id').value = itemId;
-        const loader = document.getElementById('team-loading');
-        const list = document.getElementById('team-list');
-        const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
+        const nameInput = document.getElementById('workflow_team_name');
+        nameInput.value = groupName;
 
-        loader.classList.remove('d-none');
-        list.classList.add('d-none');
+        // Existing Teams (Scan DOM)
+        const wrapper = document.getElementById('existing-teams-wrapper');
+        const list = document.getElementById('existing-teams-list');
         list.innerHTML = '';
-        modal.show();
+        wrapper.classList.add('d-none');
 
-        fetch(`/workflow/api/employer-teams/${employerId}`)
-            .then(res => res.json())
-            .then(data => {
-                loader.classList.add('d-none');
-                list.classList.remove('d-none');
+        if(orderId) {
+            const container = document.getElementById(`order-content-${orderId}`);
+            if(container) {
+                // Find group headers (h6.fw-bold.text-dark.mb-0)
+                const headers = container.querySelectorAll('h6.fw-bold.text-dark.mb-0');
+                const uniqueGroups = new Set();
+                headers.forEach(h => uniqueGroups.add(h.innerText.trim()));
 
-                if (data.length === 0) {
-                    list.innerHTML = '<div class="text-muted text-center">{{ __("No teams found for this employer.") }}</div>';
-                    return;
+                if(uniqueGroups.size > 0) {
+                    wrapper.classList.remove('d-none');
+                    uniqueGroups.forEach(name => {
+                        const badge = document.createElement('button');
+                        badge.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3';
+                        badge.type = 'button';
+                        badge.innerText = name;
+                        badge.onclick = () => { nameInput.value = name; };
+                        list.appendChild(badge);
+                    });
                 }
+            }
+        }
 
-                data.forEach(group => {
-                    if (group.teams.length > 0) {
-                        const groupTitle = document.createElement('h6');
-                        groupTitle.className = 'fw-bold mt-2';
-                        groupTitle.innerText = group.name;
-                        list.appendChild(groupTitle);
-
-                        group.teams.forEach(team => {
-                            const div = document.createElement('div');
-                            div.className = 'form-check';
-                            div.innerHTML = `
-                                <input class="form-check-input team-checkbox" type="checkbox" value="${team.id}" id="team-${team.id}">
-                                <label class="form-check-label" for="team-${team.id}">
-                                    ${team.name}
-                                </label>
-                            `;
-                            list.appendChild(div);
-                        });
-                    }
-                });
-            });
+        const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
+        modal.show();
     }
 
     window.saveItemTeam = function() {
         const itemId = document.getElementById('team_item_id').value;
-        const checkboxes = document.querySelectorAll('.team-checkbox:checked');
-        const teamIds = Array.from(checkboxes).map(cb => cb.value);
+        const groupName = document.getElementById('workflow_team_name').value;
 
-        fetch(`/workflow/item/${itemId}/team`, {
+        fetch(`/workflow/item/${itemId}/group`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ team_ids: teamIds })
+            body: JSON.stringify({ group_name: groupName })
         })
         .then(res => res.json())
         .then(data => {
             if(data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('manageTeamModal')).hide();
-                Swal.fire('{{ __('Saved') }}', '{{ __('Team assigned successfully.') }}', 'success');
+                Swal.fire('{{ __('Saved') }}', '{{ __('Team assigned successfully.') }}', 'success')
+                .then(() => location.reload());
             } else {
                  Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to assign team.') }}', 'error');
             }
