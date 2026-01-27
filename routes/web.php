@@ -308,6 +308,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'destroyItem'])->name('workflow.item.destroy');
     Route::get('workflow/api/resigned-employees', [\App\Http\Controllers\WorkflowController::class, 'searchResignedEmployees'])->name('workflow.api.resigned');
     Route::get('workflow/api/active-employees/{employerId}', [\App\Http\Controllers\WorkflowController::class, 'fetchEmployerActiveEmployees'])->name('workflow.api.active');
+    Route::get('workflow/api/employer-teams/{employerId}', [\App\Http\Controllers\WorkflowController::class, 'getEmployerTeams'])->name('workflow.api.employer_teams');
+
+    Route::post('workflow/item/{item}/team', [\App\Http\Controllers\WorkflowController::class, 'updateItemTeam'])->name('workflow.item.team');
 
     Route::get('workflow/{id}', [\App\Http\Controllers\WorkflowController::class, 'show'])->name('workflow.show'); // Board
     Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');

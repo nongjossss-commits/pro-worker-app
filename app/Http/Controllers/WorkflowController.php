@@ -110,10 +110,14 @@ class WorkflowController extends Controller
         }
 
         // 4. Calculate Scoreboard Stats (For the Active Tab)
+        // We replicate the "Registration Resolution" style detailed stats.
         $stats = [
             'total_projects' => $orders->total(),
             'total_employees' => 0,
-            'completed_employees' => 0,
+            'not_started' => 0,
+            'cancelled' => 0,
+            'completed' => 0,
+            'step_stats' => []
         ];
 
         if ($activeTab) {
@@ -122,12 +126,81 @@ class WorkflowController extends Controller
 
             $stats['total_projects'] = $statsQuery->count();
 
-            // Total Employees
-            $itemsQuery = ProductionItem::whereIn('production_order_id', $statsQuery->select('id'));
-            $stats['total_employees'] = $itemsQuery->where('status', '!=', 'cancelled')->count();
+            // Get all items for these orders to calculate step stats
+            $allTabItems = ProductionItem::whereIn('production_order_id', $statsQuery->select('id'))
+                ->with(['completedWorkTypeSteps' => function($q) {
+                    $q->select('work_type_steps.id', 'work_type_steps.order', 'production_item_step.production_item_id');
+                }])
+                ->select('id', 'status', 'production_order_id')
+                ->get();
+
+            $globalStepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            $stepOneId = $steps->sortBy('order')->first()?->id;
+
+            foreach ($allTabItems as $item) {
+                if ($item->status === 'cancelled') {
+                    $stats['cancelled']++;
+                    continue; // Cancelled items don't count towards step stats usually
+                }
+
+                $stats['total_employees']++;
+
+                if ($item->status === 'completed') {
+                    $stats['completed']++;
+                }
+
+                // Not Started
+                if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+                    $stats['not_started']++;
+                }
+
+                // Highest Step
+                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($globalStepStats[$highestStep->id])) {
+                    $globalStepStats[$highestStep->id]++;
+                }
+            }
+            $stats['step_stats'] = $globalStepStats;
         }
 
         return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps'));
+    }
+
+    /**
+     * Fetch Employer Teams for "Manage Team" Modal.
+     */
+    public function getEmployerTeams($employerId)
+    {
+        $groups = \App\Models\EmployeeGroup::where('employer_id', $employerId)
+            ->with('teams')
+            ->get();
+
+        return response()->json($groups);
+    }
+
+    /**
+     * Update/Assign Team for an Item (Employee).
+     */
+    public function updateItemTeam(Request $request, $itemId)
+    {
+        $request->validate([
+            'team_ids' => 'array', // Allow multiple teams or empty (to clear)
+            'team_ids.*' => 'exists:employee_teams,id'
+        ]);
+
+        $item = ProductionItem::with('employee')->findOrFail($itemId);
+
+        if (!$item->employee) {
+            return response()->json(['success' => false, 'message' => 'Cannot assign team to draft employee.']);
+        }
+
+        // Sync teams to the employee
+        // Note: employee_team_members pivot table
+        // We use the 'teams' relationship on Employee model
+        // Assuming Employee model has 'teams()' belongsToMany relationship.
+        $item->employee->teams()->sync($request->input('team_ids', []));
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -173,8 +246,62 @@ class WorkflowController extends Controller
             $item->completedWorkTypeSteps()->detach($request->step_id);
         }
 
-        // Return stats for UI update if needed, but for now just success
-        return response()->json(['success' => true]);
+        // Return stats for UI update (Recalculate Order Stats)
+        $order = $item->productionOrder;
+        $orderStats = $this->calculateOrderStats($order);
+
+        return response()->json([
+            'success' => true,
+            'order_stats' => $orderStats
+        ]);
+    }
+
+    /**
+     * Helper to calculate stats for a single order.
+     */
+    private function calculateOrderStats(ProductionOrder $order)
+    {
+        // Ensure relations are loaded
+        $order->load(['items.completedWorkTypeSteps', 'workType.steps']);
+        $items = $order->items;
+        $steps = $order->workType->steps ?? collect();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
+        $total = 0;
+        $notStarted = 0;
+        $cancelled = 0;
+        $completed = 0;
+        $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+
+        foreach ($items as $item) {
+            if ($item->status === 'cancelled') {
+                $cancelled++;
+                continue;
+            }
+
+            $total++;
+
+            if ($item->status === 'completed') {
+                $completed++;
+            }
+
+            if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+                $notStarted++;
+            }
+
+            $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+            if ($highestStep && isset($stepStats[$highestStep->id])) {
+                $stepStats[$highestStep->id]++;
+            }
+        }
+
+        return [
+            'total' => $total,
+            'not_started' => $notStarted,
+            'cancelled' => $cancelled,
+            'completed' => $completed,
+            'step_stats' => $stepStats
+        ];
     }
 
     /**

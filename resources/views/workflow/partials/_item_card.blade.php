@@ -123,6 +123,13 @@
                     title="Preview">
                     <i class="bi bi-eye-fill"></i>
                 </button>
+
+                {{-- Manage Team --}}
+                <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                    onclick="openManageTeamModal({{ $item->id }}, {{ $item->productionOrder->employer_id }})"
+                    title="{{ __('Manage Team') }}">
+                    <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
+                </button>
                 @endif
 
                 {{-- SAVE TO DB (Finalize) --}}

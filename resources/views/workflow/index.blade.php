@@ -13,8 +13,49 @@
 </style>
 
 <div class="container-fluid py-4">
-    {{-- Scoreboard (Dynamic based on Stats) --}}
-    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    {{-- Scoreboard (Detailed Registration Style) --}}
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+        {{-- Total Employees --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #FBBF24;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Not Started --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #EF4444;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['not_started'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Not Started') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Cancelled --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #6B7280;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['cancelled'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Cancelled') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Completed --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #10B981;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['completed'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Completed') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Total Projects --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 bg-primary bg-gradient">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
@@ -23,34 +64,38 @@
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm border-0 bg-success bg-gradient">
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
-                </div>
+    </div>
+
+    {{-- Global Workflow Progress --}}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title fw-bold text-secondary mb-0">
+                    <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }} - {{ $activeTab->name ?? 'Overview' }}
+                </h5>
+                @if(isset($activeTab))
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                        <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
+                    </button>
+                @endif
             </div>
-        </div>
-        <div class="col">
-            <div class="card h-100 shadow-sm border-0 bg-white">
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h5 class="text-muted fw-bold mb-2">
-                        {{ $activeTab->name ?? 'Overview' }}
-                        @if(isset($activeTab))
-                            <button class="btn btn-sm btn-link text-secondary" data-bs-toggle="modal" data-bs-target="#manageStepsModal" title="{{ __('Manage Steps') }}">
-                                <i class="bi bi-gear-fill"></i>
-                            </button>
-                        @endif
-                    </h5>
-                    <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        @foreach($steps as $step)
-                            <span class="badge bg-light text-dark border">{{ $step->name }}</span>
-                        @endforeach
+
+            <div class="d-flex gap-2 flex-wrap justify-content-start align-items-center">
+                @foreach($steps as $step)
+                    @php
+                        $count = $stats['step_stats'][$step->id] ?? 0;
+                        $bgClass = $count > 0 ? "bg-success" : "bg-secondary bg-opacity-50 text-white";
+                    @endphp
+                    <div class="d-inline-flex align-items-center bg-white border rounded-pill py-2 px-3 shadow-sm gap-2">
+                        <span class="badge rounded-circle {{ $bgClass }} shadow-sm d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            {{ $count }}
+                        </span>
+                        <span class="fw-bold text-dark fs-6">{{ $step->name }}</span>
                     </div>
-                    @if($steps->isEmpty())
-                        <p class="text-muted small mb-0">{{ __('No steps configured') }}</p>
-                    @endif
-                </div>
+                @endforeach
+                @if($steps->isEmpty())
+                    <p class="text-muted small mb-0">{{ __('No steps configured.') }}</p>
+                @endif
             </div>
         </div>
     </div>
@@ -120,22 +165,22 @@
                                  <div class="d-flex align-items-center gap-2 me-xl-3">
                                     {{-- Total --}}
                                     <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                        <span class="fw-bold">{{ $computed['total'] }}</span>
+                                        <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
                                         <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
                                     </span>
                                     {{-- Not Started --}}
                                     <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;">
-                                         <span class="fw-bold">{{ $computed['not_started'] }}</span>
+                                         <span class="fw-bold" id="order-{{ $order->id }}-pending">{{ $computed['not_started'] }}</span>
                                          <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">PENDING</span>
                                     </span>
                                     {{-- Completed --}}
                                     <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                         <span class="fw-bold">{{ $computed['completed'] }}</span>
+                                         <span class="fw-bold" id="order-{{ $order->id }}-completed">{{ $computed['completed'] }}</span>
                                          <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">DONE</span>
                                     </span>
                                     {{-- Cancelled --}}
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                        <span class="fw-bold">{{ $computed['cancelled'] }}</span>
+                                        <span class="fw-bold" id="order-{{ $order->id }}-cancelled">{{ $computed['cancelled'] }}</span>
                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">CANCEL</span>
                                     </span>
                                  </div>
@@ -167,7 +212,7 @@
                                     $bgClass = $count > 0 ? "bg-success text-white" : "bg-secondary bg-opacity-25 text-muted";
                                 @endphp
                                 <div class="d-inline-flex align-items-center bg-light border rounded-pill px-3 py-1 gap-2 flex-shrink-0">
-                                    <span class="badge rounded-circle d-flex align-items-center justify-content-center stat-badge {{ $bgClass }}">
+                                    <span class="badge rounded-circle d-flex align-items-center justify-content-center stat-badge {{ $bgClass }}" id="order-{{ $order->id }}-step-{{ $step->id }}">
                                         {{ $count }}
                                     </span>
                                     <span class="text-dark fw-bold" style="font-size: 0.85rem;">{{ $step->name }}</span>
@@ -256,6 +301,31 @@
                         </li>
                     @endforeach
                 </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Manage Team Modal --}}
+<div class="modal fade" id="manageTeamModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('Manage Team') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="team_item_id">
+                <div id="team-loading" class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div id="team-list" class="d-none">
+                    <!-- Teams loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-primary" onclick="saveItemTeam()">{{ __('Save') }}</button>
             </div>
         </div>
     </div>
@@ -388,11 +458,52 @@
             if(!data.success) {
                 // Revert
                 location.reload();
+            } else if (data.order_stats) {
+                // Find order ID
+                const card = document.getElementById(`item-card-${itemId}`);
+                if (card) {
+                    const wrapper = card.closest('.order-content-wrapper');
+                    if (wrapper) {
+                        const orderId = wrapper.id.replace('order-content-', '');
+                        updateOrderHeaderStats(orderId, data.order_stats);
+                    }
+                }
             }
         })
         .catch(err => {
             console.error(err);
         });
+    }
+
+    function updateOrderHeaderStats(orderId, stats) {
+        if (!stats) return;
+
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if(el) el.innerText = text;
+        };
+
+        setText(`order-${orderId}-total`, stats.total);
+        setText(`order-${orderId}-pending`, stats.not_started);
+        setText(`order-${orderId}-completed`, stats.completed);
+        setText(`order-${orderId}-cancelled`, stats.cancelled);
+
+        // Steps
+        if (stats.step_stats) {
+            for (const [stepId, count] of Object.entries(stats.step_stats)) {
+                const badge = document.getElementById(`order-${orderId}-step-${stepId}`);
+                if (badge) {
+                    badge.innerText = count;
+                    if (count > 0) {
+                        badge.classList.remove('bg-secondary', 'bg-opacity-25', 'text-muted');
+                        badge.classList.add('bg-success', 'text-white');
+                    } else {
+                        badge.classList.add('bg-secondary', 'bg-opacity-25', 'text-muted');
+                        badge.classList.remove('bg-success', 'text-white');
+                    }
+                }
+            }
+        }
     }
 
     // --- Open Add Employee Modal ---
@@ -487,6 +598,73 @@
                 .then(data => {
                     if(data.success) location.reload();
                 });
+            }
+        });
+    }
+
+    // --- Manage Team JS ---
+    window.openManageTeamModal = function(itemId, employerId) {
+        document.getElementById('team_item_id').value = itemId;
+        const loader = document.getElementById('team-loading');
+        const list = document.getElementById('team-list');
+        const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
+
+        loader.classList.remove('d-none');
+        list.classList.add('d-none');
+        list.innerHTML = '';
+        modal.show();
+
+        fetch(`/workflow/api/employer-teams/${employerId}`)
+            .then(res => res.json())
+            .then(data => {
+                loader.classList.add('d-none');
+                list.classList.remove('d-none');
+
+                if (data.length === 0) {
+                    list.innerHTML = '<div class="text-muted text-center">{{ __("No teams found for this employer.") }}</div>';
+                    return;
+                }
+
+                data.forEach(group => {
+                    if (group.teams.length > 0) {
+                        const groupTitle = document.createElement('h6');
+                        groupTitle.className = 'fw-bold mt-2';
+                        groupTitle.innerText = group.name;
+                        list.appendChild(groupTitle);
+
+                        group.teams.forEach(team => {
+                            const div = document.createElement('div');
+                            div.className = 'form-check';
+                            div.innerHTML = `
+                                <input class="form-check-input team-checkbox" type="checkbox" value="${team.id}" id="team-${team.id}">
+                                <label class="form-check-label" for="team-${team.id}">
+                                    ${team.name}
+                                </label>
+                            `;
+                            list.appendChild(div);
+                        });
+                    }
+                });
+            });
+    }
+
+    window.saveItemTeam = function() {
+        const itemId = document.getElementById('team_item_id').value;
+        const checkboxes = document.querySelectorAll('.team-checkbox:checked');
+        const teamIds = Array.from(checkboxes).map(cb => cb.value);
+
+        fetch(`/workflow/item/${itemId}/team`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ team_ids: teamIds })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('manageTeamModal')).hide();
+                Swal.fire('{{ __('Saved') }}', '{{ __('Team assigned successfully.') }}', 'success');
+            } else {
+                 Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to assign team.') }}', 'error');
             }
         });
     }
