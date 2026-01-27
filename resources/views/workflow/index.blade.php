@@ -515,26 +515,6 @@
         }
     }
 
-    // --- Open Add Employee Modal ---
-    window.openAddEmployeeModal = function(orderId, employerId) {
-        // Find existing createJobModal and open it
-        // We'll need to adapt it. For now, just trigger it.
-        // Or if we have a simplified modal.
-        // We'll simulate opening the modal and setting values if they exist.
-        // Assuming createJobModal handles this or we need to implement it properly.
-        // I'll stick to basic alert if implementation is missing, but user asked for functionality.
-        // Let's assume the user can use the main "Add Job" button for now, but pre-filling would be nice.
-
-        // Simulating usage of Create Job Modal for "Add to existing"
-        const modalEl = document.getElementById('createJobModal');
-        if(modalEl) {
-             const modal = new bootstrap.Modal(modalEl);
-             // Logic to set hidden inputs for 'production_order_id' would go here if modal supports it.
-             // I'll skip complex JS for modal pre-filling as I haven't seen the modal code fully.
-             modal.show();
-        }
-    }
-
     // --- Item Actions ---
     window.finalizeItem = function(itemId) {
         Swal.fire({
