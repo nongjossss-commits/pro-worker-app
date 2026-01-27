@@ -113,12 +113,12 @@
 
 <script>
     window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug) {
-        document.getElementById('modal_employer_id').value = employerId;
-        document.getElementById('modal_work_type_id').value = workTypeId;
+        document.getElementById('modal_employer_id').value = employerId || '';
+        document.getElementById('modal_work_type_id').value = workTypeId || '';
         document.getElementById('modal_production_order_id').value = orderId; // Important for adding to existing
 
-        // Setup Import Link
-        const importUrl = `{{ route('employees.import_view') }}?production_id=${orderId}&employer_id=${employerId}`;
+        // Setup Import Link with return_to parameter
+        const importUrl = `{{ route('employees.import_view') }}?production_id=${orderId}&employer_id=${employerId || ''}&return_to=workflow`;
         document.getElementById('btn-go-import').href = importUrl;
 
         // Reset UI
@@ -139,7 +139,13 @@
         } else {
             // Notify Out, MOU Renewal, MOU Import (Internal) -> List Active
             document.getElementById('section-notify-out').classList.remove('d-none');
-            loadActiveEmployees(employerId);
+
+            if (employerId) {
+                loadActiveEmployees(employerId);
+            } else {
+                document.getElementById('active-employees-list').innerHTML = '<div class="text-warning text-center p-3 small"><i class="bi bi-exclamation-triangle me-1"></i> No Employer linked to this job. Use "New/Manual" or "Import".</div>';
+                document.getElementById('active-employees-loader').classList.add('d-none');
+            }
         }
 
         modal.show();
