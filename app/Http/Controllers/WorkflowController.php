@@ -37,10 +37,6 @@ class WorkflowController extends Controller
 
         if ($activeTab) {
             $query->where('work_type_id', $activeTab->id);
-        } else {
-            // "All" or "General" view - maybe show uncategorized?
-            // For now, if no tab matches, show nothing or all.
-            // Let's assume we always have a tab if seeded.
         }
 
         // Search
@@ -57,30 +53,79 @@ class WorkflowController extends Controller
 
         $orders = $query->latest('updated_at')->paginate(15);
 
+        // Calculate Stats PER ORDER for the view (Accordion Header)
+        // Also load items lightly if needed for stats, or just counts
+        // To avoid N+1, we might need to load items or counts.
+        // For accurate step stats, we need items + completedWorkTypeSteps.
+        // This is heavy. Let's do it like Registration: load items for current page orders.
+        $orders->load(['items.completedWorkTypeSteps']);
+
+        $steps = $activeTab ? $activeTab->steps : collect();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
+        foreach ($orders as $order) {
+            $items = $order->items;
+            $total = 0;
+            $notStarted = 0;
+            $cancelled = 0;
+            $completed = 0;
+            $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+
+            foreach ($items as $item) {
+                if ($item->status === 'cancelled') {
+                    $cancelled++;
+                    continue;
+                }
+
+                $total++; // Active items (Pending or Completed)
+
+                if ($item->status === 'completed') {
+                    $completed++;
+                }
+
+                // Not Started Logic
+                if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+                    $notStarted++;
+                }
+
+                // Step Stats (Highest Step)
+                // We need to sort the relation collection
+                $completedSteps = $item->completedWorkTypeSteps; // Collection
+                // We need to know the 'order' of these steps.
+                // Assuming pivot is loaded, but step order is on WorkTypeStep model.
+                // We loaded items.completedWorkTypeSteps, so we have the step models.
+                $highestStep = $completedSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($stepStats[$highestStep->id])) {
+                    $stepStats[$highestStep->id]++;
+                }
+            }
+
+            $order->computedStats = [
+                'total' => $total,
+                'not_started' => $notStarted,
+                'cancelled' => $cancelled,
+                'completed' => $completed,
+                'step_stats' => $stepStats
+            ];
+        }
+
         // 4. Calculate Scoreboard Stats (For the Active Tab)
-        // Total Projects
         $stats = [
             'total_projects' => $orders->total(),
             'total_employees' => 0,
             'completed_employees' => 0,
         ];
 
-        // We need a separate query for totals across all pages
         if ($activeTab) {
             $statsQuery = ProductionOrder::where('work_type_id', $activeTab->id)
                 ->where('status', '!=', 'pre_production');
 
             $stats['total_projects'] = $statsQuery->count();
 
-            // Join items to get employee counts
-            // This might be heavy, optimise later if needed
+            // Total Employees
             $itemsQuery = ProductionItem::whereIn('production_order_id', $statsQuery->select('id'));
-            $stats['total_employees'] = $itemsQuery->count();
-            // Assuming we have a way to know if item is "completed" - for now just count items
+            $stats['total_employees'] = $itemsQuery->where('status', '!=', 'cancelled')->count();
         }
-
-        // Steps for the active tab (to display columns/settings)
-        $steps = $activeTab ? $activeTab->steps : collect();
 
         return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps'));
     }
@@ -95,8 +140,7 @@ class WorkflowController extends Controller
 
         $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId)
-            // Grouping logic: Order by Group Name then ID
-            ->orderBy('group_name') // Nulls first usually
+            ->orderBy('group_name')
             ->orderBy('id')
             ->get();
 
@@ -129,6 +173,7 @@ class WorkflowController extends Controller
             $item->completedWorkTypeSteps()->detach($request->step_id);
         }
 
+        // Return stats for UI update if needed, but for now just success
         return response()->json(['success' => true]);
     }
 
@@ -245,7 +290,8 @@ class WorkflowController extends Controller
                     ProductionItem::create([
                         'production_order_id' => $order->id,
                         'employee_id' => $empId,
-                        'group_name' => $groupName
+                        'group_name' => $groupName,
+                        'status' => 'pending'
                     ]);
                 }
             }
@@ -257,7 +303,8 @@ class WorkflowController extends Controller
                 'production_order_id' => $order->id,
                 'employee_id' => null,
                 'new_employee_data' => $request->new_employee,
-                'group_name' => $request->group_name ?? null
+                'group_name' => $request->group_name ?? null,
+                'status' => 'pending'
             ]);
         }
 
@@ -276,6 +323,7 @@ class WorkflowController extends Controller
         $slug = $item->order->workType->slug ?? '';
 
         DB::transaction(function () use ($item, $slug) {
+            // Logic Execution
             if ($slug === 'notify_in') {
                 // Transfer to new Employer and Activate
                 if ($item->employee) {
@@ -295,18 +343,43 @@ class WorkflowController extends Controller
                     ]);
                 }
             }
-            // For MOU, maybe just mark as imported/done?
 
-            // Mark the item itself as completed (if we had a status column on ProductionItem)
-            // For now, we assume the action on the Employee model is the "Result".
+            // Mark Item Completed
+            $item->update(['status' => 'completed']);
         });
 
         return response()->json(['success' => true]);
     }
 
-    // ... keep existing show/showItem methods if needed, or remove if fully replaced.
-    // I will keep show() but redirect it or repurpose it.
-    // Actually show() was the board view. User wants new UI. I should probably remove the old Board view reference in index.
+    /**
+     * Cancel an Item.
+     */
+    public function cancelItem(Request $request, $itemId)
+    {
+        $item = ProductionItem::findOrFail($itemId);
+        $item->update(['status' => 'cancelled']);
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Restore an Item (Pending).
+     */
+    public function restoreItem(Request $request, $itemId)
+    {
+        $item = ProductionItem::findOrFail($itemId);
+        $item->update(['status' => 'pending']);
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Soft Delete an Item.
+     */
+    public function destroyItem(Request $request, $itemId)
+    {
+        $item = ProductionItem::findOrFail($itemId);
+        $item->delete();
+        return response()->json(['success' => true]);
+    }
 
     private function seedDefaultWorkTypes()
     {
@@ -353,7 +426,6 @@ class WorkflowController extends Controller
     public function show($id)
     {
         $order = ProductionOrder::with('workType')->findOrFail($id);
-        // Redirect to the tab that contains this order
         return redirect()->route('workflow.index', ['tab' => $order->workType->slug]);
     }
 
