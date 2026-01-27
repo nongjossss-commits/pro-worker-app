@@ -45,17 +45,16 @@
                             </div>
                         </div>
 
-                        {{-- Mode: Select Active --}}
-                        <div id="section-notify-out" class="d-none section-mode">
-                            <div class="alert alert-info py-2 small"><i class="bi bi-info-circle me-1"></i> {{ __('Listing Active employees of this employer') }}</div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <input type="text" class="form-control form-control-sm w-50" id="active-filter-input" placeholder="{{ __('Filter...') }}">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAllActive()">{{ __('Select All') }}</button>
+                        {{-- Mode: Global Search --}}
+                        <div id="section-global-search" class="d-none section-mode">
+                            <div class="alert alert-primary py-2 small"><i class="bi bi-globe me-1"></i> {{ __('Search all employees (Global)') }}</div>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="global-search-input" placeholder="{{ __('Type name, passport to search...') }}">
                             </div>
-                            <div id="active-employees-loader" class="text-center py-3">
-                                <div class="spinner-border text-primary spinner-border-sm"></div>
+                            <div class="list-group overflow-auto custom-scrollbar" style="max-height: 300px;" id="global-results">
+                                <div class="text-center text-muted py-3">{{ __('Type to search...') }}</div>
                             </div>
-                            <div id="active-employees-list" class="list-group overflow-auto custom-scrollbar" style="max-height: 300px;"></div>
                         </div>
                     </div>
 
@@ -125,7 +124,8 @@
         document.querySelectorAll('.section-mode').forEach(el => el.classList.add('d-none'));
         document.getElementById('addEmployeeForm').reset();
         document.getElementById('resigned-results').innerHTML = '<div class="text-center text-muted py-3">{{ __("Type to search...") }}</div>';
-        document.getElementById('active-employees-list').innerHTML = ''; // Clear previous
+        const globalRes = document.getElementById('global-results');
+        if(globalRes) globalRes.innerHTML = '<div class="text-center text-muted py-3">{{ __("Type to search...") }}</div>';
 
         const modal = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
 
@@ -137,15 +137,8 @@
             // Change Employer -> Search Resigned
             document.getElementById('section-notify-in').classList.remove('d-none');
         } else {
-            // Notify Out, MOU Renewal, MOU Import (Internal) -> List Active
-            document.getElementById('section-notify-out').classList.remove('d-none');
-
-            if (employerId) {
-                loadActiveEmployees(employerId);
-            } else {
-                document.getElementById('active-employees-list').innerHTML = '<div class="text-warning text-center p-3 small"><i class="bi bi-exclamation-triangle me-1"></i> No Employer linked to this job. Use "New/Manual" or "Import".</div>';
-                document.getElementById('active-employees-loader').classList.add('d-none');
-            }
+            // Global Search
+            document.getElementById('section-global-search').classList.remove('d-none');
         }
 
         modal.show();
@@ -188,64 +181,41 @@
         });
     }
 
-    // Load Active Employees
-    function loadActiveEmployees(employerId) {
-        const container = document.getElementById('active-employees-list');
-        const loader = document.getElementById('active-employees-loader');
+    // Global Search Logic
+    let globalSearchTimeout;
+    const globalInput = document.getElementById('global-search-input');
+    if(globalInput) {
+        globalInput.addEventListener('input', function(e) {
+            clearTimeout(globalSearchTimeout);
+            const query = e.target.value;
+            if(query.length < 2) return;
 
-        loader.classList.remove('d-none');
-        container.classList.add('d-none');
-        container.innerHTML = '';
-
-        fetch(`/workflow/api/active-employees/${employerId}`)
-            .then(res => res.json())
-            .then(data => {
-                loader.classList.add('d-none');
-                container.classList.remove('d-none');
-
-                if(data.length === 0) {
-                     container.innerHTML = '<div class="text-center text-muted">No active employees found.</div>';
-                     return;
-                }
-
-                data.forEach(emp => {
-                    const item = document.createElement('label');
-                    item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer active-emp-item';
-                    const searchStr = (emp.employeeNameTh + ' ' + emp.employeeNameEn + ' ' + emp.employeePassport).toLowerCase();
-                    item.dataset.name = searchStr;
-                    item.innerHTML = `
-                        <input class="form-check-input flex-shrink-0 active-emp-checkbox" type="checkbox" name="employee_ids[]" value="${emp.id}">
-                         <div>
-                            <div class="fw-bold">${emp.employeeNameEn || emp.employeeNameTh || '-'}</div>
-                            <div class="small text-muted">${emp.employeePassport || '-'}</div>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-            });
-    }
-
-    // Filter Active List
-    const activeFilter = document.getElementById('active-filter-input');
-    if(activeFilter) {
-        activeFilter.addEventListener('input', function(e) {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.active-emp-item').forEach(el => {
-                if(el.dataset.name.includes(term)) el.classList.remove('d-none');
-                else el.classList.add('d-none');
-            });
+            globalSearchTimeout = setTimeout(() => {
+                fetch(`{{ route('workflow.api.global') }}?q=${query}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const container = document.getElementById('global-results');
+                        container.innerHTML = '';
+                        if(data.length === 0) {
+                            container.innerHTML = '<div class="text-center text-muted py-2">No employees found.</div>';
+                            return;
+                        }
+                        data.forEach(emp => {
+                            const item = document.createElement('label');
+                            item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer';
+                            const currentEmployer = emp.employer ? (emp.employer.employerNameTh || emp.employer.employerNameEn) : 'No Employer';
+                            item.innerHTML = `
+                                <input class="form-check-input flex-shrink-0" type="checkbox" name="employee_ids[]" value="${emp.id}">
+                                <div>
+                                    <div class="fw-bold">${emp.employeeNameEn || emp.employeeNameTh || '-'}</div>
+                                    <div class="small text-muted">Current: ${currentEmployer}</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Passport: ${emp.employeePassport || '-'}</div>
+                                </div>
+                            `;
+                            container.appendChild(item);
+                        });
+                    });
+            }, 500);
         });
-    }
-
-    // Toggle Select All Active
-    window.toggleSelectAllActive = function() {
-        // Only visible items
-        const visibleItems = Array.from(document.querySelectorAll('.active-emp-item')).filter(el => !el.classList.contains('d-none'));
-        const visibleCheckboxes = visibleItems.map(el => el.querySelector('.active-emp-checkbox'));
-
-        if(visibleCheckboxes.length === 0) return;
-
-        const allChecked = visibleCheckboxes.every(cb => cb.checked);
-        visibleCheckboxes.forEach(cb => cb.checked = !allChecked);
     }
 </script>
