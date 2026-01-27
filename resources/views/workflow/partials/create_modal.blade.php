@@ -10,7 +10,7 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label">{{ __('Work Type') }}</label>
-                    <select name="work_type_id" class="form-select" required onchange="updateProjectNamePlaceholder(this)">
+                    <select name="work_type_id" class="form-select" required>
                         @foreach($tabs as $tab)
                             <option value="{{ $tab->id }}" data-name="{{ $tab->name }}" {{ isset($activeTab) && $activeTab->id == $tab->id ? 'selected' : '' }}>
                                 {{ $tab->name }}
@@ -30,10 +30,6 @@
                     </select>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Project Name') }} <small class="text-muted">({{ __('Optional') }})</small></label>
-                    <input type="text" name="project_name" class="form-control" placeholder="{{ __('Auto-generated if empty') }}">
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
@@ -42,10 +38,3 @@
         </form>
     </div>
 </div>
-
-<script>
-    function updateProjectNamePlaceholder(select) {
-        const name = select.options[select.selectedIndex].dataset.name;
-        // Logic to update placeholder or hint if needed
-    }
-</script>

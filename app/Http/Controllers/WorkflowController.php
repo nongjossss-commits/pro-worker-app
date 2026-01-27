@@ -344,6 +344,31 @@ class WorkflowController extends Controller
     }
 
     /**
+     * API: Search Global Active Employees (Any Employer).
+     */
+    public function searchGlobalEmployees(Request $request)
+    {
+        $search = $request->query('q');
+
+        // Search active employees (not terminated) across all employers
+        $query = Employee::query()
+             ->whereNull('terminated_at')
+             ->with('employer'); // Include employer to show in results
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
+
+        $employees = $query->limit(20)->get();
+
+        return response()->json($employees);
+    }
+
+    /**
      * API: Fetch Active Employees for an Employer (Notify Out).
      */
     public function fetchEmployerActiveEmployees($employerId)
