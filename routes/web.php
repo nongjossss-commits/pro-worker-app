@@ -303,6 +303,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/step-toggle', [\App\Http\Controllers\WorkflowController::class, 'toggleStep'])->name('workflow.step.toggle');
     Route::post('workflow/item/{item}/group', [\App\Http\Controllers\WorkflowController::class, 'updateGroup'])->name('workflow.item.group');
     Route::post('workflow/item/{item}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeItem'])->name('workflow.item.finalize');
+    Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');
+    Route::post('workflow/item/{item}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreItem'])->name('workflow.item.restore');
+    Route::delete('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'destroyItem'])->name('workflow.item.destroy');
     Route::get('workflow/api/resigned-employees', [\App\Http\Controllers\WorkflowController::class, 'searchResignedEmployees'])->name('workflow.api.resigned');
     Route::get('workflow/api/active-employees/{employerId}', [\App\Http\Controllers\WorkflowController::class, 'fetchEmployerActiveEmployees'])->name('workflow.api.active');
 
