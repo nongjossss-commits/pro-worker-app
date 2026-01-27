@@ -1,6 +1,7 @@
-@props(['item', 'steps'])
+@props(['item', 'steps', 'order' => null])
 
 @php
+    $order = $order ?? $item->order;
     $status = $item->status ?? 'pending';
     $isCompleted = $status === 'completed';
     $isCancelled = $status === 'cancelled';
@@ -126,7 +127,7 @@
 
                 {{-- Manage Team --}}
                 <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                    onclick="openManageTeamModal({{ $item->id }}, {{ $item->productionOrder->employer_id }})"
+                    onclick="openManageTeamModal({{ $item->id }}, {{ $order->employer_id }})"
                     title="{{ __('Manage Team') }}">
                     <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
                 </button>

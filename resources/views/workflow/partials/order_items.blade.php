@@ -23,7 +23,7 @@
 
         <div class="item-list">
             @foreach($items as $item)
-                @include('workflow.partials._item_card', ['item' => $item, 'steps' => $steps])
+                @include('workflow.partials._item_card', ['item' => $item, 'steps' => $steps, 'order' => $order])
             @endforeach
         </div>
     @endforeach

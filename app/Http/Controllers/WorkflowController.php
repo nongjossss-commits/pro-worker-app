@@ -247,7 +247,7 @@ class WorkflowController extends Controller
         }
 
         // Return stats for UI update (Recalculate Order Stats)
-        $order = $item->productionOrder;
+        $order = $item->order;
         $orderStats = $this->calculateOrderStats($order);
 
         return response()->json([
