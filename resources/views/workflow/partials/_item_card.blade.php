@@ -127,7 +127,9 @@
 
                 {{-- Manage Team --}}
                 <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                    onclick="openManageTeamModal({{ $item->id }}, {{ $order->employer_id }})"
+                    onclick="openManageTeamModal({{ $item->id }}, this)"
+                    data-group-name="{{ $item->group_name }}"
+                    data-order-id="{{ $order->id }}"
                     title="{{ __('Manage Team') }}">
                     <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
                 </button>
