@@ -74,9 +74,14 @@
                     <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }} - {{ $activeTab->name ?? 'Overview' }}
                 </h5>
                 @if(isset($activeTab))
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                        <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
+                            <i class="bi bi-bell-fill me-1"></i> {{ __('Notify Settings') }}
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                            <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
+                        </button>
+                    </div>
                 @endif
             </div>
 
@@ -103,6 +108,13 @@
     {{-- Tabs Navigation --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2" style="scrollbar-width: thin;">
+            <li class="nav-item">
+                <a class="nav-link bg-white border text-secondary"
+                   href="{{ route('workflow.index') }}"
+                   style="white-space: nowrap;">
+                    <i class="bi bi-speedometer2 me-1"></i> {{ __('Dashboard') }}
+                </a>
+            </li>
             @foreach($tabs as $tab)
                 <li class="nav-item">
                     <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
@@ -254,6 +266,31 @@
 
 {{-- Add Employee Modal --}}
 @include('workflow.partials.add_employee_modal')
+
+{{-- Notification Settings Modal --}}
+<div class="modal fade" id="notificationSettingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="bi bi-bell-fill me-2"></i>{{ __('Notification Settings') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">{{ __('Set how many days in advance to show appointments on the Dashboard.') }}</p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ __('Notify Days in Advance') }}</label>
+                    <input type="number" class="form-control" id="notifyDaysInput" value="{{ $activeTab->notify_days_advance ?? 3 }}" min="0" max="365">
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-warning px-4" onclick="saveNotificationSettings()">
+                    <i class="bi bi-save-fill me-1"></i> {{ __('Save Settings') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {{-- Manage Steps Modal --}}
 <div class="modal fade" id="manageStepsModal" tabindex="-1">
@@ -587,6 +624,25 @@
                 .then(data => {
                     if(data.success) location.reload();
                 });
+            }
+        });
+    }
+
+    // --- Notification Settings JS ---
+    window.saveNotificationSettings = function() {
+        if(!activeTabId) return;
+        const days = document.getElementById('notifyDaysInput').value;
+
+        fetch(`/workflow/settings/${activeTabId}/notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ notify_days_advance: days })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('notificationSettingsModal')).hide();
+                Swal.fire('{{ __('Saved') }}', '{{ __('Settings updated.') }}', 'success');
             }
         });
     }

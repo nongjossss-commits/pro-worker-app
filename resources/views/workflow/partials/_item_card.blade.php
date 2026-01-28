@@ -28,6 +28,19 @@
     $empPassport = $item->employee->employeePassport ?? $item->new_employee_data['passport_no'] ?? '-';
     $empNationality = $item->employee->employeeNationality ?? $item->new_employee_data['nationality'] ?? '-';
     $empId = $item->employee_id;
+
+    // Appointment Date Logic
+    $appDate = $item->appointment_date;
+    $appDisplay = '-';
+    $appValue = '';
+    if ($appDate) {
+        $appValue = $appDate->format('Y-m-d H:i');
+        if ($appDate->format('H:i:s') === '00:00:00') {
+            $appDisplay = $appDate->format('d/m/Y');
+        } else {
+            $appDisplay = $appDate->format('d/m/Y H:i');
+        }
+    }
 @endphp
 
 <div class="d-flex align-items-center item-card-outer mb-3 item-card-wrapper"
@@ -83,33 +96,77 @@
                     </div>
                 </div>
 
-                {{-- Group Name Edit (Replaces 3 Extra Fields) --}}
+                {{-- Appointment Date (Replaces Group Field) --}}
                 <div class="ms-md-4" x-data="{
                     isEditing: false,
-                    groupName: '{{ $item->group_name }}',
-                    saveGroup() {
-                        fetch('/workflow/item/{{ $item->id }}/group', {
+                    dateValue: '{{ $appValue }}',
+                    displayValue: '{{ $appDisplay }}',
+                    initFlatpickr() {
+                        if (this.$refs.dateInput._flatpickr) return;
+                        flatpickr(this.$refs.dateInput, {
+                            enableTime: true,
+                            dateFormat: 'Y-m-d H:i',
+                            altInput: true,
+                            altFormat: 'd/m/Y H:i',
+                            time_24hr: true,
+                            defaultDate: this.dateValue,
+                            onChange: (selectedDates, dateStr) => {
+                                this.dateValue = dateStr;
+                            }
+                        });
+                    },
+                    saveDate() {
+                        fetch('/workflow/item/{{ $item->id }}/appointment', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                            body: JSON.stringify({ group_name: this.groupName })
+                            body: JSON.stringify({ appointment_date: this.dateValue })
                         }).then(res => res.json()).then(data => {
                             if(data.success) {
                                 this.isEditing = false;
-                                // Optional toast
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: 'Saved',
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                                // Simple update display logic
+                                if (!this.dateValue) {
+                                    this.displayValue = '-';
+                                } else {
+                                    // Basic parse to check time (simplified)
+                                    if(this.dateValue.endsWith('00:00')) {
+                                        let d = new Date(this.dateValue); // Browser parse might vary but ok for basic
+                                        // To be safe, just show what flatpickr returned or reload if critical
+                                        // Let's just use the string for now, user sees what they picked.
+                                        this.displayValue = this.dateValue;
+                                    } else {
+                                        this.displayValue = this.dateValue;
+                                    }
+                                }
+                                // Ideally reload partial to format correctly server-side
+                                // location.reload(); // Too heavy?
                             }
                         });
                     }
                 }">
-                    <div style="min-width: 150px;">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Group / Batch') }}</small>
-                        <div x-show="!isEditing" class="d-flex align-items-center gap-2">
-                            <div class="small text-dark border rounded px-2 py-1 bg-light text-nowrap overflow-hidden" style="min-height: 31px;" x-text="groupName || '-'"></div>
-                            <button @click="isEditing = true" class="btn btn-sm btn-link text-secondary p-0 {{ $overlayClass }}"><i class="bi bi-pencil-fill"></i></button>
+                    <div style="min-width: 170px;">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment Date') }}</small>
+
+                        <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer"
+                             @click="isEditing = true; $nextTick(() => initFlatpickr())">
+                             <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex align-items-center gap-2" style="min-height: 31px;">
+                                <i class="bi bi-calendar-event text-warning"></i> <span x-text="displayValue"></span>
+                             </div>
                         </div>
-                        <div x-show="isEditing" class="d-flex gap-1">
-                            <input type="text" class="form-control form-control-sm" x-model="groupName" placeholder="Group Name">
-                            <button @click="saveGroup()" class="btn btn-sm btn-success"><i class="bi bi-check"></i></button>
-                            <button @click="isEditing = false" class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
+
+                        <div x-show="isEditing" class="d-flex gap-1 align-items-center" style="display: none;">
+                             <div style="width: 140px;">
+                                <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
+                             </div>
+                             <button @click="saveDate()" class="btn btn-sm btn-success p-1"><i class="bi bi-check-lg"></i></button>
+                             <button @click="isEditing = false" class="btn btn-sm btn-outline-danger p-1"><i class="bi bi-x-lg"></i></button>
                         </div>
                     </div>
                 </div>
