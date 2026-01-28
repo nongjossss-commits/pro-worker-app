@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\Employer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class WorkflowController extends Controller
 {
@@ -20,7 +21,9 @@ class WorkflowController extends Controller
     public function index(Request $request)
     {
         // 1. Get Tabs (Work Types)
-        $tabs = WorkType::orderBy('order')->get();
+        $tabs = WorkType::withCount(['orders' => function($q){
+             $q->where('status', '!=', 'pre_production');
+        }])->orderBy('order')->get();
 
         if ($tabs->isEmpty()) {
             $this->seedDefaultWorkTypes();
@@ -28,7 +31,13 @@ class WorkflowController extends Controller
         }
 
         // 2. Determine Active Tab
-        $activeTabSlug = $request->query('tab', $tabs->first()?->slug);
+        // If no tab is specified, show the Dashboard Landing Page
+        $activeTabSlug = $request->query('tab');
+
+        if (!$activeTabSlug) {
+             return $this->dashboard($tabs);
+        }
+
         $activeTab = $tabs->where('slug', $activeTabSlug)->first();
 
         // 3. Query Orders for this Tab
@@ -54,10 +63,6 @@ class WorkflowController extends Controller
         $orders = $query->latest('updated_at')->paginate(15);
 
         // Calculate Stats PER ORDER for the view (Accordion Header)
-        // Also load items lightly if needed for stats, or just counts
-        // To avoid N+1, we might need to load items or counts.
-        // For accurate step stats, we need items + completedWorkTypeSteps.
-        // This is heavy. Let's do it like Registration: load items for current page orders.
         $orders->load(['items.completedWorkTypeSteps']);
 
         $steps = $activeTab ? $activeTab->steps : collect();
@@ -89,12 +94,7 @@ class WorkflowController extends Controller
                 }
 
                 // Step Stats (Highest Step)
-                // We need to sort the relation collection
-                $completedSteps = $item->completedWorkTypeSteps; // Collection
-                // We need to know the 'order' of these steps.
-                // Assuming pivot is loaded, but step order is on WorkTypeStep model.
-                // We loaded items.completedWorkTypeSteps, so we have the step models.
-                $highestStep = $completedSteps->sortByDesc('order')->first();
+                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
                 if ($highestStep && isset($stepStats[$highestStep->id])) {
                     $stepStats[$highestStep->id]++;
                 }
@@ -110,7 +110,6 @@ class WorkflowController extends Controller
         }
 
         // 4. Calculate Scoreboard Stats (For the Active Tab)
-        // We replicate the "Registration Resolution" style detailed stats.
         $stats = [
             'total_projects' => $orders->total(),
             'total_employees' => 0,
@@ -167,6 +166,79 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Dashboard Landing Page Logic
+     */
+    private function dashboard($tabs)
+    {
+        // 1. Global Scoreboard Stats
+        $stats = [
+            'total_projects' => ProductionOrder::where('status', '!=', 'pre_production')->count(),
+            'total_employees' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
+                                               ->where('status', '!=', 'cancelled')->count(),
+            'not_started' => 0, // Harder to calc globally efficiently without step context
+            'cancelled' => ProductionItem::where('status', 'cancelled')->count(),
+            'completed' => ProductionItem::where('status', 'completed')->count(),
+        ];
+
+        // 2. Upcoming Appointments
+        // Filter by each work type's notification setting
+        $upcomingAppointments = collect();
+        $workTypes = $tabs;
+
+        foreach ($workTypes as $wt) {
+            $days = $wt->notify_days_advance ?? 3;
+            // Range: Today 00:00 to Today+Days 23:59
+            $start = Carbon::now()->startOfDay();
+            $end = Carbon::now()->addDays($days)->endOfDay();
+
+            $items = ProductionItem::whereHas('order', fn($q) => $q->where('work_type_id', $wt->id))
+                ->where('status', '!=', 'cancelled')
+                ->where('status', '!=', 'completed')
+                ->whereNotNull('appointment_date')
+                ->whereBetween('appointment_date', [$start, $end])
+                ->with(['employee', 'order.employer', 'order.workType'])
+                ->get();
+
+            $upcomingAppointments = $upcomingAppointments->merge($items);
+        }
+
+        // Sort by date soonest
+        $upcomingAppointments = $upcomingAppointments->sortBy('appointment_date');
+
+        return view('workflow.dashboard', compact('tabs', 'stats', 'upcomingAppointments'));
+    }
+
+    /**
+     * API: Update Appointment Date
+     */
+    public function updateAppointmentDate(Request $request, $itemId)
+    {
+        $request->validate([
+            'appointment_date' => 'nullable|date',
+        ]);
+
+        $item = ProductionItem::findOrFail($itemId);
+        $item->update(['appointment_date' => $request->appointment_date]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Update Notification Settings for WorkType
+     */
+    public function updateNotificationSettings(Request $request, $workTypeId)
+    {
+        $request->validate([
+            'notify_days_advance' => 'required|integer|min:0|max:365'
+        ]);
+
+        $wt = WorkType::findOrFail($workTypeId);
+        $wt->update(['notify_days_advance' => $request->notify_days_advance]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Fetch Employer Teams for "Manage Team" Modal.
      */
     public function getEmployerTeams($employerId)
@@ -194,10 +266,6 @@ class WorkflowController extends Controller
             return response()->json(['success' => false, 'message' => 'Cannot assign team to draft employee.']);
         }
 
-        // Sync teams to the employee
-        // Note: employee_team_members pivot table
-        // We use the 'teams' relationship on Employee model
-        // Assuming Employee model has 'teams()' belongsToMany relationship.
         $item->employee->teams()->sync($request->input('team_ids', []));
 
         return response()->json(['success' => true]);
@@ -323,11 +391,8 @@ class WorkflowController extends Controller
     public function searchResignedEmployees(Request $request)
     {
         $search = $request->query('q');
-
-        // "Notify Out" usually results in termination (terminated_at != null).
-        // So we search for employees who are effectively "out" of the system (history).
         $query = Employee::query()
-             ->whereNotNull('terminated_at') // Filter for terminated/resigned employees
+             ->whereNotNull('terminated_at')
              ->with('employer');
 
         if ($search) {
@@ -349,11 +414,9 @@ class WorkflowController extends Controller
     public function searchGlobalEmployees(Request $request)
     {
         $search = $request->query('q');
-
-        // Search active employees (not terminated) across all employers
         $query = Employee::query()
              ->whereNull('terminated_at')
-             ->with('employer'); // Include employer to show in results
+             ->with('employer');
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -374,7 +437,7 @@ class WorkflowController extends Controller
     public function fetchEmployerActiveEmployees($employerId)
     {
         $employees = Employee::where('employer_id', $employerId)
-            ->whereNull('terminated_at') // Active
+            ->whereNull('terminated_at')
             ->limit(100)
             ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport']);
 
@@ -394,19 +457,16 @@ class WorkflowController extends Controller
             $request->validate([
                 'work_type_id' => 'required|exists:work_types,id',
                 'employer_id' => 'required|exists:employers,id',
-                // 'items' => array of employee IDs or new data
             ]);
 
             $workType = WorkType::findOrFail($request->work_type_id);
 
-            // Logic: Find or Create Order
             if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
-                // Single Card per Employer
                 $order = ProductionOrder::firstOrCreate(
                     [
                         'employer_id' => $request->employer_id,
                         'work_type_id' => $workType->id,
-                        'status' => 'active' // Or whatever active status is
+                        'status' => 'active'
                     ],
                     [
                         'type' => 'employer',
@@ -415,7 +475,6 @@ class WorkflowController extends Controller
                     ]
                 );
             } else {
-                // MOU / Other: Always Create New
                 $order = ProductionOrder::create([
                     'employer_id' => $request->employer_id,
                     'work_type_id' => $workType->id,
@@ -427,13 +486,11 @@ class WorkflowController extends Controller
             }
         }
 
-        // Add Items
         if ($request->has('employee_ids')) {
-            $ids = $request->employee_ids; // Expecting array
+            $ids = $request->employee_ids;
             $groupName = $request->group_name ?? null;
 
             foreach ($ids as $empId) {
-                // Check if already in this order?
                 $exists = ProductionItem::where('production_order_id', $order->id)
                             ->where('employee_id', $empId)
                             ->exists();
@@ -449,7 +506,6 @@ class WorkflowController extends Controller
             }
         }
 
-        // Handle Manual New Employee (MOU/Draft)
         if ($request->filled('new_employee.name_en') || $request->filled('new_employee.name_th')) {
             ProductionItem::create([
                 'production_order_id' => $order->id,
@@ -475,19 +531,16 @@ class WorkflowController extends Controller
         $slug = $item->order->workType->slug ?? '';
 
         DB::transaction(function () use ($item, $slug) {
-            // Logic Execution
             if ($slug === 'notify_in') {
-                // Transfer to new Employer and Activate
                 if ($item->employee) {
                     $item->employee->update([
                         'employer_id' => $item->order->employer_id,
-                        'status' => null, // Active
+                        'status' => null,
                         'terminated_at' => null,
                         'termination_reason' => null
                     ]);
                 }
             } elseif ($slug === 'notify_out') {
-                // Terminate / Resign
                 if ($item->employee) {
                     $item->employee->update([
                         'terminated_at' => now(),
@@ -496,7 +549,6 @@ class WorkflowController extends Controller
                 }
             }
 
-            // Mark Item Completed
             $item->update(['status' => 'completed']);
         });
 

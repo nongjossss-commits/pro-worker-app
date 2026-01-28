@@ -14,11 +14,14 @@ class ProductionItem extends Model
         'production_order_id',
         'employee_id', // Nullable now
         'group_name', // NEW: Group/Batch name
+        'appointment_date',
+        'status',
         'new_employee_data', // JSON for temp employees
     ];
 
     protected $casts = [
         'new_employee_data' => 'array',
+        'appointment_date' => 'datetime',
     ];
 
     public function order()

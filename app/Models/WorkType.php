@@ -14,6 +14,7 @@ class WorkType extends Model
         'slug',
         'is_system',
         'order',
+        'notify_days_advance',
     ];
 
     public function steps()
