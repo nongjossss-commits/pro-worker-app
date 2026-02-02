@@ -70,11 +70,13 @@ trait AddressFilterTrait
 
         // Get the correct morph class for Employer to ensure matching regardless of MorphMap
         $morphClass = (new Employer)->getMorphClass();
+        // Also include the short class name to handle legacy data or direct saves
+        $possibleMorphs = array_unique([$morphClass, class_basename($morphClass)]);
 
         // Use a joinSub to robustly filter addresses belonging to the filtered employers
         // This avoids limitations of whereIn with subqueries and handles bindings correctly
         $baseAddressQuery = Address::query()
-            ->where('addressable_type', $morphClass)
+            ->whereIn('addressable_type', $possibleMorphs)
             ->joinSub($subQuery, 'filtered_source', function ($join) use ($joinColumn) {
                 $join->on('addresses.addressable_id', '=', 'filtered_source.' . $joinColumn);
             });
