@@ -827,16 +827,20 @@
                     }
                 }
                 else if (type === 'passport') {
-                    // 3.5cm x 4.5cm. @150DPI (approx 59 px/cm) -> 206 x 265
-                    const pw = 206;
-                    const ph = 265;
+                    // Passport (Spread/Open ID-3): 176mm x 125mm @ 150DPI
+                    // W: (176 / 25.4) * 150 = 1039 px
+                    // H: (125 / 25.4) * 150 = 738 px
+                    const pw = 1039;
+                    const ph = 738;
                     // Center it
-                    if(images[0]) ctx.drawImage(images[0], (a4w - pw)/2, (a4h - ph)/2, pw, ph);
+                    if(images[0]) drawFit(images[0], (a4w - pw)/2, (a4h - ph)/2, pw, ph);
                 }
                 else if (type === 'card') {
-                    // Credit Card: 8.5 x 5.5 cm -> 500 x 325
-                    const cw = 500;
-                    const ch = 325;
+                    // Credit Card (ID-1): 85.6mm x 54mm @ 150DPI
+                    // W: (85.6 / 25.4) * 150 = 506 px
+                    // H: (54 / 25.4) * 150 = 319 px
+                    const cw = 506;
+                    const ch = 319;
                     if(images[0]) drawFit(images[0], (a4w - cw)/2, (a4h - ch)/2, cw, ch);
                 }
                 else if (type === 'half_v') {
@@ -861,9 +865,10 @@
                 }
                 else if (type === 'id_card_pair') {
                     // Specific ID Card Layout (Center Top / Center Bottom)
-                    // Like the scanned version logic
-                    const cardW = a4w * 0.6;
-                    const cardH = cardW * 0.65; // Approx ratio
+                    // Standard ID-1 Size: 506 x 319 px
+                    const cardW = 506;
+                    const cardH = 319;
+
                     const topY = a4h/4 - cardH/2;
                     const botY = a4h*3/4 - cardH/2;
 
@@ -912,21 +917,36 @@
             },
 
             rotateImage(degrees) {
+                // 1. Get current normalized corners before rotation
+                const oldW = this.canvasWidth;
+                const oldH = this.canvasHeight;
+                const normCorners = this.corners.map(c => ({
+                    u: c.x / oldW,
+                    v: c.y / oldH
+                }));
+
+                // 2. Update Rotation
                 this.rotation = (this.rotation + degrees) % 360;
                 if(this.rotation < 0) this.rotation += 360;
 
-                // When rotating, the previous corners (relative to unrotated image) become invalid visual markers
-                // unless we rotate the points too.
-                // However, user usually rotates because detection failed or orientation is wrong.
-                // Simpler: Reset to full crop on rotate.
-                this.resetToFull();
+                // 3. Transform Normalized Corners
+                // 90 deg CW: (u, v) -> (1-v, u)
+                // -90 deg CCW: (u, v) -> (v, 1-u)
+                let newNormCorners = [];
+                if (degrees === 90) {
+                    newNormCorners = normCorners.map(c => ({ u: 1 - c.v, v: c.u }));
+                } else if (degrees === -90) {
+                    newNormCorners = normCorners.map(c => ({ u: c.v, v: 1 - c.u }));
+                } else {
+                    newNormCorners = normCorners;
+                }
 
                 // Re-render
                 const item = this.capturedImages[this.currentEditIndex];
-                this.loadImageForCrop(item.original, this.corners, true); // true = force reset corners based on new dimensions
+                this.loadImageForCrop(item.original, newNormCorners, false, true);
             },
 
-            loadImageForCrop(src, savedCorners, forceFull = false) {
+            loadImageForCrop(src, savedCorners, forceFull = false, isNormalized = false) {
                 const img = new Image();
                 img.onload = () => {
                     // Handle Rotation Logic (Virtual Canvas)
@@ -977,15 +997,19 @@
                     if (forceFull) {
                         this.resetToFull();
                     } else {
-                        // Restore corners - NOTE: Saved corners are relative to ORIGINAL UNROTATED image.
-                        // If we have rotation, mapping old corners is complex.
-                        // Ideally, we store corners relative to the current rotation state, OR we reset on open.
-                        // For this implementation, if rotation is 0, use saved. If not, we might have issues.
-                        // But since we reset rotation to 0 on open, this is fine.
-                        this.corners = savedCorners.map(c => ({
-                            x: c.x * this.scaleX,
-                            y: c.y * this.scaleY
-                        }));
+                        if (isNormalized) {
+                            // Map normalized (0..1) to New Canvas Dimensions
+                            this.corners = savedCorners.map(c => ({
+                                x: c.u * this.canvasWidth,
+                                y: c.v * this.canvasHeight
+                            }));
+                        } else {
+                            // Map Original Image Coordinates to Canvas
+                            this.corners = savedCorners.map(c => ({
+                                x: c.x * this.scaleX,
+                                y: c.y * this.scaleY
+                            }));
+                        }
                     }
                 };
                 img.src = src;
