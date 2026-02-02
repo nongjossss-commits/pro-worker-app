@@ -214,13 +214,21 @@
         @forelse ($employer->addresses->where('type', 'registered') as $address)
             <div class="address-card p-3 border rounded">
                 <p class="mb-0">
-                    เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
-                    แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
+                    {{ $address->addrNo ? 'เลขที่ ' . $address->addrNo : '' }}
+                    {{ $address->addrMoo ? 'หมู่ ' . $address->addrMoo : '' }}
+                    {{ $address->addrSoi ? 'ซอย' . $address->addrSoi : '' }}
+                    {{ $address->addrRoad ? 'ถนน' . $address->addrRoad : '' }}
+                    {{ $address->addrSubDistrict ? 'แขวง/ตำบล ' . $address->addrSubDistrict : '' }}
+                    {{ $address->addrDistrict ? 'เขต/อำเภอ ' . $address->addrDistrict : '' }}
                     {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
                 </p>
                 <p class="mb-0 text-muted small">
-                    Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
-                    {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
+                    {{ $address->addrNoEn ? 'Addr: ' . $address->addrNoEn . ', ' : '' }}
+                    {{ $address->addrMooEn ? 'Moo: ' . $address->addrMooEn . ', ' : '' }}
+                    {{ $address->addrSoiEn ? 'Soi: ' . $address->addrSoiEn . ', ' : '' }}
+                    {{ $address->addrRoadEn ? 'Road: ' . $address->addrRoadEn . ', ' : '' }}
+                    {{ $address->addrSubDistrictEn ? $address->addrSubDistrictEn . ', ' : '' }}
+                    {{ $address->addrDistrictEn ? $address->addrDistrictEn . ', ' : '' }}
                     {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
                 </p>
             </div>
@@ -237,13 +245,21 @@
         @forelse ($employer->addresses->where('type', 'workplace') as $address)
              <div class="address-card p-3 border rounded">
                 <p class="mb-0">
-                    เลขที่ {{ $address->addrNo ?? '' }} หมู่ {{ $address->addrMoo ?? '' }} ซอย{{ $address->addrSoi ?? '' }} ถนน{{ $address->addrRoad ?? '' }}
-                    แขวง/ตำบล {{ $address->addrSubDistrict ?? '' }} เขต/อำเภอ {{ $address->addrDistrict ?? '' }}
+                    {{ $address->addrNo ? 'เลขที่ ' . $address->addrNo : '' }}
+                    {{ $address->addrMoo ? 'หมู่ ' . $address->addrMoo : '' }}
+                    {{ $address->addrSoi ? 'ซอย' . $address->addrSoi : '' }}
+                    {{ $address->addrRoad ? 'ถนน' . $address->addrRoad : '' }}
+                    {{ $address->addrSubDistrict ? 'แขวง/ตำบล ' . $address->addrSubDistrict : '' }}
+                    {{ $address->addrDistrict ? 'เขต/อำเภอ ' . $address->addrDistrict : '' }}
                     {{ $address->addrProvince ?? '' }} {{ $address->addrZipCode ?? '' }}
                 </p>
                 <p class="mb-0 text-muted small">
-                    Addr: {{ $address->addrNoEn ?? '' }}, Moo: {{ $address->addrMooEn ?? '' }}, Soi: {{ $address->addrSoiEn ?? '' }}, Road: {{ $address->addrRoadEn ?? '' }},
-                    {{ $address->addrSubDistrictEn ?? '' }}, {{ $address->addrDistrictEn ?? '' }},
+                    {{ $address->addrNoEn ? 'Addr: ' . $address->addrNoEn . ', ' : '' }}
+                    {{ $address->addrMooEn ? 'Moo: ' . $address->addrMooEn . ', ' : '' }}
+                    {{ $address->addrSoiEn ? 'Soi: ' . $address->addrSoiEn . ', ' : '' }}
+                    {{ $address->addrRoadEn ? 'Road: ' . $address->addrRoadEn . ', ' : '' }}
+                    {{ $address->addrSubDistrictEn ? $address->addrSubDistrictEn . ', ' : '' }}
+                    {{ $address->addrDistrictEn ? $address->addrDistrictEn . ', ' : '' }}
                     {{ $address->addrProvinceEn ?? '' }} {{ $address->addrZipCodeEn ?? '' }}
                 </p>
             </div>
