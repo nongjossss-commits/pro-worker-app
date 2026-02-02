@@ -174,10 +174,15 @@ class WorkflowController extends Controller
         $stats = [
             'total_projects' => ProductionOrder::where('status', '!=', 'pre_production')->count(),
             'total_employees' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
-                                               ->where('status', '!=', 'cancelled')->count(),
-            'not_started' => 0, // Harder to calc globally efficiently without step context
-            'cancelled' => ProductionItem::where('status', 'cancelled')->count(),
-            'completed' => ProductionItem::where('status', 'completed')->count(),
+                                               ->count(),
+            'not_started' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
+                                           ->where('status', 'pending')
+                                           ->doesntHave('completedWorkTypeSteps')
+                                           ->count(),
+            'cancelled' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
+                                         ->where('status', 'cancelled')->count(),
+            'completed' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
+                                         ->where('status', 'completed')->count(),
         ];
 
         // 2. Upcoming Appointments
