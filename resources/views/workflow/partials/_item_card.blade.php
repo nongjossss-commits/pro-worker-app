@@ -116,37 +116,55 @@
                         });
                     },
                     saveDate() {
-                        fetch('/workflow/item/{{ $item->id }}/appointment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                            body: JSON.stringify({ appointment_date: this.dateValue })
-                        }).then(res => res.json()).then(data => {
-                            if(data.success) {
-                                this.isEditing = false;
-                                Swal.fire({
-                                    toast: true,
-                                    position: 'top-end',
-                                    icon: 'success',
-                                    title: 'Saved',
-                                    showConfirmButton: false,
-                                    timer: 1500
-                                });
-                                // Simple update display logic
-                                if (!this.dateValue) {
-                                    this.displayValue = '-';
-                                } else {
-                                    // Basic parse to check time (simplified)
-                                    if(this.dateValue.endsWith('00:00')) {
-                                        let d = new Date(this.dateValue); // Browser parse might vary but ok for basic
-                                        // To be safe, just show what flatpickr returned or reload if critical
-                                        // Let's just use the string for now, user sees what they picked.
-                                        this.displayValue = this.dateValue;
-                                    } else {
-                                        this.displayValue = this.dateValue;
+                        Swal.fire({
+                            title: '{{ __("Confirm Appointment") }}',
+                            text: '{{ __("Are you sure you want to set this appointment date?") }}',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: '{{ __("Yes, save it!") }}',
+                            cancelButtonText: '{{ __("Cancel") }}'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                fetch('/workflow/item/{{ $item->id }}/appointment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                                    body: JSON.stringify({ appointment_date: this.dateValue })
+                                }).then(res => res.json()).then(data => {
+                                    if(data.success) {
+                                        this.isEditing = false;
+                                        Swal.fire({
+                                            toast: true,
+                                            position: 'top-end',
+                                            icon: 'success',
+                                            title: '{{ __("Appointment Saved") }}',
+                                            showConfirmButton: false,
+                                            timer: 1500
+                                        });
+
+                                        // Update display logic
+                                        if (!this.dateValue) {
+                                            this.displayValue = '-';
+                                        } else {
+                                            try {
+                                                let parts = this.dateValue.split(' ');
+                                                let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
+                                                let timePart = parts[1];
+
+                                                let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+                                                if (timePart === '00:00') {
+                                                    this.displayValue = displayDate;
+                                                } else {
+                                                    this.displayValue = `${displayDate} ${timePart}`;
+                                                }
+                                            } catch (e) {
+                                                this.displayValue = this.dateValue;
+                                            }
+                                        }
                                     }
-                                }
-                                // Ideally reload partial to format correctly server-side
-                                // location.reload(); // Too heavy?
+                                });
                             }
                         });
                     }
