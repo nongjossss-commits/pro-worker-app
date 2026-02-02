@@ -58,29 +58,57 @@ trait AddressFilterTrait
         if ($joinEmployees) {
             $table = $subQuery->getModel()->getTable();
             $subQuery->join('employees', $table . '.employee_id', '=', 'employees.id');
-            $employerIdsQuery = $subQuery->select('employees.employer_id');
+            // Select the employer_id and use it as the join key
+            $subQuery->select('employees.employer_id');
+            $joinColumn = 'employer_id';
         } else {
-            $employerIdsQuery = $subQuery->select($employerIdField);
+            $subQuery->select($employerIdField);
+            // Extract the simple column name (alias) for the join condition
+            // e.g. "employers.id" -> "id", "employer_id" -> "employer_id"
+            $joinColumn = str_contains($employerIdField, '.') ? last(explode('.', $employerIdField)) : $employerIdField;
         }
 
-        $baseAddressQuery = Address::where('addressable_type', Employer::class)
-            ->whereIn('addressable_id', $employerIdsQuery);
+        // Get the correct morph class for Employer to ensure matching regardless of MorphMap
+        $morphClass = (new Employer)->getMorphClass();
 
-        $provinces = (clone $baseAddressQuery)->distinct()->pluck('addrProvince')->filter()->sort()->values();
+        // Use a joinSub to robustly filter addresses belonging to the filtered employers
+        // This avoids limitations of whereIn with subqueries and handles bindings correctly
+        $baseAddressQuery = Address::query()
+            ->where('addressable_type', $morphClass)
+            ->joinSub($subQuery, 'filtered_source', function ($join) use ($joinColumn) {
+                $join->on('addresses.addressable_id', '=', 'filtered_source.' . $joinColumn);
+            });
+
+        $provinces = (clone $baseAddressQuery)
+            ->distinct()
+            ->pluck('addrProvince')
+            ->filter()
+            ->sort()
+            ->values();
 
         $districts = collect();
         $selectedProvince = request('addrProvince');
         if ($selectedProvince) {
-            $districts = (clone $baseAddressQuery)->where('addrProvince', $selectedProvince)
-                ->distinct()->pluck('addrDistrict')->filter()->sort()->values();
+            $districts = (clone $baseAddressQuery)
+                ->where('addrProvince', $selectedProvince)
+                ->distinct()
+                ->pluck('addrDistrict')
+                ->filter()
+                ->sort()
+                ->values();
         }
 
         $subDistricts = collect();
         $selectedDistrict = request('addrDistrict');
         if ($selectedProvince && $selectedDistrict) {
-            $subDistricts = (clone $baseAddressQuery)->where('addrProvince', $selectedProvince)
+            $subDistricts = (clone $baseAddressQuery)
+                ->where('addrProvince', $selectedProvince)
                 ->where('addrDistrict', $selectedDistrict)
-                ->distinct()->pluck('addrSubDistrict')->filter()->sort()->values();
+                ->distinct()
+                ->pluck('addrSubDistrict')
+                ->filter()
+                ->sort()
+                ->values();
         }
 
         return [
