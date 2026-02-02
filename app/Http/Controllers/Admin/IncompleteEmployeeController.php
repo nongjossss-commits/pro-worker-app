@@ -39,7 +39,10 @@ class IncompleteEmployeeController extends Controller
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                    ->orWhere('employerNameEn', 'like', $searchTerm);
+                                    ->orWhere('employerNameEn', 'like', $searchTerm)
+                                    ->orWhere(function($addrQ) use ($searchTerm) {
+                                        $addrQ->filterByAddress($searchTerm);
+                                    });
                   });
             });
         }

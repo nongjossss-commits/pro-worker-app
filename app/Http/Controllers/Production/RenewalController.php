@@ -808,18 +808,46 @@ class RenewalController extends Controller
               ->orWhere('employeePassport', 'like', "%{$search}%")
               ->orWhereHas('employer', function($q2) use ($search) {
                   $q2->where('employerNameTh', 'like', "%{$search}%")
-                     ->orWhere('employerNameEn', 'like', "%{$search}%");
+                     ->orWhere('employerNameEn', 'like', "%{$search}%")
+                     ->orWhere(function($addrQ) use ($search) {
+                         $addrQ->filterByAddress($search);
+                     });
               });
         });
     }
 
     private function applyEmployerSearchToQuery($query, $employer, $search)
     {
-        // Simple search for now
-        return $query->where(function($q) use ($search) {
-            $q->where('employeeNameTh', 'like', "%{$search}%")
-              ->orWhere('employeeNameEn', 'like', "%{$search}%")
-              ->orWhere('employeePassport', 'like', "%{$search}%");
-        });
+        $employerMatches = false;
+        if (stripos($employer->employerNameTh, $search) !== false ||
+            stripos($employer->employerNameEn, $search) !== false) {
+            $employerMatches = true;
+        }
+
+        if (!$employerMatches && $employer->jobOwner && stripos($employer->jobOwner->name, $search) !== false) {
+            $employerMatches = true;
+        }
+
+        // Check address match
+        if (!$employerMatches) {
+             $addressMatch = $employer->addresses()->where(function($q) use ($search) {
+                 $q->where('addrProvince', 'like', "%{$search}%")
+                   ->orWhere('addrDistrict', 'like', "%{$search}%");
+             })->exists();
+
+             if ($addressMatch) {
+                 $employerMatches = true;
+             }
+        }
+
+        if ($employerMatches) {
+            return $query;
+        } else {
+            return $query->where(function($q) use ($search) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%");
+            });
+        }
     }
 }

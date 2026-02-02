@@ -55,7 +55,10 @@ class WorkflowController extends Controller
                 $q->where('project_name', 'like', "%{$search}%")
                   ->orWhereHas('employer', function($e) use ($search) {
                       $e->where('employerNameTh', 'like', "%{$search}%")
-                        ->orWhere('employerNameEn', 'like', "%{$search}%");
+                        ->orWhere('employerNameEn', 'like', "%{$search}%")
+                        ->orWhere(function($addrQ) use ($search) {
+                            $addrQ->filterByAddress($search);
+                        });
                   });
             });
         }
@@ -399,7 +402,10 @@ class WorkflowController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('employeeNameTh', 'like', "%{$search}%")
                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%");
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function($e) use ($search) {
+                      $e->filterByAddress($search);
+                  });
             });
         }
 
@@ -422,7 +428,10 @@ class WorkflowController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('employeeNameTh', 'like', "%{$search}%")
                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%");
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhereHas('employer', function($e) use ($search) {
+                      $e->filterByAddress($search);
+                  });
             });
         }
 

@@ -1248,6 +1248,9 @@ class RegistrationController extends Controller
                      ->orWhere('employerNameEn', 'like', "%{$search}%")
                      ->orWhereHas('jobOwner', function($q3) use ($search) {
                          $q3->where('name', 'like', "%{$search}%");
+                     })
+                     ->orWhere(function($addrQ) use ($search) {
+                         $addrQ->filterByAddress($search);
                      });
               });
         });
@@ -1266,6 +1269,18 @@ class RegistrationController extends Controller
 
         if (!$employerMatches && $employer->jobOwner && stripos($employer->jobOwner->name, $search) !== false) {
             $employerMatches = true;
+        }
+
+        // Check address match
+        if (!$employerMatches) {
+             $addressMatch = $employer->addresses()->where(function($q) use ($search) {
+                 $q->where('addrProvince', 'like', "%{$search}%")
+                   ->orWhere('addrDistrict', 'like', "%{$search}%");
+             })->exists();
+
+             if ($addressMatch) {
+                 $employerMatches = true;
+             }
         }
 
         if ($employerMatches) {
