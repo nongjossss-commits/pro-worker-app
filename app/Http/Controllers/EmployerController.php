@@ -11,9 +11,12 @@ use Illuminate\Validation\Rule;
 use App\Models\Employee;
 use App\Services\SignatureGeneratorService; // Import Service
 use Illuminate\Support\Facades\Hash;
+use App\Traits\AddressFilterTrait;
 
 class EmployerController extends Controller
 {
+    use AddressFilterTrait;
+
     /**
      * Apply permission middleware to the controller.
      */
@@ -27,7 +30,7 @@ class EmployerController extends Controller
 
     public function index(Request $request)
     {
-        $query = Employer::with(['jobOwner', 'assignedStaff'])->latest();
+        $query = Employer::with(['jobOwner', 'assignedStaff', 'addresses'])->latest();
 
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
@@ -48,10 +51,16 @@ class EmployerController extends Controller
             });
         }
 
+        // Address options (before address filtering)
+        $addressOptions = $this->getAddressOptions($query);
+
+        // Apply address filters
+        $query = $this->applyAddressFilters($query, $request);
+
         $perPage = $request->input('per_page', 10);
         $employers = $query->paginate($perPage)->withQueryString();
 
-        return view('employers.index', compact('employers'));
+        return view('employers.index', compact('employers', 'addressOptions'));
     }
 
     public function create()

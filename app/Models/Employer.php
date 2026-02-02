@@ -110,4 +110,21 @@ class Employer extends Model
     {
         return $this->morphMany(ProductionCustomField::class, 'model');
     }
+
+    public function getMatchedAddressLabels($province, $district = null, $subDistrict = null)
+    {
+        if (!$province) return [];
+        $labels = [];
+        // Ensure addresses are loaded or load them
+        $addresses = $this->relationLoaded('addresses') ? $this->addresses : $this->addresses()->get();
+
+        foreach ($addresses as $address) {
+            if ($address->addrProvince === $province) {
+                if ($district && $address->addrDistrict !== $district) continue;
+                if ($subDistrict && $address->addrSubDistrict !== $subDistrict) continue;
+                $labels[] = ($address->type === 'registered') ? '(ที่อยู่ตามทะเบียนบ้าน)' : '(ที่อยู่สถานที่ทำงาน)';
+            }
+        }
+        return array_unique($labels);
+    }
 }

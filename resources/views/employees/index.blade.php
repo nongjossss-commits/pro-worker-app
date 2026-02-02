@@ -27,6 +27,8 @@
     @endcan
 </div>
 
+<x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
 <div class="card p-3 mb-3">
     <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
         <form method="GET" action="{{ route('employees.index') }}" class="d-flex flex-wrap align-items-center gap-2">
@@ -202,6 +204,11 @@
                         </td>
                         <td class="text-muted">
                             {{ $employee->employer->employerNameTh ?? 'N/A' }}
+                            @if(request('addrProvince') && $employee->employer)
+                                @foreach($employee->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                    <div class="text-primary small fw-bold">{{ $label }}</div>
+                                @endforeach
+                            @endif
                             @if($employee->employer)
                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
                                     <i class="bi bi-search"></i>

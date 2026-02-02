@@ -22,6 +22,8 @@
         </div>
     </div>
 
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     <div class="card mb-4">
         <div class="card-body">
             <form action="{{ route('notifications.index') }}" method="GET" class="d-flex flex-column gap-3">

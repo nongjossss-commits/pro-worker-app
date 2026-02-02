@@ -68,6 +68,11 @@
                 </h5>
                 <small class="text-muted" title="นายจ้าง">
                     {{ $employerName }}
+                    @if(request('addrProvince') && $employee->employer)
+                        @foreach($employee->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                            <div class="text-primary small fw-bold">{{ $label }}</div>
+                        @endforeach
+                    @endif
                     @if($employee->employer)
                         <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
                                 data-model-type="employer"

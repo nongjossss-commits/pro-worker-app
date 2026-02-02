@@ -87,6 +87,11 @@
 
             <span class="employer-name d-block text-muted">
                 {{ __('Employer:') }} {{ $employerName }}
+                @if(request('addrProvince') && $employee->employer)
+                    @foreach($employee->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                        <span class="text-primary small fw-bold">{{ $label }}</span>
+                    @endforeach
+                @endif
                 @if($employee->employer)
                 <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
                     <i class="bi bi-search"></i>

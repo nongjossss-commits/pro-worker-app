@@ -33,6 +33,9 @@
             </div>
         </div>
     </div>
+
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-light">
@@ -57,7 +60,14 @@
                         })"
                         style="cursor: grab;">
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $employer->employerNameTh }}</td>
+                        <td>
+                            {{ $employer->employerNameTh }}
+                            @if(request('addrProvince'))
+                                @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                    <div class="text-primary small fw-bold">{{ $label }}</div>
+                                @endforeach
+                            @endif
+                        </td>
                         <td>{{ $employer->employerId }}</td>
                         <td>{{ $employer->businessType }}</td>
                         <td>{{ $employer->jobOwner->name ?? 'N/A' }}</td>

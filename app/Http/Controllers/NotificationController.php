@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use App\Traits\AddressFilterTrait;
 
 class NotificationController extends Controller
 {
+    use AddressFilterTrait;
+
     public function index(Request $request)
     {
         $currentView = $request->input('view', 'card');
@@ -89,12 +92,25 @@ class NotificationController extends Controller
         $notificationsData['cancelled'] = $cancelledQuery->paginate($perPage, ['*'], 'cancelled_page')
             ->appends(array_merge($request->query(), ['active_tab' => 'cancelled']));
 
-        return view('notifications.index', compact('notificationsData', 'counts', 'tabs', 'currentView', 'perPageOptions'));
+        // NEW: Get address options for the active tab (or union if no active tab?)
+        $activeTab = $request->input('active_tab', array_key_first($tabs) ?: 'cancelled');
+        $activeQueryForOptions = $this->getFilteredQuery($request, $activeTab, true); // true means skip address filters
+
+        if ($activeTab === 'employer_document_expiry') {
+            $addressOptions = $this->getAddressOptions($activeQueryForOptions, 'employer_id');
+        } elseif ($activeTab === 'cancelled') {
+            // Cancelled can be mixed. For simplicity, we join employees as most are employee-based.
+            $addressOptions = $this->getAddressOptions($activeQueryForOptions, 'employee_id', true);
+        } else {
+            $addressOptions = $this->getAddressOptions($activeQueryForOptions, 'employee_id', true);
+        }
+
+        return view('notifications.index', compact('notificationsData', 'counts', 'tabs', 'currentView', 'perPageOptions', 'addressOptions'));
     }
 
-    private function getFilteredQuery(Request $request, string $type)
+    private function getFilteredQuery(Request $request, string $type, $skipAddressFilters = false)
     {
-        $query = Notification::with(['employee.employer', 'employer']);
+        $query = Notification::with(['employee.employer.addresses', 'employer.addresses']);
 
         // Filter out notifications where the related model is missing (e.g. soft deleted)
         if ($type === 'employer_document_expiry') {
@@ -175,15 +191,20 @@ class NotificationController extends Controller
         }
 
         if ($request->filled('insurance_type')) {
-            $type = $request->input('insurance_type');
+            $insuranceType = $request->input('insurance_type');
             // Only apply to notifications linked to employees
-            $query->whereHas('employee', function ($q) use ($type) {
-                if ($type === 'none') {
+            $query->whereHas('employee', function ($q) use ($insuranceType) {
+                if ($insuranceType === 'none') {
                     $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
                 } else {
-                    $q->where('insurance_type', $type);
+                    $q->where('insurance_type', $insuranceType);
                 }
             });
+        }
+
+        if (!$skipAddressFilters) {
+            $employerPath = ($type === 'employer_document_expiry') ? 'employer' : 'employee.employer';
+            $query = $this->applyAddressFilters($query, $request, $employerPath);
         }
 
         return $query;

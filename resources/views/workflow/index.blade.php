@@ -105,6 +105,8 @@
         </div>
     </div>
 
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     {{-- Tabs Navigation --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2" style="scrollbar-width: thin;">
@@ -162,7 +164,14 @@
                                     @endif
                                 </div>
                                 <div>
-                                    <h5 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">{{ $order->project_name }}</h5>
+                                    <h5 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">
+                                        {{ $order->project_name }}
+                                        @if(request('addrProvince') && $order->employer)
+                                            @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                                <span class="badge bg-info text-white small ms-1" style="font-size: 0.7rem;">{{ $label }}</span>
+                                            @endforeach
+                                        @endif
+                                    </h5>
                                     <div class="text-muted small">
                                         {{ $order->updated_at->diffForHumans() }}
                                     </div>

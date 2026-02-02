@@ -16,6 +16,8 @@
         </div>
     </div>
 
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     {{-- Filter Section --}}
     <div class="card p-3 mb-3">
         <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
@@ -180,6 +182,11 @@
                                 </td>
                                 <td class="text-muted">
                                     {{ optional($employee->employer)->employerNameTh ?? 'N/A' }}
+                                    @if(request('addrProvince') && $employee->employer)
+                                        @foreach($employee->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                            <div class="text-primary small fw-bold">{{ $label }}</div>
+                                        @endforeach
+                                    @endif
                                     @if($employee->employer)
                                         <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
                                                 data-model-type="employer"

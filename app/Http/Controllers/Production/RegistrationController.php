@@ -14,9 +14,12 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Traits\AddressFilterTrait;
 
 class RegistrationController extends Controller
 {
+    use AddressFilterTrait;
+
     public function __construct()
     {
         // Permissions can be refined later.
@@ -98,7 +101,13 @@ class RegistrationController extends Controller
 
         // --- 3. Fetch Employers (Optimization: No 'employees' eager load) ---
         $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
-            ->with(['jobOwner', 'customFields']);
+            ->with(['jobOwner', 'customFields', 'addresses']);
+
+        // NEW: Address options (before address filtering)
+        $addressOptions = $this->getAddressOptions($employerQuery);
+
+        // NEW: Apply address filters
+        $employerQuery = $this->applyAddressFilters($employerQuery, $request);
 
         if (auth()->user()->can('manage-tickets')) {
             $employerQuery->withoutGlobalScope('employerTenancy');
@@ -242,7 +251,8 @@ class RegistrationController extends Controller
             'steps',
             'stepStats',
             'employers',
-            'lastStepId'
+            'lastStepId',
+            'addressOptions'
         ));
     }
 

@@ -8,22 +8,33 @@ use App\Models\Employer;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Traits\AddressFilterTrait;
 
 class ProductionController extends Controller
 {
+    use AddressFilterTrait;
+
     /**
      * Display a listing of Production Orders (Preparation / Pre-Production).
      */
-    public function index()
+    public function index(Request $request)
     {
         // Only show Pre-Production here. Active jobs go to WorkflowController.
-        $orders = ProductionOrder::with(['employer', 'items.employee.employer'])
+        $query = ProductionOrder::with(['employer.addresses', 'items.employee.employer'])
                     ->where('status', 'pre_production')
                     ->withCount('items')
-                    ->latest()
-                    ->paginate(15);
+                    ->latest();
 
-        return view('production.index', compact('orders'));
+        // NEW: Address options (before address filtering)
+        // ProductionOrder has employer_id
+        $addressOptions = $this->getAddressOptions($query, 'employer_id');
+
+        // NEW: Apply address filters
+        $query = $this->applyAddressFilters($query, $request, 'employer');
+
+        $orders = $query->paginate(15)->withQueryString();
+
+        return view('production.index', compact('orders', 'addressOptions'));
     }
 
     /**

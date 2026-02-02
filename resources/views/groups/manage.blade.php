@@ -127,6 +127,8 @@
         </div>
     </div>
 
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     <!-- Bulk Action Bar -->
     <x-bulk-action-bar id="group-manage-bulk-bar">
         <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
@@ -256,7 +258,7 @@
                                                 $employerName = $firstMember->employer ? ($firstMember->employer->employerNameTh . ' (' . $firstMember->employer->employerNameEn . ')') : __('Unknown Employer');
                                             @endphp
                                             <div class="mb-3">
-                                                <h5 class="bg-light p-2 rounded border-start border-4 border-primary d-flex align-items-center">
+                                                <h5 class="bg-light p-2 rounded border-start border-4 border-primary d-flex align-items-center flex-wrap">
                                                     <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab me-2"
                                                        draggable="true"
                                                        data-drag-payload="{{ json_encode([
@@ -268,6 +270,11 @@
                                                        ondragstart="window.startDragGlobal(event, 'employees_bulk', JSON.parse(this.dataset.dragPayload))"
                                                        title="{{ __('Drag') }}"></i>
                                                     <i class="bi bi-building me-2"></i>{{ $employerName }}
+                                                    @if(request('addrProvince') && $firstMember->employer)
+                                                        @foreach($firstMember->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                                            <span class="badge bg-info text-white small ms-1" style="font-size: 0.7rem;">{{ $label }}</span>
+                                                        @endforeach
+                                                    @endif
                                                 </h5>
                                                 <div class="list-group">
                                                     @foreach($members as $member)

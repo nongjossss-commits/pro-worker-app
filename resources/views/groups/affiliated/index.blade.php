@@ -11,6 +11,8 @@
         <h1 class="h3 mt-2 text-gray-800">{{ __('Select Employer for Group Management') }}</h1>
     </div>
 
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form action="{{ route('groups.affiliated.index') }}" method="GET" class="row g-3">
@@ -41,7 +43,14 @@
              })">
             <div class="card h-100 shadow-sm border-0 bg-white">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold text-primary">{{ $employer->employerNameTh }}</h5>
+                    <h5 class="card-title fw-bold text-primary">
+                        {{ $employer->employerNameTh }}
+                        @if(request('addrProvince'))
+                            @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                <div class="text-info small fw-bold" style="font-size: 0.7rem;">{{ $label }}</div>
+                            @endforeach
+                        @endif
+                    </h5>
                     <h6 class="card-subtitle mb-2 text-muted">{{ $employer->employerNameEn }}</h6>
                     <p class="card-text small text-muted">
                         {{ __('Employees') }}: {{ $employer->employees()->count() }}
