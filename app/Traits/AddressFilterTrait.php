@@ -51,7 +51,8 @@ trait AddressFilterTrait
 
         // Remove orders and pagination for the subquery
         $subQuery->getQuery()->orders = null;
-        $subQuery->offset(null)->limit(null);
+        $subQuery->getQuery()->limit = null;
+        $subQuery->getQuery()->offset = null;
 
         // Ensure we only get the relevant ID column
         if ($joinEmployees) {
