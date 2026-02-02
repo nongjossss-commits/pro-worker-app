@@ -164,19 +164,21 @@
             <!-- VIEW: CROP -->
             <div x-show="view === 'crop'" class="w-full h-full flex flex-col bg-dark relative">
                 <div class="flex-grow relative overflow-hidden flex items-center justify-center bg-gray-900" x-ref="cropContainer">
-                    <canvas x-ref="cropCanvas" class="max-w-full max-h-full shadow-2xl"></canvas>
+                    <div class="relative shadow-2xl max-w-full max-h-full flex items-center justify-center" x-ref="cropWrapper">
+                        <canvas x-ref="cropCanvas" class="block max-w-full max-h-full object-contain"></canvas>
 
-                    <!-- SVG Overlay for Handles -->
-                     <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10;">
-                        <!-- Polygon Line -->
-                        <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
+                        <!-- SVG Overlay for Handles -->
+                        <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10;">
+                            <!-- Polygon Line -->
+                            <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
 
-                        <!-- Handles -->
-                        <circle :cx="corners[0].x" :cy="corners[0].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(0, $event)" @touchstart="startDrag(0, $event)" />
-                        <circle :cx="corners[1].x" :cy="corners[1].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(1, $event)" @touchstart="startDrag(1, $event)" />
-                        <circle :cx="corners[2].x" :cy="corners[2].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(2, $event)" @touchstart="startDrag(2, $event)" />
-                        <circle :cx="corners[3].x" :cy="corners[3].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(3, $event)" @touchstart="startDrag(3, $event)" />
-                    </svg>
+                            <!-- Handles -->
+                            <circle :cx="corners[0].x" :cy="corners[0].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(0, $event)" @touchstart="startDrag(0, $event)" />
+                            <circle :cx="corners[1].x" :cy="corners[1].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(1, $event)" @touchstart="startDrag(1, $event)" />
+                            <circle :cx="corners[2].x" :cy="corners[2].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(2, $event)" @touchstart="startDrag(2, $event)" />
+                            <circle :cx="corners[3].x" :cy="corners[3].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(3, $event)" @touchstart="startDrag(3, $event)" />
+                        </svg>
+                    </div>
                 </div>
 
                 <div class="p-3 bg-black/80 flex justify-between items-center shrink-0">
@@ -418,16 +420,16 @@
                 cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
 
                 // 2. Gaussian Blur (Reduce noise)
-                cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                cv.GaussianBlur(gray, blurred, new cv.Size(7, 7), 0, 0, cv.BORDER_DEFAULT);
 
                 // 3. Canny Edge Detection
                 // Lower threshold helps find faint edges, but might include noise
                 cv.Canny(blurred, dst, 30, 150);
 
-                // 4. Dilate to connect broken edges
-                const M = cv.Mat.ones(3, 3, cv.CV_8U);
-                const anchor = new cv.Point(-1, -1);
-                cv.dilate(dst, dst, M, anchor, 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
+                // 4. Morphological Close to connect broken edges (Better than simple dilate)
+                const M = cv.Mat.ones(5, 5, cv.CV_8U);
+                cv.morphologyEx(dst, dst, cv.MORPH_CLOSE, M);
+                M.delete();
 
                 // Find Contours
                 let contours = new cv.MatVector();
@@ -439,7 +441,7 @@
                 let width = src.cols;
                 let height = src.rows;
                 let found = false;
-                let minArea = width * height * 0.05; // 5% minimum area
+                let minArea = width * height * 0.10; // 10% minimum area to avoid noise
 
                 for(let i = 0; i < contours.size(); ++i) {
                     let cnt = contours.get(i);
@@ -487,7 +489,7 @@
 
                 // Cleanup
                 gray.delete(); blurred.delete();
-                dst.delete(); contours.delete(); hierarchy.delete(); M.delete();
+                dst.delete(); contours.delete(); hierarchy.delete();
 
                 return { corners, found };
             },
