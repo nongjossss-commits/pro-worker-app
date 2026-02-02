@@ -139,7 +139,10 @@ class NotificationController extends Controller
                 if ($type === 'employer_document_expiry') {
                     $q->whereHas('employer', function ($q_employer) use ($search) {
                         $q_employer->where('employerNameTh', 'like', "%{$search}%")
-                                   ->orWhere('employerNameEn', 'like', "%{$search}%");
+                                   ->orWhere('employerNameEn', 'like', "%{$search}%")
+                                   ->orWhere(function($addrQ) use ($search) {
+                                       $addrQ->filterByAddress($search);
+                                   });
                     });
                 } else {
                     $q->whereHas('employee', function ($q_employee) use ($search) {
@@ -149,7 +152,10 @@ class NotificationController extends Controller
                                    ->orWhere('companyWorkerId', 'like', "%{$search}%") // Added companyWorkerId
                                    ->orWhereHas('employer', function ($q_employer) use ($search) {
                                        $q_employer->where('employerNameTh', 'like', "%{$search}%")
-                                                  ->orWhere('employerNameEn', 'like', "%{$search}%"); // Added employerNameEn
+                                                  ->orWhere('employerNameEn', 'like', "%{$search}%") // Added employerNameEn
+                                                  ->orWhere(function($addrQ) use ($search) {
+                                                      $addrQ->filterByAddress($search);
+                                                  });
                                    });
                     });
                 }

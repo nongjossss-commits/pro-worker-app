@@ -41,6 +41,9 @@ class EmployerController extends Controller
                   })
                   ->orWhereHas('assignedStaff', function($subQ) use ($searchTerm) {
                       $subQ->where('name', 'like', $searchTerm);
+                  })
+                  ->orWhere(function($subQ) use ($searchTerm) {
+                      $subQ->filterByAddress($searchTerm);
                   });
             });
         }
@@ -510,6 +513,9 @@ class EmployerController extends Controller
                   ->orWhere('employerNameEn', 'like', $searchTerm)
                   ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
                       $subQ->where('name', 'like', $searchTerm);
+                  })
+                  ->orWhere(function($subQ) use ($searchTerm) {
+                      $subQ->filterByAddress($searchTerm);
                   });
             });
         }
@@ -564,7 +570,10 @@ class EmployerController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
-                  ->orWhere('employerId', 'like', $searchTerm);
+                  ->orWhere('employerId', 'like', $searchTerm)
+                  ->orWhere(function($subQ) use ($searchTerm) {
+                      $subQ->filterByAddress($searchTerm);
+                  });
             });
         }
 

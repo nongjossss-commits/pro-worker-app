@@ -9,10 +9,11 @@ use App\Models\JobOwner;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use App\Traits\LogActivity;
+use App\Traits\SearchableByAddress;
 
 class Employer extends Model
 {
-    use HasFactory, SoftDeletes, LogActivity;
+    use HasFactory, SoftDeletes, LogActivity, SearchableByAddress;
 
     protected static function booted(): void
     {

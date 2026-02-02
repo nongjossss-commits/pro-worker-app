@@ -109,7 +109,10 @@ public function reinstate(Employee $employee)
               ->orWhere('employeeWorkPermit', 'like', $searchTerm)
               ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                   $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                ->orWhere('employerNameEn', 'like', $searchTerm);
+                                ->orWhere('employerNameEn', 'like', $searchTerm)
+                                ->orWhere(function($addrQ) use ($searchTerm) {
+                                    $addrQ->filterByAddress($searchTerm);
+                                });
               });
         });
     }
@@ -637,7 +640,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                    ->orWhere('employerNameEn', 'like', $searchTerm);
+                                    ->orWhere('employerNameEn', 'like', $searchTerm)
+                                    ->orWhere(function($addrQ) use ($searchTerm) {
+                                        $addrQ->filterByAddress($searchTerm);
+                                    });
                   });
             });
         }
@@ -760,7 +766,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                    ->orWhere('employerNameEn', 'like', $searchTerm);
+                                    ->orWhere('employerNameEn', 'like', $searchTerm)
+                                    ->orWhere(function($addrQ) use ($searchTerm) {
+                                        $addrQ->filterByAddress($searchTerm);
+                                    });
                   });
             });
         }
