@@ -110,54 +110,158 @@
             </div>
 
             <!-- VIEW: REVIEW (Grid of taken images) -->
-            <div x-show="view === 'review'" class="w-full h-full flex flex-col bg-gray-100">
-                <div class="flex-grow overflow-y-auto p-3">
+            <div x-show="view === 'review'" class="w-full h-full flex flex-col bg-gray-100 relative">
+
+                <!-- Action Bar for Layouts -->
+                <div x-show="selectedIndices.length > 0"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="translate-y-full opacity-0"
+                     x-transition:enter-end="translate-y-0 opacity-100"
+                     class="absolute bottom-[70px] left-0 right-0 z-20 px-3 flex justify-center pointer-events-none">
+
+                     <div class="bg-white rounded-full shadow-xl border p-2 pointer-events-auto flex items-center gap-2 overflow-x-auto max-w-full">
+                        <span class="text-sm font-bold px-2 text-gray-600 whitespace-nowrap">
+                            <span x-text="selectedIndices.length"></span> รายการ:
+                        </span>
+
+                        <!-- 1 Image Options -->
+                        <template x-if="selectedIndices.length === 1">
+                            <div class="flex gap-1">
+                                <button @click="generateLayout('full')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-arrows-fullscreen"></i> เต็ม A4</button>
+                                <button @click="generateLayout('70')" class="btn btn-sm btn-outline-primary whitespace-nowrap">70%</button>
+                                <button @click="generateLayout('passport')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-person-bounding-box"></i> Passport</button>
+                                <button @click="generateLayout('card')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-credit-card"></i> ขนาดบัตร</button>
+                            </div>
+                        </template>
+
+                        <!-- 2 Image Options -->
+                        <template x-if="selectedIndices.length === 2">
+                            <div class="flex gap-1">
+                                <button @click="generateLayout('half_v')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-split"></i> บน-ล่าง</button>
+                                <button @click="generateLayout('half_h')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-sidebar"></i> ซ้าย-ขวา</button>
+                                <button @click="generateLayout('id_card_pair')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-person-badge"></i> หน้า-หลังบัตร</button>
+                            </div>
+                        </template>
+
+                        <!-- 3+ Options -->
+                        <template x-if="selectedIndices.length >= 3">
+                            <button @click="generateLayout('grid')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-grid-3x3"></i> Grid Layout</button>
+                        </template>
+
+                        <div class="w-px h-6 bg-gray-300 mx-1"></div>
+                        <button @click="selectedIndices = []" class="btn btn-sm btn-light text-muted hover:text-dark"><i class="bi bi-x-lg"></i></button>
+                     </div>
+                </div>
+
+                <div class="flex-grow overflow-y-auto p-3 pb-24">
                     <div class="text-center mb-3" x-show="scanMode === 'id_card'">
                          <span class="badge bg-primary fs-6">
-                            <i class="bi bi-info-circle me-1"></i> ตรวจสอบภาพหน้าและหลังบัตรก่อนบันทึก
+                            <i class="bi bi-info-circle me-1"></i> เลือกรูปภาพเพื่อจัดวางรูปแบบ
                          </span>
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         <template x-for="(img, index) in capturedImages" :key="img.id">
-                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-shadow">
-                                <!-- Show CROPPED version -->
-                                <img :src="img.cropped" class="w-full h-40 object-contain bg-gray-50 border rounded cursor-pointer" @click="startEdit(index)">
+                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
+                                 :class="selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : ''">
 
-                                <div class="absolute top-1 right-1 flex gap-1">
+                                <!-- Selection Checkbox Overlay -->
+                                <div class="absolute top-2 left-2 z-10">
+                                    <input type="checkbox"
+                                           :checked="selectedIndices.includes(index)"
+                                           @change="toggleSelection(index)"
+                                           class="form-check-input w-5 h-5 cursor-pointer shadow-sm border-gray-300">
+                                </div>
+
+                                <!-- Show CROPPED version -->
+                                <img :src="img.cropped"
+                                     class="w-full h-40 object-contain bg-gray-50 border rounded cursor-pointer"
+                                     @click="toggleSelection(index)">
+
+                                <div class="absolute top-1 right-1 flex gap-1 z-10">
                                     <button @click.stop="removeImage(index)" class="btn btn-sm btn-danger rounded-circle shadow-sm p-1 leading-none w-6 h-6 flex items-center justify-center">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 </div>
-                                <div class="absolute bottom-1 right-1">
+                                <div class="absolute bottom-1 right-1 z-10">
                                      <button @click.stop="startEdit(index)" class="btn btn-sm btn-primary shadow-sm py-1 px-2 text-xs rounded-pill">
                                         <i class="bi bi-crop"></i> ปรับแต่ง
                                     </button>
                                 </div>
-                                <div class="absolute top-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                                    <span x-show="scanMode === 'document'" x-text="index + 1"></span>
-                                    <span x-show="scanMode === 'id_card' && index === 0">ด้านหน้า</span>
-                                    <span x-show="scanMode === 'id_card' && index === 1">ด้านหลัง</span>
+                                <div class="absolute top-1 left-8 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded pointer-events-none">
+                                    <span x-text="index + 1"></span>
                                 </div>
                             </div>
                         </template>
 
-                        <!-- Add More Button (Only for Document Mode) -->
-                        <div x-show="scanMode === 'document'" @click="view = 'camera'; startCamera()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                        <!-- Add More Button (Universal) -->
+                        <div @click="view = 'camera'; startCamera()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-plus-lg text-3xl mb-1"></i>
                             <span class="text-sm">ถ่ายเพิ่ม</span>
                         </div>
                     </div>
                 </div>
-                <div class="p-3 bg-white border-t flex justify-between items-center">
+                <div class="p-3 bg-white border-t flex justify-between items-center z-30 relative">
                      <button @click="view = 'camera'; startCamera()" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> กลับไปถ่ายภาพ
                     </button>
                     <button @click="finalizeProcess()" class="btn btn-primary px-4" :disabled="!canFinish()">
                         <i class="bi bi-save"></i> บันทึกข้อมูล
-                        <span x-show="scanMode === 'document'">(<span x-text="capturedImages.length"></span>)</span>
-                        <span x-show="scanMode === 'id_card'">(รวมไฟล์ A4)</span>
+                        <span>(<span x-text="capturedImages.length"></span>)</span>
                     </button>
+                </div>
+            </div>
+
+            <!-- VIEW: LAYOUT EDITOR (Preview & Swap) -->
+            <div x-show="view === 'layout_editor'" class="w-full h-full flex flex-col md:flex-row bg-gray-100 overflow-hidden">
+
+                <!-- Sidebar: Order Controls -->
+                <div class="w-full md:w-80 bg-white border-r flex flex-col shadow-lg z-10">
+                    <div class="p-3 border-b bg-gray-50">
+                        <h6 class="m-0 font-bold text-gray-700"><i class="bi bi-sort-numeric-down"></i> จัดลำดับรูปภาพ</h6>
+                        <small class="text-gray-500">ลากหรือกดลูกศรเพื่อย้ายตำแหน่ง</small>
+                    </div>
+
+                    <div class="flex-grow overflow-y-auto p-2 space-y-2">
+                        <template x-for="(item, index) in layoutSourceImages" :key="index">
+                            <div class="flex items-center gap-2 p-2 bg-gray-50 border rounded hover:bg-white transition-colors">
+                                <span class="badge bg-secondary rounded-pill" x-text="index + 1"></span>
+                                <img :src="item.src" class="w-12 h-12 object-cover rounded border bg-white">
+
+                                <div class="flex-grow"></div>
+
+                                <div class="flex flex-col gap-1">
+                                    <button @click="moveLayoutItem(index, -1)" :disabled="index === 0" class="btn btn-xs btn-outline-secondary py-0" title="ย้ายขึ้น">
+                                        <i class="bi bi-chevron-up"></i>
+                                    </button>
+                                    <button @click="moveLayoutItem(index, 1)" :disabled="index === layoutSourceImages.length - 1" class="btn btn-xs btn-outline-secondary py-0" title="ย้ายลง">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="p-3 border-t bg-gray-50 flex justify-between">
+                         <button @click="cancelLayout()" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> กลับ
+                        </button>
+                        <button @click="confirmLayout()" class="btn btn-success text-white">
+                            <i class="bi bi-check-circle"></i> ยืนยัน
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main: Preview -->
+                <div class="flex-grow bg-gray-200 relative flex flex-col">
+                    <div class="absolute inset-0 flex items-center justify-center p-4 overflow-auto">
+                        <div class="bg-white shadow-2xl relative transition-all duration-300">
+                             <img :src="layoutPreviewImage" class="max-w-full max-h-[80vh] border border-gray-300 block" style="min-width: 200px;">
+                             <div class="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 shadow-sm">
+                                Preview (A4)
+                             </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -181,19 +285,27 @@
                     </div>
                 </div>
 
-                <div class="p-3 bg-black/80 flex justify-between items-center shrink-0">
+                <div class="p-3 bg-black/80 flex justify-between items-center shrink-0 gap-2">
                     <button @click="cancelCrop()" class="btn btn-secondary">
                         <i class="bi bi-x-lg"></i> ยกเลิก
                     </button>
-                     <div class="text-white text-sm opacity-75 hidden md:block">
-                        ลากจุดทั้ง 4 มุมเพื่อปรับตำแหน่งเอกสาร
+
+                    <!-- Rotation Controls -->
+                     <div class="flex items-center gap-2">
+                        <button @click="rotateImage(-90)" class="btn btn-dark border-secondary text-white" title="หมุนซ้าย">
+                             <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                        <button @click="rotateImage(90)" class="btn btn-dark border-secondary text-white" title="หมุนขวา">
+                             <i class="bi bi-arrow-clockwise"></i>
+                        </button>
                     </div>
-                    <div>
-                         <button @click="resetToFull()" class="btn btn-outline-light me-2">
-                            <i class="bi bi-arrows-fullscreen"></i> เต็มรูป
+
+                    <div class="flex items-center gap-2">
+                         <button @click="resetToFull()" class="btn btn-outline-light">
+                            <i class="bi bi-arrows-fullscreen"></i> <span class="hidden sm:inline">เต็มรูป</span>
                         </button>
                         <button @click="saveCropEdit()" class="btn btn-primary">
-                            <i class="bi bi-check-lg"></i> บันทึกแก้ไข
+                            <i class="bi bi-check-lg"></i> <span class="hidden sm:inline">บันทึก</span>
                         </button>
                     </div>
                 </div>
@@ -226,7 +338,13 @@
             // Data
             // Structure: { id, original: dataUrl, cropped: dataUrl, corners: [{x,y}...] }
             capturedImages: [],
+            selectedIndices: [], // Indices of selected images for layout
             currentEditIndex: -1,
+
+            // Layout Editor State
+            layoutSourceImages: [], // { src, originalIndex }
+            layoutPreviewImage: null,
+            layoutType: null,
 
             // Cropping State
             cvLoaded: false,
@@ -238,6 +356,7 @@
             scaleX: 1,
             scaleY: 1,
             activeDragIndex: -1,
+            rotation: 0, // Current rotation in degrees (0, 90, 180, 270)
 
             init() {
                 document.addEventListener('opencv-loaded', () => {
@@ -260,11 +379,8 @@
             },
 
             setMode(mode) {
-                if(this.capturedImages.length > 0) {
-                    if(!confirm('เปลี่ยนโหมดจะลบภาพที่ถ่ายไว้ คุณแน่ใจหรือไม่?')) return;
-                }
+                // Simplified Mode Switching - No data loss
                 this.scanMode = mode;
-                this.capturedImages = [];
             },
 
             async openScanner(detail) {
@@ -340,10 +456,7 @@
 
             captureImage() {
                 if (this.isProcessing) return;
-                if (this.scanMode === 'id_card' && this.capturedImages.length >= 2) {
-                    alert('ครบ 2 ด้านแล้ว กรุณากดเสร็จสิ้นเพื่อตรวจสอบ');
-                    return;
-                }
+                // Removed ID Card Limit Check to allow flexible scanning
 
                 this.isProcessing = true;
                 this.flash = true;
@@ -422,26 +535,33 @@
                 // 2. Gaussian Blur (Reduce noise)
                 cv.GaussianBlur(gray, blurred, new cv.Size(7, 7), 0, 0, cv.BORDER_DEFAULT);
 
-                // 3. Canny Edge Detection
-                // Lower threshold helps find faint edges, but might include noise
-                cv.Canny(blurred, dst, 30, 150);
+                // 3. Adaptive Thresholding (Better than Canny for documents on desks)
+                // cv.adaptiveThreshold(src, dst, maxValue, adaptiveMethod, thresholdType, blockSize, C)
+                cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
 
-                // 4. Morphological Close to connect broken edges (Better than simple dilate)
-                const M = cv.Mat.ones(5, 5, cv.CV_8U);
-                cv.morphologyEx(dst, dst, cv.MORPH_CLOSE, M);
-                M.delete();
+                // 4. Morphological Operations to clean up
+                // Erode then Dilate (Open) to remove small noise
+                const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+                cv.morphologyEx(dst, dst, cv.MORPH_OPEN, kernel);
+
+                // Canny Edge detection on the thresholded image can sometimes help refine boundaries
+                const edges = new cv.Mat();
+                cv.Canny(dst, edges, 50, 150);
+
+                // Dilate to connect gaps
+                cv.morphologyEx(edges, edges, cv.MORPH_DILATE, kernel);
 
                 // Find Contours
                 let contours = new cv.MatVector();
                 let hierarchy = new cv.Mat();
-                cv.findContours(dst, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+                cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
                 let maxQuadArea = 0;
                 let bestQuad = null;
                 let width = src.cols;
                 let height = src.rows;
                 let found = false;
-                let minArea = width * height * 0.10; // 10% minimum area to avoid noise
+                let minArea = width * height * 0.05; // 5% minimum area
 
                 for(let i = 0; i < contours.size(); ++i) {
                     let cnt = contours.get(i);
@@ -450,11 +570,14 @@
                     if (area > minArea) {
                         let peri = cv.arcLength(cnt, true);
                         let approx = new cv.Mat();
+                        // 0.02 is standard, but sometimes documents have rounded corners.
+                        // We check approximate polygons.
                         cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-                        if (cv.isContourConvex(approx) && approx.rows === 4) {
+                        // If it has 4 points and is convex
+                        if (approx.rows === 4 && cv.isContourConvex(approx)) {
                             if (area > maxQuadArea) {
-                                if (bestQuad) bestQuad.delete(); // Avoid leak
+                                if (bestQuad) bestQuad.delete();
                                 maxQuadArea = area;
                                 bestQuad = approx;
                                 found = true;
@@ -462,10 +585,17 @@
                                 approx.delete();
                             }
                         } else {
+                            // HEURISTIC: Sometimes a document isn't perfectly 4 corners (e.g. holding thumb).
+                            // If it has > 4 corners but is roughly rectangular, we can try to find the bounding box
+                            // or convex hull, but strict 4-corner is safest for perspective warp.
+                            // We stick to strict 4 for now to avoid bad crops.
                             approx.delete();
                         }
                     }
                 }
+
+                // Cleanup intermediate mats
+                edges.delete(); kernel.delete();
 
                 let corners = [];
 
@@ -551,6 +681,11 @@
             },
 
             removeImage(index) {
+                // Update selection indices before removing
+                // If removed index is selected, deselect it
+                // If removed index < selected index, shift selected index down
+                this.selectedIndices = this.selectedIndices.filter(i => i !== index).map(i => i > index ? i - 1 : i);
+
                 this.capturedImages.splice(index, 1);
                 if(this.capturedImages.length === 0) {
                     this.view = 'camera';
@@ -558,11 +693,217 @@
                 }
             },
 
+            toggleSelection(index) {
+                if (this.selectedIndices.includes(index)) {
+                    this.selectedIndices = this.selectedIndices.filter(i => i !== index);
+                } else {
+                    this.selectedIndices.push(index);
+                }
+            },
+
+            async generateLayout(type) {
+                this.isLoading = true;
+                this.loadingMessage = 'Preparing Layout...';
+
+                try {
+                    // 1. Prepare Source Images
+                    this.layoutSourceImages = [];
+                    for(const idx of this.selectedIndices) {
+                        // We store the data URL directly in layoutSourceImages
+                        this.layoutSourceImages.push({
+                            src: this.capturedImages[idx].cropped,
+                            originalIndex: idx
+                        });
+                    }
+                    this.layoutType = type;
+
+                    // 2. Decide Flow
+                    // If multiple images, go to Layout Editor to allow swapping
+                    // If single image, we can arguably skip editor, but maybe user wants to see the preview (e.g. passport placement)?
+                    // Let's ALWAYS show editor for consistency, or at least for complex ones.
+                    // User request: "User must be able to move... in case they want to swap".
+                    // This implies >1 image.
+
+                    if (this.layoutSourceImages.length > 1) {
+                         this.view = 'layout_editor';
+                         this.updateLayoutPreview();
+                    } else {
+                        // Direct Save for single image (faster workflow)
+                         const img = await this.loadImage(this.layoutSourceImages[0].src);
+                         const layoutDataUrl = this.renderLayoutToCanvas(type, [img]);
+                         this.saveLayoutResult(layoutDataUrl);
+                    }
+
+                } catch(e) {
+                    console.error("Layout Error", e);
+                    alert("Error generating layout: " + e.message);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            async updateLayoutPreview() {
+                // Convert source objects to Image elements
+                const imgs = [];
+                for(const item of this.layoutSourceImages) {
+                    const i = await this.loadImage(item.src);
+                    imgs.push(i);
+                }
+
+                this.layoutPreviewImage = this.renderLayoutToCanvas(this.layoutType, imgs);
+            },
+
+            moveLayoutItem(index, direction) {
+                const newIndex = index + direction;
+                if (newIndex < 0 || newIndex >= this.layoutSourceImages.length) return;
+
+                // Swap
+                const temp = this.layoutSourceImages[index];
+                this.layoutSourceImages[index] = this.layoutSourceImages[newIndex];
+                this.layoutSourceImages[newIndex] = temp;
+
+                this.updateLayoutPreview();
+            },
+
+            cancelLayout() {
+                this.view = 'review';
+                this.layoutSourceImages = [];
+                this.layoutPreviewImage = null;
+            },
+
+            confirmLayout() {
+                if (this.layoutPreviewImage) {
+                    this.saveLayoutResult(this.layoutPreviewImage);
+                    this.cancelLayout(); // Back to review
+                }
+            },
+
+            saveLayoutResult(dataUrl) {
+                this.capturedImages.push({
+                    id: Date.now(),
+                    original: dataUrl,
+                    cropped: dataUrl,
+                    corners: this.getDefaultCorners(1240, 1754),
+                    isFound: true
+                });
+                // Optional: Scroll to bottom
+            },
+
+            renderLayoutToCanvas(type, images) {
+                const a4w = 1240;
+                const a4h = 1754;
+                const canvas = document.createElement('canvas');
+                canvas.width = a4w;
+                canvas.height = a4h;
+                const ctx = canvas.getContext('2d');
+
+                // Fill White Background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, a4w, a4h);
+
+                const margin = 40;
+
+                // Helper to draw image fitting within a box
+                const drawFit = (img, x, y, w, h) => {
+                    const scale = Math.min(w / img.width, h / img.height);
+                    const drawW = img.width * scale;
+                    const drawH = img.height * scale;
+                    const drawX = x + (w - drawW) / 2;
+                    const drawY = y + (h - drawH) / 2;
+                    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                };
+
+                if (type === 'full') {
+                    // 1 Image Full Page (with margin)
+                    if(images[0]) drawFit(images[0], margin, margin, a4w - 2*margin, a4h - 2*margin);
+                }
+                else if (type === '70') {
+                    // 1 Image 70% Scale (Relative to A4 width)
+                    if(images[0]) {
+                        const targetW = a4w * 0.7;
+                        const targetH = a4h * 0.7; // Bound by 70% height too?
+                        // "70% of page" usually means 70% size.
+                        drawFit(images[0], (a4w - targetW)/2, (a4h - targetH)/2, targetW, targetH);
+                    }
+                }
+                else if (type === 'passport') {
+                    // 3.5cm x 4.5cm. @150DPI (approx 59 px/cm) -> 206 x 265
+                    const pw = 206;
+                    const ph = 265;
+                    // Center it
+                    if(images[0]) ctx.drawImage(images[0], (a4w - pw)/2, (a4h - ph)/2, pw, ph);
+                }
+                else if (type === 'card') {
+                    // Credit Card: 8.5 x 5.5 cm -> 500 x 325
+                    const cw = 500;
+                    const ch = 325;
+                    if(images[0]) drawFit(images[0], (a4w - cw)/2, (a4h - ch)/2, cw, ch);
+                }
+                else if (type === 'half_v') {
+                    // Top / Bottom
+                    const hHalf = a4h / 2;
+                    if(images[0]) drawFit(images[0], margin, margin, a4w - 2*margin, hHalf - 2*margin);
+                    if(images[1]) drawFit(images[1], margin, hHalf + margin, a4w - 2*margin, hHalf - 2*margin);
+
+                    // Divider Line (Optional - Visual Aid)
+                    ctx.beginPath();
+                    ctx.moveTo(0, hHalf);
+                    ctx.lineTo(a4w, hHalf);
+                    ctx.strokeStyle = '#e5e7eb';
+                    ctx.lineWidth = 2;
+                    // ctx.stroke(); // Maybe don't draw lines on the document itself
+                }
+                else if (type === 'half_h') {
+                    // Left / Right
+                    const wHalf = a4w / 2;
+                    if(images[0]) drawFit(images[0], margin, margin, wHalf - 2*margin, a4h - 2*margin);
+                    if(images[1]) drawFit(images[1], wHalf + margin, margin, wHalf - 2*margin, a4h - 2*margin);
+                }
+                else if (type === 'id_card_pair') {
+                    // Specific ID Card Layout (Center Top / Center Bottom)
+                    // Like the scanned version logic
+                    const cardW = a4w * 0.6;
+                    const cardH = cardW * 0.65; // Approx ratio
+                    const topY = a4h/4 - cardH/2;
+                    const botY = a4h*3/4 - cardH/2;
+
+                    if(images[0]) drawFit(images[0], (a4w - cardW)/2, topY, cardW, cardH);
+                    if(images[1]) drawFit(images[1], (a4w - cardW)/2, botY, cardW, cardH);
+
+                    // Labels
+                    ctx.font = '30px Arial';
+                    ctx.fillStyle = '#333';
+                    ctx.textAlign = 'center';
+                    if(images[0]) ctx.fillText('ด้านหน้า (Front)', a4w/2, topY - 20);
+                    if(images[1]) ctx.fillText('ด้านหลัง (Back)', a4w/2, botY - 20);
+                }
+                else if (type === 'grid') {
+                    // 2x2 Grid for 3 or 4 images
+                    // 3 images -> 2 top, 1 bottom center? Or 3 vertical?
+                    // "3 รูปต่อ 1 หน้า"
+                    // Common: Top-Left, Top-Right, Bottom-Left, (Bottom-Right)
+                    const wHalf = a4w / 2;
+                    const hHalf = a4h / 2;
+
+                    // Grid 1 (TL)
+                    if(images[0]) drawFit(images[0], margin, margin, wHalf - 2*margin, hHalf - 2*margin);
+                    // Grid 2 (TR)
+                    if(images[1]) drawFit(images[1], wHalf + margin, margin, wHalf - 2*margin, hHalf - 2*margin);
+                    // Grid 3 (BL)
+                    if(images[2]) drawFit(images[2], margin, hHalf + margin, wHalf - 2*margin, hHalf - 2*margin);
+                    // Grid 4 (BR)
+                    if(images[3]) drawFit(images[3], wHalf + margin, hHalf + margin, wHalf - 2*margin, hHalf - 2*margin);
+                }
+
+                return canvas.toDataURL('image/jpeg', 0.9);
+            },
+
             // --- EDIT / CROP LOGIC ---
 
             startEdit(index) {
                 this.currentEditIndex = index;
                 this.view = 'crop';
+                this.rotation = 0; // Reset rotation
                 const item = this.capturedImages[index];
 
                 this.$nextTick(() => {
@@ -570,35 +911,82 @@
                 });
             },
 
-            loadImageForCrop(src, savedCorners) {
+            rotateImage(degrees) {
+                this.rotation = (this.rotation + degrees) % 360;
+                if(this.rotation < 0) this.rotation += 360;
+
+                // When rotating, the previous corners (relative to unrotated image) become invalid visual markers
+                // unless we rotate the points too.
+                // However, user usually rotates because detection failed or orientation is wrong.
+                // Simpler: Reset to full crop on rotate.
+                this.resetToFull();
+
+                // Re-render
+                const item = this.capturedImages[this.currentEditIndex];
+                this.loadImageForCrop(item.original, this.corners, true); // true = force reset corners based on new dimensions
+            },
+
+            loadImageForCrop(src, savedCorners, forceFull = false) {
                 const img = new Image();
                 img.onload = () => {
-                    this.imageWidth = img.width;
-                    this.imageHeight = img.height;
+                    // Handle Rotation Logic (Virtual Canvas)
+                    // If rotation is not 0, we must draw the image rotated onto a temporary canvas
+                    // and use that as our source "imageWidth/Height"
+
+                    let srcWidth = img.width;
+                    let srcHeight = img.height;
+
+                    // Create an intermediate canvas for rotation if needed
+                    const rotCanvas = document.createElement('canvas');
+                    const rotCtx = rotCanvas.getContext('2d');
+
+                    if (this.rotation % 180 !== 0) {
+                        rotCanvas.width = srcHeight;
+                        rotCanvas.height = srcWidth;
+                    } else {
+                        rotCanvas.width = srcWidth;
+                        rotCanvas.height = srcHeight;
+                    }
+
+                    rotCtx.translate(rotCanvas.width/2, rotCanvas.height/2);
+                    rotCtx.rotate(this.rotation * Math.PI / 180);
+                    rotCtx.drawImage(img, -srcWidth/2, -srcHeight/2);
+
+                    // Now use rotCanvas as the source
+                    this.imageWidth = rotCanvas.width;
+                    this.imageHeight = rotCanvas.height;
 
                     const canvas = this.$refs.cropCanvas;
                     const container = this.$refs.cropContainer;
 
                     // Simple fit logic
-                    const scale = Math.min(container.clientWidth / img.width, container.clientHeight / img.height) * 0.9;
+                    const scale = Math.min(container.clientWidth / this.imageWidth, container.clientHeight / this.imageHeight) * 0.9;
 
-                    this.canvasWidth = img.width * scale;
-                    this.canvasHeight = img.height * scale;
+                    this.canvasWidth = this.imageWidth * scale;
+                    this.canvasHeight = this.imageHeight * scale;
 
                     canvas.width = this.canvasWidth;
                     canvas.height = this.canvasHeight;
 
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, this.canvasWidth, this.canvasHeight);
+                    ctx.drawImage(rotCanvas, 0, 0, this.canvasWidth, this.canvasHeight);
 
                     this.scaleX = this.canvasWidth / this.imageWidth;
                     this.scaleY = this.canvasHeight / this.imageHeight;
 
-                    // Restore corners
-                    this.corners = savedCorners.map(c => ({
-                        x: c.x * this.scaleX,
-                        y: c.y * this.scaleY
-                    }));
+                    if (forceFull) {
+                        this.resetToFull();
+                    } else {
+                        // Restore corners - NOTE: Saved corners are relative to ORIGINAL UNROTATED image.
+                        // If we have rotation, mapping old corners is complex.
+                        // Ideally, we store corners relative to the current rotation state, OR we reset on open.
+                        // For this implementation, if rotation is 0, use saved. If not, we might have issues.
+                        // But since we reset rotation to 0 on open, this is fine.
+                        this.corners = savedCorners.map(c => ({
+                            x: c.x * this.scaleX,
+                            y: c.y * this.scaleY
+                        }));
+                    }
                 };
                 img.src = src;
             },
@@ -627,18 +1015,36 @@
 
                     const img = new Image();
                     img.onload = () => {
+                        // Apply Rotation to Source
                         const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
+                        // Swap dims if 90/270
+                        if (this.rotation % 180 !== 0) {
+                            canvas.width = img.height;
+                            canvas.height = img.width;
+                        } else {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                        }
 
+                        const ctx = canvas.getContext('2d');
+                        ctx.translate(canvas.width/2, canvas.height/2);
+                        ctx.rotate(this.rotation * Math.PI / 180);
+                        ctx.drawImage(img, -img.width/2, -img.height/2);
+
+                        // Read from rotated canvas
                         const src = cv.imread(canvas);
-                        const newCroppedUrl = this.performWarp(src, realCorners, img.width, img.height);
+                        const newCroppedUrl = this.performWarp(src, realCorners, canvas.width, canvas.height);
                         src.delete();
 
+                        // Update State
                         this.capturedImages[this.currentEditIndex].cropped = newCroppedUrl;
                         this.capturedImages[this.currentEditIndex].corners = realCorners;
+                        // Note: We technically should update 'original' to the rotated one if we want to persist rotation
+                        // But simpler to just keep original as is and only update cropped.
+                        // Wait, if I go back to edit again, rotation is reset to 0, but corners are for rotated version?
+                        // FIX: We should update 'original' to the rotated version so subsequent edits are consistent.
+                        this.capturedImages[this.currentEditIndex].original = canvas.toDataURL('image/jpeg', 0.9);
+
                         this.view = 'review';
                     };
                     img.src = item.original;
@@ -730,52 +1136,13 @@
                 try {
                     const dt = new DataTransfer();
 
-                    // --- ID CARD COMBINATION LOGIC ---
-                    if (this.scanMode === 'id_card' && this.capturedImages.length >= 2) {
-                        const front = await this.loadImage(this.capturedImages[0].cropped);
-                        const back = await this.loadImage(this.capturedImages[1].cropped);
+                    // Standard Logic: Bundle everything into the input
+                    // If 1 image -> JPG
+                    // If > 1 image -> PDF
+                    // Note: If user created a Layout, it is just another image in the list.
+                    // The user is expected to delete source images if they only want the layout.
 
-                        // A4 Dimensions (High Res - 150 DPI approx)
-                        const a4Width = 1240;
-                        const a4Height = 1754;
-
-                        const canvas = document.createElement('canvas');
-                        canvas.width = a4Width;
-                        canvas.height = a4Height;
-                        const ctx = canvas.getContext('2d');
-
-                        // Fill White
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, a4Width, a4Height);
-
-                        // Layout: Center Front in Top Half, Center Back in Bottom Half
-                        const cardWidth = a4Width * 0.6; // 60% of page width
-                        const cardHeight = cardWidth * (front.height / front.width); // maintain aspect
-
-                        const centerX = (a4Width - cardWidth) / 2;
-                        const topY = (a4Height / 4) - (cardHeight / 2); // Center of top half
-                        const bottomY = (a4Height * 3 / 4) - (cardHeight / 2); // Center of bottom half
-
-                        // Draw Front
-                        ctx.drawImage(front, centerX, topY, cardWidth, cardHeight);
-                        // Label Front
-                        ctx.font = '30px Arial';
-                        ctx.fillStyle = '#333';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('ด้านหน้า (Front)', a4Width/2, topY - 20);
-
-                        // Draw Back
-                        ctx.drawImage(back, centerX, bottomY, cardWidth, cardHeight);
-                        // Label Back
-                        ctx.fillText('ด้านหลัง (Back)', a4Width/2, bottomY - 20);
-
-                        const finalDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                        const file = await this.urlToFile(finalDataUrl, 'id_card_scan.jpg', 'image/jpeg');
-                        dt.items.add(file);
-
-                    }
-                    // --- NORMAL DOCUMENT LOGIC ---
-                    else if(this.capturedImages.length === 1) {
+                    if(this.capturedImages.length === 1) {
                         const file = await this.urlToFile(this.capturedImages[0].cropped, 'scanned_doc.jpg', 'image/jpeg');
                         dt.items.add(file);
 
