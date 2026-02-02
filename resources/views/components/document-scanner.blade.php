@@ -164,19 +164,22 @@
             <!-- VIEW: CROP -->
             <div x-show="view === 'crop'" class="w-full h-full flex flex-col bg-dark relative">
                 <div class="flex-grow relative overflow-hidden flex items-center justify-center bg-gray-900" x-ref="cropContainer">
-                    <canvas x-ref="cropCanvas" class="max-w-full max-h-full shadow-2xl"></canvas>
 
-                    <!-- SVG Overlay for Handles -->
-                     <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10;">
-                        <!-- Polygon Line -->
-                        <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
+                    <div x-ref="cropWrapper" class="relative shadow-2xl">
+                        <canvas x-ref="cropCanvas" class="block"></canvas>
 
-                        <!-- Handles -->
-                        <circle :cx="corners[0].x" :cy="corners[0].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(0, $event)" @touchstart="startDrag(0, $event)" />
-                        <circle :cx="corners[1].x" :cy="corners[1].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(1, $event)" @touchstart="startDrag(1, $event)" />
-                        <circle :cx="corners[2].x" :cy="corners[2].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(2, $event)" @touchstart="startDrag(2, $event)" />
-                        <circle :cx="corners[3].x" :cy="corners[3].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(3, $event)" @touchstart="startDrag(3, $event)" />
-                    </svg>
+                        <!-- SVG Overlay for Handles -->
+                        <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10;">
+                            <!-- Polygon Line -->
+                            <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
+
+                            <!-- Handles -->
+                            <circle :cx="corners[0].x" :cy="corners[0].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(0, $event)" @touchstart="startDrag(0, $event)" />
+                            <circle :cx="corners[1].x" :cy="corners[1].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(1, $event)" @touchstart="startDrag(1, $event)" />
+                            <circle :cx="corners[2].x" :cy="corners[2].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(2, $event)" @touchstart="startDrag(2, $event)" />
+                            <circle :cx="corners[3].x" :cy="corners[3].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(3, $event)" @touchstart="startDrag(3, $event)" />
+                        </svg>
+                    </div>
                 </div>
 
                 <div class="p-3 bg-black/80 flex justify-between items-center shrink-0">
@@ -576,12 +579,17 @@
 
                     const canvas = this.$refs.cropCanvas;
                     const container = this.$refs.cropContainer;
+                    const wrapper = this.$refs.cropWrapper;
 
                     // Simple fit logic
                     const scale = Math.min(container.clientWidth / img.width, container.clientHeight / img.height) * 0.9;
 
                     this.canvasWidth = img.width * scale;
                     this.canvasHeight = img.height * scale;
+
+                    // Set wrapper size to match calculated canvas size
+                    wrapper.style.width = this.canvasWidth + 'px';
+                    wrapper.style.height = this.canvasHeight + 'px';
 
                     canvas.width = this.canvasWidth;
                     canvas.height = this.canvasHeight;
