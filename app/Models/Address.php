@@ -36,4 +36,34 @@ class Address extends Model
     {
         return $this->morphTo();
     }
+
+    public function getFullAddressThAttribute()
+    {
+        $parts = [];
+        if ($this->addrNo) $parts[] = 'เลขที่ ' . $this->addrNo;
+        if ($this->addrMoo) $parts[] = 'หมู่ ' . $this->addrMoo;
+        if ($this->addrSoi) $parts[] = 'ซอย ' . $this->addrSoi;
+        if ($this->addrRoad) $parts[] = 'ถนน ' . $this->addrRoad;
+        if ($this->addrSubDistrict) $parts[] = 'ต.' . $this->addrSubDistrict;
+        if ($this->addrDistrict) $parts[] = 'อ.' . $this->addrDistrict;
+        if ($this->addrProvince) $parts[] = 'จ.' . $this->addrProvince;
+        if ($this->addrZipCode) $parts[] = $this->addrZipCode;
+
+        return implode(' ', $parts);
+    }
+
+    public function getFullAddressEnAttribute()
+    {
+        $parts = [];
+        if ($this->addrNoEn) $parts[] = 'No. ' . $this->addrNoEn;
+        if ($this->addrMooEn) $parts[] = 'Moo ' . $this->addrMooEn;
+        if ($this->addrSoiEn) $parts[] = 'Soi ' . $this->addrSoiEn;
+        if ($this->addrRoadEn) $parts[] = 'Rd. ' . $this->addrRoadEn;
+        if ($this->addrSubDistrictEn) $parts[] = $this->addrSubDistrictEn;
+        if ($this->addrDistrictEn) $parts[] = $this->addrDistrictEn;
+        if ($this->addrProvinceEn) $parts[] = $this->addrProvinceEn;
+        if ($this->addrZipCodeEn) $parts[] = $this->addrZipCodeEn;
+
+        return implode(', ', $parts);
+    }
 }

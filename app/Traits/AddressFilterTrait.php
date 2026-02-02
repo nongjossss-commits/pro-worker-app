@@ -68,8 +68,9 @@ trait AddressFilterTrait
             $joinColumn = str_contains($employerIdField, '.') ? last(explode('.', $employerIdField)) : $employerIdField;
         }
 
-        // Get the correct morph class for Employer to ensure matching regardless of MorphMap
-        $morphClass = (new Employer)->getMorphClass();
+        // Get the correct morph class for the model to ensure matching regardless of MorphMap
+        $model = $query->getModel();
+        $morphClass = $model->getMorphClass();
         // Also include the short class name to handle legacy data or direct saves
         $possibleMorphs = array_unique([$morphClass, class_basename($morphClass)]);
 
@@ -89,7 +90,8 @@ trait AddressFilterTrait
             ->values();
 
         $districts = collect();
-        $selectedProvince = request('addrProvince');
+        $selectedProvince = request('addrProvince') ? trim(request('addrProvince')) : null;
+
         if ($selectedProvince) {
             $districts = (clone $baseAddressQuery)
                 ->where('addrProvince', $selectedProvince)
@@ -101,7 +103,8 @@ trait AddressFilterTrait
         }
 
         $subDistricts = collect();
-        $selectedDistrict = request('addrDistrict');
+        $selectedDistrict = request('addrDistrict') ? trim(request('addrDistrict')) : null;
+
         if ($selectedProvince && $selectedDistrict) {
             $subDistricts = (clone $baseAddressQuery)
                 ->where('addrProvince', $selectedProvince)
