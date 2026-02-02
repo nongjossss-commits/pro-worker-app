@@ -188,7 +188,7 @@
                     </div>
                     <div>
                          <button @click="resetToFull()" class="btn btn-outline-light me-2">
-                            <i class="bi bi-arrows-fullscreen"></i> Reset
+                            <i class="bi bi-arrows-fullscreen"></i> เต็มรูป
                         </button>
                         <button @click="saveCropEdit()" class="btn btn-primary">
                             <i class="bi bi-check-lg"></i> บันทึกแก้ไข
@@ -413,7 +413,6 @@
                 const dst = new cv.Mat();
                 const gray = new cv.Mat();
                 const blurred = new cv.Mat();
-                const thresholded = new cv.Mat();
 
                 // 1. Grayscale
                 cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
@@ -421,27 +420,13 @@
                 // 2. Gaussian Blur (Reduce noise)
                 cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
 
-                // 3. Adaptive Threshold (Better for shadows/lighting)
-                // Parameters: (src, dst, maxValue, adaptiveMethod, thresholdType, blockSize, C)
-                cv.adaptiveThreshold(blurred, thresholded, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
+                // 3. Canny Edge Detection
+                // Lower threshold helps find faint edges, but might include noise
+                cv.Canny(blurred, dst, 30, 150);
 
-                // 4. Morphological Operations (Dilate then Erode to close gaps)
+                // 4. Dilate to connect broken edges
                 const M = cv.Mat.ones(3, 3, cv.CV_8U);
                 const anchor = new cv.Point(-1, -1);
-                // Erode first in binary inverted, or Dilate in standard binary?
-                // Adaptive Threshold usually returns white edges on black, or black on white depending on type.
-                // Assuming white edges -> Dilate connects them.
-                // Actually Canny is edge detection, Adaptive Threshold is segmentation.
-                // Let's stick to Canny for edges but use Adaptive Threshold output as input?
-                // No, standard robust pipeline is Canny. Let's optimize Canny instead with logic.
-                // OR: Use Canny but pre-process better.
-
-                // REVISED PIPELINE FOR "SMART" DETECTION:
-                // 1. Blur
-                // 2. Canny (with calculated threshold)
-                // 3. Dilate (connect edges)
-
-                cv.Canny(blurred, dst, 75, 200); // Standard Canny
                 cv.dilate(dst, dst, M, anchor, 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
 
                 // Find Contours
@@ -449,12 +434,12 @@
                 let hierarchy = new cv.Mat();
                 cv.findContours(dst, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
-                let maxArea = 0;
-                let biggestContour = null;
+                let maxQuadArea = 0;
+                let bestQuad = null;
                 let width = src.cols;
                 let height = src.rows;
                 let found = false;
-                let minArea = width * height * 0.05; // 5% of screen (ID cards can be small)
+                let minArea = width * height * 0.05; // 5% minimum area
 
                 for(let i = 0; i < contours.size(); ++i) {
                     let cnt = contours.get(i);
@@ -463,14 +448,13 @@
                     if (area > minArea) {
                         let peri = cv.arcLength(cnt, true);
                         let approx = new cv.Mat();
-                        // Relax epsilon for ID cards which might be rounded
                         cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-                        if (approx.rows === 4 && area > maxArea) {
-                            // Check convexity to ensure it's a rectangle-ish shape
-                            if(cv.isContourConvex(approx)) {
-                                maxArea = area;
-                                biggestContour = approx;
+                        if (cv.isContourConvex(approx) && approx.rows === 4) {
+                            if (area > maxQuadArea) {
+                                if (bestQuad) bestQuad.delete(); // Avoid leak
+                                maxQuadArea = area;
+                                bestQuad = approx;
                                 found = true;
                             } else {
                                 approx.delete();
@@ -482,22 +466,27 @@
                 }
 
                 let corners = [];
-                if (biggestContour) {
-                     const points = [];
+
+                if (found && bestQuad) {
+                    // Extract points from the perfect polygon
+                    const points = [];
                     for(let i=0; i<4; i++) {
                         points.push({
-                            x: biggestContour.data32S[i*2],
-                            y: biggestContour.data32S[i*2+1]
+                            x: bestQuad.data32S[i*2],
+                            y: bestQuad.data32S[i*2+1]
                         });
                     }
                     corners = this.sortPoints(points);
-                    biggestContour.delete();
-                } else {
+                    bestQuad.delete();
+                }
+                else {
+                    // Fallback to Full Image
                     corners = this.getDefaultCorners(width, height);
+                    found = false;
                 }
 
                 // Cleanup
-                gray.delete(); blurred.delete(); thresholded.delete();
+                gray.delete(); blurred.delete();
                 dst.delete(); contours.delete(); hierarchy.delete(); M.delete();
 
                 return { corners, found };
@@ -544,14 +533,13 @@
             },
 
             getDefaultCorners(w, h) {
-                // Default to a central box
-                const padX = w * 0.15;
-                const padY = h * 0.15;
+                // Default to FULL IMAGE (0,0 to w,h)
+                // This ensures that if detection fails, we don't crop out important edges.
                 return [
-                    {x: padX, y: padY},
-                    {x: w-padX, y: padY},
-                    {x: w-padX, y: h-padY},
-                    {x: padX, y: h-padY}
+                    {x: 0, y: 0},
+                    {x: w, y: 0},
+                    {x: w, y: h},
+                    {x: 0, y: h}
                 ];
             },
 
@@ -616,12 +604,12 @@
             resetToFull() {
                 const w = this.canvasWidth;
                 const h = this.canvasHeight;
-                const pad = 20;
+                // Full image (no padding)
                 this.corners = [
-                    {x: pad, y: pad},
-                    {x: w-pad, y: pad},
-                    {x: w-pad, y: h-pad},
-                    {x: pad, y: h-pad}
+                    {x: 0, y: 0},
+                    {x: w, y: 0},
+                    {x: w, y: h},
+                    {x: 0, y: h}
                 ];
             },
 
