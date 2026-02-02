@@ -63,8 +63,11 @@
                         <td>
                             {{ $employer->employerNameTh }}
                             @if(request('addrProvince'))
-                                @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
-                                    <div class="text-primary small fw-bold">{{ $label }}</div>
+                                @foreach($employer->getMatchedAddresses(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $address)
+                                    <div class="text-primary small fw-bold mt-1">
+                                        {{ $address->full_address_th }}
+                                        <span class="text-muted fw-normal">({{ $address->type === 'registered' ? 'ที่อยู่ตามทะเบียนบ้าน' : 'ที่อยู่สถานที่ทำงาน' }})</span>
+                                    </div>
                                 @endforeach
                             @endif
                         </td>

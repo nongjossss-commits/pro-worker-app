@@ -127,4 +127,18 @@ class Employer extends Model
         }
         return array_unique($labels);
     }
+
+    public function getMatchedAddresses($province, $district = null, $subDistrict = null)
+    {
+        if (!$province) return collect();
+        // Ensure addresses are loaded or load them
+        $addresses = $this->relationLoaded('addresses') ? $this->addresses : $this->addresses()->get();
+
+        return $addresses->filter(function ($address) use ($province, $district, $subDistrict) {
+            if ($address->addrProvince !== $province) return false;
+            if ($district && $address->addrDistrict !== $district) return false;
+            if ($subDistrict && $address->addrSubDistrict !== $subDistrict) return false;
+            return true;
+        });
+    }
 }
