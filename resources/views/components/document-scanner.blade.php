@@ -566,8 +566,11 @@
                 this.view = 'crop';
                 const item = this.capturedImages[index];
 
+                // Ensure container is visible and layout is settled
                 this.$nextTick(() => {
-                    this.loadImageForCrop(item.original, item.corners);
+                    setTimeout(() => {
+                         this.loadImageForCrop(item.original, item.corners);
+                    }, 50);
                 });
             },
 
@@ -581,26 +584,40 @@
                     const container = this.$refs.cropContainer;
                     const wrapper = this.$refs.cropWrapper;
 
-                    // Simple fit logic
+                    // Ensure we have dimensions
+                    if (container.clientWidth === 0 || container.clientHeight === 0) {
+                         // Retry if container is not ready
+                         setTimeout(() => this.loadImageForCrop(src, savedCorners), 100);
+                         return;
+                    }
+
+                    // Simple fit logic - Use Math.floor to ensure integer pixel alignment
+                    // This fixes the "A" issue (blue frame size mismatch due to sub-pixel rendering)
                     const scale = Math.min(container.clientWidth / img.width, container.clientHeight / img.height) * 0.9;
 
-                    this.canvasWidth = img.width * scale;
-                    this.canvasHeight = img.height * scale;
+                    // Force integer dimensions
+                    this.canvasWidth = Math.floor(img.width * scale);
+                    this.canvasHeight = Math.floor(img.height * scale);
 
-                    // Set wrapper size to match calculated canvas size
+                    // Set wrapper size to match EXACTLY the canvas integer size
                     wrapper.style.width = this.canvasWidth + 'px';
                     wrapper.style.height = this.canvasHeight + 'px';
 
+                    // Set canvas attributes AND style to match (prevents CSS scaling)
                     canvas.width = this.canvasWidth;
                     canvas.height = this.canvasHeight;
+                    canvas.style.width = this.canvasWidth + 'px';
+                    canvas.style.height = this.canvasHeight + 'px';
 
                     const ctx = canvas.getContext('2d');
+                    // Draw using integer dimensions
                     ctx.drawImage(img, 0, 0, this.canvasWidth, this.canvasHeight);
 
+                    // Recalculate scale based on the FINAL integer dimensions
                     this.scaleX = this.canvasWidth / this.imageWidth;
                     this.scaleY = this.canvasHeight / this.imageHeight;
 
-                    // Restore corners
+                    // Restore corners mapping to the new integer coordinate space
                     this.corners = savedCorners.map(c => ({
                         x: c.x * this.scaleX,
                         y: c.y * this.scaleY
