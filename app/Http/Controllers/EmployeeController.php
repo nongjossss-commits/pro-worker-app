@@ -13,9 +13,12 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use App\Traits\AddressFilterTrait;
 
 class EmployeeController extends Controller
 {
+    use AddressFilterTrait;
+
     /**
      * Apply permission middleware to the controller.
      */
@@ -176,18 +179,25 @@ public function reinstate(Employee $employee)
     }
     // --- END: ADDED FILTERING LOGIC ---
 
+    // Address options (before address filtering)
+    $addressOptions = $this->getAddressOptions($query, 'employer_id');
+
+    // Apply address filters
+    $query = $this->applyAddressFilters($query, $request, 'employer');
+
     $totalEmployees = (clone $query)->count();
 
     $perPageOptions = [25, 50, 100]; // Defined options here
     $currentPerPage = $request->input('per_page', 25);
 
-    $employees = $query->with(['employer', 'teams.group'])->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
+    $employees = $query->with(['employer.addresses', 'teams.group'])->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
 
     return view('employees.index', compact(
         'employees',
         'totalEmployees',
         'perPageOptions',
-        'currentPerPage'
+        'currentPerPage',
+        'addressOptions'
     ))->with('currentView', $request->input('view', 'card'));
 }
 

@@ -12,9 +12,12 @@ use App\Models\Employer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Traits\AddressFilterTrait;
 
 class WorkflowController extends Controller
 {
+    use AddressFilterTrait;
+
     /**
      * Display the main Workflow Dashboard with Tabs.
      */
@@ -48,6 +51,13 @@ class WorkflowController extends Controller
             $query->where('work_type_id', $activeTab->id);
         }
 
+        // NEW: Address options (before address filtering)
+        // ProductionOrder has employer_id
+        $addressOptions = $this->getAddressOptions($query, 'employer_id');
+
+        // NEW: Apply address filters
+        $query = $this->applyAddressFilters($query, $request, 'employer');
+
         // Search
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -60,10 +70,10 @@ class WorkflowController extends Controller
             });
         }
 
-        $orders = $query->latest('updated_at')->paginate(15);
+        $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
 
         // Calculate Stats PER ORDER for the view (Accordion Header)
-        $orders->load(['items.completedWorkTypeSteps']);
+        $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
 
         $steps = $activeTab ? $activeTab->steps : collect();
         $stepOneId = $steps->sortBy('order')->first()?->id;
@@ -162,7 +172,7 @@ class WorkflowController extends Controller
             $stats['step_stats'] = $globalStepStats;
         }
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps'));
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions'));
     }
 
     /**

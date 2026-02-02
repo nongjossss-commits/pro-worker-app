@@ -13,9 +13,12 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Traits\AddressFilterTrait;
 
 class RenewalController extends Controller
 {
+    use AddressFilterTrait;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -87,7 +90,13 @@ class RenewalController extends Controller
 
         // --- 4. Fetch Employers ---
         $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
-            ->with(['jobOwner', 'customFields']);
+            ->with(['jobOwner', 'customFields', 'addresses']);
+
+        // NEW: Address options (before address filtering)
+        $addressOptions = $this->getAddressOptions($employerQuery);
+
+        // NEW: Apply address filters
+        $employerQuery = $this->applyAddressFilters($employerQuery, $request);
 
         if (auth()->user()->can('manage-tickets')) {
             $employerQuery->withoutGlobalScope('employerTenancy');
@@ -207,7 +216,8 @@ class RenewalController extends Controller
             'currentExpiryConfig',
             'steps',
             'stepStats',
-            'lastStepId'
+            'lastStepId',
+            'addressOptions'
         ));
     }
 

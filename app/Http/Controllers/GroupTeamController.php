@@ -8,9 +8,12 @@ use App\Models\EmployeeGroup;
 use App\Models\EmployeeTeam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Traits\AddressFilterTrait;
 
 class GroupTeamController extends Controller
 {
+    use AddressFilterTrait;
+
     public function index()
     {
         return view('groups.index');
@@ -19,17 +22,27 @@ class GroupTeamController extends Controller
     public function indexAffiliated(Request $request)
     {
         $search = $request->input('search');
-        $employers = collect();
+        $query = Employer::with('addresses');
 
         if ($search) {
-            $employers = Employer::query()
-                ->where('employerNameTh', 'like', "%{$search}%")
-                ->orWhere('employerNameEn', 'like', "%{$search}%")
-                ->limit(20)
-                ->get();
+            $query->where(function($q) use ($search) {
+                $q->where('employerNameTh', 'like', "%{$search}%")
+                  ->orWhere('employerNameEn', 'like', "%{$search}%");
+            });
         }
 
-        return view('groups.affiliated.index', compact('employers', 'search'));
+        // Address options (before address filtering)
+        $addressOptions = $this->getAddressOptions($query);
+
+        // Apply address filters
+        $query = $this->applyAddressFilters($query, $request);
+
+        $employers = collect();
+        if ($search || $request->filled('addrProvince')) {
+            $employers = $query->limit(20)->get();
+        }
+
+        return view('groups.affiliated.index', compact('employers', 'search', 'addressOptions'));
     }
 
     public function manageAffiliated(Request $request, Employer $employer)
@@ -39,6 +52,11 @@ class GroupTeamController extends Controller
         $passportTypeMyanmar = $request->input('passport_type_myanmar');
         $passportTypeCambodia = $request->input('passport_type_cambodia');
         $pinkCard = $request->input('pink_card');
+
+        // NEW: Address Filter logic
+        $addrProvince = $request->input('addrProvince');
+        $addrDistrict = $request->input('addrDistrict');
+        $addrSubDistrict = $request->input('addrSubDistrict');
 
         // Fetch distinct nationalities for dropdown
         $nationalities = Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
@@ -56,7 +74,7 @@ class GroupTeamController extends Controller
              $activeGroup = EmployeeGroup::where('id', $activeGroupId)
                 ->where('employer_id', $employer->id) // Ensure belongs to this employer
                 ->where('type', 'affiliated')
-                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard) {
+                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard, $addrProvince, $addrDistrict, $addrSubDistrict) {
                     if ($search) {
                         $query->where(function($q) use ($search) {
                             $q->where('employeeNameTh', 'like', "%{$search}%")
@@ -83,10 +101,22 @@ class GroupTeamController extends Controller
                             });
                         }
                     }
-                    $query->with('employer');
+
+                    if ($addrProvince || $addrDistrict || $addrSubDistrict) {
+                        $query->whereHas('employer.addresses', function($q) use ($addrProvince, $addrDistrict, $addrSubDistrict) {
+                            if ($addrProvince) $q->where('addrProvince', $addrProvince);
+                            if ($addrDistrict) $q->where('addrDistrict', $addrDistrict);
+                            if ($addrSubDistrict) $q->where('addrSubDistrict', $addrSubDistrict);
+                        });
+                    }
+
+                    $query->with(['employer.addresses', 'employer.jobOwner']);
                 }])
                 ->first();
         }
+
+        // Options for single employer are just its own addresses
+        $addressOptions = $this->getAddressOptions(Employer::where('id', $employer->id));
 
         return view('groups.manage', [
             'type' => 'affiliated',
@@ -94,7 +124,8 @@ class GroupTeamController extends Controller
             'allGroups' => $allGroups,
             'activeGroup' => $activeGroup,
             'nationalities' => $nationalities,
-            'filters' => $request->all()
+            'filters' => $request->all(),
+            'addressOptions' => $addressOptions
         ]);
     }
 
@@ -106,6 +137,11 @@ class GroupTeamController extends Controller
         $passportTypeCambodia = $request->input('passport_type_cambodia');
         $pinkCard = $request->input('pink_card');
 
+        // NEW: Address Filter logic
+        $addrProvince = $request->input('addrProvince');
+        $addrDistrict = $request->input('addrDistrict');
+        $addrSubDistrict = $request->input('addrSubDistrict');
+
         // Fetch distinct nationalities for dropdown
         $nationalities = Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
 
@@ -116,10 +152,12 @@ class GroupTeamController extends Controller
         $activeGroupId = $request->input('active_group') ?? ($allGroups->first()->id ?? null);
         $activeGroup = null;
 
+        $addressOptions = ['provinces' => [], 'districts' => [], 'subDistricts' => []];
+
         if ($activeGroupId) {
              $activeGroup = EmployeeGroup::where('id', $activeGroupId)
                 ->where('type', 'independent')
-                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard) {
+                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard, $addrProvince, $addrDistrict, $addrSubDistrict) {
                     if ($search) {
                         $query->where(function($q) use ($search) {
                             $q->where('employeeNameTh', 'like', "%{$search}%")
@@ -147,11 +185,28 @@ class GroupTeamController extends Controller
                         }
                     }
 
+                    if ($addrProvince || $addrDistrict || $addrSubDistrict) {
+                        $query->whereHas('employer.addresses', function($q) use ($addrProvince, $addrDistrict, $addrSubDistrict) {
+                            if ($addrProvince) $q->where('addrProvince', $addrProvince);
+                            if ($addrDistrict) $q->where('addrDistrict', $addrDistrict);
+                            if ($addrSubDistrict) $q->where('addrSubDistrict', $addrSubDistrict);
+                        });
+                    }
+
                     // Load employer and sort by it for the grouping requirement
-                    $query->with('employer')
+                    $query->with(['employer.addresses', 'employer.jobOwner'])
                           ->orderBy('employer_id');
                 }])
                 ->first();
+
+             // Address options based on employers IN the group
+             $employerIdsQuery = DB::table('employee_team_members')
+                ->join('employee_teams', 'employee_team_members.employee_team_id', '=', 'employee_teams.id')
+                ->join('employees', 'employee_team_members.employee_id', '=', 'employees.id')
+                ->where('employee_teams.employee_group_id', $activeGroupId)
+                ->select('employees.employer_id');
+
+             $addressOptions = $this->getAddressOptions(Employer::whereIn('id', $employerIdsQuery));
         }
 
         return view('groups.manage', [
@@ -160,7 +215,8 @@ class GroupTeamController extends Controller
             'allGroups' => $allGroups,
             'activeGroup' => $activeGroup,
             'nationalities' => $nationalities,
-            'filters' => $request->all()
+            'filters' => $request->all(),
+            'addressOptions' => $addressOptions
         ]);
     }
 

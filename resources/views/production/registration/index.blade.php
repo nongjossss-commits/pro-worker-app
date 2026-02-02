@@ -195,6 +195,8 @@
     </div>
 
     {{-- Actions Bar --}}
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     <div class="card shadow-sm border-0 mb-4 bg-white">
         <div class="card-body p-3">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
@@ -344,7 +346,14 @@
 
                             {{-- Name & Collapse Trigger --}}
                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
-                                <h4 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">{{ $employer->employerNameTh }}</h4>
+                                <h4 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">
+                                    {{ $employer->employerNameTh }}
+                                    @if(request('addrProvince'))
+                                        @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                            <span class="badge bg-info text-white small ms-1" style="font-size: 0.7rem;">{{ $label }}</span>
+                                        @endforeach
+                                    @endif
+                                </h4>
                             </button>
 
                             {{-- Preview --}}

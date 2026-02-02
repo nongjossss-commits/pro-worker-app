@@ -8,9 +8,12 @@ use App\Models\SystemConfig;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Schema;
+use App\Traits\AddressFilterTrait;
 
 class IncompleteEmployeeController extends Controller
 {
+    use AddressFilterTrait;
+
     public function index(Request $request)
     {
         // 1. Get mandatory fields from config
@@ -77,6 +80,12 @@ class IncompleteEmployeeController extends Controller
         }
         // --- END: ADDED FILTERING LOGIC ---
 
+        // NEW: Address options (before address filtering)
+        $addressOptions = $this->getAddressOptions($query, 'employer_id');
+
+        // NEW: Apply address filters
+        $query = $this->applyAddressFilters($query, $request, 'employer');
+
         // Only apply mandatory fields check if there are mandatory fields defined
         if (!empty($mandatoryFields)) {
             // Use a closure to group the OR conditions: (field1 IS NULL OR field1 = '' OR field2 IS NULL ...)
@@ -116,7 +125,8 @@ class IncompleteEmployeeController extends Controller
             'is_incomplete_view' => true,
             'perPageOptions' => $perPageOptions,
             'currentPerPage' => $currentPerPage,
-            'currentView' => $request->input('view', 'card')
+            'currentView' => $request->input('view', 'card'),
+            'addressOptions' => $addressOptions
         ]);
     }
 }

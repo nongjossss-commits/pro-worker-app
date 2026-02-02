@@ -100,6 +100,11 @@
                 @endif
                 <p class="mb-1 small">
                     <strong>นายจ้าง:</strong> {{ $employer->employerNameTh ?? 'N/A' }}
+                    @if(request('addrProvince') && $employer)
+                        @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                            <span class="text-primary small fw-bold ms-1">{{ $label }}</span>
+                        @endforeach
+                    @endif
                     @if($employer)
                     <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
                     @endif

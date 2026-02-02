@@ -12,6 +12,8 @@
         </a>
     </div>
 
+    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -49,7 +51,14 @@
                                 </td>
                                 <td>
                                     @if($order->type === 'employer' && $order->employer)
-                                        <div class="fw-bold">{{ $order->employer->name_en ?? $order->employer->name_th }}</div>
+                                        <div class="fw-bold">
+                                            {{ $order->employer->employerNameEn ?? $order->employer->employerNameTh }}
+                                            @if(request('addrProvince'))
+                                                @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                                    <div class="text-primary small fw-bold">{{ $label }}</div>
+                                                @endforeach
+                                            @endif
+                                        </div>
                                     @elseif($order->type === 'independent')
                                         @php
                                             $employers = $order->items->map(function($item) {
