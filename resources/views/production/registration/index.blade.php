@@ -227,6 +227,13 @@
                 </form>
 
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
+                    <button class="btn btn-outline-info fw-bold"
+                            id="btn-global-filter-biometrics"
+                            onclick="toggleFilter('biometrics_collected')"
+                            title="{{ __('Filter Biometrics Collected') }}">
+                        <i class="bi bi-person-bounding-box me-1"></i>
+                    </button>
+
                     @can('edit-employees')
                     <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white fw-bold">
                         <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
@@ -806,7 +813,12 @@
              else if (currentStepFilter === 'saved') document.getElementById('filter-saved')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled_employer') document.getElementById('filter-cancelled-employer')?.classList.add('filter-active');
-             else if (currentStepFilter === 'biometrics_collected') document.getElementById('filter-biometrics-collected')?.classList.add('filter-active');
+             else if (currentStepFilter === 'biometrics_collected') {
+                 document.getElementById('filter-biometrics-collected')?.classList.add('filter-active');
+                 // Highlight global button too
+                 const btn = document.getElementById('btn-global-filter-biometrics');
+                 if(btn) btn.classList.add('active', 'bg-info', 'text-white');
+             }
              else {
                  const pill = document.getElementById(`filter-step-${currentStepFilter}`);
                  if (pill) pill.classList.add('filter-active');
@@ -1180,12 +1192,23 @@
                     showConfirmButton: false
                 });
 
-                // Update UI Button
+                // Update Scan Button State
                 if(btn) {
                     btn.disabled = false;
-                    btn.className = 'btn btn-sm btn-success rounded-pill px-3 biometrics-btn';
-                    btn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Collected') }}</span> <i class="bi bi-check-lg ms-1"></i>';
+                    btn.classList.remove('btn-outline-warning');
+                    btn.classList.add('btn-success');
+                    btn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Collected') }}</span>';
                     btn.dataset.collected = 'true';
+                }
+
+                // Update Tick Button State
+                const tickBtn = document.getElementById(`btn-biometrics-toggle-${employeeId}`);
+                if (tickBtn) {
+                    tickBtn.classList.remove('btn-outline-secondary');
+                    tickBtn.classList.add('btn-success');
+                    if(!tickBtn.querySelector('.bi-check-lg')) {
+                        tickBtn.innerHTML += ' <i class="bi bi-check-lg ms-1"></i>';
+                    }
                 }
 
                 // Update Card Data Attribute
@@ -1202,11 +1225,9 @@
                 Swal.fire('{{ __('Error') }}', data.message || 'Upload failed', 'error');
                 if(btn) { // Reset button
                     btn.disabled = false;
-                    // We assume it was not collected before if it failed? Or check dataset.
+                    // Reset to initial state logic if needed
                     const wasCollected = btn.dataset.collected === 'true';
-                    if(wasCollected) {
-                         btn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Collected') }}</span> <i class="bi bi-check-lg ms-1"></i>';
-                    } else {
+                    if(!wasCollected) {
                          btn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Biometrics') }}</span>';
                     }
                 }
@@ -1216,6 +1237,86 @@
             console.error(err);
             Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error');
             if(btn) btn.disabled = false; // Basic reset
+        });
+    }
+
+    // --- Toggle Biometrics (Tick) Handler ---
+    window.toggleBiometricsStatus = function(employeeId) {
+        const btn = document.getElementById(`btn-biometrics-toggle-${employeeId}`);
+        const scanBtn = document.getElementById(`btn-biometrics-${employeeId}`);
+
+        // Optimistic UI Update can be tricky if we want exact sync, let's wait for response or simple toggle
+        if(btn) btn.disabled = true;
+
+        fetch(`/production/registration/${employeeId}/biometrics-toggle` + window.location.search, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Update Card Data
+                const card = document.getElementById(`employee-card-${employeeId}`);
+                if(card) {
+                    card.dataset.biometricsCollected = data.collected ? 'true' : 'false';
+                }
+
+                // Update Tick Button
+                if(btn) {
+                    btn.disabled = false;
+                    if (data.collected) {
+                        btn.classList.remove('btn-outline-secondary');
+                        btn.classList.add('btn-success');
+                        if(!btn.querySelector('.bi-check-lg')) {
+                            btn.innerHTML += ' <i class="bi bi-check-lg ms-1"></i>';
+                        }
+                    } else {
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-outline-secondary');
+                        const icon = btn.querySelector('.bi-check-lg');
+                        if(icon) icon.remove();
+                    }
+                }
+
+                // Update Scan Button (Reflect status, but keep function)
+                if (scanBtn) {
+                     if (data.collected) {
+                        scanBtn.classList.remove('btn-outline-warning');
+                        scanBtn.classList.add('btn-success');
+                        scanBtn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Collected') }}</span>';
+                        scanBtn.dataset.collected = 'true';
+                     } else {
+                        // Only revert scan button if no file... actually requirement says "File stays".
+                        // But status "Collected" depends on tick.
+                        // If we untick, status becomes "Not Collected".
+                        // Should the scan button turn orange?
+                        // User said: "The system filtering... checks for employees who have collected biometrics... does not rely on the file attached".
+                        // So yes, visual indication of "Collected" should match the tick.
+                        // However, if file exists, maybe keep green?
+                        // Let's stick to the status: if unticked (not collected), scan button goes back to orange/warning.
+                        scanBtn.classList.remove('btn-success');
+                        scanBtn.classList.add('btn-outline-warning');
+                        scanBtn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Biometrics') }}</span>';
+                        scanBtn.dataset.collected = 'false';
+                     }
+                }
+
+                updateStatsUI(data.stats);
+                applyFilters();
+
+            } else {
+                Swal.fire('{{ __('Error') }}', data.message, 'error');
+                if(btn) btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error');
+            if(btn) btn.disabled = false;
         });
     }
 
