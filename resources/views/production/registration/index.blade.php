@@ -1283,27 +1283,8 @@
                 }
 
                 // Update Scan Button (Reflect status, but keep function)
-                if (scanBtn) {
-                     if (data.collected) {
-                        scanBtn.classList.remove('btn-outline-warning');
-                        scanBtn.classList.add('btn-success');
-                        scanBtn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Collected') }}</span>';
-                        scanBtn.dataset.collected = 'true';
-                     } else {
-                        // Only revert scan button if no file... actually requirement says "File stays".
-                        // But status "Collected" depends on tick.
-                        // If we untick, status becomes "Not Collected".
-                        // Should the scan button turn orange?
-                        // User said: "The system filtering... checks for employees who have collected biometrics... does not rely on the file attached".
-                        // So yes, visual indication of "Collected" should match the tick.
-                        // However, if file exists, maybe keep green?
-                        // Let's stick to the status: if unticked (not collected), scan button goes back to orange/warning.
-                        scanBtn.classList.remove('btn-success');
-                        scanBtn.classList.add('btn-outline-warning');
-                        scanBtn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Biometrics') }}</span>';
-                        scanBtn.dataset.collected = 'false';
-                     }
-                }
+                // MODIFIED: Scan button only changes on file upload, not on manual tick.
+                // if (scanBtn) { ... } logic removed to decouple.
 
                 updateStatsUI(data.stats);
                 applyFilters();
