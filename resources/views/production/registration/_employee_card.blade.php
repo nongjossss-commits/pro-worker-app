@@ -232,13 +232,13 @@
                      </button>
 
                      {{-- Scan/Upload Button --}}
-                     <button class="btn btn-sm {{ $employee->biometrics_collected_at ? 'btn-success' : 'btn-outline-warning' }} rounded-end-pill px-3 biometrics-btn border-start-0"
+                     <button class="btn btn-sm {{ $employee->employee_doc_9 ? 'btn-success' : 'btn-outline-warning' }} rounded-end-pill px-3 biometrics-btn border-start-0"
                          id="btn-biometrics-{{ $employee->id }}"
-                         data-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
+                         data-collected="{{ $employee->employee_doc_9 ? 'true' : 'false' }}"
                          title="{{ __('Scan / Upload Biometrics') }}"
                          onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'biometrics-input-{{ $employee->id }}' } }))">
                          <i class="bi bi-fingerprint"></i>
-                         <span class="d-none d-lg-inline">{{ $employee->biometrics_collected_at ? __('Collected') : __('Biometrics') }}</span>
+                         <span class="d-none d-lg-inline">{{ $employee->employee_doc_9 ? __('Collected') : __('Biometrics') }}</span>
                      </button>
                  </div>
                  @endcan
