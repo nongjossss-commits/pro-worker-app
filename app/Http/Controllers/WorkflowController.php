@@ -222,6 +222,7 @@ class WorkflowController extends Controller
             $items = ProductionItem::whereHas('order', fn($q) => $q->where('work_type_id', $wt->id))
                 ->where('status', '!=', 'cancelled')
                 ->where('status', '!=', 'completed')
+                ->whereNull('appointment_completed_at') // Exclude completed appointments
                 ->whereNotNull('appointment_date')
                 ->whereBetween('appointment_date', [$start, $end])
                 ->with(['employee', 'order.employer', 'order.workType'])
@@ -273,6 +274,25 @@ class WorkflowController extends Controller
     }
 
     /**
+     * API: Toggle Appointment Complete
+     */
+    public function toggleAppointmentComplete(Request $request, $itemId)
+    {
+        $item = ProductionItem::findOrFail($itemId);
+
+        // If completed, un-complete it (toggle), or user request implies specific action.
+        // Usually buttons are "Finish". If already finished, maybe nothing.
+        // But for robust toggle:
+        if ($item->appointment_completed_at) {
+            $item->update(['appointment_completed_at' => null]);
+        } else {
+            $item->update(['appointment_completed_at' => now()]);
+        }
+
+        return response()->json(['success' => true, 'completed_at' => $item->appointment_completed_at]);
+    }
+
+    /**
      * API: Get Calendar Data (Counts per day)
      */
     public function getCalendarData(Request $request)
@@ -287,6 +307,7 @@ class WorkflowController extends Controller
             ->whereBetween('appointment_date', [$start, $end])
             ->where('status', '!=', 'cancelled')
             ->where('status', '!=', 'completed')
+            ->whereNull('appointment_completed_at') // Exclude completed appointments
             ->groupBy('date')
             ->get()
             ->mapWithKeys(function ($item) {
@@ -297,7 +318,7 @@ class WorkflowController extends Controller
     }
 
     /**
-     * API: Get Appointments for a specific Date (Modal list)
+     * API: Get Appointments for a specific Date (Modal list -> Rendered HTML)
      */
     public function getAppointmentsByDate(Request $request)
     {
@@ -306,22 +327,68 @@ class WorkflowController extends Controller
 
         $items = ProductionItem::whereDate('appointment_date', $date)
             ->where('status', '!=', 'cancelled')
-            ->with(['employee', 'order.employer', 'order.workType'])
-            ->get()
-            ->map(function($item) {
-                return [
-                    'id' => $item->id,
-                    'time' => $item->appointment_date->format('H:i'),
-                    'employee_name' => $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee',
-                    'employer_name' => $item->order->employer->employerNameTh ?? '-',
-                    'project_name' => $item->order->project_name ?? '-',
-                    'work_type' => $item->order->workType->name ?? '-',
-                    'location' => $item->appointment_location ?? '-',
-                    'tab_slug' => $item->order->workType->slug ?? ''
-                ];
-            });
+            ->whereNull('appointment_completed_at') // Exclude completed
+            ->with(['employee', 'order.employer', 'order.workType', 'completedWorkTypeSteps'])
+            ->get();
 
-        return response()->json($items);
+        // We need to group them by order for better display, or just list them as cards.
+        // Using a partial view for the list of cards.
+
+        $html = view('workflow.partials.day_appointments_list', compact('items'))->render();
+
+        return response()->json(['html' => $html]);
+    }
+
+    /**
+     * API: Export Selected Appointments
+     */
+    public function exportAppointments(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:production_items,id'
+        ]);
+
+        $ids = $request->ids;
+        $items = ProductionItem::whereIn('id', $ids)
+            ->with(['employee', 'order.employer', 'order.workType'])
+            ->get();
+
+        // Simple CSV Export
+        $fileName = 'appointments_export_' . date('Y-m-d_H-i') . '.csv';
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $columns = ['Date', 'Time', 'Employee Name', 'Passport', 'Employer', 'Project', 'Work Type', 'Location', 'Status'];
+
+        $callback = function() use($items, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($items as $item) {
+                $row = [
+                    $item->appointment_date ? $item->appointment_date->format('Y-m-d') : '',
+                    $item->appointment_date ? $item->appointment_date->format('H:i') : '',
+                    $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee',
+                    $item->employee->employeePassport ?? '-',
+                    $item->order->employer->employerNameTh ?? '-',
+                    $item->order->project_name ?? '-',
+                    $item->order->workType->name ?? '-',
+                    $item->appointment_location ?? '-',
+                    $item->status
+                ];
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

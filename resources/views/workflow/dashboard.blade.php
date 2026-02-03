@@ -154,33 +154,28 @@
                     </div>
                 </div>
 
-                {{-- Day Details Modal --}}
+                {{-- Day Details Modal (Updated for Full Cards) --}}
                 <div class="modal fade" id="dayDetailsModal" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
                         <div class="modal-content">
                             <div class="modal-header bg-primary text-white">
                                 <h5 class="modal-title">{{ __('Appointments for') }} <span x-text="selectedDateFormatted"></span></h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body p-0">
-                                <div class="list-group list-group-flush" id="dayAppointmentsList">
-                                    <template x-for="appt in selectedAppointments" :key="appt.id">
-                                        <a :href="'/workflow?tab=' + appt.tab_slug + '#item-card-' + appt.id" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <div class="fw-bold text-dark" x-text="appt.time + ' - ' + appt.employee_name"></div>
-                                                <div class="small text-muted">
-                                                    <span x-text="appt.project_name"></span> | <span x-text="appt.work_type"></span>
-                                                </div>
-                                                <div class="small text-info" x-show="appt.location !== '-'">
-                                                    <i class="bi bi-geo-alt-fill"></i> <span x-text="appt.location"></span>
-                                                </div>
-                                            </div>
-                                            <i class="bi bi-chevron-right text-muted"></i>
-                                        </a>
-                                    </template>
-                                    <div x-show="selectedAppointments.length === 0" class="p-4 text-center text-muted">
-                                        {{ __('No appointments found.') }}
+
+                            {{-- Toolbar --}}
+                            <div class="modal-body p-0 border-bottom">
+                                <div class="bg-light p-3 d-flex justify-content-between align-items-center sticky-top border-bottom">
+                                    <div class="form-check ms-1">
+                                        <input class="form-check-input" type="checkbox" id="selectAllDay" @change="toggleSelectAll($el.checked)">
+                                        <label class="form-check-label fw-bold" for="selectAllDay">{{ __('Select All') }}</label>
                                     </div>
+                                    <button class="btn btn-success" @click="exportSelected()">
+                                        <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> {{ __('Export / Download') }}
+                                    </button>
+                                </div>
+                                <div id="dayAppointmentsContent" class="p-3 bg-light" style="min-height: 200px;">
+                                     {{-- Rendered Content Injected Here --}}
                                 </div>
                             </div>
                         </div>
@@ -222,6 +217,12 @@
         </div>
     </div>
 
+    {{-- Hidden Form for Export --}}
+    <form id="exportForm" action="{{ route('workflow.appointments.export') }}" method="POST" target="_blank" class="d-none">
+        @csrf
+        <div id="exportIdsContainer"></div>
+    </form>
+
 </div>
 
 {{-- Create Job Modal --}}
@@ -241,7 +242,6 @@
             counts: {},
             selectedDate: null,
             selectedDateFormatted: '',
-            selectedAppointments: [],
 
             init() {
                 this.generateCalendar();
@@ -337,15 +337,56 @@
             openDayModal(dateStr) {
                 this.selectedDate = dateStr;
                 this.selectedDateFormatted = moment(dateStr).format('D MMM YYYY');
-                this.selectedAppointments = [];
 
-                // Fetch details
+                const container = document.getElementById('dayAppointmentsContent');
+                container.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>';
+
+                // Reset Select All
+                document.getElementById('selectAllDay').checked = false;
+
+                new bootstrap.Modal(document.getElementById('dayDetailsModal')).show();
+
+                // Fetch rendered HTML
                 fetch(`/workflow/api/appointments-by-date?date=${dateStr}`)
                     .then(res => res.json())
                     .then(data => {
-                        this.selectedAppointments = data;
-                        new bootstrap.Modal(document.getElementById('dayDetailsModal')).show();
+                        container.innerHTML = data.html;
+                        // Re-initialize Alpine components in the injected HTML
+                        if(window.Alpine) {
+                             Alpine.initTree(container);
+                        }
                     });
+            },
+
+            toggleSelectAll(checked) {
+                const container = document.getElementById('dayAppointmentsContent');
+                const checkboxes = container.querySelectorAll('.item-checkbox');
+                checkboxes.forEach(cb => cb.checked = checked);
+            },
+
+            exportSelected() {
+                const container = document.getElementById('dayAppointmentsContent');
+                const checkboxes = container.querySelectorAll('.item-checkbox:checked');
+
+                if(checkboxes.length === 0) {
+                    Swal.fire('{{ __('No Items Selected') }}', '{{ __('Please select at least one item to export.') }}', 'warning');
+                    return;
+                }
+
+                const ids = Array.from(checkboxes).map(cb => cb.value);
+                const form = document.getElementById('exportForm');
+                const containerInput = document.getElementById('exportIdsContainer');
+                containerInput.innerHTML = '';
+
+                ids.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = id;
+                    containerInput.appendChild(input);
+                });
+
+                form.submit();
             }
         }
     }
