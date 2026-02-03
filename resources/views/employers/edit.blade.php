@@ -283,22 +283,13 @@
         <h5>{{ __('Employer Attachments') }}</h5>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }}</label>
-                @if($employer->employer_doc_company)
-                         <div class="mb-2 d-flex gap-1">
-                             <a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                             <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_company' } }))">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
-                @error('employer_doc_company')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <x-file-input-group
+                    id="employer_doc_company"
+                    name="employer_doc_company"
+                    label="1. {{ __('Company Certificate / ID Card') }}"
+                    :value="$employer->employer_doc_company"
+                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company'])"
+                />
             </div>
             <div class="col-md-6">
                 <label for="employer_doc_company_expiry" class="form-label">{{ __('Expiry Date') }}</label>
@@ -310,99 +301,57 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }}</label>
-                @if($employer->employer_doc_lease)
-                        <div class="mb-2 d-flex gap-1">
-                            <a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_lease' } }))">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
-                @error('employer_doc_lease')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <x-file-input-group
+                    id="employer_doc_lease"
+                    name="employer_doc_lease"
+                    label="2. {{ __('Lease Agreement / House Registration') }}"
+                    :value="$employer->employer_doc_lease"
+                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease'])"
+                />
             </div>
             <div class="col-md-6">
-                <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }}</label>
-                @if($employer->employer_doc_construction)
-                        <div class="mb-2 d-flex gap-1">
-                            <a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_construction' } }))">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
-                @error('employer_doc_construction')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <x-file-input-group
+                    id="employer_doc_construction"
+                    name="employer_doc_construction"
+                    label="3. {{ __('Construction Contract / Map') }}"
+                    :value="$employer->employer_doc_construction"
+                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction'])"
+                />
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1</label>
-                @if($employer->employer_doc_other_1)
-                        <div class="mb-2 d-flex gap-1">
-                            <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_1' } }))">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_1_desc') is-invalid @enderror" id="employer_doc_other_1_desc" name="employer_doc_other_1_desc" value="{{ old('employer_doc_other_1_desc', $employer->employer_doc_other_1_desc ?? '') }}" placeholder="{{ __('Specify description...') }}">
-                @error('employer_doc_other_1')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <x-file-input-group
+                    id="employer_doc_other_1"
+                    name="employer_doc_other_1"
+                    label="4. {{ __('Other Document') }} 1"
+                    :value="$employer->employer_doc_other_1"
+                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1'])"
+                    description="employer_doc_other_1_desc"
+                    :descriptionValue="$employer->employer_doc_other_1_desc"
+                />
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2</label>
-                @if($employer->employer_doc_other_2)
-                        <div class="mb-2 d-flex gap-1">
-                            <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_2' } }))">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_2_desc') is-invalid @enderror" id="employer_doc_other_2_desc" name="employer_doc_other_2_desc" value="{{ old('employer_doc_other_2_desc', $employer->employer_doc_other_2_desc ?? '') }}" placeholder="{{ __('Specify description...') }}">
-                @error('employer_doc_other_2')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <x-file-input-group
+                    id="employer_doc_other_2"
+                    name="employer_doc_other_2"
+                    label="5. {{ __('Other Document') }} 2"
+                    :value="$employer->employer_doc_other_2"
+                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2'])"
+                    description="employer_doc_other_2_desc"
+                    :descriptionValue="$employer->employer_doc_other_2_desc"
+                />
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3</label>
-                @if($employer->employer_doc_other_3)
-                        <div class="mb-2 d-flex gap-1">
-                            <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                            <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_3' } }))">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
-                <input type="text" class="form-control form-control-sm mt-2 @error('employer_doc_other_3_desc') is-invalid @enderror" id="employer_doc_other_3_desc" name="employer_doc_other_3_desc" value="{{ old('employer_doc_other_3_desc', $employer->employer_doc_other_3_desc ?? '') }}" placeholder="{{ __('Specify description...') }}">
-                @error('employer_doc_other_3')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <x-file-input-group
+                    id="employer_doc_other_3"
+                    name="employer_doc_other_3"
+                    label="6. {{ __('Other Document') }} 3"
+                    :value="$employer->employer_doc_other_3"
+                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3'])"
+                    description="employer_doc_other_3_desc"
+                    :descriptionValue="$employer->employer_doc_other_3_desc"
+                />
             </div>
         </div>
         <div class="mt-4">

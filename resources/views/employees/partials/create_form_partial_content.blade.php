@@ -331,13 +331,11 @@
 
 <div class="row">
     <div class="col-md-6 mb-3">
-        <label for="medical_certificate_path" class="form-label">ใบรับรองแพทย์ (Medical Certificate)</label>
-        <div class="input-group input-group-sm">
-            <input type="file" class="form-control form-control-sm" id="medical_certificate_path" name="medical_certificate_path">
-             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'medical_certificate_path' } }))">
-                <i class="bi bi-camera"></i>
-            </button>
-        </div>
+        <x-file-input-group
+            id="medical_certificate_path"
+            name="medical_certificate_path"
+            label="ใบรับรองแพทย์ (Medical Certificate)"
+        />
     </div>
     <div class="col-md-6 mb-3">
         <label for="medical_hospital_name" class="form-label">โรงพยาบาลที่ตรวจโรค (Hospital Name)</label>
@@ -357,8 +355,11 @@
             <input type="text" class="form-control" name="insurance_detail_social" value="{{ old('insurance_detail_social') }}">
         </div>
         <div class="col-md-4 mb-3">
-            <label for="insurance_document_path_social" class="form-label">แนบไฟล์เอกสารประกัน</label>
-            <input type="file" class="form-control form-control-sm" name="insurance_document_path_social">
+            <x-file-input-group
+                id="insurance_document_path_social"
+                name="insurance_document_path_social"
+                label="แนบไฟล์เอกสารประกัน"
+            />
         </div>
         </div>
 </div>
@@ -374,8 +375,11 @@
             <input type="date" class="form-control" name="insurance_expiry_date_hospital" value="{{ old('insurance_expiry_date_hospital') }}">
         </div>
             <div class="col-md-4 mb-3">
-            <label for="insurance_document_path_hospital" class="form-label">แนบไฟล์เอกสารประกัน</label>
-            <input type="file" class="form-control form-control-sm" name="insurance_document_path_hospital">
+            <x-file-input-group
+                id="insurance_document_path_hospital"
+                name="insurance_document_path_hospital"
+                label="แนบไฟล์เอกสารประกัน"
+            />
         </div>
     </div>
 </div>
@@ -391,8 +395,11 @@
             <input type="date" class="form-control" name="insurance_expiry_date_private" value="{{ old('insurance_expiry_date_private') }}">
         </div>
             <div class="col-md-4 mb-3">
-            <label for="insurance_document_path_private" class="form-label">แนบไฟล์เอกสารประกัน</label>
-            <input type="file" class="form-control form-control-sm" name="insurance_document_path_private">
+            <x-file-input-group
+                id="insurance_document_path_private"
+                name="insurance_document_path_private"
+                label="แนบไฟล์เอกสารประกัน"
+            />
         </div>
     </div>
 </div>
@@ -429,13 +436,11 @@
 
     @foreach($docs as $i => $label)
         <div class="col-md-4 mb-3">
-            <label for="employee_doc_{{ $i }}" class="form-label">{{ $label }}</label>
-            <div class="input-group input-group-sm">
-                <input type="file" class="form-control form-control-sm" id="employee_doc_{{ $i }}" name="employee_doc_{{ $i }}">
-                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employee_doc_{{ $i }}' } }))">
-                    <i class="bi bi-camera"></i>
-                </button>
-            </div>
+            <x-file-input-group
+                :id="'employee_doc_' . $i"
+                :name="'employee_doc_' . $i"
+                :label="$label"
+            />
         </div>
     @endforeach
 
@@ -444,17 +449,16 @@
             $docIndex = $i + 8;
             $fieldName = "employee_doc_" . $docIndex;
             $descName = "other_doc_" . $i . "_desc";
-            $label = "เอกสารอื่นๆ " . $i; // Matches 9 to 18
+            $label = "เอกสารอื่นๆ " . $i;
         @endphp
         <div class="col-md-6 mb-3">
-            <label for="{{ $fieldName }}" class="form-label">{{ $docIndex }}. {{ $label }}</label>
-            <div class="input-group input-group-sm">
-                <input type="file" class="form-control form-control-sm" id="{{ $fieldName }}" name="{{ $fieldName }}">
-                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $fieldName }}' } }))">
-                    <i class="bi bi-camera"></i>
-                </button>
-            </div>
-            <input type="text" class="form-control form-control-sm mt-2" name="{{ $descName }}" placeholder="คำอธิบาย..." value="{{ old($descName) }}">
+            <x-file-input-group
+                :id="$fieldName"
+                :name="$fieldName"
+                :label="$docIndex . '. ' . $label"
+                :description="$descName"
+                :descriptionValue="old($descName)"
+            />
         </div>
     @endfor
 </div>

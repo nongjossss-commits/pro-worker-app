@@ -89,6 +89,12 @@
             <div class="d-grid gap-2 w-75">
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('triggerFile').click();"><i class="bi bi-file-earmark-image me-1"></i> เลือกจากไฟล์</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('triggerCamera').click();"><i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ</button>
+                @if($employee->employeePhoto)
+                <button type="button" class="btn btn-sm btn-warning"
+                        onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employeePhotoInput', initialUrl: '{{ asset('storage/' . $employee->employeePhoto) }}' } }))">
+                    <i class="bi bi-pencil-square me-1"></i> แก้ไขรูปภาพ
+                </button>
+                @endif
             </div>
             {{-- Hidden file inputs --}}
             <input type="file" class="d-none" id="triggerFile" accept="image/*">
@@ -297,19 +303,13 @@
 
     <div class="row">
         <div class="col-md-6 mb-3">
-            <label for="medical_certificate_path" class="form-label">ใบรับรองแพทย์ (Medical Certificate)</label>
-            @if($employee->medical_certificate_path)
-                <div class="mb-2 d-flex gap-1">
-                    <a href="{{ asset('storage/' . $employee->medical_certificate_path) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                </div>
-            @endif
-            <div class="input-group input-group-sm">
-                <input type="file" class="form-control form-control-sm" id="medical_certificate_path" name="medical_certificate_path">
-                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'medical_certificate_path' } }))">
-                    <i class="bi bi-camera"></i>
-                </button>
-            </div>
+            <x-file-input-group
+                id="medical_certificate_path"
+                name="medical_certificate_path"
+                label="ใบรับรองแพทย์ (Medical Certificate)"
+                :value="$employee->medical_certificate_path"
+                :pdfRoute="route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path'])"
+            />
         </div>
         <div class="col-md-6 mb-3">
             <label for="medical_hospital_name" class="form-label">โรงพยาบาลที่ตรวจโรค (Hospital Name)</label>
@@ -370,21 +370,13 @@
     </div>
     <div class="row">
         <div class="col-md-4 mb-3">
-            <label for="insurance_document_path_private" class="form-label">แนบไฟล์เอกสารประกัน
-                @if(isset($missingFields) && in_array('insurance_document_path_private', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
-            </label>
-            @if($employee->insurance_document_path_private)
-                <div class="mb-2 d-flex gap-1">
-                    <a href="{{ asset('storage/' . $employee->insurance_document_path_private) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                </div>
-            @endif
-            <div class="input-group input-group-sm">
-                <input type="file" class="form-control form-control-sm" id="insurance_document_path_private" name="insurance_document_path_private">
-                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_private' } }))">
-                    <i class="bi bi-camera"></i>
-                </button>
-            </div>
+            <x-file-input-group
+                id="insurance_document_path_private"
+                name="insurance_document_path_private"
+                label="แนบไฟล์เอกสารประกัน"
+                :value="$employee->insurance_document_path_private"
+                :pdfRoute="route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private'])"
+            />
         </div>
     </div>
 
@@ -434,24 +426,15 @@
                 $descField = 'other_doc_' . ($i - 8) . '_desc';
             @endphp
             <div class="{{ in_array($i, $descSlots) ? 'col-md-6' : 'col-md-4' }} mb-3">
-                <label for="{{ $docField }}" class="form-label fw-bold">{{ $i }}. {{ $label }}
-                    @if(isset($missingFields) && in_array($docField, $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
-                </label>
-                @if($employee->{$docField})
-                    <div class="mb-2 d-flex gap-1">
-                        <a href="{{ asset('storage/' . $employee->{$docField}) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์ปัจจุบัน</a>
-                        <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => $docField]) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm" id="{{ $docField }}" name="{{ $docField }}">
-                    <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $docField }}' } }))">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
-                @if(in_array($i, $descSlots))
-                    <input type="text" class="form-control form-control-sm mt-2" name="{{ $descField }}" placeholder="คำอธิบาย..." value="{{ old($descField, $employee->{$descField}) }}">
-                @endif
+                <x-file-input-group
+                    :id="$docField"
+                    :name="$docField"
+                    :label="$i . '. ' . $label"
+                    :value="$employee->{$docField}"
+                    :pdfRoute="route('employees.documents.pdf', ['employee' => $employee->id, 'field' => $docField])"
+                    :description="in_array($i, $descSlots) ? $descField : null"
+                    :descriptionValue="in_array($i, $descSlots) ? $employee->{$descField} : null"
+                />
             </div>
         @endforeach
     </div>

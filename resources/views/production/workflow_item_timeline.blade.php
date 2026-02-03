@@ -195,8 +195,12 @@
                         <input type="text" name="label" class="form-control" placeholder="e.g. Receipt, Signed Form" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">File</label>
-                        <input type="file" name="value_file" class="form-control" required>
+                        <x-file-input-group
+                            id="value_file"
+                            name="value_file"
+                            label="File"
+                            required="true"
+                        />
                     </div>
                 </div>
                 <div class="modal-footer">
