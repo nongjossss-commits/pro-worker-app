@@ -66,6 +66,7 @@ class RegistrationController extends Controller
         $totalCancelled = 0;
         $totalSaved = 0;
         $notStartedCount = 0;
+        $totalBiometricsCollected = 0; // NEW
         $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
         // Group by Employer for Per-Employer Stats assignment later
@@ -87,6 +88,11 @@ class RegistrationController extends Controller
                 // Not Started Logic
                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
                     $notStartedCount++;
+                }
+
+                // Biometrics Collected Logic
+                if ($emp->biometrics_collected_at) {
+                    $totalBiometricsCollected++;
                 }
 
                 // Step Stats (Highest Step)
@@ -142,6 +148,17 @@ class RegistrationController extends Controller
                 if ($filter === 'cancelled') {
                      return $emps->contains('status', 'registration_cancelled');
                 }
+                // Biometrics Filters
+                if ($filter === 'biometrics_collected') {
+                     return $emps->contains(function($e) {
+                         return $e->status !== 'registration_cancelled' && $e->biometrics_collected_at;
+                     });
+                }
+                if ($filter === 'biometrics_not_collected') {
+                     return $emps->contains(function($e) {
+                         return $e->status !== 'registration_cancelled' && !$e->biometrics_collected_at;
+                     });
+                }
                 // Step Filter
                 return $emps->contains(function($e) use ($filter) {
                      if ($e->status === 'registration_cancelled') return false;
@@ -193,6 +210,7 @@ class RegistrationController extends Controller
             $empActiveCount = 0;
             $empCancelledCount = 0;
             $empSavedCount = 0;
+            $empBiometricsCollected = 0;
 
             foreach ($myEmps as $emp) {
                 if ($emp->status === 'registration_cancelled') {
@@ -210,6 +228,10 @@ class RegistrationController extends Controller
                     $empNotStarted++;
                 }
 
+                if ($emp->biometrics_collected_at) {
+                    $empBiometricsCollected++;
+                }
+
                 $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
                 if ($highestStep && isset($empStats[$highestStep->id])) {
                     $empStats[$highestStep->id]++;
@@ -222,6 +244,7 @@ class RegistrationController extends Controller
             $employer->activeEmployeesCount = $empActiveCount;
             $employer->cancelledCount = $empCancelledCount;
             $employer->savedCount = $empSavedCount;
+            $employer->biometricsCollectedCount = $empBiometricsCollected;
 
             // NOTE: We do NOT assign $employer->employees here to keep response light.
             // The view will lazily load them.
@@ -248,6 +271,7 @@ class RegistrationController extends Controller
             'totalEmployers',
             'cancelledEmployersCount',
             'notStartedCount',
+            'totalBiometricsCollected',
             'steps',
             'stepStats',
             'employers',
@@ -297,6 +321,12 @@ class RegistrationController extends Controller
                  $query->where('status', 'registration_completed');
             } elseif ($filter === 'cancelled') {
                  $query->where('status', 'registration_cancelled');
+            } elseif ($filter === 'biometrics_collected') {
+                 $query->where('status', '!=', 'registration_cancelled')
+                       ->whereNotNull('biometrics_collected_at');
+            } elseif ($filter === 'biometrics_not_collected') {
+                 $query->where('status', '!=', 'registration_cancelled')
+                       ->whereNull('biometrics_collected_at');
             } elseif (is_numeric($filter)) { // Step ID
                  $query->where('status', '!=', 'registration_cancelled');
                  // We filter by highest step in PHP below
@@ -1189,13 +1219,17 @@ class RegistrationController extends Controller
         // 5. Total Employers (who have any registration employees)
         $globalEmployers = (clone $globalQuery)->whereIn('status', $allStatuses)->distinct('employer_id')->count('employer_id');
 
+        // 6. Total Biometrics Collected
+        $globalBiometrics = (clone $globalQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
+
         $stats = [
             'global' => [
                 'total' => $globalTotal,
                 'not_started' => $globalNotStarted,
                 'cancelled' => $globalCancelled,
                 'saved' => $globalSaved,
-                'employers_count' => $globalEmployers
+                'employers_count' => $globalEmployers,
+                'biometrics_collected' => $globalBiometrics
             ]
         ];
 
@@ -1231,17 +1265,59 @@ class RegistrationController extends Controller
 
             $empCancelled = (clone $empQuery)->where('status', 'registration_cancelled')->count();
             $empSaved = (clone $empQuery)->where('status', 'registration_completed')->count();
+            $empBiometrics = (clone $empQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
 
             $stats['employer'] = [
                 'id' => $employerId,
                 'total' => $empTotal,
                 'not_started' => $empNotStarted,
                 'cancelled' => $empCancelled,
-                'saved' => $empSaved
+                'saved' => $empSaved,
+                'biometrics_collected' => $empBiometrics
             ];
         }
 
         return $stats;
+    }
+
+    /**
+     * Update Biometrics Collection Status and File.
+     */
+    public function updateBiometrics(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        // Validate File
+        $request->validate([
+            'biometrics_file' => 'required|file|max:10240', // 10MB
+        ]);
+
+        if ($request->hasFile('biometrics_file')) {
+            // Delete old file if exists (optional, but good practice)
+            if ($employee->employee_doc_9) {
+                Storage::disk('public')->delete($employee->employee_doc_9);
+            }
+
+            $file = $request->file('biometrics_file');
+            $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
+
+            // Update Employee: Set Doc 9 AND Biometrics Timestamp
+            $employee->update([
+                'employee_doc_9' => $path,
+                'biometrics_collected_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Biometrics updated successfully.',
+                'stats' => $this->getStats($employee->employer_id, $request)
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'No file uploaded.'], 400);
     }
 
     /**

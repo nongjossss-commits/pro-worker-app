@@ -110,6 +110,19 @@
             </div>
         </div>
 
+        {{-- Biometrics Collected --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-biometrics-collected"
+                 onclick="toggleFilter('biometrics_collected')"
+                 style="background-color: #06b6d4; border: none;"> {{-- Cyan-500 --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-biometrics-collected-count">{{ $totalBiometricsCollected ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Biometrics Collected') }}</p>
+                </div>
+            </div>
+        </div>
+
         {{-- Total Employers --}}
         <div class="col">
             <div class="card bg-dark text-white h-100 shadow-sm" style="border: none;">
@@ -403,6 +416,11 @@
                                         <span class="fw-bold" id="employer-cancelled-{{ $employer->id }}">{{ $employer->cancelledCount ?? 0 }}</span>
                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">{{ __('CANCEL') }}</span>
                                     </span>
+                                    {{-- Biometrics --}}
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 95px;" title="{{ __('Biometrics Collected') }}">
+                                        <i class="bi bi-fingerprint"></i>
+                                        <span class="fw-bold" id="employer-biometrics-collected-{{ $employer->id }}">{{ $employer->biometricsCollectedCount ?? 0 }}</span>
+                                    </span>
                                  </div>
 
                                  <div class="vr d-none d-xl-block me-2"></div>
@@ -441,6 +459,10 @@
 
                                 <button class="btn btn-outline-secondary btn-sm ms-1" id="btn-employer-toggle-cancelled-{{ $employer->id }}" onclick="toggleEmployerCancelled({{ $employer->id }}); event.stopPropagation();" title="{{ __('Hide Cancelled Items') }}">
                                     <i class="bi bi-eye-slash"></i>
+                                </button>
+
+                                <button class="btn btn-outline-info btn-sm ms-1" id="btn-employer-toggle-biometrics-{{ $employer->id }}" onclick="toggleEmployerBiometrics({{ $employer->id }}); event.stopPropagation();" title="{{ __('Filter Biometrics Collected') }}">
+                                    <i class="bi bi-fingerprint"></i>
                                 </button>
 
                                 {{-- Collapse Chevron --}}
@@ -784,6 +806,7 @@
              else if (currentStepFilter === 'saved') document.getElementById('filter-saved')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled_employer') document.getElementById('filter-cancelled-employer')?.classList.add('filter-active');
+             else if (currentStepFilter === 'biometrics_collected') document.getElementById('filter-biometrics-collected')?.classList.add('filter-active');
              else {
                  const pill = document.getElementById(`filter-step-${currentStepFilter}`);
                  if (pill) pill.classList.add('filter-active');
@@ -851,6 +874,47 @@
             // Show cancelled employees in this employer container
             if (listContainer) {
                 listContainer.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.remove('d-none'));
+            }
+        }
+    }
+
+    // Toggle Biometrics Filter (Employer Level)
+    window.employerBiometricsFilter = {};
+
+    window.toggleEmployerBiometrics = function(employerId) {
+        if (typeof window.employerBiometricsFilter[employerId] === 'undefined') {
+            window.employerBiometricsFilter[employerId] = false;
+        }
+
+        window.employerBiometricsFilter[employerId] = !window.employerBiometricsFilter[employerId];
+        const btn = document.getElementById(`btn-employer-toggle-biometrics-${employerId}`);
+        const listContainer = document.getElementById(`employee-list-${employerId}`);
+
+        if (window.employerBiometricsFilter[employerId]) {
+            btn.classList.add('active', 'bg-info', 'text-white');
+            // Show ONLY biometrics collected
+            if (listContainer) {
+                listContainer.querySelectorAll('.employee-card-wrapper').forEach(el => {
+                    if (el.dataset.biometricsCollected !== 'true') {
+                        el.classList.add('d-none');
+                    }
+                });
+            }
+        } else {
+            btn.classList.remove('active', 'bg-info', 'text-white');
+            // Reset visibility (respecting cancelled filter if active)
+            if (listContainer) {
+                listContainer.querySelectorAll('.employee-card-wrapper').forEach(el => {
+                    // Check if we should keep it hidden due to cancelled filter
+                    const isCancelled = el.dataset.status === 'registration_cancelled';
+                    const isCancelledHidden = window.employerCancelledHidden[employerId];
+
+                    if (isCancelled && isCancelledHidden) {
+                        // Keep hidden
+                    } else {
+                        el.classList.remove('d-none');
+                    }
+                });
             }
         }
     }
@@ -959,6 +1023,10 @@
                  visible = (card.dataset.status === 'registration_completed');
             } else if (filter === 'cancelled') {
                  visible = (card.dataset.status === 'registration_cancelled');
+            } else if (filter === 'biometrics_collected') {
+                 visible = (card.dataset.biometricsCollected === 'true');
+            } else if (filter === 'biometrics_not_collected') {
+                 visible = (card.dataset.biometricsCollected === 'false');
             } else if (!isNaN(filter)) {
                  // Step ID
                  visible = (card.dataset.highestStepId == filter && card.dataset.status !== 'registration_cancelled');
@@ -1059,13 +1127,96 @@
             updateText('global-cancelled-count', stats.global.cancelled);
             updateText('global-saved-count', stats.global.saved);
             updateText('global-employers-count', stats.global.employers_count);
+            if(typeof stats.global.biometrics_collected !== 'undefined') {
+                updateText('global-biometrics-collected-count', stats.global.biometrics_collected);
+            }
         }
         if (stats.employer && typeof stats.employer.total !== 'undefined') {
             updateText(`employer-total-${stats.employer.id}`, stats.employer.total);
             updateText(`employer-not-started-${stats.employer.id}`, stats.employer.not_started);
             updateText(`employer-cancelled-${stats.employer.id}`, stats.employer.cancelled);
             updateText(`employer-saved-${stats.employer.id}`, stats.employer.saved);
+            if(typeof stats.employer.biometrics_collected !== 'undefined') {
+                updateText(`employer-biometrics-collected-${stats.employer.id}`, stats.employer.biometrics_collected);
+            }
         }
+    }
+
+    // --- Biometrics Upload Handler ---
+    window.uploadBiometrics = function(employeeId) {
+        const input = document.getElementById(`biometrics-input-${employeeId}`);
+        if (!input || !input.files || input.files.length === 0) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('biometrics_file', file);
+
+        // Append current search/filter params to URL to ensure stats returned are consistent with view
+        const currentQuery = window.location.search;
+
+        // Show loading state
+        const btn = document.getElementById(`btn-biometrics-${employeeId}`);
+        if(btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        }
+
+        fetch(`/production/registration/${employeeId}/biometrics` + currentQuery, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '{{ __('Success') }}',
+                    text: '{{ __('Biometrics updated!') }}',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                // Update UI Button
+                if(btn) {
+                    btn.disabled = false;
+                    btn.className = 'btn btn-sm btn-success rounded-pill px-3 biometrics-btn';
+                    btn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Collected') }}</span> <i class="bi bi-check-lg ms-1"></i>';
+                    btn.dataset.collected = 'true';
+                }
+
+                // Update Card Data Attribute
+                const card = document.getElementById(`employee-card-${employeeId}`);
+                if(card) {
+                    card.dataset.biometricsCollected = 'true';
+                }
+
+                // Update Stats
+                updateStatsUI(data.stats);
+                applyFilters();
+
+            } else {
+                Swal.fire('{{ __('Error') }}', data.message || 'Upload failed', 'error');
+                if(btn) { // Reset button
+                    btn.disabled = false;
+                    // We assume it was not collected before if it failed? Or check dataset.
+                    const wasCollected = btn.dataset.collected === 'true';
+                    if(wasCollected) {
+                         btn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Collected') }}</span> <i class="bi bi-check-lg ms-1"></i>';
+                    } else {
+                         btn.innerHTML = '<i class="bi bi-fingerprint"></i> <span class="d-none d-lg-inline">{{ __('Biometrics') }}</span>';
+                    }
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error');
+            if(btn) btn.disabled = false; // Basic reset
+        });
     }
 
     function updateText(id, value) {
