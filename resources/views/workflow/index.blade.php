@@ -717,5 +717,29 @@
             }
         });
     }
+
+    // --- Daily Check ---
+    window.checkDaily = function(itemId) {
+        fetch(`/workflow/item/${itemId}/check-daily`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                // UI update: Remove the button and the orange border
+                const card = document.getElementById(`item-card-${itemId}`);
+                if(card) {
+                    const cardInner = card.querySelector('.card');
+                    // Remove border warning classes
+                    cardInner.classList.remove('border-warning', 'border-3', 'shadow');
+                    cardInner.classList.add('shadow-sm'); // Reset to default shadow
+                    // Find and remove the check button
+                    const checkBtn = card.querySelector('button[title="Daily Check"]');
+                    if(checkBtn) checkBtn.remove();
+                }
+            }
+        });
+    }
 </script>
 @endpush
