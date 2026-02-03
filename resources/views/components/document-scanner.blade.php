@@ -1083,8 +1083,18 @@
                 let newNormCorners = [];
                 if (degrees === 90) {
                     newNormCorners = normCorners.map(c => ({ u: 1 - c.v, v: c.u }));
+                    // FIX: Shift array to maintain TL, TR, BR, BL order
+                    // Old TL (0) -> New TR. We need New TL to be at index 0.
+                    // The point that became New TL is Old BL (3).
+                    // So we move last element to first.
+                    if (newNormCorners.length === 4) newNormCorners.unshift(newNormCorners.pop());
                 } else if (degrees === -90) {
                     newNormCorners = normCorners.map(c => ({ u: c.v, v: 1 - c.u }));
+                    // FIX: Shift array to maintain TL, TR, BR, BL order
+                    // Old TL (0) -> New BL. We need New TL to be at index 0.
+                    // The point that became New TL is Old TR (1).
+                    // So we move first element to last.
+                    if (newNormCorners.length === 4) newNormCorners.push(newNormCorners.shift());
                 } else {
                     newNormCorners = normCorners;
                 }
