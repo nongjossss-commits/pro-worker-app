@@ -213,8 +213,7 @@
     <div class="vstack gap-3">
         @forelse ($employer->addresses->where('type', 'registered') as $address)
             <div class="address-card p-3 border rounded">
-                <p class="mb-0">{{ $address->full_address_th }}</p>
-                <p class="mb-0 text-muted small">{{ $address->full_address_en }}</p>
+                <p class="mb-0">{{ $address->full_address }}</p>
             </div>
         @empty
             <p class="text-muted">ยังไม่มีที่อยู่</p>
@@ -228,8 +227,7 @@
     <div class="vstack gap-3">
         @forelse ($employer->addresses->where('type', 'workplace') as $address)
              <div class="address-card p-3 border rounded">
-                <p class="mb-0">{{ $address->full_address_th }}</p>
-                <p class="mb-0 text-muted small">{{ $address->full_address_en }}</p>
+                <p class="mb-0">{{ $address->full_address }}</p>
             </div>
         @empty
             <p class="text-muted">ยังไม่มีที่อยู่</p>

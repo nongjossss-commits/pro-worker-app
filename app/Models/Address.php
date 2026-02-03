@@ -37,6 +37,17 @@ class Address extends Model
         return $this->morphTo();
     }
 
+    public function getFullAddressAttribute()
+    {
+        if (app()->getLocale() === 'th') {
+            return $this->full_address_th;
+        }
+        // Fallback to English fields if not Thai,
+        // OR if you want to support other languages, handle them here.
+        // For now, default to English structure for non-Thai.
+        return $this->full_address_en;
+    }
+
     public function getFullAddressThAttribute()
     {
         $parts = [];
