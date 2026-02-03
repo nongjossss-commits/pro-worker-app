@@ -18,6 +18,7 @@ class ProductionItem extends Model
         'appointment_date',
         'appointment_location', // NEW
         'last_checked_at', // NEW
+        'appointment_completed_at', // NEW: Appointment finished
         'status',
         'new_employee_data', // JSON for temp employees
     ];
@@ -26,6 +27,7 @@ class ProductionItem extends Model
         'new_employee_data' => 'array',
         'appointment_date' => 'datetime',
         'last_checked_at' => 'datetime',
+        'appointment_completed_at' => 'datetime',
     ];
 
     public function order()

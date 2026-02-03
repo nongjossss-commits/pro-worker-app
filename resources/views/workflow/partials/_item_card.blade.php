@@ -47,6 +47,7 @@
     }
 
     $appLocation = $item->appointment_location ?? '';
+    $isAppCompleted = $item->appointment_completed_at ? true : false;
 @endphp
 
 <div class="d-flex align-items-center item-card-outer mb-3 item-card-wrapper"
@@ -63,7 +64,7 @@
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-center gap-3 w-100">
                 {{-- Checkbox (Optional, for bulk actions if implemented later) --}}
-                <div class="form-check {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $item->id }}">
+                <div class="form-check" id="checkbox-container-{{ $item->id }}">
                     <input class="form-check-input item-checkbox"
                            type="checkbox"
                            value="{{ $item->id }}"
@@ -105,6 +106,7 @@
                 {{-- Appointment Date & Location --}}
                 <div class="ms-md-4" x-data="{
                     isEditing: false,
+                    isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: '{{ $appValue }}',
                     displayValue: '{{ $appDisplay }}',
                     locationValue: '{{ $appLocation }}',
@@ -119,6 +121,18 @@
                             defaultDate: this.dateValue,
                             onChange: (selectedDates, dateStr) => {
                                 this.dateValue = dateStr;
+                            }
+                        });
+                    },
+                    toggleAppComplete() {
+                        fetch('/workflow/item/{{ $item->id }}/appointment-complete', {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) {
+                                // this.isAppCompleted is already toggled by x-model, but let's confirm logic
+                            } else {
+                                this.isAppCompleted = !this.isAppCompleted; // revert
                             }
                         });
                     },
@@ -176,21 +190,32 @@
                     }
                 }">
                     <div style="min-width: 170px;">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
+                            <div class="form-check form-switch" title="{{ __('Mark Appointment Completed') }}">
+                                <input class="form-check-input cursor-pointer" type="checkbox" x-model="isAppCompleted" @change="toggleAppComplete()">
+                            </div>
+                        </div>
 
-                        <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer"
-                             @click="isEditing = true; $nextTick(() => initFlatpickr())">
-                             <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2" style="min-height: 38px;">
-                                <div><i class="bi bi-calendar-event text-warning me-1"></i> <span x-text="displayValue"></span></div>
+                        <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                             @click="isEditing = true; $nextTick(() => initFlatpickr())"
+                             :class="{ 'opacity-50': isAppCompleted }">
+
+                             <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px;">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-calendar-event text-warning me-1"></i>
+                                    <span x-text="displayValue"></span>
+                                    <i x-show="isAppCompleted" class="bi bi-check-circle-fill text-success ms-auto"></i>
+                                </div>
                                 <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
                                     <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
                                 </div>
                              </div>
                         </div>
 
-                        <div x-show="isEditing" class="d-flex flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 10;">
+                        <div x-show="isEditing" @click.outside="isEditing = false" class="d-flex flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
                              <label class="small fw-bold">Date & Time</label>
-                             <div style="width: 160px;">
+                             <div>
                                 <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
                              </div>
 
