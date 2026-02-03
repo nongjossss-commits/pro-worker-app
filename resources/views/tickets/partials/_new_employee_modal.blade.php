@@ -217,13 +217,12 @@
                         <div class="col-md-4 mb-3"><label class="form-label">เลขประกันสังคม</label><input type="text" class="form-control" x-model="newEmployeeForm.social_security_number"></div>
                         <div class="col-md-4 mb-3"><label class="form-label">สิทธิ์โรงพยาบาล</label><input type="text" class="form-control" x-model="newEmployeeForm.insurance_detail_social"></div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">แนบไฟล์เอกสาร</label>
-                            <div class="input-group input-group-sm">
-                                <input type="file" class="form-control form-control-sm" id="insurance_document_path_social_input" @change="handleFileUpload($event, 'insurance_document_path_social')">
-                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_social_input' } }))">
-                                    <i class="bi bi-camera"></i>
-                                </button>
-                            </div>
+                            <x-file-input-group
+                                id="insurance_document_path_social_input"
+                                name="insurance_document_path_social"
+                                label="แนบไฟล์เอกสาร"
+                                @change="handleFileUpload($event, 'insurance_document_path_social')"
+                            />
                         </div>
                     </div>
                 </div>
@@ -232,13 +231,12 @@
                         <div class="col-md-4 mb-3"><label class="form-label">ชื่อโรงพยาบาล</label><input type="text" class="form-control" x-model="newEmployeeForm.insurance_detail_hospital"></div>
                         <div class="col-md-4 mb-3"><label class="form-label">วันหมดอายุ</label><input type="date" class="form-control" x-model="newEmployeeForm.insurance_expiry_date_hospital"></div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">แนบไฟล์เอกสาร</label>
-                            <div class="input-group input-group-sm">
-                                <input type="file" class="form-control form-control-sm" id="insurance_document_path_hospital_input" @change="handleFileUpload($event, 'insurance_document_path_hospital')">
-                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_hospital_input' } }))">
-                                    <i class="bi bi-camera"></i>
-                                </button>
-                            </div>
+                            <x-file-input-group
+                                id="insurance_document_path_hospital_input"
+                                name="insurance_document_path_hospital"
+                                label="แนบไฟล์เอกสาร"
+                                @change="handleFileUpload($event, 'insurance_document_path_hospital')"
+                            />
                         </div>
                     </div>
                 </div>
@@ -247,13 +245,12 @@
                         <div class="col-md-4 mb-3"><label class="form-label">บริษัทประกัน</label><input type="text" class="form-control" x-model="newEmployeeForm.insurance_detail_private"></div>
                         <div class="col-md-4 mb-3"><label class="form-label">วันหมดอายุ</label><input type="date" class="form-control" x-model="newEmployeeForm.insurance_expiry_date_private"></div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">แนบไฟล์เอกสาร</label>
-                            <div class="input-group input-group-sm">
-                                <input type="file" class="form-control form-control-sm" id="insurance_document_path_private_input" @change="handleFileUpload($event, 'insurance_document_path_private')">
-                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'insurance_document_path_private_input' } }))">
-                                    <i class="bi bi-camera"></i>
-                                </button>
-                            </div>
+                            <x-file-input-group
+                                id="insurance_document_path_private_input"
+                                name="insurance_document_path_private"
+                                label="แนบไฟล์เอกสาร"
+                                @change="handleFileUpload($event, 'insurance_document_path_private')"
+                            />
                         </div>
                     </div>
                 </div>
@@ -277,13 +274,12 @@
                             ];
                         @endphp
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">{{ $labels[$i] }}</label>
-                            <div class="input-group input-group-sm">
-                                <input type="file" class="form-control form-control-sm" id="employee_doc_{{ $i }}_input" @change="handleFileUpload($event, 'employee_doc_{{ $i }}')">
-                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employee_doc_{{ $i }}_input' } }))">
-                                    <i class="bi bi-camera"></i>
-                                </button>
-                            </div>
+                            <x-file-input-group
+                                :id="'employee_doc_' . $i . '_input'"
+                                :name="'employee_doc_' . $i"
+                                :label="$labels[$i]"
+                                @change="handleFileUpload($event, 'employee_doc_{{ $i }}')"
+                            />
                         </div>
                     @endforeach
 
@@ -295,13 +291,13 @@
                             $fileKey = "employee_doc_$docIndex";
                         @endphp
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ $label }}</label>
-                            <div class="input-group input-group-sm">
-                                <input type="file" class="form-control form-control-sm" id="{{ $fileKey }}_input" @change="handleFileUpload($event, '{{ $fileKey }}')">
-                                <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $fileKey }}_input' } }))">
-                                    <i class="bi bi-camera"></i>
-                                </button>
-                            </div>
+                            {{-- Note: The description input is manually bound via x-model, so we don't use the component's internal description field --}}
+                            <x-file-input-group
+                                :id="$fileKey . '_input'"
+                                :name="$fileKey"
+                                :label="$label"
+                                @change="handleFileUpload($event, '{{ $fileKey }}')"
+                            />
                             <input type="text" class="form-control form-control-sm mt-2" x-model="newEmployeeForm.{{ $modelKey }}" placeholder="คำอธิบาย...">
                         </div>
                     @endforeach

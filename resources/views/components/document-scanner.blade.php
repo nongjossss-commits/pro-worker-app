@@ -421,6 +421,11 @@
                 this.view = 'camera';
                 this.scanMode = 'document'; // Default
 
+                // Handle Edit Mode (Initial File)
+                if (detail.initialUrl) {
+                    await this.loadInitialFile(detail.initialUrl);
+                }
+
                 if(!this.cvLoaded) {
                      this.isLoading = true;
                      this.loadingMessage = 'กำลังโหลดระบบประมวลผลภาพ...';
@@ -430,7 +435,7 @@
                              this.cvLoaded = true;
                              this.isLoading = false;
                              clearInterval(checkInterval);
-                             this.startCamera();
+                             if (!detail.initialUrl) this.startCamera();
                          }
                      }, 500);
 
@@ -439,11 +444,38 @@
                          if(!this.cvLoaded && this.isLoading) {
                              this.isLoading = false;
                              alert('Cannot load Image Processing Engine (OpenCV). Basic features only.');
-                             this.startCamera();
+                             if (!detail.initialUrl) this.startCamera();
                          }
                      }, 10000);
                 } else {
-                    this.startCamera();
+                    if (!detail.initialUrl) this.startCamera();
+                }
+            },
+
+            async loadInitialFile(url) {
+                this.isLoading = true;
+                this.loadingMessage = 'Loading file...';
+                try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const mimeType = blob.type;
+                    const filename = url.split('/').pop() || 'file';
+                    const file = new File([blob], filename, { type: mimeType });
+
+                    if (mimeType.startsWith('image/')) {
+                        await this.processImageFile(file);
+                    } else if (mimeType === 'application/pdf') {
+                        await this.processPdfFile(file);
+                    } else {
+                         // Try image as fallback if mime is generic binary
+                         await this.processImageFile(file);
+                    }
+                    this.view = 'review';
+                } catch (e) {
+                    console.error("Load Initial File Error", e);
+                    alert("Cannot load file for editing: " + e.message);
+                } finally {
+                    this.isLoading = false;
                 }
             },
 
