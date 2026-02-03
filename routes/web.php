@@ -247,6 +247,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Biometrics
         Route::post('/{employee}/biometrics', [App\Http\Controllers\Production\RegistrationController::class, 'updateBiometrics'])->name('biometrics.update');
+        Route::post('/{employee}/biometrics-toggle', [App\Http\Controllers\Production\RegistrationController::class, 'toggleBiometrics'])->name('biometrics.toggle');
     });
 
     // Renewal Resolution Routes (NEW)

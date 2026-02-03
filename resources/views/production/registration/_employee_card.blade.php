@@ -220,15 +220,27 @@
                  @can('edit-employees')
                  {{-- Biometrics Button --}}
                  <input type="file" id="biometrics-input-{{ $employee->id }}" class="d-none" onchange="uploadBiometrics({{ $employee->id }})">
-                 <button class="btn btn-sm {{ $employee->biometrics_collected_at ? 'btn-success' : 'btn-outline-warning' }} rounded-pill px-3 biometrics-btn"
-                     id="btn-biometrics-{{ $employee->id }}"
-                     data-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
-                     title="{{ __('Collect Biometrics') }}"
-                     onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'biometrics-input-{{ $employee->id }}' } }))">
-                     <i class="bi {{ $employee->biometrics_collected_at ? 'bi-fingerprint' : 'bi-fingerprint' }}"></i>
-                     <span class="d-none d-lg-inline">{{ $employee->biometrics_collected_at ? __('Collected') : __('Biometrics') }}</span>
-                     @if($employee->biometrics_collected_at) <i class="bi bi-check-lg ms-1"></i> @endif
-                 </button>
+
+                 <div class="btn-group">
+                     {{-- Toggle Tick Button --}}
+                     <button class="btn btn-sm {{ $employee->biometrics_collected_at ? 'btn-success' : 'btn-outline-secondary' }} rounded-start-pill px-3"
+                         id="btn-biometrics-toggle-{{ $employee->id }}"
+                         title="{{ __('Mark Biometrics Collected') }}"
+                         onclick="toggleBiometricsStatus({{ $employee->id }})">
+                         <i class="bi bi-person-bounding-box"></i>
+                         @if($employee->biometrics_collected_at) <i class="bi bi-check-lg ms-1"></i> @endif
+                     </button>
+
+                     {{-- Scan/Upload Button --}}
+                     <button class="btn btn-sm {{ $employee->biometrics_collected_at ? 'btn-success' : 'btn-outline-warning' }} rounded-end-pill px-3 biometrics-btn border-start-0"
+                         id="btn-biometrics-{{ $employee->id }}"
+                         data-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
+                         title="{{ __('Scan / Upload Biometrics') }}"
+                         onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'biometrics-input-{{ $employee->id }}' } }))">
+                         <i class="bi bi-fingerprint"></i>
+                         <span class="d-none d-lg-inline">{{ $employee->biometrics_collected_at ? __('Collected') : __('Biometrics') }}</span>
+                     </button>
+                 </div>
                  @endcan
 
                  {{-- Preview Button (Universal) --}}

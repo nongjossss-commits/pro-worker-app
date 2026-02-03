@@ -1321,6 +1321,33 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Toggle Biometrics Collected Status (without file).
+     */
+    public function toggleBiometrics(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $isCollected = $employee->biometrics_collected_at !== null;
+
+        if ($isCollected) {
+            $employee->update(['biometrics_collected_at' => null]);
+            $message = 'Biometrics marked as not collected.';
+        } else {
+            $employee->update(['biometrics_collected_at' => now()]);
+            $message = 'Biometrics marked as collected.';
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'collected' => !$isCollected,
+            'stats' => $this->getStats($employee->employer_id, $request)
+        ]);
+    }
+
+    /**
      * Apply Search Filter to Global Query
      */
     private function applySearchToQuery($query, $search)
