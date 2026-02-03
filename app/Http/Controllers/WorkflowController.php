@@ -129,7 +129,8 @@ class WorkflowController extends Controller
             'not_started' => 0,
             'cancelled' => 0,
             'completed' => 0,
-            'step_stats' => []
+            'step_stats' => [],
+            'pending_daily_check' => 0, // NEW
         ];
 
         if ($activeTab) {
@@ -143,7 +144,7 @@ class WorkflowController extends Controller
                 ->with(['completedWorkTypeSteps' => function($q) {
                     $q->select('work_type_steps.id', 'work_type_steps.order', 'production_item_step.production_item_id');
                 }])
-                ->select('id', 'status', 'production_order_id')
+                ->select('id', 'status', 'production_order_id', 'last_checked_at', 'created_at')
                 ->get();
 
             $globalStepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
@@ -171,6 +172,11 @@ class WorkflowController extends Controller
                 if ($highestStep && isset($globalStepStats[$highestStep->id])) {
                     $globalStepStats[$highestStep->id]++;
                 }
+
+                // Daily Check (Pending if not checked today)
+                if (!$item->is_checked_today && $item->status !== 'completed' && $item->status !== 'cancelled') {
+                    $stats['pending_daily_check']++;
+                }
             }
             $stats['step_stats'] = $globalStepStats;
         }
@@ -184,18 +190,22 @@ class WorkflowController extends Controller
     private function dashboard($tabs)
     {
         // 1. Global Scoreboard Stats
+        $itemsQuery = ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'));
+
         $stats = [
             'total_projects' => ProductionOrder::where('status', '!=', 'pre_production')->count(),
-            'total_employees' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
-                                               ->count(),
-            'not_started' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
-                                           ->where('status', 'pending')
+            'total_employees' => (clone $itemsQuery)->count(),
+            'not_started' => (clone $itemsQuery)->where('status', 'pending')
                                            ->doesntHave('completedWorkTypeSteps')
                                            ->count(),
-            'cancelled' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
-                                         ->where('status', 'cancelled')->count(),
-            'completed' => ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'))
-                                         ->where('status', 'completed')->count(),
+            'cancelled' => (clone $itemsQuery)->where('status', 'cancelled')->count(),
+            'completed' => (clone $itemsQuery)->where('status', 'completed')->count(),
+            'pending_daily_check' => (clone $itemsQuery)
+                ->where('status', 'pending')
+                ->where(function($q) {
+                     $q->whereNull('last_checked_at')
+                       ->orWhereDate('last_checked_at', '<', Carbon::today());
+                })->count(),
         ];
 
         // 2. Upcoming Appointments
@@ -227,18 +237,91 @@ class WorkflowController extends Controller
     }
 
     /**
-     * API: Update Appointment Date
+     * API: Update Appointment Date & Location
      */
     public function updateAppointmentDate(Request $request, $itemId)
     {
         $request->validate([
             'appointment_date' => 'nullable|date',
+            'appointment_location' => 'nullable|string|max:255',
         ]);
 
         $item = ProductionItem::findOrFail($itemId);
-        $item->update(['appointment_date' => $request->appointment_date]);
+
+        $data = [];
+        if ($request->has('appointment_date')) {
+            $data['appointment_date'] = $request->appointment_date;
+        }
+        if ($request->has('appointment_location')) {
+            $data['appointment_location'] = $request->appointment_location;
+        }
+
+        $item->update($data);
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Perform Daily Check on Item
+     */
+    public function checkDaily(Request $request, $itemId)
+    {
+        $item = ProductionItem::findOrFail($itemId);
+        $item->update(['last_checked_at' => now()]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Get Calendar Data (Counts per day)
+     */
+    public function getCalendarData(Request $request)
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $counts = ProductionItem::select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
+            ->whereBetween('appointment_date', [$start, $end])
+            ->where('status', '!=', 'cancelled')
+            ->where('status', '!=', 'completed')
+            ->groupBy('date')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->date => $item->count];
+            });
+
+        return response()->json($counts);
+    }
+
+    /**
+     * API: Get Appointments for a specific Date (Modal list)
+     */
+    public function getAppointmentsByDate(Request $request)
+    {
+        $request->validate(['date' => 'required|date']);
+        $date = Carbon::parse($request->date);
+
+        $items = ProductionItem::whereDate('appointment_date', $date)
+            ->where('status', '!=', 'cancelled')
+            ->with(['employee', 'order.employer', 'order.workType'])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'time' => $item->appointment_date->format('H:i'),
+                    'employee_name' => $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee',
+                    'employer_name' => $item->order->employer->employerNameTh ?? '-',
+                    'project_name' => $item->order->project_name ?? '-',
+                    'work_type' => $item->order->workType->name ?? '-',
+                    'location' => $item->appointment_location ?? '-',
+                    'tab_slug' => $item->order->workType->slug ?? ''
+                ];
+            });
+
+        return response()->json($items);
     }
 
     /**

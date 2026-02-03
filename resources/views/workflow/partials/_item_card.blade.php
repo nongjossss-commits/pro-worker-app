@@ -6,6 +6,10 @@
     $isCompleted = $status === 'completed';
     $isCancelled = $status === 'cancelled';
 
+    // Daily Check Logic
+    $isCheckedToday = $item->is_checked_today;
+    $daysMissed = $item->days_since_last_check ?? 0;
+
     // Style: if completed/cancelled, flat/grey out.
     $cardClass = 'bg-white border shadow-sm';
     $overlayClass = '';
@@ -16,10 +20,10 @@
     } elseif ($isCancelled) {
         $cardClass = 'bg-light border-0 text-secondary grayscale-mode';
         $overlayClass = 'opacity-50 pointer-events-none';
+    } elseif (!$isCheckedToday) {
+        // Highlight Pending Check (Orange Border/Glow)
+        $cardClass = 'bg-white border border-warning border-3 shadow';
     }
-
-    // Determine Highest Completed Step for Filtering (Optional, logic in controller)
-    // We just need it for display if needed.
 
     // Employee Data Proxy
     $empNameEn = $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee';
@@ -41,6 +45,8 @@
             $appDisplay = $appDate->format('d/m/Y H:i');
         }
     }
+
+    $appLocation = $item->appointment_location ?? '';
 @endphp
 
 <div class="d-flex align-items-center item-card-outer mb-3 item-card-wrapper"
@@ -51,7 +57,7 @@
     {{-- Sequence Number (CSS Counter can handle this if parent has counter-reset) --}}
     <div class="item-sequence-number me-2 fs-5 fw-bold text-muted opacity-50 text-end" style="min-width: 30px;"></div>
 
-    <div class="card {{ $cardClass }} w-100">
+    <div class="card {{ $cardClass }} w-100 position-relative">
     <div class="card-body p-3">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
@@ -96,11 +102,12 @@
                     </div>
                 </div>
 
-                {{-- Appointment Date (Replaces Group Field) --}}
+                {{-- Appointment Date & Location --}}
                 <div class="ms-md-4" x-data="{
                     isEditing: false,
                     dateValue: '{{ $appValue }}',
                     displayValue: '{{ $appDisplay }}',
+                    locationValue: '{{ $appLocation }}',
                     initFlatpickr() {
                         if (this.$refs.dateInput._flatpickr) return;
                         flatpickr(this.$refs.dateInput, {
@@ -118,7 +125,7 @@
                     saveDate() {
                         Swal.fire({
                             title: '{{ __("Confirm Appointment") }}',
-                            text: '{{ __("Are you sure you want to set this appointment date?") }}',
+                            text: '{{ __("Save appointment details?") }}',
                             icon: 'question',
                             showCancelButton: true,
                             confirmButtonColor: '#3085d6',
@@ -130,7 +137,7 @@
                                 fetch('/workflow/item/{{ $item->id }}/appointment', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                                    body: JSON.stringify({ appointment_date: this.dateValue })
+                                    body: JSON.stringify({ appointment_date: this.dateValue, appointment_location: this.locationValue })
                                 }).then(res => res.json()).then(data => {
                                     if(data.success) {
                                         this.isEditing = false;
@@ -138,7 +145,7 @@
                                             toast: true,
                                             position: 'top-end',
                                             icon: 'success',
-                                            title: '{{ __("Appointment Saved") }}',
+                                            title: '{{ __("Saved") }}',
                                             showConfirmButton: false,
                                             timer: 1500
                                         });
@@ -151,7 +158,6 @@
                                                 let parts = this.dateValue.split(' ');
                                                 let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
                                                 let timePart = parts[1];
-
                                                 let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
 
                                                 if (timePart === '00:00') {
@@ -170,29 +176,55 @@
                     }
                 }">
                     <div style="min-width: 170px;">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment Date') }}</small>
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
 
                         <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer"
                              @click="isEditing = true; $nextTick(() => initFlatpickr())">
-                             <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex align-items-center gap-2" style="min-height: 31px;">
-                                <i class="bi bi-calendar-event text-warning"></i> <span x-text="displayValue"></span>
+                             <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2" style="min-height: 38px;">
+                                <div><i class="bi bi-calendar-event text-warning me-1"></i> <span x-text="displayValue"></span></div>
+                                <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
+                                    <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
+                                </div>
                              </div>
                         </div>
 
-                        <div x-show="isEditing" class="d-flex gap-1 align-items-center" style="display: none;">
-                             <div style="width: 140px;">
+                        <div x-show="isEditing" class="d-flex flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 10;">
+                             <label class="small fw-bold">Date & Time</label>
+                             <div style="width: 160px;">
                                 <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
                              </div>
-                             <button @click="saveDate()" class="btn btn-sm btn-success p-1"><i class="bi bi-check-lg"></i></button>
-                             <button @click="isEditing = false" class="btn btn-sm btn-outline-danger p-1"><i class="bi bi-x-lg"></i></button>
+
+                             <label class="small fw-bold mt-1">Location</label>
+                             <input x-model="locationValue" type="text" class="form-control form-control-sm" placeholder="e.g. Office, Site A">
+
+                             <div class="d-flex gap-1 mt-2">
+                                <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> Save</button>
+                                <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
+                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {{-- Actions --}}
-            <div class="d-flex gap-2 flex-wrap justify-content-end">
+            <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center">
+
+                {{-- Daily Check Button --}}
+                @if(!$isCheckedToday && !$isCompleted && !$isCancelled)
+                    <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="checkDaily({{ $item->id }})" title="Daily Check">
+                        <i class="bi bi-clipboard-check-fill"></i> {{ __('Check') }}
+                        @if($daysMissed > 0)
+                            <span class="badge bg-danger ms-1 border border-white">{{ $daysMissed }}d</span>
+                        @endif
+                    </button>
+                @endif
+
                  @if($empId)
+                 {{-- Edit Button --}}
+                 <a href="{{ route('employees.edit', $empId) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Edit Employee">
+                    <i class="bi bi-pencil-square"></i>
+                 </a>
+
                  <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
                     data-model-type="employee"
                     data-model-id="{{ $empId }}"

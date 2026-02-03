@@ -16,6 +16,16 @@
             </div>
         </div>
 
+        {{-- Pending Daily Check (NEW) --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 bg-warning">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['pending_daily_check'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Pending Daily Check') }}</p>
+                </div>
+            </div>
+        </div>
+
         {{-- Not Started --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0" style="background-color: #EF4444;">
@@ -45,93 +55,138 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        {{-- Total Projects --}}
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm border-0 bg-primary bg-gradient">
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_projects'] ?? 0 }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Active Projects') }}</p>
+    <div class="row g-4 mb-4">
+        {{-- Left Column: Upcoming List --}}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-event me-2"></i>{{ __('Upcoming Appointments (Short Term)') }}</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if($upcomingAppointments->isEmpty())
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-check fs-1 opacity-25"></i>
+                            <p class="mt-2">{{ __('No upcoming appointments found in the next few days.') }}</p>
+                            <small>{{ __('Check notification settings in each Work Type tab.') }}</small>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">{{ __('Date / Time') }}</th>
+                                        <th>{{ __('Details') }}</th>
+                                        <th class="text-end pe-4">{{ __('Action') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($upcomingAppointments as $item)
+                                        @php
+                                            $date = $item->appointment_date;
+                                            $isToday = $date->isToday();
+                                            $isTomorrow = $date->isTomorrow();
+                                            $colorClass = $isToday ? 'text-danger fw-bold' : ($isTomorrow ? 'text-warning fw-bold' : 'text-primary');
+                                            $formatted = $date->format('d/m/Y H:i');
+                                        @endphp
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="{{ $colorClass }}">
+                                                    <i class="bi bi-clock me-1"></i> {{ $formatted }}
+                                                    @if($isToday) <span class="badge bg-danger ms-1">TODAY</span> @endif
+                                                </div>
+                                                <div class="small text-muted">{{ $date->diffForHumans() }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">{{ $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee' }}</div>
+                                                <div class="small text-muted">{{ $item->order->project_name ?? '-' }}</div>
+                                                @if($item->appointment_location)
+                                                    <div class="small text-info"><i class="bi bi-geo-alt-fill"></i> {{ $item->appointment_location }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <a href="{{ route('workflow.index', ['tab' => $item->order->workType->slug]) }}#item-card-{{ $item->id }}"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-arrow-right"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
-    </div>
 
-    {{-- Upcoming Appointments Section --}}
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-event me-2"></i>{{ __('Upcoming Appointments') }}</h5>
-        </div>
-        <div class="card-body p-0">
-            @if($upcomingAppointments->isEmpty())
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-calendar-check fs-1 opacity-25"></i>
-                    <p class="mt-2">{{ __('No upcoming appointments found in the next few days.') }}</p>
-                    <small>{{ __('Check notification settings in each Work Type tab.') }}</small>
+        {{-- Right Column: Monthly Calendar --}}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100" x-data="calendarApp()">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-month me-2"></i>{{ __('Monthly Overview') }}</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-light border" @click="prevMonth()"><i class="bi bi-chevron-left"></i></button>
+                        <span class="fw-bold text-uppercase" style="min-width: 120px; text-align: center;" x-text="monthNames[month] + ' ' + year"></span>
+                        <button class="btn btn-sm btn-light border" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
+                    </div>
                 </div>
-            @else
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">{{ __('Date / Time') }}</th>
-                                <th>{{ __('Employee') }}</th>
-                                <th>{{ __('Employer / Project') }}</th>
-                                <th>{{ __('Work Type') }}</th>
-                                <th class="text-end pe-4">{{ __('Action') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($upcomingAppointments as $item)
-                                @php
-                                    $date = $item->appointment_date;
-                                    $isToday = $date->isToday();
-                                    $isTomorrow = $date->isTomorrow();
-                                    $colorClass = $isToday ? 'text-danger fw-bold' : ($isTomorrow ? 'text-warning fw-bold' : 'text-primary');
+                <div class="card-body p-3">
+                    {{-- Calendar Grid --}}
+                    <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+                    <div class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                        <template x-for="day in days" :key="day.dateStr">
+                            <div
+                                class="border rounded p-2 d-flex flex-column align-items-center justify-content-between position-relative cursor-pointer transition-all"
+                                :class="{ 'bg-light text-muted': !day.isCurrentMonth, 'bg-white': day.isCurrentMonth, 'border-primary bg-primary bg-opacity-10': day.isToday }"
+                                style="min-height: 80px;"
+                                @click="openDayModal(day.dateStr)"
+                            >
+                                <span class="small" x-text="day.dayNum"></span>
+                                <template x-if="counts[day.dateStr]">
+                                    <span class="badge bg-danger rounded-pill shadow-sm animate__animated animate__pulse animate__infinite" x-text="counts[day.dateStr]" style="font-size: 0.9rem;"></span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
 
-                                    // Use format depending on time presence?
-                                    // Logic: if time is 00:00:00, show only date.
-                                    // But Carbon defaults to 00:00:00.
-                                    // We can just show standard format d/m/Y H:i
-                                    $formatted = $date->format('d/m/Y H:i');
-                                @endphp
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="{{ $colorClass }}">
-                                            <i class="bi bi-clock me-1"></i> {{ $formatted }}
-                                            @if($isToday) <span class="badge bg-danger ms-1">TODAY</span> @endif
-                                        </div>
-                                        <div class="small text-muted">{{ $date->diffForHumans() }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            @php
-                                                $photo = $item->employee && $item->employee->employeePhoto ? asset('storage/' . $item->employee->employeePhoto) : 'https://placehold.co/40x40?text=IMG';
-                                                $name = $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee';
-                                            @endphp
-                                            <img src="{{ $photo }}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
-                                            <span class="fw-bold">{{ $name }}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {{ $item->order->project_name ?? '-' }}
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border">{{ $item->order->workType->name ?? '-' }}</span>
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        {{-- Link to the specific tab and highlight the item if possible (Need ID logic) --}}
-                                        <a href="{{ route('workflow.index', ['tab' => $item->order->workType->slug]) }}#item-card-{{ $item->id }}"
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-arrow-right"></i> {{ __('View') }}
+                {{-- Day Details Modal --}}
+                <div class="modal fade" id="dayDetailsModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">{{ __('Appointments for') }} <span x-text="selectedDateFormatted"></span></h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-0">
+                                <div class="list-group list-group-flush" id="dayAppointmentsList">
+                                    <template x-for="appt in selectedAppointments" :key="appt.id">
+                                        <a :href="'/workflow?tab=' + appt.tab_slug + '#item-card-' + appt.id" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="fw-bold text-dark" x-text="appt.time + ' - ' + appt.employee_name"></div>
+                                                <div class="small text-muted">
+                                                    <span x-text="appt.project_name"></span> | <span x-text="appt.work_type"></span>
+                                                </div>
+                                                <div class="small text-info" x-show="appt.location !== '-'">
+                                                    <i class="bi bi-geo-alt-fill"></i> <span x-text="appt.location"></span>
+                                                </div>
+                                            </div>
+                                            <i class="bi bi-chevron-right text-muted"></i>
                                         </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                                    </template>
+                                    <div x-show="selectedAppointments.length === 0" class="p-4 text-center text-muted">
+                                        {{ __('No appointments found.') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            @endif
+            </div>
         </div>
     </div>
 
@@ -169,13 +224,130 @@
 
 </div>
 
-{{-- Create Job Modal (Include reusing partial) --}}
+{{-- Create Job Modal --}}
 @include('workflow.partials.create_modal')
 
 @endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script>
-    // Add hover effect logic if needed
+    function calendarApp() {
+        return {
+            month: new Date().getMonth(),
+            year: new Date().getFullYear(),
+            monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            days: [],
+            counts: {},
+            selectedDate: null,
+            selectedDateFormatted: '',
+            selectedAppointments: [],
+
+            init() {
+                this.generateCalendar();
+                this.fetchCounts();
+            },
+
+            prevMonth() {
+                if (this.month === 0) {
+                    this.month = 11;
+                    this.year--;
+                } else {
+                    this.month--;
+                }
+                this.generateCalendar();
+                this.fetchCounts();
+            },
+
+            nextMonth() {
+                if (this.month === 11) {
+                    this.month = 0;
+                    this.year++;
+                } else {
+                    this.month++;
+                }
+                this.generateCalendar();
+                this.fetchCounts();
+            },
+
+            generateCalendar() {
+                const firstDay = new Date(this.year, this.month, 1);
+                const lastDay = new Date(this.year, this.month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDay = firstDay.getDay(); // 0 = Sunday
+
+                let calendarDays = [];
+
+                // Previous month padding
+                const prevMonthLastDay = new Date(this.year, this.month, 0).getDate();
+                for (let i = startingDay - 1; i >= 0; i--) {
+                    let d = prevMonthLastDay - i;
+                    // Calculate correct previous month/year
+                    let pm = this.month - 1;
+                    let py = this.year;
+                    if(pm < 0) { pm = 11; py--; }
+
+                    calendarDays.push({
+                        dayNum: d,
+                        isCurrentMonth: false,
+                        isToday: false,
+                        dateStr: `${py}-${String(pm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+                    });
+                }
+
+                // Current Month
+                const today = new Date();
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const isToday = (i === today.getDate() && this.month === today.getMonth() && this.year === today.getFullYear());
+                    calendarDays.push({
+                        dayNum: i,
+                        isCurrentMonth: true,
+                        isToday: isToday,
+                        dateStr: `${this.year}-${String(this.month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`
+                    });
+                }
+
+                // Next Month padding (to fill grid to 42 cells 6x7, or just enough to finish week)
+                // Let's just finish the week
+                const remaining = 42 - calendarDays.length;
+                for (let i = 1; i <= remaining; i++) {
+                    let nm = this.month + 1;
+                    let ny = this.year;
+                    if(nm > 11) { nm = 0; ny++; }
+
+                    calendarDays.push({
+                        dayNum: i,
+                        isCurrentMonth: false,
+                        isToday: false,
+                        dateStr: `${ny}-${String(nm+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`
+                    });
+                }
+
+                this.days = calendarDays;
+            },
+
+            fetchCounts() {
+                fetch(`/workflow/api/calendar?month=${this.month + 1}&year=${this.year}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.counts = data;
+                    });
+            },
+
+            openDayModal(dateStr) {
+                this.selectedDate = dateStr;
+                this.selectedDateFormatted = moment(dateStr).format('D MMM YYYY');
+                this.selectedAppointments = [];
+
+                // Fetch details
+                fetch(`/workflow/api/appointments-by-date?date=${dateStr}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.selectedAppointments = data;
+                        new bootstrap.Modal(document.getElementById('dayDetailsModal')).show();
+                    });
+            }
+        }
+    }
 </script>
 @endpush
