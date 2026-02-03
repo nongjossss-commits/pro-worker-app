@@ -35,6 +35,14 @@
         <!-- Main Content Area -->
         <div class="flex-grow bg-gray-100 relative overflow-hidden flex flex-col items-center justify-center p-0">
 
+            <!-- Hidden File Input -->
+            <input type="file"
+                   x-ref="fileInput"
+                   class="hidden"
+                   accept="image/*,application/pdf"
+                   multiple
+                   @change="handleImport($event)">
+
             <!-- VIEW: CAMERA -->
             <div x-show="view === 'camera'" class="w-full h-full relative bg-black flex flex-col">
                 <video x-ref="video" class="w-full h-full object-contain bg-black" autoplay playsinline></video>
@@ -78,14 +86,24 @@
 
                 <!-- Camera Controls -->
                 <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-center z-40">
-                    <!-- Gallery Preview (Bottom Left) -->
-                    <div class="text-white text-sm cursor-pointer hover:underline min-w-[80px]" @click="if(capturedImages.length > 0) view = 'review'">
-                        <div class="flex items-center gap-2">
-                             <div class="relative" x-show="capturedImages.length > 0">
-                                <img :src="capturedImages[capturedImages.length-1]?.cropped" class="w-10 h-10 rounded border border-white object-cover">
-                                <span class="absolute -top-2 -right-2 badge bg-primary rounded-pill fs-7" x-text="capturedImages.length"></span>
+                    <!-- Gallery Preview & Import (Bottom Left) -->
+                    <div class="flex items-center gap-3 min-w-[120px]">
+                        <!-- Import Button -->
+                        <button @click="$refs.fileInput.click()"
+                                class="btn btn-dark rounded-circle p-0 flex flex-col items-center justify-center shadow-lg border border-white/20 hover:bg-gray-800 transition-colors group"
+                                style="width: 50px; height: 50px;"
+                                title="นำเข้าไฟล์ (Images/PDF)">
+                            <i class="bi bi-file-earmark-plus text-xl mb-0"></i>
+                            <span class="text-[10px] leading-none opacity-80 group-hover:opacity-100">นำเข้า</span>
+                        </button>
+
+                        <div class="text-white text-sm cursor-pointer hover:underline" @click="if(capturedImages.length > 0) view = 'review'">
+                            <div class="flex items-center gap-2">
+                                <div class="relative" x-show="capturedImages.length > 0">
+                                    <img :src="capturedImages[capturedImages.length-1]?.cropped" class="w-10 h-10 rounded border border-white object-cover">
+                                    <span class="absolute -top-2 -right-2 badge bg-primary rounded-pill fs-7" x-text="capturedImages.length"></span>
+                                </div>
                             </div>
-                            <span x-show="capturedImages.length === 0" class="opacity-70">No images</span>
                         </div>
                     </div>
 
@@ -198,6 +216,12 @@
                         <div @click="view = 'camera'; startCamera()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-plus-lg text-3xl mb-1"></i>
                             <span class="text-sm">ถ่ายเพิ่ม</span>
+                        </div>
+
+                        <!-- Import Button (Universal) -->
+                        <div @click="$refs.fileInput.click()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                            <i class="bi bi-file-earmark-plus text-3xl mb-1"></i>
+                            <span class="text-sm">นำเข้าไฟล์</span>
                         </div>
                     </div>
                 </div>
@@ -317,6 +341,7 @@
 
 <!-- Load Libraries (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script async src="https://docs.opencv.org/4.x/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
 
 <script>
@@ -359,6 +384,11 @@
             rotation: 0, // Current rotation in degrees (0, 90, 180, 270)
 
             init() {
+                // Initialize PDF.js worker
+                if (typeof pdfjsLib !== 'undefined') {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                }
+
                 document.addEventListener('opencv-loaded', () => {
                     this.cvLoaded = true;
                     console.log('OpenCV Loaded');
@@ -420,6 +450,92 @@
             closeScanner() {
                 this.stopCamera();
                 this.isOpen = false;
+            },
+
+            async handleImport(event) {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+
+                this.isLoading = true;
+                this.loadingMessage = 'กำลังนำเข้าไฟล์...';
+
+                try {
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+
+                        if (file.type.startsWith('image/')) {
+                            await this.processImageFile(file);
+                        } else if (file.type === 'application/pdf') {
+                            await this.processPdfFile(file);
+                        }
+                    }
+
+                    this.stopCamera();
+                    this.view = 'review';
+
+                    // Reset input
+                    event.target.value = '';
+                } catch (err) {
+                    console.error("Import Error:", err);
+                    alert("เกิดข้อผิดพลาดในการนำเข้าไฟล์: " + err.message);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            async processImageFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        const dataUrl = e.target.result;
+                        const img = await this.loadImage(dataUrl);
+
+                        this.capturedImages.push({
+                            id: Date.now() + Math.random(),
+                            original: dataUrl,
+                            cropped: dataUrl,
+                            corners: this.getDefaultCorners(img.width, img.height),
+                            isFound: false
+                        });
+                        resolve();
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            },
+
+            async processPdfFile(file) {
+                if (typeof pdfjsLib === 'undefined') {
+                    throw new Error('ระบบยังไม่พร้อมสำหรับการนำเข้า PDF กรุณารอสักครู่หรือรีเฟรชหน้าเว็บ');
+                }
+
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    this.loadingMessage = `กำลังแปลง PDF หน้าที่ ${pageNum}/${pdf.numPages}...`;
+
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 2.0 }); // High quality
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+                    this.capturedImages.push({
+                        id: Date.now() + Math.random(),
+                        original: dataUrl,
+                        cropped: dataUrl,
+                        corners: this.getDefaultCorners(canvas.width, canvas.height),
+                        isFound: false
+                    });
+                }
             },
 
             async startCamera() {
