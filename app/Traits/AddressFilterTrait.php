@@ -90,7 +90,7 @@ trait AddressFilterTrait
             ->values();
 
         $districts = collect();
-        $selectedProvince = request('addrProvince') ? trim(request('addrProvince')) : null;
+        $selectedProvince = request('addrProvince');
 
         if ($selectedProvince) {
             $districts = (clone $baseAddressQuery)
@@ -103,7 +103,7 @@ trait AddressFilterTrait
         }
 
         $subDistricts = collect();
-        $selectedDistrict = request('addrDistrict') ? trim(request('addrDistrict')) : null;
+        $selectedDistrict = request('addrDistrict');
 
         if ($selectedProvince && $selectedDistrict) {
             $subDistricts = (clone $baseAddressQuery)
