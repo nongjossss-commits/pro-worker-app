@@ -78,7 +78,8 @@ class WorkflowController extends Controller
         // Calculate Stats PER ORDER for the view (Accordion Header)
         $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
 
-        $steps = $activeTab ? $activeTab->steps : collect();
+        // Workflow Steps (Stage = 'workflow')
+        $steps = $activeTab ? $activeTab->workflowSteps : collect();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         foreach ($orders as $order) {
@@ -107,7 +108,9 @@ class WorkflowController extends Controller
                 }
 
                 // Step Stats (Highest Step)
-                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                // Filter completed steps to only include 'workflow' steps
+                $completedSteps = $item->completedWorkTypeSteps->where('stage', 'workflow');
+                $highestStep = $completedSteps->sortByDesc('order')->first();
                 if ($highestStep && isset($stepStats[$highestStep->id])) {
                     $stepStats[$highestStep->id]++;
                 }
@@ -141,7 +144,7 @@ class WorkflowController extends Controller
             // Get all items for these orders to calculate step stats
             $allTabItems = ProductionItem::whereIn('production_order_id', $statsQuery->select('id'))
                 ->with(['completedWorkTypeSteps' => function($q) {
-                    $q->select('work_type_steps.id', 'work_type_steps.order', 'production_item_step.production_item_id');
+                    $q->select('work_type_steps.id', 'work_type_steps.order', 'work_type_steps.stage', 'production_item_step.production_item_id');
                 }])
                 ->select('id', 'status', 'production_order_id')
                 ->get();
@@ -167,7 +170,8 @@ class WorkflowController extends Controller
                 }
 
                 // Highest Step
-                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                $completedSteps = $item->completedWorkTypeSteps->where('stage', 'workflow');
+                $highestStep = $completedSteps->sortByDesc('order')->first();
                 if ($highestStep && isset($globalStepStats[$highestStep->id])) {
                     $globalStepStats[$highestStep->id]++;
                 }
@@ -295,7 +299,17 @@ class WorkflowController extends Controller
      */
     public function fetchOrderItems(Request $request, $orderId)
     {
-        $order = ProductionOrder::with(['workType.steps'])->findOrFail($orderId);
+        $order = ProductionOrder::with(['workType'])->findOrFail($orderId);
+
+        // Fetch Steps based on Order Status (Preparation vs Workflow)
+        $steps = collect();
+        if ($order->workType) {
+            if ($order->status === 'pre_production') {
+                 $steps = $order->workType->preparationSteps;
+            } else {
+                 $steps = $order->workType->workflowSteps;
+            }
+        }
 
         $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId)
@@ -306,7 +320,8 @@ class WorkflowController extends Controller
         // Group the items collection by group_name for easier view rendering
         $groupedItems = $items->groupBy('group_name');
 
-        return view('workflow.partials.order_items', compact('order', 'groupedItems'));
+        // Pass available steps to the view
+        return view('workflow.partials.order_items', compact('order', 'groupedItems', 'steps'));
     }
 
     /**
@@ -348,9 +363,19 @@ class WorkflowController extends Controller
     private function calculateOrderStats(ProductionOrder $order)
     {
         // Ensure relations are loaded
-        $order->load(['items.completedWorkTypeSteps', 'workType.steps']);
+        $order->load(['items.completedWorkTypeSteps', 'workType']);
         $items = $order->items;
-        $steps = $order->workType->steps ?? collect();
+
+        // Determine correct steps (Preparation vs Workflow)
+        $steps = collect();
+        if ($order->workType) {
+            if ($order->status === 'pre_production') {
+                $steps = $order->workType->preparationSteps;
+            } else {
+                $steps = $order->workType->workflowSteps;
+            }
+        }
+
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         $total = 0;
@@ -375,7 +400,13 @@ class WorkflowController extends Controller
                 $notStarted++;
             }
 
-            $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+            // We filter logic by stage implicitly because $steps contains IDs from the correct stage
+            // So if $steps are preparation steps, only matching pivots (Preparation) will count.
+            // However, highestStep logic needs to filter pivots too.
+            $stage = ($order->status === 'pre_production') ? 'preparation' : 'workflow';
+            $relevantCompletedSteps = $item->completedWorkTypeSteps->where('stage', $stage);
+
+            $highestStep = $relevantCompletedSteps->sortByDesc('order')->first();
             if ($highestStep && isset($stepStats[$highestStep->id])) {
                 $stepStats[$highestStep->id]++;
             }
@@ -611,6 +642,7 @@ class WorkflowController extends Controller
 
     private function seedDefaultWorkTypes()
     {
+        // Seeds for 'workflow' stage only by default
         $types = [
             [
                 'name' => 'แจ้งเข้า / เปลี่ยนนายจ้าง',
@@ -645,7 +677,8 @@ class WorkflowController extends Controller
                 WorkTypeStep::create([
                     'work_type_id' => $workType->id,
                     'name' => $stepName,
-                    'order' => $index + 1
+                    'order' => $index + 1,
+                    'stage' => 'workflow'
                 ]);
             }
         }
@@ -664,14 +697,20 @@ class WorkflowController extends Controller
         $request->validate([
             'work_type_id' => 'required|exists:work_types,id',
             'name' => 'required|string|max:255',
+            'stage' => 'nullable|in:workflow,preparation' // Added validation
         ]);
 
-        $maxOrder = WorkTypeStep::where('work_type_id', $request->work_type_id)->max('order') ?? 0;
+        $stage = $request->stage ?? 'workflow';
+
+        $maxOrder = WorkTypeStep::where('work_type_id', $request->work_type_id)
+            ->where('stage', $stage) // Filter by stage
+            ->max('order') ?? 0;
 
         WorkTypeStep::create([
             'work_type_id' => $request->work_type_id,
             'name' => $request->name,
-            'order' => $maxOrder + 1
+            'order' => $maxOrder + 1,
+            'stage' => $stage
         ]);
 
         return response()->json(['success' => true]);

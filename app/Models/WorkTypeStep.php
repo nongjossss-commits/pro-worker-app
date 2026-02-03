@@ -13,6 +13,7 @@ class WorkTypeStep extends Model
         'work_type_id',
         'name',
         'order',
+        'stage', // Added
     ];
 
     public function workType()

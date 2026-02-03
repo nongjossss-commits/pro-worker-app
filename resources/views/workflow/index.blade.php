@@ -315,6 +315,8 @@
                     <label class="form-label fw-bold">{{ __('Add New Step') }}</label>
                     <div class="d-flex gap-2 align-items-center">
                         <input type="text" class="form-control" id="newStepName" placeholder="{{ __('Step Name') }}" required>
+                        {{-- Hidden Stage Input (Default workflow) --}}
+                        <input type="hidden" id="stepStage" value="workflow">
                         <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> {{ __('Add') }}</button>
                     </div>
                 </form>
@@ -399,10 +401,12 @@
         if(!activeTabId) return;
 
         const name = document.getElementById('newStepName').value;
+        const stage = document.getElementById('stepStage').value; // Added
+
         fetch('{{ route("workflow.steps.store") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ work_type_id: activeTabId, name: name })
+            body: JSON.stringify({ work_type_id: activeTabId, name: name, stage: stage })
         }).then(res => res.json()).then(data => {
             if(data.success) location.reload();
         });

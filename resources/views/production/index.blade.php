@@ -1,253 +1,671 @@
 @extends('layouts.app')
 
+@section('title', 'P Production (Preparation)')
+
 @section('content')
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .grayscale-mode { filter: grayscale(100%); opacity: 0.8; }
+    .stat-badge { width: 24px; height: 24px; font-size: 0.75rem; }
+    .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+</style>
+
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 text-gray-800 fw-bold">{{ __('P Production (Preparation)') }}</h1>
-            <p class="text-muted">{{ __('Prepare projects before sending to Workflow') }}</p>
+    {{-- Scoreboard --}}
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+        {{-- Total Employees --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #FBBF24;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
+                </div>
+            </div>
         </div>
-        <a href="{{ route('production.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-2"></i>{{ __('New Project') }}
-        </a>
+
+        {{-- Not Started --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #EF4444;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['not_started'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Not Started') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Cancelled --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #6B7280;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['cancelled'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Cancelled') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Completed --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0" style="background-color: #10B981;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['completed'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Completed') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Total Projects --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 bg-warning bg-gradient">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_projects'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Preparation Projects') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Global Progress --}}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title fw-bold text-secondary mb-0">
+                    <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Preparation Progress') }} - {{ $activeTab->name ?? 'Overview' }}
+                </h5>
+                @if(isset($activeTab))
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                            <i class="bi bi-gear-fill me-1"></i> {{ __('Preparation Steps') }}
+                        </button>
+                    </div>
+                @endif
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap justify-content-start align-items-center">
+                @foreach($steps as $step)
+                    @php
+                        $count = $stats['step_stats'][$step->id] ?? 0;
+                        $bgClass = $count > 0 ? "bg-success" : "bg-secondary bg-opacity-50 text-white";
+                    @endphp
+                    <div class="d-inline-flex align-items-center bg-white border rounded-pill py-2 px-3 shadow-sm gap-2">
+                        <span class="badge rounded-circle {{ $bgClass }} shadow-sm d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            {{ $count }}
+                        </span>
+                        <span class="fw-bold text-dark fs-6">{{ $step->name }}</span>
+                    </div>
+                @endforeach
+                @if($steps->isEmpty())
+                    <p class="text-muted small mb-0">{{ __('No preparation steps configured.') }}</p>
+                @endif
+            </div>
+        </div>
     </div>
 
     <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4" style="width: 25%;">{{ __('Project Name') }}</th>
-                            <th style="width: 10%;">{{ __('Type') }}</th>
-                            <th style="width: 20%;">{{ __('Employer') }}</th>
-                            <th class="text-center" style="width: 10%;">{{ __('Employees') }}</th>
-                            <th style="width: 20%;">{{ __('Readiness Status') }}</th>
-                            <th class="text-end pe-4" style="width: 15%;">{{ __('Actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($orders as $order)
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="fw-bold">{{ $order->project_name ?? 'Untitled Project' }}</div>
-                                    <div class="small text-muted">{{ Str::limit($order->description, 50) }}</div>
-                                    <div class="small text-muted">{{ __('Created') }} {{ $order->created_at->format('d/m/Y') }}</div>
+    {{-- Tabs Navigation --}}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2" style="scrollbar-width: thin;">
+            @foreach($tabs as $tab)
+                <li class="nav-item">
+                    <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
+                       href="{{ route('production.index', ['tab' => $tab->slug]) }}"
+                       style="white-space: nowrap;">
+                        {{ $tab->name }}
+                    </a>
+                </li>
+            @endforeach
+        </ul>
 
-                                    {{-- Waiting for Documents Warning --}}
-                                    <div class="mt-1" id="missing-docs-display-{{ $order->id }}" style="{{ $order->waiting_for_documents ? '' : 'display:none;' }}">
-                                        <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>{{ __('Waiting for Docs') }}</span>
-                                        <div class="small text-danger fst-italic mt-1 missing-docs-text">{{ $order->missing_documents }}</div>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if($order->type === 'independent')
-                                        <span class="badge bg-purple text-white" style="background-color: #6f42c1;">{{ __('Independent') }}</span>
-                                    @else
-                                        <span class="badge bg-secondary">{{ __('Standard') }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($order->type === 'employer' && $order->employer)
-                                        <div class="fw-bold">
-                                            {{ $order->employer->employerNameEn ?? $order->employer->employerNameTh }}
-                                            @if(request('addrProvince'))
-                                                @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
-                                                    <div class="text-primary small fw-bold">{{ $label }}</div>
-                                                @endforeach
-                                            @endif
-                                        </div>
-                                    @elseif($order->type === 'independent')
-                                        @php
-                                            $employers = $order->items->map(function($item) {
-                                                return $item->employee && $item->employee->employer ? ($item->employee->employer->name_th ?? $item->employee->employer->name_en) : null;
-                                            })->filter()->unique()->values();
-                                            $displayEmployers = $employers->take(2);
-                                            $remaining = $employers->count() - 2;
-                                        @endphp
-                                        @foreach($displayEmployers as $empName)
-                                            <div class="small fw-bold">{{ $empName }}</div>
-                                        @endforeach
-                                        @if($remaining > 0)
-                                            <div class="small text-muted fst-italic">+ {{ $remaining }} other(s)</div>
-                                        @endif
-                                        @if($employers->isEmpty())
-                                            <div class="text-muted fst-italic">Mixed / Independent</div>
-                                        @endif
-                                    @else
-                                        <span class="text-danger">{{ __('Unknown') }}</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-warning text-dark rounded-pill">{{ $order->items_count }}</span>
-                                </td>
-                                <td>
-                                    <div class="d-flex flex-column gap-2">
-                                        {{-- Documents Ready Toggle --}}
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input status-toggle" type="checkbox" id="docReady{{ $order->id }}"
-                                                data-id="{{ $order->id }}" data-type="document_ready"
-                                                {{ $order->document_ready_at ? 'checked' : '' }} disabled>
-                                            <label class="form-check-label small" for="docReady{{ $order->id }}">{{ __('Documents Ready') }}</label>
-                                        </div>
-
-                                        {{-- Ready to Process (Financial) Toggle --}}
-                                        @can('view-finance')
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input status-toggle" type="checkbox" id="finReady{{ $order->id }}"
-                                                data-id="{{ $order->id }}" data-type="financial_approved"
-                                                {{ $order->financial_approved_at ? 'checked' : '' }} disabled>
-                                            <label class="form-check-label small" for="finReady{{ $order->id }}">{{ __('Ready to Process') }}</label>
-                                        </div>
-                                        @endcan
-
-                                        {{-- Waiting for Docs Button/Toggle --}}
-                                        <button class="btn btn-sm btn-link text-decoration-none p-0 text-start text-danger"
-                                            onclick="openMissingDocsModal({{ $order->id }}, '{{ addslashes($order->missing_documents) }}')">
-                                            <i class="bi bi-pencil-square"></i> <span class="small">{{ __('Missing Documents...') }}</span>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td class="text-end pe-4">
-                                    <div class="d-flex flex-column align-items-end gap-2">
-                                        <a href="{{ route('production.edit', $order->id) }}" class="btn btn-sm btn-outline-warning w-100">
-                                            <i class="bi bi-gear-fill me-1"></i>{{ __('Prepare') }}
-                                        </a>
-
-                                        {{-- Send to Workflow Button (Conditional) --}}
-                                        <form action="{{ route('production.update', $order->id) }}" method="POST"
-                                              id="workflow-form-{{ $order->id }}"
-                                              class="w-100 workflow-btn-container"
-                                              style="{{ ($order->document_ready_at && $order->financial_approved_at) ? '' : 'display:none;' }}">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="start_workflow" value="1">
-                                            <button type="submit" class="btn btn-sm btn-success w-100">
-                                                <i class="bi bi-send-fill me-1"></i>{{ __('Send to Workflow') }}
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
-                                    <i class="bi bi-clipboard-x fs-1 d-block mb-2"></i>
-                                    {{ __('No projects in preparation.') }}
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('production.create') }}" class="btn btn-primary fw-bold shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> {{ __('New Preparation Project') }}
+            </a>
         </div>
     </div>
-    <div class="mt-3">
+
+    {{-- Accordion List --}}
+    <div class="accordion" id="workflowAccordion">
+        @forelse($orders as $order)
+            @php
+                 $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'cancelled'=>0, 'completed'=>0, 'step_stats'=>[]];
+                 $stepStats = $computed['step_stats'];
+            @endphp
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
+
+                    {{-- Top Row: Identity + Stats + Actions --}}
+                    <div class="row align-items-xl-center g-3 mb-3">
+                        {{-- Identity --}}
+                        <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
+                            <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary" style="width: 40px; height: 40px;">
+                                    @if($order->type === 'independent')
+                                        <i class="bi bi-person-workspace fs-5"></i>
+                                    @else
+                                        <i class="bi bi-building fs-5"></i>
+                                    @endif
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">
+                                        {{ $order->project_name }}
+                                        @if(request('addrProvince') && $order->employer)
+                                            @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
+                                                <span class="badge bg-info text-white small ms-1" style="font-size: 0.7rem;">{{ $label }}</span>
+                                            @endforeach
+                                        @endif
+                                    </h5>
+                                    <div class="text-muted small">
+                                        {{ $order->updated_at->diffForHumans() }}
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {{-- Stats & Actions --}}
+                        <div class="col-12 col-xl text-xl-end">
+                            <div class="d-flex align-items-center justify-content-xl-end gap-2 flex-wrap">
+                                 {{-- Stats Badges --}}
+                                 <div class="d-flex align-items-center gap-2 me-xl-3">
+                                    {{-- Total --}}
+                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                        <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
+                                        <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
+                                    </span>
+                                    {{-- Not Started --}}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;">
+                                         <span class="fw-bold" id="order-{{ $order->id }}-pending">{{ $computed['not_started'] }}</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">PENDING</span>
+                                    </span>
+                                    {{-- Completed --}}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                         <span class="fw-bold" id="order-{{ $order->id }}-completed">{{ $computed['completed'] }}</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">DONE</span>
+                                    </span>
+                                    {{-- Cancelled --}}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                        <span class="fw-bold" id="order-{{ $order->id }}-cancelled">{{ $computed['cancelled'] }}</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">CANCEL</span>
+                                    </span>
+                                 </div>
+
+                                 <div class="vr d-none d-xl-block me-2"></div>
+
+                                 {{-- Actions --}}
+                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
+                                    <i class="bi bi-plus-lg"></i> {{ __('Add') }}
+                                 </button>
+
+                                 <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'production']) }}" class="btn btn-outline-success btn-sm fw-bold">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
+                                 </a>
+
+                                 {{-- Send to Workflow (Only for Preparation) --}}
+                                 <form action="{{ route('production.update', $order->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to send this to Workflow?') }}')">
+                                     @csrf
+                                     @method('PUT')
+                                     <input type="hidden" name="start_workflow" value="1">
+                                     <button type="submit" class="btn btn-success btn-sm fw-bold ms-2">
+                                         <i class="bi bi-send-fill me-1"></i> {{ __('Send to Workflow') }}
+                                     </button>
+                                 </form>
+
+                                <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Bottom Row: Preparation Steps (Horizontal Scroll) --}}
+                    <div class="w-100 overflow-auto custom-scrollbar pb-1" style="scrollbar-width: thin;">
+                         <div class="d-flex flex-nowrap align-items-center gap-2">
+                             @foreach($steps as $step)
+                                @php
+                                    $count = $stepStats[$step->id] ?? 0;
+                                    $bgClass = $count > 0 ? "bg-success text-white" : "bg-secondary bg-opacity-25 text-muted";
+                                @endphp
+                                <div class="d-inline-flex align-items-center bg-light border rounded-pill px-3 py-1 gap-2 flex-shrink-0">
+                                    <span class="badge rounded-circle d-flex align-items-center justify-content-center stat-badge {{ $bgClass }}" id="order-{{ $order->id }}-step-{{ $step->id }}">
+                                        {{ $count }}
+                                    </span>
+                                    <span class="text-dark fw-bold" style="font-size: 0.85rem;">{{ $step->name }}</span>
+                                </div>
+                             @endforeach
+                         </div>
+                    </div>
+
+                </div>
+
+                <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#workflowAccordion">
+                    <div class="card-body bg-light p-4">
+                        <div id="order-content-{{ $order->id }}" class="order-content-wrapper">
+                            <div class="d-flex justify-content-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="text-center py-5">
+                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="120" class="mb-3 opacity-50" alt="No Data">
+                <h4 class="text-muted">{{ __('No preparation projects found.') }}</h4>
+                <a href="{{ route('production.create') }}" class="btn btn-primary mt-3">
+                    {{ __('Create New Project') }}
+                </a>
+            </div>
+        @endforelse
+    </div>
+
+    <div class="mt-4">
         {{ $orders->links() }}
     </div>
 </div>
 
-{{-- Missing Documents Modal --}}
-<div class="modal fade" id="missingDocsModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form id="missingDocsForm" method="POST" class="modal-content">
-            @csrf
-            @method('PUT')
-            <div class="modal-header">
-                <h5 class="modal-title">{{ __('Missing Documents') }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+{{-- Add Employee Modal --}}
+@include('workflow.partials.add_employee_modal')
+
+{{-- Manage Steps Modal --}}
+<div class="modal fade" id="manageStepsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-gear-fill me-2"></i>{{ __('Manage Preparation Steps') }} - {{ $activeTab->name ?? '' }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="waitingForDocsToggle" name="waiting_for_documents" value="1">
-                    <label class="form-check-label" for="waitingForDocsToggle">{{ __('Status') }}: {{ __('Waiting for Docs') }}</label>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ __('List Missing Documents') }}</label>
-                    <textarea class="form-control" name="missing_documents" id="missingDocsText" rows="4" placeholder="e.g. Copy of Passport, Photo..."></textarea>
-                </div>
+            <div class="modal-body p-4">
+                {{-- Add New Step --}}
+                <form id="addStepForm" class="mb-4 p-3 bg-light rounded border">
+                    <label class="form-label fw-bold">{{ __('Add New Step') }}</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="text" class="form-control" id="newStepName" placeholder="{{ __('Step Name') }}" required>
+                        {{-- Hidden Stage Input --}}
+                        <input type="hidden" id="stepStage" value="preparation">
+                        <button class="btn btn-secondary px-4" type="submit"><i class="bi bi-plus-lg"></i> {{ __('Add') }}</button>
+                    </div>
+                </form>
+
+                <h6 class="fw-bold mb-3 text-secondary">{{ __('Existing Steps') }}</h6>
+                <ul class="list-group list-group-flush" id="stepsList">
+                    @foreach($steps as $step)
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3" id="step-item-{{ $step->id }}">
+                            <div class="d-flex align-items-center gap-3 flex-grow-1">
+                                <span class="badge bg-secondary rounded-pill">{{ $step->order }}</span>
+                                <div class="d-flex align-items-center gap-2 step-display">
+                                    <span class="fw-bold step-name-text">{{ $step->name }}</span>
+                                </div>
+                                <div class="step-edit d-none flex-grow-1 d-flex gap-2 align-items-center">
+                                    <input type="text" class="form-control form-control-sm step-edit-input" value="{{ $step->name }}">
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'up')"><i class="bi bi-arrow-up"></i></button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'down')"><i class="bi bi-arrow-down"></i></button>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-step" onclick="toggleEditStep({{ $step->id }})"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-success d-none btn-save-step" onclick="saveStep({{ $step->id }})"><i class="bi bi-check-lg"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
+{{-- Manage Team Modal --}}
+<div class="modal fade" id="manageTeamModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-people-fill me-2"></i>{{ __('Manage Workflow Team') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="team_item_id">
+
+                <div class="mb-4">
+                    <label for="workflow_team_name" class="form-label fw-bold text-dark">{{ __('Team Name / Batch') }}</label>
+                    <input type="text" class="form-control form-control-lg" id="workflow_team_name" placeholder="{{ __('e.g., Batch 1, Arrived 25/10') }}">
+                    <div class="form-text text-muted">{{ __('Assign a group name to organize employees in this job.') }}</div>
+                </div>
+
+                <div id="existing-teams-wrapper" class="d-none">
+                    <h6 class="fw-bold text-secondary mb-3 small text-uppercase">{{ __('Existing Teams in this Job') }}</h6>
+                    <div class="d-flex flex-wrap gap-2" id="existing-teams-list">
+                        <!-- Chips loaded via JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-primary px-4" onclick="saveItemTeam()">
+                    <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const activeTabId = @json($activeTab->id ?? null);
 
-        // Toggle Status Handler
-        document.querySelectorAll('.status-toggle').forEach(toggle => {
-            toggle.addEventListener('change', function() {
-                const id = this.dataset.id;
-                const type = this.dataset.type;
-                const status = this.checked ? 1 : 0;
+    // --- Step Management JS ---
+    document.getElementById('addStepForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if(!activeTabId) return;
 
-                // Disable while processing
-                this.disabled = true;
+        const name = document.getElementById('newStepName').value;
+        const stage = document.getElementById('stepStage').value; // Get stage
 
-                fetch(`/production/${id}/toggle-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify({ type, status })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    this.disabled = false;
-                    if (data.success) {
-                        checkWorkflowReadiness(id);
-                        showToast('Status updated', 'success');
-                    } else {
-                        this.checked = !this.checked; // Revert
-                        showToast(data.message || 'Error updating status', 'danger');
-                    }
-                })
-                .catch(err => {
-                    this.disabled = false;
-                    this.checked = !this.checked;
-                    showToast('Network error', 'danger');
-                });
-            });
+        fetch('{{ route("workflow.steps.store") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ work_type_id: activeTabId, name: name, stage: stage })
+        }).then(res => res.json()).then(data => {
+            if(data.success) location.reload();
         });
     });
 
-    function checkWorkflowReadiness(id) {
-        const docReady = document.getElementById(`docReady${id}`).checked;
-        const finReady = document.getElementById(`finReady${id}`).checked;
-        const btnContainer = document.getElementById(`workflow-form-${id}`);
+    window.toggleEditStep = function(id) {
+        const item = document.getElementById(`step-item-${id}`);
+        item.querySelector('.step-display').classList.toggle('d-none');
+        item.querySelector('.step-edit').classList.toggle('d-none');
+        item.querySelector('.btn-edit-step').classList.toggle('d-none');
+        item.querySelector('.btn-save-step').classList.toggle('d-none');
+    }
 
-        if (docReady && finReady) {
-            btnContainer.style.display = 'block';
+    window.saveStep = function(id) {
+        const item = document.getElementById(`step-item-${id}`);
+        const newName = item.querySelector('.step-edit-input').value;
+        fetch(`/workflow/steps/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ name: newName })
+        }).then(res => res.json()).then(data => {
+            if(data.success) location.reload();
+        });
+    }
+
+    window.deleteStep = function(id) {
+        if(!confirm('Delete this step?')) return;
+        fetch(`/workflow/steps/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        }).then(res => res.json()).then(data => {
+            if(data.success) location.reload();
+        });
+    }
+
+    window.moveStep = function(id, direction) {
+        const list = document.getElementById('stepsList');
+        const item = document.getElementById(`step-item-${id}`);
+        if(direction === 'up') {
+            const prev = item.previousElementSibling;
+            if(prev) list.insertBefore(item, prev);
         } else {
-            btnContainer.style.display = 'none';
+            const next = item.nextElementSibling;
+            if(next) list.insertBefore(next, item);
+        }
+
+        const order = [];
+        list.querySelectorAll('li').forEach(li => order.push(li.id.replace('step-item-', '')));
+
+        fetch('{{ route("workflow.steps.reorder") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ order: order })
+        });
+        setTimeout(() => location.reload(), 500);
+    }
+
+    // --- Lazy Load Accordion ---
+    const loadedOrders = {};
+
+    document.getElementById('workflowAccordion').addEventListener('show.bs.collapse', function (e) {
+        if (e.target.classList.contains('accordion-collapse')) {
+            const orderId = e.target.id.replace('collapse-', '');
+
+            if (!loadedOrders[orderId]) {
+                const container = document.getElementById(`order-content-${orderId}`);
+                // Uses WorkflowController to fetch items
+                fetch(`{{ route('workflow.index') }}/${orderId}/items`)
+                .then(res => res.text())
+                .then(html => {
+                    container.innerHTML = html;
+                    loadedOrders[orderId] = true;
+                })
+                .catch(err => {
+                    container.innerHTML = '<div class="text-danger text-center py-3">Failed to load items.</div>';
+                });
+            }
+        }
+    });
+
+    // --- Toggle Step API (Updated for Button) ---
+    window.toggleWorkStep = function(itemId, stepId, completed) {
+        // Toggle UI immediately (Optimistic)
+        const btn = document.querySelector(`.step-btn-${itemId}-${stepId}`);
+        if(btn) {
+            // Simple toggle visual
+            if(completed) {
+                btn.classList.remove('btn-light', 'text-secondary', 'border');
+                btn.classList.add('btn-success', 'text-white');
+                if(!btn.innerHTML.includes('bi-check')) btn.innerHTML += ' <i class="bi bi-check-circle-fill ms-1"></i>';
+                btn.setAttribute('onclick', `toggleWorkStep(${itemId}, ${stepId}, false)`);
+            } else {
+                btn.classList.add('btn-light', 'text-secondary', 'border');
+                btn.classList.remove('btn-success', 'text-white');
+                const icon = btn.querySelector('i');
+                if(icon) icon.remove();
+                btn.setAttribute('onclick', `toggleWorkStep(${itemId}, ${stepId}, true)`);
+            }
+        }
+
+        fetch(`/workflow/item/${itemId}/step-toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ step_id: stepId, completed: completed })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(!data.success) {
+                // Revert
+                location.reload();
+            } else if (data.order_stats) {
+                // Find order ID
+                const card = document.getElementById(`item-card-${itemId}`);
+                if (card) {
+                    const wrapper = card.closest('.order-content-wrapper');
+                    if (wrapper) {
+                        const orderId = wrapper.id.replace('order-content-', '');
+                        updateOrderHeaderStats(orderId, data.order_stats);
+                    }
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+        });
+    }
+
+    function updateOrderHeaderStats(orderId, stats) {
+        if (!stats) return;
+
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if(el) el.innerText = text;
+        };
+
+        setText(`order-${orderId}-total`, stats.total);
+        setText(`order-${orderId}-pending`, stats.not_started);
+        setText(`order-${orderId}-completed`, stats.completed);
+        setText(`order-${orderId}-cancelled`, stats.cancelled);
+
+        // Steps
+        if (stats.step_stats) {
+            for (const [stepId, count] of Object.entries(stats.step_stats)) {
+                const badge = document.getElementById(`order-${orderId}-step-${stepId}`);
+                if (badge) {
+                    badge.innerText = count;
+                    if (count > 0) {
+                        badge.classList.remove('bg-secondary', 'bg-opacity-25', 'text-muted');
+                        badge.classList.add('bg-success', 'text-white');
+                    } else {
+                        badge.classList.add('bg-secondary', 'bg-opacity-25', 'text-muted');
+                        badge.classList.remove('bg-success', 'text-white');
+                    }
+                }
+            }
         }
     }
 
-    function openMissingDocsModal(id, currentText) {
-        const form = document.getElementById('missingDocsForm');
-        form.action = `/production/${id}`; // POST to update method
+    // --- Item Actions ---
+    window.finalizeItem = function(itemId) {
+        Swal.fire({
+            title: '{{ __("Complete Item?") }}',
+            text: '{{ __("Mark as completed?") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}/finalize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) location.reload();
+                });
+            }
+        });
+    }
 
-        document.getElementById('missingDocsText').value = currentText;
+    window.cancelItem = function(itemId) {
+        Swal.fire({
+            title: '{{ __("Cancel Item?") }}',
+            text: '{{ __("Mark as cancelled?") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) location.reload();
+                });
+            }
+        });
+    }
 
-        // Determine toggle state based on display existence (or passed param if we had it)
-        // Since we didn't pass "waiting" bool, we can infer or fetch.
-        // For simplicity, if text exists, assume waiting. Or check the badge visibility in DOM?
-        const displayEl = document.getElementById(`missing-docs-display-${id}`);
-        const isWaiting = displayEl.style.display !== 'none';
+    window.restoreItem = function(itemId) {
+        fetch(`/workflow/item/${itemId}/restore`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) location.reload();
+        });
+    }
 
-        document.getElementById('waitingForDocsToggle').checked = isWaiting;
+    window.deleteItem = function(itemId) {
+        Swal.fire({
+            title: '{{ __("Delete Item?") }}',
+            text: '{{ __("This cannot be undone.") }}',
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Delete") }}',
+            confirmButtonColor: '#d33'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) location.reload();
+                });
+            }
+        });
+    }
 
-        new bootstrap.Modal(document.getElementById('missingDocsModal')).show();
+    // --- Manage Team JS (Workflow Batch) ---
+    window.openManageTeamModal = function(itemId, btn) {
+        const groupName = btn.dataset.groupName || '';
+        const orderId = btn.dataset.orderId;
+
+        document.getElementById('team_item_id').value = itemId;
+        const nameInput = document.getElementById('workflow_team_name');
+        nameInput.value = groupName;
+
+        // Existing Teams (Scan DOM)
+        const wrapper = document.getElementById('existing-teams-wrapper');
+        const list = document.getElementById('existing-teams-list');
+        list.innerHTML = '';
+        wrapper.classList.add('d-none');
+
+        if(orderId) {
+            const container = document.getElementById(`order-content-${orderId}`);
+            if(container) {
+                // Find group headers (h6.fw-bold.text-dark.mb-0)
+                const headers = container.querySelectorAll('h6.fw-bold.text-dark.mb-0');
+                const uniqueGroups = new Set();
+                headers.forEach(h => uniqueGroups.add(h.innerText.trim()));
+
+                if(uniqueGroups.size > 0) {
+                    wrapper.classList.remove('d-none');
+                    uniqueGroups.forEach(name => {
+                        const badge = document.createElement('button');
+                        badge.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3';
+                        badge.type = 'button';
+                        badge.innerText = name;
+                        badge.onclick = () => { nameInput.value = name; };
+                        list.appendChild(badge);
+                    });
+                }
+            }
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
+        modal.show();
+    }
+
+    window.saveItemTeam = function() {
+        const itemId = document.getElementById('team_item_id').value;
+        const groupName = document.getElementById('workflow_team_name').value;
+
+        fetch(`/workflow/item/${itemId}/group`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ group_name: groupName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('manageTeamModal')).hide();
+                Swal.fire('{{ __('Saved') }}', '{{ __('Team assigned successfully.') }}', 'success')
+                .then(() => location.reload());
+            } else {
+                 Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to assign team.') }}', 'error');
+            }
+        });
     }
 </script>
 @endpush
-@endsection

@@ -18,9 +18,6 @@
         $overlayClass = 'opacity-50 pointer-events-none';
     }
 
-    // Determine Highest Completed Step for Filtering (Optional, logic in controller)
-    // We just need it for display if needed.
-
     // Employee Data Proxy
     $empNameEn = $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee';
     $empNameTh = $item->employee->employeeNameTh ?? $item->new_employee_data['name_th'] ?? '';
@@ -40,6 +37,21 @@
         } else {
             $appDisplay = $appDate->format('d/m/Y H:i');
         }
+    }
+
+    // Resolution Group Logic (MOU Badge)
+    $mouGroup = $item->employee->workPermitMOUGroup ?? $item->new_employee_data['work_permit_mou_group'] ?? null;
+    $badgeColor = 'bg-secondary';
+    $badgeText = $mouGroup;
+
+    if ($mouGroup === 'MOU') {
+        $badgeColor = 'bg-primary'; // Blue
+    } elseif ($mouGroup === 'มติขึ้นทะเบียนใหม่') {
+        $badgeColor = 'bg-danger'; // Red
+    } elseif ($mouGroup === 'มติต่ออายุในประเทศ') {
+        $badgeColor = 'bg-success'; // Green
+    } elseif ($mouGroup === 'อื่นๆ ระบุ') {
+        $badgeColor = 'bg-secondary'; // Gray
     }
 @endphp
 
@@ -80,8 +92,11 @@
 
                     {{-- Info --}}
                     <div>
-                        <div class="fw-bold text-dark">
+                        <div class="fw-bold text-dark d-flex align-items-center gap-2">
                             {{ $empNameEn }}
+                            @if($badgeText)
+                                <span class="badge rounded-pill {{ $badgeColor }}" style="font-size: 0.65rem;">{{ $badgeText }}</span>
+                            @endif
                         </div>
                         <div class="text-muted small">
                             {{ $empNameTh }}

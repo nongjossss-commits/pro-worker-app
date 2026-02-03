@@ -10,7 +10,7 @@
     </style>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 fw-bold">Create New Project</h1>
+        <h1 class="h3 fw-bold">Create New Preparation Project</h1>
         <a href="{{ route('production.index') }}" class="btn btn-outline-secondary">Back</a>
     </div>
 
@@ -32,23 +32,34 @@
                         <input type="text" name="project_name" class="form-control" placeholder="e.g. Visa Renewal Batch #101" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold">Project Type</label>
-                        <div class="d-flex gap-3 mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="type" id="typeEmployer" value="employer"
-                                    {{ $isIndependent ? 'disabled' : 'checked' }}>
-                                <label class="form-check-label" for="typeEmployer">
-                                    Standard (Single Employer)
-                                    @if($isIndependent) <small class="text-danger d-block">(Disabled: Mixed employers selected)</small> @endif
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="type" id="typeIndependent" value="independent"
-                                    {{ $isIndependent ? 'checked' : '' }}>
-                                <label class="form-check-label" for="typeIndependent">
-                                    Independent (Multiple/No Employer)
-                                </label>
-                            </div>
+                        <label class="form-label fw-bold">Work Type (Category)</label>
+                        <select name="work_type_id" class="form-select" required>
+                            <option value="">-- Select Work Type --</option>
+                            @foreach($workTypes as $wt)
+                                <option value="{{ $wt->id }}">{{ $wt->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Choose the workflow this project belongs to (e.g. Change Employer).</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Project Type</label>
+                    <div class="d-flex gap-3 mt-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="type" id="typeEmployer" value="employer"
+                                {{ $isIndependent ? 'disabled' : 'checked' }}>
+                            <label class="form-check-label" for="typeEmployer">
+                                Standard (Single Employer)
+                                @if($isIndependent) <small class="text-danger d-block">(Disabled: Mixed employers selected)</small> @endif
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="type" id="typeIndependent" value="independent"
+                                {{ $isIndependent ? 'checked' : '' }}>
+                            <label class="form-check-label" for="typeIndependent">
+                                Independent (Multiple/No Employer)
+                            </label>
                         </div>
                     </div>
                 </div>
