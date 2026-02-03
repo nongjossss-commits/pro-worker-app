@@ -213,7 +213,7 @@
                              </div>
                         </div>
 
-                        <div x-show="isEditing" @click.outside="isEditing = false" class="d-flex flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
+                        <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
                              <label class="small fw-bold">Date & Time</label>
                              <div>
                                 <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
