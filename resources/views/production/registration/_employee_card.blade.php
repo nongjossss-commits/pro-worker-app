@@ -30,6 +30,7 @@
      data-status="{{ $employee->status }}"
      data-is-not-started="{{ $isNotStarted ? 'true' : 'false' }}"
      data-employer-id="{{ $employee->employer_id }}"
+     data-biometrics-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
 
     {{-- Sequence Number (Outside Card) --}}
@@ -216,6 +217,20 @@
 
             {{-- Actions --}}
             <div class="d-flex gap-2 flex-wrap justify-content-end">
+                 @can('edit-employees')
+                 {{-- Biometrics Button --}}
+                 <input type="file" id="biometrics-input-{{ $employee->id }}" class="d-none" onchange="uploadBiometrics({{ $employee->id }})">
+                 <button class="btn btn-sm {{ $employee->biometrics_collected_at ? 'btn-success' : 'btn-outline-warning' }} rounded-pill px-3 biometrics-btn"
+                     id="btn-biometrics-{{ $employee->id }}"
+                     data-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
+                     title="{{ __('Collect Biometrics') }}"
+                     onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'biometrics-input-{{ $employee->id }}' } }))">
+                     <i class="bi {{ $employee->biometrics_collected_at ? 'bi-fingerprint' : 'bi-fingerprint' }}"></i>
+                     <span class="d-none d-lg-inline">{{ $employee->biometrics_collected_at ? __('Collected') : __('Biometrics') }}</span>
+                     @if($employee->biometrics_collected_at) <i class="bi bi-check-lg ms-1"></i> @endif
+                 </button>
+                 @endcan
+
                  {{-- Preview Button (Universal) --}}
                  <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
                     data-model-type="employee"

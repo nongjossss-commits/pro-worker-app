@@ -129,11 +129,13 @@ class Employee extends Model
         'outsource_code',
         'bank_name',
         'bank_account_number',
+        'biometrics_collected_at',
     ];
 
     protected $casts = [
         'passportExpiryDate' => 'date:Y-m-d',
         'workPermitExpiryDate' => 'date:Y-m-d',
+        'biometrics_collected_at' => 'datetime',
         'visaExpiryDate' => 'date:Y-m-d',
         'ninetyDayReportDate' => 'date:Y-m-d',
         'employeeDob' => 'date:Y-m-d',
