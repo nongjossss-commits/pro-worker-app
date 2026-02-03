@@ -1039,43 +1039,57 @@
 
                     const img = new Image();
                     img.onload = () => {
-                        // Apply Rotation to Source
-                        const canvas = document.createElement('canvas');
-                        // Swap dims if 90/270
-                        if (this.rotation % 180 !== 0) {
-                            canvas.width = img.height;
-                            canvas.height = img.width;
-                        } else {
-                            canvas.width = img.width;
-                            canvas.height = img.height;
+                        try {
+                            // Apply Rotation to Source
+                            const canvas = document.createElement('canvas');
+                            // Swap dims if 90/270
+                            if (this.rotation % 180 !== 0) {
+                                canvas.width = img.height;
+                                canvas.height = img.width;
+                            } else {
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                            }
+
+                            const ctx = canvas.getContext('2d');
+                            ctx.translate(canvas.width/2, canvas.height/2);
+                            ctx.rotate(this.rotation * Math.PI / 180);
+                            ctx.drawImage(img, -img.width/2, -img.height/2);
+
+                            // Read from rotated canvas
+                            const src = cv.imread(canvas);
+                            const newCroppedUrl = this.performWarp(src, realCorners, canvas.width, canvas.height);
+                            src.delete();
+
+                            // Create updated object (Deep Copy)
+                            const updatedItem = {
+                                ...this.capturedImages[this.currentEditIndex],
+                                id: Date.now(), // Force reactivity
+                                cropped: newCroppedUrl,
+                                corners: realCorners,
+                                original: canvas.toDataURL('image/jpeg', 0.9)
+                            };
+
+                            // Update State with Splice to ensure Alpine detects change
+                            this.capturedImages.splice(this.currentEditIndex, 1, updatedItem);
+
+                            // Reset rotation because 'original' is now the rotated image
+                            this.rotation = 0;
+                            this.view = 'review';
+                        } catch (innerError) {
+                            console.error("Processing Error during Save:", innerError);
+                            alert("Failed to process image rotation: " + innerError.message);
                         }
-
-                        const ctx = canvas.getContext('2d');
-                        ctx.translate(canvas.width/2, canvas.height/2);
-                        ctx.rotate(this.rotation * Math.PI / 180);
-                        ctx.drawImage(img, -img.width/2, -img.height/2);
-
-                        // Read from rotated canvas
-                        const src = cv.imread(canvas);
-                        const newCroppedUrl = this.performWarp(src, realCorners, canvas.width, canvas.height);
-                        src.delete();
-
-                        // Update State
-                        this.capturedImages[this.currentEditIndex].cropped = newCroppedUrl;
-                        this.capturedImages[this.currentEditIndex].corners = realCorners;
-                        // Note: We technically should update 'original' to the rotated one if we want to persist rotation
-                        // But simpler to just keep original as is and only update cropped.
-                        // Wait, if I go back to edit again, rotation is reset to 0, but corners are for rotated version?
-                        // FIX: We should update 'original' to the rotated version so subsequent edits are consistent.
-                        this.capturedImages[this.currentEditIndex].original = canvas.toDataURL('image/jpeg', 0.9);
-
-                        this.view = 'review';
+                    };
+                    img.onerror = (err) => {
+                        console.error("Image Load Error:", err);
+                        alert("Failed to load source image for processing.");
                     };
                     img.src = item.original;
 
                 } catch(e) {
                     console.error("Save Edit Error", e);
-                    alert("Failed to process crop.");
+                    alert("Failed to start save process.");
                 }
             },
 
