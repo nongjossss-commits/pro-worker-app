@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', function () {
         provinceSelect.disabled = false;
     };
 
-    // Fetch data on initial load
-    fetch('/thai-addresses')
+    // Store the fetch promise so we can chain onto it later
+    const addressDataPromise = fetch('/thai-addresses')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -42,97 +42,95 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(data => {
             thaiAddressData = data;
-            // The modal's show event will trigger the population
+            return data;
         })
         .catch(error => {
             console.error('Failed to fetch Thai address data:', error);
-            // Maybe disable the address functionality or show an error
+            resetSelect(provinceSelect, 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
         });
 
-// START: Corrected 'show.bs.modal' listener
-addressModalEl.addEventListener('show.bs.modal', function (event) {
-    // Button that triggered the modal
-    const button = event.relatedTarget;
-    const addressForm = document.getElementById('addressForm');
-    const modalTitle = document.getElementById('addressModalLabel'); // Assuming your modal title has this ID, add it if not.
+    addressModalEl.addEventListener('show.bs.modal', function (event) {
+        // Button that triggered the modal
+        const button = event.relatedTarget;
+        const addressForm = document.getElementById('addressForm');
+        const modalTitle = document.getElementById('addressModalLabel');
 
-    // Reset the form for both create and edit
-    addressForm.reset();
-    document.getElementById('address_id').value = '';
-    document.getElementById('addressable_id').value = '';
-    document.getElementById('address_type').value = '';
+        // Reset the form for both create and edit
+        addressForm.reset();
+        document.getElementById('address_id').value = '';
+        document.getElementById('addressable_id').value = '';
+        document.getElementById('address_type').value = '';
 
-    // Clear dropdowns
-    resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
-    resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
-    clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
+        // Clear dropdowns
+        resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
+        resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
+        clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
 
-    // Repopulate provinces if data is ready
-    if (thaiAddressData.length > 0) {
-        populateProvinces();
-    }
+        // Set loading state for province
+        resetSelect(provinceSelect, 'กำลังโหลดข้อมูล...');
 
-    if (button) {
-        const addressId = button.dataset.addressId;
-        const addressableId = button.dataset.addressableId;
-        const addressType = button.dataset.type;
+        // Wait for data to be ready
+        addressDataPromise.then(() => {
+            if (thaiAddressData.length > 0) {
+                populateProvinces();
+            } else {
+                resetSelect(provinceSelect, 'ไม่พบข้อมูล');
+            }
+        });
 
-        if (addressId) {
-            // ----- WE ARE EDITING -----
-            if(modalTitle) modalTitle.textContent = 'แก้ไขที่อยู่';
-            document.getElementById('address_id').value = addressId;
+        if (button) {
+            const addressId = button.dataset.addressId;
+            const addressableId = button.dataset.addressableId;
+            const addressType = button.dataset.type;
 
-            // Show loading state (optional, but good practice)
-            // saveButton.disabled = true;
+            if (addressId) {
+                // ----- WE ARE EDITING -----
+                if(modalTitle) modalTitle.textContent = 'แก้ไขที่อยู่';
+                document.getElementById('address_id').value = addressId;
 
-            // Fetch the existing address data
-            fetch(`/addresses/${addressId}/edit`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch address data.');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Populate the form with existing data
-                    document.getElementById('addrNo').value = data.addrNo || '';
-                    document.getElementById('addrMoo').value = data.addrMoo || '';
-                    document.getElementById('addrSoi').value = data.addrSoi || '';
-                    document.getElementById('addrRoad').value = data.addrRoad || '';
-                    document.getElementById('addrZipCode').value = data.addrZipCode || '';
-                    document.getElementById('addrNoEn').value = data.addrNoEn || '';
-                    document.getElementById('addrMooEn').value = data.addrMooEn || '';
-                    document.getElementById('addrSoiEn').value = data.addrSoiEn || '';
-                    document.getElementById('addrRoadEn').value = data.addrRoadEn || '';
-                    document.getElementById('addrSubDistrictEn').value = data.addrSubDistrictEn || '';
-                    document.getElementById('addrDistrictEn').value = data.addrDistrictEn || '';
-                    document.getElementById('addrProvinceEn').value = data.addrProvinceEn || '';
+                // Fetch the existing address data
+                fetch(`/addresses/${addressId}/edit`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch address data.');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Populate the form with existing data
+                        document.getElementById('addrNo').value = data.addrNo || '';
+                        document.getElementById('addrMoo').value = data.addrMoo || '';
+                        document.getElementById('addrSoi').value = data.addrSoi || '';
+                        document.getElementById('addrRoad').value = data.addrRoad || '';
+                        document.getElementById('addrZipCode').value = data.addrZipCode || '';
+                        document.getElementById('addrNoEn').value = data.addrNoEn || '';
+                        document.getElementById('addrMooEn').value = data.addrMooEn || '';
+                        document.getElementById('addrSoiEn').value = data.addrSoiEn || '';
+                        document.getElementById('addrRoadEn').value = data.addrRoadEn || '';
+                        document.getElementById('addrSubDistrictEn').value = data.addrSubDistrictEn || '';
+                        document.getElementById('addrDistrictEn').value = data.addrDistrictEn || '';
+                        document.getElementById('addrProvinceEn').value = data.addrProvinceEn || '';
 
-                    // Set dropdowns (This is complex, simplified version: set values)
-                    // Note: This won't auto-trigger district/sub-district loading,
-                    // but it will save the correct data.
-                    if (data.addrProvince) {
-                        provinceSelect.value = data.addrProvince;
-                    }
-                    // A full solution would require triggering 'change' events and waiting
-                    // but for saving, setting the EN values is most important.
+                        // Wait for address data to ensure province options exist before setting value
+                        addressDataPromise.then(() => {
+                            if (data.addrProvince) {
+                                provinceSelect.value = data.addrProvince;
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching address data:', error);
+                        alert('Could not load address data for editing. Please close and try again.');
+                    });
 
-                    // saveButton.disabled = false;
-                })
-                .catch(error => {
-                    console.error('Error fetching address data:', error);
-                    alert('Could not load address data for editing. Please close and try again.');
-                });
-
-        } else if (addressableId) {
-            // ----- WE ARE CREATING -----
-            if(modalTitle) modalTitle.textContent = 'เพิ่มที่อยู่ใหม่';
-            document.getElementById('addressable_id').value = addressableId;
-            document.getElementById('address_type').value = addressType;
+            } else if (addressableId) {
+                // ----- WE ARE CREATING -----
+                if(modalTitle) modalTitle.textContent = 'เพิ่มที่อยู่ใหม่';
+                document.getElementById('addressable_id').value = addressableId;
+                document.getElementById('address_type').value = addressType;
+            }
         }
-    }
-});
-// END: Corrected 'show.bs.modal' listener
+    });
 
     provinceSelect.addEventListener('change', function () {
         // Always start by resetting downstream dependencies. This disables them.
