@@ -136,11 +136,11 @@ class NotificationController extends Controller
         }
 
         if ($type === 'cancelled') {
-            $query->where('status', 'cancelled')->orderBy('updated_at', 'desc');
+            $query->where('notifications.status', 'cancelled')->orderBy('updated_at', 'desc');
         } else {
             // Modified sorting: Sort by due_date ASC (Earliest expiry first, expired items at top)
             // For missing data types, due_date might be null or irrelevant, but we keep sorting for consistency
-            $query->where('status', '!=', 'cancelled')->where('type', $type)->orderBy('due_date', 'asc');
+            $query->where('notifications.status', '!=', 'cancelled')->where('notifications.type', $type)->orderBy('due_date', 'asc');
         }
 
         // Filter by month if provided
@@ -474,22 +474,22 @@ class NotificationController extends Controller
         // Base query conditions based on type
         switch ($type) {
             case 'cancelled':
-                $query->where('status', 'cancelled');
+                $query->where('notifications.status', 'cancelled');
                 break;
             case 'work_permit_expired':
-                $query->where('type', 'work_permit_expiry')
+                $query->where('notifications.type', 'work_permit_expiry')
                       ->whereDate('due_date', '<', now())
-                      ->where('status', 'unread');
+                      ->where('notifications.status', 'unread');
                 break;
             case 'work_permit_expiry':
-                $query->where('type', 'work_permit_expiry')
+                $query->where('notifications.type', 'work_permit_expiry')
                       ->whereDate('due_date', '>=', now())
-                      ->where('status', 'unread');
+                      ->where('notifications.status', 'unread');
                 break;
             default:
-                $query->where('status', 'unread');
+                $query->where('notifications.status', 'unread');
                 if ($type !== 'permits') { // 'permits' is a tab group, not a notification type
-                    $query->where('type', $type);
+                    $query->where('notifications.type', $type);
                 }
         }
 
