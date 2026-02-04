@@ -59,6 +59,50 @@ class ProductionController extends Controller
         $addressOptions = $this->getAddressOptions($query, 'employer_id');
         $query = $this->applyAddressFilters($query, $request, 'employer');
 
+        // --- FILTERING LOGIC ---
+        $itemFilter = function($q) use ($request) {
+            if ($request->filled('filter_status')) {
+                $status = $request->filter_status;
+                if ($status === 'completed') {
+                    $q->where('status', 'completed');
+                } elseif ($status === 'cancelled') {
+                    $q->where('status', 'cancelled');
+                } elseif ($status === 'not_started') {
+                    $q->where('status', 'pending')
+                      ->doesntHave('completedWorkTypeSteps');
+                }
+            }
+
+            if ($request->filled('filter_step')) {
+                $stepId = $request->filter_step;
+                // Pre-Production steps might be inclusive or exclusive.
+                // Reusing Workflow logic: Has this step, and no higher step (if we want highest).
+                // But Pre-Prod steps are often checklists.
+                // Let's stick to "Has completed this step" for simplicity in Pre-Prod?
+                // User said "tick to filter...".
+                // Workflow Logic: Highest Step.
+                // Let's use the same logic if possible.
+                $step = WorkTypeStep::find($stepId);
+                if ($step) {
+                    $q->whereHas('completedWorkTypeSteps', function($sq) use ($stepId) {
+                        $sq->where('work_type_steps.id', $stepId);
+                    });
+                    // Should we check higher steps? Pre-Prod steps are 'preparation', usually sequential.
+                    // Let's check higher steps in same stage.
+                     $q->whereDoesntHave('completedWorkTypeSteps', function($sq) use ($step) {
+                        $sq->where('work_type_steps.order', '>', $step->order)
+                           ->where('work_type_steps.work_type_id', $step->work_type_id)
+                           ->where('work_type_steps.stage', 'preparation');
+                    })->where('status', '!=', 'cancelled');
+                }
+            }
+        };
+
+        if ($request->filled('filter_status') || $request->filled('filter_step')) {
+            $query->whereHas('items', $itemFilter);
+        }
+        // --- END FILTERING LOGIC ---
+
         // Search
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -76,60 +120,104 @@ class ProductionController extends Controller
 
         $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
 
-        // Load Relations for View
-        // Note: steps for Pre-Production might be different.
-        // We filter steps by stage = 'preparation' (if we decide to split) or just use all steps but allow independent checking.
-        // Based on user: "Steps... independent of workflow... user sets freely".
-        // So we fetch steps for this WorkType, but maybe filter by 'stage' if we implemented it.
-        // Let's fetch 'preparation' steps if they exist, else all.
-
-        $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
-
+        // Steps Logic
         $steps = collect();
         if ($activeTab) {
-            // Get steps specifically for 'preparation' stage, or fallback?
-            // Since we just added 'stage', old steps are 'workflow'.
-            // User needs to create 'preparation' steps.
             $steps = WorkTypeStep::where('work_type_id', $activeTab->id)
                         ->where('stage', 'preparation')
                         ->orderBy('order')
                         ->get();
-
-            // If no preparation steps found, maybe return empty (user needs to add them)
         }
 
-        // Calculate Stats (Similar to Workflow but for Pre-Prod)
+        // Load Relations with Filter
+        $orders->load(['items' => function($q) use ($itemFilter) {
+            $itemFilter($q);
+            $q->with('completedWorkTypeSteps', 'employee');
+        }, 'employer.addresses']);
+
+
+        // Calculate Stats PER ORDER
         foreach ($orders as $order) {
             $items = $order->items;
             $total = 0;
-            $notStarted = 0; // Items with no steps checked?
-            $ready = 0; // Maybe not needed
+            $notStarted = 0;
+            $cancelled = 0;
+            $completed = 0;
             $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
             foreach ($items as $item) {
-                $total++;
-
-                // Calculate step progress
-                $completedSteps = $item->completedWorkTypeSteps->pluck('id')->toArray();
-                if (empty($completedSteps)) {
-                    $notStarted++;
+                 if ($item->status === 'cancelled') {
+                    $cancelled++;
+                    continue;
                 }
+                $total++;
+                if ($item->status === 'completed') $completed++;
 
-                foreach ($completedSteps as $sId) {
-                    if (isset($stepStats[$sId])) {
-                        $stepStats[$sId]++;
-                    }
+                // Step Progress (Highest)
+                $highestStep = $item->completedWorkTypeSteps
+                    ->where('stage', 'preparation') // Ensure we only count prep steps
+                    ->sortByDesc('order')
+                    ->first();
+
+                if ($highestStep && isset($stepStats[$highestStep->id])) {
+                    $stepStats[$highestStep->id]++;
+                } elseif ($item->completedWorkTypeSteps->isEmpty()) {
+                    $notStarted++;
                 }
             }
 
             $order->computedStats = [
                 'total' => $total,
                 'not_started' => $notStarted,
+                'cancelled' => $cancelled,
+                'completed' => $completed,
                 'step_stats' => $stepStats
             ];
         }
 
-        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'addressOptions'));
+        // Calculate Global Scoreboard Stats (For the Active Tab)
+        $stats = [
+            'total_projects' => $orders->total(),
+            'total_employees' => 0,
+            'not_started' => 0,
+            'cancelled' => 0,
+            'completed' => 0,
+            'step_stats' => [],
+        ];
+
+        if ($activeTab) {
+            $statsQuery = ProductionOrder::where('work_type_id', $activeTab->id)
+                ->where('status', 'pre_production');
+
+            $stats['total_projects'] = $statsQuery->count();
+
+            $allTabItems = ProductionItem::whereIn('production_order_id', $statsQuery->select('id'))
+                ->with(['completedWorkTypeSteps' => function($q) {
+                    $q->where('stage', 'preparation'); // Only prep steps
+                }])
+                ->get();
+
+            $globalStepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+
+            foreach ($allTabItems as $item) {
+                if ($item->status === 'cancelled') {
+                    $stats['cancelled']++;
+                    continue;
+                }
+                $stats['total_employees']++;
+                if ($item->status === 'completed') $stats['completed']++;
+
+                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($globalStepStats[$highestStep->id])) {
+                    $globalStepStats[$highestStep->id]++;
+                } elseif ($item->completedWorkTypeSteps->isEmpty()) {
+                    $stats['not_started']++;
+                }
+            }
+            $stats['step_stats'] = $globalStepStats;
+        }
+
+        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'stats', 'addressOptions'));
     }
 
     /**

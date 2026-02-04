@@ -12,11 +12,102 @@
 </style>
 
 <div class="container-fluid py-4">
-    {{-- Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-0"><i class="bi bi-boxes me-2"></i>{{ __('Pre-Production / Preparation') }}</h1>
-            <p class="text-muted mb-0">{{ __('Prepare documents and confirm data before sending to Workflow.') }}</p>
+    {{-- Scoreboard (Replicated from Workflow) --}}
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+        {{-- Total Employees --}}
+        <div class="col">
+            <a href="{{ request()->fullUrlWithQuery(['filter_status' => null]) }}" class="text-decoration-none">
+                <div class="card text-white h-100 shadow-sm border-0" style="background-color: #FBBF24;">
+                    <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                        <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
+                        <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        {{-- Not Started --}}
+        <div class="col">
+            <a href="{{ request()->fullUrlWithQuery(['filter_status' => 'not_started']) }}" class="text-decoration-none">
+                <div class="card text-white h-100 shadow-sm border-0" style="background-color: #EF4444;">
+                    <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                        <h1 class="display-4 fw-bold mb-0">{{ $stats['not_started'] ?? 0 }}</h1>
+                        <p class="fs-5 fw-light mb-0">{{ __('Not Started') }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        {{-- Cancelled --}}
+        <div class="col">
+            <a href="{{ request()->fullUrlWithQuery(['filter_status' => 'cancelled']) }}" class="text-decoration-none">
+                <div class="card text-white h-100 shadow-sm border-0" style="background-color: #6B7280;">
+                    <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                        <h1 class="display-4 fw-bold mb-0">{{ $stats['cancelled'] ?? 0 }}</h1>
+                        <p class="fs-5 fw-light mb-0">{{ __('Cancelled') }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        {{-- Completed --}}
+        <div class="col">
+            <a href="{{ request()->fullUrlWithQuery(['filter_status' => 'completed']) }}" class="text-decoration-none">
+                <div class="card text-white h-100 shadow-sm border-0" style="background-color: #10B981;">
+                    <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                        <h1 class="display-4 fw-bold mb-0">{{ $stats['completed'] ?? 0 }}</h1>
+                        <p class="fs-5 fw-light mb-0">{{ __('Completed') }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        {{-- Total Projects --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 bg-primary bg-gradient">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_projects'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Active Projects') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Global Progress --}}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title fw-bold text-secondary mb-0">
+                    <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Preparation Progress') }}
+                </h5>
+                @if(isset($activeTab))
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                            <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
+                        </button>
+                    </div>
+                @endif
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap justify-content-start align-items-center">
+                @foreach($steps as $step)
+                    @php
+                        $count = $stats['step_stats'][$step->id] ?? 0;
+                        $bgClass = $count > 0 ? "bg-success" : "bg-secondary bg-opacity-50 text-white";
+                    @endphp
+                    <a href="{{ request()->fullUrlWithQuery(['filter_step' => $step->id]) }}" class="text-decoration-none">
+                        <div class="d-inline-flex align-items-center bg-white border rounded-pill py-2 px-3 shadow-sm gap-2 hover-shadow">
+                            <span class="badge rounded-circle {{ $bgClass }} shadow-sm d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                {{ $count }}
+                            </span>
+                            <span class="fw-bold text-dark fs-6">{{ $step->name }}</span>
+                        </div>
+                    </a>
+                @endforeach
+                @if($steps->isEmpty())
+                    <p class="text-muted small mb-0">{{ __('No steps configured.') }}</p>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -99,8 +190,16 @@
                                             @endforeach
                                         @endif
                                     </h5>
-                                    <div class="text-muted small">
-                                        {{ $order->employer->employerNameTh ?? 'Unknown Employer' }} &bull; {{ $order->updated_at->diffForHumans() }}
+                                    <div class="text-muted small d-flex align-items-center gap-2 mt-1">
+                                        <span>{{ $order->employer->employerNameTh ?? 'Unknown Employer' }}</span>
+                                        <button class="btn btn-sm btn-link p-0 text-primary btn-preview"
+                                            data-model-type="employer"
+                                            data-model-id="{{ $order->employer_id }}"
+                                            title="Preview Employer">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                        <span class="text-muted opacity-50">&bull;</span>
+                                        <span>{{ $order->updated_at->diffForHumans() }}</span>
                                     </div>
                                 </div>
                             </button>
