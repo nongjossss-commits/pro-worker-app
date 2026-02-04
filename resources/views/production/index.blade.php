@@ -312,6 +312,59 @@
     </div>
 </div>
 
+{{-- Edit Employee Modal (Full Form) --}}
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editEmployeeModalLabel"><i class="bi bi-pencil-square me-2"></i>{{ __('Edit Employee') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light" id="editEmployeeModalBody">
+                <div class="d-flex justify-content-center align-items-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Cropper Modal (Required for Employee Edit) --}}
+<div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cropperModalLabel">ครอบตัดรูปภาพ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <style>
+                    .img-container {
+                        max-height: 500px;
+                        display: block;
+                    }
+                    .img-container img {
+                        max-width: 100%;
+                        display: block;
+                    }
+                </style>
+                <div class="img-container">
+                    <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="cropImageBtn">ครอบตัดและบันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@include('employees.partials._edit_scripts')
+@include('production.registration.partials.edit_modal_script')
+
 @endsection
 
 @push('scripts')
