@@ -138,9 +138,9 @@
                 <div class="ms-md-4" x-data="{
                     isEditing: false,
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
-                    dateValue: '{{ $appValue }}',
-                    displayValue: '{{ $appDisplay }}',
-                    locationValue: '{{ $appLocation }}',
+                    dateValue: @json($appValue),
+                    displayValue: @json($appDisplay),
+                    locationValue: @json($appLocation),
                     initFlatpickr() {
                         if (this.$refs.dateInput._flatpickr) return;
                         flatpickr(this.$refs.dateInput, {

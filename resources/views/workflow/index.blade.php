@@ -182,10 +182,8 @@
                  $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'cancelled'=>0, 'completed'=>0, 'step_stats'=>[]];
                  $stepStats = $computed['step_stats'];
             @endphp
-            <div class="d-flex align-items-start w-100 mb-4">
-                {{-- Sequence Number (Can add if needed, skipping for now to match Registration look) --}}
-
-                <div class="card flex-grow-1 shadow-sm border-0 mb-3 w-100 position-relative">
+            <div class="d-flex align-items-start w-100 mb-4 order-card-container">
+                <div class="card flex-grow-1 shadow-sm border-0 mb-3 w-100 position-relative overflow-visible">
                     <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions --}}
