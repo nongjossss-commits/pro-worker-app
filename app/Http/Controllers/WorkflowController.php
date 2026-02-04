@@ -25,6 +25,8 @@ class WorkflowController extends Controller
      */
     public function index(Request $request)
     {
+        $employers = Employer::select('id', 'employerNameTh', 'employerNameEn')->orderBy('employerNameTh')->get();
+
         // 1. Get Tabs (Work Types)
         $tabs = WorkType::withCount(['orders' => function($q){
              $q->where('status', '!=', 'pre_production');
@@ -40,7 +42,7 @@ class WorkflowController extends Controller
         $activeTabSlug = $request->query('tab');
 
         if (!$activeTabSlug) {
-             return $this->dashboard($tabs);
+             return $this->dashboard($tabs, $employers);
         }
 
         $activeTab = $tabs->where('slug', $activeTabSlug)->first();
@@ -228,13 +230,13 @@ class WorkflowController extends Controller
             $stats['step_stats'] = $globalStepStats;
         }
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions'));
+        return view('workflow.index', compact('employers', 'orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions'));
     }
 
     /**
      * Dashboard Landing Page Logic
      */
-    private function dashboard($tabs)
+    private function dashboard($tabs, $employers)
     {
         // 1. Global Scoreboard Stats
         $itemsQuery = ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'));
@@ -281,7 +283,7 @@ class WorkflowController extends Controller
         // Sort by date soonest
         $upcomingAppointments = $upcomingAppointments->sortBy('appointment_date');
 
-        return view('workflow.dashboard', compact('tabs', 'stats', 'upcomingAppointments'));
+        return view('workflow.dashboard', compact('employers', 'tabs', 'stats', 'upcomingAppointments'));
     }
 
     /**
@@ -381,7 +383,7 @@ class WorkflowController extends Controller
         // We need to group them by order for better display, or just list them as cards.
         // Using a partial view for the list of cards.
 
-        $html = view('workflow.partials.day_appointments_list', compact('items'))->render();
+        $html = view('workflow.partials.day_appointments_list', compact('employers', 'items'))->render();
 
         return response()->json(['html' => $html]);
     }
