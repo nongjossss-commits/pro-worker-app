@@ -475,6 +475,20 @@
                 </div>
             @endif
 
+            @if (session('duplicate_error'))
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        Swal.fire({
+                            title: '{{ __("Duplicate Employee") }}',
+                            text: "{!! session('duplicate_error') !!}",
+                            icon: 'warning',
+                            confirmButtonText: '{{ __("OK") }}',
+                            confirmButtonColor: '#F97316'
+                        });
+                    });
+                </script>
+            @endif
+
             @if ($errors->any())
                 <div class="alert alert-danger">
                     <ul class="mb-0">
