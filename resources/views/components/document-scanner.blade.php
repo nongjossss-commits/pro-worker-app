@@ -673,108 +673,109 @@
             },
 
             detectDocument(src) {
-                const dst = new cv.Mat();
-                const gray = new cv.Mat();
-                const blurred = new cv.Mat();
+                const width = src.cols;
+                const height = src.rows;
+                let bestCorners = [];
+                let isFound = false;
 
-                // 1. Grayscale
-                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+                // Helper to check contour consistency
+                const checkContour = (cnt) => {
+                    const area = cv.contourArea(cnt);
+                    // Filter: Must be at least 5% of the image area
+                    if (area < (width * height * 0.05)) return null;
 
-                // 2. Gaussian Blur (Reduce noise)
-                cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                    let peri = cv.arcLength(cnt, true);
+                    let approx = new cv.Mat();
+                    // Approximation accuracy: 0.02 * perimeter
+                    cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-                // 3. Canny Edge Detection (Robust for documents)
-                cv.Canny(blurred, dst, 75, 200);
-
-                // 4. Dilate to connect gaps in edges
-                const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-                cv.morphologyEx(dst, dst, cv.MORPH_DILATE, kernel);
-
-                // Find Contours
-                let contours = new cv.MatVector();
-                let hierarchy = new cv.Mat();
-                cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-                let maxArea = 0;
-                let bestApprox = null;
-                let bestRect = null;
-                let width = src.cols;
-                let height = src.rows;
-                let found = false;
-                let minArea = width * height * 0.05; // 5% minimum area
-
-                for(let i = 0; i < contours.size(); ++i) {
-                    let cnt = contours.get(i);
-                    let area = cv.contourArea(cnt);
-
-                    if (area > minArea) {
-                        let peri = cv.arcLength(cnt, true);
-                        let approx = new cv.Mat();
-                        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-
-                        // Priority 1: Perfect 4-corner polygon
-                        if (approx.rows === 4 && cv.isContourConvex(approx)) {
-                            if (area > maxArea) {
-                                maxArea = area;
-                                if(bestApprox) bestApprox.delete();
-                                bestApprox = approx; // Keep as new best
-                                bestRect = null; // Clear fallback
-                                found = true;
-                            } else {
-                                approx.delete();
-                            }
+                    // Must be convex and have 4 corners (Quadrilateral)
+                    if (approx.rows === 4 && cv.isContourConvex(approx)) {
+                        const points = [];
+                        for(let i=0; i<4; i++) {
+                            points.push({
+                                x: approx.data32S[i*2],
+                                y: approx.data32S[i*2+1]
+                            });
                         }
-                        // Priority 2: Largest contour (fallback to RotatedRect)
-                        else {
-                            if (!found && area > maxArea) {
-                                maxArea = area;
-                                if(bestApprox) bestApprox.delete();
-                                bestApprox = null;
-                                bestRect = cv.minAreaRect(cnt);
-                                approx.delete();
-                            } else {
-                                approx.delete();
-                            }
+                        approx.delete();
+                        return { points, area };
+                    }
+                    approx.delete();
+                    return null;
+                };
+
+                // Processing Strategy
+                const runDetectionPass = (method) => {
+                    const gray = new cv.Mat();
+                    const blurred = new cv.Mat();
+                    const processed = new cv.Mat();
+
+                    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+                    cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+
+                    if (method === 'canny') {
+                        // Pass 1: Canny Edge Detection
+                        // Lower thresholds (30, 150) to catch fainter edges
+                        cv.Canny(blurred, processed, 30, 150);
+
+                        // Dilate to close small gaps in edges
+                        const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+                        cv.morphologyEx(processed, processed, cv.MORPH_DILATE, kernel);
+                        kernel.delete();
+                    }
+                    else if (method === 'threshold') {
+                        // Pass 2: Otsu's Thresholding
+                        // Effective for high contrast (e.g., White paper on Dark desk)
+                        cv.threshold(blurred, processed, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+                    }
+
+                    const contours = new cv.MatVector();
+                    const hierarchy = new cv.Mat();
+                    cv.findContours(processed, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+                    let maxArea = 0;
+                    let bestCandidate = null;
+
+                    for (let i = 0; i < contours.size(); ++i) {
+                        const res = checkContour(contours.get(i));
+                        if (res && res.area > maxArea) {
+                            maxArea = res.area;
+                            bestCandidate = res.points;
                         }
                     }
-                }
 
-                // Cleanup intermediate mats
-                kernel.delete(); gray.delete(); blurred.delete(); dst.delete();
-                contours.delete(); hierarchy.delete();
+                    gray.delete(); blurred.delete(); processed.delete();
+                    contours.delete(); hierarchy.delete();
 
-                let corners = [];
+                    return bestCandidate;
+                };
 
-                if (found && bestApprox) {
-                    // Extract points from the perfect polygon
-                    const points = [];
-                    for(let i=0; i<4; i++) {
-                        points.push({
-                            x: bestApprox.data32S[i*2],
-                            y: bestApprox.data32S[i*2+1]
-                        });
+                // Execution
+                try {
+                    // Try Canny First (Standard)
+                    let result = runDetectionPass('canny');
+
+                    // If failed, try Threshold (High Contrast)
+                    if (!result) {
+                        result = runDetectionPass('threshold');
                     }
-                    corners = this.sortPoints(points);
-                    bestApprox.delete();
-                }
-                else if (bestRect) {
-                    // Fallback: Use RotatedRect points
-                    // cv.RotatedRect.points returns 4 points
-                    const vertices = cv.RotatedRect.points(bestRect);
-                    const points = [];
-                    for(let i=0; i<4; i++) {
-                         points.push({x: vertices[i].x, y: vertices[i].y});
+
+                    if (result) {
+                        bestCorners = this.sortPoints(result);
+                        isFound = true;
+                    } else {
+                        // Fallback: Full Image
+                        bestCorners = this.getDefaultCorners(width, height);
+                        isFound = false;
                     }
-                    corners = this.sortPoints(points);
-                    found = true; // Treated as found
-                }
-                else {
-                    // Fallback to Full Image
-                    corners = this.getDefaultCorners(width, height);
-                    found = false;
+                } catch(e) {
+                    console.error("Detection Error:", e);
+                    bestCorners = this.getDefaultCorners(width, height);
+                    isFound = false;
                 }
 
-                return { corners, found };
+                return { corners: bestCorners, found: isFound };
             },
 
             performWarp(src, corners, width, height) {
@@ -1347,22 +1348,42 @@
                     // The user is expected to delete source images if they only want the layout.
 
                     if(this.capturedImages.length === 1) {
+                        // Check if we should generate PDF for single image to enforce A4 placement
+                        // For now, we continue to return JPG for single images unless they are specifically from a layout.
+                        // However, to ensure "Fit to A4" behavior is consistent, we might want to consider PDF.
+                        // But sticking to JPG for single image is standard for file inputs.
                         const file = await this.urlToFile(this.capturedImages[0].cropped, 'scanned_doc.jpg', 'image/jpeg');
                         dt.items.add(file);
 
                     } else if (this.capturedImages.length > 1) {
                         const { jsPDF } = window.jspdf;
-                        const doc = new jsPDF();
+                        const doc = new jsPDF(); // A4 Portrait by default
+
+                        const pageWidth = doc.internal.pageSize.getWidth();
+                        const pageHeight = doc.internal.pageSize.getHeight();
 
                         for (let i = 0; i < this.capturedImages.length; i++) {
                             const imgData = this.capturedImages[i].cropped;
                             if (i > 0) doc.addPage();
 
                             const props = doc.getImageProperties(imgData);
-                            const pdfWidth = doc.internal.pageSize.getWidth();
-                            const pdfHeight = (props.height * pdfWidth) / props.width;
 
-                            doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                            // "Fit to Page" Logic (Aspect Fit)
+                            // Calculate scale factors for both dimensions
+                            const scaleW = pageWidth / props.width;
+                            const scaleH = pageHeight / props.height;
+
+                            // Use the smaller scale to ensure the image fits entirely within the page
+                            const scale = Math.min(scaleW, scaleH);
+
+                            const finalW = props.width * scale;
+                            const finalH = props.height * scale;
+
+                            // Center the image on the page
+                            const x = (pageWidth - finalW) / 2;
+                            const y = (pageHeight - finalH) / 2;
+
+                            doc.addImage(imgData, 'JPEG', x, y, finalW, finalH);
                         }
 
                         const pdfBlob = doc.output('blob');
