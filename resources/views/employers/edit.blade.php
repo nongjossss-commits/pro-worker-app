@@ -381,7 +381,8 @@
             @forelse ($employer->addresses->where('type', 'registered') as $address)
                 <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
                     <div>
-                        <p class="mb-0">{{ $address->full_address }}</p>
+                        <p class="mb-0"><strong>TH:</strong> {{ $address->full_address_th }}</p>
+                        <p class="mb-0"><strong>EN:</strong> {{ $address->full_address_en }}</p>
                     </div>
                     <div class="btn-group btn-group-sm">
                         <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>
@@ -409,7 +410,8 @@
             @forelse ($employer->addresses->where('type', 'workplace') as $address)
                 <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
                     <div>
-                        <p class="mb-0">{{ $address->full_address }}</p>
+                        <p class="mb-0"><strong>TH:</strong> {{ $address->full_address_th }}</p>
+                        <p class="mb-0"><strong>EN:</strong> {{ $address->full_address_en }}</p>
                     </div>
                     <div class="btn-group btn-group-sm">
                         <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>

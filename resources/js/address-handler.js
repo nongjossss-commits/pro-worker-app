@@ -6,9 +6,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const provinceSelect = document.getElementById('addrProvinceTh');
-    const districtSelect = document.getElementById('addrDistrictTh');
-    const subDistrictSelect = document.getElementById('addrSubDistrictTh');
+    const provinceSelect = document.getElementById('addrProvince');
+    const districtSelect = document.getElementById('addrDistrict');
+    const subDistrictSelect = document.getElementById('addrSubDistrict');
     const provinceEnInput = document.getElementById('addrProvinceEn');
     const districtEnInput = document.getElementById('addrDistrictEn');
     const subDistrictEnInput = document.getElementById('addrSubDistrictEn');

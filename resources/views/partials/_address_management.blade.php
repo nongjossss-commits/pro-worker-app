@@ -72,11 +72,11 @@
                     {{-- Row 5: Province --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrProvinceTh" class="form-label">จังหวัด (Thai)</label>
-                            <select class="form-select" name="addrProvinceTh" id="addrProvinceTh">
+                            <label for="addrProvince" class="form-label">จังหวัด (Thai)</label>
+                            <select class="form-select" name="addrProvince" id="addrProvince">
                                 <option selected disabled value="">-- เลือกจังหวัด --</option>
                             </select>
-                            <div class="invalid-feedback" id="addrProvinceThError"></div>
+                            <div class="invalid-feedback" id="addrProvinceError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrProvinceEn" class="form-label">Province (EN)</label>
@@ -86,11 +86,11 @@
                     {{-- Row 6: District --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrDistrictTh" class="form-label">อำเภอ/เขต (Thai)</label>
-                            <select class="form-select" name="addrDistrictTh" id="addrDistrictTh" disabled>
+                            <label for="addrDistrict" class="form-label">อำเภอ/เขต (Thai)</label>
+                            <select class="form-select" name="addrDistrict" id="addrDistrict" disabled>
                                 <option selected disabled value="">-- เลือกอำเภอ/เขต --</option>
                             </select>
-                             <div class="invalid-feedback" id="addrDistrictThError"></div>
+                             <div class="invalid-feedback" id="addrDistrictError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrDistrictEn" class="form-label">District (EN)</label>
@@ -100,11 +100,11 @@
                     {{-- Row 7: SubDistrict --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrSubDistrictTh" class="form-label">ตำบล/แขวง (Thai)</label>
-                            <select class="form-select" name="addrSubDistrictTh" id="addrSubDistrictTh" disabled>
+                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง (Thai)</label>
+                            <select class="form-select" name="addrSubDistrict" id="addrSubDistrict" disabled>
                                 <option selected disabled value="">-- เลือกตำบล/แขวง --</option>
                             </select>
-                             <div class="invalid-feedback" id="addrSubDistrictThError"></div>
+                             <div class="invalid-feedback" id="addrSubDistrictError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrSubDistrictEn" class="form-label">Sub-district (EN)</label>
