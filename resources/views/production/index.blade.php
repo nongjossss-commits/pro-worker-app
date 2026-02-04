@@ -114,7 +114,7 @@
     {{-- Search & Address Filter Bar --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4 bg-white p-3 rounded shadow-sm border">
         {{-- Search Bar --}}
-        <form action="{{ url()->current() }}" method="GET" class="d-flex gap-2 flex-grow-1 w-100" style="max-width: 500px;">
+        <form action="{{ url()->current() }}" method="GET" class="d-flex gap-2 flex-grow-1 w-100 justify-content-center" style="max-width: 500px;">
             @foreach(request()->except('search', 'page') as $key => $value)
                 <input type="hidden" name="{{ $key }}" value="{{ $value }}">
             @endforeach
@@ -152,6 +152,11 @@
                     <i class="bi bi-gear-fill me-1"></i> {{ __('Preparation Steps') }}
                 </button>
             @endif
+            {{-- Global Import Button --}}
+            <button class="btn btn-outline-success fw-bold shadow-sm text-nowrap"
+                    onclick="openImportModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import') }}
+            </button>
             {{-- Global Add Employee Button (Pre-Production) --}}
             <button class="btn btn-warning fw-bold shadow-sm text-nowrap"
                     onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
@@ -193,7 +198,7 @@
                 <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
                     {{-- Row 1: Flex Container for Top Section --}}
-                    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
 
                         {{-- Left: Identity --}}
                         <div class="d-flex align-items-center gap-3 overflow-hidden flex-grow-1" style="min-width: 0;">
@@ -228,14 +233,14 @@
                         {{-- Right: Stats & Actions --}}
                         <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
                              {{-- Stats --}}
-                             <div class="d-flex align-items-center gap-2 me-xl-3">
+                             <div class="d-flex align-items-center gap-2 me-lg-3">
                                 <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
                                     <span class="fw-bold">{{ $computed['total'] }}</span>
                                     <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
                                 </span>
                              </div>
 
-                             <div class="vr d-none d-xl-block me-2"></div>
+                             <div class="vr d-none d-lg-block me-2"></div>
 
                              {{-- Actions (Inside Card) --}}
                              <div class="d-flex align-items-center gap-2">
@@ -425,11 +430,22 @@
                 const container = document.getElementById(`order-content-${orderId}`);
                 // Reusing Workflow item fetcher, passing order ID.
                 // Since structure is identical, this returns _item_card.blade.php loops.
-                fetch(`{{ route('workflow.index') }}/${orderId}/items`)
-                .then(res => res.text())
+                fetch(`{{ url('workflow') }}/${orderId}/items`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    return res.text();
+                })
                 .then(html => {
                     container.innerHTML = html;
                     loadedOrders[orderId] = true;
+                    // Re-init Alpine for the new content if needed
+                    if (window.Alpine) {
+                        Alpine.initTree(container);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading items:', err);
+                    container.innerHTML = '<div class="text-danger text-center py-3">Failed to load items. <br><small class="text-muted">' + err.message + '</small></div>';
                 });
             }
         }
