@@ -4,6 +4,25 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    {{-- Search & Global Actions --}}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4 bg-white p-3 rounded shadow-sm border">
+        {{-- Search Bar --}}
+        <form action="{{ route('workflow.index') }}" method="GET" class="d-flex gap-2 flex-grow-1 w-100" style="max-width: 500px;">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="{{ __('Search project, employer, employee...') }}">
+                <button type="submit" class="btn btn-primary">{{ __('Search') }}</button>
+            </div>
+        </form>
+
+        <div class="d-flex gap-2">
+            <button class="btn btn-success fw-bold shadow-sm text-nowrap"
+                    onclick="openAddEmployeeModal(null, null, null, '')">
+                <i class="bi bi-person-plus-fill me-1"></i> {{ __('Add Employee') }}
+            </button>
+        </div>
+    </div>
+
     {{-- Scoreboard (Global Stats) --}}
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         {{-- Total Employees --}}
@@ -218,11 +237,10 @@
         @endforeach
 
         <div class="col">
-             <div class="card h-100 border-dashed bg-light text-center">
+             <div class="card h-100 border-dashed bg-light text-center hover-shadow transition-all cursor-pointer" onclick="openAddEmployeeModal(null, null, null, '')">
                 <div class="card-body d-flex flex-column align-items-center justify-content-center text-muted">
-                    <i class="bi bi-plus-circle fs-3 mb-2"></i>
-                    <span>{{ __('Create New Job') }}</span>
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#createJobModal" class="stretched-link"></a>
+                    <i class="bi bi-person-plus-fill fs-3 mb-2 text-success"></i>
+                    <span class="fw-bold">{{ __('Add Employee') }}</span>
                 </div>
             </div>
         </div>
@@ -238,6 +256,9 @@
 
 {{-- Create Job Modal --}}
 @include('workflow.partials.create_modal')
+
+{{-- Add Employee Modal --}}
+@include('workflow.partials.add_employee_modal')
 
 {{-- Edit Employee Modal (Full Form) --}}
 <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">

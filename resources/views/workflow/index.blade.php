@@ -115,11 +115,31 @@
         </div>
     </div>
 
-    <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+    {{-- Search & Address Filter Bar --}}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4 bg-white p-3 rounded shadow-sm border">
+        {{-- Search Bar --}}
+        <form action="{{ url()->current() }}" method="GET" class="d-flex gap-2 flex-grow-1 w-100" style="max-width: 500px;">
+            @foreach(request()->except('search', 'page') as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="{{ __('Search project, employer, employee...') }}" value="{{ request('search') }}">
+                <button type="submit" class="btn btn-primary">{{ __('Search') }}</button>
+            </div>
+        </form>
 
-    {{-- Tabs Navigation --}}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2" style="scrollbar-width: thin;">
+        {{-- Address Filter Component (Collapsed/Modal Trigger or Inline if space) --}}
+        {{-- We'll keep the x-address-filter logic but maybe style it differently if needed.
+             For now, keeping the original component hook but ensuring it flows well. --}}
+        <div class="flex-grow-1 w-100">
+             <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
+        </div>
+    </div>
+
+    {{-- Tabs Navigation & Global Actions --}}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+        <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2 flex-grow-1" style="scrollbar-width: thin;">
             <li class="nav-item">
                 <a class="nav-link bg-white border text-secondary"
                    href="{{ route('workflow.index') }}"
@@ -136,16 +156,13 @@
                     </a>
                 </li>
             @endforeach
-            <li class="nav-item">
-                <button class="btn btn-outline-secondary border-dashed" title="Add Work Type" onclick="alert('Feature coming soon: Add Custom Tab')">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-            </li>
         </ul>
 
         <div class="d-flex gap-2">
-            <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
-                <i class="bi bi-plus-lg me-1"></i> {{ __('Add Job / Employee') }}
+            {{-- Global Add Employee Button --}}
+            <button class="btn btn-success fw-bold shadow-sm text-nowrap"
+                    onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
+                <i class="bi bi-person-plus-fill me-1"></i> {{ __('Add Employee') }}
             </button>
         </div>
     </div>
@@ -158,14 +175,16 @@
                  $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'cancelled'=>0, 'completed'=>0, 'step_stats'=>[]];
                  $stepStats = $computed['step_stats'];
             @endphp
-            <div class="card border-0 shadow-sm mb-3">
+            <div class="card border-0 shadow-sm mb-3 overflow-hidden">
+                {{-- Card Header: Contains Identity, Stats, Actions, Steps --}}
                 <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
-                    {{-- Top Row: Identity + Stats + Actions --}}
+                    {{-- Row 1: Flex Container for Top Section --}}
                     <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
-                        {{-- Identity --}}
-                        <div class="d-flex align-items-center gap-3 overflow-hidden" style="min-width: 0;">
-                            <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-3 border-0 bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
+
+                        {{-- Left: Identity --}}
+                        <div class="d-flex align-items-center gap-3 overflow-hidden flex-grow-1" style="min-width: 0;">
+                            <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-3 border-0 bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}" aria-expanded="false" aria-controls="collapse-{{ $order->id }}">
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 40px; height: 40px;">
                                     @if($order->type === 'independent')
                                         <i class="bi bi-person-workspace fs-5"></i>
@@ -197,8 +216,8 @@
                             </button>
                         </div>
 
-                        {{-- Stats & Actions --}}
-                        <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap flex-grow-1">
+                        {{-- Right: Stats & Actions --}}
+                        <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
                              {{-- Stats Badges --}}
                              <div class="d-flex align-items-center gap-2 me-xl-3">
                                 {{-- Total --}}
@@ -225,7 +244,7 @@
 
                              <div class="vr d-none d-xl-block me-2"></div>
 
-                             {{-- Actions --}}
+                             {{-- Actions (Inside Card) --}}
                              <div class="d-flex align-items-center gap-2">
                                  <button class="btn btn-outline-warning btn-sm fw-bold text-nowrap" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
@@ -242,7 +261,7 @@
                         </div>
                     </div>
 
-                    {{-- Bottom Row: Workflow Steps (Horizontal Scroll) --}}
+                    {{-- Row 2: Workflow Steps (Horizontal Scroll) --}}
                     <div class="w-100 overflow-auto custom-scrollbar pb-1" style="scrollbar-width: thin;">
                          <div class="d-flex flex-nowrap align-items-center gap-2">
                              @foreach($steps as $step)
@@ -262,6 +281,7 @@
 
                 </div>
 
+                {{-- Accordion Collapse (Drawer) --}}
                 <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#workflowAccordion">
                     <div class="card-body bg-light p-4">
                         <div id="order-content-{{ $order->id }}" class="order-content-wrapper">
@@ -276,9 +296,7 @@
             <div class="text-center py-5">
                 <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="120" class="mb-3 opacity-50" alt="No Data">
                 <h4 class="text-muted">{{ __('No jobs found in this tab.') }}</h4>
-                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createJobModal">
-                    {{ __('Create New Job') }}
-                </button>
+                <p class="text-muted">{{ __('Try adding a new employee globally.') }}</p>
             </div>
         @endforelse
     </div>

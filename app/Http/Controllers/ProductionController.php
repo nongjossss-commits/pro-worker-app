@@ -22,6 +22,8 @@ class ProductionController extends Controller
      */
     public function index(Request $request)
     {
+        $employers = Employer::select('id', 'employerNameTh', 'employerNameEn')->orderBy('employerNameTh')->get();
+
         // 1. Get Tabs (Work Types) - Same as Workflow
         // We might want to show all tabs, or filter. For now, show all.
         $tabs = WorkType::withCount(['orders' => function($q){
@@ -224,7 +226,7 @@ class ProductionController extends Controller
             $stats['step_stats'] = $globalStepStats;
         }
 
-        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'stats', 'addressOptions'));
+        return view('production.index', compact('employers', 'orders', 'tabs', 'activeTab', 'steps', 'stats', 'addressOptions'));
     }
 
     /**
@@ -322,7 +324,7 @@ class ProductionController extends Controller
 
         // Return existing create view but passing worktypes
         $workTypes = WorkType::orderBy('order')->get();
-        return view('production.create', compact('workTypes')); // We'll need to update view too
+        return view('production.create', compact('employers', 'workTypes')); // We'll need to update view too
     }
 
     public function store(Request $request)
