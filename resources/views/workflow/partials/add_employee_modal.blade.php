@@ -6,6 +6,7 @@
             <input type="hidden" name="employer_id" id="modal_employer_id">
             <input type="hidden" name="work_type_id" id="modal_work_type_id">
             <input type="hidden" name="production_order_id" id="modal_production_order_id"> {{-- For adding to existing --}}
+            <input type="hidden" name="is_pre_production" id="add_employee_is_pre_production" value="0">
 
             <div class="modal-header">
                 <h5 class="modal-title">{{ __('Add Employees') }}</h5>

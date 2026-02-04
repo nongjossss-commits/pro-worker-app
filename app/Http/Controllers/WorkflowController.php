@@ -623,6 +623,40 @@ class WorkflowController extends Controller
      */
     public function store(Request $request)
     {
+        $isPreProduction = $request->boolean('is_pre_production');
+        $targetStatus = $isPreProduction ? 'pre_production' : 'active';
+
+        // 1. Validation: Check for duplicates (Existing Employees)
+        // Ensure an employee cannot be in the same WorkType workflow (Active or Pre-Production) twice.
+        if ($request->has('employee_ids') && is_array($request->employee_ids)) {
+            $workTypeId = null;
+
+            if ($request->filled('production_order_id')) {
+                $existingOrder = ProductionOrder::findOrFail($request->production_order_id);
+                $workTypeId = $existingOrder->work_type_id;
+            } elseif ($request->filled('work_type_id')) {
+                $workTypeId = $request->work_type_id;
+            }
+
+            if ($workTypeId) {
+                // Find any items for these employees in this WorkType that are NOT cancelled or completed.
+                $duplicates = ProductionItem::whereIn('employee_id', $request->employee_ids)
+                    ->whereHas('order', function($q) use ($workTypeId) {
+                        $q->where('work_type_id', $workTypeId)
+                          ->where('status', '!=', 'cancelled'); // Ensure order is not cancelled
+                    })
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->with('employee')
+                    ->get();
+
+                if ($duplicates->isNotEmpty()) {
+                    $names = $duplicates->map(fn($item) => $item->employee->employeeNameEn ?? $item->employee->employeeNameTh)->unique()->implode(', ');
+
+                    return back()->with('duplicate_error', "Employees already in this workflow: $names. Please complete their current process first.");
+                }
+            }
+        }
+
         $order = null;
 
         if ($request->filled('production_order_id')) {
@@ -635,16 +669,17 @@ class WorkflowController extends Controller
 
             $workType = WorkType::findOrFail($request->work_type_id);
 
+            // Bucket Logic (Merge into existing if applicable)
             if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
                 $order = ProductionOrder::firstOrCreate(
                     [
                         'employer_id' => $request->employer_id,
                         'work_type_id' => $workType->id,
-                        'status' => 'active'
+                        'status' => $targetStatus // Separate buckets for Active vs Pre-Production
                     ],
                     [
                         'type' => 'employer',
-                        'project_name' => $workType->name . ' - ' . Employer::find($request->employer_id)->employerNameTh,
+                        'project_name' => $workType->name . ' - ' . Employer::find($request->employer_id)->employerNameTh . ($isPreProduction ? ' (Prep)' : ''),
                         'created_by' => auth()->id()
                     ]
                 );
@@ -654,7 +689,7 @@ class WorkflowController extends Controller
                     'work_type_id' => $workType->id,
                     'type' => 'employer',
                     'project_name' => $request->project_name ?? ($workType->name . ' - ' . now()->format('d/m/Y')),
-                    'status' => 'active',
+                    'status' => $targetStatus,
                     'created_by' => auth()->id()
                 ]);
             }
@@ -712,6 +747,12 @@ class WorkflowController extends Controller
         }
 
         $slug = $order->workType->slug ?? ($request->work_type_id ? WorkType::find($request->work_type_id)->slug : 'notify_in');
+
+        // Redirect based on status/context
+        if ($isPreProduction || $order->status === 'pre_production') {
+             return redirect()->route('production.index', ['tab' => $slug])
+                         ->with('success', 'Preparation Job updated successfully.');
+        }
 
         return redirect()->route('workflow.index', ['tab' => $slug])
                          ->with('success', 'Job updated successfully.');
