@@ -129,7 +129,10 @@ class ProductionController extends Controller
             ];
         }
 
-        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'addressOptions'));
+        // Employers for Dropdown (Global Add Employee)
+        $employers = Employer::orderBy('employerNameTh')->get();
+
+        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'addressOptions', 'employers'));
     }
 
     /**

@@ -140,6 +140,9 @@
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
                         <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
+                        @if(request('search'))
+                            <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null]) }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
+                        @endif
                     </div>
                 </form>
 
