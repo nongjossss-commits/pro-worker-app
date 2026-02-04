@@ -5,6 +5,7 @@
     $status = $item->status ?? 'pending';
     $isCompleted = $status === 'completed';
     $isCancelled = $status === 'cancelled';
+    $isPreProduction = $order->status === 'pre_production';
 
     // Daily Check Logic
     $isCheckedToday = $item->is_checked_today;
@@ -20,8 +21,8 @@
     } elseif ($isCancelled) {
         $cardClass = 'bg-light border-0 text-secondary grayscale-mode';
         $overlayClass = 'opacity-50 pointer-events-none';
-    } elseif (!$isCheckedToday) {
-        // Highlight Pending Check (Orange Border/Glow)
+    } elseif (!$isCheckedToday && !$isPreProduction) {
+        // Highlight Pending Check (Orange Border/Glow) ONLY in Workflow
         $cardClass = 'bg-white border border-warning border-3 shadow';
     }
 
@@ -32,6 +33,17 @@
     $empPassport = $item->employee->employeePassport ?? $item->new_employee_data['passport_no'] ?? '-';
     $empNationality = $item->employee->employeeNationality ?? $item->new_employee_data['nationality'] ?? '-';
     $empId = $item->employee_id;
+
+    // MOU Group Color
+    $mouGroup = $item->employee->workPermitMOUGroup ?? 'N/A';
+    $mouBadgeClass = 'bg-secondary';
+    if (str_contains($mouGroup, 'MOU')) {
+        $mouBadgeClass = 'bg-primary'; // Blue
+    } elseif (str_contains($mouGroup, 'มติขึ้นทะเบียน') || str_contains($mouGroup, 'มติ ลงทะเบียนในประเทศ')) {
+        $mouBadgeClass = 'bg-danger'; // Red
+    } elseif (str_contains($mouGroup, 'มติต่ออายุในประเทศ')) {
+        $mouBadgeClass = 'bg-success'; // Green
+    }
 
     // Appointment Date Logic
     $appDate = $item->appointment_date;
@@ -87,8 +99,12 @@
 
                     {{-- Info --}}
                     <div>
-                        <div class="fw-bold text-dark">
-                            {{ $empNameEn }}
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                             <div class="fw-bold text-dark">{{ $empNameEn }}</div>
+                             {{-- Resolution Badge --}}
+                             @if($mouGroup !== 'N/A')
+                                <span class="badge rounded-pill {{ $mouBadgeClass }} small" style="font-size: 0.65rem;">{{ $mouGroup }}</span>
+                             @endif
                         </div>
                         <div class="text-muted small">
                             {{ $empNameTh }}
@@ -234,14 +250,23 @@
             {{-- Actions --}}
             <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center">
 
-                {{-- Daily Check Button --}}
-                @if(!$isCheckedToday && !$isCompleted && !$isCancelled)
-                    <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="checkDaily({{ $item->id }})" title="Daily Check">
-                        <i class="bi bi-clipboard-check-fill"></i> {{ __('Check') }}
-                        @if($daysMissed > 0)
-                            <span class="badge bg-danger ms-1 border border-white">{{ $daysMissed }}d</span>
-                        @endif
+                @if($isPreProduction)
+                    {{-- Send to Workflow Button (Only in Pre-Production) --}}
+                    <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3"
+                            onclick="sendToWorkflow({{ $item->id }})"
+                            title="{{ __('Send to Workflow') }}">
+                        <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
                     </button>
+                @else
+                    {{-- Daily Check Button (Only in Workflow) --}}
+                    @if(!$isCheckedToday && !$isCompleted && !$isCancelled)
+                        <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="checkDaily({{ $item->id }})" title="Daily Check">
+                            <i class="bi bi-clipboard-check-fill"></i> {{ __('Check') }}
+                            @if($daysMissed > 0)
+                                <span class="badge bg-danger ms-1 border border-white">{{ $daysMissed }}d</span>
+                            @endif
+                        </button>
+                    @endif
                 @endif
 
                  @if($empId)
