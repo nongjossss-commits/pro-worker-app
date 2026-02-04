@@ -284,15 +284,25 @@
                     @endif
                 @endif
 
-                 @if($empId)
                  {{-- Edit Button --}}
-                 <a href="{{ route('employees.edit', $empId) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Edit Employee">
-                    <i class="bi bi-pencil-square"></i>
-                 </a>
+                 @if($empId)
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                        onclick="openEditEmployeeModal({{ $empId }})"
+                        title="Edit Employee">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                 @else
+                    {{-- Temp Employee (Edit not fully linked yet, but button visible as requested) --}}
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                        onclick="Swal.fire('{{ __('Notice') }}', '{{ __('Please register this employee first to edit full details.') }}', 'info')"
+                        title="Edit Employee">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                 @endif
 
                  <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
                     data-model-type="employee"
-                    data-model-id="{{ $empId }}"
+                    data-model-id="{{ $empId ?? 0 }}"
                     title="Preview">
                     <i class="bi bi-eye-fill"></i>
                 </button>
@@ -305,7 +315,6 @@
                     title="{{ __('Manage Team') }}">
                     <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
                 </button>
-                @endif
 
                 {{-- SAVE TO DB (Finalize) --}}
                 <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
