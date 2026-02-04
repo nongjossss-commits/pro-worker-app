@@ -184,11 +184,11 @@
                 {{-- Card Header: Contains Identity, Stats, Actions, Steps --}}
                 <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
-                    {{-- Row 1: Flex Container for Top Section --}}
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+                    {{-- Row 1: Grid Layout for Top Section --}}
+                    <div class="row align-items-xl-center g-3 mb-3">
 
                         {{-- Left: Identity --}}
-                        <div class="d-flex align-items-center gap-3 overflow-hidden flex-grow-1" style="min-width: 0;">
+                        <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-3 border-0 bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}" aria-expanded="false" aria-controls="collapse-{{ $order->id }}">
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 40px; height: 40px;">
                                     @if($order->type === 'independent')
@@ -198,7 +198,7 @@
                                     @endif
                                 </div>
                                 <div style="min-width: 0;">
-                                    <h5 class="fw-bold mb-0 text-primary text-truncate">
+                                    <h5 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 350px;">
                                         {{ $order->project_name }}
                                         @if(request('addrProvince') && $order->employer)
                                             @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
@@ -222,46 +222,48 @@
                         </div>
 
                         {{-- Right: Stats & Actions --}}
-                        <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
-                             {{-- Stats Badges --}}
-                             <div class="d-flex align-items-center gap-2 me-lg-3">
-                                {{-- Total --}}
-                                <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                    <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
-                                    <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
-                                </span>
-                                {{-- Not Started --}}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;">
-                                     <span class="fw-bold" id="order-{{ $order->id }}-pending">{{ $computed['not_started'] }}</span>
-                                     <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">PENDING</span>
-                                </span>
-                                {{-- Completed --}}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                     <span class="fw-bold" id="order-{{ $order->id }}-completed">{{ $computed['completed'] }}</span>
-                                     <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">DONE</span>
-                                </span>
-                                {{-- Cancelled --}}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                    <span class="fw-bold" id="order-{{ $order->id }}-cancelled">{{ $computed['cancelled'] }}</span>
-                                    <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">CANCEL</span>
-                                </span>
-                             </div>
+                        <div class="col-12 col-xl text-xl-end">
+                             <div class="d-flex align-items-center justify-content-xl-end gap-2 flex-wrap">
+                                 {{-- Stats Badges --}}
+                                 <div class="d-flex align-items-center gap-2 me-xl-3">
+                                    {{-- Total --}}
+                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                        <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
+                                        <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
+                                    </span>
+                                    {{-- Not Started --}}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;">
+                                         <span class="fw-bold" id="order-{{ $order->id }}-pending">{{ $computed['not_started'] }}</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">PENDING</span>
+                                    </span>
+                                    {{-- Completed --}}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                         <span class="fw-bold" id="order-{{ $order->id }}-completed">{{ $computed['completed'] }}</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">DONE</span>
+                                    </span>
+                                    {{-- Cancelled --}}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                        <span class="fw-bold" id="order-{{ $order->id }}-cancelled">{{ $computed['cancelled'] }}</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">CANCEL</span>
+                                    </span>
+                                 </div>
 
-                             <div class="vr d-none d-lg-block me-2"></div>
+                                 <div class="vr d-none d-xl-block me-2"></div>
 
-                             {{-- Actions (Inside Card) --}}
-                             <div class="d-flex align-items-center gap-2">
-                                 <button class="btn btn-outline-warning btn-sm fw-bold text-nowrap" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
-                                    <i class="bi bi-plus-lg"></i> {{ __('Add') }}
-                                 </button>
+                                 {{-- Actions (Inside Card) --}}
+                                 <div class="d-flex align-items-center gap-2">
+                                     <button class="btn btn-outline-warning btn-sm fw-bold text-nowrap" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
+                                        <i class="bi bi-plus-lg"></i> {{ __('Add') }}
+                                     </button>
 
-                                 <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold text-nowrap">
-                                    <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
-                                 </a>
+                                     <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold text-nowrap">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
+                                     </a>
 
-                                <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
-                                    <i class="bi bi-chevron-down"></i>
-                                </button>
+                                    <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                 </div>
                              </div>
                         </div>
                     </div>
@@ -557,31 +559,42 @@
     // --- Lazy Load Accordion ---
     const loadedOrders = {};
 
+    window.loadOrderItems = function(orderId) {
+        if (loadedOrders[orderId]) return;
+
+        const container = document.getElementById(`order-content-${orderId}`);
+        if (!container) return;
+
+        container.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+
+        fetch(`{{ url('workflow') }}/${orderId}/items`)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.text();
+        })
+        .then(html => {
+            container.innerHTML = html;
+            loadedOrders[orderId] = true;
+            // Re-init Alpine for the new content
+            if (window.Alpine) {
+                Alpine.initTree(container);
+            }
+        })
+        .catch(err => {
+            console.error('Error loading items:', err);
+            container.innerHTML = `<div class="text-danger text-center py-3">
+                <i class="bi bi-exclamation-triangle fs-4 d-block mb-2"></i>
+                Failed to load items.<br>
+                <small class="text-muted">${err.message}</small><br>
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadOrderItems(${orderId})">Retry</button>
+            </div>`;
+        });
+    }
+
     document.getElementById('workflowAccordion').addEventListener('show.bs.collapse', function (e) {
         if (e.target.classList.contains('accordion-collapse')) {
             const orderId = e.target.id.replace('collapse-', '');
-
-            if (!loadedOrders[orderId]) {
-                const container = document.getElementById(`order-content-${orderId}`);
-
-                fetch(`{{ url('workflow') }}/${orderId}/items`)
-                .then(res => {
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    return res.text();
-                })
-                .then(html => {
-                    container.innerHTML = html;
-                    loadedOrders[orderId] = true;
-                    // Re-init Alpine for the new content
-                    if (window.Alpine) {
-                        Alpine.initTree(container);
-                    }
-                })
-                .catch(err => {
-                    console.error('Error loading items:', err);
-                    container.innerHTML = '<div class="text-danger text-center py-3">Failed to load items. <br><small class="text-muted">' + err.message + '</small></div>';
-                });
-            }
+            loadOrderItems(orderId);
         }
     });
 
