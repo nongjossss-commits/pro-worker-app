@@ -49,7 +49,7 @@ class PreProductionWorkflowTest extends TestCase
     {
         $response = $this->actingAs($this->user)->get(route('production.index'));
         $response->assertStatus(200);
-        $response->assertSee('Pre-Production / Preparation');
+        $response->assertSee('Pre-Production');
         $response->assertSee('Notify In'); // Tab name
     }
 
