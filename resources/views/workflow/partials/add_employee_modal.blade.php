@@ -98,7 +98,7 @@
 </div>
 
 <script>
-    window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug) {
+    window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug, initialTab = null) {
         // Set hidden inputs
         document.getElementById('modal_employer_id').value = employerId || '';
         document.getElementById('modal_work_type_id').value = workTypeId || '';
@@ -179,8 +179,11 @@
         const modal = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
 
         // Logic for Tabs/Modes
-        // If Global Add -> Prefer New/Manual Tab because selecting existing without employer context is weird
-        if (!orderId) {
+        if (initialTab === 'import') {
+             const tabImport = new bootstrap.Tab(document.querySelector('#import-tab'));
+             tabImport.show();
+        } else if (initialTab === 'new' || !orderId) {
+             // If Global Add -> Prefer New/Manual Tab
              const tabNew = new bootstrap.Tab(document.querySelector('#new-tab'));
              tabNew.show();
         } else {
@@ -195,6 +198,10 @@
         }
 
         modal.show();
+    }
+
+    window.openImportModal = function(orderId, employerId, workTypeId, workTypeSlug) {
+        openAddEmployeeModal(orderId, employerId, workTypeId, workTypeSlug, 'import');
     }
 
     // Search Resigned Logic

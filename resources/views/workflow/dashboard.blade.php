@@ -7,7 +7,7 @@
     {{-- Search & Global Actions --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4 bg-white p-3 rounded shadow-sm border">
         {{-- Search Bar --}}
-        <form action="{{ route('workflow.index') }}" method="GET" class="d-flex gap-2 flex-grow-1 w-100" style="max-width: 500px;">
+        <form action="{{ route('workflow.index') }}" method="GET" class="d-flex gap-2 flex-grow-1 w-100 justify-content-center" style="max-width: 500px;">
             <div class="input-group">
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="{{ __('Search project, employer, employee...') }}">
@@ -16,6 +16,10 @@
         </form>
 
         <div class="d-flex gap-2">
+            <button class="btn btn-outline-success fw-bold shadow-sm text-nowrap"
+                    onclick="openImportModal(null, null, null, '')">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import') }}
+            </button>
             <button class="btn btn-success fw-bold shadow-sm text-nowrap"
                     onclick="openAddEmployeeModal(null, null, null, '')">
                 <i class="bi bi-person-plus-fill me-1"></i> {{ __('Add Employee') }}
