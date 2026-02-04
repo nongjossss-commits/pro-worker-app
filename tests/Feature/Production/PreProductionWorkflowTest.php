@@ -49,7 +49,7 @@ class PreProductionWorkflowTest extends TestCase
     {
         $response = $this->actingAs($this->user)->get(route('production.index'));
         $response->assertStatus(200);
-        $response->assertSee('Pre-Production / Preparation');
+        $response->assertSee('Pre-Production Dashboard');
         $response->assertSee('Notify In'); // Tab name
     }
 
@@ -63,6 +63,13 @@ class PreProductionWorkflowTest extends TestCase
             'project_name' => 'Test Project',
             'status' => 'pre_production',
             'created_by' => $this->user->id
+        ]);
+
+        // Add an active item so the card is visible (due to 'Hide Empty Cards' logic)
+        ProductionItem::create([
+            'production_order_id' => $order->id,
+            'employee_id' => Employee::factory()->create(['employer_id' => $this->employer->id])->id,
+            'status' => 'pending'
         ]);
 
         $response = $this->actingAs($this->user)->get(route('production.index', ['tab' => 'notify_in']));

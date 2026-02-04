@@ -51,6 +51,13 @@ class ProductionController extends Controller
         $query = ProductionOrder::with(['employer', 'workType'])
                     ->where('status', 'pre_production');
 
+        // Hide cards with no active employees (unless filtering for history)
+        if ($request->input('filter_status') !== 'completed' && $request->input('filter_status') !== 'cancelled') {
+             $query->whereHas('items', function($q) {
+                  $q->whereNotIn('status', ['completed', 'cancelled']);
+             });
+        }
+
         if ($activeTab) {
             $query->where('work_type_id', $activeTab->id);
         }

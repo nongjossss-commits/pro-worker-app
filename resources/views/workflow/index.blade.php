@@ -162,19 +162,19 @@
                 <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions --}}
-                    <div class="row align-items-xl-center g-3 mb-3">
+                    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-3">
                         {{-- Identity --}}
-                        <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
-                            <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
-                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary" style="width: 40px; height: 40px;">
+                        <div class="d-flex align-items-center gap-3 overflow-hidden" style="min-width: 0;">
+                            <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-3 border-0 bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary flex-shrink-0" style="width: 40px; height: 40px;">
                                     @if($order->type === 'independent')
                                         <i class="bi bi-person-workspace fs-5"></i>
                                     @else
                                         <i class="bi bi-building fs-5"></i>
                                     @endif
                                 </div>
-                                <div>
-                                    <h5 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">
+                                <div style="min-width: 0;">
+                                    <h5 class="fw-bold mb-0 text-primary text-truncate">
                                         {{ $order->project_name }}
                                         @if(request('addrProvince') && $order->employer)
                                             @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
@@ -183,62 +183,62 @@
                                         @endif
                                     </h5>
                                     <div class="text-muted small d-flex align-items-center gap-2 mt-1">
-                                         <span>{{ $order->employer->employerNameTh ?? '-' }}</span>
-                                         <button class="btn btn-sm btn-link p-0 text-primary btn-preview"
+                                         <span class="text-truncate">{{ $order->employer->employerNameTh ?? '-' }}</span>
+                                         <button class="btn btn-sm btn-link p-0 text-primary btn-preview flex-shrink-0"
                                             data-model-type="employer"
                                             data-model-id="{{ $order->employer_id }}"
                                             title="Preview Employer">
                                              <i class="bi bi-search"></i>
                                          </button>
                                          <span class="text-muted opacity-50">&bull;</span>
-                                         <span>{{ $order->updated_at->diffForHumans() }}</span>
+                                         <span class="flex-shrink-0">{{ $order->updated_at->diffForHumans() }}</span>
                                     </div>
                                 </div>
                             </button>
                         </div>
 
                         {{-- Stats & Actions --}}
-                        <div class="col-12 col-xl text-xl-end">
-                            <div class="d-flex align-items-center justify-content-xl-end gap-2 flex-wrap">
-                                 {{-- Stats Badges --}}
-                                 <div class="d-flex align-items-center gap-2 me-xl-3">
-                                    {{-- Total --}}
-                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                        <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
-                                        <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
-                                    </span>
-                                    {{-- Not Started --}}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;">
-                                         <span class="fw-bold" id="order-{{ $order->id }}-pending">{{ $computed['not_started'] }}</span>
-                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">PENDING</span>
-                                    </span>
-                                    {{-- Completed --}}
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                         <span class="fw-bold" id="order-{{ $order->id }}-completed">{{ $computed['completed'] }}</span>
-                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">DONE</span>
-                                    </span>
-                                    {{-- Cancelled --}}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                        <span class="fw-bold" id="order-{{ $order->id }}-cancelled">{{ $computed['cancelled'] }}</span>
-                                        <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">CANCEL</span>
-                                    </span>
-                                 </div>
+                        <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap flex-grow-1">
+                             {{-- Stats Badges --}}
+                             <div class="d-flex align-items-center gap-2 me-xl-3">
+                                {{-- Total --}}
+                                <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                    <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
+                                    <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
+                                </span>
+                                {{-- Not Started --}}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;">
+                                     <span class="fw-bold" id="order-{{ $order->id }}-pending">{{ $computed['not_started'] }}</span>
+                                     <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">PENDING</span>
+                                </span>
+                                {{-- Completed --}}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                     <span class="fw-bold" id="order-{{ $order->id }}-completed">{{ $computed['completed'] }}</span>
+                                     <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">DONE</span>
+                                </span>
+                                {{-- Cancelled --}}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
+                                    <span class="fw-bold" id="order-{{ $order->id }}-cancelled">{{ $computed['cancelled'] }}</span>
+                                    <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">CANCEL</span>
+                                </span>
+                             </div>
 
-                                 <div class="vr d-none d-xl-block me-2"></div>
+                             <div class="vr d-none d-xl-block me-2"></div>
 
-                                 {{-- Actions --}}
-                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
+                             {{-- Actions --}}
+                             <div class="d-flex align-items-center gap-2">
+                                 <button class="btn btn-outline-warning btn-sm fw-bold text-nowrap" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </button>
 
-                                 <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold">
+                                 <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold text-nowrap">
                                     <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
                                  </a>
 
                                 <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
                                     <i class="bi bi-chevron-down"></i>
                                 </button>
-                            </div>
+                             </div>
                         </div>
                     </div>
 

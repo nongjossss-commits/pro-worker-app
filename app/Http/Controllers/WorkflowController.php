@@ -49,6 +49,13 @@ class WorkflowController extends Controller
         $query = ProductionOrder::with(['employer', 'workType'])
             ->where('status', '!=', 'pre_production'); // Active workflows
 
+        // Hide cards with no active employees (unless filtering for history)
+        if ($request->input('filter_status') !== 'completed' && $request->input('filter_status') !== 'cancelled') {
+             $query->whereHas('items', function($q) {
+                  $q->whereNotIn('status', ['completed', 'cancelled']);
+             });
+        }
+
         if ($activeTab) {
             $query->where('work_type_id', $activeTab->id);
         }
@@ -485,7 +492,30 @@ class WorkflowController extends Controller
      */
     public function fetchOrderItems(Request $request, $orderId)
     {
-        $order = ProductionOrder::with(['workType.steps'])->findOrFail($orderId);
+        // Don't eager load steps blindly. We need to filter them.
+        $order = ProductionOrder::with(['workType'])->findOrFail($orderId);
+
+        // Filter Steps based on Order Status (Pre-Prod vs Workflow)
+        $steps = collect();
+        if ($order->workType) {
+            $stepsQuery = WorkTypeStep::where('work_type_id', $order->work_type_id)->orderBy('order');
+
+            if ($order->status === 'pre_production') {
+                $stepsQuery->where('stage', 'preparation');
+            } else {
+                // Active/Workflow: Exclude preparation
+                $stepsQuery->where(function($q) {
+                    $q->where('stage', '!=', 'preparation')
+                      ->orWhereNull('stage');
+                });
+            }
+            $steps = $stepsQuery->get();
+        }
+
+        // Inject filtered steps into the relation so the view uses them correctly
+        if ($order->workType) {
+            $order->workType->setRelation('steps', $steps);
+        }
 
         $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId)
