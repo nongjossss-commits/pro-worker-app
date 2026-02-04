@@ -20,52 +20,53 @@
         </div>
     </div>
 
+    {{-- Search & Actions (Moved Above Filter) --}}
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3 mb-4">
+        {{-- Search Bar --}}
+        <form action="{{ route('production.index') }}" method="GET" class="d-flex flex-grow-1 justify-content-center w-100">
+            @if(isset($activeTab))
+                <input type="hidden" name="tab" value="{{ $activeTab->slug }}">
+            @endif
+            <div class="input-group input-group-lg" style="max-width: 500px;">
+                <span class="input-group-text bg-white border-end-0 shadow-sm"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="search" class="form-control bg-white border-start-0 shadow-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
+                <button class="btn btn-primary shadow-sm" type="submit">{{ __('Search') }}</button>
+                @if(request('search'))
+                    <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null]) }}" class="btn btn-outline-secondary shadow-sm bg-white">{{ __('Clear') }}</a>
+                @endif
+            </div>
+        </form>
+
+        {{-- Actions --}}
+        <div class="d-flex gap-2">
+            @if(isset($activeTab))
+                <button class="btn btn-light btn-sm shadow-sm border" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                    <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
+                </button>
+            @endif
+            <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
+                <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
+            </button>
+        </div>
+    </div>
+
     {{-- Address Filter --}}
     <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
 
-    {{-- Tabs Navigation & Actions --}}
+    {{-- Tabs Navigation --}}
     <div class="card shadow-sm border-0 mb-4 bg-white">
         <div class="card-body p-3">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
-                {{-- Tabs --}}
-                <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2 flex-grow-1" style="scrollbar-width: thin; max-width: 40%;">
-                    @foreach($tabs as $tab)
-                        <li class="nav-item">
-                            <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
-                               href="{{ route('production.index', ['tab' => $tab->slug]) }}"
-                               style="white-space: nowrap;">
-                                {{ $tab->name }}
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
-
-                {{-- Search Bar --}}
-                <form action="{{ route('production.index') }}" method="GET" class="d-flex flex-grow-1 justify-content-center w-100">
-                    @if(isset($activeTab))
-                        <input type="hidden" name="tab" value="{{ $activeTab->slug }}">
-                    @endif
-                    <div class="input-group input-group-lg" style="max-width: 500px;">
-                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
-                        <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
-                        @if(request('search'))
-                            <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null]) }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
-                        @endif
-                    </div>
-                </form>
-
-                <div class="d-flex gap-2">
-                    @if(isset($activeTab))
-                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                            <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
-                        </button>
-                    @endif
-                    <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
-                        <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
-                    </button>
-                </div>
-            </div>
+            <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap w-100" style="scrollbar-width: thin;">
+                @foreach($tabs as $tab)
+                    <li class="nav-item">
+                        <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
+                           href="{{ route('production.index', ['tab' => $tab->slug]) }}"
+                           style="white-space: nowrap;">
+                            {{ $tab->name }}
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
         </div>
     </div>
 
