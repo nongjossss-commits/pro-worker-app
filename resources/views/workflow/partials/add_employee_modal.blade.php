@@ -1,7 +1,7 @@
 {{-- resources/views/workflow/partials/add_employee_modal.blade.php --}}
 <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <form action="{{ route('workflow.store') }}" method="POST" class="modal-content" id="addEmployeeForm">
+    <div class="modal-dialog modal-xl">
+        <form action="{{ route('workflow.store') }}" method="POST" class="modal-content" id="addEmployeeForm" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="employer_id" id="modal_employer_id">
             <input type="hidden" name="work_type_id" id="modal_work_type_id">
@@ -62,31 +62,7 @@
                     {{-- Tab 2: New Manual --}}
                     <div class="tab-pane fade" id="tab-new" role="tabpanel">
                         <div class="alert alert-light border">
-                             <h6 class="fw-bold mb-2">{{ __('Add New Employee (Draft)') }}</h6>
-                             <div class="row g-2">
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small">{{ __('Name (TH)') }}</label>
-                                    <input type="text" name="new_employee[name_th]" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small">{{ __('Name (EN)') }}</label>
-                                    <input type="text" name="new_employee[name_en]" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small">{{ __('Passport No') }}</label>
-                                    <input type="text" name="new_employee[passport]" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small">{{ __('Nationality') }}</label>
-                                    <select name="new_employee[nationality]" class="form-select form-select-sm">
-                                        <option value="">{{ __('Select...') }}</option>
-                                        <option value="Myanmar">Myanmar</option>
-                                        <option value="Laos">Laos</option>
-                                        <option value="Cambodia">Cambodia</option>
-                                        <option value="Vietnam">Vietnam</option>
-                                    </select>
-                                </div>
-                            </div>
+                             @include('employees.partials.create_form_partial_content')
                         </div>
                     </div>
 
@@ -115,10 +91,15 @@
     window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug) {
         document.getElementById('modal_employer_id').value = employerId || '';
         document.getElementById('modal_work_type_id').value = workTypeId || '';
-        document.getElementById('modal_production_order_id').value = orderId; // Important for adding to existing
+        document.getElementById('modal_production_order_id').value = orderId || ''; // Empty if Global Add
+
+        // Dispatch event to Alpine component in the partial to set/clear employer
+        window.dispatchEvent(new CustomEvent('set-employer-id', {
+            detail: { id: employerId } // If null/undefined, partial handles it
+        }));
 
         // Setup Import Link with return_to parameter
-        const importUrl = `{{ route('employees.import_view') }}?production_id=${orderId}&employer_id=${employerId || ''}&return_to=workflow`;
+        const importUrl = `{{ route('employees.import_view') }}?production_id=${orderId || ''}&employer_id=${employerId || ''}&return_to=workflow`;
         document.getElementById('btn-go-import').href = importUrl;
 
         // Reset UI
@@ -131,8 +112,24 @@
         const modal = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
 
         // Logic for Tabs/Modes
-        const tabExisting = new bootstrap.Tab(document.querySelector('#existing-tab'));
-        tabExisting.show();
+        // If Global Add (no orderId), default to New Manual tab?
+        // Or if Existing Employer (from card), default to Existing?
+        // Let's stick to Existing as default, user can switch.
+        // User asked: "Add Employee button... for Manual... use form".
+        // If they click "Add" on card, maybe they want to add New directly?
+        // If "Add" on Global, they definitely want to add New or Existing.
+        // Let's Default to 'New / Manual' if Global Add, else 'Existing' if adding to Card?
+        // Or just keep Existing default.
+        // The user said: "Change Add Job to Add Employee Global... search employer... create employee data".
+        // This implies the flow is "New Employee". So for Global Add, let's switch to Tab 2.
+
+        if (!orderId) {
+             const tabNew = new bootstrap.Tab(document.querySelector('#new-tab'));
+             tabNew.show();
+        } else {
+             const tabExisting = new bootstrap.Tab(document.querySelector('#existing-tab'));
+             tabExisting.show();
+        }
 
         if (workTypeSlug === 'notify_in') {
             // Change Employer -> Search Resigned
