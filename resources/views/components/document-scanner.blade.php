@@ -681,31 +681,23 @@
                 cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
 
                 // 2. Gaussian Blur (Reduce noise)
-                cv.GaussianBlur(gray, blurred, new cv.Size(7, 7), 0, 0, cv.BORDER_DEFAULT);
+                cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
 
-                // 3. Adaptive Thresholding (Better than Canny for documents on desks)
-                // cv.adaptiveThreshold(src, dst, maxValue, adaptiveMethod, thresholdType, blockSize, C)
-                cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
+                // 3. Canny Edge Detection (Robust for documents)
+                cv.Canny(blurred, dst, 75, 200);
 
-                // 4. Morphological Operations to clean up
-                // Erode then Dilate (Open) to remove small noise
+                // 4. Dilate to connect gaps in edges
                 const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-                cv.morphologyEx(dst, dst, cv.MORPH_OPEN, kernel);
-
-                // Canny Edge detection on the thresholded image can sometimes help refine boundaries
-                const edges = new cv.Mat();
-                cv.Canny(dst, edges, 50, 150);
-
-                // Dilate to connect gaps
-                cv.morphologyEx(edges, edges, cv.MORPH_DILATE, kernel);
+                cv.morphologyEx(dst, dst, cv.MORPH_DILATE, kernel);
 
                 // Find Contours
                 let contours = new cv.MatVector();
                 let hierarchy = new cv.Mat();
-                cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+                cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-                let maxQuadArea = 0;
-                let bestQuad = null;
+                let maxArea = 0;
+                let bestApprox = null;
+                let bestRect = null;
                 let width = src.cols;
                 let height = src.rows;
                 let found = false;
@@ -718,56 +710,69 @@
                     if (area > minArea) {
                         let peri = cv.arcLength(cnt, true);
                         let approx = new cv.Mat();
-                        // 0.02 is standard, but sometimes documents have rounded corners.
-                        // We check approximate polygons.
                         cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-                        // If it has 4 points and is convex
+                        // Priority 1: Perfect 4-corner polygon
                         if (approx.rows === 4 && cv.isContourConvex(approx)) {
-                            if (area > maxQuadArea) {
-                                if (bestQuad) bestQuad.delete();
-                                maxQuadArea = area;
-                                bestQuad = approx;
+                            if (area > maxArea) {
+                                maxArea = area;
+                                if(bestApprox) bestApprox.delete();
+                                bestApprox = approx; // Keep as new best
+                                bestRect = null; // Clear fallback
                                 found = true;
                             } else {
                                 approx.delete();
                             }
-                        } else {
-                            // HEURISTIC: Sometimes a document isn't perfectly 4 corners (e.g. holding thumb).
-                            // If it has > 4 corners but is roughly rectangular, we can try to find the bounding box
-                            // or convex hull, but strict 4-corner is safest for perspective warp.
-                            // We stick to strict 4 for now to avoid bad crops.
-                            approx.delete();
+                        }
+                        // Priority 2: Largest contour (fallback to RotatedRect)
+                        else {
+                            if (!found && area > maxArea) {
+                                maxArea = area;
+                                if(bestApprox) bestApprox.delete();
+                                bestApprox = null;
+                                bestRect = cv.minAreaRect(cnt);
+                                approx.delete();
+                            } else {
+                                approx.delete();
+                            }
                         }
                     }
                 }
 
                 // Cleanup intermediate mats
-                edges.delete(); kernel.delete();
+                kernel.delete(); gray.delete(); blurred.delete(); dst.delete();
+                contours.delete(); hierarchy.delete();
 
                 let corners = [];
 
-                if (found && bestQuad) {
+                if (found && bestApprox) {
                     // Extract points from the perfect polygon
                     const points = [];
                     for(let i=0; i<4; i++) {
                         points.push({
-                            x: bestQuad.data32S[i*2],
-                            y: bestQuad.data32S[i*2+1]
+                            x: bestApprox.data32S[i*2],
+                            y: bestApprox.data32S[i*2+1]
                         });
                     }
                     corners = this.sortPoints(points);
-                    bestQuad.delete();
+                    bestApprox.delete();
+                }
+                else if (bestRect) {
+                    // Fallback: Use RotatedRect points
+                    // cv.RotatedRect.points returns 4 points
+                    const vertices = cv.RotatedRect.points(bestRect);
+                    const points = [];
+                    for(let i=0; i<4; i++) {
+                         points.push({x: vertices[i].x, y: vertices[i].y});
+                    }
+                    corners = this.sortPoints(points);
+                    found = true; // Treated as found
                 }
                 else {
                     // Fallback to Full Image
                     corners = this.getDefaultCorners(width, height);
                     found = false;
                 }
-
-                // Cleanup
-                gray.delete(); blurred.delete();
-                dst.delete(); contours.delete(); hierarchy.delete();
 
                 return { corners, found };
             },
@@ -787,8 +792,8 @@
                 const hLeft = Math.hypot(corners[3].x - corners[0].x, corners[3].y - corners[0].y);
                 const hRight = Math.hypot(corners[2].x - corners[1].x, corners[2].y - corners[1].y);
 
-                const maxWidth = Math.max(wTop, wBot);
-                const maxHeight = Math.max(hLeft, hRight);
+                const maxWidth = Math.round(Math.max(wTop, wBot));
+                const maxHeight = Math.round(Math.max(hLeft, hRight));
 
                 const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
                     0, 0,
@@ -1190,6 +1195,9 @@
                 const item = this.capturedImages[this.currentEditIndex];
 
                 try {
+                    // Fix: Ensure corners are sorted (TL, TR, BR, BL) to prevent twisting
+                    this.corners = this.sortPoints(this.corners);
+
                     const realCorners = this.corners.map(c => ({
                         x: c.x / this.scaleX,
                         y: c.y / this.scaleY
