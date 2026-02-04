@@ -117,6 +117,36 @@
 
     <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
 
+    {{-- Action Bar --}}
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-diagram-3-fill me-2"></i>{{ __('Workflow Dashboard') }}</h4>
+
+                <form action="{{ route('workflow.index') }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
+                    {{-- Preserve existing filters --}}
+                    @foreach(request()->except(['search', 'page']) as $key => $value)
+                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endforeach
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search project, employer, employee...') }}" value="{{ request('search') }}">
+                        <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
+                        @if(request('search'))
+                            <a href="{{ route('workflow.index') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
+                        @endif
+                    </div>
+                </form>
+
+                <div class="d-flex gap-2 flex-wrap justify-content-end">
+                    <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                        <i class="bi bi-plus-lg me-1"></i> {{ __('Add Job') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Tabs Navigation --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2" style="scrollbar-width: thin;">
@@ -142,12 +172,6 @@
                 </button>
             </li>
         </ul>
-
-        <div class="d-flex gap-2">
-            <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
-                <i class="bi bi-plus-lg me-1"></i> {{ __('Add Job / Employee') }}
-            </button>
-        </div>
     </div>
 
     {{-- Accordion List --}}
@@ -158,8 +182,11 @@
                  $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'cancelled'=>0, 'completed'=>0, 'step_stats'=>[]];
                  $stepStats = $computed['step_stats'];
             @endphp
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
+            <div class="d-flex align-items-start w-100 mb-4">
+                {{-- Sequence Number (Can add if needed, skipping for now to match Registration look) --}}
+
+                <div class="card flex-grow-1 shadow-sm border-0 mb-3 w-100 position-relative">
+                    <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions --}}
                     <div class="row align-items-xl-center g-3 mb-3">
@@ -271,6 +298,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         @empty
             <div class="text-center py-5">
@@ -492,6 +520,9 @@
                 .then(res => res.text())
                 .then(html => {
                     container.innerHTML = html;
+                    if (window.Alpine) {
+                         Alpine.initTree(container);
+                    }
                     loadedOrders[orderId] = true;
                 })
                 .catch(err => {

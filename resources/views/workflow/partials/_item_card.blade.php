@@ -27,15 +27,15 @@
     }
 
     // Employee Data Proxy
-    $empNameEn = $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee';
-    $empNameTh = $item->employee->employeeNameTh ?? $item->new_employee_data['name_th'] ?? '';
-    $empPhoto = $item->employee && $item->employee->employeePhoto ? asset('storage/' . $item->employee->employeePhoto) : 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
-    $empPassport = $item->employee->employeePassport ?? $item->new_employee_data['passport_no'] ?? '-';
-    $empNationality = $item->employee->employeeNationality ?? $item->new_employee_data['nationality'] ?? '-';
+    $empNameEn = ($item->employee ? $item->employee->employeeNameEn : null) ?? ($item->new_employee_data['name_en'] ?? 'New Employee');
+    $empNameTh = ($item->employee ? $item->employee->employeeNameTh : null) ?? ($item->new_employee_data['name_th'] ?? '');
+    $empPhoto = ($item->employee && $item->employee->employeePhoto) ? asset('storage/' . $item->employee->employeePhoto) : 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
+    $empPassport = ($item->employee ? $item->employee->employeePassport : null) ?? ($item->new_employee_data['passport_no'] ?? '-');
+    $empNationality = ($item->employee ? $item->employee->employeeNationality : null) ?? ($item->new_employee_data['nationality'] ?? '-');
     $empId = $item->employee_id;
 
     // MOU Group Color
-    $mouGroup = $item->employee->workPermitMOUGroup ?? 'N/A';
+    $mouGroup = ($item->employee ? $item->employee->workPermitMOUGroup : null) ?? 'N/A';
     $mouBadgeClass = 'bg-secondary';
     if (str_contains($mouGroup, 'MOU')) {
         $mouBadgeClass = 'bg-primary'; // Blue
