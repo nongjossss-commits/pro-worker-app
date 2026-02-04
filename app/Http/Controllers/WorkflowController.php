@@ -120,6 +120,7 @@ class WorkflowController extends Controller
 
         $steps = $activeTab ? $activeTab->steps : collect();
         $stepOneId = $steps->sortBy('order')->first()?->id;
+        $lastStepId = $steps->sortByDesc('order')->first()?->id;
 
         foreach ($orders as $order) {
             $items = $order->items;
@@ -221,7 +222,7 @@ class WorkflowController extends Controller
             $stats['step_stats'] = $globalStepStats;
         }
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions'));
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'lastStepId'));
     }
 
     /**

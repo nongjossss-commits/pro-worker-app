@@ -129,6 +129,8 @@ class ProductionController extends Controller
                         ->get();
         }
 
+        $lastStepId = $steps->sortByDesc('order')->first()?->id;
+
         // Load Relations with Filter
         $orders->load(['items' => function($q) use ($itemFilter) {
             $itemFilter($q);
@@ -217,7 +219,7 @@ class ProductionController extends Controller
             $stats['step_stats'] = $globalStepStats;
         }
 
-        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'stats', 'addressOptions'));
+        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'stats', 'addressOptions', 'lastStepId'));
     }
 
     /**

@@ -9,6 +9,26 @@
     .stat-badge { width: 24px; height: 24px; font-size: 0.75rem; }
     .custom-scrollbar::-webkit-scrollbar { height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+
+    /* CSS Counters for persistent slot numbering */
+    #productionAccordion {
+        counter-reset: order-counter;
+    }
+    .order-card-container:not(.d-none) {
+        counter-increment: order-counter;
+    }
+    .order-sequence-number::before {
+        content: counter(order-counter);
+    }
+    .order-sequence-number {
+        /* Ensure it doesn't shift when content changes */
+        min-width: 50px;
+        text-align: center;
+        font-size: 2.5rem; /* display-5 size approx */
+        font-weight: bold;
+        color: #6c757d; /* text-muted */
+        opacity: 0.5;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -194,7 +214,10 @@
                  $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'step_stats'=>[]];
                  $stepStats = $computed['step_stats'];
             @endphp
-             <div class="d-flex align-items-start w-100 mb-4 order-card-container">
+             <div class="d-flex align-items-start order-card-container w-100 mb-4" id="order-card-{{ $order->id }}">
+                {{-- Sequence Number (CSS Counter will handle number) --}}
+                <div class="order-sequence-number me-3 pt-2"></div>
+
                 <div class="card flex-grow-1 shadow-sm border-0 mb-3 w-100 position-relative overflow-visible">
                     <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
@@ -256,19 +279,46 @@
                         </div>
                     </div>
 
-                    {{-- Bottom Row: Steps Progress --}}
+                    {{-- Bottom Row: Steps Progress (Full Width, Centered, Styled Exact Match) --}}
                     <div class="w-100 overflow-auto custom-scrollbar pb-1" style="scrollbar-width: thin;">
                          <div class="d-flex flex-nowrap align-items-center gap-2">
                              @foreach($steps as $step)
                                 @php
                                     $count = $stepStats[$step->id] ?? 0;
-                                    $bgClass = $count > 0 ? "bg-info text-dark" : "bg-secondary bg-opacity-10 text-muted";
+                                    $isZero = $count === 0;
+                                    $isLastStep = isset($lastStepId) && ($step->id === $lastStepId);
+
+                                    if ($isLastStep) {
+                                         // Last Step Special Styling
+                                         if ($isZero) {
+                                             $bgClass = "bg-secondary bg-opacity-50 text-white";
+                                         } else {
+                                             $bgClass = "bg-primary"; // Blue for last step
+                                         }
+                                         $sizeClass = "fs-6"; // Slightly bigger font
+                                         $dimensions = "width: 32px; height: 32px;"; // Bigger circle
+                                         $containerClass = "py-2 px-3 border-primary shadow-sm"; // Bigger pill
+                                         $nameClass = "fw-bold";
+                                    } else {
+                                        // Normal Step
+                                        if ($isZero) {
+                                            $bgClass = "bg-secondary bg-opacity-25 text-muted";
+                                        } else {
+                                            $bgClass = "bg-success text-white";
+                                        }
+                                        $sizeClass = "";
+                                        $dimensions = "width: 24px; height: 24px;";
+                                        $containerClass = "px-3 py-1";
+                                        $nameClass = "fw-bold";
+                                    }
                                 @endphp
-                                <div class="d-inline-flex align-items-center bg-light border rounded-pill px-3 py-1 gap-2 flex-shrink-0">
-                                    <span class="badge rounded-circle d-flex align-items-center justify-content-center stat-badge {{ $bgClass }}" id="order-{{ $order->id }}-step-{{ $step->id }}">
+                                <div class="d-inline-flex align-items-center bg-light border rounded-pill {{ $containerClass }} gap-2 flex-shrink-0">
+                                    <span class="badge rounded-circle d-flex align-items-center justify-content-center {{ $bgClass }} {{ $sizeClass }}"
+                                          style="{{ $dimensions }}"
+                                          id="order-{{ $order->id }}-step-{{ $step->id }}">
                                         {{ $count }}
                                     </span>
-                                    <span class="text-dark fw-bold" style="font-size: 0.85rem;">{{ $step->name }}</span>
+                                    <span class="text-dark {{ $nameClass }}" style="font-size: 0.85rem;">{{ $step->name }}</span>
                                 </div>
                              @endforeach
                          </div>
@@ -422,10 +472,6 @@
     }
 
     // --- Reuse Toggle Step from Workflow (Global Function) ---
-    // Make sure toggleWorkStep exists or include it here if not globally available.
-    // It is defined in workflow/index.blade.php. We should copy it or extract to shared JS.
-    // For now, I will include a minimal version here.
-
     window.toggleWorkStep = function(itemId, stepId, completed) {
         // Optimistic UI Update
         const btn = document.querySelector(`.step-btn-${itemId}-${stepId}`);
