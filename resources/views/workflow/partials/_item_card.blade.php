@@ -93,6 +93,21 @@
                         <div class="text-muted small">
                             {{ $empNameTh }}
                         </div>
+
+                        {{-- Employer Info (Requested Feature) --}}
+                        @if($order && $order->employer)
+                        <div class="small text-primary mt-1">
+                             <i class="bi bi-building me-1"></i> {{ $order->employer->employerNameTh ?? $order->employer->employerNameEn }}
+                             <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                style="text-decoration: none;"
+                                data-model-type="employer"
+                                data-model-id="{{ $order->employer_id }}"
+                                title="Preview Employer">
+                                 <i class="bi bi-eye-fill"></i>
+                             </button>
+                        </div>
+                        @endif
+
                         <div class="small text-muted mt-1">
                             <span class="me-2"><i class="bi bi-passport text-primary me-1"></i> {{ $empPassport }}</span>
                             <span class="d-inline-flex align-items-center">
