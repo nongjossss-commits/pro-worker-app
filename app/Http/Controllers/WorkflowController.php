@@ -11,6 +11,8 @@ use App\Models\Employee;
 use App\Models\Employer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use App\Traits\AddressFilterTrait;
 
@@ -58,6 +60,40 @@ class WorkflowController extends Controller
         // NEW: Apply address filters
         $query = $this->applyAddressFilters($query, $request, 'employer');
 
+        // --- FILTERING LOGIC ---
+        $itemFilter = function($q) use ($request) {
+            if ($request->filled('filter_status')) {
+                $status = $request->filter_status;
+                if ($status === 'completed') {
+                    $q->where('status', 'completed');
+                } elseif ($status === 'cancelled') {
+                    $q->where('status', 'cancelled');
+                } elseif ($status === 'not_started') {
+                    $q->where('status', 'pending')
+                      ->doesntHave('completedWorkTypeSteps');
+                }
+            }
+
+            if ($request->filled('filter_step')) {
+                $stepId = $request->filter_step;
+                $step = WorkTypeStep::find($stepId);
+                if ($step) {
+                    // Highest Step Logic: Has this step, AND doesn't have any step with higher order
+                    $q->whereHas('completedWorkTypeSteps', function($sq) use ($stepId) {
+                        $sq->where('work_type_steps.id', $stepId);
+                    })->whereDoesntHave('completedWorkTypeSteps', function($sq) use ($step) {
+                        $sq->where('work_type_steps.order', '>', $step->order)
+                           ->where('work_type_steps.work_type_id', $step->work_type_id);
+                    })->where('status', '!=', 'cancelled');
+                }
+            }
+        };
+
+        if ($request->filled('filter_status') || $request->filled('filter_step')) {
+            $query->whereHas('items', $itemFilter);
+        }
+        // --- END FILTERING LOGIC ---
+
         // Search
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -76,7 +112,11 @@ class WorkflowController extends Controller
         $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
 
         // Calculate Stats PER ORDER for the view (Accordion Header)
-        $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
+        // Also apply the item filter to the eager load so the view only shows relevant items inside the order
+        $orders->load(['items' => function($q) use ($itemFilter) {
+            $itemFilter($q);
+            $q->with('completedWorkTypeSteps', 'employee'); // Load nested
+        }, 'employer.addresses']);
 
         $steps = $activeTab ? $activeTab->steps : collect();
         $stepOneId = $steps->sortBy('order')->first()?->id;
@@ -689,23 +729,159 @@ class WorkflowController extends Controller
             }
         }
 
-        if ($request->filled('new_employee.name_en') || $request->filled('new_employee.name_th')) {
-            $newEmpData = $request->new_employee;
+        // Handle "New Employee" Full Form
+        // We check for a required field from the full form, e.g., employeeNameEn or employeeNameTh
+        if ($request->filled('employeeNameEn') || $request->filled('employeeNameTh')) {
 
-            // Create Employee Immediately
-            $employee = Employee::create([
-                'employer_id' => $order->employer_id,
-                'employeeNameTh' => $newEmpData['name_th'] ?? null,
-                'employeeNameEn' => $newEmpData['name_en'] ?? null,
-                'employeePassport' => $newEmpData['passport'] ?? null,
-                'employeeNationality' => $newEmpData['nationality'] ?? null,
-                'status' => 'onboarding',
+            // 1. Validate (Using EmployeeController logic)
+            // Note: We use 'nullable' for most to allow partial drafts if needed, but enforce basics
+            $validated = $request->validate([
+                'passportType' => 'nullable|string|max:255',
+                'employeeTitleTh' => 'nullable|string|max:255',
+                'employeeNameTh' => 'nullable|string|max:255',
+                'employeeTitleEn' => 'nullable|string|max:255',
+                'employeeNameEn' => 'required|string|max:255',
+                'father_name' => 'nullable|string|max:255',
+                'mother_name' => 'nullable|string|max:255',
+                'employeeGender' => 'nullable|string|max:255',
+                'employeeDob' => 'nullable|date',
+                'employeeAge' => 'nullable|integer',
+                'employeePhone' => 'nullable|string|max:255',
+                'employeeNationality' => 'nullable|string|max:255',
+                'passport_type_cambodia' => 'nullable|string|max:255',
+                'employeePassport' => 'nullable|string|max:255',
+                'passport_issue_date' => 'nullable|date',
+                'passportExpiryDate' => 'nullable|date',
+                'pinkCardNo' => 'nullable|string|max:255',
+                'visaType' => 'nullable|string|max:255',
+                'visaExpiryDate' => 'nullable|date',
+                'job_title' => 'nullable|string|max:255',
+                'job_description' => 'nullable|string',
+                'startDate' => 'nullable|date',
+                'employeeWorkPermit' => 'nullable|string|max:255',
+                'workPermitExpiryDate' => 'nullable|date',
+                'workPermitType' => 'nullable|string|max:255',
+                'workPermitMOUGroup' => 'nullable|string|max:255',
+                'workPermitMOUGroupOther' => 'nullable|string|max:255',
+                'ninetyDayReportDate' => 'nullable|date',
+                'name_list_number' => 'nullable|string|max:255',
+                'request_number' => 'nullable|string|max:255',
+                'employee_id_number' => 'nullable|string|max:255',
+                'tax_id_number' => 'nullable|string|max:255',
+                'employer_employee_id' => 'nullable|string|max:255',
+                'employee_reference_id' => 'nullable|string|max:255',
+                'insurance_type' => 'nullable|string|max:255',
+                'insurance_detail' => 'nullable|string',
+                'insurance_expiry_date' => 'nullable|date',
+                'social_security_number' => 'nullable|string|max:255',
+                'insurance_detail_hospital' => 'nullable|string|max:255',
+                'insurance_detail_private' => 'nullable|string|max:255',
+                'insurance_expiry_date_private' => 'nullable|string|max:255',
+                'insurance_expiry_date_hospital' => 'nullable|string|max:255',
+                'insurance_detail_social' => 'nullable|string|max:255',
+                'medical_hospital_name' => 'nullable|string|max:255',
+                'outsource_code' => 'nullable|string|max:255',
+                'bank_name' => 'nullable|string|max:255',
+                'bank_account_number' => 'nullable|string|max:255',
+                'employeeEmail' => 'nullable|email|max:255',
+                'employeePassword' => 'nullable|string|min:8',
+                'other_doc_1_desc' => 'nullable|string|max:255',
+                'other_doc_2_desc' => 'nullable|string|max:255',
+                'other_doc_3_desc' => 'nullable|string|max:255',
+                'other_doc_4_desc' => 'nullable|string|max:255',
+                'other_doc_5_desc' => 'nullable|string|max:255',
+                'other_doc_6_desc' => 'nullable|string|max:255',
+                'other_doc_7_desc' => 'nullable|string|max:255',
+                'other_doc_8_desc' => 'nullable|string|max:255',
+                'other_doc_9_desc' => 'nullable|string|max:255',
+                'other_doc_10_desc' => 'nullable|string|max:255',
+                'employeePhoto' => 'nullable|image|max:2048',
+                'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'medical_certificate_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_4' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_5' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_6' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_7' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_8' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_9' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_13' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_14' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_15' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_16' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_17' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+                'employee_doc_18' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             ]);
 
+            // 2. Map Insurance
+            $validated['insuranceType'] = $validated['insurance_type'] ?? null;
+            if ($validated['insuranceType'] === 'ประกันสังคม') {
+                $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
+                $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+                $validated['insuranceCompany'] = null;
+                $validated['insuranceExpiryDate'] = null;
+            } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
+                $validated['insuranceCompany'] = $validated['insurance_detail_private'] ?? null;
+                $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
+                $validated['socialSecurityNumber'] = null;
+                $validated['hospitalName'] = null;
+            } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
+                $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
+                $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
+                $validated['socialSecurityNumber'] = null;
+                $validated['insuranceCompany'] = null;
+            }
+
+            // 3. Map Email/Password
+            $validated['email'] = $validated['employeeEmail'] ?? null;
+            unset($validated['employeeEmail']);
+            if (!empty($validated['employeePassword'])) {
+                $validated['password'] = $validated['employeePassword'];
+            }
+            unset($validated['employeePassword']);
+
+            // 4. Handle Files
+            $fileFields = [
+                'employeePhoto', 'insurance_document_path','insurance_document_path_private', 'medical_certificate_path',
+                'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+                'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
+                'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
+                'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
+                'employee_doc_17', 'employee_doc_18'
+            ];
+
+            foreach ($fileFields as $field) {
+                if ($request->hasFile($field)) {
+                    $file = $request->file($field);
+                    $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs("employee_files/{$order->employer_id}", $filename, 'public');
+                    $validated[$field] = $path;
+                }
+            }
+
+            // 5. Create Employee
+            $validated['employer_id'] = $order->employer_id;
+            $validated['status'] = 'onboarding';
+            $employee = Employee::create($validated);
+
+            // 6. Create Production Item
             ProductionItem::create([
                 'production_order_id' => $order->id,
                 'employee_id' => $employee->id,
-                'new_employee_data' => $request->new_employee,
+                // We store a minimal subset in new_employee_data just for legacy compatibility or fallback,
+                // but usually now we have a real employee record.
+                'new_employee_data' => [
+                    'name_th' => $employee->employeeNameTh,
+                    'name_en' => $employee->employeeNameEn,
+                    'passport' => $employee->employeePassport,
+                    'nationality' => $employee->employeeNationality
+                ],
                 'group_name' => $request->group_name ?? null,
                 'status' => 'pending'
             ]);
