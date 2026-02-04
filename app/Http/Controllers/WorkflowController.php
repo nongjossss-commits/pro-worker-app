@@ -78,6 +78,9 @@ class WorkflowController extends Controller
         // Calculate Stats PER ORDER for the view (Accordion Header)
         $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
 
+        // Employers for Dropdown
+        $employers = Employer::orderBy('employerNameTh')->get();
+
         $steps = $activeTab ? $activeTab->steps : collect();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
@@ -181,7 +184,7 @@ class WorkflowController extends Controller
             $stats['step_stats'] = $globalStepStats;
         }
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions'));
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers'));
     }
 
     /**
@@ -724,23 +727,89 @@ class WorkflowController extends Controller
             }
         }
 
-        if ($request->filled('new_employee.name_en') || $request->filled('new_employee.name_th')) {
-            $newEmpData = $request->new_employee;
+        // Handle Full Employee Creation (Replaces old Draft logic)
+        // Check if we have core fields for a new employee
+        if ($request->filled('employeeNameEn') || $request->filled('employeeNameTh')) {
+             // Validate
+             $validated = $request->validate([
+                'employer_id' => 'required|exists:employers,id',
+                'employeeNameTh' => 'nullable|string|max:255',
+                'employeeNameEn' => 'required|string|max:255',
+                'employeePassport' => 'nullable|string|max:255',
+                'employeeNationality' => 'nullable|string|max:255',
+                // Add strict validation for other fields as needed, mirroring EmployeeController
+             ]);
 
-            // Create Employee Immediately
-            $employee = Employee::create([
-                'employer_id' => $order->employer_id,
-                'employeeNameTh' => $newEmpData['name_th'] ?? null,
-                'employeeNameEn' => $newEmpData['name_en'] ?? null,
-                'employeePassport' => $newEmpData['passport'] ?? null,
-                'employeeNationality' => $newEmpData['nationality'] ?? null,
-                'status' => 'onboarding',
-            ]);
+             // Capture all potential fields from request that match Employee model
+             $employeeData = $request->only([
+                'employer_id', 'employeeTitleTh', 'employeeNameTh', 'employeeTitleEn', 'employeeNameEn',
+                'father_name', 'mother_name', 'employeeGender', 'employeeDob', 'employeeAge', 'employeePhone',
+                'employeeNationality', 'passportType', 'passport_type_cambodia', 'employeePassport',
+                'passport_issue_date', 'passportExpiryDate', 'pinkCardNo', 'visaType', 'visaExpiryDate',
+                'job_title', 'job_description', 'startDate', 'employeeWorkPermit', 'workPermitExpiryDate',
+                'workPermitType', 'workPermitMOUGroup', 'workPermitMOUGroupOther', 'ninetyDayReportDate',
+                'name_list_number', 'request_number', 'employee_id_number', 'tax_id_number',
+                'employer_employee_id', 'employee_reference_id', 'insurance_type', 'insurance_detail',
+                'insurance_expiry_date', 'social_security_number', 'insurance_detail_hospital',
+                'insurance_detail_private', 'insurance_expiry_date_private', 'insurance_expiry_date_hospital',
+                'insurance_detail_social', 'medical_hospital_name', 'outsource_code', 'bank_name',
+                'bank_account_number', 'other_doc_1_desc', 'other_doc_2_desc', 'other_doc_3_desc',
+                'other_doc_4_desc', 'other_doc_5_desc', 'other_doc_6_desc', 'other_doc_7_desc',
+                'other_doc_8_desc', 'other_doc_9_desc', 'other_doc_10_desc'
+             ]);
 
+             // Insurance Mapping
+            $employeeData['insuranceType'] = $request->insurance_type ?? null;
+            if ($employeeData['insuranceType'] === 'ประกันสังคม') {
+                $employeeData['socialSecurityNumber'] = $request->social_security_number ?? null;
+                $employeeData['hospitalName'] = $request->insurance_detail_social ?? null;
+            } elseif ($employeeData['insuranceType'] === 'ประกันเอกชน') {
+                $employeeData['insuranceCompany'] = $request->insurance_detail_private ?? null;
+                $employeeData['insuranceExpiryDate'] = $request->insurance_expiry_date_private ?? null;
+            } elseif ($employeeData['insuranceType'] === 'ประกันโรงพยาบาล') {
+                $employeeData['hospitalName'] = $request->insurance_detail_hospital ?? null;
+                $employeeData['insuranceExpiryDate'] = $request->insurance_expiry_date_hospital ?? null;
+            }
+
+            // Email & Password
+            $employeeData['email'] = $request->employeeEmail ?? null;
+            if ($request->filled('employeePassword')) {
+                $employeeData['password'] = $request->employeePassword;
+            }
+
+            $employeeData['status'] = 'onboarding';
+
+            // Create Employee
+            $employee = Employee::create($employeeData);
+
+            // File Uploads
+            $fileFields = [
+                'employeePhoto', 'insurance_document_path','insurance_document_path_private', 'medical_certificate_path',
+                'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
+                'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
+                'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
+                'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
+                'employee_doc_17', 'employee_doc_18'
+            ];
+
+            $filesToUpdate = [];
+            foreach ($fileFields as $field) {
+                if ($request->hasFile($field)) {
+                    $file = $request->file($field);
+                    $filename = \Illuminate\Support\Str::random(20) . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
+                    $filesToUpdate[$field] = $path;
+                }
+            }
+
+            if (!empty($filesToUpdate)) {
+                $employee->update($filesToUpdate);
+            }
+
+            // Add to ProductionItem
             ProductionItem::create([
                 'production_order_id' => $order->id,
                 'employee_id' => $employee->id,
-                'new_employee_data' => $request->new_employee,
                 'group_name' => $request->group_name ?? null,
                 'status' => 'pending'
             ]);

@@ -107,36 +107,49 @@
 
     <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
 
-    {{-- Tabs Navigation --}}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2" style="scrollbar-width: thin;">
-            <li class="nav-item">
-                <a class="nav-link bg-white border text-secondary"
-                   href="{{ route('workflow.index') }}"
-                   style="white-space: nowrap;">
-                    <i class="bi bi-speedometer2 me-1"></i> {{ __('Dashboard') }}
-                </a>
-            </li>
-            @foreach($tabs as $tab)
-                <li class="nav-item">
-                    <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
-                       href="{{ route('workflow.index', ['tab' => $tab->slug]) }}"
-                       style="white-space: nowrap;">
-                        {{ $tab->name }}
-                    </a>
-                </li>
-            @endforeach
-            <li class="nav-item">
-                <button class="btn btn-outline-secondary border-dashed" title="Add Work Type" onclick="alert('Feature coming soon: Add Custom Tab')">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-            </li>
-        </ul>
+    {{-- Tabs Navigation & Actions --}}
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                {{-- Tabs --}}
+                <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap pb-2 flex-grow-1" style="scrollbar-width: thin; max-width: 40%;">
+                    <li class="nav-item">
+                        <a class="nav-link bg-white border text-secondary"
+                           href="{{ route('workflow.index') }}"
+                           style="white-space: nowrap;">
+                            <i class="bi bi-speedometer2 me-1"></i> {{ __('Dashboard') }}
+                        </a>
+                    </li>
+                    @foreach($tabs as $tab)
+                        <li class="nav-item">
+                            <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
+                               href="{{ route('workflow.index', ['tab' => $tab->slug]) }}"
+                               style="white-space: nowrap;">
+                                {{ $tab->name }}
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
 
-        <div class="d-flex gap-2">
-            <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
-                <i class="bi bi-plus-lg me-1"></i> {{ __('Add Job / Employee') }}
-            </button>
+                {{-- Search Bar --}}
+                <form action="{{ route('workflow.index') }}" method="GET" class="d-flex flex-grow-1 justify-content-center w-100">
+                    @if(isset($activeTab))
+                        <input type="hidden" name="tab" value="{{ $activeTab->slug }}">
+                    @endif
+                    <div class="input-group input-group-lg" style="max-width: 500px;">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
+                        <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
+                    </div>
+                </form>
+
+                {{-- Actions --}}
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
+                        <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

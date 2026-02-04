@@ -8,14 +8,14 @@
     <input type="hidden" name="employer_id" value="{{ $employer->id }}">
 @else
     <div class="row mb-4">
-        <div class="col-md-12" x-data="employerSelector()" @click.outside="open = false">
+        <div class="col-md-12" x-data="employerSelector()" @click.outside="open = false" @set-employer-id.window="setFromEvent($event.detail)">
             <label for="employer_id" class="form-label">เลือกนายจ้าง <span class="text-danger">*</span></label>
 
             {{-- Hidden Input for Form Submission --}}
             <input type="hidden" name="employer_id" :value="selectedId" required>
 
             {{-- Searchable Dropdown --}}
-            <div class="position-relative">
+            <div class="position-relative" x-show="showSelector">
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text"
@@ -72,6 +72,7 @@
                 selectedId: '{{ old('employer_id') }}',
                 selectedName: '',
                 touched: false,
+                showSelector: true,
                 employers: @json($employerOptions),
 
                 init() {
@@ -98,6 +99,20 @@
                     this.search = emp.name_th;
                     if(close) this.open = false;
                     this.touched = true;
+                }
+
+                setFromEvent(detail) {
+                    if (detail && detail.id) {
+                        this.selectedId = detail.id;
+                        this.selectedName = ''; // Handled by calling context or not needed if hidden
+                        this.showSelector = false;
+                    } else {
+                        // Reset for Global Add
+                        this.selectedId = '';
+                        this.selectedName = '';
+                        this.search = '';
+                        this.showSelector = true;
+                    }
                 }
             }
         }
