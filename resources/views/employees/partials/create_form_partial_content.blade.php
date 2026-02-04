@@ -15,7 +15,7 @@
             <input type="hidden" name="employer_id" :value="selectedId" required>
 
             {{-- Searchable Dropdown --}}
-            <div class="position-relative" x-show="showSelector">
+            <div class="position-relative">
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text"
@@ -23,21 +23,17 @@
                            placeholder="พิมพ์เพื่อค้นหาชื่อนายจ้าง..."
                            x-model="search"
                            @focus="open = true"
+                           @input="open = true; selectedId = ''; selectedName = ''"
                            @keydown.escape="open = false"
-                           :class="{'is-invalid': !selectedId && touched}">
+                           :class="{'is-invalid': !selectedId && touched}"
+                           autocomplete="off">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
-                </div>
-
-                {{-- Selected Display (Optional, if we want to show it separately, but the input acts as search/display hybrid usually.
-                     However, for better UX, let's keep search separate or fill it on select) --}}
-                <div class="form-text text-success fw-bold mt-1" x-show="selectedName">
-                    <i class="bi bi-check-circle-fill me-1"></i> เลือกแล้ว: <span x-text="selectedName"></span>
                 </div>
 
                 {{-- Dropdown List --}}
                 <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
                      style="z-index: 1050; max-height: 250px; overflow-y: auto;"
-                     x-show="open"
+                     x-show="open && filteredEmployers.length > 0"
                      x-transition>
                     <ul class="list-group list-group-flush">
                         <template x-for="emp in filteredEmployers" :key="emp.id">
@@ -47,22 +43,29 @@
                                 <div class="small text-muted" x-text="emp.name_en"></div>
                             </li>
                         </template>
-                        <li class="list-group-item text-muted text-center" x-show="filteredEmployers.length === 0">
-                            ไม่พบข้อมูล
-                        </li>
                     </ul>
+                </div>
+
+                {{-- No Results --}}
+                <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
+                     style="z-index: 1050;"
+                     x-show="open && filteredEmployers.length === 0"
+                     x-transition>
+                     <div class="list-group list-group-flush">
+                        <div class="list-group-item text-muted text-center">ไม่พบข้อมูล</div>
+                     </div>
                 </div>
             </div>
         </div>
     </div>
 
     @php
-        $employerOptions = $employers->map(fn($e) => [
+        $employerOptions = isset($employers) ? $employers->map(fn($e) => [
             'id' => $e->id,
             'name_th' => $e->employerNameTh,
             'name_en' => $e->employerNameEn,
             'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
-        ]);
+        ]) : collect([]);
     @endphp
     <script>
         function employerSelector() {
@@ -72,11 +75,9 @@
                 selectedId: '{{ old('employer_id') }}',
                 selectedName: '',
                 touched: false,
-                showSelector: true,
                 employers: @json($employerOptions),
 
                 init() {
-                    // Pre-select if old value exists
                     if (this.selectedId) {
                         const found = this.employers.find(e => e.id == this.selectedId);
                         if (found) {
@@ -93,25 +94,20 @@
 
                 selectEmployer(emp, close = true) {
                     this.selectedId = emp.id;
-                    this.selectedName = emp.name_th + ' (' + emp.name_en + ')';
-                    // We can choose to clear search or set it to name. Setting it to name allows user to see what they picked in input.
-                    // But if they type again, it filters.
-                    this.search = emp.name_th;
-                    if(close) this.open = false;
+                    this.search = emp.name_th; // Show name in input
+                    this.open = false;
                     this.touched = true;
-                }
+                },
 
                 setFromEvent(detail) {
                     if (detail && detail.id) {
                         this.selectedId = detail.id;
-                        this.selectedName = ''; // Handled by calling context or not needed if hidden
-                        this.showSelector = false;
+                        // Find name to set search
+                        const found = this.employers.find(e => e.id == detail.id);
+                        if(found) this.search = found.name_th;
                     } else {
-                        // Reset for Global Add
                         this.selectedId = '';
-                        this.selectedName = '';
                         this.search = '';
-                        this.showSelector = true;
                     }
                 }
             }
