@@ -100,7 +100,18 @@
                                             </td>
                                             <td>
                                                 <div class="fw-bold">{{ $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee' }}</div>
-                                                <div class="small text-muted">{{ $item->order->project_name ?? '-' }}</div>
+                                                <div class="small text-muted">
+                                                    {{ $item->order->employer->employerNameTh ?? $item->order->employer->employerNameEn ?? '-' }}
+                                                    @if($item->order->employer)
+                                                    <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                                        data-model-type="employer"
+                                                        data-model-id="{{ $item->order->employer->id }}"
+                                                        title="Preview Employer">
+                                                        <i class="bi bi-eye-fill"></i>
+                                                    </button>
+                                                    @endif
+                                                </div>
+                                                <div class="small text-muted" style="font-size: 0.75rem;">{{ $item->order->project_name ?? '-' }}</div>
                                                 @if($item->appointment_location)
                                                     <div class="small text-info"><i class="bi bi-geo-alt-fill"></i> {{ $item->appointment_location }}</div>
                                                 @endif

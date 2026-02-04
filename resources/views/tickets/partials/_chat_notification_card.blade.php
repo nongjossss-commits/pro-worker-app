@@ -31,6 +31,14 @@
 
             <div class="small text-muted mb-2">
                 <i class="bi bi-building"></i> {{ $notification->employer_name_th ?? 'N/A' }}
+                {{-- Preview Employer --}}
+                @if(!empty($notification->employer_id)) <!-- Assuming employer_id is available in payload or context -->
+                    <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2"
+                            data-model-type="employer"
+                            data-model-id="{{ $notification->employer_id }}">
+                        <i class="bi bi-search"></i>
+                    </button>
+                @endif
                 @if($flagCode)
                     <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
                         <img src="{{ asset('images/flags/' . strtolower($flagCode) . '.png') }}"

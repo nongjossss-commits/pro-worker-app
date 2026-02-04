@@ -665,6 +665,15 @@ class WorkflowController extends Controller
             $groupName = $request->group_name ?? null;
 
             foreach ($ids as $empId) {
+                // Locking: Check if employee is already in an active workflow
+                $hasActiveWorkflow = ProductionItem::where('employee_id', $empId)
+                    ->whereNotIn('status', ['completed', 'cancelled'])
+                    ->exists();
+
+                if ($hasActiveWorkflow) {
+                    continue;
+                }
+
                 $exists = ProductionItem::where('production_order_id', $order->id)
                             ->where('employee_id', $empId)
                             ->exists();
@@ -681,9 +690,21 @@ class WorkflowController extends Controller
         }
 
         if ($request->filled('new_employee.name_en') || $request->filled('new_employee.name_th')) {
+            $newEmpData = $request->new_employee;
+
+            // Create Employee Immediately
+            $employee = Employee::create([
+                'employer_id' => $order->employer_id,
+                'employeeNameTh' => $newEmpData['name_th'] ?? null,
+                'employeeNameEn' => $newEmpData['name_en'] ?? null,
+                'employeePassport' => $newEmpData['passport'] ?? null,
+                'employeeNationality' => $newEmpData['nationality'] ?? null,
+                'status' => 'onboarding',
+            ]);
+
             ProductionItem::create([
                 'production_order_id' => $order->id,
-                'employee_id' => null,
+                'employee_id' => $employee->id,
                 'new_employee_data' => $request->new_employee,
                 'group_name' => $request->group_name ?? null,
                 'status' => 'pending'
