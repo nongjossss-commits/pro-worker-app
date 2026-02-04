@@ -220,6 +220,24 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const activeTabId = @json($activeTab->id ?? null);
 
+    // --- Pre-Production Flag Setting ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set Create Job Modal Flag
+        const createJobInput = document.getElementById('create_job_is_pre_production');
+        if(createJobInput) createJobInput.value = '1';
+
+        // Override OpenAddEmployeeModal to set flag after opening (as form might reset)
+        if(typeof window.openAddEmployeeModal === 'function') {
+            const originalOpenFn = window.openAddEmployeeModal;
+            window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug) {
+                originalOpenFn(orderId, employerId, workTypeId, workTypeSlug);
+                // Force set the flag again
+                const addEmpInput = document.getElementById('add_employee_is_pre_production');
+                if(addEmpInput) addEmpInput.value = '1';
+            }
+        }
+    });
+
     // --- Lazy Load ---
     const loadedOrders = {};
     document.getElementById('productionAccordion').addEventListener('show.bs.collapse', function (e) {

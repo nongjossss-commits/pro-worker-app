@@ -121,4 +121,65 @@ class PreProductionWorkflowTest extends TestCase
         $this->assertEquals('active', $newOrder->status);
         $this->assertEquals($this->employer->id, $newOrder->employer_id);
     }
+
+    /** @test */
+    public function cannot_add_employee_if_already_in_active_workflow()
+    {
+        $employee = Employee::factory()->create(['employer_id' => $this->employer->id]);
+
+        // 1. Create Active Order & Item
+        $activeOrder = ProductionOrder::create([
+            'employer_id' => $this->employer->id,
+            'work_type_id' => $this->workType->id,
+            'status' => 'active', // Already in workflow
+            'created_by' => $this->user->id
+        ]);
+
+        ProductionItem::create([
+            'production_order_id' => $activeOrder->id,
+            'employee_id' => $employee->id,
+            'status' => 'pending'
+        ]);
+
+        // 2. Try to add same employee to Pre-Production (Create new job)
+        // We simulate the form submission to 'workflow.store' with 'is_pre_production' = true
+        $response = $this->actingAs($this->user)
+            ->from(route('production.index'))
+            ->post(route('workflow.store'), [
+                'employer_id' => $this->employer->id,
+                'work_type_id' => $this->workType->id,
+                'employee_ids' => [$employee->id],
+                'is_pre_production' => true
+            ]);
+
+        // 3. Assert redirected back with error
+        $response->assertRedirect(route('production.index'));
+        $response->assertSessionHas('duplicate_error');
+
+        // Verify NO new pre-production order created (because validation happens first)
+        $this->assertDatabaseMissing('production_orders', [
+            'status' => 'pre_production',
+            'employer_id' => $this->employer->id
+        ]);
+    }
+
+    /** @test */
+    public function create_job_from_pre_production_sets_correct_status()
+    {
+        // Simulate creating a new empty job (bucket) from Pre-Prod modal
+        $response = $this->actingAs($this->user)
+            ->post(route('workflow.store'), [
+                'employer_id' => $this->employer->id,
+                'work_type_id' => $this->workType->id,
+                'is_pre_production' => true // The flag
+            ]);
+
+        $response->assertRedirect(route('production.index', ['tab' => 'notify_in']));
+
+        $this->assertDatabaseHas('production_orders', [
+            'employer_id' => $this->employer->id,
+            'work_type_id' => $this->workType->id,
+            'status' => 'pre_production'
+        ]);
+    }
 }

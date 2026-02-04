@@ -3,6 +3,7 @@
     <div class="modal-dialog">
         <form action="{{ route('workflow.store') }}" method="POST" class="modal-content">
             @csrf
+            <input type="hidden" name="is_pre_production" id="create_job_is_pre_production" value="0">
             <div class="modal-header">
                 <h5 class="modal-title">{{ __('Create New Job') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
