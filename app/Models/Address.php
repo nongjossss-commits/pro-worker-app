@@ -55,9 +55,41 @@ class Address extends Model
         if ($this->addrMoo) $parts[] = 'หมู่ ' . $this->addrMoo;
         if ($this->addrSoi) $parts[] = 'ซอย ' . $this->addrSoi;
         if ($this->addrRoad) $parts[] = 'ถนน ' . $this->addrRoad;
-        if ($this->addrSubDistrict) $parts[] = 'ต.' . $this->addrSubDistrict;
-        if ($this->addrDistrict) $parts[] = 'อ.' . $this->addrDistrict;
-        if ($this->addrProvince) $parts[] = 'จ.' . $this->addrProvince;
+
+        $isBangkok = $this->addrProvince && (str_contains($this->addrProvince, 'กรุงเทพ') || str_contains($this->addrProvince, 'Bangkok'));
+
+        if ($this->addrSubDistrict) {
+            $val = trim($this->addrSubDistrict);
+            $prefix = $isBangkok ? 'แขวง' : 'ต.';
+            // Only add prefix if not already present
+            if (!str_starts_with($val, $prefix)) {
+                $parts[] = $prefix . $val;
+            } else {
+                $parts[] = $val;
+            }
+        }
+
+        if ($this->addrDistrict) {
+            $val = trim($this->addrDistrict);
+            $prefix = $isBangkok ? 'เขต' : 'อ.';
+            if (!str_starts_with($val, $prefix)) {
+                $parts[] = $prefix . $val;
+            } else {
+                $parts[] = $val;
+            }
+        }
+
+        if ($this->addrProvince) {
+            $val = trim($this->addrProvince);
+            // For Bangkok, typically no prefix or just the name. For others, use 'จ.'
+            $prefix = $isBangkok ? '' : 'จ.';
+            if ($prefix && !str_starts_with($val, $prefix)) {
+                $parts[] = $prefix . $val;
+            } else {
+                $parts[] = $val;
+            }
+        }
+
         if ($this->addrZipCode) $parts[] = $this->addrZipCode;
 
         return implode(' ', $parts);
