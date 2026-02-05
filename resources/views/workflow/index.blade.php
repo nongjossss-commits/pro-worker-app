@@ -3,6 +3,13 @@
 @section('title', 'Workflow Dashboard')
 
 @section('content')
+@php
+    $user = auth()->user();
+    $isEmployer = $user->hasRole('employer');
+    $canManage = $user->can('manage-own-workflow');
+    // Read Only if Employer AND cannot manage
+    $isReadOnly = $isEmployer && !$canManage;
+@endphp
 <style>
     .cursor-pointer { cursor: pointer; }
     .grayscale-mode { filter: grayscale(100%); opacity: 0.8; }
@@ -109,7 +116,7 @@
                 <h5 class="card-title fw-bold text-secondary mb-0">
                     <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }} - {{ $activeTab->name ?? 'Overview' }}
                 </h5>
-                @if(isset($activeTab))
+                @if(isset($activeTab) && !$isReadOnly)
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
                             <i class="bi bi-bell-fill me-1"></i> {{ __('Notify Settings') }}
@@ -159,11 +166,13 @@
         </form>
 
         {{-- Actions --}}
+        @if(!$isReadOnly)
         <div class="d-flex gap-2">
             <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
                 <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
             </button>
         </div>
+        @endif
     </div>
 
     <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
@@ -297,6 +306,7 @@
                                  <div class="vr d-none d-xl-block me-2"></div>
 
                                  {{-- Actions --}}
+                                 @if(!$isReadOnly)
                                  <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </button>
@@ -304,6 +314,7 @@
                                  <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold">
                                     <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
                                  </a>
+                                 @endif
 
                                 <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
                                     <i class="bi bi-chevron-down"></i>
@@ -347,9 +358,11 @@
             <div class="text-center py-5">
                 <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="120" class="mb-3 opacity-50" alt="No Data">
                 <h4 class="text-muted">{{ __('No jobs found in this tab.') }}</h4>
+                @if(!$isReadOnly)
                 <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createJobModal">
                     {{ __('Create New Job') }}
                 </button>
+                @endif
             </div>
         @endforelse
     </div>
@@ -360,10 +373,14 @@
 </div>
 
 {{-- Create Job Modal --}}
+@if(!$isReadOnly)
 @include('workflow.partials.create_modal')
+@endif
 
 {{-- Add Employee Modal --}}
+@if(!$isReadOnly)
 @include('workflow.partials.add_employee_modal')
+@endif
 
 {{-- Notification Settings Modal --}}
 <div class="modal fade" id="notificationSettingsModal" tabindex="-1">

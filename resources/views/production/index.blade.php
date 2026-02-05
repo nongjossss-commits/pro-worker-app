@@ -3,6 +3,13 @@
 @section('title', 'Pre-Production Dashboard')
 
 @section('content')
+@php
+    $user = auth()->user();
+    $isEmployer = $user->hasRole('employer');
+    $canManage = $user->can('manage-own-workflow');
+    // Read Only if Employer AND cannot manage
+    $isReadOnly = $isEmployer && !$canManage;
+@endphp
 <style>
     .cursor-pointer { cursor: pointer; }
     .grayscale-mode { filter: grayscale(100%); opacity: 0.8; }
@@ -74,6 +81,7 @@
         </form>
 
         {{-- Actions --}}
+        @if(!$isReadOnly)
         <div class="d-flex gap-2">
             @if(isset($activeTab))
                 <button class="btn btn-light btn-sm shadow-sm border" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
@@ -84,6 +92,7 @@
                 <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
             </button>
         </div>
+        @endif
     </div>
 
     {{-- Address Filter --}}
@@ -214,10 +223,12 @@
                                  <div class="vr d-none d-xl-block me-2"></div>
 
                                  {{-- Actions --}}
+                                 @if(!$isReadOnly)
                                  {{-- Add Employee Button --}}
                                  <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </button>
+                                 @endif
 
                                 <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
                                     <i class="bi bi-chevron-down"></i>
@@ -272,10 +283,14 @@
 </div>
 
 {{-- Create Job Modal (Reuse Workflow Partial) --}}
+@if(!$isReadOnly)
 @include('workflow.partials.create_modal')
+@endif
 
 {{-- Add Employee Modal (Reuse Workflow Partial) --}}
+@if(!$isReadOnly)
 @include('workflow.partials.add_employee_modal')
+@endif
 
 {{-- Manage Steps Modal (Preparation) --}}
 <div class="modal fade" id="manageStepsModal" tabindex="-1">

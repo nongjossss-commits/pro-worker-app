@@ -66,6 +66,13 @@
 
     $appLocation = $item->appointment_location ?? '';
     $isAppCompleted = $item->appointment_completed_at ? true : false;
+
+    // Permissions
+    $user = auth()->user();
+    $isEmployer = $user->hasRole('employer');
+    $canManage = $user->can('manage-own-workflow');
+    $isReadOnly = $isEmployer && !$canManage;
+    $canDelete = $user->hasRole('admin');
 @endphp
 
 <div class="d-flex align-items-center item-card-outer mb-3 item-card-wrapper"
@@ -278,40 +285,42 @@
             {{-- Actions --}}
             <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center">
 
-                @if($isPreProduction)
-                    {{-- Send to Workflow Button (Only in Pre-Production) --}}
-                    <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3"
-                            onclick="sendToWorkflow({{ $item->id }})"
-                            title="{{ __('Send to Workflow') }}">
-                        <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
-                    </button>
-                @else
-                    {{-- Daily Check Button (Only in Workflow) --}}
-                    @if(!$isCheckedToday && !$isCompleted && !$isCancelled)
-                        <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="checkDaily({{ $item->id }})" title="Daily Check">
-                            <i class="bi bi-clipboard-check-fill"></i> {{ __('Check') }}
-                            @if($daysMissed > 0)
-                                <span class="badge bg-danger ms-1 border border-white">{{ $daysMissed }}d</span>
-                            @endif
+                @if(!$isReadOnly)
+                    @if($isPreProduction)
+                        {{-- Send to Workflow Button (Only in Pre-Production) --}}
+                        <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3"
+                                onclick="sendToWorkflow({{ $item->id }})"
+                                title="{{ __('Send to Workflow') }}">
+                            <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
+                        </button>
+                    @else
+                        {{-- Daily Check Button (Only in Workflow) --}}
+                        @if(!$isCheckedToday && !$isCompleted && !$isCancelled)
+                            <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="checkDaily({{ $item->id }})" title="Daily Check">
+                                <i class="bi bi-clipboard-check-fill"></i> {{ __('Check') }}
+                                @if($daysMissed > 0)
+                                    <span class="badge bg-danger ms-1 border border-white">{{ $daysMissed }}d</span>
+                                @endif
+                            </button>
+                        @endif
+                    @endif
+
+                    {{-- Edit Button --}}
+                    @if($empId)
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                            onclick="openEditEmployeeModal({{ $empId }}, {{ $item->id }})"
+                            title="Edit Employee">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    @else
+                        {{-- Temp Employee (Edit not fully linked yet, but button visible as requested) --}}
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                            onclick="Swal.fire('{{ __('Notice') }}', '{{ __('Please register this employee first to edit full details.') }}', 'info')"
+                            title="Edit Employee">
+                            <i class="bi bi-pencil-square"></i>
                         </button>
                     @endif
                 @endif
-
-                 {{-- Edit Button --}}
-                 @if($empId)
-                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                        onclick="openEditEmployeeModal({{ $empId }}, {{ $item->id }})"
-                        title="Edit Employee">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                 @else
-                    {{-- Temp Employee (Edit not fully linked yet, but button visible as requested) --}}
-                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                        onclick="Swal.fire('{{ __('Notice') }}', '{{ __('Please register this employee first to edit full details.') }}', 'info')"
-                        title="Edit Employee">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                 @endif
 
                  <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
                     data-model-type="employee"
@@ -320,51 +329,55 @@
                     <i class="bi bi-eye-fill"></i>
                 </button>
 
-                {{-- Manage Team --}}
-                <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                    onclick="openManageTeamModal({{ $item->id }}, this)"
-                    data-group-name="{{ $item->group_name }}"
-                    data-order-id="{{ $order->id }}"
-                    title="{{ __('Manage Team') }}">
-                    <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
-                </button>
+                @if(!$isReadOnly)
+                    {{-- Manage Team --}}
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                        onclick="openManageTeamModal({{ $item->id }}, this)"
+                        data-group-name="{{ $item->group_name }}"
+                        data-order-id="{{ $order->id }}"
+                        title="{{ __('Manage Team') }}">
+                        <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
+                    </button>
 
-                {{-- SAVE TO DB (Finalize) --}}
-                <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
-                    id="btn-save-{{ $item->id }}"
-                    title="Mark as Completed"
-                    onclick="finalizeItem({{ $item->id }})">
-                    <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Finish') }}</span>
-                </button>
+                    {{-- SAVE TO DB (Finalize) --}}
+                    <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
+                        id="btn-save-{{ $item->id }}"
+                        title="Mark as Completed"
+                        onclick="finalizeItem({{ $item->id }})">
+                        <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Finish') }}</span>
+                    </button>
 
-                {{-- CANCEL --}}
-                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
-                    id="btn-cancel-{{ $item->id }}"
-                    title="Cancel Item"
-                    onclick="cancelItem({{ $item->id }})">
-                    <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
-                </button>
+                    {{-- CANCEL --}}
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
+                        id="btn-cancel-{{ $item->id }}"
+                        title="Cancel Item"
+                        onclick="cancelItem({{ $item->id }})">
+                        <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
+                    </button>
 
-                {{-- RESTORE (For Cancelled) --}}
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCancelled ? 'd-none' : '' }}"
-                    id="btn-restore-{{ $item->id }}"
-                    title="Restore"
-                    onclick="restoreItem({{ $item->id }})">
-                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
-                </button>
+                    {{-- RESTORE (For Cancelled) --}}
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCancelled ? 'd-none' : '' }}"
+                        id="btn-restore-{{ $item->id }}"
+                        title="Restore"
+                        onclick="restoreItem({{ $item->id }})">
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
+                    </button>
 
-                {{-- UNDO (For Completed) --}}
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCompleted ? 'd-none' : '' }}"
-                    id="btn-undo-{{ $item->id }}"
-                    title="Undo"
-                    onclick="restoreItem({{ $item->id }})">
-                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
-                </button>
+                    {{-- UNDO (For Completed) --}}
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCompleted ? 'd-none' : '' }}"
+                        id="btn-undo-{{ $item->id }}"
+                        title="Undo"
+                        onclick="restoreItem({{ $item->id }})">
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
+                    </button>
+                @endif
 
                 {{-- Delete (Soft) --}}
+                @if($canDelete)
                 <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteItem({{ $item->id }})">
                     <i class="bi bi-trash-fill"></i>
                 </button>
+                @endif
             </div>
         </div>
 
@@ -385,7 +398,7 @@
                              $btnClass = "btn-success text-white"; // Default success for workflow
                         }
 
-                        $disabled = ($isCompleted || $isCancelled) ? 'disabled' : '';
+                        $disabled = ($isCompleted || $isCancelled || $isReadOnly) ? 'disabled' : '';
                         $onclick = "onclick=\"toggleWorkStep({$item->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"";
                     @endphp
                     <button
