@@ -88,7 +88,7 @@
                     <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
                 </button>
             @endif
-            <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
+            <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}', 'production')">
                 <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
             </button>
         </div>
@@ -225,7 +225,7 @@
                                  {{-- Actions --}}
                                  @if(!$isReadOnly)
                                  {{-- Add Employee Button --}}
-                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
+                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'production')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </button>
                                  @endif
@@ -423,17 +423,6 @@
         // Set Create Job Modal Flag
         const createJobInput = document.getElementById('create_job_is_pre_production');
         if(createJobInput) createJobInput.value = '1';
-
-        // Override OpenAddEmployeeModal to set flag after opening (as form might reset)
-        if(typeof window.openAddEmployeeModal === 'function') {
-            const originalOpenFn = window.openAddEmployeeModal;
-            window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug) {
-                originalOpenFn(orderId, employerId, workTypeId, workTypeSlug);
-                // Force set the flag again
-                const addEmpInput = document.getElementById('add_employee_is_pre_production');
-                if(addEmpInput) addEmpInput.value = '1';
-            }
-        }
     });
 
     // --- Lazy Load ---

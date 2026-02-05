@@ -168,7 +168,7 @@
         {{-- Actions --}}
         @if(!$isReadOnly)
         <div class="d-flex gap-2">
-            <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}')">
+            <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}', 'workflow')">
                 <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
             </button>
         </div>
@@ -307,7 +307,7 @@
 
                                  {{-- Actions --}}
                                  @if(!$isReadOnly)
-                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}')">
+                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'workflow')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </button>
 
