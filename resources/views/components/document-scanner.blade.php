@@ -454,9 +454,14 @@
                 if (newIndex >= this.capturedImages.length) {
                     newIndex = this.capturedImages.length - 1;
                 }
+                if (newIndex < 0) newIndex = 0;
 
+                // Move item in the array
                 const item = this.capturedImages.splice(oldIndex, 1)[0];
                 this.capturedImages.splice(newIndex, 0, item);
+
+                // Force Reactivity for Alpine to ensure DOM matches Array
+                this.capturedImages = [...this.capturedImages];
 
                 // Clear selection to avoid confusion
                 this.selectedIndices = [];
