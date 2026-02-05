@@ -45,6 +45,7 @@ class WorkflowController extends Controller
 
         // 3. Query Orders for this Tab
         $query = ProductionOrder::with(['employer', 'workType'])
+            ->whereHas('employer')
             ->where('status', '!=', 'pre_production'); // Active workflows
 
         if ($activeTab) {

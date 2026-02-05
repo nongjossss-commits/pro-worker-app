@@ -100,7 +100,7 @@
                        data-name-en="{{ $item->employee->employeeNameEn ?? '' }}"
                        data-photo="{{ $empPhoto }}"
                        data-employer-name="{{ $order->employer->employerNameTh ?? 'N/A' }}"
-                       {{ !$item->employee_id ? 'disabled' : '' }}>
+                       {{ (!$item->employee_id || $isReadOnly) ? 'disabled' : '' }}>
                 </div>
 
                 <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $item->id }}">
