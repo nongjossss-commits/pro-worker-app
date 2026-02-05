@@ -83,10 +83,17 @@
             <div class="d-flex align-items-center gap-3 w-100">
                 {{-- Checkbox (Optional, for bulk actions if implemented later) --}}
                 <div class="form-check" id="checkbox-container-{{ $item->id }}">
-                    <input class="form-check-input item-checkbox"
+                <input class="form-check-input employee-checkbox"
                            type="checkbox"
-                           value="{{ $item->id }}"
-                           id="check_{{ $item->id }}">
+                       value="{{ $item->employee_id ?? '' }}"
+                       id="check_{{ $item->id }}"
+                       data-employee-id="{{ $item->employee_id ?? '' }}"
+                       data-employer-id="{{ $order->employer_id ?? '' }}"
+                       data-name-th="{{ $item->employee->employeeNameTh ?? '' }}"
+                       data-name-en="{{ $item->employee->employeeNameEn ?? '' }}"
+                       data-photo="{{ $empPhoto }}"
+                       data-employer-name="{{ $order->employer->employerNameTh ?? 'N/A' }}"
+                       {{ !$item->employee_id ? 'disabled' : '' }}>
                 </div>
 
                 <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $item->id }}">

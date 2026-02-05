@@ -54,11 +54,20 @@ class VerificationSeeder extends Seeder
         ]);
 
         // Add items to Active Order
+        $emp1 = Employee::create([
+            'employer_id' => $empActive->id,
+            'employeeNameEn' => 'Mr. Active 1',
+            'employeeNameTh' => 'นาย แอคทีฟ 1',
+            'employeePassport' => 'P1234567',
+            'employeeNationality' => 'Cambodia'
+        ]);
+
         ProductionItem::create([
             'production_order_id' => $wfActive->id,
             'status' => 'pending',
-            'new_employee_data' => ['name_en' => 'Mr. Active 1', 'name_th' => 'นาย แอคทีฟ 1']
+            'employee_id' => $emp1->id
         ]);
+
         ProductionItem::create([
             'production_order_id' => $wfActive->id,
             'status' => 'completed',
@@ -89,6 +98,20 @@ class VerificationSeeder extends Seeder
             'status' => 'pre_production',
             'created_by' => $user->id
         ]);
+        $empPrep = Employee::create([
+            'employer_id' => $empActive->id,
+            'employeeNameEn' => 'Mr. Prep Linked',
+            'employeeNameTh' => 'นาย เตรียม เชื่อมโยง',
+            'employeePassport' => 'PREP123',
+            'employeeNationality' => 'Laos'
+        ]);
+
+        ProductionItem::create([
+            'production_order_id' => $ppActive->id,
+            'status' => 'pending',
+            'employee_id' => $empPrep->id
+        ]);
+
         ProductionItem::create([
             'production_order_id' => $ppActive->id,
             'status' => 'pending',

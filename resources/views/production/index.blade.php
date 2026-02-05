@@ -128,6 +128,29 @@
         </div>
     @endif
 
+    {{-- Bulk Action Bar --}}
+    <div class="bulk-action-bar mb-3 align-items-center gap-2" style="display: none;" id="bulkActionBar">
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+            <label class="form-check-label" for="select-all-checkbox">
+                {{ __('Select All') }} (<span id="selected-count">0</span>)
+            </label>
+        </div>
+
+        <div class="dropdown">
+            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="bulkActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ __('Actions') }}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
+                <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+            </ul>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+    </div>
+
     {{-- Accordion List --}}
     <div class="accordion" id="productionAccordion">
         @forelse($orders as $order)
@@ -371,6 +394,7 @@
 
 @include('employees.partials._edit_scripts')
 @include('production.registration.partials.edit_modal_script')
+@include('employees.modals.advanced_export')
 
 @endsection
 
@@ -411,9 +435,68 @@
                 .then(html => {
                     container.innerHTML = html;
                     loadedOrders[orderId] = true;
+                    if(window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
                 });
+            } else {
+                 if(window.refreshGlobalSelectionUI) setTimeout(window.refreshGlobalSelectionUI, 100);
             }
         }
+    });
+
+    // --- Bulk Actions ---
+    document.getElementById('bulk-advanced-export-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const selected = window.getGlobalSelectedIds();
+        if (selected.length === 0) {
+            showToast('{{ __('Please select employees first.') }}', 'danger');
+            return;
+        }
+        document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+        new bootstrap.Modal(document.getElementById('advancedExportModal')).show();
+    });
+
+    document.getElementById('bulk-download-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const selected = window.getGlobalSelectedIds();
+        if (selected.length === 0) {
+            showToast('{{ __('Please select employees first.') }}', 'danger');
+            return;
+        }
+        if (window.openBulkDownloadModal) window.openBulkDownloadModal(selected);
+    });
+
+    document.getElementById('bulk-advanced-edit-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const selected = window.getGlobalSelectedIds();
+        if (selected.length === 0) {
+            showToast('{{ __('Please select employees first.') }}', 'danger');
+            return;
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('employees.bulk_edit.select_fields') }}';
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        const redirectInput = document.createElement('input');
+        redirectInput.type = 'hidden';
+        redirectInput.name = 'redirect_to';
+        redirectInput.value = window.location.href;
+        form.appendChild(redirectInput);
+
+        selected.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'employee_ids[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
     });
 
     // --- Step Management ---
