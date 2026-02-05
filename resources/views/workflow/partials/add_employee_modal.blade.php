@@ -111,18 +111,7 @@
 
         const modal = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
 
-        // Logic for Tabs/Modes
-        // If Global Add (no orderId), default to New Manual tab?
-        // Or if Existing Employer (from card), default to Existing?
-        // Let's stick to Existing as default, user can switch.
-        // User asked: "Add Employee button... for Manual... use form".
-        // If they click "Add" on card, maybe they want to add New directly?
-        // If "Add" on Global, they definitely want to add New or Existing.
-        // Let's Default to 'New / Manual' if Global Add, else 'Existing' if adding to Card?
-        // Or just keep Existing default.
-        // The user said: "Change Add Job to Add Employee Global... search employer... create employee data".
-        // This implies the flow is "New Employee". So for Global Add, let's switch to Tab 2.
-
+        // Default Tabs Logic
         if (!orderId) {
              const tabNew = new bootstrap.Tab(document.querySelector('#new-tab'));
              tabNew.show();
@@ -132,15 +121,111 @@
         }
 
         if (workTypeSlug === 'notify_in') {
-            // Change Employer -> Search Resigned
             document.getElementById('section-notify-in').classList.remove('d-none');
         } else {
-            // Global Search
             document.getElementById('section-global-search').classList.remove('d-none');
+        }
+
+        // Initialize Image Cropper listeners for New Employee form (Empty prefix)
+        // This fixes the image upload bug by ensuring the 'triggerFile' listener is active
+        if (window.initEmployeeForm) {
+            window.initEmployeeForm('');
         }
 
         modal.show();
     }
+
+    // AJAX Form Submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('addEmployeeForm');
+        if(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const btn = document.getElementById('btn-submit-add');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+                const formData = new FormData(this);
+
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                        // Do NOT set Content-Type for FormData, browser sets it with boundary
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+
+                    if(data.success) {
+                        // Close Modal
+                        bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal')).hide();
+
+                        // Sweet Alert
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Success") }}',
+                            text: data.message || '{{ __("Employees added successfully.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        // Dynamic Update
+                        if (data.order_id) {
+                            // If we added to a known order, refresh it
+                            if (window.refreshOrderContent) {
+                                window.refreshOrderContent(data.order_id);
+                            } else {
+                                // Fallback: try to find the container manually
+                                const container = document.getElementById(`order-content-${data.order_id}`);
+                                if(container) {
+                                    // Re-fetch items
+                                    const url = `{{ route('workflow.index') }}/${data.order_id}/items`;
+                                    fetch(url)
+                                        .then(res => res.text())
+                                        .then(html => {
+                                            container.innerHTML = html;
+                                            // Init Alpine if needed (handled by scripts usually)
+                                        });
+                                }
+                            }
+
+                            // Update Header Stats
+                            if (window.updateOrderHeaderStats && data.order_stats) {
+                                window.updateOrderHeaderStats(data.order_id, data.order_stats);
+                            }
+                        } else {
+                            // Global Add (New Order created) -> Reload Page to show new card
+                            if(data.redirect_url) {
+                                window.location.href = data.redirect_url;
+                            } else {
+                                location.reload();
+                            }
+                        }
+                    } else {
+                        // Error (e.g. Validation)
+                        let msg = data.message || '{{ __("Something went wrong.") }}';
+                        if (data.errors) {
+                            msg = Object.values(data.errors).flat().join('<br>');
+                        }
+                        Swal.fire('{{ __("Error") }}', msg, 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    Swal.fire('{{ __("Error") }}', '{{ __("Network error or server error.") }}', 'error');
+                });
+            });
+        }
+    });
 
     // Search Resigned Logic
     let searchTimeout;

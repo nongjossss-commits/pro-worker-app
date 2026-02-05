@@ -680,6 +680,24 @@
         }
     }
 
+    // --- Helper to Refresh Order Content (List) ---
+    window.refreshOrderContent = function(orderId) {
+        const container = document.getElementById(`order-content-${orderId}`);
+        if (container) {
+            // Keep min-height to prevent jitter
+            container.style.minHeight = container.offsetHeight + 'px';
+            container.style.opacity = '0.5';
+
+            fetch(`{{ route('workflow.index') }}/${orderId}/items`)
+            .then(res => res.text())
+            .then(html => {
+                container.innerHTML = html;
+                container.style.opacity = '1';
+                container.style.minHeight = '';
+            });
+        }
+    };
+
     // --- Helper to Refresh Card ---
     window.refreshItemCard = function(itemId) {
         fetch(`/workflow/item/${itemId}/card`)
@@ -723,11 +741,26 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        removeItemCard(itemId);
+                        // Refresh card to show "Saved/Completed" state (Green/Flat)
+                        refreshItemCard(itemId);
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Finished") }}',
+                            text: '{{ __("Item marked as completed.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
                         if(data.order_stats) {
-                            // Logic to find orderId from card hierarchy if needed, but card is gone.
-                            // We might need to store orderId before removing.
-                            // For now, removing is sufficient as counters are optimistic or will refresh on expand.
+                             const card = document.getElementById(`item-card-${itemId}`);
+                             if(card) {
+                                 const wrapper = card.closest('.order-content-wrapper');
+                                 if(wrapper) {
+                                     const orderId = wrapper.id.replace('order-content-', '');
+                                     updateOrderHeaderStats(orderId, data.order_stats);
+                                 }
+                             }
                         }
                     }
                 });
@@ -751,7 +784,27 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        removeItemCard(itemId);
+                        // Refresh card to show "Cancelled" state (Gray/Flat)
+                        refreshItemCard(itemId);
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Cancelled") }}',
+                            text: '{{ __("Item cancelled.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        if(data.order_stats) {
+                             const card = document.getElementById(`item-card-${itemId}`);
+                             if(card) {
+                                 const wrapper = card.closest('.order-content-wrapper');
+                                 if(wrapper) {
+                                     const orderId = wrapper.id.replace('order-content-', '');
+                                     updateOrderHeaderStats(orderId, data.order_stats);
+                                 }
+                             }
+                        }
                     }
                 });
             }
@@ -759,14 +812,42 @@
     }
 
     window.restoreItem = function(itemId) {
-        fetch(`/workflow/item/${itemId}/restore`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                 refreshItemCard(itemId);
+        Swal.fire({
+            title: '{{ __("Restore Item?") }}',
+            text: '{{ __("Restore to pending state?") }}',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}/restore`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                         refreshItemCard(itemId);
+                         Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Restored") }}',
+                            text: '{{ __("Item restored.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        if(data.order_stats) {
+                             const card = document.getElementById(`item-card-${itemId}`);
+                             if(card) {
+                                 const wrapper = card.closest('.order-content-wrapper');
+                                 if(wrapper) {
+                                     const orderId = wrapper.id.replace('order-content-', '');
+                                     updateOrderHeaderStats(orderId, data.order_stats);
+                                 }
+                             }
+                        }
+                    }
+                });
             }
         });
     }
@@ -868,8 +949,24 @@
         .then(data => {
             if(data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('manageTeamModal')).hide();
-                Swal.fire('{{ __('Saved') }}', '{{ __('Team assigned successfully.') }}', 'success')
-                .then(() => location.reload());
+                Swal.fire({
+                    icon: 'success',
+                    title: '{{ __('Saved') }}',
+                    text: '{{ __('Team assigned successfully.') }}',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                // Update UI: Reload the order items to reflect new grouping
+                // Find Order ID
+                const card = document.getElementById(`item-card-${itemId}`);
+                if (card) {
+                    const wrapper = card.closest('.order-content-wrapper');
+                    if (wrapper) {
+                        const orderId = wrapper.id.replace('order-content-', '');
+                        refreshOrderContent(orderId);
+                    }
+                }
             } else {
                  Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to assign team.') }}', 'error');
             }

@@ -827,6 +827,20 @@ class WorkflowController extends Controller
         $slug = $order->workType->slug ?? ($request->work_type_id ? WorkType::find($request->work_type_id)->slug : 'notify_in');
 
         // Redirect based on status/context
+        if ($request->ajax() || $request->wantsJson()) {
+            // Calculate stats for the order to update UI
+            $orderStats = $this->calculateOrderStats($order);
+            return response()->json([
+                'success' => true,
+                'message' => 'Employee added successfully.',
+                'order_id' => $order->id,
+                'order_stats' => $orderStats,
+                'redirect_url' => $isPreProduction || $order->status === 'pre_production'
+                    ? route('production.index', ['tab' => $slug])
+                    : route('workflow.index', ['tab' => $slug])
+            ]);
+        }
+
         if ($isPreProduction || $order->status === 'pre_production') {
              return redirect()->route('production.index', ['tab' => $slug])
                          ->with('success', 'Preparation Job updated successfully.');
