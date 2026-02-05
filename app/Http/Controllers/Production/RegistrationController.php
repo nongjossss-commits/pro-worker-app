@@ -9,8 +9,10 @@ use App\Models\ProductionOrder;
 use App\Models\RegistrationStep;
 use App\Models\EmployeeCustomField;
 use App\Models\ProductionCustomField;
+use App\Models\NotificationSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -69,6 +71,16 @@ class RegistrationController extends Controller
         $totalBiometricsCollected = 0; // NEW
         $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
+        // Appointments Stat
+        $totalAppointments = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $totalAppointments->withoutGlobalScope('employerTenancy');
+        }
+        $totalAppointments = $totalAppointments->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereNotNull('appointment_date')
+            ->whereNull('appointment_completed_at')
+            ->count();
+
         // Group by Employer for Per-Employer Stats assignment later
         $employeesByEmployer = $allEmployees->groupBy('employer_id');
         $filteredEmployerIds = $allEmployees->pluck('employer_id')->unique();
@@ -104,6 +116,12 @@ class RegistrationController extends Controller
         }
 
         $totalEmployers = $filteredEmployerIds->count();
+
+        // Notification Setting
+        $notificationSetting = NotificationSetting::firstOrNew(
+            ['notification_type' => 'registration_appointment'],
+            ['days_before_expiry' => 3, 'is_enabled' => true]
+        );
 
         // --- 3. Fetch Employers (Optimization: No 'employees' eager load) ---
         $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
@@ -272,11 +290,13 @@ class RegistrationController extends Controller
             'cancelledEmployersCount',
             'notStartedCount',
             'totalBiometricsCollected',
+            'totalAppointments',
             'steps',
             'stepStats',
             'employers',
             'lastStepId',
-            'addressOptions'
+            'addressOptions',
+            'notificationSetting'
         ));
     }
 
@@ -1408,5 +1428,126 @@ class RegistrationController extends Controller
                   ->orWhere('employeePassport', 'like', "%{$search}%");
             });
         }
+    }
+
+    /**
+     * API: Update Appointment Date & Location
+     */
+    public function updateAppointment(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'appointment_date' => 'nullable|date',
+            'appointment_location' => 'nullable|string|max:255',
+        ]);
+
+        $data = [];
+        if ($request->has('appointment_date')) {
+            $data['appointment_date'] = $request->appointment_date;
+        }
+        if ($request->has('appointment_location')) {
+            $data['appointment_location'] = $request->appointment_location;
+        }
+
+        $employee->update($data);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Toggle Appointment Complete
+     */
+    public function toggleAppointmentComplete(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        if ($employee->appointment_completed_at) {
+            $employee->update(['appointment_completed_at' => null]);
+        } else {
+            $employee->update(['appointment_completed_at' => now()]);
+        }
+
+        return response()->json(['success' => true, 'completed_at' => $employee->appointment_completed_at]);
+    }
+
+    /**
+     * API: Update Notification Settings
+     */
+    public function updateNotificationSettings(Request $request)
+    {
+        if (!auth()->user()->can('manage-settings')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'notify_days_advance' => 'required|integer|min:0|max:365'
+        ]);
+
+        NotificationSetting::updateOrCreate(
+            ['notification_type' => 'registration_appointment'],
+            ['days_before_expiry' => $request->notify_days_advance, 'is_enabled' => true]
+        );
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Get Calendar Data (Counts per day)
+     */
+    public function getCalendarData(Request $request)
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $query = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $counts = $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
+            ->whereBetween('appointment_date', [$start, $end])
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereNull('appointment_completed_at') // Exclude completed appointments
+            ->groupBy('date')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->date => $item->count];
+            });
+
+        return response()->json($counts);
+    }
+
+    /**
+     * API: Get Appointments for a specific Date (Modal list -> Rendered HTML)
+     */
+    public function getAppointmentsByDate(Request $request)
+    {
+        $request->validate(['date' => 'required|date']);
+        $date = Carbon::parse($request->date);
+
+        $query = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $employees = $query->whereDate('appointment_date', $date)
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereNull('appointment_completed_at') // Exclude completed
+            ->with(['employer', 'registrationSteps'])
+            ->get();
+
+        $steps = RegistrationStep::registration()->orderBy('order')->get();
+
+        $html = view('production.registration.partials.day_appointments_list', compact('employees', 'steps'))->render();
+
+        return response()->json(['html' => $html]);
     }
 }

@@ -115,6 +115,126 @@
                 </div>
                 </div>
 
+            {{-- Appointment Date & Location (Copied from Workflow) --}}
+            @php
+                $appDate = $employee->appointment_date;
+                $appDisplay = '-';
+                $appValue = '';
+                if ($appDate) {
+                    $appValue = $appDate->format('Y-m-d H:i');
+                    if ($appDate->format('H:i:s') === '00:00:00') {
+                        $appDisplay = $appDate->format('d/m/Y');
+                    } else {
+                        $appDisplay = $appDate->format('d/m/Y H:i');
+                    }
+                }
+                $appLocation = $employee->appointment_location ?? '';
+                $isAppCompleted = $employee->appointment_completed_at ? true : false;
+            @endphp
+
+            <div class="ms-md-2" x-data="{
+                isEditing: false,
+                isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
+                dateValue: '{{ $appValue }}',
+                displayValue: '{{ $appDisplay }}',
+                locationValue: '{{ $appLocation }}',
+                initFlatpickr() {
+                    if (this.$refs.dateInput._flatpickr) return;
+                    flatpickr(this.$refs.dateInput, {
+                        enableTime: true,
+                        dateFormat: 'Y-m-d H:i',
+                        altInput: true,
+                        altFormat: 'd/m/Y H:i',
+                        time_24hr: true,
+                        defaultDate: this.dateValue,
+                        onChange: (selectedDates, dateStr) => {
+                            this.dateValue = dateStr;
+                        }
+                    });
+                },
+                toggleAppComplete() {
+                    fetch('/production/registration/{{ $employee->id }}/appointment-complete', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                    }).then(res => res.json()).then(data => {
+                        if(data.success) {
+                            // Logic handled by x-model
+                        } else {
+                            this.isAppCompleted = !this.isAppCompleted; // revert
+                        }
+                    });
+                },
+                saveDate() {
+                    fetch('/production/registration/{{ $employee->id }}/appointment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                        body: JSON.stringify({ appointment_date: this.dateValue, appointment_location: this.locationValue })
+                    }).then(res => res.json()).then(data => {
+                        if(data.success) {
+                            this.isEditing = false;
+                            // Update display logic
+                            if (!this.dateValue) {
+                                this.displayValue = '-';
+                            } else {
+                                try {
+                                    let parts = this.dateValue.split(' ');
+                                    let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
+                                    let timePart = parts[1];
+                                    let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                                    if (timePart === '00:00') {
+                                        this.displayValue = displayDate;
+                                    } else {
+                                        this.displayValue = `${displayDate} ${timePart}`;
+                                    }
+                                } catch (e) {
+                                    this.displayValue = this.dateValue;
+                                }
+                            }
+                        }
+                    });
+                }
+            }">
+                <div style="min-width: 170px;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
+                        <div class="form-check form-switch" title="{{ __('Mark Appointment Completed') }}">
+                            <input class="form-check-input cursor-pointer" type="checkbox" x-model="isAppCompleted" @change="toggleAppComplete()">
+                        </div>
+                    </div>
+
+                    <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                         @click="isEditing = true; $nextTick(() => initFlatpickr())"
+                         :class="{ 'opacity-50': isAppCompleted }">
+
+                         <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-calendar-event text-warning me-1"></i>
+                                <span x-text="displayValue"></span>
+                                <i x-show="isAppCompleted" class="bi bi-check-circle-fill text-success ms-auto"></i>
+                            </div>
+                            <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
+                                <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
+                            </div>
+                         </div>
+                    </div>
+
+                    <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
+                         <label class="small fw-bold">Date & Time</label>
+                         <div>
+                            <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
+                         </div>
+
+                         <label class="small fw-bold mt-1">Location</label>
+                         <input x-model="locationValue" type="text" class="form-control form-control-sm" placeholder="e.g. Office">
+
+                         <div class="d-flex gap-1 mt-2">
+                            <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> Save</button>
+                            <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- 3 Extra Fields (Editable) --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
