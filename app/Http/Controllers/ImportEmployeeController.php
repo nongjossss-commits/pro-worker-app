@@ -178,6 +178,10 @@ class ImportEmployeeController extends Controller
             'CI/PJ/TD/Inter',                 // N
             'Visa Expiry Date',               // O (New)
             '90-Day Report Date',             // P (New)
+            'Employer\'s Employee ID',        // Q (New)
+            'Start Date',                     // R (New)
+            'Employee ID Number',             // S (New)
+            'Passport Issue Date',            // T (New)
         ];
 
         foreach ($columns as $index => $header) {
@@ -206,8 +210,8 @@ class ImportEmployeeController extends Controller
         // Set dimensions
         $sheet->getColumnDimension('A')->setWidth(30);
 
-        // Auto-size other columns (B to P)
-        foreach (range('B', 'P') as $col) {
+        // Auto-size other columns (B to T)
+        foreach (range('B', 'T') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -224,8 +228,8 @@ class ImportEmployeeController extends Controller
         for ($r = $startDataRow; $r <= $endDataRow; $r++) {
             $sheet->getRowDimension($r)->setRowHeight(150);
 
-            // Apply borders to all cells in the grid (A to P)
-            $rowRange = "A{$r}:P{$r}";
+            // Apply borders to all cells in the grid (A to T)
+            $rowRange = "A{$r}:T{$r}";
             $sheet->getStyle($rowRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             $sheet->getStyle($rowRange)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
 
@@ -357,10 +361,14 @@ class ImportEmployeeController extends Controller
                 // N (14) = Book Type (Old L)
                 // O (15) = Visa Expiry (New)
                 // P (16) = 90 Day Expiry (New)
+                // Q (17) = Employer's Employee ID (New)
+                // R (18) = Start Date (New)
+                // S (19) = Employee ID Number (New)
+                // T (20) = Passport Issue Date (New)
 
                 $row = [];
-                // We read columns 2 (B) through 16 (P) for text data
-                for ($colIdx = 2; $colIdx <= 16; $colIdx++) {
+                // We read columns 2 (B) through 20 (T) for text data
+                for ($colIdx = 2; $colIdx <= 20; $colIdx++) {
                     $colLetter = Coordinate::stringFromColumnIndex($colIdx);
                     $val = $sheet->getCell($colLetter . $rowIdx)->getValue();
                     $row[] = trim((string)$val);
@@ -387,6 +395,10 @@ class ImportEmployeeController extends Controller
                 $bookType = $row[12];
                 $visaExpiryRaw = $row[13];
                 $ninetyDayRaw = $row[14];
+                $employerEmployeeId = $row[15];
+                $startDateRaw = $row[16];
+                $employeeIdNumber = $row[17];
+                $passportIssueDateRaw = $row[18];
 
                 // Validate and Parse Dates
                 $dob = $this->parseDateStrict($dobRaw, $sheet->getCell('F' . $rowIdx));
@@ -417,6 +429,18 @@ class ImportEmployeeController extends Controller
                 if ($ninetyDayRaw && !$ninetyDay) {
                     $errors[] = "Row $rowIdx: Invalid 90-Day Report format ($ninetyDayRaw). Expected D/M/Y.";
                     continue;
+                }
+
+                $startDate = $this->parseDateStrict($startDateRaw, $sheet->getCell('R' . $rowIdx));
+                if ($startDateRaw && !$startDate) {
+                     $errors[] = "Row $rowIdx: Invalid Start Date format ($startDateRaw). Expected D/M/Y.";
+                     continue;
+                }
+
+                $passportIssueDate = $this->parseDateStrict($passportIssueDateRaw, $sheet->getCell('T' . $rowIdx));
+                if ($passportIssueDateRaw && !$passportIssueDate) {
+                     $errors[] = "Row $rowIdx: Invalid Passport Issue Date format ($passportIssueDateRaw). Expected D/M/Y.";
+                     continue;
                 }
 
                 // Process Image from Column A
@@ -563,6 +587,10 @@ class ImportEmployeeController extends Controller
                     'ninetyDayReportDate' => $ninetyDay,
                     'employeePhoto' => $photoPath,
                     'status' => $status,
+                    'employer_employee_id' => $employerEmployeeId,
+                    'startDate' => $startDate,
+                    'employee_id_number' => $employeeIdNumber,
+                    'passport_issue_date' => $passportIssueDate,
                 ];
 
                 if ($nationality === 'กัมพูชา') {
