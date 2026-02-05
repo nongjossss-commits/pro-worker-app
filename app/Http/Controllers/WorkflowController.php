@@ -885,8 +885,19 @@ class WorkflowController extends Controller
      */
     public function destroyItem(Request $request, $itemId)
     {
-        $item = ProductionItem::findOrFail($itemId);
+        $item = ProductionItem::with('employee')->findOrFail($itemId);
+
+        // Capture employee before deleting the item
+        $employee = $item->employee;
+
         $item->delete();
+
+        // Check if employee should also be deleted
+        // Logic: If employee was created specifically for this workflow (status 'onboarding')
+        if ($employee && $employee->status === 'onboarding') {
+            $employee->delete();
+        }
+
         return response()->json(['success' => true]);
     }
 

@@ -206,6 +206,36 @@ class Employee extends Model
                     ->withTimestamps();
     }
 
+    public function productionItems()
+    {
+        return $this->hasMany(ProductionItem::class);
+    }
+
+    public function getActiveWorkflowsAttribute()
+    {
+        return $this->productionItems()
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereHas('order', function ($query) {
+                $query->whereNotIn('status', ['completed', 'cancelled']);
+            })
+            ->with(['order.workType'])
+            ->get()
+            ->map(function ($item) {
+                // Determine status label based on Order status
+                $statusLabel = $item->order->status === 'pre_production'
+                    ? 'Pre-Production'
+                    : 'กำลังดำเนินการ'; // "Processing"
+
+                return (object) [
+                    'name' => $item->order->workType->name ?? 'Unknown',
+                    'status_label' => $statusLabel,
+                    'order_id' => $item->production_order_id,
+                    'item_id' => $item->id,
+                    'tab_slug' => $item->order->workType->slug ?? '',
+                ];
+            });
+    }
+
     public function customFields()
     {
         return $this->hasMany(EmployeeCustomField::class);
