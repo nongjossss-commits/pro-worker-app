@@ -15,13 +15,23 @@
     #workflowAccordion {
         counter-reset: employer-counter;
     }
-    .production-order-card .employer-sequence-number::before {
+    .production-order-card-container:not(.d-none) {
         counter-increment: employer-counter;
+    }
+    .employer-sequence-number::before {
         content: counter(employer-counter);
+    }
+    .employer-sequence-number {
+        min-width: 50px;
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #6c757d;
+        opacity: 0.5;
     }
 
     /* CSS Counters for Employees (Per Order) */
-    .item-list {
+    .order-content-wrapper {
         counter-reset: employee-counter;
     }
     .item-card-wrapper:not(.d-none) {
@@ -29,6 +39,12 @@
     }
     .item-sequence-number::before {
         content: counter(employee-counter);
+    }
+    .item-sequence-number {
+        min-width: 40px;
+        text-align: right;
+        font-weight: bold;
+        white-space: nowrap;
     }
 </style>
 
@@ -185,14 +201,13 @@
                  $stepStats = $computed['step_stats'];
                  $isActive = ($computed['active_items_count'] ?? 0) > 0;
             @endphp
-            <div class="card border-0 shadow-sm mb-3 production-order-card {{ !$isActive ? 'grayscale-mode' : '' }}">
-                <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
+            <div class="d-flex align-items-start production-order-card-container w-100 mb-4">
+                <div class="employer-sequence-number me-3 pt-2"></div>
 
-                    <div class="d-flex align-items-center position-absolute" style="left: -15px; top: 20px;">
-                        <span class="employer-sequence-number badge rounded-pill bg-secondary shadow-sm" style="font-size: 0.75rem;"></span>
-                    </div>
+                <div class="card border-0 shadow-sm flex-grow-1 production-order-card {{ !$isActive ? 'grayscale-mode' : '' }}">
+                    <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
-                    {{-- Top Row: Identity + Stats + Actions --}}
+                        {{-- Top Row: Identity + Stats + Actions --}}
                     <div class="row align-items-xl-center g-3 mb-3">
                         {{-- Identity --}}
                         <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
@@ -294,11 +309,12 @@
 
                 </div>
 
-                <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#workflowAccordion">
-                    <div class="card-body bg-light p-4">
-                        <div id="order-content-{{ $order->id }}" class="order-content-wrapper">
-                            <div class="d-flex justify-content-center py-5">
-                                <div class="spinner-border text-primary" role="status"></div>
+                    <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#workflowAccordion">
+                        <div class="card-body bg-light p-4">
+                            <div id="order-content-{{ $order->id }}" class="order-content-wrapper">
+                                <div class="d-flex justify-content-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
