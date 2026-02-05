@@ -54,7 +54,7 @@ class EmployerEmployeeController extends Controller
             }
 
             // Retrieve data with necessary fields
-             $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
+             $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'employer_employee_id', 'employeePhoto', 'employeeNationality']);
 
              return response()->json($this->formatEmployees($employees));
         }
@@ -117,7 +117,7 @@ class EmployerEmployeeController extends Controller
             }
         }
 
-        $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'companyWorkerId', 'employeePhoto', 'employeeNationality']);
+        $employees = $query->get(['id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'employer_employee_id', 'employeePhoto', 'employeeNationality']);
 
         return response()->json($this->formatEmployees($employees));
     }
@@ -144,7 +144,7 @@ class EmployerEmployeeController extends Controller
                 'employeeNameTh' => $employee->employeeNameTh,
                 'employeeNameEn' => $employee->employeeNameEn,
                 'employeePassport' => $employee->employeePassport,
-                'companyWorkerId' => $employee->companyWorkerId,
+                'employer_employee_id' => $employee->employer_employee_id,
                 'photo_url' => $employee->photo_url, // Accessor field
                 'nationality' => $nationality,
                 'flag_url' => $flagUrl,
