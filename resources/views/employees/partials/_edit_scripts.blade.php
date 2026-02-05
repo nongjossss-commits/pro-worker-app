@@ -332,8 +332,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize Edit Form (AJAX loaded later usually, but calling here is safe)
-        // window.initEmployeeForm('edit_'); // Actually, edit form is loaded via AJAX, script there calls it.
+        // Initialize Edit Form (Static Page Load)
+        // This is required for the standalone Edit Page (employees.edit) which renders _edit_form.blade.php directly.
+        window.initEmployeeForm('edit_');
 
         // Initialize Create Form (Static HTML)
         window.initEmployeeForm('');
