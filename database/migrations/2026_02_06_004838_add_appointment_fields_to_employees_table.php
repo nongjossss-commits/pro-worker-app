@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('employees', function (Blueprint $table) {
             $table->dateTime('appointment_date')->nullable();
-            $table->string('appointment_location')->nullable();
+            $table->text('appointment_location')->nullable();
             $table->dateTime('appointment_completed_at')->nullable();
         });
     }
