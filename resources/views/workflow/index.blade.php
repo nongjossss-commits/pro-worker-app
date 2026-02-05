@@ -192,6 +192,8 @@
         </div>
     </div>
 
+    <x-bulk-action-bar :hide-send-to-production="true" />
+
     {{-- Accordion List --}}
     <div class="accordion" id="workflowAccordion">
         @forelse($orders as $order)
@@ -502,12 +504,15 @@
     </div>
 </div>
 
+<x-bulk-action-modals />
+
 @endsection
 
 @include('employees.partials._edit_scripts')
 @include('production.registration.partials.edit_modal_script')
 
 @push('scripts')
+<x-bulk-action-scripts />
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const activeTabId = @json($activeTab->id ?? null);

@@ -10,6 +10,15 @@
         {{ __('No employees in this job yet.') }}
     </div>
 @else
+    <div class="d-flex align-items-center mb-3 px-2 border-bottom pb-2">
+        <div class="form-check">
+            <input class="form-check-input order-select-all" type="checkbox" id="select-all-order-{{ $order->id }}" data-order-id="{{ $order->id }}">
+            <label class="form-check-label fw-bold small text-secondary cursor-pointer" for="select-all-order-{{ $order->id }}">
+                {{ __('Select All in this Job') }}
+            </label>
+        </div>
+    </div>
+
     @foreach($groupedItems as $groupName => $items)
         @if($groupName)
             <div class="d-flex align-items-center mb-2 mt-4 px-2">
