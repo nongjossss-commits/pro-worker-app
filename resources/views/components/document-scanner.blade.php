@@ -131,7 +131,7 @@
             <div x-show="view === 'review'" class="w-full h-full flex flex-col bg-gray-100 relative">
 
                 <!-- Action Bar for Layouts -->
-                <div x-show="selectedIndices.length > 0"
+                <div x-show="selectedIds.length > 0"
                      x-transition:enter="transition ease-out duration-200"
                      x-transition:enter-start="translate-y-full opacity-0"
                      x-transition:enter-end="translate-y-0 opacity-100"
@@ -139,11 +139,11 @@
 
                      <div class="bg-white rounded-full shadow-xl border p-2 pointer-events-auto flex items-center gap-2 overflow-x-auto max-w-full">
                         <span class="text-sm font-bold px-2 text-gray-600 whitespace-nowrap">
-                            <span x-text="selectedIndices.length"></span> รายการ:
+                            <span x-text="selectedIds.length"></span> รายการ:
                         </span>
 
                         <!-- 1 Image Options -->
-                        <template x-if="selectedIndices.length === 1">
+                        <template x-if="selectedIds.length === 1">
                             <div class="flex gap-1">
                                 <button @click="generateLayout('full')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-arrows-fullscreen"></i> เต็ม A4</button>
                                 <button @click="generateLayout('70')" class="btn btn-sm btn-outline-primary whitespace-nowrap">70%</button>
@@ -153,7 +153,7 @@
                         </template>
 
                         <!-- 2 Image Options -->
-                        <template x-if="selectedIndices.length === 2">
+                        <template x-if="selectedIds.length === 2">
                             <div class="flex gap-1">
                                 <button @click="generateLayout('half_v')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-split"></i> บน-ล่าง</button>
                                 <button @click="generateLayout('half_h')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-sidebar"></i> ซ้าย-ขวา</button>
@@ -162,12 +162,12 @@
                         </template>
 
                         <!-- 3+ Options -->
-                        <template x-if="selectedIndices.length >= 3">
+                        <template x-if="selectedIds.length >= 3">
                             <button @click="generateLayout('grid')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-grid-3x3"></i> Grid Layout</button>
                         </template>
 
                         <div class="w-px h-6 bg-gray-300 mx-1"></div>
-                        <button @click="selectedIndices = []" class="btn btn-sm btn-light text-muted hover:text-dark"><i class="bi bi-x-lg"></i></button>
+                        <button @click="selectedIds = []" class="btn btn-sm btn-light text-muted hover:text-dark"><i class="bi bi-x-lg"></i></button>
                      </div>
                 </div>
 
@@ -178,15 +178,15 @@
                          </span>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" x-ref="sortableGrid">
                         <template x-for="(img, index) in capturedImages" :key="img.id">
-                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
-                                 :class="selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : ''">
+                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200 sortable-item"
+                                 :class="selectedIds.includes(img.id) ? 'ring-2 ring-primary bg-blue-50' : ''">
 
                                 <!-- Selection Checkbox Overlay -->
                                 <div class="absolute top-2 left-2 z-10">
                                     <input type="checkbox"
-                                           :checked="selectedIndices.includes(index)"
+                                           :checked="selectedIds.includes(img.id)"
                                            @change="toggleSelection(index)"
                                            class="form-check-input w-5 h-5 cursor-pointer shadow-sm border-gray-300">
                                 </div>
@@ -213,13 +213,13 @@
                         </template>
 
                         <!-- Add More Button (Universal) -->
-                        <div @click="view = 'camera'; startCamera()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                        <div @click="view = 'camera'; startCamera()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-plus-lg text-3xl mb-1"></i>
                             <span class="text-sm">ถ่ายเพิ่ม</span>
                         </div>
 
                         <!-- Import Button (Universal) -->
-                        <div @click="$refs.fileInput.click()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                        <div @click="$refs.fileInput.click()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-file-earmark-plus text-3xl mb-1"></i>
                             <span class="text-sm">นำเข้าไฟล์</span>
                         </div>
@@ -342,6 +342,7 @@
 <!-- Load Libraries (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script async src="https://docs.opencv.org/4.x/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
 
 <script>
@@ -363,7 +364,8 @@
             // Data
             // Structure: { id, original: dataUrl, cropped: dataUrl, corners: [{x,y}...] }
             capturedImages: [],
-            selectedIndices: [], // Indices of selected images for layout
+            selectedIds: [], // IDs of selected images for layout
+            sortableInstance: null,
             currentEditIndex: -1,
 
             // Layout Editor State
@@ -394,11 +396,45 @@
                     console.log('OpenCV Loaded');
                 });
 
+                this.$watch('view', (value) => {
+                    if (value === 'review') {
+                        this.$nextTick(() => this.initSortable());
+                    }
+                });
+
                 // Mouse/Touch Move Handlers for Cropping
                 window.addEventListener('mousemove', (e) => this.onDrag(e));
                 window.addEventListener('mouseup', () => this.stopDrag());
                 window.addEventListener('touchmove', (e) => this.onDrag(e), {passive: false});
                 window.addEventListener('touchend', () => this.stopDrag());
+            },
+
+            initSortable() {
+                if (this.sortableInstance) return;
+                const el = this.$refs.sortableGrid;
+                if (!el) return;
+
+                this.sortableInstance = new Sortable(el, {
+                    draggable: ".sortable-item",
+                    filter: ".static-item",
+                    animation: 150,
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    ghostClass: "opacity-50",
+                    onEnd: (evt) => {
+                        const { oldIndex, newIndex } = evt;
+                        if (oldIndex === newIndex) return;
+
+                        let targetIndex = newIndex;
+                        if (targetIndex >= this.capturedImages.length) {
+                            targetIndex = this.capturedImages.length - 1;
+                        }
+
+                        // Move the item in the array
+                        const item = this.capturedImages.splice(oldIndex, 1)[0];
+                        this.capturedImages.splice(targetIndex, 0, item);
+                    }
+                });
             },
 
             getHeaderTitle() {
@@ -835,10 +871,10 @@
             },
 
             removeImage(index) {
-                // Update selection indices before removing
-                // If removed index is selected, deselect it
-                // If removed index < selected index, shift selected index down
-                this.selectedIndices = this.selectedIndices.filter(i => i !== index).map(i => i > index ? i - 1 : i);
+                const item = this.capturedImages[index];
+                if (item) {
+                     this.selectedIds = this.selectedIds.filter(id => id !== item.id);
+                }
 
                 this.capturedImages.splice(index, 1);
                 if(this.capturedImages.length === 0) {
@@ -848,10 +884,14 @@
             },
 
             toggleSelection(index) {
-                if (this.selectedIndices.includes(index)) {
-                    this.selectedIndices = this.selectedIndices.filter(i => i !== index);
+                const item = this.capturedImages[index];
+                if (!item) return;
+                const id = item.id;
+
+                if (this.selectedIds.includes(id)) {
+                    this.selectedIds = this.selectedIds.filter(i => i !== id);
                 } else {
-                    this.selectedIndices.push(index);
+                    this.selectedIds.push(id);
                 }
             },
 
@@ -862,12 +902,14 @@
                 try {
                     // 1. Prepare Source Images
                     this.layoutSourceImages = [];
-                    for(const idx of this.selectedIndices) {
-                        // We store the data URL directly in layoutSourceImages
-                        this.layoutSourceImages.push({
-                            src: this.capturedImages[idx].cropped,
-                            originalIndex: idx
-                        });
+                    for(const id of this.selectedIds) {
+                        const img = this.capturedImages.find(i => i.id === id);
+                        if(img) {
+                            this.layoutSourceImages.push({
+                                src: img.cropped,
+                                originalIndex: -1
+                            });
+                        }
                     }
                     this.layoutType = type;
 
