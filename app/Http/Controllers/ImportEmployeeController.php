@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\ProductionOrder;
 use App\Models\ProductionItem;
+use App\Models\WorkType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -278,7 +279,50 @@ class ImportEmployeeController extends Controller
         $employerId = $request->input('employer_id');
         $productionId = $request->input('production_id');
         $targetStatus = $request->input('target_status'); // Get target status
+        $workTypeId = $request->input('work_type_id'); // New
+        $returnTo = $request->input('return_to'); // New
         $file = $request->file('file');
+
+        // Logic to create order if missing (when importing from generic context)
+        if (!$productionId && $workTypeId && $employerId) {
+             $workType = WorkType::find($workTypeId);
+             if ($workType) {
+                 // Determine status based on context
+                 $isPreProduction = ($returnTo === 'production'); // 'production' means Pre-Production dashboard
+
+                 // If target_status is explicitly passed, use it, otherwise derive
+                 if (!$targetStatus) {
+                     $targetStatus = $isPreProduction ? 'pre_production' : 'active';
+                 }
+
+                 // Bucket Logic (Merge into existing if applicable)
+                 if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
+                    $order = ProductionOrder::firstOrCreate(
+                        [
+                            'employer_id' => $employerId,
+                            'work_type_id' => $workType->id,
+                            'status' => $targetStatus
+                        ],
+                        [
+                            'type' => 'employer',
+                            'project_name' => $workType->name . ' - ' . Employer::find($employerId)->employerNameTh . ($isPreProduction ? ' (Prep)' : ''),
+                            'created_by' => auth()->id()
+                        ]
+                    );
+                 } else {
+                     // For other types, create new order for this import batch
+                     $order = ProductionOrder::create([
+                        'employer_id' => $employerId,
+                        'work_type_id' => $workType->id,
+                        'type' => 'employer',
+                        'project_name' => $workType->name . ' - ' . now()->format('d/m/Y') . ' (Import)',
+                        'status' => $targetStatus,
+                        'created_by' => auth()->id()
+                    ]);
+                 }
+                 $productionId = $order->id;
+             }
+        }
 
         if (!auth()->user()->can('create-employees')) {
             // Check ownership if strict
@@ -617,6 +661,21 @@ class ImportEmployeeController extends Controller
 
             $importedEmployeeIds = collect($importedEmployees)->pluck('id')->toArray();
 
+            // Calculate Finish Route
+            $finishRoute = null;
+            if ($productionId) {
+                $order = ProductionOrder::find($productionId);
+                if ($order && $order->workType) {
+                    $slug = $order->workType->slug;
+                    // Check status or context
+                    if ($order->status === 'pre_production') {
+                        $finishRoute = route('production.index', ['tab' => $slug]);
+                    } else {
+                         $finishRoute = route('workflow.index', ['tab' => $slug]);
+                    }
+                }
+            }
+
             $msg = "Successfully imported $count employees.";
             if (count($errors)) {
                 $msg .= " With " . count($errors) . " errors.";
@@ -625,7 +684,8 @@ class ImportEmployeeController extends Controller
             return back()->with('success', $msg)
                          ->with('import_errors', $errors)
                          ->with('imported_employee_ids', $importedEmployeeIds)
-                         ->with('production_id', $productionId);
+                         ->with('production_id', $productionId)
+                         ->with('finish_route', $finishRoute);
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -88,18 +88,22 @@
 </div>
 
 <script>
-    window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug) {
+    window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug, context = 'workflow') {
         document.getElementById('modal_employer_id').value = employerId || '';
         document.getElementById('modal_work_type_id').value = workTypeId || '';
         document.getElementById('modal_production_order_id').value = orderId || ''; // Empty if Global Add
+
+        // Set Pre-Production Flag based on context
+        const isPreProduction = (context === 'production');
+        document.getElementById('add_employee_is_pre_production').value = isPreProduction ? '1' : '0';
 
         // Dispatch event to Alpine component in the partial to set/clear employer
         window.dispatchEvent(new CustomEvent('set-employer-id', {
             detail: { id: employerId } // If null/undefined, partial handles it
         }));
 
-        // Setup Import Link with return_to parameter
-        const importUrl = `{{ route('employees.import_view') }}?production_id=${orderId || ''}&employer_id=${employerId || ''}&return_to=workflow`;
+        // Setup Import Link with return_to parameter and work_type_id
+        const importUrl = `{{ route('employees.import_view') }}?production_id=${orderId || ''}&employer_id=${employerId || ''}&work_type_id=${workTypeId || ''}&return_to=${context}`;
         document.getElementById('btn-go-import').href = importUrl;
 
         // Reset UI

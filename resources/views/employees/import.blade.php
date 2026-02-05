@@ -55,6 +55,14 @@
                             <input type="hidden" name="target_status" value="{{ request('target_status') }}">
                         @endif
 
+                        @if(request('work_type_id'))
+                            <input type="hidden" name="work_type_id" value="{{ request('work_type_id') }}">
+                        @endif
+
+                        @if(request('return_to'))
+                            <input type="hidden" name="return_to" value="{{ request('return_to') }}">
+                        @endif
+
                         <div class="mb-4">
                             <label for="employer_id" class="form-label fw-bold required">{{ __('Select Employer') }}</label>
 
