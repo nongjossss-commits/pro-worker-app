@@ -738,7 +738,10 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error(res.statusText);
+                    return res.json();
+                })
                 .then(data => {
                     if(data.success) {
                         // Refresh card to show "Saved/Completed" state (Green/Flat)
@@ -762,7 +765,13 @@
                                  }
                              }
                         }
+                    } else {
+                         Swal.fire('Error', data.message || '{{ __("Something went wrong") }}', 'error');
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error', '{{ __("Failed to save data.") }}', 'error');
                 });
             }
         });
