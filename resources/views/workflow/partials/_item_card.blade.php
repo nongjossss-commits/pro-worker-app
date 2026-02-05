@@ -27,8 +27,12 @@
     }
 
     // Employee Data Proxy
+    $empTitleEn = $item->employee->employeeTitleEn ?? $item->new_employee_data['title_en'] ?? '';
     $empNameEn = $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee';
+
+    $empTitleTh = $item->employee->employeeTitleTh ?? $item->new_employee_data['title_th'] ?? '';
     $empNameTh = $item->employee->employeeNameTh ?? $item->new_employee_data['name_th'] ?? '';
+
     $empPhoto = $item->employee && $item->employee->employeePhoto ? asset('storage/' . $item->employee->employeePhoto) : 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
     $empPassport = $item->employee->employeePassport ?? $item->new_employee_data['passport_no'] ?? '-';
     $empNationality = $item->employee->employeeNationality ?? $item->new_employee_data['nationality'] ?? '-';
@@ -100,14 +104,14 @@
                     {{-- Info --}}
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
-                             <div class="fw-bold text-dark">{{ $empNameEn }}</div>
+                             <div class="fw-bold text-dark">{{ $empTitleEn }} {{ $empNameEn }}</div>
                              {{-- Resolution Badge --}}
                              @if($mouGroup !== 'N/A')
                                 <span class="badge rounded-pill {{ $mouBadgeClass }} small" style="font-size: 0.65rem;">{{ $mouGroup }}</span>
                              @endif
                         </div>
-                        <div class="text-muted small">
-                            {{ $empNameTh }}
+                        <div class="text-primary small fw-bold">
+                            {{ $empTitleTh }} {{ $empNameTh }}
                         </div>
 
                         {{-- Employer Info (Requested Feature) --}}

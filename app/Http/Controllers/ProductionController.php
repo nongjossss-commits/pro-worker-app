@@ -74,7 +74,15 @@ class ProductionController extends Controller
             });
         }
 
-        $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
+        // Count active items for sorting (Active = Not Cancelled AND Not Completed)
+        $query->withCount(['items as active_items_count' => function($q) {
+             $q->whereNotIn('status', ['cancelled', 'completed']);
+        }]);
+
+        $orders = $query->orderByDesc('active_items_count')
+                        ->latest('updated_at')
+                        ->paginate(15)
+                        ->withQueryString();
 
         // Load Relations for View
         // Note: steps for Pre-Production might be different.

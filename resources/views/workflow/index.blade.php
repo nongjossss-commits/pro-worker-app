@@ -10,6 +10,26 @@
     .stat-badge { width: 24px; height: 24px; font-size: 0.75rem; }
     .custom-scrollbar::-webkit-scrollbar { height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+
+    /* CSS Counters */
+    #workflowAccordion {
+        counter-reset: employer-counter;
+    }
+    .order-card-container {
+        counter-increment: employer-counter;
+    }
+    .employer-sequence-number::before {
+        content: counter(employer-counter);
+    }
+    .employer-sequence-number {
+        min-width: 50px;
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #6c757d;
+        opacity: 0.5;
+        line-height: 1;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -163,14 +183,17 @@
                  // Computed stats from controller
                  $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'cancelled'=>0, 'completed'=>0, 'step_stats'=>[]];
                  $stepStats = $computed['step_stats'];
+                 $isActive = ($order->active_items_count ?? 0) > 0;
             @endphp
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
+            <div class="card border-0 shadow-sm mb-3 order-card-container {{ !$isActive ? 'grayscale-mode bg-light' : '' }}">
+                <div class="card-header border-bottom py-3 px-4 {{ !$isActive ? 'bg-light' : 'bg-white' }}" id="heading-{{ $order->id }}">
 
                     {{-- Top Row: Identity + Stats + Actions --}}
                     <div class="row align-items-xl-center g-3 mb-3">
                         {{-- Identity --}}
                         <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
+                            <div class="employer-sequence-number me-2"></div>
+
                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary" style="width: 40px; height: 40px;">
                                     @if($order->type === 'independent')
@@ -180,7 +203,7 @@
                                     @endif
                                 </div>
                                 <div>
-                                    <h5 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">
+                                    <h5 class="fw-bold mb-0 text-primary">
                                         {{ $order->project_name }}
                                         @if(request('addrProvince') && $order->employer)
                                             @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
@@ -188,8 +211,16 @@
                                             @endforeach
                                         @endif
                                     </h5>
-                                    <div class="text-muted small">
-                                        {{ $order->updated_at->diffForHumans() }}
+                                    <div class="text-muted small d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-outline-info btn-preview rounded-circle p-0 d-flex align-items-center justify-content-center"
+                                            style="width: 20px; height: 20px;"
+                                            data-model-type="employer"
+                                            data-model-id="{{ $order->employer_id }}"
+                                            title="{{ __('Preview Employer Data') }}"
+                                            onclick="event.stopPropagation()">
+                                            <i class="bi bi-search" style="font-size: 0.7rem;"></i>
+                                        </button>
+                                        <span>{{ $order->updated_at->diffForHumans() }}</span>
                                     </div>
                                 </div>
                             </button>
