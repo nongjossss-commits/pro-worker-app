@@ -74,7 +74,16 @@ class ProductionController extends Controller
             });
         }
 
-        $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
+        // SORTING: Active items count first (desc), then updated_at (desc)
+        // For Pre-Production, Active means status != 'cancelled' (and usually not 'completed' either as completed means sent)
+        $query->withCount(['items as active_items_count' => function ($q) {
+            $q->whereNotIn('status', ['cancelled', 'completed']);
+        }]);
+
+        $orders = $query->orderByDesc('active_items_count')
+                        ->latest('updated_at')
+                        ->paginate(15)
+                        ->withQueryString();
 
         // Load Relations for View
         // Note: steps for Pre-Production might be different.
@@ -125,7 +134,8 @@ class ProductionController extends Controller
             $order->computedStats = [
                 'total' => $total,
                 'not_started' => $notStarted,
-                'step_stats' => $stepStats
+                'step_stats' => $stepStats,
+                'active_items_count' => $order->active_items_count // For Grayscale logic
             ];
         }
 

@@ -67,7 +67,8 @@ class PreProductionWorkflowTest extends TestCase
 
         $response = $this->actingAs($this->user)->get(route('production.index', ['tab' => 'notify_in']));
         $response->assertStatus(200);
-        $response->assertSee('Test Project');
+        // We now prioritize showing the Employer Name directly
+        $response->assertSee($this->employer->employerNameTh ?? 'Test Project');
     }
 
     /** @test */
