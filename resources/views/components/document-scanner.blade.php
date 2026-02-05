@@ -19,6 +19,11 @@
         <div x-text="loadingMessage">Loading Scanner Resources...</div>
     </div>
 
+    <style>
+        /* Hide the sequence number on the item being dragged to imply numbers are static slots */
+        .sortable-drag .seq-number { opacity: 0; }
+    </style>
+
     <div class="bg-white w-full h-full md:w-[90%] md:h-[90%] md:rounded-lg shadow-xl flex flex-col relative overflow-hidden">
 
         <!-- Header -->
@@ -181,6 +186,7 @@
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" x-ref="sortableGrid">
                         <template x-for="(img, index) in capturedImages" :key="img.id">
                             <div class="sortable-item relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
+                                 :data-id="img.id"
                                  :class="selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : ''">
 
                                 <!-- Selection Checkbox Overlay -->
@@ -212,7 +218,7 @@
                                         <i class="bi bi-arrows-move"></i>
                                     </button>
                                 </div>
-                                <div class="absolute top-1 left-8 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded pointer-events-none">
+                                <div class="seq-number absolute top-1 left-8 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded pointer-events-none transition-opacity">
                                     <span x-text="index + 1"></span>
                                 </div>
                             </div>
@@ -435,33 +441,29 @@
                         return !evt.related.classList.contains('static-item');
                     },
                     onEnd: (evt) => {
-                        if (evt.oldIndex !== evt.newIndex) {
-                            this.reorderImages(evt.oldIndex, evt.newIndex);
-                        }
+                        // Strict DOM-to-Data Sync
+                        // Instead of relying on oldIndex/newIndex which can be flaky with templates and static items,
+                        // we read the actual DOM order of the items and re-align our data to match.
+                        this.syncOrderFromDom();
                     }
                 });
             },
 
-            reorderImages(oldIndex, newIndex) {
-                // Adjust index if static items are counted by Sortable (they are children of the grid)
-                // Sortable counts all children. Alpine renders images first.
-                // Our images are at indices 0 to capturedImages.length-1.
-                // Static items are at the end.
-                // If the user tries to drop past static items, onMove prevents it.
-                // So oldIndex and newIndex should be valid image indices.
+            syncOrderFromDom() {
+                const el = this.$refs.sortableGrid;
+                // Query only the draggable items to get the new order of IDs
+                const domItems = Array.from(el.querySelectorAll('.sortable-item'));
+                const newOrderIds = domItems.map(item => item.dataset.id);
 
-                // However, just to be safe:
-                if (newIndex >= this.capturedImages.length) {
-                    newIndex = this.capturedImages.length - 1;
-                }
-                if (newIndex < 0) newIndex = 0;
+                // Reconstruct the array based on this order
+                // Note: We cast id to string for comparison if needed, but usually they match types.
+                // We use a Map for O(1) lookup or just find. Since list is small, find is fine.
+                const newCapturedImages = newOrderIds.map(id => {
+                    return this.capturedImages.find(img => String(img.id) === String(id));
+                }).filter(Boolean); // Filter out undefined just in case
 
-                // Move item in the array
-                const item = this.capturedImages.splice(oldIndex, 1)[0];
-                this.capturedImages.splice(newIndex, 0, item);
-
-                // Force Reactivity for Alpine to ensure DOM matches Array
-                this.capturedImages = [...this.capturedImages];
+                // Update State
+                this.capturedImages = newCapturedImages;
 
                 // Clear selection to avoid confusion
                 this.selectedIndices = [];
