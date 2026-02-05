@@ -77,7 +77,7 @@ class ProductionDocumentController extends Controller
         }
 
         // --- Transactions Logic ---
-        $transactionsQuery = FinancialTransaction::where('production_order_id', $production->id);
+        $transactionsQuery = FinancialTransaction::with('items')->where('production_order_id', $production->id);
         if ($groupId) {
              $transactionsQuery->where('production_financial_group_id', $groupId);
         }

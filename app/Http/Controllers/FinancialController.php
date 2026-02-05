@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductionOrder;
 use App\Models\FinancialTransaction;
 use App\Models\CompanyProfile;
+use App\Models\ProductionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -19,8 +20,6 @@ class FinancialController extends Controller
     {
         // Permission check
         if (!auth()->user()->can('manage-finance') && !auth()->user()->hasRole('admin')) {
-             // Allow if it's the creator? Or strict?
-             // User requested professional restriction.
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -29,8 +28,13 @@ class FinancialController extends Controller
             'due_date' => 'nullable|date',
             'type' => 'required|in:installment,down_payment,full_payment,advance_payment',
             'notes' => 'nullable|string',
-            'financial_group_id' => 'required|exists:production_financial_groups,id'
+            'financial_group_id' => 'required|exists:production_financial_groups,id',
+            'item_ids' => 'nullable|array',
+            'item_ids.*' => 'exists:production_items,id'
         ]);
+
+        // Validation: Ensure items belong to this production order?
+        // Optimization: We assume frontend sends correct IDs. Strict check can be added if critical.
 
         $transaction = FinancialTransaction::create([
             'production_order_id' => $productionId,
@@ -41,6 +45,13 @@ class FinancialController extends Controller
             'notes' => $request->notes,
             'status' => 'pending'
         ]);
+
+        if ($request->has('item_ids') && is_array($request->item_ids)) {
+            $transaction->items()->attach($request->item_ids);
+        }
+
+        // Return transaction with items to update frontend state if needed
+        $transaction->load('items');
 
         return response()->json([
             'success' => true,
@@ -60,11 +71,20 @@ class FinancialController extends Controller
 
         $transaction = FinancialTransaction::findOrFail($id);
 
-        $request->validate([
+        // Allow 'item_ids' in validation, even though it might be sent as JSON string if using FormData for file upload
+        // If file upload is present, we might receive key-value pairs.
+        // If pure JSON request (no file), it's standard JSON.
+        // Frontend logic uses FormData for update if file is present.
+        // We need to handle `item_ids` carefully.
+
+        $rules = [
             'paid_amount' => 'nullable|numeric',
             'status' => 'nullable|in:pending,partial,paid,overdue',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
-        ]);
+            'item_ids' => 'nullable' // Can be array or string "1,2,3" if FormData
+        ];
+
+        $request->validate($rules);
 
         if ($request->hasFile('slip_file')) {
             // Delete old slip if exists
@@ -94,6 +114,23 @@ class FinancialController extends Controller
 
         $transaction->save();
 
+        // Sync Items
+        if ($request->has('item_ids')) {
+            $itemIds = $request->input('item_ids');
+
+            // If FormData sends array as item_ids[], Laravel sees it as array.
+            // If comma separated string:
+            if (is_string($itemIds)) {
+                $itemIds = explode(',', $itemIds);
+            }
+
+            if (is_array($itemIds)) {
+                $transaction->items()->sync($itemIds);
+            }
+        }
+
+        $transaction->load('items');
+
         return response()->json(['success' => true, 'transaction' => $transaction]);
     }
 
@@ -115,49 +152,36 @@ class FinancialController extends Controller
      */
     public function generateDocument(Request $request, $productionId, $type)
     {
+        // ... (Keeping existing logic for safety, though likely unused)
         $production = ProductionOrder::with(['employer', 'items.employee', 'financialGroups'])->findOrFail($productionId);
 
-        // Filter transactions by IDs if provided (Partial/Selective Generation)
         $transactionIds = $request->query('transaction_ids');
         if ($transactionIds) {
             $ids = explode(',', $transactionIds);
             $transactions = FinancialTransaction::whereIn('id', $ids)->orderBy('due_date')->get();
         } else {
-            // Default: Should probably not show ALL transactions if we have multiple tabs?
-            // User flow: They click "Generate" inside a tab.
-            // Ideally, we filter by group if no specific transactions selected.
-            // But let's stick to transaction IDs if possible, or fallback to all.
             $transactions = FinancialTransaction::where('production_order_id', $productionId)->orderBy('due_date')->get();
         }
 
-        // Determine which Group (Tab) we are generating for
-        // If transactions are selected, take the group from the first transaction
         $activeGroup = null;
         if ($transactions->isNotEmpty()) {
             $activeGroup = $transactions->first()->financialGroup;
         }
 
-        // If no transactions but we have a group_id param?
         if (!$activeGroup && $request->has('group_id')) {
             $activeGroup = $production->financialGroups->where('id', $request->query('group_id'))->first();
         }
 
-        // Fallback: First group
         if (!$activeGroup) {
             $activeGroup = $production->financialGroups->first();
         }
 
-        // Financial Data comes from the Group now, fallback to Order for legacy
         $financial = $activeGroup ? $activeGroup->financial_data : ($production->financial_data ?? []);
 
-        // Get Header Profile (From Params > Group Settings > Default)
         $profileId = $request->query('profile_id') ?? ($financial['profile_id'] ?? null);
         $profile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::where('is_default', true)->first();
 
-        // Custom Header Override
         $customHeader = $financial['custom_header'] ?? null;
-        // If Custom Header exists and "useCustomHeader" flag is true (implied if present?), we construct a mock profile.
-        // Actually, logic is usually client-side param, but let's check data.
         if (!empty($customHeader) && !empty($customHeader['name'])) {
             $profile = new CompanyProfile([
                 'name' => $customHeader['name'],

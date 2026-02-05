@@ -2,6 +2,13 @@
 <div x-data="financialManager({
     financialGroups: {{ json_encode($production->financialGroups) }},
     transactions: {{ json_encode($production->financialGroups->pluck('transactions')->flatten()) }},
+    productionItems: {{ json_encode($production->items->map(function($item) {
+        return [
+            'id' => $item->id,
+            'name' => $item->employee ? ($item->employee->name_th ?? $item->employee->name_en) : 'New Employee',
+            'employee_id' => $item->employee_id
+        ];
+    })) }},
     productionId: {{ $production->id }},
     employeeCount: {{ $employeeCount ?? $production->items->count() }},
     csrfToken: '{{ csrf_token() }}'
@@ -614,7 +621,7 @@
 
     <!-- Add Transaction Modal -->
     <div class="modal fade" :id="'addTransactionModal-' + productionId" tabindex="-1" x-ref="addModal">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">Add Installment</h6>
@@ -622,29 +629,54 @@
                 </div>
                 <div class="modal-body">
                     <form @submit.prevent="addTransaction">
-                        <div class="mb-2">
-                            <label class="form-label small">Type</label>
-                            <select class="form-select form-select-sm" x-model="newTransaction.type" required>
-                                <option value="installment">Installment (งวดงาน)</option>
-                                <option value="down_payment">Down Payment (มัดจำ)</option>
-                                <option value="full_payment">Full Payment (จ่ายเต็ม)</option>
-                                <option value="advance_payment">Advance Payment (เงินสำรองจ่าย)</option>
-                            </select>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <label class="form-label small">Type</label>
+                                    <select class="form-select form-select-sm" x-model="newTransaction.type" required>
+                                        <option value="installment">Installment (งวดงาน)</option>
+                                        <option value="down_payment">Down Payment (มัดจำ)</option>
+                                        <option value="full_payment">Full Payment (จ่ายเต็ม)</option>
+                                        <option value="advance_payment">Advance Payment (เงินสำรองจ่าย)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">Amount</label>
+                                    <input type="number" step="0.01" class="form-control form-control-sm" x-model="newTransaction.amount" required>
+                                    <div class="form-text small">Remaining: <span x-text="formatCurrency(remainingSchedule)"></span></div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">Due Date</label>
+                                    <input type="date" class="form-control form-control-sm" x-model="newTransaction.due_date">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">Notes</label>
+                                    <textarea class="form-control form-control-sm" x-model="newTransaction.notes" rows="2"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6 border-start">
+                                <label class="form-label small fw-bold mb-1">Select Employees</label>
+                                <div class="small text-muted mb-2" style="font-size: 0.75rem;">
+                                    Selected: <span x-text="selectedTransactionItems.length"></span>
+                                    <span x-show="pricingMode === 'per_head'">(Auto-calc active)</span>
+                                </div>
+                                <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
+                                    <div class="list-group list-group-flush">
+                                        <!-- Available Items -->
+                                        <template x-for="item in availableItems" :key="item.id">
+                                            <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
+                                                <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcAmount()">
+                                                <span class="text-truncate" x-text="item.name"></span>
+                                            </label>
+                                        </template>
+                                        <div x-show="availableItems.length === 0" class="p-2 text-center text-muted small">
+                                            No available employees.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Amount</label>
-                            <input type="number" step="0.01" class="form-control form-control-sm" x-model="newTransaction.amount" required>
-                            <div class="form-text small">Remaining: <span x-text="formatCurrency(remainingSchedule)"></span></div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Due Date</label>
-                            <input type="date" class="form-control form-control-sm" x-model="newTransaction.due_date">
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Notes</label>
-                            <textarea class="form-control form-control-sm" x-model="newTransaction.notes" rows="2"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100" :disabled="isSavingTransaction">Save</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100 mt-3" :disabled="isSavingTransaction">Save</button>
                     </form>
                 </div>
             </div>
@@ -653,31 +685,50 @@
 
     <!-- Update Payment Modal -->
     <div class="modal fade" :id="'updatePaymentModal-' + productionId" tabindex="-1" x-ref="payModal">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h6 class="modal-title">Update Payment</h6>
+                    <h6 class="modal-title">Update Payment & Items</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form @submit.prevent="updateTransaction">
-                        <div class="mb-2">
-                            <label class="form-label small">Paid Amount</label>
-                            <input type="number" step="0.01" class="form-control form-control-sm" x-model="editingTransaction.paid_amount">
+                        <div class="row">
+                             <div class="col-md-6">
+                                <div class="mb-2">
+                                    <label class="form-label small">Paid Amount</label>
+                                    <input type="number" step="0.01" class="form-control form-control-sm" x-model="editingTransaction.paid_amount">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">Status</label>
+                                    <select class="form-select form-select-sm" x-model="editingTransaction.status">
+                                        <option value="pending">Pending</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="paid">Paid</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">Upload Slip</label>
+                                    <input type="file" class="form-control form-control-sm" @change="handleFileSelect">
+                                </div>
+                             </div>
+                             <div class="col-md-6 border-start">
+                                <label class="form-label small fw-bold mb-1">Edit Employees</label>
+                                <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
+                                    <div class="list-group list-group-flush">
+                                        <!-- Show ALL items for edit (Available + Currently Attached) -->
+                                        <template x-for="item in editModalItems" :key="item.id">
+                                            <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
+                                                <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems">
+                                                <span class="text-truncate" x-text="item.name"></span>
+                                                <span x-show="isItemAttached(item.id)" class="badge bg-success ms-auto" style="font-size: 0.6em;">Linked</span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+                             </div>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Status</label>
-                            <select class="form-select form-select-sm" x-model="editingTransaction.status">
-                                <option value="pending">Pending</option>
-                                <option value="partial">Partial</option>
-                                <option value="paid">Paid</option>
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Upload Slip</label>
-                            <input type="file" class="form-control form-control-sm" @change="handleFileSelect">
-                        </div>
-                        <button type="submit" class="btn btn-success btn-sm w-100">Update</button>
+                        <button type="submit" class="btn btn-success btn-sm w-100 mt-3">Update</button>
                     </form>
                 </div>
             </div>
