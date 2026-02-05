@@ -38,4 +38,9 @@ class FinancialTransaction extends Model
     {
         return $this->belongsTo(ProductionFinancialGroup::class, 'production_financial_group_id');
     }
+
+    public function items()
+    {
+        return $this->belongsToMany(ProductionItem::class, 'financial_transaction_items');
+    }
 }

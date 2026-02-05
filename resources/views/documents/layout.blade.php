@@ -308,29 +308,59 @@
                          @foreach($serviceTransactions as $index => $t)
                             @php
                                 $amount = $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
+                                $itemCount = $t->items->count();
+                                $pricingMode = $financial['pricing_mode'] ?? 'per_head';
+
+                                $qty = 1;
+                                $unitPrice = $amount;
+                                $description = ucfirst(str_replace('_', ' ', $t->type));
+
+                                if ($itemCount > 0) {
+                                    if ($pricingMode === 'per_head') {
+                                        $qty = $itemCount;
+                                        $unitPrice = ($qty > 0) ? ($amount / $qty) : 0;
+                                    } else {
+                                        $description .= " (" . $itemCount . " Employees)";
+                                    }
+                                }
                             @endphp
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>
-                                    <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
+                                    <strong>{{ $description }}</strong>
                                     @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
                                     @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
                                     @if($isReceiptContext && $t->amount > $amount)
                                         <br><span class="badge" style="font-size: 10px; background: #eee; padding: 2px 4px; border-radius: 4px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
                                     @endif
                                 </td>
-                                <td class="text-center">1</td>
-                                <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                <td class="text-center">{{ $qty }}</td>
+                                <td class="text-right">{{ number_format($unitPrice, 2) }}</td>
                                 <td class="text-right">{{ number_format($amount, 2) }}</td>
                             </tr>
                         @endforeach
                     @else
                         <!-- Fallback: Full Project Summary (Quotation Style) -->
+                        @php
+                             $pricingMode = $financial['pricing_mode'] ?? 'per_head';
+                             $empCount = $production->items->count();
+
+                             $qty = 1;
+                             $unitPrice = $serviceTotal;
+                             $description = $production->project_name ?? 'Service Fee for Recruitment';
+
+                             if ($pricingMode === 'per_head') {
+                                 $qty = $empCount;
+                                 $unitPrice = ($qty > 0) ? ($serviceTotal / $qty) : 0;
+                             } else {
+                                 $description .= " ({$empCount} Employees)";
+                             }
+                        @endphp
                         <tr>
                             <td class="text-center">1</td>
-                            <td>{{ $production->project_name ?? 'Service Fee for Recruitment' }}</td>
-                            <td class="text-center">1</td>
-                            <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
+                            <td>{{ $description }}</td>
+                            <td class="text-center">{{ $qty }}</td>
+                            <td class="text-right">{{ number_format($unitPrice, 2) }}</td>
                             <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
                         </tr>
                     @endif

@@ -55,6 +55,11 @@ class ProductionItem extends Model
                     ->withTimestamps();
     }
 
+    public function transactions()
+    {
+        return $this->belongsToMany(FinancialTransaction::class, 'financial_transaction_items');
+    }
+
     // ACCESSORS
 
     public function getIsCheckedTodayAttribute()

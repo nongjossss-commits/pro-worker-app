@@ -15,6 +15,8 @@ if (typeof window.financialManager === 'undefined') {
 
             // Advance Items
             advanceItems: [],
+            productionItems: initialData.productionItems || [], // List of {id, name, employee_id}
+            selectedTransactionItems: [], // List of IDs (ProductionItem ID)
 
             // Tax Settings
             vatIncluded: false,
@@ -64,8 +66,6 @@ if (typeof window.financialManager === 'undefined') {
             init() {
                 if (this.financialGroups.length > 0) {
                     this.switchGroup(this.financialGroups[0].id);
-                } else {
-                    // Safety fallback
                 }
             },
 
@@ -82,10 +82,7 @@ if (typeof window.financialManager === 'undefined') {
                 this.pricingTiers = data.pricing_tiers || [];
                 this.discount = data.discount || 0;
 
-                // Load Advance Items (From relational data loaded in Blade via json_encode)
-                // Need to ensure the Controller loads `advanceItems` relation.
-                // Blade: financialGroups: {{ json_encode($production->financialGroups) }}
-                // If controller uses eager loading, `group.advance_items` should exist.
+                // Load Advance Items
                 this.advanceItems = group.advance_items || [];
 
                 this.vatIncluded = !!data.vat_included;
@@ -108,6 +105,157 @@ if (typeof window.financialManager === 'undefined') {
                 this.updateTotal();
             },
 
+            // --- Employee Filter Logic ---
+            get availableItems() {
+                // Filter out items that are attached to OTHER transactions in this group
+                // 1. Get IDs of items in this group
+                if (!this.activeGroupId) return [];
+
+                // Collect IDs used in other transactions in this group
+                const usedIds = new Set();
+                this.filteredTransactions.forEach(t => {
+                    // Exclude current editing transaction if any
+                    if (this.editingTransaction.id && t.id === this.editingTransaction.id) return;
+
+                    if (t.items && Array.isArray(t.items)) {
+                        t.items.forEach(item => usedIds.add(item.id));
+                    }
+                });
+
+                return this.productionItems.filter(item => !usedIds.has(item.id));
+            },
+
+            get editModalItems() {
+                // Show items that are available OR attached to this transaction
+                if (!this.activeGroupId) return [];
+
+                const attachedIds = new Set();
+                if (this.editingTransaction.items && Array.isArray(this.editingTransaction.items)) {
+                    this.editingTransaction.items.forEach(item => attachedIds.add(item.id));
+                }
+
+                const usedIds = new Set();
+                this.filteredTransactions.forEach(t => {
+                    if (this.editingTransaction.id && t.id === this.editingTransaction.id) return;
+                    if (t.items && Array.isArray(t.items)) {
+                        t.items.forEach(item => usedIds.add(item.id));
+                    }
+                });
+
+                return this.productionItems.filter(item => !usedIds.has(item.id) || attachedIds.has(item.id));
+            },
+
+            isItemAttached(itemId) {
+                if (!this.editingTransaction.items) return false;
+                return this.editingTransaction.items.some(i => i.id == itemId);
+            },
+
+            recalcAmount() {
+                if (this.pricingMode === 'per_head' && this.pricingTiers.length > 0) {
+                    const count = this.selectedTransactionItems.length;
+                    const price = parseFloat(this.pricingTiers[0].price || 0);
+                    // Update New Transaction Amount
+                    this.newTransaction.amount = count * price;
+                }
+            },
+
+            // --- Transaction Actions ---
+            openAddModal() {
+                this.selectedTransactionItems = [];
+                this.newTransaction.amount = '';
+                if(typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getOrCreateInstance(this.$refs.addModal);
+                    modal.show();
+                }
+            },
+
+            addTransaction() {
+                if (!this.activeGroupId) {
+                    Swal.fire('Error', 'Please select a financial tab first.', 'error');
+                    return;
+                }
+                this.isSavingTransaction = true;
+                const payload = {
+                    ...this.newTransaction,
+                    financial_group_id: this.activeGroupId,
+                    item_ids: this.selectedTransactionItems
+                };
+
+                fetch(`/production/${this.productionId}/transactions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        this.transactions.push(data.transaction);
+                        bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
+                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
+                        this.selectedTransactionItems = [];
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Transaction added successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                         throw new Error(data.message || 'Unknown error');
+                    }
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'))
+                .finally(() => this.isSavingTransaction = false);
+            },
+
+            openPayModal(t) {
+                this.editingTransaction = { ...t };
+                // Populate selection from attached items
+                if (t.items) {
+                    this.selectedTransactionItems = t.items.map(i => i.id);
+                } else {
+                    this.selectedTransactionItems = [];
+                }
+                this.selectedFile = null;
+                bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
+            },
+
+            updateTransaction() {
+                const formData = new FormData();
+                formData.append('_method', 'PUT');
+                formData.append('paid_amount', this.editingTransaction.paid_amount);
+                formData.append('status', this.editingTransaction.status);
+                if (this.selectedFile) formData.append('slip_file', this.selectedFile);
+
+                // Append items
+                this.selectedTransactionItems.forEach(id => formData.append('item_ids[]', id));
+
+                fetch(`/production/transactions/${this.editingTransaction.id}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
+                        if(idx !== -1) this.transactions[idx] = data.transaction;
+                        bootstrap.Modal.getInstance(this.$refs.payModal).hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Updated successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        throw new Error(data.message || 'Unknown error');
+                    }
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'));
+            },
+
+            // --- Groups (Tabs) Logic ---
             addNewGroup() {
                 Swal.fire({
                     title: 'Add Tab',
@@ -272,12 +420,6 @@ if (typeof window.financialManager === 'undefined') {
                 if (this.documentTypeToGenerate === 'advance_receipt') {
                     return this.filteredTransactions.filter(t => t.type === 'advance_payment');
                 }
-                // If generating tax_invoice or receipt, usually we want Service Fee types,
-                // but sometimes we might want to issue a tax invoice for an advance.
-                // For flexibility, let's show all or maybe exclude advance if confusing?
-                // Request says "Billing should match installment...".
-                // Let's show ALL for generic types to allow maximum flexibility,
-                // BUT if it's strictly 'advance_receipt', filtering makes sense.
                 return this.filteredTransactions;
             },
 
@@ -314,247 +456,7 @@ if (typeof window.financialManager === 'undefined') {
                  return this.useCustomCustomer;
             },
 
-            // --- Save Logic ---
-            saveFinancialData() {
-                if (!this.activeGroupId) return;
-
-                this.isSavingSettings = true;
-
-                const payload = {
-                    financial: {
-                        pricing_mode: this.pricingMode,
-                        fixed_base_amount: this.fixedTotal,
-                        pricing_tiers: this.pricingTiers,
-                        discount: this.discount,
-
-                        vat_included: this.vatIncluded,
-                        vat_rate: this.vatRate,
-                        wht_enabled: this.whtEnabled,
-                        wht_rate: this.whtRate,
-
-                        total_amount: this.totalAmount,
-
-                        // Header Data
-                        custom_header: this.useCustomHeader ? this.customHeader : null,
-                        profile_id: this.selectedProfileId,
-
-                        // Customer Override Data
-                        customer_override: this.useCustomCustomer ? this.customCustomerData : null
-                    },
-                    // Send Advance Items separately for robust sync
-                    advance_items: this.advanceItems,
-                    financial_group_id: this.activeGroupId,
-                    _method: 'PUT'
-                };
-
-                fetch(`/production/${this.productionId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    this.isSavingSettings = false;
-                    const group = this.financialGroups.find(g => g.id === this.activeGroupId);
-                    if (group) {
-                        group.financial_data = payload.financial;
-                        group.advance_items = this.advanceItems; // Update local state match
-                    }
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Settings Saved',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        toast: true,
-                        position: 'top-end'
-                    });
-                })
-                .catch(err => {
-                    this.isSavingSettings = false;
-                    Swal.fire('Error', 'Error saving data', 'error');
-                });
-            },
-
-            // --- Agent Logic ---
-            loadAgentData() {
-                if (!this.selectedAgentId) return;
-                const select = document.querySelector(`#customCustomerModal-${this.productionId} select`);
-
-                if(select) {
-                    const option = select.options[select.selectedIndex];
-                    const name = option.getAttribute('data-name');
-                    const phone = option.getAttribute('data-phone');
-
-                    this.customCustomerData.name = name;
-                    this.customCustomerData.phone = phone;
-                    this.customCustomerData.address = '';
-                    this.customCustomerData.tax_id = '';
-
-                    this.useCustomCustomer = true;
-                    Swal.fire({ icon: 'success', title: 'Agent Data Loaded', timer: 1500, showConfirmButton: false });
-                }
-            },
-
-            // --- Profile Logic ---
-            saveAsNewProfile() {
-                if (!this.customHeader.name) {
-                    Swal.fire('Error', 'Please enter a Company Name', 'error');
-                    return;
-                }
-
-                fetch('/admin/settings/financial', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                    body: JSON.stringify(this.customHeader)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire('Success', 'Profile Saved!', 'success').then(() => {
-                            location.reload();
-                        });
-                    } else {
-                         Swal.fire('Error', 'Failed to save profile', 'error');
-                    }
-                });
-            },
-
-            // --- Logo Upload ---
-            uploadLogo() {
-                const fileInput = this.$el.querySelector('input[type="file"]');
-                const file = this.$refs.logoInput ? this.$refs.logoInput.files[0] : null;
-                if (!file) return;
-
-                const formData = new FormData();
-                formData.append('logo', file);
-
-                fetch(`/production/${this.productionId}/upload-logo`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': this.csrfToken },
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        this.customHeader.logo = data.path;
-                        Swal.fire('Success', 'Logo uploaded!', 'success');
-                    } else {
-                        Swal.fire('Error', 'Upload failed', 'error');
-                    }
-                });
-            },
-
-            // --- Transactions ---
-            openAddModal() {
-                if(typeof bootstrap !== 'undefined') {
-                    const modal = bootstrap.Modal.getOrCreateInstance(this.$refs.addModal);
-                    modal.show();
-                }
-            },
-            addTransaction() {
-                if (!this.activeGroupId) {
-                    Swal.fire('Error', 'Please select a financial tab first.', 'error');
-                    return;
-                }
-                this.isSavingTransaction = true;
-                const payload = { ...this.newTransaction, financial_group_id: this.activeGroupId };
-
-                fetch(`/production/${this.productionId}/transactions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(res => {
-                    if (!res.ok) {
-                         const contentType = res.headers.get("content-type");
-                         if (contentType && contentType.indexOf("application/json") !== -1) {
-                             return res.json().then(err => { throw new Error(err.message || 'Server Error'); });
-                         } else {
-                             return res.text().then(text => { throw new Error(text || 'Server Error'); });
-                         }
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    if(data.success) {
-                        this.transactions.push(data.transaction);
-                        bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
-                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Transaction added successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } else {
-                         throw new Error(data.message || 'Unknown error');
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: err.message || 'Failed to add transaction. Please check your inputs.',
-                    });
-                })
-                .finally(() => this.isSavingTransaction = false);
-            },
-            openPayModal(t) {
-                this.editingTransaction = { ...t };
-                this.selectedFile = null;
-                bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
-            },
             handleFileSelect(e) { this.selectedFile = e.target.files[0]; },
-            updateTransaction() {
-                const formData = new FormData();
-                formData.append('_method', 'PUT');
-                formData.append('paid_amount', this.editingTransaction.paid_amount);
-                formData.append('status', this.editingTransaction.status);
-                if (this.selectedFile) formData.append('slip_file', this.selectedFile);
-
-                fetch(`/production/transactions/${this.editingTransaction.id}`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                    body: formData
-                })
-                .then(res => {
-                     if (!res.ok) {
-                         const contentType = res.headers.get("content-type");
-                         if (contentType && contentType.indexOf("application/json") !== -1) {
-                             return res.json().then(err => { throw new Error(err.message || 'Server Error'); });
-                         } else {
-                             return res.text().then(text => { throw new Error(text || 'Server Error'); });
-                         }
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    if(data.success) {
-                        const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
-                        if(idx !== -1) this.transactions[idx] = data.transaction;
-                        bootstrap.Modal.getInstance(this.$refs.payModal).hide();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Payment updated successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } else {
-                        throw new Error(data.message || 'Unknown error');
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Update Failed',
-                        text: err.message || 'Could not update transaction.',
-                    });
-                });
-            },
             deleteTransaction(id) {
                 Swal.fire({
                     title: 'Are you sure?',
