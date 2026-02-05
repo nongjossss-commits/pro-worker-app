@@ -58,6 +58,38 @@ class WorkflowController extends Controller
         // NEW: Apply address filters
         $query = $this->applyAddressFilters($query, $request, 'employer');
 
+        // Filtering Logic (Server-Side)
+        $filter = $request->query('filter');
+        $itemsCallback = function($q) use ($filter) {
+            if ($filter === 'cancelled') {
+                $q->where('status', 'cancelled');
+            } elseif ($filter === 'completed') {
+                $q->where('status', 'completed');
+            } elseif ($filter === 'not_started') {
+                $q->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+            } elseif (is_numeric($filter)) {
+                $q->whereNotIn('status', ['cancelled', 'completed'])
+                  ->whereHas('completedWorkTypeSteps', function($sq) use ($filter) {
+                      $sq->where('work_type_steps.id', $filter);
+                  });
+            } else {
+                // Default: Active (Pending)
+                $q->whereNotIn('status', ['cancelled', 'completed']);
+            }
+        };
+
+        // Apply filter to Orders
+        if ($filter || $filter === '0' || $activeTab) {
+             if ($filter === 'cancelled' || $filter === 'completed' || is_numeric($filter)) {
+                 $query->whereHas('items', $itemsCallback);
+             } else {
+                 $query->where(function($q) use ($itemsCallback) {
+                     $q->whereHas('items', $itemsCallback)
+                       ->orWhereDoesntHave('items');
+                 });
+             }
+        }
+
         // Search
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -75,8 +107,11 @@ class WorkflowController extends Controller
 
         $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
 
-        // Calculate Stats PER ORDER for the view (Accordion Header)
-        $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
+        // Load Relations with Filter
+        $orders->load(['items' => function($q) use ($itemsCallback) {
+            $itemsCallback($q);
+            $q->with('completedWorkTypeSteps');
+        }, 'employer.addresses']);
 
         // Employers for Dropdown
         $employers = Employer::orderBy('employerNameTh')->get();
@@ -450,9 +485,28 @@ class WorkflowController extends Controller
     {
         $order = ProductionOrder::with(['workType.steps'])->findOrFail($orderId);
 
-        $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
-            ->where('production_order_id', $orderId)
-            ->orderBy('group_name')
+        $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
+            ->where('production_order_id', $orderId);
+
+        // Filter Logic (Mirrors index)
+        $filter = $request->query('filter');
+        if ($filter === 'cancelled') {
+            $query->where('status', 'cancelled');
+        } elseif ($filter === 'completed') {
+            $query->where('status', 'completed');
+        } elseif ($filter === 'not_started') {
+            $query->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+        } elseif (is_numeric($filter)) {
+            $query->whereNotIn('status', ['cancelled', 'completed'])
+                  ->whereHas('completedWorkTypeSteps', function($sq) use ($filter) {
+                      $sq->where('work_type_steps.id', $filter);
+                  });
+        } else {
+            // Default: Active (Pending)
+            $query->whereNotIn('status', ['cancelled', 'completed']);
+        }
+
+        $items = $query->orderBy('group_name')
             ->orderBy('id')
             ->get();
 

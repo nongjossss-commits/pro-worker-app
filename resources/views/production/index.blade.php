@@ -5,7 +5,27 @@
 @section('content')
 <style>
     .cursor-pointer { cursor: pointer; }
-    .grayscale-mode { filter: grayscale(100%); opacity: 0.8; }
+    .filter-active {
+        transform: scale(1.1);
+        border: 2px solid #0d6efd !important;
+        background-color: #e7f1ff !important;
+        color: #0d6efd !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .last-step-pill {
+        font-size: 1.1rem !important;
+        padding: 0.75rem 1.5rem !important;
+        border-width: 2px !important;
+        background-color: #fff3cd !important; /* Warning Light */
+        color: #856404 !important;
+        border-color: #ffeeba !important;
+    }
+    .last-step-pill.filter-active {
+        background-color: #ffecb5 !important;
+        border-color: #ffc107 !important;
+        color: #856404 !important;
+        transform: scale(1.15);
+    }
     .stat-badge { width: 24px; height: 24px; font-size: 0.75rem; }
     .custom-scrollbar::-webkit-scrollbar { height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
@@ -20,12 +40,62 @@
         </div>
     </div>
 
-    {{-- Search & Actions (Moved Above Filter) --}}
+    {{-- Scoreboard Filters (Replica of Registration Logic) --}}
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {{-- Total --}}
+        <div class="col">
+            <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null]) }}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0 {{ !request('filter') ? 'bg-primary text-white' : 'bg-white text-dark' }}">
+                    <div class="card-body text-center py-3">
+                        <h4 class="fw-bold mb-0"><i class="bi bi-list-ul"></i></h4>
+                        <small>{{ __('Show Active') }}</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {{-- Not Started --}}
+        <div class="col">
+            <a href="{{ route('production.index', array_merge(request()->query(), ['filter' => 'not_started'])) }}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0 {{ request('filter') == 'not_started' ? 'bg-danger text-white' : 'bg-white text-dark' }}">
+                    <div class="card-body text-center py-3">
+                        <h4 class="fw-bold mb-0"><i class="bi bi-hourglass"></i></h4>
+                        <small>{{ __('Not Started') }}</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {{-- Completed (History) --}}
+        <div class="col">
+            <a href="{{ route('production.index', array_merge(request()->query(), ['filter' => 'completed'])) }}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0 {{ request('filter') == 'completed' ? 'bg-success text-white' : 'bg-white text-dark' }}">
+                    <div class="card-body text-center py-3">
+                        <h4 class="fw-bold mb-0"><i class="bi bi-check-circle"></i></h4>
+                        <small>{{ __('History (Completed)') }}</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {{-- Cancelled --}}
+        <div class="col">
+            <a href="{{ route('production.index', array_merge(request()->query(), ['filter' => 'cancelled'])) }}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0 {{ request('filter') == 'cancelled' ? 'bg-secondary text-white' : 'bg-white text-dark' }}">
+                    <div class="card-body text-center py-3">
+                        <h4 class="fw-bold mb-0"><i class="bi bi-x-circle"></i></h4>
+                        <small>{{ __('Cancelled') }}</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    {{-- Search & Actions --}}
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3 mb-4">
-        {{-- Search Bar --}}
         <form action="{{ route('production.index') }}" method="GET" class="d-flex flex-grow-1 justify-content-center w-100">
             @if(isset($activeTab))
                 <input type="hidden" name="tab" value="{{ $activeTab->slug }}">
+            @endif
+            @if(request('filter'))
+                <input type="hidden" name="filter" value="{{ request('filter') }}">
             @endif
             <div class="input-group input-group-lg" style="max-width: 500px;">
                 <span class="input-group-text bg-white border-end-0 shadow-sm"><i class="bi bi-search text-muted"></i></span>
@@ -37,7 +107,6 @@
             </div>
         </form>
 
-        {{-- Actions --}}
         <div class="d-flex gap-2">
             @if(isset($activeTab))
                 <button class="btn btn-light btn-sm shadow-sm border" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
@@ -50,7 +119,6 @@
         </div>
     </div>
 
-    {{-- Address Filter --}}
     <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
 
     {{-- Tabs Navigation --}}
@@ -78,11 +146,19 @@
                     <h6 class="fw-bold text-secondary mb-0 me-3">{{ __('Preparation Steps') }}</h6>
                     <span class="badge bg-info text-dark">{{ $activeTab->name }}</span>
                 </div>
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap align-items-center">
                      @foreach($steps as $step)
-                        <div class="badge bg-light text-dark border px-3 py-2">
+                        @php
+                            $isLast = $loop->last;
+                            $isActive = request('filter') == $step->id;
+                            $baseClass = $isLast ? 'last-step-pill' : 'badge bg-light text-dark border px-3 py-2';
+                            $activeClass = $isActive ? 'filter-active' : '';
+                        @endphp
+                        <a href="{{ route('production.index', array_merge(request()->query(), ['filter' => $isActive ? null : $step->id])) }}"
+                           class="text-decoration-none {{ $baseClass }} {{ $activeClass }} shadow-sm cursor-pointer d-flex align-items-center gap-2">
                             {{ $step->name }}
-                        </div>
+                            @if($isActive) <i class="bi bi-check-circle-fill"></i> @endif
+                        </a>
                      @endforeach
                      @if($steps->isEmpty())
                         <span class="text-muted small">{{ __('No preparation steps configured. Click the gear icon to add steps.') }}</span>
@@ -91,6 +167,37 @@
             </div>
         </div>
     @endif
+
+    {{-- Bulk Action Bar --}}
+    <div class="bulk-action-bar mb-3 align-items-center gap-2 p-2 bg-light border rounded"
+         style="display: none;"
+         id="bulkActionBar">
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+            <label class="form-check-label fw-bold" for="select-all-checkbox">
+                {{ __('Select All') }} (<span id="selected-count">0</span>)
+            </label>
+        </div>
+
+        <div class="vr mx-2"></div>
+
+        <div class="dropdown">
+            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="bulkActionDropdown" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                {{ __('Actions') }}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
+                <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+            </ul>
+        </div>
+
+        <button class="btn btn-sm btn-outline-danger ms-2" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+        <button class="btn btn-sm btn-info text-white" id="btn-view-selected">
+            <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+        </button>
+    </div>
 
     {{-- Accordion List --}}
     <div class="accordion" id="productionAccordion">
@@ -233,24 +340,29 @@
     </div>
 </div>
 
-{{-- Edit Employee Modal (Full Form) --}}
-<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+{{-- View Selected Items Modal (Reused) --}}
+<div class="modal fade" id="viewSelectedModal" tabindex="-1" aria-labelledby="viewSelectedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="editEmployeeModalLabel"><i class="bi bi-pencil-square me-2"></i>{{ __('Edit Employee') }}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewSelectedModalLabel">{{ __('Selected Employees') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body bg-light" id="editEmployeeModalBody">
-                <div class="d-flex justify-content-center align-items-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">{{ __('Loading...') }}</span>
-                    </div>
-                </div>
+            <div class="modal-body p-0">
+                <div id="selected-list-container" class="list-group list-group-flush"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
             </div>
         </div>
     </div>
 </div>
+
+{{-- Modals for Bulk Actions --}}
+@include('employees.modals.advanced_export')
+{{-- Include edit scripts and modals --}}
+@include('employees.partials._edit_scripts')
+@include('production.registration.partials.edit_modal_script')
 
 {{-- Cropper Modal (Required for Employee Edit) --}}
 <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true" style="z-index: 1060;">
@@ -283,8 +395,24 @@
     </div>
 </div>
 
-@include('employees.partials._edit_scripts')
-@include('production.registration.partials.edit_modal_script')
+{{-- Full Edit Modal Container --}}
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editEmployeeModalLabel"><i class="bi bi-pencil-square me-2"></i>{{ __('Edit Employee') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light" id="editEmployeeModalBody">
+                <div class="d-flex justify-content-center align-items-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 
@@ -292,41 +420,154 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const activeTabId = @json($activeTab->id ?? null);
+    const currentFilter = @json(request('filter'));
 
     // --- Pre-Production Flag Setting ---
     document.addEventListener('DOMContentLoaded', function() {
-        // Set Create Job Modal Flag
         const createJobInput = document.getElementById('create_job_is_pre_production');
         if(createJobInput) createJobInput.value = '1';
 
-        // Override OpenAddEmployeeModal to set flag after opening (as form might reset)
         if(typeof window.openAddEmployeeModal === 'function') {
             const originalOpenFn = window.openAddEmployeeModal;
             window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug) {
                 originalOpenFn(orderId, employerId, workTypeId, workTypeSlug);
-                // Force set the flag again
                 const addEmpInput = document.getElementById('add_employee_is_pre_production');
                 if(addEmpInput) addEmpInput.value = '1';
             }
         }
+
+        // Bulk Selection UI Refresh
+        if (window.refreshGlobalSelectionUI) {
+            window.refreshGlobalSelectionUI();
+        }
     });
 
-    // --- Lazy Load ---
+    // --- Lazy Load with Filter ---
     const loadedOrders = {};
     document.getElementById('productionAccordion').addEventListener('show.bs.collapse', function (e) {
         if (e.target.classList.contains('accordion-collapse')) {
             const orderId = e.target.id.replace('collapse-', '');
             if (!loadedOrders[orderId]) {
                 const container = document.getElementById(`order-content-${orderId}`);
-                // Reusing Workflow item fetcher, passing order ID.
-                // Since structure is identical, this returns _item_card.blade.php loops.
-                fetch(`{{ route('workflow.index') }}/${orderId}/items`)
+                // Construct URL with filter if present
+                let url = `{{ route('workflow.index') }}/${orderId}/items`;
+                if(currentFilter) {
+                    url += `?filter=${currentFilter}`;
+                }
+
+                fetch(url)
                 .then(res => res.text())
                 .then(html => {
                     container.innerHTML = html;
                     loadedOrders[orderId] = true;
+                    // Re-initialize any components or selection UI if needed
+                    if (window.refreshGlobalSelectionUI) {
+                        window.refreshGlobalSelectionUI();
+                    }
                 });
             }
+        }
+    });
+
+    // --- Bulk Action Handlers ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // View Selected
+        const viewSelectedBtn = document.getElementById('btn-view-selected');
+        const container = document.getElementById('selected-list-container');
+        const modalEl = document.getElementById('viewSelectedModal');
+        const modal = new bootstrap.Modal(modalEl);
+
+        if (viewSelectedBtn) {
+            viewSelectedBtn.addEventListener('click', function() {
+                const data = window.getGlobalSelectedData();
+                if (data.length === 0) {
+                    showToast('{{ __('No employees selected') }}', 'danger');
+                    return;
+                }
+                container.innerHTML = '';
+                data.forEach(item => {
+                    const li = document.createElement('div');
+                    li.className = 'list-group-item d-flex align-items-center justify-content-between';
+                    li.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <img src="${item.photo}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                            <div>
+                                <div class="fw-bold">${item.name_en || 'N/A'}</div>
+                                <div class="text-muted small">${item.name_th || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-selected" data-id="${item.id}"><i class="bi bi-trash"></i></button>
+                    `;
+                    container.appendChild(li);
+                });
+
+                container.querySelectorAll('.btn-remove-selected').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        window.removeItemsByIds([id]);
+                        this.closest('.list-group-item').remove();
+                        if (container.children.length === 0) modal.hide();
+                    });
+                });
+                modal.show();
+            });
+        }
+
+        // Bulk Advanced Edit
+        const bulkEditBtn = document.getElementById('bulk-advanced-edit-btn');
+        if (bulkEditBtn) {
+            bulkEditBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+                if (selected.length === 0) { showToast('{{ __('Please select employees first.') }}', 'danger'); return; }
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route('employees.bulk_edit.select_fields') }}';
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden'; csrfInput.name = '_token'; csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                const redirectInput = document.createElement('input');
+                redirectInput.type = 'hidden'; redirectInput.name = 'redirect_to'; redirectInput.value = window.location.href;
+                form.appendChild(redirectInput);
+
+                selected.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden'; input.name = 'employee_ids[]'; input.value = id;
+                    form.appendChild(input);
+                });
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        // Bulk Advanced Export
+        const bulkExportBtn = document.getElementById('bulk-advanced-export-btn');
+        if (bulkExportBtn) {
+            bulkExportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+                if (selected.length === 0) { showToast('{{ __('Please select employees first.') }}', 'danger'); return; }
+                document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                const modalEl = document.getElementById('advancedExportModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            });
+        }
+
+        // Bulk Download
+        const bulkDownloadBtn = document.getElementById('bulk-download-btn');
+        if (bulkDownloadBtn) {
+            bulkDownloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+                if (selected.length === 0) { showToast('{{ __('Please select employees first.') }}', 'danger'); return; }
+                if (window.openBulkDownloadModal) {
+                    window.openBulkDownloadModal(selected);
+                }
+            });
         }
     });
 
@@ -373,7 +614,6 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        // Remove card from UI
                         document.getElementById(`item-card-${itemId}`).remove();
                         Swal.fire('{{ __("Sent!") }}', '{{ __("Employee moved to Workflow.") }}', 'success');
                     } else {
@@ -385,12 +625,7 @@
     }
 
     // --- Reuse Toggle Step from Workflow (Global Function) ---
-    // Make sure toggleWorkStep exists or include it here if not globally available.
-    // It is defined in workflow/index.blade.php. We should copy it or extract to shared JS.
-    // For now, I will include a minimal version here.
-
     window.toggleWorkStep = function(itemId, stepId, completed) {
-        // Optimistic UI Update
         const btn = document.querySelector(`.step-btn-${itemId}-${stepId}`);
         if(btn) {
             if(completed) {

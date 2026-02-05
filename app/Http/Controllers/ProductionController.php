@@ -59,6 +59,47 @@ class ProductionController extends Controller
         $addressOptions = $this->getAddressOptions($query, 'employer_id');
         $query = $this->applyAddressFilters($query, $request, 'employer');
 
+        // Filtering Logic (Server-Side)
+        $filter = $request->query('filter');
+        $itemsCallback = function($q) use ($filter) {
+            if ($filter === 'cancelled') {
+                $q->where('status', 'cancelled');
+            } elseif ($filter === 'completed') {
+                $q->where('status', 'completed');
+            } elseif ($filter === 'not_started') {
+                $q->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+            } elseif (is_numeric($filter)) {
+                $q->whereNotIn('status', ['cancelled', 'completed'])
+                  ->whereHas('completedWorkTypeSteps', function($sq) use ($filter) {
+                      $sq->where('work_type_steps.id', $filter);
+                  });
+            } else {
+                // Default: Active (Pending)
+                $q->whereNotIn('status', ['cancelled', 'completed']);
+            }
+        };
+
+        // Apply filter to Orders (hide empty orders)
+        // Only apply if we are filtering, otherwise standard view might show empty orders?
+        // Actually, for "Default" view, we probably don't want empty orders either if all items are completed.
+        // But if an order has NO items yet, it should show.
+        // Use whereHas only if we want to enforce matches.
+        // If we want to show empty orders (newly created), we shouldn't use whereHas indiscriminately.
+        // However, if I filter by 'cancelled', I only want orders that have cancelled items.
+
+        if ($filter || $filter === '0' || $activeTab) { // If filtering or active tab selected
+             if ($filter === 'cancelled' || $filter === 'completed' || is_numeric($filter)) {
+                 // Strict filtering: Must have items matching the specific status/step
+                 $query->whereHas('items', $itemsCallback);
+             } else {
+                 // Default or Not Started: Show if it has matching items (Pending) OR if it has NO items (Empty/New)
+                 $query->where(function($q) use ($itemsCallback) {
+                     $q->whereHas('items', $itemsCallback)
+                       ->orWhereDoesntHave('items');
+                 });
+             }
+        }
+
         // Search
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -76,14 +117,11 @@ class ProductionController extends Controller
 
         $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
 
-        // Load Relations for View
-        // Note: steps for Pre-Production might be different.
-        // We filter steps by stage = 'preparation' (if we decide to split) or just use all steps but allow independent checking.
-        // Based on user: "Steps... independent of workflow... user sets freely".
-        // So we fetch steps for this WorkType, but maybe filter by 'stage' if we implemented it.
-        // Let's fetch 'preparation' steps if they exist, else all.
-
-        $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
+        // Load Relations with Filter
+        $orders->load(['items' => function($q) use ($itemsCallback) {
+            $itemsCallback($q);
+            $q->with('completedWorkTypeSteps'); // Eager load nested
+        }, 'employer.addresses']);
 
         $steps = collect();
         if ($activeTab) {

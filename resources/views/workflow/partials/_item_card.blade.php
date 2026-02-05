@@ -75,12 +75,19 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-center gap-3 w-100">
-                {{-- Checkbox (Optional, for bulk actions if implemented later) --}}
+                {{-- Checkbox for Bulk Actions --}}
                 <div class="form-check" id="checkbox-container-{{ $item->id }}">
-                    <input class="form-check-input item-checkbox"
+                    <input class="form-check-input employee-checkbox"
                            type="checkbox"
-                           value="{{ $item->id }}"
-                           id="check_{{ $item->id }}">
+                           value="{{ $empId }}"
+                           id="check_{{ $item->id }}"
+                           data-employee-id="{{ $empId }}"
+                           data-employer-id="{{ $order->employer_id }}"
+                           data-name-th="{{ $empNameTh }}"
+                           data-name-en="{{ $empNameEn }}"
+                           data-photo="{{ $empPhoto }}"
+                           data-employer-name="{{ $order->employer->employerNameTh ?? 'N/A' }}"
+                           {{ ($isCompleted || $isCancelled) ? 'disabled' : '' }}>
                 </div>
 
                 <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $item->id }}">
