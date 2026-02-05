@@ -866,7 +866,10 @@ class WorkflowController extends Controller
             $item->update(['status' => 'completed']);
         });
 
-        return response()->json(['success' => true]);
+        // Recalculate Stats
+        $orderStats = $this->calculateOrderStats($item->order);
+
+        return response()->json(['success' => true, 'order_stats' => $orderStats]);
     }
 
     /**
@@ -876,7 +879,11 @@ class WorkflowController extends Controller
     {
         $item = ProductionItem::findOrFail($itemId);
         $item->update(['status' => 'cancelled']);
-        return response()->json(['success' => true]);
+
+        // Recalculate Stats
+        $orderStats = $this->calculateOrderStats($item->order);
+
+        return response()->json(['success' => true, 'order_stats' => $orderStats]);
     }
 
     /**
@@ -886,7 +893,11 @@ class WorkflowController extends Controller
     {
         $item = ProductionItem::findOrFail($itemId);
         $item->update(['status' => 'pending']);
-        return response()->json(['success' => true]);
+
+        // Recalculate Stats
+        $orderStats = $this->calculateOrderStats($item->order);
+
+        return response()->json(['success' => true, 'order_stats' => $orderStats]);
     }
 
     /**
@@ -894,7 +905,8 @@ class WorkflowController extends Controller
      */
     public function destroyItem(Request $request, $itemId)
     {
-        $item = ProductionItem::with('employee')->findOrFail($itemId);
+        $item = ProductionItem::with(['employee', 'order'])->findOrFail($itemId);
+        $order = $item->order; // Capture order before delete
 
         // Capture employee before deleting the item
         $employee = $item->employee;
@@ -907,7 +919,10 @@ class WorkflowController extends Controller
             $employee->delete();
         }
 
-        return response()->json(['success' => true]);
+        // Recalculate Stats
+        $orderStats = $this->calculateOrderStats($order);
+
+        return response()->json(['success' => true, 'order_stats' => $orderStats]);
     }
 
     private function seedDefaultWorkTypes()
@@ -1000,5 +1015,22 @@ class WorkflowController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get HTML for a single Item Card (for AJAX refresh).
+     */
+    public function getItemHtml($itemId)
+    {
+        $item = ProductionItem::with(['employee', 'order.employer', 'order.workType.steps', 'completedWorkTypeSteps'])
+            ->findOrFail($itemId);
+
+        $order = $item->order;
+        $steps = $order->workType->steps ?? collect();
+
+        // Render just the card partial
+        $html = view('workflow.partials._item_card', compact('item', 'steps', 'order'))->render();
+
+        return response()->json(['html' => $html]);
     }
 }

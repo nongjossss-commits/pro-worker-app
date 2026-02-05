@@ -436,6 +436,74 @@
         });
     }
 
+    // --- Helper to Refresh Card ---
+    window.refreshItemCard = function(itemId) {
+        fetch(`/workflow/item/${itemId}/card`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.html) {
+                const card = document.getElementById(`item-card-${itemId}`);
+                if(card) card.outerHTML = data.html;
+            }
+        });
+    }
+
+    // --- Helper to Remove Card ---
+    window.removeItemCard = function(itemId) {
+        const card = document.getElementById(`item-card-${itemId}`);
+        if(card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => card.remove(), 300);
+        }
+    }
+
+    // --- Actions for Pre-Production ---
+    window.deleteItem = function(itemId) {
+        Swal.fire({
+            title: '{{ __("Delete Item?") }}',
+            text: '{{ __("This cannot be undone.") }}',
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Delete") }}',
+            confirmButtonColor: '#d33'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}`, { // Reusing Workflow Delete endpoint (ProductionItem)
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        removeItemCard(itemId);
+                    }
+                });
+            }
+        });
+    }
+
+    // Add missing functions if buttons appear
+    window.finalizeItem = function(itemId) {
+         // Pre-Production items usually don't finalize, they Send to Workflow.
+         // But if button is clicked:
+         Swal.fire('Error', 'Use "Send to Workflow" instead.', 'error');
+    }
+    window.cancelItem = function(itemId) {
+         // Reuse workflow cancel
+         fetch(`/workflow/item/${itemId}/cancel`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+         }).then(res => res.json()).then(d => { if(d.success) removeItemCard(itemId); });
+    }
+    window.restoreItem = function(itemId) {
+         fetch(`/workflow/item/${itemId}/restore`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+         }).then(res => res.json()).then(d => { if(d.success) refreshItemCard(itemId); });
+    }
+
     // --- Reuse Toggle Step from Workflow (Global Function) ---
     // Make sure toggleWorkStep exists or include it here if not globally available.
     // It is defined in workflow/index.blade.php. We should copy it or extract to shared JS.
