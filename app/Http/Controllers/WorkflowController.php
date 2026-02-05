@@ -863,7 +863,7 @@ class WorkflowController extends Controller
                 if ($item->employee) {
                     $item->employee->update([
                         'employer_id' => $item->order->employer_id,
-                        'status' => null,
+                        'status' => 'active',
                         'terminated_at' => null,
                         'termination_reason' => null
                     ]);
