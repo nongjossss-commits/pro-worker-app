@@ -293,7 +293,7 @@
                  {{-- Edit Button --}}
                  @if($empId)
                     <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                        onclick="openEditEmployeeModal({{ $empId }})"
+                        onclick="openEditEmployeeModal({{ $empId }}, {{ $item->id }})"
                         title="Edit Employee">
                         <i class="bi bi-pencil-square"></i>
                     </button>

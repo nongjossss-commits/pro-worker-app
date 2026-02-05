@@ -1,6 +1,7 @@
 <script>
     // Global function to open the Edit Modal
-    window.openEditEmployeeModal = function(employeeId) {
+    window.openEditEmployeeModal = function(employeeId, itemId = null) {
+        window.currentEditItemId = itemId; // Store Item ID for refresh logic
         const modalEl = document.getElementById('editEmployeeModal');
         const modalBody = document.getElementById('editEmployeeModalBody');
         const modal = new bootstrap.Modal(modalEl);
@@ -97,12 +98,22 @@
                 }
 
                 // 3. Update DOM in-place (No Reload)
-                if (data.employee) {
+                if (window.currentEditItemId) {
+                    // Fetch fresh card HTML and replace
+                    fetch(`/workflow/item/${window.currentEditItemId}/card`)
+                        .then(r => r.json())
+                        .then(json => {
+                            const oldCard = document.getElementById(`item-card-${window.currentEditItemId}`);
+                            if (oldCard && json.html) {
+                                oldCard.outerHTML = json.html;
+                                // Optional: Re-init Alpine if necessary (Alpine v3 usually handles mutations)
+                            }
+                        })
+                        .catch(err => console.error('Failed to refresh card:', err));
+                } else if (data.employee) {
                     updateEmployeeCardInDom(data.employee);
                 } else {
-                    // Fallback if no data returned (though controller is updated)
-                    console.warn('No employee data returned, reloading...');
-                    window.location.reload();
+                    console.warn('No refresh context available.');
                 }
             }
         })

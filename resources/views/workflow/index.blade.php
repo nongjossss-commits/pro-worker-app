@@ -680,6 +680,32 @@
         }
     }
 
+    // --- Helper to Refresh Card ---
+    window.refreshItemCard = function(itemId) {
+        fetch(`/workflow/item/${itemId}/card`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.html) {
+                const card = document.getElementById(`item-card-${itemId}`);
+                if(card) {
+                    card.outerHTML = data.html;
+                    // Optional: re-init Alpine if needed
+                }
+            }
+        });
+    }
+
+    // --- Helper to Remove Card ---
+    window.removeItemCard = function(itemId) {
+        const card = document.getElementById(`item-card-${itemId}`);
+        if(card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => card.remove(), 300);
+        }
+    }
+
     // --- Item Actions ---
     window.finalizeItem = function(itemId) {
         Swal.fire({
@@ -696,7 +722,14 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    if(data.success) location.reload();
+                    if(data.success) {
+                        removeItemCard(itemId);
+                        if(data.order_stats) {
+                            // Logic to find orderId from card hierarchy if needed, but card is gone.
+                            // We might need to store orderId before removing.
+                            // For now, removing is sufficient as counters are optimistic or will refresh on expand.
+                        }
+                    }
                 });
             }
         });
@@ -717,7 +750,9 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    if(data.success) location.reload();
+                    if(data.success) {
+                        removeItemCard(itemId);
+                    }
                 });
             }
         });
@@ -730,7 +765,9 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.success) location.reload();
+            if(data.success) {
+                 refreshItemCard(itemId);
+            }
         });
     }
 
@@ -750,7 +787,9 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    if(data.success) location.reload();
+                    if(data.success) {
+                        removeItemCard(itemId);
+                    }
                 });
             }
         });
