@@ -178,9 +178,9 @@
                          </span>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" x-ref="sortableGrid">
                         <template x-for="(img, index) in capturedImages" :key="img.id">
-                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
+                            <div class="sortable-item relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
                                  :class="selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : ''">
 
                                 <!-- Selection Checkbox Overlay -->
@@ -206,6 +206,12 @@
                                         <i class="bi bi-crop"></i> ปรับแต่ง
                                     </button>
                                 </div>
+                                <!-- Drag Handle -->
+                                <div class="absolute bottom-1 left-1 z-10">
+                                     <button class="drag-handle btn btn-sm btn-light shadow-sm p-1 leading-none w-6 h-6 flex items-center justify-center cursor-move" title="ลากเพื่อย้ายตำแหน่ง">
+                                        <i class="bi bi-arrows-move"></i>
+                                    </button>
+                                </div>
                                 <div class="absolute top-1 left-8 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded pointer-events-none">
                                     <span x-text="index + 1"></span>
                                 </div>
@@ -213,13 +219,13 @@
                         </template>
 
                         <!-- Add More Button (Universal) -->
-                        <div @click="view = 'camera'; startCamera()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                        <div @click="view = 'camera'; startCamera()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-plus-lg text-3xl mb-1"></i>
                             <span class="text-sm">ถ่ายเพิ่ม</span>
                         </div>
 
                         <!-- Import Button (Universal) -->
-                        <div @click="$refs.fileInput.click()" class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                        <div @click="$refs.fileInput.click()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-file-earmark-plus text-3xl mb-1"></i>
                             <span class="text-sm">นำเข้าไฟล์</span>
                         </div>
@@ -342,6 +348,7 @@
 <!-- Load Libraries (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script async src="https://docs.opencv.org/4.x/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
 
 <script>
@@ -356,6 +363,7 @@
             targetInputId: null,
             targetPreviewId: null,
             flash: false,
+            sortableInstance: null,
 
             // Camera
             stream: null,
@@ -399,6 +407,59 @@
                 window.addEventListener('mouseup', () => this.stopDrag());
                 window.addEventListener('touchmove', (e) => this.onDrag(e), {passive: false});
                 window.addEventListener('touchend', () => this.stopDrag());
+
+                this.$nextTick(() => {
+                    if (typeof Sortable !== 'undefined') {
+                        this.initSortable();
+                    } else {
+                        // Retry once in case script is loading
+                        setTimeout(() => {
+                            if (typeof Sortable !== 'undefined') this.initSortable();
+                        }, 1000);
+                    }
+                });
+            },
+
+            initSortable() {
+                if (this.sortableInstance) return;
+                const el = this.$refs.sortableGrid;
+                if (!el) return;
+
+                this.sortableInstance = new Sortable(el, {
+                    animation: 150,
+                    handle: '.drag-handle',
+                    draggable: '.sortable-item',
+                    filter: '.static-item',
+                    onMove: (evt) => {
+                        // Prevent moving items past static items (Add/Import buttons)
+                        return !evt.related.classList.contains('static-item');
+                    },
+                    onEnd: (evt) => {
+                        if (evt.oldIndex !== evt.newIndex) {
+                            this.reorderImages(evt.oldIndex, evt.newIndex);
+                        }
+                    }
+                });
+            },
+
+            reorderImages(oldIndex, newIndex) {
+                // Adjust index if static items are counted by Sortable (they are children of the grid)
+                // Sortable counts all children. Alpine renders images first.
+                // Our images are at indices 0 to capturedImages.length-1.
+                // Static items are at the end.
+                // If the user tries to drop past static items, onMove prevents it.
+                // So oldIndex and newIndex should be valid image indices.
+
+                // However, just to be safe:
+                if (newIndex >= this.capturedImages.length) {
+                    newIndex = this.capturedImages.length - 1;
+                }
+
+                const item = this.capturedImages.splice(oldIndex, 1)[0];
+                this.capturedImages.splice(newIndex, 0, item);
+
+                // Clear selection to avoid confusion
+                this.selectedIndices = [];
             },
 
             getHeaderTitle() {
