@@ -1,156 +1,9 @@
 <script>
-    // --- Global Cropper State & Logic ---
-    // This ensures we only attach listeners to the global modal ONCE,
-    // preventing the "stacking listeners" bug which caused "Canvas creation failed".
-    window.cropperManager = {
-        initialized: false,
-        instance: null,
-        originalFile: null,
-        targetInputId: null,
-        targetPreviewId: null
-    };
-
+    // Legacy support: ensure initCropperGlobal exists if called, but it does nothing as manager handles init
     window.initCropperGlobal = function() {
-        if (window.cropperManager.initialized) return;
-
-        const cropperModalEl = document.getElementById('cropperModal');
-        if (!cropperModalEl) return;
-
-        // Mark as initialized so this block runs only once per page load
-        window.cropperManager.initialized = true;
-
-        const imageToCrop = document.getElementById('imageToCrop');
-        const cropImageBtn = document.getElementById('cropImageBtn');
-        // Retrieve or create bootstrap modal instance
-        let cropperModal = bootstrap.Modal.getOrCreateInstance(cropperModalEl);
-
-        // --- Helper: Init Cropper Instance ---
-        function initCropperInstance() {
-            if (typeof Cropper === 'undefined') {
-                alert('ไม่สามารถโหลดเครื่องมือตัดภาพได้ (Cropper.js) กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
-                return;
-            }
-
-            try {
-                window.cropperManager.instance = new Cropper(imageToCrop, {
-                    aspectRatio: 150 / 180,
-                    viewMode: 1,
-                    dragMode: 'move',
-                    background: false,
-                    autoCropArea: 0.8,
-                    movable: true,
-                    zoomable: true,
-                    rotatable: true,
-                    scalable: true,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    minCropBoxWidth: 50,
-                    minCropBoxHeight: 50,
-                    checkCrossOrigin: false,
-                    ready: function () {
-                        if(cropImageBtn) cropImageBtn.disabled = false;
-                    },
-                });
-            } catch (err) {
-                console.error(err);
-                alert('เกิดข้อผิดพลาดในการเริ่มทำงาน Cropper: ' + err.message);
-            }
+        if (window.cropperManager && window.cropperManager.init) {
+            window.cropperManager.init();
         }
-
-        // --- Event: Modal Shown ---
-        cropperModalEl.addEventListener('shown.bs.modal', function () {
-            if (cropImageBtn) cropImageBtn.disabled = true;
-
-            // Destroy existing cropper if any to be safe
-            if (window.cropperManager.instance) {
-                window.cropperManager.instance.destroy();
-                window.cropperManager.instance = null;
-            }
-
-            // Ensure image is loaded
-            if (imageToCrop.complete) {
-                initCropperInstance();
-            } else {
-                imageToCrop.onload = function() {
-                    initCropperInstance();
-                };
-            }
-        });
-
-        // --- Event: Modal Hidden ---
-        cropperModalEl.addEventListener('hidden.bs.modal', function () {
-            if (window.cropperManager.instance) {
-                window.cropperManager.instance.destroy();
-                window.cropperManager.instance = null;
-            }
-            // Clear image src to prevent flashing old content next time
-            imageToCrop.src = '';
-            // Note: We do NOT clear window.cropperManager.originalFile here because
-            // the save logic might need it (though save happens before hide).
-            // Input value clearing is handled in handleFileSelect.
-        });
-
-        // --- Event: Save Button Click ---
-        cropImageBtn.addEventListener('click', function () {
-            const cropper = window.cropperManager.instance;
-            const originalFile = window.cropperManager.originalFile;
-            const targetInputId = window.cropperManager.targetInputId;
-            const targetPreviewId = window.cropperManager.targetPreviewId;
-
-            if (!cropper) {
-                alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
-                return;
-            }
-
-            const canvas = cropper.getCroppedCanvas({
-                width: 300,
-                height: 360,
-                minWidth: 200,
-                minHeight: 200,
-                imageSmoothingQuality: 'high',
-            });
-
-            if (!canvas) {
-                alert('เกิดข้อผิดพลาดในการตัดภาพ (Canvas creation failed). กรุณาลองใหม่อีกครั้ง');
-                return;
-            }
-
-            canvas.toBlob(function (blob) {
-                if (!blob) return;
-
-                const croppedImageUrl = URL.createObjectURL(blob);
-
-                // Update Preview Image
-                if (targetPreviewId) {
-                    const employeePhotoPreview = document.getElementById(targetPreviewId);
-                    if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
-                }
-
-                // Create a new File object
-                const fileType = originalFile ? (originalFile.type || 'image/jpeg') : 'image/jpeg';
-                const fileName = originalFile ? originalFile.name : 'cropped-image.jpg';
-
-                const croppedFile = new File([blob], fileName, {
-                    type: fileType,
-                    lastModified: Date.now()
-                });
-
-                // Use a DataTransfer to create a FileList for the input
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(croppedFile);
-
-                if (targetInputId) {
-                    const actualInput = document.getElementById(targetInputId);
-                    if(actualInput) {
-                        actualInput.files = dataTransfer.files;
-                    }
-                }
-
-                // Hide the modal
-                cropperModal.hide();
-
-            }, (originalFile && originalFile.type) ? originalFile.type : 'image/jpeg');
-        });
     };
 
     // --- Generic Form Initialization ---
@@ -178,25 +31,14 @@
         // --- Logic: Handle File Selection (Triggers Modal) ---
         function handleFileSelect(event) {
             if (event.target.files && event.target.files.length > 0) {
-                // Update global state with selected file
-                window.cropperManager.originalFile = event.target.files[0];
-                // Set Targets based on prefix
-                window.cropperManager.targetInputId = prefix + 'employeePhotoInput';
-                window.cropperManager.targetPreviewId = prefix + 'employeePhotoPreview';
-            } else {
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                if(imageToCrop) {
-                    imageToCrop.src = e.target.result;
-                    // Open the modal
-                    const modal = bootstrap.Modal.getOrCreateInstance(cropperModalEl);
-                    modal.show();
+                if (window.cropperManager && window.cropperManager.openWithFile) {
+                    window.cropperManager.openWithFile(
+                        event.target.files[0],
+                        prefix + 'employeePhotoInput',
+                        prefix + 'employeePhotoPreview'
+                    );
                 }
-            };
-            reader.readAsDataURL(window.cropperManager.originalFile);
+            }
             event.target.value = ''; // Reset input to allow re-selecting same file
         }
 

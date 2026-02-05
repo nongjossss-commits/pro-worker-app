@@ -91,7 +91,7 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('edit_triggerCamera').click();"><i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ</button>
                 @if($employee->employeePhoto)
                 <button type="button" class="btn btn-sm btn-warning"
-                        onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'edit_employeePhotoInput', initialUrl: '{{ asset('storage/' . $employee->employeePhoto) }}' } }))">
+                        onclick="window.cropperManager.openWithUrl('{{ asset('storage/' . $employee->employeePhoto) }}', 'edit_employeePhotoInput', 'edit_employeePhotoPreview')">
                     <i class="bi bi-pencil-square me-1"></i> แก้ไขรูปภาพ
                 </button>
                 @endif

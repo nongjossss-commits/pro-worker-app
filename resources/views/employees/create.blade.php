@@ -36,39 +36,11 @@
     </form>
 </div>
 
-<!-- Cropper Modal -->
-<div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="cropperModalLabel">ครอบตัดรูปภาพ</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <style>
-                    .img-container {
-                        max-height: 500px;
-                        display: block;
-                    }
-                    .img-container img {
-                        max-width: 100%;
-                        display: block;
-                    }
-                </style>
-                <div class="img-container">
-                    <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" id="cropImageBtn">ครอบตัดและบันทึก</button>
-            </div>
-        </div>
-    </div>
-</div>
+<x-cropper-modal />
 @endsection
 
 @push('scripts')
+@include('employees.partials._cropper_scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // --- V6: Get all required elements ---
@@ -178,111 +150,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- Logic Block 6: Photo Cropping ---
-    const cropperModalEl = document.getElementById('cropperModal');
-    let cropperModal;
-    if (cropperModalEl) {
-         cropperModal = new bootstrap.Modal(cropperModalEl);
-    }
-    const imageToCrop = document.getElementById('imageToCrop');
-    const cropImageBtn = document.getElementById('cropImageBtn');
-    let cropper;
-    let originalFile;
-
     function handleFileSelect(event) {
         if (event.target.files && event.target.files.length > 0) {
-            originalFile = event.target.files[0];
-        } else {
-            return;
+            window.cropperManager.openWithFile(event.target.files[0], 'employeePhotoInput', 'employeePhotoPreview');
         }
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            if (imageToCrop) {
-                imageToCrop.src = e.target.result;
-                if (cropperModal) cropperModal.show();
-            }
-        };
-        reader.readAsDataURL(originalFile);
         // Clear the input value to allow re-selecting the same file
         event.target.value = '';
-    }
-
-    if (cropperModalEl) {
-        cropperModalEl.addEventListener('shown.bs.modal', function () {
-            // Ensure image is loaded and ready
-            if (imageToCrop.complete) {
-                initCropper();
-            } else {
-                imageToCrop.onload = initCropper;
-            }
-        });
-
-        cropperModalEl.addEventListener('hidden.bs.modal', function () {
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-            }
-            // Also clear the src to prevent flashing old image
-            imageToCrop.src = '';
-        });
-    }
-
-    function initCropper() {
-        if (typeof Cropper === 'undefined') {
-            console.error('Cropper.js is not loaded.');
-            return;
-        }
-        if (cropper) {
-            cropper.destroy();
-        }
-        cropper = new Cropper(imageToCrop, {
-            aspectRatio: 150 / 180,
-            viewMode: 1,
-            dragMode: 'move',
-            background: false,
-            autoCropArea: 0.8,
-            movable: true,
-            zoomable: true,
-            rotatable: true,
-            scalable: true,
-            cropBoxMovable: true, // Allow moving the crop box
-            cropBoxResizable: true, // Allow resizing the crop box
-        });
-    }
-
-    if (cropImageBtn) {
-        cropImageBtn.addEventListener('click', function () {
-            if (!cropper) return;
-
-            const canvas = cropper.getCroppedCanvas({
-                width: 300,
-                height: 360,
-                imageSmoothingQuality: 'high',
-            });
-
-            canvas.toBlob(function (blob) {
-                if (!blob) return;
-
-                const croppedImageUrl = URL.createObjectURL(blob);
-                if (employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
-
-                // Create a new File object
-                const croppedFile = new File([blob], originalFile.name, {
-                    type: originalFile.type || 'image/jpeg',
-                    lastModified: Date.now()
-                });
-
-                // Use a DataTransfer to create a FileList
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(croppedFile);
-
-                // Assign the FileList to the ACTUAL input for submission
-                if (actualInput) actualInput.files = dataTransfer.files;
-
-                if (cropperModal) cropperModal.hide();
-
-            }, originalFile.type || 'image/jpeg');
-        });
     }
 
     if (triggerFileInput) triggerFileInput.addEventListener('change', handleFileSelect);
