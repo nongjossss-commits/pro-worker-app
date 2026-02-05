@@ -183,7 +183,7 @@
                                  {{-- Stats --}}
                                  <div class="d-flex align-items-center gap-2 me-xl-3">
                                     <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
-                                        <span class="fw-bold">{{ $computed['total'] }}</span>
+                                        <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
                                         <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
                                     </span>
                                  </div>
@@ -335,6 +335,40 @@
     </div>
 </div>
 
+{{-- Manage Team Modal (Copied from Workflow for consistency) --}}
+<div class="modal fade" id="manageTeamModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-people-fill me-2"></i>{{ __('Manage Team / Batch') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="team_item_id">
+
+                <div class="mb-4">
+                    <label for="workflow_team_name" class="form-label fw-bold text-dark">{{ __('Team Name / Batch') }}</label>
+                    <input type="text" class="form-control form-control-lg" id="workflow_team_name" placeholder="{{ __('e.g., Batch 1, Arrived 25/10') }}">
+                    <div class="form-text text-muted">{{ __('Assign a group name to organize employees in this job.') }}</div>
+                </div>
+
+                <div id="existing-teams-wrapper" class="d-none">
+                    <h6 class="fw-bold text-secondary mb-3 small text-uppercase">{{ __('Existing Teams in this Job') }}</h6>
+                    <div class="d-flex flex-wrap gap-2" id="existing-teams-list">
+                        <!-- Chips loaded via JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-primary px-4" onclick="saveItemTeam()">
+                    <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @include('employees.partials._edit_scripts')
 @include('production.registration.partials.edit_modal_script')
 
@@ -436,6 +470,23 @@
         });
     }
 
+    // --- Helper to Refresh Order Content (List) ---
+    window.refreshOrderContent = function(orderId) {
+        const container = document.getElementById(`order-content-${orderId}`);
+        if (container) {
+            container.style.minHeight = container.offsetHeight + 'px';
+            container.style.opacity = '0.5';
+
+            fetch(`{{ route('workflow.index') }}/${orderId}/items`)
+            .then(res => res.text())
+            .then(html => {
+                container.innerHTML = html;
+                container.style.opacity = '1';
+                container.style.minHeight = '';
+            });
+        }
+    };
+
     // --- Helper to Refresh Card ---
     window.refreshItemCard = function(itemId) {
         fetch(`/workflow/item/${itemId}/card`)
@@ -443,7 +494,10 @@
         .then(data => {
             if(data.html) {
                 const card = document.getElementById(`item-card-${itemId}`);
-                if(card) card.outerHTML = data.html;
+                if(card) {
+                    card.outerHTML = data.html;
+                    // Optional: re-init Alpine if needed
+                }
             }
         });
     }
@@ -459,6 +513,34 @@
         }
     }
 
+    function updateOrderHeaderStats(orderId, stats) {
+        if (!stats) return;
+        // Basic implementation for Pre-Production if needed (badges are slightly different)
+        // Usually Pre-Prod doesn't have detailed stats like Workflow, but if badges exist:
+
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if(el) el.innerText = text;
+        };
+
+        // Steps
+        if (stats.step_stats) {
+            for (const [stepId, count] of Object.entries(stats.step_stats)) {
+                const badge = document.getElementById(`order-${orderId}-step-${stepId}`);
+                if (badge) {
+                    badge.innerText = count;
+                    if (count > 0) {
+                        badge.classList.remove('bg-secondary', 'bg-opacity-10', 'text-muted');
+                        badge.classList.add('bg-info', 'text-dark');
+                    } else {
+                        badge.classList.add('bg-secondary', 'bg-opacity-10', 'text-muted');
+                        badge.classList.remove('bg-info', 'text-dark');
+                    }
+                }
+            }
+        }
+    }
+
     // --- Actions for Pre-Production ---
     window.deleteItem = function(itemId) {
         Swal.fire({
@@ -470,7 +552,7 @@
             confirmButtonColor: '#d33'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`/workflow/item/${itemId}`, { // Reusing Workflow Delete endpoint (ProductionItem)
+                fetch(`/workflow/item/${itemId}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken },
                 })
@@ -484,24 +566,206 @@
         });
     }
 
-    // Add missing functions if buttons appear
+    // "Save to Database" (Finish)
     window.finalizeItem = function(itemId) {
-         // Pre-Production items usually don't finalize, they Send to Workflow.
-         // But if button is clicked:
-         Swal.fire('Error', 'Use "Send to Workflow" instead.', 'error');
+        Swal.fire({
+            title: '{{ __("Save to Database?") }}',
+            text: '{{ __("Mark this employee as saved/completed?") }}',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes, Save") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}/finalize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        refreshItemCard(itemId);
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Saved") }}',
+                            text: '{{ __("Employee data saved successfully.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        if(data.order_stats) {
+                             const card = document.getElementById(`item-card-${itemId}`);
+                             if(card) {
+                                 const wrapper = card.closest('.order-content-wrapper');
+                                 if(wrapper) {
+                                     const orderId = wrapper.id.replace('order-content-', '');
+                                     updateOrderHeaderStats(orderId, data.order_stats);
+                                 }
+                             }
+                        }
+                    }
+                });
+            }
+        });
     }
+
     window.cancelItem = function(itemId) {
-         // Reuse workflow cancel
-         fetch(`/workflow/item/${itemId}/cancel`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-         }).then(res => res.json()).then(d => { if(d.success) removeItemCard(itemId); });
+        Swal.fire({
+            title: '{{ __("Cancel Item?") }}',
+            text: '{{ __("Mark as cancelled?") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        refreshItemCard(itemId);
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Cancelled") }}',
+                            text: '{{ __("Item cancelled.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        if(data.order_stats) {
+                             const card = document.getElementById(`item-card-${itemId}`);
+                             if(card) {
+                                 const wrapper = card.closest('.order-content-wrapper');
+                                 if(wrapper) {
+                                     const orderId = wrapper.id.replace('order-content-', '');
+                                     updateOrderHeaderStats(orderId, data.order_stats);
+                                 }
+                             }
+                        }
+                    }
+                });
+            }
+        });
     }
+
     window.restoreItem = function(itemId) {
-         fetch(`/workflow/item/${itemId}/restore`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-         }).then(res => res.json()).then(d => { if(d.success) refreshItemCard(itemId); });
+        Swal.fire({
+            title: '{{ __("Restore Item?") }}',
+            text: '{{ __("Restore to pending state?") }}',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}/restore`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                         refreshItemCard(itemId);
+                         Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Restored") }}',
+                            text: '{{ __("Item restored.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        if(data.order_stats) {
+                             const card = document.getElementById(`item-card-${itemId}`);
+                             if(card) {
+                                 const wrapper = card.closest('.order-content-wrapper');
+                                 if(wrapper) {
+                                     const orderId = wrapper.id.replace('order-content-', '');
+                                     updateOrderHeaderStats(orderId, data.order_stats);
+                                 }
+                             }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    // --- Manage Team JS (Copied from Workflow) ---
+    window.openManageTeamModal = function(itemId, btn) {
+        const groupName = btn.dataset.groupName || '';
+        const orderId = btn.dataset.orderId;
+
+        document.getElementById('team_item_id').value = itemId;
+        const nameInput = document.getElementById('workflow_team_name');
+        nameInput.value = groupName;
+
+        // Existing Teams (Scan DOM)
+        const wrapper = document.getElementById('existing-teams-wrapper');
+        const list = document.getElementById('existing-teams-list');
+        list.innerHTML = '';
+        wrapper.classList.add('d-none');
+
+        if(orderId) {
+            const container = document.getElementById(`order-content-${orderId}`);
+            if(container) {
+                // Find group headers (h6.fw-bold.text-dark.mb-0)
+                const headers = container.querySelectorAll('h6.fw-bold.text-dark.mb-0');
+                const uniqueGroups = new Set();
+                headers.forEach(h => uniqueGroups.add(h.innerText.trim()));
+
+                if(uniqueGroups.size > 0) {
+                    wrapper.classList.remove('d-none');
+                    uniqueGroups.forEach(name => {
+                        const badge = document.createElement('button');
+                        badge.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3';
+                        badge.type = 'button';
+                        badge.innerText = name;
+                        badge.onclick = () => { nameInput.value = name; };
+                        list.appendChild(badge);
+                    });
+                }
+            }
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
+        modal.show();
+    }
+
+    window.saveItemTeam = function() {
+        const itemId = document.getElementById('team_item_id').value;
+        const groupName = document.getElementById('workflow_team_name').value;
+
+        fetch(`/workflow/item/${itemId}/group`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ group_name: groupName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('manageTeamModal')).hide();
+                Swal.fire({
+                    icon: 'success',
+                    title: '{{ __('Saved') }}',
+                    text: '{{ __('Team assigned successfully.') }}',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                // Update UI: Reload the order items to reflect new grouping
+                // Find Order ID
+                const card = document.getElementById(`item-card-${itemId}`);
+                if (card) {
+                    const wrapper = card.closest('.order-content-wrapper');
+                    if (wrapper) {
+                        const orderId = wrapper.id.replace('order-content-', '');
+                        refreshOrderContent(orderId);
+                    }
+                }
+            } else {
+                 Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to assign team.') }}', 'error');
+            }
+        });
     }
 
     // --- Reuse Toggle Step from Workflow (Global Function) ---

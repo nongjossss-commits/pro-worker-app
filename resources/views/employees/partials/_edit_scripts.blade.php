@@ -5,7 +5,9 @@
     window.cropperManager = {
         initialized: false,
         instance: null,
-        originalFile: null
+        originalFile: null,
+        targetInputId: null,
+        targetPreviewId: null
     };
 
     window.initCropperGlobal = function() {
@@ -92,6 +94,8 @@
         cropImageBtn.addEventListener('click', function () {
             const cropper = window.cropperManager.instance;
             const originalFile = window.cropperManager.originalFile;
+            const targetInputId = window.cropperManager.targetInputId;
+            const targetPreviewId = window.cropperManager.targetPreviewId;
 
             if (!cropper) {
                 alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
@@ -116,12 +120,11 @@
 
                 const croppedImageUrl = URL.createObjectURL(blob);
 
-                // Find CURRENT elements in the DOM (since form is dynamic/AJAX loaded)
-                // UPDATE: Target 'edit_' prefixed IDs for the Edit Modal
-                const employeePhotoPreview = document.getElementById('edit_employeePhotoPreview');
-                const actualInput = document.getElementById('edit_employeePhotoInput');
-
-                if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
+                // Update Preview Image
+                if (targetPreviewId) {
+                    const employeePhotoPreview = document.getElementById(targetPreviewId);
+                    if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
+                }
 
                 // Create a new File object
                 const fileType = originalFile ? (originalFile.type || 'image/jpeg') : 'image/jpeg';
@@ -136,12 +139,11 @@
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(croppedFile);
 
-                if(actualInput) {
-                    actualInput.files = dataTransfer.files;
-                } else {
-                    // It's possible we are in a context where edit input doesn't exist?
-                    // But this script is for Edit Form.
-                    // If we were in Add Modal, this listener still runs but finds nothing (good).
+                if (targetInputId) {
+                    const actualInput = document.getElementById(targetInputId);
+                    if(actualInput) {
+                        actualInput.files = dataTransfer.files;
+                    }
                 }
 
                 // Hide the modal
@@ -151,25 +153,26 @@
         });
     };
 
-    // --- Per-Form Initialization (Called every time the AJAX form loads) ---
-    window.initEmployeeEditForm = function() {
+    // --- Generic Form Initialization ---
+    // prefix: '' for Create Form, 'edit_' for Edit Form
+    window.initEmployeeForm = function(prefix = '') {
         // 1. Ensure global cropper logic is ready (Idempotent call)
         window.initCropperGlobal();
 
-        // 2. Get Form Field References (Updated IDs)
-        const titleTh = document.getElementById('edit_employeeTitleTh');
-        const titleEn = document.getElementById('edit_employeeTitleEn');
-        const genderInput = document.getElementById('edit_employeeGender');
-        const dobInput = document.getElementById('edit_employeeDob');
-        const ageInput = document.getElementById('edit_employeeAge');
-        const nationalitySelect = document.getElementById('edit_employeeNationality');
-        const mouGroupSelect = document.getElementById('edit_workPermitMOUGroup');
-        const insuranceSelect = document.getElementById('edit_insurance_type');
+        // 2. Get Form Field References
+        const titleTh = document.getElementById(prefix + 'employeeTitleTh');
+        const titleEn = document.getElementById(prefix + 'employeeTitleEn');
+        const genderInput = document.getElementById(prefix + 'employeeGender');
+        const dobInput = document.getElementById(prefix + 'employeeDob');
+        const ageInput = document.getElementById(prefix + 'employeeAge');
+        const nationalitySelect = document.getElementById(prefix + 'employeeNationality');
+        const mouGroupSelect = document.getElementById(prefix + 'workPermitMOUGroup');
+        const insuranceSelect = document.getElementById(prefix + 'insurance_type');
 
-        // 3. File Triggers (These are new elements in the AJAX form)
-        const triggerFileInput = document.getElementById('edit_triggerFile');
-        const triggerCameraInput = document.getElementById('edit_triggerCamera');
-        const imageToCrop = document.getElementById('imageToCrop'); // Global element, but ref doesn't hurt
+        // 3. File Triggers
+        const triggerFileInput = document.getElementById(prefix + 'triggerFile');
+        const triggerCameraInput = document.getElementById(prefix + 'triggerCamera');
+        const imageToCrop = document.getElementById('imageToCrop'); // Global element
         const cropperModalEl = document.getElementById('cropperModal'); // Global element
 
         // --- Logic: Handle File Selection (Triggers Modal) ---
@@ -177,6 +180,9 @@
             if (event.target.files && event.target.files.length > 0) {
                 // Update global state with selected file
                 window.cropperManager.originalFile = event.target.files[0];
+                // Set Targets based on prefix
+                window.cropperManager.targetInputId = prefix + 'employeePhotoInput';
+                window.cropperManager.targetPreviewId = prefix + 'employeePhotoPreview';
             } else {
                 return;
             }
@@ -195,10 +201,19 @@
         }
 
         if (triggerFileInput) {
-             triggerFileInput.addEventListener('change', handleFileSelect);
+             // Remove existing listener if any (to avoid duplicates if called multiple times)
+             // But anonymous functions can't be removed easily.
+             // Simplest is to check if we already marked it attached?
+             // Or clone/replace to strip listeners.
+             // For now, assuming standard usage pattern, replacing node is safest.
+             const newTrigger = triggerFileInput.cloneNode(true);
+             triggerFileInput.parentNode.replaceChild(newTrigger, triggerFileInput);
+             newTrigger.addEventListener('change', handleFileSelect);
         }
         if (triggerCameraInput) {
-             triggerCameraInput.addEventListener('change', handleFileSelect);
+             const newTrigger = triggerCameraInput.cloneNode(true);
+             triggerCameraInput.parentNode.replaceChild(newTrigger, triggerCameraInput);
+             newTrigger.addEventListener('change', handleFileSelect);
         }
 
         // --- Logic: Titles & Gender ---
@@ -225,7 +240,11 @@
             else genderInput.value = '';
         }
 
-        if(titleTh) titleTh.addEventListener('change', () => syncTitles('th'));
+        if(titleTh) {
+            titleTh.addEventListener('change', () => syncTitles('th'));
+            // Trigger once for initial state if value exists
+            if(titleTh.value) updateGender();
+        }
         if(titleEn) titleEn.addEventListener('change', () => syncTitles('en'));
 
         // --- Logic: Age Calculation ---
@@ -242,31 +261,40 @@
                 ageInput.value = '';
             }
         }
-        if(dobInput) dobInput.addEventListener('change', calculateAge);
+        if(dobInput) {
+            dobInput.addEventListener('change', calculateAge);
+            if(dobInput.value) calculateAge();
+        }
 
         // --- Logic: Nationality Conditionals ---
-        const myanmarPassportContainer = document.getElementById('edit_passportTypeContainer');
-        const cambodiaPassportContainer = document.getElementById('edit_passportTypeCambodiaContainer');
+        const myanmarPassportContainer = document.getElementById(prefix + 'passportTypeContainer');
+        const cambodiaPassportContainer = document.getElementById(prefix + 'passportTypeCambodiaContainer');
 
         function toggleNationalityFields() {
             if (!nationalitySelect || !myanmarPassportContainer || !cambodiaPassportContainer) return;
             myanmarPassportContainer.classList.toggle('d-none', nationalitySelect.value !== 'เมียนมา');
             cambodiaPassportContainer.classList.toggle('d-none', nationalitySelect.value !== 'กัมพูชา');
         }
-        if(nationalitySelect) nationalitySelect.addEventListener('change', toggleNationalityFields);
+        if(nationalitySelect) {
+            nationalitySelect.addEventListener('change', toggleNationalityFields);
+            toggleNationalityFields();
+        }
 
         // --- Logic: MOU Other ---
-        const mouGroupOtherContainer = document.getElementById('edit_workPermitMOUGroupOtherContainer');
+        const mouGroupOtherContainer = document.getElementById(prefix + 'workPermitMOUGroupOtherContainer');
         function toggleMouGroupOther() {
             if (!mouGroupSelect || !mouGroupOtherContainer) return;
             mouGroupOtherContainer.classList.toggle('d-none', mouGroupSelect.value !== 'อื่นๆ');
         }
-        if(mouGroupSelect) mouGroupSelect.addEventListener('change', toggleMouGroupOther);
+        if(mouGroupSelect) {
+            mouGroupSelect.addEventListener('change', toggleMouGroupOther);
+            toggleMouGroupOther();
+        }
 
         // --- Logic: Insurance Conditionals ---
-        const socialContainer = document.getElementById('edit_insuranceSocialSecurity');
-        const hospitalContainer = document.getElementById('edit_insuranceHospital');
-        const privateContainer = document.getElementById('edit_insurancePrivate');
+        const socialContainer = document.getElementById(prefix + 'insuranceSocialSecurity');
+        const hospitalContainer = document.getElementById(prefix + 'insuranceHospital');
+        const privateContainer = document.getElementById(prefix + 'insurancePrivate');
         function toggleInsuranceVisibility() {
             if (!insuranceSelect || !socialContainer || !hospitalContainer || !privateContainer) return;
             const selectedType = insuranceSelect.value;
@@ -274,34 +302,40 @@
             hospitalContainer.classList.toggle('d-none', selectedType !== 'ประกันโรงพยาบาล');
             privateContainer.classList.toggle('d-none', selectedType !== 'ประกันเอกชน');
         }
-        if(insuranceSelect) insuranceSelect.addEventListener('change', toggleInsuranceVisibility);
-
-        // --- Cancel Button Logic ---
-        const cancelBtn = document.querySelector('.btn-cancel-edit');
-        if (cancelBtn) {
-             const newCancelBtn = cancelBtn.cloneNode(true);
-             cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-             newCancelBtn.onclick = function() {
-                 const modal = document.getElementById('editEmployeeModal');
-                 if(modal && modal.classList.contains('show')) {
-                     const bsModal = bootstrap.Modal.getInstance(modal);
-                     if(bsModal) bsModal.hide();
-                 } else {
-                     history.back();
-                 }
-             }
+        if(insuranceSelect) {
+            insuranceSelect.addEventListener('change', toggleInsuranceVisibility);
+            toggleInsuranceVisibility();
         }
 
-        // --- Run Initial Logic for current form ---
-        updateGender();
-        calculateAge();
-        toggleNationalityFields();
-        toggleMouGroupOther();
-        toggleInsuranceVisibility();
+        // --- Cancel Button Logic (Only for Edit Form usually) ---
+        if (prefix === 'edit_') {
+            const cancelBtn = document.querySelector('.btn-cancel-edit');
+            if (cancelBtn) {
+                 const newCancelBtn = cancelBtn.cloneNode(true);
+                 cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                 newCancelBtn.onclick = function() {
+                     const modal = document.getElementById('editEmployeeModal');
+                     if(modal && modal.classList.contains('show')) {
+                         const bsModal = bootstrap.Modal.getInstance(modal);
+                         if(bsModal) bsModal.hide();
+                     } else {
+                         history.back();
+                     }
+                 }
+            }
+        }
     };
 
+    // Keep legacy name for backward compatibility if called directly elsewhere
+    window.initEmployeeEditForm = function() {
+        window.initEmployeeForm('edit_');
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        // Run once on page load (handles case where form is static)
-        window.initEmployeeEditForm();
+        // Initialize Edit Form (AJAX loaded later usually, but calling here is safe)
+        // window.initEmployeeForm('edit_'); // Actually, edit form is loaded via AJAX, script there calls it.
+
+        // Initialize Create Form (Static HTML)
+        window.initEmployeeForm('');
     });
 </script>
