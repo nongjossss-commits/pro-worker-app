@@ -73,7 +73,15 @@ class WorkflowController extends Controller
             });
         }
 
-        $orders = $query->latest('updated_at')->paginate(15)->withQueryString();
+        // SORTING: Active items (not cancelled/completed) first, then updated_at
+        $query->withCount(['items as active_items_count' => function ($q) {
+            $q->whereNotIn('status', ['cancelled', 'completed']);
+        }]);
+
+        $orders = $query->orderByDesc('active_items_count')
+                        ->latest('updated_at')
+                        ->paginate(15)
+                        ->withQueryString();
 
         // Calculate Stats PER ORDER for the view (Accordion Header)
         $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
@@ -121,7 +129,8 @@ class WorkflowController extends Controller
                 'not_started' => $notStarted,
                 'cancelled' => $cancelled,
                 'completed' => $completed,
-                'step_stats' => $stepStats
+                'step_stats' => $stepStats,
+                'active_items_count' => $order->active_items_count // Pass to view for Grayscale
             ];
         }
 

@@ -10,6 +10,26 @@
     .stat-badge { width: 24px; height: 24px; font-size: 0.75rem; }
     .custom-scrollbar::-webkit-scrollbar { height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+
+    /* CSS Counters */
+    #workflowAccordion {
+        counter-reset: employer-counter;
+    }
+    .production-order-card .employer-sequence-number::before {
+        counter-increment: employer-counter;
+        content: counter(employer-counter);
+    }
+
+    /* CSS Counters for Employees (Per Order) */
+    .item-list {
+        counter-reset: employee-counter;
+    }
+    .item-card-wrapper:not(.d-none) {
+        counter-increment: employee-counter;
+    }
+    .item-sequence-number::before {
+        content: counter(employee-counter);
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -163,9 +183,14 @@
                  // Computed stats from controller
                  $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'cancelled'=>0, 'completed'=>0, 'step_stats'=>[]];
                  $stepStats = $computed['step_stats'];
+                 $isActive = ($computed['active_items_count'] ?? 0) > 0;
             @endphp
-            <div class="card border-0 shadow-sm mb-3">
+            <div class="card border-0 shadow-sm mb-3 production-order-card {{ !$isActive ? 'grayscale-mode' : '' }}">
                 <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
+
+                    <div class="d-flex align-items-center position-absolute" style="left: -15px; top: 20px;">
+                        <span class="employer-sequence-number badge rounded-pill bg-secondary shadow-sm" style="font-size: 0.75rem;"></span>
+                    </div>
 
                     {{-- Top Row: Identity + Stats + Actions --}}
                     <div class="row align-items-xl-center g-3 mb-3">
@@ -180,8 +205,8 @@
                                     @endif
                                 </div>
                                 <div>
-                                    <h5 class="fw-bold mb-0 text-primary text-truncate" style="max-width: 300px;">
-                                        {{ $order->project_name }}
+                                    <h5 class="fw-bold mb-0 text-primary">
+                                        {{ $order->employer->employerNameTh ?? $order->project_name }}
                                         @if(request('addrProvince') && $order->employer)
                                             @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
                                                 <span class="badge bg-info text-white small ms-1" style="font-size: 0.7rem;">{{ $label }}</span>
@@ -193,6 +218,15 @@
                                     </div>
                                 </div>
                             </button>
+
+                            @if($order->employer_id)
+                                <button class="btn btn-sm btn-outline-info btn-preview rounded-circle"
+                                    data-model-type="employer"
+                                    data-model-id="{{ $order->employer_id }}"
+                                    title="{{ __('Preview Employer Data') }}">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            @endif
                         </div>
 
                         {{-- Stats & Actions --}}
