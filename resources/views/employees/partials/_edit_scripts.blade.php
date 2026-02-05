@@ -117,8 +117,9 @@
                 const croppedImageUrl = URL.createObjectURL(blob);
 
                 // Find CURRENT elements in the DOM (since form is dynamic/AJAX loaded)
-                const employeePhotoPreview = document.getElementById('employeePhotoPreview');
-                const actualInput = document.getElementById('employeePhotoInput');
+                // UPDATE: Target 'edit_' prefixed IDs for the Edit Modal
+                const employeePhotoPreview = document.getElementById('edit_employeePhotoPreview');
+                const actualInput = document.getElementById('edit_employeePhotoInput');
 
                 if(employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
 
@@ -138,7 +139,9 @@
                 if(actualInput) {
                     actualInput.files = dataTransfer.files;
                 } else {
-                    console.error('Actual input for employee photo not found!');
+                    // It's possible we are in a context where edit input doesn't exist?
+                    // But this script is for Edit Form.
+                    // If we were in Add Modal, this listener still runs but finds nothing (good).
                 }
 
                 // Hide the modal
@@ -153,19 +156,19 @@
         // 1. Ensure global cropper logic is ready (Idempotent call)
         window.initCropperGlobal();
 
-        // 2. Get Form Field References
-        const titleTh = document.getElementById('employeeTitleTh');
-        const titleEn = document.getElementById('employeeTitleEn');
-        const genderInput = document.getElementById('employeeGender');
-        const dobInput = document.getElementById('employeeDob');
-        const ageInput = document.getElementById('employeeAge');
-        const nationalitySelect = document.getElementById('employeeNationality');
-        const mouGroupSelect = document.getElementById('workPermitMOUGroup');
-        const insuranceSelect = document.getElementById('insurance_type');
+        // 2. Get Form Field References (Updated IDs)
+        const titleTh = document.getElementById('edit_employeeTitleTh');
+        const titleEn = document.getElementById('edit_employeeTitleEn');
+        const genderInput = document.getElementById('edit_employeeGender');
+        const dobInput = document.getElementById('edit_employeeDob');
+        const ageInput = document.getElementById('edit_employeeAge');
+        const nationalitySelect = document.getElementById('edit_employeeNationality');
+        const mouGroupSelect = document.getElementById('edit_workPermitMOUGroup');
+        const insuranceSelect = document.getElementById('edit_insurance_type');
 
         // 3. File Triggers (These are new elements in the AJAX form)
-        const triggerFileInput = document.getElementById('triggerFile');
-        const triggerCameraInput = document.getElementById('triggerCamera');
+        const triggerFileInput = document.getElementById('edit_triggerFile');
+        const triggerCameraInput = document.getElementById('edit_triggerCamera');
         const imageToCrop = document.getElementById('imageToCrop'); // Global element, but ref doesn't hurt
         const cropperModalEl = document.getElementById('cropperModal'); // Global element
 
@@ -192,7 +195,6 @@
         }
 
         if (triggerFileInput) {
-             // Since this function runs on new DOM, no need to remove old listeners from *this* specific element
              triggerFileInput.addEventListener('change', handleFileSelect);
         }
         if (triggerCameraInput) {
@@ -243,8 +245,8 @@
         if(dobInput) dobInput.addEventListener('change', calculateAge);
 
         // --- Logic: Nationality Conditionals ---
-        const myanmarPassportContainer = document.getElementById('passportTypeContainer');
-        const cambodiaPassportContainer = document.getElementById('passportTypeCambodiaContainer');
+        const myanmarPassportContainer = document.getElementById('edit_passportTypeContainer');
+        const cambodiaPassportContainer = document.getElementById('edit_passportTypeCambodiaContainer');
 
         function toggleNationalityFields() {
             if (!nationalitySelect || !myanmarPassportContainer || !cambodiaPassportContainer) return;
@@ -254,7 +256,7 @@
         if(nationalitySelect) nationalitySelect.addEventListener('change', toggleNationalityFields);
 
         // --- Logic: MOU Other ---
-        const mouGroupOtherContainer = document.getElementById('workPermitMOUGroupOtherContainer');
+        const mouGroupOtherContainer = document.getElementById('edit_workPermitMOUGroupOtherContainer');
         function toggleMouGroupOther() {
             if (!mouGroupSelect || !mouGroupOtherContainer) return;
             mouGroupOtherContainer.classList.toggle('d-none', mouGroupSelect.value !== 'อื่นๆ');
@@ -262,9 +264,9 @@
         if(mouGroupSelect) mouGroupSelect.addEventListener('change', toggleMouGroupOther);
 
         // --- Logic: Insurance Conditionals ---
-        const socialContainer = document.getElementById('insuranceSocialSecurity');
-        const hospitalContainer = document.getElementById('insuranceHospital');
-        const privateContainer = document.getElementById('insurancePrivate');
+        const socialContainer = document.getElementById('edit_insuranceSocialSecurity');
+        const hospitalContainer = document.getElementById('edit_insuranceHospital');
+        const privateContainer = document.getElementById('edit_insurancePrivate');
         function toggleInsuranceVisibility() {
             if (!insuranceSelect || !socialContainer || !hospitalContainer || !privateContainer) return;
             const selectedType = insuranceSelect.value;
