@@ -84,6 +84,18 @@
             </div>
         </div>
 
+        {{-- Appointments (NEW) --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm cursor-pointer"
+                 onclick="openCalendarModal()"
+                 style="background-color: #8B5CF6; border: none; transition: transform 0.2s;"> {{-- Purple --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-appointments-count">{{ $totalAppointments ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Appointments') }}</p>
+                </div>
+            </div>
+        </div>
+
         {{-- Total Cancelled Employees --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
@@ -153,9 +165,14 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="card-title fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }}</h5>
                 @can('edit-employees')
-                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                    <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
+                        <i class="bi bi-bell-fill me-1"></i> {{ __('Notify Settings') }}
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                        <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
+                    </button>
+                </div>
                 @endcan
             </div>
 
@@ -751,6 +768,77 @@
     </div>
 </div>
 
+{{-- Notification Settings Modal --}}
+<div class="modal fade" id="notificationSettingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="bi bi-bell-fill me-2"></i>{{ __('Notification Settings') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">{{ __('Set how many days in advance to show appointments on the Dashboard.') }}</p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ __('Notify Days in Advance') }}</label>
+                    <input type="number" class="form-control" id="notifyDaysInput" value="{{ $notificationSetting->days_before_expiry ?? 3 }}" min="0" max="365">
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-warning px-4" onclick="saveNotificationSettings()">
+                    <i class="bi bi-save-fill me-1"></i> {{ __('Save Settings') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Calendar Modal --}}
+<div class="modal fade" id="calendarModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-calendar-event me-2"></i>{{ __('Appointment Calendar') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="d-flex flex-column h-100">
+                    {{-- Calendar Header --}}
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+                        <h4 class="mb-0 fw-bold text-primary" id="calendar-month-year"></h4>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-secondary" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
+                            <button class="btn btn-outline-secondary" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+                        </div>
+                    </div>
+
+                    {{-- Calendar Grid --}}
+                    <div class="row g-0 flex-grow-1" id="calendar-grid">
+                        {{-- Days will be injected here --}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Day Appointments Modal --}}
+<div class="modal fade" id="dayAppointmentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title fw-bold" id="dayAppointmentsTitle"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-light" id="dayAppointmentsContent">
+                <div class="d-flex justify-content-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @include('employees.partials._edit_scripts')
@@ -762,6 +850,108 @@
     const currentStepFilter = @json(request('filter'));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = @json($lastStepId);
+
+    // --- Notification Settings ---
+    window.saveNotificationSettings = function() {
+        const days = document.getElementById('notifyDaysInput').value;
+
+        fetch('{{ route("production.registration.settings.notification") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ notify_days_advance: days })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('notificationSettingsModal')).hide();
+                Swal.fire('{{ __('Saved') }}', '{{ __('Settings updated.') }}', 'success');
+            }
+        });
+    }
+
+    // --- Calendar Logic ---
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth() + 1; // 1-12
+
+    window.openCalendarModal = function() {
+        new bootstrap.Modal(document.getElementById('calendarModal')).show();
+        loadCalendar();
+    }
+
+    window.changeMonth = function(delta) {
+        currentMonth += delta;
+        if (currentMonth > 12) {
+            currentMonth = 1;
+            currentYear++;
+        } else if (currentMonth < 1) {
+            currentMonth = 12;
+            currentYear--;
+        }
+        loadCalendar();
+    }
+
+    function loadCalendar() {
+        // Update Header
+        const date = new Date(currentYear, currentMonth - 1);
+        document.getElementById('calendar-month-year').textContent = date.toLocaleDateString('{{ app()->getLocale() }}', { month: 'long', year: 'numeric' });
+
+        const grid = document.getElementById('calendar-grid');
+        grid.innerHTML = '<div class="d-flex justify-content-center align-items-center w-100 py-5"><div class="spinner-border text-primary"></div></div>';
+
+        fetch(`{{ route('production.registration.api.calendar') }}?month=${currentMonth}&year=${currentYear}`)
+        .then(res => res.json())
+        .then(data => {
+            renderCalendar(data);
+        });
+    }
+
+    function renderCalendar(counts) {
+        const grid = document.getElementById('calendar-grid');
+        grid.innerHTML = '';
+
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay(); // 0 = Sun
+
+        // Empty slots for start
+        for (let i = 0; i < firstDay; i++) {
+            grid.innerHTML += '<div class="col border bg-light" style="min-height: 100px; width: 14.28%;"></div>';
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const count = counts[dateStr] || 0;
+            const hasCount = count > 0;
+            const bgClass = hasCount ? 'bg-white' : 'bg-light';
+            const badgeClass = hasCount ? 'bg-primary' : 'd-none';
+            const cursorClass = hasCount ? 'cursor-pointer' : '';
+            const onClick = hasCount ? `onclick="openDayAppointments('${dateStr}')"` : '';
+
+            grid.innerHTML += `
+                <div class="col border ${bgClass} ${cursorClass} p-2 position-relative" style="min-height: 100px; width: 14.28%;" ${onClick}>
+                    <div class="fw-bold mb-2">${day}</div>
+                    <div class="position-absolute top-50 start-50 translate-middle">
+                        <span class="badge rounded-pill ${badgeClass} fs-5 shadow-sm">${count}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    window.openDayAppointments = function(dateStr) {
+        const modal = new bootstrap.Modal(document.getElementById('dayAppointmentsModal'));
+        document.getElementById('dayAppointmentsTitle').textContent = `Appointments: ${dateStr}`;
+        const content = document.getElementById('dayAppointmentsContent');
+        content.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>';
+        modal.show();
+
+        fetch(`{{ route('production.registration.api.appointments_by_date') }}?date=${dateStr}`)
+        .then(res => res.json())
+        .then(data => {
+            content.innerHTML = data.html;
+            // Initialize components (e.g. Alpine) if needed, but innerHTML might handle x-data if structure is simple
+            // Or trigger a custom event
+        });
+    }
 
     // --- Lazy Loading Logic ---
     window.loadedEmployers = {};

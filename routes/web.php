@@ -248,6 +248,13 @@ Route::middleware(['auth'])->group(function () {
         // Biometrics
         Route::post('/{employee}/biometrics', [App\Http\Controllers\Production\RegistrationController::class, 'updateBiometrics'])->name('biometrics.update');
         Route::post('/{employee}/biometrics-toggle', [App\Http\Controllers\Production\RegistrationController::class, 'toggleBiometrics'])->name('biometrics.toggle');
+
+        // Appointments (NEW)
+        Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RegistrationController::class, 'updateAppointment'])->name('appointment');
+        Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RegistrationController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
+        Route::post('/settings/notification', [App\Http\Controllers\Production\RegistrationController::class, 'updateNotificationSettings'])->name('settings.notification');
+        Route::get('/api/calendar', [App\Http\Controllers\Production\RegistrationController::class, 'getCalendarData'])->name('api.calendar');
+        Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RegistrationController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');
     });
 
     // Renewal Resolution Routes (NEW)

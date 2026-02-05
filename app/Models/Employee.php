@@ -130,12 +130,17 @@ class Employee extends Model
         'bank_name',
         'bank_account_number',
         'biometrics_collected_at',
+        'appointment_date',
+        'appointment_location',
+        'appointment_completed_at',
     ];
 
     protected $casts = [
         'passportExpiryDate' => 'date:Y-m-d',
         'workPermitExpiryDate' => 'date:Y-m-d',
         'biometrics_collected_at' => 'datetime',
+        'appointment_date' => 'datetime',
+        'appointment_completed_at' => 'datetime',
         'visaExpiryDate' => 'date:Y-m-d',
         'ninetyDayReportDate' => 'date:Y-m-d',
         'employeeDob' => 'date:Y-m-d',
