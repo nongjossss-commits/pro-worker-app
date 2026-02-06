@@ -12,9 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->dateTime('appointment_date')->nullable();
-            $table->text('appointment_location')->nullable();
-            $table->dateTime('appointment_completed_at')->nullable();
+            if (!Schema::hasColumn('employees', 'appointment_date')) {
+                $table->dateTime('appointment_date')->nullable();
+            }
+            if (!Schema::hasColumn('employees', 'appointment_location')) {
+                $table->text('appointment_location')->nullable();
+            }
+            if (!Schema::hasColumn('employees', 'appointment_completed_at')) {
+                $table->dateTime('appointment_completed_at')->nullable();
+            }
         });
     }
 
