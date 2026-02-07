@@ -70,6 +70,14 @@ class WorkflowController extends Controller
                         ->orWhere(function($addrQ) use ($search) {
                             $addrQ->filterByAddress($search);
                         });
+                  })
+                  ->orWhereHas('items.employee', function($emp) use ($search) {
+                      $emp->where('employeeNameTh', 'like', "%{$search}%")
+                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                          ->orWhere('employeePassport', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('creator', function($creator) use ($search) {
+                      $creator->where('name', 'like', "%{$search}%");
                   });
             });
         }

@@ -388,7 +388,7 @@
             <label for="edit_employeeEmail" class="form-label">อีเมล
                 @if(isset($missingFields) && in_array('email', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            <input type="email" class="form-control" id="edit_employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', $employee->email) }}">
+            <input type="text" class="form-control" id="edit_employeeEmail" name="employeeEmail" value="{{ old('employeeEmail', $employee->email) }}">
         </div>
         <div class="col-md-4 mb-3">
             <label for="edit_password" class="form-label">รหัสสำหรับอีเมล
