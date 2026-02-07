@@ -78,7 +78,6 @@ class RegistrationController extends Controller
         }
         $totalAppointments = $totalAppointments->whereIn('status', ['registration_pending', 'registration_completed'])
             ->whereNotNull('appointment_date')
-            ->whereNull('appointment_completed_at')
             ->count();
 
         // Group by Employer for Per-Employer Stats assignment later
