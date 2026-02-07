@@ -31,6 +31,12 @@
                     </select>
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Project Name / Batch Name') }} <small class="text-muted">({{ __('Optional') }})</small></label>
+                    <input type="text" name="project_name" class="form-control" placeholder="{{ __('e.g. Batch 1 - Jan 2024') }}">
+                    <div class="form-text text-muted">{{ __('Use this to create multiple batches for MOU Import.') }}</div>
+                </div>
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
