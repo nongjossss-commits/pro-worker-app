@@ -57,6 +57,52 @@
             }
         }
 
+        // --- Background Removal Logic ---
+        const bgToolbar = document.getElementById('bgToolbar');
+        const loadingOverlay = document.getElementById('cropperLoadingOverlay');
+        const loadingText = document.getElementById('cropperLoadingText');
+
+        if (bgToolbar) {
+            bgToolbar.addEventListener('click', async function(e) {
+                const btn = e.target.closest('button[data-bg-action]');
+                if (!btn) return;
+
+                const action = btn.dataset.bgAction;
+                const originalFile = window.cropperManager.originalFile;
+
+                if (!originalFile) {
+                    alert('No image selected');
+                    return;
+                }
+
+                try {
+                    // Show Loading
+                    if (loadingOverlay) loadingOverlay.classList.remove('d-none');
+                    if (loadingText) loadingText.textContent = 'Processing...';
+
+                    // Process
+                    const processedBlob = await window.backgroundRemoval.process(originalFile, action, (active, text) => {
+                        if (loadingText && text) loadingText.textContent = text;
+                    });
+
+                    // Replace Image
+                    const newUrl = URL.createObjectURL(processedBlob);
+                    imageToCrop.src = newUrl;
+
+                    // Re-init Cropper
+                    if (window.cropperManager.instance) window.cropperManager.instance.destroy();
+                    initCropperInstance();
+
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to process image: ' + err.message);
+                } finally {
+                    // Hide Loading
+                    if (loadingOverlay) loadingOverlay.classList.add('d-none');
+                }
+            });
+        }
+
         // --- Event: Modal Shown ---
         cropperModalEl.addEventListener('shown.bs.modal', function () {
             if (cropImageBtn) cropImageBtn.disabled = true;

@@ -447,6 +447,46 @@
             if (globalTriggerFile) globalTriggerFile.addEventListener('change', handleFileSelect);
             if (globalTriggerCamera) globalTriggerCamera.addEventListener('change', handleFileSelect);
 
+            // --- Background Removal Logic ---
+            const bgToolbar = container.querySelector('#bgToolbar');
+            const loadingOverlay = container.querySelector('#cropperLoadingOverlay');
+            const loadingText = container.querySelector('#cropperLoadingText');
+
+            if (bgToolbar) {
+                bgToolbar.addEventListener('click', async function(e) {
+                    const btn = e.target.closest('button[data-bg-action]');
+                    if (!btn) return;
+
+                    const action = btn.dataset.bgAction;
+                    // Use closure variable `currentOriginalFile`
+                    if (!currentOriginalFile) {
+                        alert('No image selected');
+                        return;
+                    }
+
+                    try {
+                        if (loadingOverlay) loadingOverlay.classList.remove('d-none');
+                        if (loadingText) loadingText.textContent = 'Processing...';
+
+                        const processedBlob = await window.backgroundRemoval.process(currentOriginalFile, action, (active, text) => {
+                            if (loadingText && text) loadingText.textContent = text;
+                        });
+
+                        const newUrl = URL.createObjectURL(processedBlob);
+                        imageToCrop.src = newUrl;
+
+                        if (cropper) cropper.destroy();
+                        setTimeout(initCropper, 100);
+
+                    } catch (err) {
+                        console.error(err);
+                        alert('Failed to process image: ' + err.message);
+                    } finally {
+                        if (loadingOverlay) loadingOverlay.classList.add('d-none');
+                    }
+                });
+            }
+
             cropperModalEl.addEventListener('shown.bs.modal', function () {
                 if (cropper) {
                     cropper.destroy();
@@ -676,35 +716,7 @@
     </script>
 
     {{-- Cropper Modal (Moved to end for Z-Index safety) --}}
-    <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true" style="z-index: 1060;">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="cropperModalLabel">{{ __('Crop Image') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <style>
-                        .img-container {
-                            max-height: 500px;
-                            display: block;
-                        }
-                        .img-container img {
-                            max-width: 100%;
-                            display: block;
-                        }
-                    </style>
-                    <div class="img-container">
-                        <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('Crop & Save') }}</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <x-cropper-modal />
 
     {{-- Progress Modal --}}
     <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" style="z-index: 1070;">

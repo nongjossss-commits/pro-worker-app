@@ -1069,6 +1069,7 @@
     </script>
 
     @include('components.download-modals')
+    @include('partials.background-removal-scripts')
     @stack('scripts')
 
 <!-- Universal Preview Modal -->
