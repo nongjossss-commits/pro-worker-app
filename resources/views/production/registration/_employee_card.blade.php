@@ -1,4 +1,4 @@
-@props(['employee', 'steps', 'isHistory' => false])
+@props(['employee', 'steps', 'isHistory' => false, 'show_employer' => false])
 
 @php
     $isCompleted = in_array($employee->status, ['registration_completed', 'renewal_completed']);
@@ -104,6 +104,18 @@
                             {{-- Thai Name + Title --}}
                             {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? '-' }}
                         </div>
+                        @if($show_employer)
+                            <div class="text-muted small mt-1">
+                                <i class="bi bi-building me-1"></i>
+                                {{ $employee->employer->employerNameTh ?? '-' }}
+                                <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                        data-model-type="employer"
+                                        data-model-id="{{ $employee->employer_id }}"
+                                        title="{{ __('Preview Employer') }}">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        @endif
                         <div class="small text-muted mt-1">
                              <span class="me-2" title="{{ __('Date of Birth') }}">
                                 <i class="bi bi-calendar-event me-1"></i>

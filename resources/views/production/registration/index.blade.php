@@ -830,7 +830,7 @@
 
 {{-- Day Appointments Modal --}}
 <div class="modal fade" id="dayAppointmentsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-info text-white">
                 <h5 class="modal-title fw-bold" id="dayAppointmentsTitle"></h5>
@@ -949,9 +949,15 @@
             const cursorClass = hasCount ? 'cursor-pointer' : '';
             const onClick = hasCount ? `onclick="openDayAppointments('${dateStr}')"` : '';
 
+            const dateObj = new Date(currentYear, currentMonth - 1, day);
+            const dayName = dateObj.toLocaleDateString('{{ app()->getLocale() }}', { weekday: 'long' });
+
             grid.innerHTML += `
                 <div class="col border ${bgClass} ${cursorClass} p-2 position-relative" style="min-height: 100px; width: 14.28%;" ${onClick}>
-                    <div class="fw-bold mb-2">${day}</div>
+                    <div class="fw-bold mb-2 d-flex flex-column">
+                        <span>${day}</span>
+                        <small class="text-muted fw-normal" style="font-size: 0.75rem;">${dayName}</small>
+                    </div>
                     <div class="position-absolute top-50 start-50 translate-middle">
                         <span class="badge rounded-pill ${badgeClass} fs-5 shadow-sm">${count}</span>
                     </div>
