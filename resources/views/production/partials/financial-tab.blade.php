@@ -92,18 +92,25 @@
                             <thead>
                                 <tr class="text-muted small">
                                     <th>{{ __('Price (฿)') }}</th>
-                                    <th>{{ __('Count') }}</th>
+                                    <th style="width: 120px;">{{ __('Assigned') }}</th>
                                     <th>{{ __('Note') }}</th>
-                                    <th></th>
+                                    <th style="width: 30px;"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <template x-for="(tier, index) in pricingTiers" :key="index">
                                     <tr>
                                         <td><input type="number" class="form-control form-control-sm" x-model="tier.price" @input="updateTotal()" placeholder="Price"></td>
-                                        <td><input type="number" class="form-control form-control-sm" x-model="tier.count" @input="updateTotal()" placeholder="Qty"></td>
-                                        <td><input type="text" class="form-control form-control-sm" x-model="tier.note" placeholder="Opt."></td>
                                         <td>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control text-center bg-white" readonly :value="tier.item_ids ? tier.item_ids.length : (tier.count || 0)">
+                                                <button class="btn btn-outline-secondary" type="button" @click="openManageEmployeesModal(index)" title="Manage Employees">
+                                                    <i class="bi bi-people-fill"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td><input type="text" class="form-control form-control-sm" x-model="tier.note" placeholder="Opt."></td>
+                                        <td class="text-center align-middle">
                                             <button class="btn btn-sm btn-link text-danger p-0" @click="removeTier(index)">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
@@ -555,6 +562,58 @@
     </div>
     <!-- Backdrop for manual modal -->
     <div class="modal-backdrop fade show" x-show="showCustomHeaderModal" style="z-index: 1040;"></div>
+
+    <!-- Manage Employees Modal (Tier Assignment) -->
+    <div class="modal fade" :id="'manageEmployeesModal-' + productionId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold">Assign Employees to Price Tier</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-2">
+                    <div class="mb-2 d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Search employee..." x-model="modalSearch">
+                        <button class="btn btn-sm btn-outline-secondary" @click="selectAllForModal()" title="Select All Visible">
+                            <i class="bi bi-check-all"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" @click="deselectAllForModal()" title="Clear Selection">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="list-group list-group-flush border rounded small" style="max-height: 300px; overflow-y: auto;">
+                        <template x-for="item in productionItems" :key="item.id">
+                            <label class="list-group-item list-group-item-action d-flex gap-2 align-items-center py-2"
+                                   x-show="!modalSearch || item.name.toLowerCase().includes(modalSearch.toLowerCase())"
+                                   style="cursor: pointer;">
+                                <input class="form-check-input me-1 mt-0" type="checkbox" :value="item.id" x-model="modalSelectedIds">
+                                <span class="text-truncate" x-text="item.name"></span>
+
+                                <!-- Indicator if assigned to another tier -->
+                                <template x-if="getTierForItem(item.id) && activeTierIndex !== null && pricingTiers.indexOf(getTierForItem(item.id)) !== activeTierIndex">
+                                    <span class="badge bg-warning text-dark ms-auto fw-normal" style="font-size: 0.7em;">
+                                        In <span x-text="getTierForItem(item.id).price"></span>
+                                    </span>
+                                </template>
+                            </label>
+                        </template>
+                        <div x-show="productionItems.length === 0" class="p-3 text-center text-muted">No employees found.</div>
+                    </div>
+                </div>
+                <div class="modal-footer py-1 bg-light">
+                     <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="small text-muted">
+                            Selected: <strong x-text="modalSelectedIds.length"></strong>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary btn-sm" @click="saveTierSelection()">Save Changes</button>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Custom Customer Modal -->
     <div class="modal fade" :id="'customCustomerModal-' + productionId" tabindex="-1" x-show="showCustomCustomerModal" style="display: none;" :class="{ 'show d-block': showCustomCustomerModal }">

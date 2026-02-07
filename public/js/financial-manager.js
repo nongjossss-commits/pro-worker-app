@@ -13,6 +13,11 @@ if (typeof window.financialManager === 'undefined') {
             employeeCount: initialData.employeeCount || 0,
             discount: 0,
 
+            // Manage Employees Modal State
+            activeTierIndex: null,
+            modalSelectedIds: [],
+            modalSearch: '',
+
             // Advance Items
             advanceItems: [],
             productionItems: initialData.productionItems || [], // List of {id, name, employee_id}
@@ -98,11 +103,77 @@ if (typeof window.financialManager === 'undefined') {
                 this.useCustomCustomer = !!data.customer_override;
                 this.customCustomerData = data.customer_override || { name:'', address:'', tax_id:'', phone:'' };
 
+                // Initialize item_ids if missing
+                this.pricingTiers.forEach(t => {
+                    if (!Array.isArray(t.item_ids)) t.item_ids = [];
+                });
+
                 // Default tier if empty
                 if (this.pricingMode === 'per_head' && this.pricingTiers.length === 0) {
-                    this.pricingTiers.push({ price: 0, count: this.employeeCount, note: 'Standard Price' });
+                    this.pricingTiers.push({ price: 0, count: this.employeeCount, note: 'Standard Price', item_ids: [] });
                 }
 
+                this.updateTotal();
+            },
+
+            // --- Helper Methods for Tier Management ---
+            getTierForItem(itemId) {
+                // Returns the tier object if the item is assigned to one
+                return this.pricingTiers.find(t => t.item_ids && t.item_ids.includes(parseInt(itemId)));
+            },
+
+            getItemPrice(itemId) {
+                const tier = this.getTierForItem(itemId);
+                return tier ? parseFloat(tier.price || 0) : 0;
+            },
+
+            assignItemsToTier(tierIndex, itemIds) {
+                // Ensure IDs are integers
+                const intIds = itemIds.map(id => parseInt(id));
+
+                // 1. Remove these items from all other tiers
+                this.pricingTiers.forEach((t, idx) => {
+                    if (idx !== tierIndex && t.item_ids) {
+                        t.item_ids = t.item_ids.filter(id => !intIds.includes(parseInt(id)));
+                    }
+                });
+
+                // 2. Overwrite target tier with new selection
+                // This handles both adding new items and removing unchecked items
+                const targetTier = this.pricingTiers[tierIndex];
+                targetTier.item_ids = intIds;
+
+                // 3. Update count for display (though we use item_ids.length now)
+                targetTier.count = targetTier.item_ids.length;
+
+                this.updateTotal();
+            },
+
+            selectAllForModal() {
+                if (this.modalSearch) {
+                    const term = this.modalSearch.toLowerCase();
+                    const visibleIds = this.productionItems
+                        .filter(i => i.name.toLowerCase().includes(term))
+                        .map(i => i.id);
+
+                    // Union with existing selection
+                    this.modalSelectedIds = [...new Set([...this.modalSelectedIds, ...visibleIds])];
+                } else {
+                    this.modalSelectedIds = this.productionItems.map(i => i.id);
+                }
+            },
+
+            deselectAllForModal() {
+                this.modalSelectedIds = [];
+            },
+
+            unassignItem(itemId) {
+                 this.pricingTiers.forEach(t => {
+                    if (t.item_ids) {
+                        t.item_ids = t.item_ids.filter(id => id !== parseInt(itemId));
+                        t.count = t.item_ids.length;
+                    }
+                });
                 this.updateTotal();
             },
 
@@ -134,6 +205,20 @@ if (typeof window.financialManager === 'undefined') {
                     // Skip if used
                     if (usedItemIds.has(item.id)) return;
 
+                    // Pricing Mode Filter: In 'per_head', skip if not in any tier
+                    // Note: 'emp_' items (candidates) are never in a tier yet, so they are effectively blocked from installment
+                    // until added to a tier. But adding to a tier creates a ProductionItem?
+                    // No, tiers store ProductionItem IDs. So candidates must be "converted" or created first?
+                    // Actually, for simplicity, we only allow existing Production Items in Per Head mode Installments.
+                    // If user wants to add a new person, they add to job card first (creating ProductionItem), then assign tier.
+
+                    let hasPrice = true;
+                    if (this.pricingMode === 'per_head') {
+                         hasPrice = !!this.getTierForItem(item.id);
+                    }
+
+                    if (this.pricingMode === 'per_head' && !hasPrice) return;
+
                     if (item.employee_id) {
                         itemsByEmpId[item.employee_id] = item.id;
                         // Also skip if employee ID is considered used
@@ -148,18 +233,21 @@ if (typeof window.financialManager === 'undefined') {
                 });
 
                 // 3. Add Candidates (Employees)
-                this.employees.forEach(emp => {
-                    // Check if this employee is already represented by an existing Production Item
-                    if (itemsByEmpId[emp.id]) return;
-                    // Check if already used in another transaction
-                    if (usedEmployeeIds.has(emp.id)) return;
+                // Only show candidates if NOT in per_head mode (since they can't have a price yet)
+                if (this.pricingMode !== 'per_head') {
+                    this.employees.forEach(emp => {
+                        // Check if this employee is already represented by an existing Production Item
+                        if (itemsByEmpId[emp.id]) return;
+                        // Check if already used in another transaction
+                        if (usedEmployeeIds.has(emp.id)) return;
 
-                    list.push({
-                        id: 'emp_' + emp.id, // Value with prefix to distinguish
-                        name: emp.name,
-                        type: 'employee'
+                        list.push({
+                            id: 'emp_' + emp.id, // Value with prefix to distinguish
+                            name: emp.name,
+                            type: 'employee'
+                        });
                     });
-                });
+                }
 
                 return list;
             },
@@ -232,10 +320,15 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             recalcAmount() {
-                if (this.pricingMode === 'per_head' && this.pricingTiers.length > 0) {
-                    const count = this.selectedTransactionItems.length;
-                    const price = parseFloat(this.pricingTiers[0].price || 0);
-                    this.newTransaction.amount = count * price;
+                if (this.pricingMode === 'per_head') {
+                    let total = 0;
+                    this.selectedTransactionItems.forEach(val => {
+                        // Only ProductionItems have tiers
+                        if (!String(val).startsWith('emp_')) {
+                             total += this.getItemPrice(val);
+                        }
+                    });
+                    this.newTransaction.amount = total;
                 }
             },
 
@@ -463,14 +556,38 @@ if (typeof window.financialManager === 'undefined') {
 
             // --- Pricing Logic ---
             addTier() {
-                this.pricingTiers.push({ price: 0, count: 0, note: '' });
+                this.pricingTiers.push({ price: 0, count: 0, note: '', item_ids: [] });
             },
             removeTier(index) {
                 this.pricingTiers.splice(index, 1);
                 this.updateTotal();
             },
             get tierCountSum() {
-                return this.pricingTiers.reduce((sum, t) => sum + parseInt(t.count || 0), 0);
+                // Use item_ids.length for accurate count
+                return this.pricingTiers.reduce((sum, t) => sum + (t.item_ids ? t.item_ids.length : 0), 0);
+            },
+
+            // Manage Employees Modal Actions
+            openManageEmployeesModal(index) {
+                this.activeTierIndex = index;
+                this.modalSearch = '';
+                this.modalSelectedIds = [...(this.pricingTiers[index].item_ids || [])];
+
+                const el = document.getElementById('manageEmployeesModal-' + this.productionId);
+                if (el && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getOrCreateInstance(el);
+                    modal.show();
+                }
+            },
+
+            saveTierSelection() {
+                if (this.activeTierIndex === null) return;
+                this.assignItemsToTier(this.activeTierIndex, this.modalSelectedIds);
+
+                const el = document.getElementById('manageEmployeesModal-' + this.productionId);
+                if (el && typeof bootstrap !== 'undefined') {
+                    bootstrap.Modal.getInstance(el).hide();
+                }
             },
 
             // --- Advance Logic ---
@@ -485,7 +602,10 @@ if (typeof window.financialManager === 'undefined') {
             updateTotal() {
                 let gross = 0;
                 if (this.pricingMode === 'per_head') {
-                    gross = this.pricingTiers.reduce((sum, t) => sum + (parseFloat(t.price || 0) * parseFloat(t.count || 0)), 0);
+                    gross = this.pricingTiers.reduce((sum, t) => {
+                         const count = t.item_ids ? t.item_ids.length : (parseInt(t.count) || 0); // Fallback for legacy
+                         return sum + (parseFloat(t.price || 0) * count);
+                    }, 0);
                 } else {
                     gross = parseFloat(this.fixedTotal) || 0;
                 }
