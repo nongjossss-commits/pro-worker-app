@@ -293,6 +293,75 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- NEW CREDENTIALS SECTION --}}
+                <div class="ms-md-4" x-data="{
+                    isEditing: false,
+                    email: {{ json_encode($item->employee->email ?? '') }},
+                    password: {{ json_encode($item->employee->password ?? '') }},
+                    copy(el, text) {
+                        if (!text) return;
+                        navigator.clipboard.writeText(text).then(() => {
+                            const originalHtml = el.innerHTML;
+                            el.innerHTML = '<i class=\'bi bi-check text-success\'></i>';
+                            setTimeout(() => el.innerHTML = originalHtml, 1000);
+                        });
+                    },
+                    save() {
+                        fetch('/workflow/item/{{ $item->id }}/update-credentials', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                            body: JSON.stringify({ email: this.email, password: this.password })
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) {
+                                this.isEditing = false;
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: '{{ __("Saved") }}',
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                            }
+                        });
+                    }
+                }">
+                    {{-- Display Mode --}}
+                    <div x-show="!isEditing" class="d-flex align-items-center gap-2">
+                        <div class="d-flex flex-column gap-1">
+                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm" style="min-width: 200px;">
+                                <i class="bi bi-envelope text-muted me-1"></i>
+                                <span x-text="email || '-'" class="small text-truncate" style="max-width: 150px;" :title="email"></span>
+                                <button @click="copy($event.currentTarget, email)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Email" x-show="email">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                             </div>
+                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm" style="min-width: 200px;">
+                                <i class="bi bi-key text-muted me-1"></i>
+                                <span x-text="password || '-'" class="small text-truncate" style="max-width: 150px;" :title="password"></span>
+                                <button @click="copy($event.currentTarget, password)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Password" x-show="password">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                             </div>
+                        </div>
+                        @if(!$isReadOnly)
+                        <button @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Credentials">
+                            <i class="bi bi-pencil-fill" style="font-size: 0.7rem;"></i>
+                        </button>
+                        @endif
+                    </div>
+
+                    {{-- Edit Mode --}}
+                    <div x-show="isEditing" @click.outside="isEditing = false" class="d-flex flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; min-width: 220px;">
+                        <input x-model="email" type="email" class="form-control form-control-sm" placeholder="Email">
+                        <input x-model="password" type="text" class="form-control form-control-sm" placeholder="Password">
+                        <div class="d-flex gap-1 mt-1">
+                            <button @click="save()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i></button>
+                            <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Actions --}}

@@ -341,6 +341,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('workflow/{id}', [\App\Http\Controllers\WorkflowController::class, 'show'])->name('workflow.show'); // Board
     Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');
     Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
+    Route::post('workflow/item/{item}/update-credentials', [\App\Http\Controllers\WorkflowController::class, 'updateCredentials'])->name('workflow.item.update_credentials');
 
     // Workflow API Routes
     Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
