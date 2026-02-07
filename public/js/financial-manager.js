@@ -143,6 +143,7 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: item.id, // Value
                         name: item.name,
+                        photo_url: item.photo_url,
                         type: 'item'
                     });
                 });
@@ -157,6 +158,7 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: 'emp_' + emp.id, // Value with prefix to distinguish
                         name: emp.name,
+                        photo_url: emp.photo_url,
                         type: 'employee'
                     });
                 });
@@ -202,6 +204,7 @@ if (typeof window.financialManager === 'undefined') {
                          list.push({
                             id: item.id,
                             name: item.name,
+                            photo_url: item.photo_url,
                             type: 'item',
                             attached: isAttached
                         });
@@ -216,6 +219,7 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: 'emp_' + emp.id,
                         name: emp.name,
+                        photo_url: emp.photo_url,
                         type: 'employee',
                         attached: false
                     });

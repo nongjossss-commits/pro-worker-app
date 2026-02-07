@@ -6,10 +6,17 @@
         return [
             'id' => $item->id,
             'name' => $item->employee ? ($item->employee->name_th ?? $item->employee->name_en) : 'New Employee',
-            'employee_id' => $item->employee_id
+            'employee_id' => $item->employee_id,
+            'photo_url' => $item->employee?->photoUrl
         ];
     })) }},
-    employees: {{ json_encode($employees ?? []) }},
+    employees: {{ json_encode(collect($employees ?? [])->map(function($emp) {
+        return [
+            'id' => $emp->id,
+            'name' => $emp->employeeNameTh ?? $emp->employeeNameEn ?? 'Unknown',
+            'photo_url' => $emp->photoUrl
+        ];
+    })) }},
     productionId: {{ $production->id }},
     employeeCount: {{ $employeeCount ?? $production->items->count() }},
     csrfToken: '{{ csrf_token() }}'
@@ -667,6 +674,7 @@
                                         <template x-for="item in availableItems" :key="item.id">
                                             <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
                                                 <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcAmount()">
+                                                <img :src="item.photo_url" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;" x-show="item.photo_url">
                                                 <span class="text-truncate" x-text="item.name"></span>
                                             </label>
                                         </template>
@@ -721,6 +729,7 @@
                                         <template x-for="item in editModalItems" :key="item.id">
                                             <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
                                                 <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems">
+                                                <img :src="item.photo_url" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;" x-show="item.photo_url">
                                                 <span class="text-truncate" x-text="item.name"></span>
                                                 <span x-show="isItemAttached(item.id)" class="badge bg-success ms-auto" style="font-size: 0.6em;">Linked</span>
                                             </label>
