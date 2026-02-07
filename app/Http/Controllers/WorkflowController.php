@@ -288,18 +288,31 @@ class WorkflowController extends Controller
      */
     public function updateCredentials(Request $request, $itemId)
     {
+        $item = ProductionItem::with('employee')->findOrFail($itemId);
+        $employeeId = $item->employee->id ?? null;
+
         $request->validate([
-            'email' => 'nullable|email|max:255',
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                $employeeId ? \Illuminate\Validation\Rule::unique('employees', 'email')->ignore($employeeId) : 'unique:employees,email'
+            ],
             'password' => 'nullable|string|max:255',
         ]);
 
-        $item = ProductionItem::with('employee')->findOrFail($itemId);
-
         if ($item->employee) {
-            $item->employee->update([
-                'email' => $request->email,
-                'password' => $request->password,
-            ]);
+            try {
+                $item->employee->update([
+                    'email' => $request->email,
+                    'password' => $request->password,
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to save: ' . $e->getMessage()
+                ], 500);
+            }
         }
 
         return response()->json(['success' => true]);
