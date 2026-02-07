@@ -44,7 +44,7 @@ class RegistrationController extends Controller
         // We only fetch ID, Status, EmployerID to keep it fast.
         $employeeQuery = Employee::query()
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
-            ->select('id', 'employer_id', 'status', 'biometrics_collected_at', 'employee_doc_9'); // Lightweight Select
+            ->select('id', 'employer_id', 'status', 'biometrics_collected_at', 'employee_doc_9', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn'); // Lightweight Select + Names
 
         if (auth()->user()->can('manage-tickets')) {
             $employeeQuery->withoutGlobalScope('employerTenancy');
@@ -222,6 +222,35 @@ class RegistrationController extends Controller
             // Calculate Employer-Specific Stats from our Lightweight Collection
             $myEmps = $employeesByEmployer[$employer->id] ?? collect();
 
+            // --- Financial Status Logic ---
+            $employeeFinancialStatus = [];
+            foreach ($financeOrder->financialGroups as $group) {
+                foreach ($group->transactions as $transaction) {
+                    foreach ($transaction->items as $item) {
+                        if (!$item->employee_id) continue;
+
+                        $empId = $item->employee_id;
+                        $currentStatus = $employeeFinancialStatus[$empId] ?? 'none';
+                        $txStatus = $transaction->status;
+
+                        // Logic:
+                        // If any transaction is pending/partial -> Partial/Pending
+                        // If all transactions are paid -> Paid
+                        if ($txStatus === 'paid') {
+                            if ($currentStatus === 'none') {
+                                $employeeFinancialStatus[$empId] = 'paid';
+                            }
+                        } else {
+                            // pending, partial, overdue
+                            $employeeFinancialStatus[$empId] = 'partial';
+                        }
+                    }
+                }
+            }
+
+            // Prepare Candidates List for Finance Tab
+            $employer->activeEmployeesList = $myEmps->where('status', '!=', 'registration_cancelled')->values();
+
             // Initialize Employer Stats
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
             $empNotStarted = 0;
@@ -231,6 +260,9 @@ class RegistrationController extends Controller
             $empBiometricsCollected = 0;
 
             foreach ($myEmps as $emp) {
+                // Attach Financial Status
+                $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
+
                 if ($emp->status === 'registration_cancelled') {
                     $empCancelledCount++;
                     continue;
@@ -363,6 +395,39 @@ class RegistrationController extends Controller
                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
                 return $highest && $highest->id == $filterStepId;
             });
+        }
+
+        // --- Calculate Financial Status ---
+        $financeOrder = ProductionOrder::with('financialGroups.transactions.items')
+            ->where('employer_id', $employerId)
+            ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+            ->first();
+
+        $employeeFinancialStatus = [];
+        if ($financeOrder) {
+            foreach ($financeOrder->financialGroups as $group) {
+                foreach ($group->transactions as $transaction) {
+                    foreach ($transaction->items as $item) {
+                        if (!$item->employee_id) continue;
+
+                        $empId = $item->employee_id;
+                        $currentStatus = $employeeFinancialStatus[$empId] ?? 'none';
+                        $txStatus = $transaction->status;
+
+                        if ($txStatus === 'paid') {
+                            if ($currentStatus === 'none') {
+                                $employeeFinancialStatus[$empId] = 'paid';
+                            }
+                        } else {
+                            $employeeFinancialStatus[$empId] = 'partial';
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($employees as $emp) {
+            $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
         }
 
         return view('production.registration._employee_list_content', [

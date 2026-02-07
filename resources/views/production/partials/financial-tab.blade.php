@@ -9,6 +9,7 @@
             'employee_id' => $item->employee_id
         ];
     })) }},
+    employees: {{ json_encode($employees ?? []) }},
     productionId: {{ $production->id }},
     employeeCount: {{ $employeeCount ?? $production->items->count() }},
     csrfToken: '{{ csrf_token() }}'

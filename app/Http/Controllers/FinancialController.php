@@ -30,11 +30,10 @@ class FinancialController extends Controller
             'notes' => 'nullable|string',
             'financial_group_id' => 'required|exists:production_financial_groups,id',
             'item_ids' => 'nullable|array',
-            'item_ids.*' => 'exists:production_items,id'
+            'item_ids.*' => 'exists:production_items,id',
+            'employee_ids' => 'nullable|array',
+            'employee_ids.*' => 'exists:employees,id'
         ]);
-
-        // Validation: Ensure items belong to this production order?
-        // Optimization: We assume frontend sends correct IDs. Strict check can be added if critical.
 
         $transaction = FinancialTransaction::create([
             'production_order_id' => $productionId,
@@ -46,12 +45,34 @@ class FinancialController extends Controller
             'status' => 'pending'
         ]);
 
-        if ($request->has('item_ids') && is_array($request->item_ids)) {
-            $transaction->items()->attach($request->item_ids);
+        $finalItemIds = $request->item_ids ?? [];
+
+        // Handle direct Employee IDs (Create items on the fly)
+        if ($request->has('employee_ids') && is_array($request->employee_ids)) {
+            foreach ($request->employee_ids as $empId) {
+                // Find or Create ProductionItem for this order/employee
+                $item = ProductionItem::firstOrCreate(
+                    [
+                        'production_order_id' => $productionId,
+                        'employee_id' => $empId
+                    ],
+                    [
+                        'status' => 'pending', // Or registration_pending context dependent? Safe default.
+                        'group_name' => null
+                    ]
+                );
+                $finalItemIds[] = $item->id;
+            }
+        }
+
+        $finalItemIds = array_unique($finalItemIds);
+
+        if (!empty($finalItemIds)) {
+            $transaction->items()->attach($finalItemIds);
         }
 
         // Return transaction with items to update frontend state if needed
-        $transaction->load('items');
+        $transaction->load('items.employee'); // Load employee for name display
 
         return response()->json([
             'success' => true,
@@ -71,17 +92,12 @@ class FinancialController extends Controller
 
         $transaction = FinancialTransaction::findOrFail($id);
 
-        // Allow 'item_ids' in validation, even though it might be sent as JSON string if using FormData for file upload
-        // If file upload is present, we might receive key-value pairs.
-        // If pure JSON request (no file), it's standard JSON.
-        // Frontend logic uses FormData for update if file is present.
-        // We need to handle `item_ids` carefully.
-
         $rules = [
             'paid_amount' => 'nullable|numeric',
             'status' => 'nullable|in:pending,partial,paid,overdue',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
-            'item_ids' => 'nullable' // Can be array or string "1,2,3" if FormData
+            'item_ids' => 'nullable', // Can be array or string "1,2,3" if FormData
+            'employee_ids' => 'nullable' // Can be array or string
         ];
 
         $request->validate($rules);
@@ -115,21 +131,47 @@ class FinancialController extends Controller
         $transaction->save();
 
         // Sync Items
-        if ($request->has('item_ids')) {
-            $itemIds = $request->input('item_ids');
+        // We need to merge item_ids and employee_ids logic
+        if ($request->has('item_ids') || $request->has('employee_ids')) {
+            $itemIds = $request->input('item_ids', []);
+            $employeeIds = $request->input('employee_ids', []);
 
-            // If FormData sends array as item_ids[], Laravel sees it as array.
-            // If comma separated string:
+            // Handle FormData format (strings)
             if (is_string($itemIds)) {
-                $itemIds = explode(',', $itemIds);
+                $itemIds = $itemIds ? explode(',', $itemIds) : [];
+            }
+            if (is_string($employeeIds)) {
+                $employeeIds = $employeeIds ? explode(',', $employeeIds) : [];
             }
 
-            if (is_array($itemIds)) {
+            // Convert to array if not
+            if (!is_array($itemIds)) $itemIds = [];
+            if (!is_array($employeeIds)) $employeeIds = [];
+
+            // Process new employee IDs
+            foreach ($employeeIds as $empId) {
+                $item = ProductionItem::firstOrCreate(
+                    [
+                        'production_order_id' => $transaction->production_order_id,
+                        'employee_id' => $empId
+                    ],
+                    [
+                        'status' => 'pending'
+                    ]
+                );
+                $itemIds[] = $item->id;
+            }
+
+            $itemIds = array_unique($itemIds);
+
+            // Only sync if we actually received data updates.
+            // If item_ids was passed (even empty), it means we want to update the list.
+            if ($request->has('item_ids') || $request->has('employee_ids')) {
                 $transaction->items()->sync($itemIds);
             }
         }
 
-        $transaction->load('items');
+        $transaction->load('items.employee');
 
         return response()->json(['success' => true, 'transaction' => $transaction]);
     }
