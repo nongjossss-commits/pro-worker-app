@@ -50,6 +50,16 @@
                             {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+
+                        @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
+                            @foreach($employee->active_workflows as $wf)
+                                <a href="{{ route('workflow.index', ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]) }}"
+                                   class="badge bg-warning text-dark text-decoration-none ms-1"
+                                   title="{{ $wf->status_label }}: {{ $wf->name }}">
+                                   <i class="bi bi-gear-fill me-1"></i>{{ $wf->status_label }}
+                                </a>
+                            @endforeach
+                        @endif
                     </div>
                     <div class="small text-muted">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }}</div>
                 </div>
