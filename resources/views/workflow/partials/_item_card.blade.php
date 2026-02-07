@@ -1,4 +1,4 @@
-@props(['item', 'steps', 'order' => null])
+@props(['item', 'steps', 'order' => null, 'isHistory' => false])
 
 @php
     $order = $order ?? $item->order;
@@ -73,6 +73,19 @@
     $canManage = $user->can('manage-own-workflow');
     $isReadOnly = $isEmployer && !$canManage;
     $canDelete = $user->hasRole('admin');
+
+    // Restore Logic
+    $canRestore = false;
+    $expiresAtTimestamp = 0;
+
+    if ($isCompleted && $item->completed_at && !$isHistory) {
+        $completedAt = \Carbon\Carbon::parse($item->completed_at);
+        $expiresAt = $completedAt->copy()->addHours(24);
+        if ($expiresAt->isFuture()) {
+            $canRestore = true;
+            $expiresAtTimestamp = $expiresAt->timestamp * 1000;
+        }
+    }
 @endphp
 
 <div class="d-flex align-items-center item-card-outer mb-3 item-card-wrapper"
@@ -363,13 +376,40 @@
                         <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
                     </button>
 
-                    {{-- UNDO (For Completed) --}}
-                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCompleted ? 'd-none' : '' }}"
-                        id="btn-undo-{{ $item->id }}"
-                        title="Undo"
-                        onclick="restoreItem({{ $item->id }})">
-                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
-                    </button>
+                    {{-- UNDO (For Completed - Within 24h) --}}
+                    @if($canRestore)
+                    <div x-data="{
+                        expires: {{ $expiresAtTimestamp }},
+                        text: '',
+                        init() {
+                             this.tick();
+                             setInterval(() => this.tick(), 60000);
+                        },
+                        tick() {
+                             const now = new Date().getTime();
+                             const diff = this.expires - now;
+                             if (diff <= 0) {
+                                 this.text = 'Expired';
+                             } else {
+                                 const hours = Math.floor(diff / (1000 * 60 * 60));
+                                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                 this.text = hours + 'h ' + minutes + 'm';
+                             }
+                        }
+                    }" class="d-inline-block">
+                        <button class="btn btn-sm btn-outline-warning rounded-pill px-3"
+                            id="btn-undo-{{ $item->id }}"
+                            title="Undo"
+                            onclick="restoreItem({{ $item->id }})">
+                            <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
+                            <span class="badge bg-warning text-dark ms-1" x-text="text"></span>
+                        </button>
+                    </div>
+                    @endif
+
+                    @if($isHistory)
+                        <span class="badge bg-secondary align-self-center">{{ __('Archived') }}</span>
+                    @endif
                 @endif
 
                 {{-- Delete (Soft) --}}

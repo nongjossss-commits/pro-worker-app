@@ -460,8 +460,16 @@ class WorkflowController extends Controller
     {
         $order = ProductionOrder::with(['workType.steps'])->findOrFail($orderId);
 
+        // Filter out "Historic" items (Completed > 24h ago)
         $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId)
+            ->where(function($q) {
+                $q->where('status', '!=', 'completed')
+                  ->orWhere(function($sub) {
+                      $sub->where('status', 'completed')
+                          ->where('completed_at', '>=', now()->subHours(24));
+                  });
+            })
             ->orderBy('group_name')
             ->orderBy('id')
             ->get();
@@ -469,7 +477,41 @@ class WorkflowController extends Controller
         // Group the items collection by group_name for easier view rendering
         $groupedItems = $items->groupBy('group_name');
 
-        return view('workflow.partials.order_items', compact('order', 'groupedItems'));
+        // Check if there are history items (for the button)
+        $hasHistory = ProductionItem::where('production_order_id', $orderId)
+            ->where('status', 'completed')
+            ->where(function($q) {
+                $q->whereNull('completed_at')
+                  ->orWhere('completed_at', '<', now()->subHours(24));
+            })
+            ->exists();
+
+        return view('workflow.partials.order_items', compact('order', 'groupedItems', 'hasHistory'));
+    }
+
+    /**
+     * Fetch Historic Items (Completed > 24h).
+     */
+    public function fetchOrderHistory(Request $request, $orderId)
+    {
+        $order = ProductionOrder::with(['workType.steps'])->findOrFail($orderId);
+
+        $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
+            ->where('production_order_id', $orderId)
+            ->where('status', 'completed')
+            ->where(function($q) {
+                $q->whereNull('completed_at')
+                  ->orWhere('completed_at', '<', now()->subHours(24));
+            })
+            ->orderByDesc('completed_at')
+            ->get();
+
+        $groupedItems = $items->groupBy('group_name');
+
+        // Reuse the order_items partial but maybe with a flag or different view
+        // For simplicity, reusing order_items but passing a flag is good,
+        // OR render a simple list. Let's reuse order_items but we need to handle "Restore" button hidden.
+        return view('workflow.partials.order_items', compact('order', 'groupedItems'))->with('isHistory', true);
     }
 
     /**
@@ -878,7 +920,10 @@ class WorkflowController extends Controller
                 }
             }
 
-            $item->update(['status' => 'completed']);
+            $item->update([
+                'status' => 'completed',
+                'completed_at' => now()
+            ]);
         });
 
         // Recalculate Stats
@@ -907,7 +952,11 @@ class WorkflowController extends Controller
     public function restoreItem(Request $request, $itemId)
     {
         $item = ProductionItem::findOrFail($itemId);
-        $item->update(['status' => 'pending']);
+        // Reset completed_at so if finalized again, timer restarts
+        $item->update([
+            'status' => 'pending',
+            'completed_at' => null
+        ]);
 
         // Recalculate Stats
         $orderStats = $this->calculateOrderStats($item->order);

@@ -315,6 +315,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->name('workflow.index');
     Route::post('workflow/store', [\App\Http\Controllers\WorkflowController::class, 'store'])->name('workflow.store');
     Route::get('workflow/{order}/items', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderItems'])->name('workflow.items');
+    Route::get('workflow/{order}/history', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderHistory'])->name('workflow.history');
     Route::get('workflow/item/{item}/card', [\App\Http\Controllers\WorkflowController::class, 'getItemHtml'])->name('workflow.item.card');
     Route::post('workflow/item/{item}/step-toggle', [\App\Http\Controllers\WorkflowController::class, 'toggleStep'])->name('workflow.step.toggle');
     Route::post('workflow/item/{item}/appointment', [\App\Http\Controllers\WorkflowController::class, 'updateAppointmentDate'])->name('workflow.item.appointment');
