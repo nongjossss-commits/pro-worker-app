@@ -5,7 +5,21 @@
     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
 @endphp
 
-<div id="history-row-{{ $employee->id }}" class="list-group-item list-group-item-action">
+<div id="history-row-{{ $employee->id }}" class="list-group-item list-group-item-action position-relative">
+    @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded"
+             style="background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107; z-index: 10; pointer-events: none;">
+             <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
+                @foreach($employee->active_workflows as $wf)
+                    <a href="{{ route('workflow.index', ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]) }}"
+                       class="badge bg-warning text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
+                       style="max-width: 90%;">
+                       <i class="bi bi-gear-fill me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
+                    </a>
+                @endforeach
+             </div>
+        </div>
+    @endif
     <div class="d-flex w-100">
         {{-- Checkbox --}}
         <div class="me-3 d-flex align-items-center">
