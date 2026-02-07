@@ -53,6 +53,11 @@
         font-weight: bold;
         white-space: nowrap;
     }
+
+    /* Visibility Toggle */
+    .hide-cancelled .status-cancelled {
+        display: none !important;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -307,6 +312,21 @@
 
                                  {{-- Actions --}}
                                  @if(!$isReadOnly)
+                                 {{-- History Button --}}
+                                 <button class="btn btn-outline-secondary btn-sm rounded-circle me-1 history-btn-{{ $order->id }}"
+                                    onclick="openHistoryModal({{ $order->id }})"
+                                    title="{{ __('View History') }}">
+                                     <i class="bi bi-clock-history"></i>
+                                 </button>
+
+                                 {{-- Toggle Cancelled --}}
+                                 <button class="btn btn-outline-secondary btn-sm rounded-circle me-1"
+                                    onclick="toggleCancelled({{ $order->id }}, this)"
+                                    title="{{ __('Toggle Cancelled Items') }}"
+                                    data-hidden="true">
+                                     <i class="bi bi-eye"></i>
+                                 </button>
+
                                  <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'workflow')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </button>
@@ -345,7 +365,8 @@
 
                     <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#workflowAccordion">
                         <div class="card-body bg-light p-4">
-                            <div id="order-content-{{ $order->id }}" class="order-content-wrapper">
+                            {{-- Default: hide-cancelled class added --}}
+                            <div id="order-content-{{ $order->id }}" class="order-content-wrapper hide-cancelled">
                                 <div class="d-flex justify-content-center py-5">
                                     <div class="spinner-border text-primary" role="status"></div>
                                 </div>
@@ -537,6 +558,23 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
                 <button type="button" class="btn btn-primary" id="cropImageBtn">ครอบตัดและบันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- History Modal --}}
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>{{ __('Job History') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light" id="historyModalBody">
+                 <div class="d-flex justify-content-center py-5">
+                     <div class="spinner-border text-secondary" role="status"></div>
+                 </div>
             </div>
         </div>
     </div>
@@ -822,6 +860,44 @@
             card.style.transform = 'scale(0.95)';
             setTimeout(() => card.remove(), 300);
         }
+    }
+
+    // --- New Features JS ---
+    window.toggleCancelled = function(orderId, btn) {
+        const container = document.getElementById(`order-content-${orderId}`);
+        const icon = btn.querySelector('i');
+        const isHidden = btn.dataset.hidden === "true";
+
+        if (isHidden) {
+            // Show them
+            container.classList.remove('hide-cancelled');
+            btn.dataset.hidden = "false";
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            // Hide them
+            container.classList.add('hide-cancelled');
+            btn.dataset.hidden = "true";
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+
+    window.openHistoryModal = function(orderId) {
+        const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+        modal.show();
+
+        const body = document.getElementById('historyModalBody');
+        body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-secondary" role="status"></div></div>';
+
+        fetch(`/workflow/${orderId}/history`)
+            .then(res => res.text())
+            .then(html => {
+                body.innerHTML = html;
+            })
+            .catch(err => {
+                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>';
+            });
     }
 
     // --- Item Actions ---

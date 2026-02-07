@@ -23,8 +23,24 @@
 
         <div class="item-list">
             @foreach($items as $item)
-                @include('workflow.partials._item_card', ['item' => $item, 'steps' => $steps, 'order' => $order])
+                <div class="item-card-wrapper mb-3 {{ $item->status === 'cancelled' ? 'status-cancelled' : '' }}">
+                    @include('workflow.partials._item_card', [
+                        'item' => $item,
+                        'steps' => $steps,
+                        'order' => $order,
+                        'isHistory' => $isHistory ?? false
+                    ])
+                </div>
             @endforeach
         </div>
     @endforeach
+@endif
+
+@if(isset($hasHistory) && $hasHistory)
+<script>
+    (function(){
+        const btn = document.querySelector('.history-btn-{{ $order->id }}');
+        if(btn) btn.style.display = 'inline-block';
+    })();
+</script>
 @endif
