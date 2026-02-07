@@ -37,35 +37,7 @@
 </div>
 
 <!-- Cropper Modal -->
-<div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="cropperModalLabel">ครอบตัดรูปภาพ</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <style>
-                    .img-container {
-                        max-height: 500px;
-                        display: block;
-                    }
-                    .img-container img {
-                        max-width: 100%;
-                        display: block;
-                    }
-                </style>
-                <div class="img-container">
-                    <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" id="cropImageBtn">ครอบตัดและบันทึก</button>
-            </div>
-        </div>
-    </div>
-</div>
+<x-cropper-modal />
 @endsection
 
 @push('scripts')
@@ -225,6 +197,50 @@ document.addEventListener('DOMContentLoaded', function () {
             // Also clear the src to prevent flashing old image
             imageToCrop.src = '';
         });
+
+        // --- Background Removal Logic ---
+        const bgToolbar = document.getElementById('bgToolbar');
+        const loadingOverlay = document.getElementById('cropperLoadingOverlay');
+        const loadingText = document.getElementById('cropperLoadingText');
+
+        if (bgToolbar) {
+            bgToolbar.addEventListener('click', async function(e) {
+                const btn = e.target.closest('button[data-bg-action]');
+                if (!btn) return;
+
+                const action = btn.dataset.bgAction;
+                if (!originalFile) {
+                    alert('No image selected');
+                    return;
+                }
+
+                try {
+                    // Show Loading
+                    if (loadingOverlay) loadingOverlay.classList.remove('d-none');
+                    if (loadingText) loadingText.textContent = 'Processing...';
+
+                    // Process
+                    const processedBlob = await window.backgroundRemoval.process(originalFile, action, (active, text) => {
+                        if (loadingText && text) loadingText.textContent = text;
+                    });
+
+                    // Replace Image
+                    const newUrl = URL.createObjectURL(processedBlob);
+                    imageToCrop.src = newUrl;
+
+                    // Re-init Cropper
+                    if (cropper) cropper.destroy();
+                    initCropper();
+
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to process image: ' + err.message);
+                } finally {
+                    // Hide Loading
+                    if (loadingOverlay) loadingOverlay.classList.add('d-none');
+                }
+            });
+        }
     }
 
     function initCropper() {
