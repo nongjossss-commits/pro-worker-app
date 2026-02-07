@@ -681,18 +681,85 @@ class WorkflowController extends Controller
         $isPreProduction = $request->boolean('is_pre_production');
         $targetStatus = $isPreProduction ? 'pre_production' : 'active';
 
+        // Resolve WorkType first
+        $workTypeId = null;
+        if ($request->filled('production_order_id')) {
+            $existingOrder = ProductionOrder::findOrFail($request->production_order_id);
+            $workTypeId = $existingOrder->work_type_id;
+        } elseif ($request->filled('work_type_id')) {
+            $workTypeId = $request->work_type_id;
+        }
+
+        // --- Special Logic: Notify Out (Resignation) ---
+        // If adding existing employees to 'Notify Out', automatically group them by their CURRENT employer.
+        // This overrides the selected employer in the form (if any).
+        if ($workTypeId && $request->has('employee_ids') && is_array($request->employee_ids)) {
+            $workType = WorkType::find($workTypeId);
+
+            if ($workType && $workType->slug === 'notify_out') {
+                $employees = Employee::whereIn('id', $request->employee_ids)->with('employer')->get();
+                $grouped = $employees->groupBy('employer_id');
+                $updatedOrderIds = [];
+
+                foreach ($grouped as $employerId => $emps) {
+                    if (!$employerId) continue;
+
+                    // Find or Create Order for this Employer
+                    $employer = $emps->first()->employer; // Optimization: use relation from first item
+
+                    $order = ProductionOrder::firstOrCreate(
+                        [
+                            'employer_id' => $employerId,
+                            'work_type_id' => $workTypeId,
+                            'status' => $targetStatus
+                        ],
+                        [
+                            'type' => 'employer',
+                            'project_name' => $workType->name . ' - ' . ($employer->employerNameTh ?? 'Unknown') . ($isPreProduction ? ' (Prep)' : ''),
+                            'created_by' => auth()->id()
+                        ]
+                    );
+
+                    $updatedOrderIds[] = $order->id;
+
+                    foreach ($emps as $emp) {
+                         // Check duplicates (Locking)
+                         $hasActive = ProductionItem::where('employee_id', $emp->id)
+                            ->whereNotIn('status', ['completed', 'cancelled'])
+                            ->exists();
+
+                         if ($hasActive) continue;
+
+                         $exists = ProductionItem::where('production_order_id', $order->id)
+                            ->where('employee_id', $emp->id)->exists();
+
+                         if (!$exists) {
+                             ProductionItem::create([
+                                'production_order_id' => $order->id,
+                                'employee_id' => $emp->id,
+                                'group_name' => $request->group_name ?? null,
+                                'status' => 'pending'
+                             ]);
+                         }
+                    }
+                }
+
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Employees processed into resignation lists.',
+                        'redirect_url' => route('workflow.index', ['tab' => 'notify_out']) // Force refresh
+                    ]);
+                }
+                return redirect()->route('workflow.index', ['tab' => 'notify_out'])->with('success', 'Employees processed.');
+            }
+        }
+
+        // --- Original Logic for Other Types ---
+
         // 1. Validation: Check for duplicates (Existing Employees)
         // Ensure an employee cannot be in the same WorkType workflow (Active or Pre-Production) twice.
         if ($request->has('employee_ids') && is_array($request->employee_ids)) {
-            $workTypeId = null;
-
-            if ($request->filled('production_order_id')) {
-                $existingOrder = ProductionOrder::findOrFail($request->production_order_id);
-                $workTypeId = $existingOrder->work_type_id;
-            } elseif ($request->filled('work_type_id')) {
-                $workTypeId = $request->work_type_id;
-            }
-
             if ($workTypeId) {
                 // Find any items for these employees in this WorkType that are NOT cancelled or completed.
                 $duplicates = ProductionItem::whereIn('employee_id', $request->employee_ids)
@@ -706,6 +773,13 @@ class WorkflowController extends Controller
 
                 if ($duplicates->isNotEmpty()) {
                     $names = $duplicates->map(fn($item) => $item->employee->employeeNameEn ?? $item->employee->employeeNameTh)->unique()->implode(', ');
+
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Employees already in this workflow: $names"
+                        ]);
+                    }
 
                     return back()->with('duplicate_error', "Employees already in this workflow: $names. Please complete their current process first.");
                 }
@@ -725,7 +799,9 @@ class WorkflowController extends Controller
             $workType = WorkType::findOrFail($request->work_type_id);
 
             // Bucket Logic (Merge into existing if applicable)
-            if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
+            // Note: notify_out is handled above for existing employees, but if "New Employee" is created,
+            // it falls through here. For New Employee, we use the selected employer (request->employer_id).
+            if (in_array($workType->slug, ['notify_in', 'notify_out', 'mou_renewal'])) {
                 $order = ProductionOrder::firstOrCreate(
                     [
                         'employer_id' => $request->employer_id,
@@ -902,7 +978,7 @@ class WorkflowController extends Controller
         $slug = $item->order->workType->slug ?? '';
 
         DB::transaction(function () use ($item, $slug) {
-            if ($slug === 'notify_in') {
+            if (in_array($slug, ['notify_in', 'mou_import', 'mou_renewal'])) {
                 if ($item->employee) {
                     $item->employee->update([
                         'employer_id' => $item->order->employer_id,
@@ -1012,6 +1088,13 @@ class WorkflowController extends Controller
                 'is_system' => true,
                 'order' => 3,
                 'steps' => ['Name List', 'Calling Visa', 'Stamp Visa', 'Work Permit', 'Card']
+            ],
+            [
+                'name' => 'ต่ออายุ MOU',
+                'slug' => 'mou_renewal',
+                'is_system' => true,
+                'order' => 4,
+                'steps' => ['ยื่นเอกสาร', 'รอผล', 'รับเล่ม']
             ]
         ];
 
