@@ -328,7 +328,7 @@
                     }
                 }">
                     {{-- Display Mode --}}
-                    <div x-show="!isEditing" class="d-flex align-items-center gap-2">
+                    <div x-show="!isEditing" class="align-items-center gap-2" :class="{ 'd-flex': !isEditing }">
                         <div class="d-flex flex-column gap-1">
                              <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm" style="min-width: 200px;">
                                 <i class="bi bi-envelope text-muted me-1"></i>
@@ -353,7 +353,7 @@
                     </div>
 
                     {{-- Edit Mode --}}
-                    <div x-show="isEditing" @click.outside="isEditing = false" class="d-flex flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; min-width: 220px;">
+                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" :class="{ 'd-flex': isEditing }" style="display: none; min-width: 220px;">
                         <input x-model="email" type="email" class="form-control form-control-sm" placeholder="Email">
                         <input x-model="password" type="text" class="form-control form-control-sm" placeholder="Password">
                         <div class="d-flex gap-1 mt-1">
