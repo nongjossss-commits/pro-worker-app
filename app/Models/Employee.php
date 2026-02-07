@@ -133,6 +133,7 @@ class Employee extends Model
         'appointment_date',
         'appointment_location',
         'appointment_completed_at',
+        'resolution_completed_at',
     ];
 
     protected $casts = [
@@ -141,6 +142,7 @@ class Employee extends Model
         'biometrics_collected_at' => 'datetime',
         'appointment_date' => 'datetime',
         'appointment_completed_at' => 'datetime',
+        'resolution_completed_at' => 'datetime',
         'visaExpiryDate' => 'date:Y-m-d',
         'ninetyDayReportDate' => 'date:Y-m-d',
         'employeeDob' => 'date:Y-m-d',

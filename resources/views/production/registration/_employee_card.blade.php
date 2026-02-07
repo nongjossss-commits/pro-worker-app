@@ -1,8 +1,12 @@
-@props(['employee', 'steps'])
+@props(['employee', 'steps', 'isHistory' => false])
 
 @php
-    $isCompleted = $employee->status === 'registration_completed';
-    $isCancelled = $employee->status === 'registration_cancelled';
+    $isCompleted = in_array($employee->status, ['registration_completed', 'renewal_completed']);
+    $isCancelled = in_array($employee->status, ['registration_cancelled', 'renewal_cancelled']);
+
+    if ($isHistory) {
+        // $isCompleted = true; // Force completed styling if not already
+    }
 
     // Style: if completed/cancelled, flat/grey out.
     // Cancelled gets a specific flat grey look.
@@ -388,7 +392,7 @@
                 </button>
 
                 {{-- SAVE TO DB --}}
-                <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
+                <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
                     id="btn-save-{{ $employee->id }}"
                     title="Save to Database"
                     onclick="finalizeEmployee({{ $employee->id }})">
@@ -396,7 +400,7 @@
                 </button>
 
                 {{-- CANCEL --}}
-                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
                     id="btn-cancel-{{ $employee->id }}"
                     title="Cancel Registration"
                     onclick="cancelEmployee({{ $employee->id }})">
@@ -404,7 +408,7 @@
                 </button>
 
                 {{-- RESTORE (For Cancelled) --}}
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCancelled ? 'd-none' : '' }}"
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCancelled || $isHistory) ? 'd-none' : '' }}"
                     id="btn-restore-{{ $employee->id }}"
                     title="Restore"
                     onclick="restoreEmployeeState({{ $employee->id }})">
@@ -412,7 +416,7 @@
                 </button>
 
                 {{-- UNDO (For Completed) --}}
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ !$isCompleted ? 'd-none' : '' }}"
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCompleted || $isHistory) ? 'd-none' : '' }}"
                     id="btn-undo-{{ $employee->id }}"
                     title="Undo / Restore"
                     onclick="restoreEmployeeState({{ $employee->id }})">

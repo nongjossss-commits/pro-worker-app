@@ -321,7 +321,16 @@ class RegistrationController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $query->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+        $query->where(function($q) {
+                $q->whereIn('status', ['registration_pending', 'registration_cancelled'])
+                  ->orWhere(function($sub) {
+                      $sub->where('status', 'registration_completed')
+                          ->where(function($t) {
+                              $t->whereNull('resolution_completed_at')
+                                ->orWhere('resolution_completed_at', '>=', now()->subHours(24));
+                          });
+                  });
+            })
             ->with(['registrationSteps', 'customFields']); // Load everything needed for the card
 
         // Apply Search (if global search is active)
@@ -444,7 +453,10 @@ class RegistrationController extends Controller
         }
 
         // Change status to 'registration_completed'
-        $employee->update(['status' => 'registration_completed']);
+        $employee->update([
+            'status' => 'registration_completed',
+            'resolution_completed_at' => now()
+        ]);
 
         if ($request->ajax()) {
             return response()->json([
@@ -484,7 +496,10 @@ class RegistrationController extends Controller
             abort(403);
         }
 
-        $employee->update(['status' => 'registration_pending']);
+        $employee->update([
+            'status' => 'registration_pending',
+            'resolution_completed_at' => null
+        ]);
 
         if ($request->ajax()) {
             return response()->json([
@@ -493,6 +508,31 @@ class RegistrationController extends Controller
             ]);
         }
         return back()->with('success', 'Employee restored to pending.');
+    }
+
+    /**
+     * Fetch Historic Items (Completed > 24h).
+     */
+    public function fetchHistory(Request $request, $employerId)
+    {
+        $employer = Employer::findOrFail($employerId);
+
+        $employees = $employer->employees()
+            ->where('status', 'registration_completed')
+            ->where(function($q) {
+                 $q->whereNotNull('resolution_completed_at')
+                   ->where('resolution_completed_at', '<', now()->subHours(24));
+            })
+            ->with(['registrationSteps'])
+            ->get();
+
+        $steps = RegistrationStep::registration()->orderBy('order')->get();
+
+        return view('production.registration._employee_list_content', [
+            'employees' => $employees,
+            'steps' => $steps,
+            'employer' => $employer
+        ])->with('isHistory', true);
     }
 
     /**
