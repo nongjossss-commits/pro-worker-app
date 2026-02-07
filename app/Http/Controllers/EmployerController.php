@@ -339,6 +339,14 @@ class EmployerController extends Controller
         unset($validated['signature_2_base64']);
 
         $employer->update($validated);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Employer updated successfully.'
+            ]);
+        }
+
         return redirect()->route('employers.index')->with('success', 'Employer updated successfully.');
     }
 

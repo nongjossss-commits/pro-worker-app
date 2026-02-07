@@ -41,6 +41,7 @@
             <thead class="table-light">
                 <tr>
                     <th>#</th>
+                    <th style="width: 1%;"></th> {{-- Drag Handle Column --}}
                     <th>{{ __('Employer Name (Thai)') }}</th>
                     <th>{{ __('Employer ID') }}</th>
                     <th>{{ __('Business Type') }}</th>
@@ -51,15 +52,20 @@
             </thead>
             <tbody id="employer-table-body">
                 @forelse ($employers as $employer)
-                    <tr id="employer-row-{{ $employer->id }}" draggable="true"
-                        ondragstart="window.startDragGlobal(event, 'employer', {
-                            id: {{ $employer->id }},
-                            name: '{{ addslashes($employer->employerNameTh) }}',
-                            code: '{{ $employer->employerId }}',
-                            url: '{{ route('employers.edit', $employer->id) }}'
-                        })"
-                        style="cursor: grab;">
+                    <tr id="employer-row-{{ $employer->id }}">
                         <td>{{ $loop->iteration }}</td>
+                        <td>
+                            <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
+                               draggable="true"
+                               ondragstart="window.startDragGlobal(event, 'employer', {
+                                   id: {{ $employer->id }},
+                                   name: '{{ addslashes($employer->employerNameTh) }}',
+                                   code: '{{ $employer->employerId }}',
+                                   url: '{{ route('employers.edit', $employer->id) }}'
+                               })"
+                               title="{{ __('Drag') }}">
+                            </i>
+                        </td>
                         <td>
                             {{ $employer->employerNameTh }}
                             @if(request('addrProvince'))
@@ -93,7 +99,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted">{{ __('No employers found') }}</td>
+                        <td colspan="8" class="text-center text-muted">{{ __('No employers found') }}</td>
                     </tr>
                 @endforelse
             </tbody>
