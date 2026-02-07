@@ -312,7 +312,14 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                             body: JSON.stringify({ email: this.email, password: this.password })
-                        }).then(res => res.json()).then(data => {
+                        })
+                        .then(res => {
+                            if (!res.ok) {
+                                return res.json().then(err => { throw err; });
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
                             if(data.success) {
                                 this.isEditing = false;
                                 Swal.fire({
@@ -324,6 +331,20 @@
                                     timer: 1500
                                 });
                             }
+                        })
+                        .catch(error => {
+                            let msg = '{{ __("Failed to save.") }}';
+                            if (error.message) msg = error.message;
+                            if (error.errors) {
+                                const firstKey = Object.keys(error.errors)[0];
+                                if (firstKey) msg = error.errors[firstKey][0];
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: '{{ __("Error") }}',
+                                text: msg,
+                                confirmButtonText: '{{ __("OK") }}'
+                            });
                         });
                     }
                 }">
