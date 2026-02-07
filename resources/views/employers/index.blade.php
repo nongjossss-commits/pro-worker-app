@@ -85,7 +85,7 @@
                             <div class="d-flex flex-column flex-md-row gap-1 justify-content-center">
                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
                                 @can('edit-employers')
-                                <a href="{{ route('employers.edit', $employer) }}" class="btn btn-sm btn-outline-primary">{{ __('Edit') }}</a>
+                                <a href="{{ route('employers.edit', ['employer' => $employer->id, 'return_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-outline-primary">{{ __('Edit') }}</a>
                                 @endcan
                                 @can('delete-employers')
                                 <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="d-grid d-md-inline delete-employer-form">

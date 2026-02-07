@@ -33,6 +33,7 @@
     <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
+        <input type="hidden" id="return_url" name="return_url" value="{{ request('return_url', route('employers.index')) }}">
 
         @if ($errors->any())
             <div class="alert alert-danger">
@@ -989,8 +990,13 @@
                             icon: 'success',
                             title: '{{ __("Success") }}',
                             text: data.message || '{{ __("Employer updated successfully.") }}',
-                            timer: 2000,
-                            showConfirmButton: false
+                            showConfirmButton: true,
+                            confirmButtonText: 'OK'
+                        }).then((result) => {
+                             if (result.isConfirmed || result.isDismissed) {
+                                 const returnUrl = document.getElementById('return_url').value;
+                                 window.location.href = returnUrl;
+                             }
                         });
                     }
                 })
