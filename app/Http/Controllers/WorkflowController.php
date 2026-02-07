@@ -276,6 +276,28 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Update Employee Credentials (Email/Password) from Item Card.
+     */
+    public function updateCredentials(Request $request, $itemId)
+    {
+        $request->validate([
+            'email' => 'nullable|email|max:255',
+            'password' => 'nullable|string|max:255',
+        ]);
+
+        $item = ProductionItem::with('employee')->findOrFail($itemId);
+
+        if ($item->employee) {
+            $item->employee->update([
+                'email' => $request->email,
+                'password' => $request->password,
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * API: Perform Daily Check on Item
      */
     public function checkDaily(Request $request, $itemId)
