@@ -1,5 +1,6 @@
-<!-- @imgly/background-removal CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.3.0/dist/imgly-background-removal.min.js"></script>
+<!-- @imgly/background-removal CDN with Fallback -->
+<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.3.0/dist/imgly-background-removal.min.js"
+        onerror="console.error('Failed to load imgly from jsdelivr, trying unpkg...'); this.onerror=null; this.src='https://unpkg.com/@imgly/background-removal@1.3.0/dist/imgly-background-removal.min.js';"></script>
 
 <script>
     window.backgroundRemoval = {
@@ -34,12 +35,18 @@
                 try {
                     if (onProgress) onProgress(true, 'Removing background...');
 
+                    // Check if library is loaded
+                    let removeBackgroundFn;
+                    if (typeof imgly !== 'undefined' && imgly.removeBackground) {
+                        removeBackgroundFn = imgly.removeBackground;
+                    } else if (typeof imglyRemoveBackground !== 'undefined') {
+                        removeBackgroundFn = imglyRemoveBackground;
+                    } else {
+                        throw new Error('Background removal library (imgly) is not loaded. Please check your internet connection.');
+                    }
+
                     // imgly.removeBackground returns a Promise<Blob>
-                    // We need to configure it to load assets from CDN correctly if needed,
-                    // but usually default works if simple.
-                    // However, for better reliability, we can specify publicPath if issues arise.
-                    // For now, let's try default.
-                    transparentBlob = await imgly.removeBackground(file, {
+                    transparentBlob = await removeBackgroundFn(file, {
                         progress: (key, current, total) => {
                              // console.log(`Downloading ${key}: ${current} of ${total}`);
                         }
