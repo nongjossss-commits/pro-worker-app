@@ -943,6 +943,95 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
+        // --- Employer Form AJAX Submission ---
+        const employerForm = document.getElementById('employerForm');
+        if (employerForm) {
+            employerForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                // Clear previous errors
+                document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+                const formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (!submitBtn) return; // Guard clause
+
+                const originalBtnText = submitBtn.innerHTML;
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> {{ __("Saving...") }}';
+
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    return response.json().then(data => {
+                        if (!response.ok) {
+                            throw { status: response.status, data: data };
+                        }
+                        return data;
+                    });
+                })
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Success") }}',
+                            text: data.message || '{{ __("Employer updated successfully.") }}',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (error.status === 422) {
+                        // Validation Errors
+                        const errors = error.data.errors;
+                        let errorMsg = '<div class="text-start"><ul>';
+                        for (const field in errors) {
+                            errorMsg += `<li>${errors[field][0]}</li>`;
+                            const input = document.getElementById(field) || document.querySelector(`[name="${field}"]`);
+                            if (input) {
+                                input.classList.add('is-invalid');
+                                // Check if feedback div already exists (it shouldn't because we removed them, but for safety)
+                                let feedbackDiv = input.parentElement.querySelector('.invalid-feedback');
+                                if (!feedbackDiv) {
+                                     feedbackDiv = document.createElement('div');
+                                     feedbackDiv.className = 'invalid-feedback';
+                                     input.parentElement.appendChild(feedbackDiv);
+                                }
+                                feedbackDiv.innerText = errors[field][0];
+                            }
+                        }
+                        errorMsg += '</ul></div>';
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ __("Validation Error") }}',
+                            html: errorMsg
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.data?.message || '{{ __("An error occurred while saving.") }}'
+                        });
+                    }
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                });
+            });
+        }
+
         // --- Business Type Logic ---
         const businessTypeSelect = document.getElementById('business_type_select');
         const businessTypeThInput = document.getElementById('businessType');
