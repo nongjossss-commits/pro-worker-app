@@ -270,10 +270,16 @@
             if (!titleTh || !titleEn) return;
             if (source === 'th') {
                 const selectedTh = titleTh.value;
-                if (thToEnMap[selectedTh]) titleEn.value = thToEnMap[selectedTh];
+                if (thToEnMap[selectedTh]) {
+                    titleEn.value = thToEnMap[selectedTh];
+                    // Also dispatch change event to ensure any other listeners (if any) are triggered, though careful with loops
+                    // For now, direct assignment is enough as we manually call updateGender
+                }
             } else {
                 const selectedEn = titleEn.value;
-                if (enToThMap[selectedEn]) titleTh.value = enToThMap[selectedEn];
+                if (enToThMap[selectedEn]) {
+                    titleTh.value = enToThMap[selectedEn];
+                }
             }
             updateGender();
         }
@@ -283,15 +289,28 @@
             const selectedTh = titleTh.value;
             if (selectedTh === 'นาย') genderInput.value = 'ชาย';
             else if (selectedTh === 'นางสาว' || selectedTh === 'นาง') genderInput.value = 'หญิง';
-            else genderInput.value = '';
+            else genderInput.value = ''; // Don't clear if unknown, or maybe we should? User didn't specify. Keeping as is.
+        }
+
+        // Helper to safely attach listener only once
+        function attachOnce(element, event, handler) {
+            if (!element) return;
+            // Remove previous handler if possible? We can't easily with anonymous functions.
+            // So we use a flag property on the element.
+            if (element.dataset['has_' + event + '_listener']) return;
+
+            element.addEventListener(event, handler);
+            element.dataset['has_' + event + '_listener'] = 'true';
         }
 
         if(titleTh) {
-            titleTh.addEventListener('change', () => syncTitles('th'));
+            attachOnce(titleTh, 'change', () => syncTitles('th'));
             // Trigger once for initial state if value exists
             if(titleTh.value) updateGender();
         }
-        if(titleEn) titleEn.addEventListener('change', () => syncTitles('en'));
+        if(titleEn) {
+            attachOnce(titleEn, 'change', () => syncTitles('en'));
+        }
 
         // --- Logic: Age Calculation ---
         function calculateAge() {

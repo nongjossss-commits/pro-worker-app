@@ -422,7 +422,7 @@
 <div class="row">
     <div class="col-md-4 mb-3">
         <label for="employeeEmail" class="form-label">อีเมล</label>
-        <input type="email" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail') }}">
+        <input type="text" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail') }}">
     </div>
     <div class="col-md-4 mb-3">
         <label for="employeePassword" class="form-label">รหัสสำหรับอีเมล</label>

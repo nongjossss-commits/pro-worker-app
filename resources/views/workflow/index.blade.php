@@ -266,7 +266,7 @@
                                         @endif
                                     </h5>
                                     <div class="text-muted small">
-                                        {{ $order->updated_at->diffForHumans() }}
+                                        <i class="bi bi-person-circle me-1"></i> {{ $order->creator->name ?? 'System' }} &bull; {{ $order->updated_at->diffForHumans() }}
                                     </div>
                                 </div>
                             </button>
