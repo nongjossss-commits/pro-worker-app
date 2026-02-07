@@ -444,7 +444,10 @@
                         // Strict DOM-to-Data Sync
                         // Instead of relying on oldIndex/newIndex which can be flaky with templates and static items,
                         // we read the actual DOM order of the items and re-align our data to match.
-                        this.syncOrderFromDom();
+                        // Add delay to ensure Sortable animation/DOM updates are settled
+                        setTimeout(() => {
+                            this.syncOrderFromDom();
+                        }, 50);
                     }
                 });
             },
@@ -462,8 +465,8 @@
                     return this.capturedImages.find(img => String(img.id) === String(id));
                 }).filter(Boolean); // Filter out undefined just in case
 
-                // Update State
-                this.capturedImages = newCapturedImages;
+                // Update State - Force new array reference for Alpine
+                this.capturedImages = [...newCapturedImages];
 
                 // Clear selection to avoid confusion
                 this.selectedIndices = [];
