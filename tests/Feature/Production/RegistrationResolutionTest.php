@@ -25,9 +25,11 @@ class RegistrationResolutionTest extends TestCase
 
         // 1. Create Role & Permission
         $role = Role::firstOrCreate(['name' => 'admin']);
-        // If there are specific permissions for this page, assign them.
-        // The controller uses just 'auth' middleware for now, or maybe permission middleware?
-        // RegistrationController::construct uses $this->middleware('auth');
+        Permission::firstOrCreate(['name' => 'edit-employees']);
+        Permission::firstOrCreate(['name' => 'view-employers']);
+        Permission::firstOrCreate(['name' => 'manage-tickets']);
+
+        $role->givePermissionTo(['edit-employees', 'view-employers', 'manage-tickets']);
 
         // 2. Create Admin User
         $this->adminUser = User::factory()->create();
@@ -72,9 +74,11 @@ class RegistrationResolutionTest extends TestCase
             'status' => 'registration_pending'
         ]);
 
-        // Search for 'Somchai'
+        // Search for 'Somchai' - Hit the AJAX endpoint directly as list is lazy loaded
+        $url = route('production.registration.index') . '/employer/' . $this->employer->id . '/employees?search=Somchai';
+
         $response = $this->actingAs($this->adminUser)
-                         ->get(route('production.registration.index', ['search' => 'Somchai']));
+                         ->get($url);
 
         $response->assertStatus(200);
         $response->assertSee('Somchai Test');

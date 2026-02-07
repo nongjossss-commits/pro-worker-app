@@ -824,7 +824,7 @@
 
 {{-- Day Appointments Modal --}}
 <div class="modal fade" id="dayAppointmentsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-info text-white">
                 <h5 class="modal-title fw-bold" id="dayAppointmentsTitle"></h5>
@@ -919,6 +919,8 @@
 
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dateObj = new Date(currentYear, currentMonth - 1, day);
+            const dayName = dateObj.toLocaleDateString('th-TH', { weekday: 'long' });
             const count = counts[dateStr] || 0;
             const hasCount = count > 0;
             const bgClass = hasCount ? 'bg-white' : 'bg-light';
@@ -928,7 +930,7 @@
 
             grid.innerHTML += `
                 <div class="col border ${bgClass} ${cursorClass} p-2 position-relative" style="min-height: 100px; width: 14.28%;" ${onClick}>
-                    <div class="fw-bold mb-2">${day}</div>
+                    <div class="fw-bold mb-2">${day} <span class="small fw-normal text-muted d-block d-md-inline">${dayName}</span></div>
                     <div class="position-absolute top-50 start-50 translate-middle">
                         <span class="badge rounded-pill ${badgeClass} fs-5 shadow-sm">${count}</span>
                     </div>

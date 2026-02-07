@@ -1,4 +1,4 @@
-@props(['employee', 'steps'])
+@props(['employee', 'steps', 'show_employer' => false])
 
 @php
     $isCompleted = $employee->status === 'registration_completed';
@@ -38,6 +38,19 @@
 
     <div class="card {{ $cardClass }} w-100">
     <div class="card-body p-3">
+        @if($show_employer)
+            <div class="mb-3 pb-2 border-bottom text-primary fw-bold d-flex align-items-center">
+                <i class="bi bi-building me-2"></i> {{ $employee->employer->employerNameTh ?? 'N/A' }}
+                {{-- Preview Button --}}
+                <button class="btn btn-sm btn-outline-info btn-preview rounded-circle ms-2"
+                        data-model-type="employer"
+                        data-model-id="{{ $employee->employer_id }}"
+                        title="{{ __('Preview Employer Data') }}">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        @endif
+
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-start gap-3 w-100">

@@ -78,7 +78,6 @@ class RegistrationController extends Controller
         }
         $totalAppointments = $totalAppointments->whereIn('status', ['registration_pending', 'registration_completed'])
             ->whereNotNull('appointment_date')
-            ->whereNull('appointment_completed_at')
             ->count();
 
         // Group by Employer for Per-Employer Stats assignment later
@@ -1515,7 +1514,6 @@ class RegistrationController extends Controller
         $counts = $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
             ->whereBetween('appointment_date', [$start, $end])
             ->whereIn('status', ['registration_pending', 'registration_completed'])
-            ->whereNull('appointment_completed_at') // Exclude completed appointments
             ->groupBy('date')
             ->get()
             ->mapWithKeys(function ($item) {
@@ -1540,7 +1538,6 @@ class RegistrationController extends Controller
 
         $employees = $query->whereDate('appointment_date', $date)
             ->whereIn('status', ['registration_pending', 'registration_completed'])
-            ->whereNull('appointment_completed_at') // Exclude completed
             ->with(['employer', 'registrationSteps'])
             ->get();
 
