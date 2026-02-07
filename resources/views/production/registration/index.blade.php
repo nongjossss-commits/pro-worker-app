@@ -583,7 +583,8 @@
                         <div class="modal-body bg-light">
                             @include('production.partials.financial-tab', [
                                 'production' => $employer->financeOrder,
-                                'employeeCount' => $employer->activeEmployeesCount ?? 0
+                                'employeeCount' => $employer->activeEmployeesCount ?? 0,
+                                'employees' => $employer->activeEmployeesList ?? collect()
                             ])
                         </div>
                     </div>

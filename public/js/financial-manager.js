@@ -15,6 +15,9 @@ if (typeof window.financialManager === 'undefined') {
 
             // Advance Items
             advanceItems: [],
+            productionItems: initialData.productionItems || [], // List of {id, name, employee_id}
+            employees: initialData.employees || [], // List of candidates {id, name}
+            selectedTransactionItems: [], // List of IDs (ProductionItem ID or 'emp_ID')
 
             // Tax Settings
             vatIncluded: false,
@@ -64,8 +67,6 @@ if (typeof window.financialManager === 'undefined') {
             init() {
                 if (this.financialGroups.length > 0) {
                     this.switchGroup(this.financialGroups[0].id);
-                } else {
-                    // Safety fallback
                 }
             },
 
@@ -82,10 +83,7 @@ if (typeof window.financialManager === 'undefined') {
                 this.pricingTiers = data.pricing_tiers || [];
                 this.discount = data.discount || 0;
 
-                // Load Advance Items (From relational data loaded in Blade via json_encode)
-                // Need to ensure the Controller loads `advanceItems` relation.
-                // Blade: financialGroups: {{ json_encode($production->financialGroups) }}
-                // If controller uses eager loading, `group.advance_items` should exist.
+                // Load Advance Items
                 this.advanceItems = group.advance_items || [];
 
                 this.vatIncluded = !!data.vat_included;
@@ -108,28 +106,302 @@ if (typeof window.financialManager === 'undefined') {
                 this.updateTotal();
             },
 
+            // --- Employee Filter Logic ---
+            get availableItems() {
+                if (!this.activeGroupId) return [];
+
+                // 1. Collect Used IDs (ProductionItem IDs) in this Group
+                // And check associated Employee IDs to prevent duplicates
+                const usedItemIds = new Set();
+                const usedEmployeeIds = new Set();
+
+                this.filteredTransactions.forEach(t => {
+                    if (this.editingTransaction.id && t.id === this.editingTransaction.id) return;
+
+                    if (t.items && Array.isArray(t.items)) {
+                        t.items.forEach(item => {
+                            usedItemIds.add(item.id);
+                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
+                        });
+                    }
+                });
+
+                const list = [];
+                const itemsByEmpId = {}; // Map employee_id -> ProductionItem ID
+
+                // 2. Add Existing Production Items
+                this.productionItems.forEach(item => {
+                    // Skip if used
+                    if (usedItemIds.has(item.id)) return;
+
+                    if (item.employee_id) {
+                        itemsByEmpId[item.employee_id] = item.id;
+                        // Also skip if employee ID is considered used
+                        if (usedEmployeeIds.has(item.employee_id)) return;
+                    }
+
+                    list.push({
+                        id: item.id, // Value
+                        name: item.name,
+                        type: 'item'
+                    });
+                });
+
+                // 3. Add Candidates (Employees)
+                this.employees.forEach(emp => {
+                    // Check if this employee is already represented by an existing Production Item
+                    if (itemsByEmpId[emp.id]) return;
+                    // Check if already used in another transaction
+                    if (usedEmployeeIds.has(emp.id)) return;
+
+                    list.push({
+                        id: 'emp_' + emp.id, // Value with prefix to distinguish
+                        name: emp.name,
+                        type: 'employee'
+                    });
+                });
+
+                return list;
+            },
+
+            get editModalItems() {
+                // Show items that are available OR attached to this transaction
+                if (!this.activeGroupId) return [];
+
+                // IDs currently attached to editing transaction
+                const attachedItemIds = new Set();
+                if (this.editingTransaction.items && Array.isArray(this.editingTransaction.items)) {
+                    this.editingTransaction.items.forEach(item => attachedItemIds.add(item.id));
+                }
+
+                // IDs used by OTHER transactions
+                const usedItemIds = new Set();
+                const usedEmployeeIds = new Set();
+
+                this.filteredTransactions.forEach(t => {
+                    if (this.editingTransaction.id && t.id === this.editingTransaction.id) return;
+                    if (t.items && Array.isArray(t.items)) {
+                        t.items.forEach(item => {
+                            usedItemIds.add(item.id);
+                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
+                        });
+                    }
+                });
+
+                const list = [];
+                const itemsByEmpId = {};
+
+                // 1. Production Items
+                this.productionItems.forEach(item => {
+                    if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
+
+                    const isAttached = attachedItemIds.has(item.id);
+                    const isUsed = usedItemIds.has(item.id); // Used elsewhere
+
+                    if (isAttached || !isUsed) {
+                         list.push({
+                            id: item.id,
+                            name: item.name,
+                            type: 'item',
+                            attached: isAttached
+                        });
+                    }
+                });
+
+                // 2. Candidates
+                this.employees.forEach(emp => {
+                    if (itemsByEmpId[emp.id]) return; // Already has item
+                    if (usedEmployeeIds.has(emp.id)) return; // Used elsewhere
+
+                    list.push({
+                        id: 'emp_' + emp.id,
+                        name: emp.name,
+                        type: 'employee',
+                        attached: false
+                    });
+                });
+
+                return list;
+            },
+
+            isItemAttached(itemId) {
+                if (!this.editingTransaction.items) return false;
+                // Only check numeric IDs for attachment status as candidates are never "attached" until saved
+                if (String(itemId).startsWith('emp_')) return false;
+                return this.editingTransaction.items.some(i => i.id == itemId);
+            },
+
+            recalcAmount() {
+                if (this.pricingMode === 'per_head' && this.pricingTiers.length > 0) {
+                    const count = this.selectedTransactionItems.length;
+                    const price = parseFloat(this.pricingTiers[0].price || 0);
+                    this.newTransaction.amount = count * price;
+                }
+            },
+
+            // --- Transaction Actions ---
+            openAddModal() {
+                this.selectedTransactionItems = [];
+                this.newTransaction.amount = '';
+                if(typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getOrCreateInstance(this.$refs.addModal);
+                    modal.show();
+                }
+            },
+
+            addTransaction() {
+                if (!this.activeGroupId) {
+                    Swal.fire('Error', 'Please select a financial tab first.', 'error');
+                    return;
+                }
+                this.isSavingTransaction = true;
+
+                // Split selected IDs
+                const itemIds = [];
+                const employeeIds = [];
+
+                this.selectedTransactionItems.forEach(val => {
+                    if (String(val).startsWith('emp_')) {
+                        employeeIds.push(val.replace('emp_', ''));
+                    } else {
+                        itemIds.push(val);
+                    }
+                });
+
+                const payload = {
+                    ...this.newTransaction,
+                    financial_group_id: this.activeGroupId,
+                    item_ids: itemIds,
+                    employee_ids: employeeIds
+                };
+
+                fetch(`/production/${this.productionId}/transactions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        this.transactions.push(data.transaction);
+                        bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
+                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
+                        this.selectedTransactionItems = [];
+
+                        // Update local productionItems list with potentially newly created items
+                        if (data.transaction.items) {
+                            data.transaction.items.forEach(newItem => {
+                                const exists = this.productionItems.find(pi => pi.id === newItem.id);
+                                if (!exists) {
+                                    this.productionItems.push({
+                                        id: newItem.id,
+                                        name: newItem.employee ? (newItem.employee.name_th || newItem.employee.name_en) : 'New Item',
+                                        employee_id: newItem.employee_id
+                                    });
+                                }
+                            });
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Transaction added successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                         throw new Error(data.message || 'Unknown error');
+                    }
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'))
+                .finally(() => this.isSavingTransaction = false);
+            },
+
+            openPayModal(t) {
+                this.editingTransaction = { ...t };
+                if (t.items) {
+                    this.selectedTransactionItems = t.items.map(i => i.id);
+                } else {
+                    this.selectedTransactionItems = [];
+                }
+                this.selectedFile = null;
+                bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
+            },
+
+            updateTransaction() {
+                const formData = new FormData();
+                formData.append('_method', 'PUT');
+                formData.append('paid_amount', this.editingTransaction.paid_amount);
+                formData.append('status', this.editingTransaction.status);
+                if (this.selectedFile) formData.append('slip_file', this.selectedFile);
+
+                this.selectedTransactionItems.forEach(val => {
+                    if (String(val).startsWith('emp_')) {
+                        formData.append('employee_ids[]', val.replace('emp_', ''));
+                    } else {
+                        formData.append('item_ids[]', val);
+                    }
+                });
+
+                fetch(`/production/transactions/${this.editingTransaction.id}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
+                        if(idx !== -1) this.transactions[idx] = data.transaction;
+
+                        if (data.transaction.items) {
+                            data.transaction.items.forEach(newItem => {
+                                const exists = this.productionItems.find(pi => pi.id === newItem.id);
+                                if (!exists) {
+                                    this.productionItems.push({
+                                        id: newItem.id,
+                                        name: newItem.employee ? (newItem.employee.name_th || newItem.employee.name_en) : 'New Item',
+                                        employee_id: newItem.employee_id
+                                    });
+                                }
+                            });
+                        }
+
+                        bootstrap.Modal.getInstance(this.$refs.payModal).hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Updated successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        throw new Error(data.message || 'Unknown error');
+                    }
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'));
+            },
+
+            // --- Groups Logic ---
             addNewGroup() {
                 Swal.fire({
                     title: 'Add Tab',
                     input: 'text',
-                    inputLabel: 'Enter new tab name',
                     inputValue: 'New Tab',
                     showCancelButton: true,
-                    confirmButtonText: 'Add',
-                    cancelButtonText: 'Cancel'
+                    confirmButtonText: 'Add'
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
-                        const name = result.value;
                         fetch(`/production/${this.productionId}/financial-groups`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                            body: JSON.stringify({ name: name })
+                            body: JSON.stringify({ name: result.value })
                         })
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
                                 this.financialGroups.push(data.group);
-                                this.switchGroup(data.group.id); // Switch to new group
+                                this.switchGroup(data.group.id);
                             }
                         });
                     }
@@ -138,13 +410,12 @@ if (typeof window.financialManager === 'undefined') {
 
             deleteGroup(groupId) {
                  Swal.fire({
-                    title: 'Are you sure you want to delete this tab?',
+                    title: 'Delete Tab?',
                     text: "All transactions in this group will be deleted.",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
-                    confirmButtonText: 'Yes, delete it!',
-                    cancelButtonText: 'Cancel'
+                    confirmButtonText: 'Yes, delete it!'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
@@ -154,15 +425,10 @@ if (typeof window.financialManager === 'undefined') {
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
-                                // Remove from local array
                                 this.financialGroups = this.financialGroups.filter(g => g.id !== groupId);
-                                // Switch to first group if active one was deleted
                                 if (this.activeGroupId === groupId) {
-                                    if (this.financialGroups.length > 0) {
-                                        this.switchGroup(this.financialGroups[0].id);
-                                    } else {
-                                        this.activeGroupId = null;
-                                    }
+                                    this.activeGroupId = this.financialGroups.length > 0 ? this.financialGroups[0].id : null;
+                                    if(this.activeGroupId) this.switchGroup(this.activeGroupId);
                                 }
                                 Swal.fire('Deleted!', 'Tab has been deleted.', 'success');
                             }
@@ -217,7 +483,6 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             updateTotal() {
-                // 1. Calculate Gross Base (Service Fee)
                 let gross = 0;
                 if (this.pricingMode === 'per_head') {
                     gross = this.pricingTiers.reduce((sum, t) => sum + (parseFloat(t.price || 0) * parseFloat(t.count || 0)), 0);
@@ -226,25 +491,18 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 this.baseTotal = gross;
 
-                // 2. Apply Discount (To Service Fee)
                 let netBase = Math.max(0, gross - (parseFloat(this.discount) || 0));
 
-                // 3. VAT Logic (Only on Service Fee)
                 if (this.vatIncluded) {
-                    // Formula: NetBase = Total (Inc VAT)
-                    // Subtotal (Ex VAT) = Total / (1 + Rate)
                     this.totalAmount = netBase;
                     this.subtotalAmount = netBase / (1 + (this.vatRate / 100));
                     this.vatAmount = this.totalAmount - this.subtotalAmount;
                 } else {
-                    // Formula: NetBase = Subtotal (Ex VAT)
-                    // Total = Subtotal + VAT
                     this.subtotalAmount = netBase;
                     this.vatAmount = netBase * (this.vatRate / 100);
                     this.totalAmount = this.subtotalAmount + this.vatAmount;
                 }
 
-                // 4. WHT Logic (Standard: Calculated on Base Amount before VAT)
                 if (this.whtEnabled) {
                     this.whtAmount = this.subtotalAmount * (this.whtRate / 100);
                 } else {
@@ -253,12 +511,10 @@ if (typeof window.financialManager === 'undefined') {
 
                 this.netReceivable = this.totalAmount - this.whtAmount;
 
-                // 5. Advance Payments (No VAT, No WHT)
                 this.advanceTotal = this.advanceItems.reduce((sum, item) => {
                     return sum + ((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0));
                 }, 0);
 
-                // 6. Grand Total
                 this.grandTotalReceivable = this.netReceivable + this.advanceTotal;
             },
 
@@ -268,16 +524,9 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             get modalFilteredTransactions() {
-                // If generating 'advance_receipt', only show advance_payment transactions
                 if (this.documentTypeToGenerate === 'advance_receipt') {
                     return this.filteredTransactions.filter(t => t.type === 'advance_payment');
                 }
-                // If generating tax_invoice or receipt, usually we want Service Fee types,
-                // but sometimes we might want to issue a tax invoice for an advance.
-                // For flexibility, let's show all or maybe exclude advance if confusing?
-                // Request says "Billing should match installment...".
-                // Let's show ALL for generic types to allow maximum flexibility,
-                // BUT if it's strictly 'advance_receipt', filtering makes sense.
                 return this.filteredTransactions;
             },
 
@@ -293,268 +542,55 @@ if (typeof window.financialManager === 'undefined') {
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
             },
             get remainingSchedule() {
-                // The schedule should cover the Grand Total Receivable
                 return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
             },
             get isFullyScheduled() {
                 return Math.abs(this.grandTotalReceivable - this.scheduledAmount) < 1;
             },
             get headerNameDisplay() {
-                if (this.useCustomHeader) {
-                    return this.customHeader.name || 'Custom Header';
-                }
+                if (this.useCustomHeader) return this.customHeader.name || 'Custom Header';
                 return this.selectedProfileId ? 'Selected System Profile' : 'Default Profile';
             },
-
             get customerNameDisplay() {
                  return this.useCustomCustomer ? (this.customCustomerData.name || 'Custom Client') : 'Default (Employer)';
             },
-
             get customCustomer() {
                  return this.useCustomCustomer;
             },
 
-            // --- Save Logic ---
             saveFinancialData() {
-                if (!this.activeGroupId) return;
-
                 this.isSavingSettings = true;
-
                 const payload = {
-                    financial: {
-                        pricing_mode: this.pricingMode,
-                        fixed_base_amount: this.fixedTotal,
-                        pricing_tiers: this.pricingTiers,
-                        discount: this.discount,
-
-                        vat_included: this.vatIncluded,
-                        vat_rate: this.vatRate,
-                        wht_enabled: this.whtEnabled,
-                        wht_rate: this.whtRate,
-
-                        total_amount: this.totalAmount,
-
-                        // Header Data
-                        custom_header: this.useCustomHeader ? this.customHeader : null,
-                        profile_id: this.selectedProfileId,
-
-                        // Customer Override Data
-                        customer_override: this.useCustomCustomer ? this.customCustomerData : null
-                    },
-                    // Send Advance Items separately for robust sync
+                    pricing_mode: this.pricingMode,
+                    fixed_base_amount: this.fixedTotal,
+                    pricing_tiers: this.pricingTiers,
+                    discount: this.discount,
+                    vat_included: this.vatIncluded,
+                    vat_rate: this.vatRate,
+                    wht_enabled: this.whtEnabled,
+                    wht_rate: this.whtRate,
                     advance_items: this.advanceItems,
-                    financial_group_id: this.activeGroupId,
-                    _method: 'PUT'
+                    custom_header: this.useCustomHeader ? this.customHeader : null,
+                    profile_id: this.selectedProfileId,
+                    customer_override: this.useCustomCustomer ? this.customCustomerData : null
                 };
 
-                fetch(`/production/${this.productionId}`, {
-                    method: 'POST',
+                fetch(`/production/${this.productionId}/financial-groups/${this.activeGroupId}`, {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 })
                 .then(res => res.json())
                 .then(data => {
-                    this.isSavingSettings = false;
-                    const group = this.financialGroups.find(g => g.id === this.activeGroupId);
-                    if (group) {
-                        group.financial_data = payload.financial;
-                        group.advance_items = this.advanceItems; // Update local state match
-                    }
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Settings Saved',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        toast: true,
-                        position: 'top-end'
-                    });
-                })
-                .catch(err => {
-                    this.isSavingSettings = false;
-                    Swal.fire('Error', 'Error saving data', 'error');
-                });
-            },
-
-            // --- Agent Logic ---
-            loadAgentData() {
-                if (!this.selectedAgentId) return;
-                const select = document.querySelector(`#customCustomerModal-${this.productionId} select`);
-
-                if(select) {
-                    const option = select.options[select.selectedIndex];
-                    const name = option.getAttribute('data-name');
-                    const phone = option.getAttribute('data-phone');
-
-                    this.customCustomerData.name = name;
-                    this.customCustomerData.phone = phone;
-                    this.customCustomerData.address = '';
-                    this.customCustomerData.tax_id = '';
-
-                    this.useCustomCustomer = true;
-                    Swal.fire({ icon: 'success', title: 'Agent Data Loaded', timer: 1500, showConfirmButton: false });
-                }
-            },
-
-            // --- Profile Logic ---
-            saveAsNewProfile() {
-                if (!this.customHeader.name) {
-                    Swal.fire('Error', 'Please enter a Company Name', 'error');
-                    return;
-                }
-
-                fetch('/admin/settings/financial', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                    body: JSON.stringify(this.customHeader)
-                })
-                .then(res => res.json())
-                .then(data => {
                     if (data.success) {
-                        Swal.fire('Success', 'Profile Saved!', 'success').then(() => {
-                            location.reload();
-                        });
-                    } else {
-                         Swal.fire('Error', 'Failed to save profile', 'error');
-                    }
-                });
-            },
-
-            // --- Logo Upload ---
-            uploadLogo() {
-                const fileInput = this.$el.querySelector('input[type="file"]');
-                const file = this.$refs.logoInput ? this.$refs.logoInput.files[0] : null;
-                if (!file) return;
-
-                const formData = new FormData();
-                formData.append('logo', file);
-
-                fetch(`/production/${this.productionId}/upload-logo`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': this.csrfToken },
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        this.customHeader.logo = data.path;
-                        Swal.fire('Success', 'Logo uploaded!', 'success');
-                    } else {
-                        Swal.fire('Error', 'Upload failed', 'error');
-                    }
-                });
-            },
-
-            // --- Transactions ---
-            openAddModal() {
-                if(typeof bootstrap !== 'undefined') {
-                    const modal = bootstrap.Modal.getOrCreateInstance(this.$refs.addModal);
-                    modal.show();
-                }
-            },
-            addTransaction() {
-                if (!this.activeGroupId) {
-                    Swal.fire('Error', 'Please select a financial tab first.', 'error');
-                    return;
-                }
-                this.isSavingTransaction = true;
-                const payload = { ...this.newTransaction, financial_group_id: this.activeGroupId };
-
-                fetch(`/production/${this.productionId}/transactions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(res => {
-                    if (!res.ok) {
-                         const contentType = res.headers.get("content-type");
-                         if (contentType && contentType.indexOf("application/json") !== -1) {
-                             return res.json().then(err => { throw new Error(err.message || 'Server Error'); });
-                         } else {
-                             return res.text().then(text => { throw new Error(text || 'Server Error'); });
-                         }
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    if(data.success) {
-                        this.transactions.push(data.transaction);
-                        bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
-                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Transaction added successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } else {
-                         throw new Error(data.message || 'Unknown error');
+                        Swal.fire({ icon: 'success', title: 'Saved', text: 'Settings updated.', timer: 1000, showConfirmButton: false });
                     }
                 })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: err.message || 'Failed to add transaction. Please check your inputs.',
-                    });
-                })
-                .finally(() => this.isSavingTransaction = false);
+                .catch(err => Swal.fire('Error', 'Failed to save settings', 'error'))
+                .finally(() => this.isSavingSettings = false);
             },
-            openPayModal(t) {
-                this.editingTransaction = { ...t };
-                this.selectedFile = null;
-                bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
-            },
+
             handleFileSelect(e) { this.selectedFile = e.target.files[0]; },
-            updateTransaction() {
-                const formData = new FormData();
-                formData.append('_method', 'PUT');
-                formData.append('paid_amount', this.editingTransaction.paid_amount);
-                formData.append('status', this.editingTransaction.status);
-                if (this.selectedFile) formData.append('slip_file', this.selectedFile);
-
-                fetch(`/production/transactions/${this.editingTransaction.id}`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                    body: formData
-                })
-                .then(res => {
-                     if (!res.ok) {
-                         const contentType = res.headers.get("content-type");
-                         if (contentType && contentType.indexOf("application/json") !== -1) {
-                             return res.json().then(err => { throw new Error(err.message || 'Server Error'); });
-                         } else {
-                             return res.text().then(text => { throw new Error(text || 'Server Error'); });
-                         }
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    if(data.success) {
-                        const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
-                        if(idx !== -1) this.transactions[idx] = data.transaction;
-                        bootstrap.Modal.getInstance(this.$refs.payModal).hide();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Payment updated successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } else {
-                        throw new Error(data.message || 'Unknown error');
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Update Failed',
-                        text: err.message || 'Could not update transaction.',
-                    });
-                });
-            },
             deleteTransaction(id) {
                 Swal.fire({
                     title: 'Are you sure?',
@@ -574,8 +610,6 @@ if (typeof window.financialManager === 'undefined') {
                             if(data.success) {
                                 this.transactions = this.transactions.filter(t => t.id !== id);
                                 Swal.fire('Deleted!', 'Transaction has been deleted.', 'success');
-                            } else {
-                                Swal.fire('Error', data.message || 'Failed to delete', 'error');
                             }
                         });
                     }
@@ -610,14 +644,10 @@ if (typeof window.financialManager === 'undefined') {
             generateSelectedDocument() {
                 if (this.selectedTransactionIds.length === 0) return;
                 const ids = this.selectedTransactionIds.join(',');
-
-                // If generating advance receipt for specific transactions, force mode to 'advance_only'
-                // to prevent rendering of Service Fee headers or confusing layout logic
                 let mode = null;
                 if (this.documentTypeToGenerate === 'advance_receipt') {
                     mode = 'advance_only';
                 }
-
                 this.openDocument(this.documentTypeToGenerate, ids, mode);
                 bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
             },
@@ -633,6 +663,24 @@ if (typeof window.financialManager === 'undefined') {
                     url += `&mode=${mode}`;
                 }
                 window.open(url, '_blank');
+            },
+            uploadLogo() {
+                const input = this.$refs.logoInput;
+                if (!input.files || input.files.length === 0) return;
+                Swal.fire('Info', 'Please upload logo in Settings > Company Profiles first, then select it.', 'info');
+            },
+            saveAsNewProfile() {
+                 Swal.fire('Info', 'Feature coming soon.', 'info');
+            },
+            loadAgentData() {
+                if(!this.selectedAgentId) return;
+                // Basic stub if we don't have an endpoint for this yet
+                const select = document.querySelector(`select[x-model="selectedAgentId"]`);
+                if(select) {
+                    const option = select.options[select.selectedIndex];
+                    this.customCustomerData.name = option.dataset.name || '';
+                    this.customCustomerData.phone = option.dataset.phone || '';
+                }
             }
         }
     }

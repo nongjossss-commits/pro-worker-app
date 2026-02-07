@@ -227,6 +227,50 @@ class ProductionController extends Controller
         return response()->json(['success' => true]);
     }
 
+    // --- Financial Group Methods (Fix for Settings Saving) ---
+
+    public function storeFinancialGroup(Request $request, $id)
+    {
+        $production = ProductionOrder::findOrFail($id);
+
+        $request->validate(['name' => 'required|string']);
+
+        $group = $production->financialGroups()->create([
+            'name' => $request->name,
+            'financial_data' => $production->financial_data ?? []
+        ]);
+
+        return response()->json(['success' => true, 'group' => $group]);
+    }
+
+    public function updateFinancialGroup(Request $request, $id, $groupId)
+    {
+        $group = \App\Models\ProductionFinancialGroup::where('production_order_id', $id)->findOrFail($groupId);
+
+        $data = $request->all();
+
+        // If simple rename
+        if ($request->has('name') && count($data) === 1) {
+             $group->update(['name' => $request->name]);
+        } else {
+             // Saving Settings
+             // Filter out token or method if present, though $request->all() usually has them.
+             // Typically we want to save the payload as financial_data.
+             // The JS sends a clean JSON body.
+             $group->financial_data = $request->json()->all();
+             $group->save();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function destroyFinancialGroup(Request $request, $id, $groupId)
+    {
+        $group = \App\Models\ProductionFinancialGroup::where('production_order_id', $id)->findOrFail($groupId);
+        $group->delete();
+        return response()->json(['success' => true]);
+    }
+
     // ... (Keep other methods like edit, update, etc. if they are still relevant or redirect them)
     // For now, we are replacing the main Index logic.
     // The previous 'create', 'store' methods in ProductionController are still useful for creating the Pre-Prod job initially.
