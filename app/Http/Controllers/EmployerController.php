@@ -195,6 +195,18 @@ class EmployerController extends Controller
             }
         }
 
+        if ($request->filled('passport_status')) {
+            if ($request->input('passport_status') === 'has_passport') {
+                $employeeQuery->where(function ($q) {
+                    $q->whereNotNull('employeePassport')->where('employeePassport', '!=', '');
+                });
+            } elseif ($request->input('passport_status') === 'no_passport') {
+                $employeeQuery->where(function ($q) {
+                    $q->whereNull('employeePassport')->orWhere('employeePassport', '=', '');
+                });
+            }
+        }
+
         if ($request->filled('work_permit_expiry_date')) {
             $employeeQuery->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
         }
@@ -447,6 +459,18 @@ class EmployerController extends Controller
                     $query->where(fn($q) => $q->whereNotNull('pinkCardNo')->where('pinkCardNo', '!=', ''));
                 } elseif ($request->input('pink_card') === 'no') {
                     $query->where(fn($q) => $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', ''));
+                }
+            }
+
+            if ($request->filled('passport_status')) {
+                if ($request->input('passport_status') === 'has_passport') {
+                    $query->where(function ($q) {
+                        $q->whereNotNull('employeePassport')->where('employeePassport', '!=', '');
+                    });
+                } elseif ($request->input('passport_status') === 'no_passport') {
+                    $query->where(function ($q) {
+                        $q->whereNull('employeePassport')->orWhere('employeePassport', '=', '');
+                    });
                 }
             }
 
