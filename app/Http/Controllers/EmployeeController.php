@@ -164,6 +164,18 @@ public function reinstate(Employee $employee)
               ->where('employeeNationality', 'กัมพูชา');
     }
 
+    if ($request->filled('passport_status')) {
+        if ($request->input('passport_status') === 'has_passport') {
+            $query->where(function ($q) {
+                $q->whereNotNull('employeePassport')->where('employeePassport', '!=', '');
+            });
+        } elseif ($request->input('passport_status') === 'no_passport') {
+            $query->where(function ($q) {
+                $q->whereNull('employeePassport')->orWhere('employeePassport', '=', '');
+            });
+        }
+    }
+
     if ($request->filled('bank_account_status')) {
         $status = $request->input('bank_account_status');
         if ($status === 'opened') {
@@ -689,6 +701,18 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
+        if ($request->filled('passport_status')) {
+            if ($request->input('passport_status') === 'has_passport') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('employeePassport')->where('employeePassport', '!=', '');
+                });
+            } elseif ($request->input('passport_status') === 'no_passport') {
+                $query->where(function ($q) {
+                    $q->whereNull('employeePassport')->orWhere('employeePassport', '=', '');
+                });
+            }
+        }
+
         if ($request->filled('passport_type_myanmar')) {
             $query->where('passportType', $request->input('passport_type_myanmar'))
                   ->where('employeeNationality', 'เมียนมา');
@@ -811,6 +835,18 @@ public function create(Request $request) // เพิ่ม Request $request เ
             } elseif ($request->input('pink_card') === 'no') {
                 $query->where(function ($q) {
                     $q->whereNull('pinkCardNo')->orWhere('pinkCardNo', '=', '');
+                });
+            }
+        }
+
+        if ($request->filled('passport_status')) {
+            if ($request->input('passport_status') === 'has_passport') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('employeePassport')->where('employeePassport', '!=', '');
+                });
+            } elseif ($request->input('passport_status') === 'no_passport') {
+                $query->where(function ($q) {
+                    $q->whereNull('employeePassport')->orWhere('employeePassport', '=', '');
                 });
             }
         }
