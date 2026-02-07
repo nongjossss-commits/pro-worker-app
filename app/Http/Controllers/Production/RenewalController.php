@@ -241,7 +241,16 @@ class RenewalController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $query->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
+        $query->where(function($q) {
+                $q->whereIn('status', ['renewal_pending', 'renewal_cancelled'])
+                  ->orWhere(function($sub) {
+                      $sub->where('status', 'renewal_completed')
+                          ->where(function($t) {
+                              $t->whereNull('resolution_completed_at')
+                                ->orWhere('resolution_completed_at', '>=', now()->subHours(24));
+                          });
+                  });
+            })
             ->with(['registrationSteps', 'customFields']);
 
         if ($request->has('search') && $request->search) {
@@ -740,7 +749,10 @@ class RenewalController extends Controller
     public function finalize(Request $request, Employee $employee)
     {
         if (!auth()->user()->can('edit-employees')) abort(403);
-        $employee->update(['status' => 'renewal_completed']);
+        $employee->update([
+            'status' => 'renewal_completed',
+            'resolution_completed_at' => now()
+        ]);
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
@@ -760,11 +772,39 @@ class RenewalController extends Controller
     public function restore(Request $request, Employee $employee)
     {
         if (!auth()->user()->can('edit-employees')) abort(403);
-        $employee->update(['status' => 'renewal_pending']);
+        $employee->update([
+            'status' => 'renewal_pending',
+            'resolution_completed_at' => null
+        ]);
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
         return back()->with('success', 'Employee restored.');
+    }
+
+    /**
+     * Fetch Historic Items (Completed > 24h).
+     */
+    public function fetchHistory(Request $request, $employerId)
+    {
+        $employer = Employer::findOrFail($employerId);
+
+        $employees = $employer->employees()
+            ->where('status', 'renewal_completed')
+            ->where(function($q) {
+                 $q->whereNotNull('resolution_completed_at')
+                   ->where('resolution_completed_at', '<', now()->subHours(24));
+            })
+            ->with(['registrationSteps'])
+            ->get();
+
+        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+
+        return view('production.renewal._employee_list_content', [
+            'employees' => $employees,
+            'employer' => $employer,
+            'steps' => $steps
+        ])->with('isHistory', true);
     }
 
     public function destroy(Request $request, Employee $employee)

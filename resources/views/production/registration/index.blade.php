@@ -454,6 +454,11 @@
                                  <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </a>
+
+                                 {{-- History Button --}}
+                                 <button class="btn btn-outline-secondary btn-sm" onclick="openHistoryModal({{ $employer->id }})" title="{{ __('View History') }}">
+                                     <i class="bi bi-clock-history"></i>
+                                 </button>
                                  @endcan
 
                                  {{-- Finance Button --}}
@@ -839,6 +844,23 @@
     </div>
 </div>
 
+{{-- History Modal --}}
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>{{ __('Job History') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light" id="historyModalBody">
+                 <div class="d-flex justify-content-center py-5">
+                     <div class="spinner-border text-secondary" role="status"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @include('employees.partials._edit_scripts')
@@ -1142,6 +1164,24 @@
             }
         })
         .catch(err => Swal.fire('{{ __('Error') }}', '{{ __('Network error') }}', 'error'));
+    }
+
+    // --- History Modal ---
+    window.openHistoryModal = function(employerId) {
+        const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+        modal.show();
+
+        const body = document.getElementById('historyModalBody');
+        body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-secondary" role="status"></div></div>';
+
+        fetch(`/production/registration/employer/${employerId}/history`)
+            .then(res => res.text())
+            .then(html => {
+                body.innerHTML = html;
+            })
+            .catch(err => {
+                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>';
+            });
     }
 
     // Modal variable init inside DOMContentLoaded to ensure Bootstrap is loaded
