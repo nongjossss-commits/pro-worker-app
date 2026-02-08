@@ -518,6 +518,37 @@
             </div>
         </div>
 
+        {{-- COUNTDOWN TIMER (If Completed & Within 24h) --}}
+        @if($canRestore)
+             <div class="mt-3 w-100 d-flex justify-content-center" x-data="{
+                expires: {{ $expiresAtTimestamp }},
+                displayText: '',
+                init() {
+                        this.update();
+                        setInterval(() => this.update(), 60000);
+                },
+                update() {
+                        const now = new Date().getTime();
+                        const diff = this.expires - now;
+                        if (diff <= 0) {
+                            this.displayText = '{{ __('Locked') }}';
+                        } else {
+                            const totalMinutes = Math.floor(diff / (1000 * 60));
+                            const hours = Math.floor(totalMinutes / 60);
+                            const minutes = totalMinutes % 60;
+
+                            if (hours >= 1) {
+                                this.displayText = hours + ' {{ __('Hours remaining') }}';
+                            } else {
+                                this.displayText = minutes + ' {{ __('Minutes remaining') }}';
+                            }
+                        }
+                }
+            }">
+                <span class="badge bg-success fs-6 shadow-sm px-3 py-2" x-text="displayText" x-show="displayText !== '{{ __('Locked') }}'"></span>
+            </div>
+        @endif
+
         {{-- Steps Progress Bar --}}
         <div class="mt-3 {{ $overlayClass }}" id="steps-container-{{ $item->id }}">
             <div class="d-flex gap-2 flex-wrap">
