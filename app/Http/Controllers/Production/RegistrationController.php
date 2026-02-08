@@ -34,87 +34,186 @@ class RegistrationController extends Controller
      */
     public function index(Request $request)
     {
-        // 2. Fetch Workflow Steps (Needed for stats calculation and view)
+        // 1. Fetch Workflow Steps
         $steps = RegistrationStep::registration()->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
         $lastStepId = $steps->sortByDesc('order')->first()?->id;
 
-        // --- 1. Global Employee Query (Lightweight) ---
-        // Fetch ALL employees relevant to the current search to calculate stats in PHP.
-        // We only fetch ID, Status, EmployerID to keep it fast.
-        $employeeQuery = Employee::query()
-            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
-            ->select('id', 'employer_id', 'status', 'biometrics_collected_at', 'employee_doc_9', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeeNationality'); // Lightweight Select + Names + Photo + Nationality
-
+        // 2. Global Stats (Optimized with DB Aggregates)
+        $globalQuery = Employee::query();
         if (auth()->user()->can('manage-tickets')) {
-            $employeeQuery->withoutGlobalScope('employerTenancy');
+            $globalQuery->withoutGlobalScope('employerTenancy');
         }
 
-        $employeeQuery->with(['registrationSteps' => function($q) {
-                $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id'); // Lightweight Relation
-            }]);
-
-        // Apply Search (Same logic as before)
+        // If search is present, stats should reflect search?
+        // Typically stats reflect the "Whole Database" or "Whole Filtered View".
+        // Let's respect search for global stats to be consistent with previous behavior (where we filtered $allEmployees).
         if ($request->has('search') && $request->search) {
-            $this->applySearchToQuery($employeeQuery, $request->search);
+            $this->applySearchToQuery($globalQuery, $request->search);
         }
 
-        // Execute Lightweight Query
-        $allEmployees = $employeeQuery->get();
+        $activeStatuses = ['registration_pending', 'registration_completed'];
 
-        // --- 2. Calculate Stats (In PHP, O(N)) ---
-        // Initialize Global Stats
-        $totalEmployees = 0;
-        $totalCancelled = 0;
-        $totalSaved = 0;
-        $notStartedCount = 0;
-        $totalBiometricsCollected = 0; // NEW
-        $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+        // Clone queries for counts
+        $totalEmployees = (clone $globalQuery)->whereIn('status', $activeStatuses)->count();
+        $totalCancelled = (clone $globalQuery)->where('status', 'registration_cancelled')->count();
+        $totalSaved = (clone $globalQuery)->where('status', 'registration_completed')->count();
+        $totalBiometricsCollected = (clone $globalQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
 
-        // Appointments Stat
-        $totalAppointments = Employee::query();
-        if (auth()->user()->can('manage-tickets')) {
-            $totalAppointments->withoutGlobalScope('employerTenancy');
-        }
-        $totalAppointments = $totalAppointments->whereIn('status', ['registration_pending', 'registration_completed'])
+        $notStartedCount = (clone $globalQuery)
+            ->whereIn('status', $activeStatuses)
+            ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
+                $q->where('registration_steps.id', $stepOneId);
+            })->count();
+
+        // Total Employers (Distinct IDs in the filtered employees)
+        $totalEmployers = (clone $globalQuery)
+            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+            ->distinct('employer_id')
+            ->count('employer_id');
+
+        // Total Appointments
+        $totalAppointments = (clone $globalQuery)
+            ->whereIn('status', $activeStatuses)
             ->whereNotNull('appointment_date')
             ->count();
 
-        // Group by Employer for Per-Employer Stats assignment later
-        $employeesByEmployer = $allEmployees->groupBy('employer_id');
-        $filteredEmployerIds = $allEmployees->pluck('employer_id')->unique();
+        // Cancelled Employers Count
+        $cancelledEmpQuery = Employer::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $cancelledEmpQuery->withoutGlobalScope('employerTenancy');
+        }
+        $cancelledEmployersCount = $cancelledEmpQuery->whereHas('registrationResolutionOrder', function($q) {
+            $q->where('status', 'registration_resolution_cancelled');
+        })->count();
 
-        foreach ($allEmployees as $emp) {
-            // Global Totals
-            if ($emp->status === 'registration_cancelled') {
-                $totalCancelled++;
-            } else {
-                // Active (Pending or Completed)
-                $totalEmployees++;
 
-                if ($emp->status === 'registration_completed') {
-                    $totalSaved++;
-                }
+        // Step Stats (Global) - Efficient approach
+        // We fetch IDs and their steps for active employees to calculate "Highest Step" stats in PHP.
+        // This avoids N+1 but might be heavy if >10k employees.
+        // For now, let's limit the fields strictly.
+        $stepStatsData = (clone $globalQuery)
+            ->whereIn('status', $activeStatuses)
+            ->with(['registrationSteps' => function($q) {
+                $q->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id');
+            }])
+            ->select('id') // Only ID needed
+            ->get();
 
-                // Not Started Logic
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
-                    $notStartedCount++;
-                }
-
-                // Biometrics Collected Logic
-                if ($emp->biometrics_collected_at) {
-                    $totalBiometricsCollected++;
-                }
-
-                // Step Stats (Highest Step)
-                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
-                if ($highestStep && isset($stepStats[$highestStep->id])) {
-                    $stepStats[$highestStep->id]++;
-                }
+        $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+        foreach ($stepStatsData as $emp) {
+            $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+            if ($highestStep && isset($stepStats[$highestStep->id])) {
+                $stepStats[$highestStep->id]++;
             }
         }
 
-        $totalEmployers = $filteredEmployerIds->count();
+
+        // 3. Employer Query & Pagination
+        $employerQuery = Employer::query(); // Global scope applies automatically
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
+
+        // Apply Search (Using whereHas on employees or employer fields)
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $employerQuery->where(function($q) use ($search) {
+                 $q->where('employerNameTh', 'like', "%{$search}%")
+                   ->orWhere('employerNameEn', 'like', "%{$search}%")
+                   ->orWhereHas('jobOwner', function($q2) use ($search) {
+                       $q2->where('name', 'like', "%{$search}%");
+                   })
+                   ->orWhereHas('employees', function($q3) use ($search) {
+                       // Search within employees
+                       $q3->where('employeeNameTh', 'like', "%{$search}%")
+                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                          ->orWhere('employeePassport', 'like', "%{$search}%");
+                   })
+                   ->orWhere(function($addrQ) use ($search) {
+                         $addrQ->filterByAddress($search);
+                   });
+            });
+        }
+
+        // Address Options & Filtering
+        $addressOptions = $this->getAddressOptions($employerQuery); // Note: This might be heavy if not optimized, but let's keep logic
+        $employerQuery = $this->applyAddressFilters($employerQuery, $request);
+
+        // Apply Filter
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'cancelled_employer') {
+                $employerQuery->whereHas('registrationResolutionOrder', function($q) {
+                    $q->where('status', 'registration_resolution_cancelled');
+                });
+            } elseif ($filter === 'not_started') {
+                $employerQuery->whereHas('employees', function($q) use ($stepOneId) {
+                    $q->where('status', '!=', 'registration_cancelled')
+                      ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
+                          $sq->where('registration_steps.id', $stepOneId);
+                      });
+                });
+            } elseif ($filter === 'saved') {
+                $employerQuery->whereHas('employees', function($q) {
+                    $q->where('status', 'registration_completed');
+                });
+            } elseif ($filter === 'cancelled') {
+                $employerQuery->whereHas('employees', function($q) {
+                    $q->where('status', 'registration_cancelled');
+                });
+            } elseif ($filter === 'biometrics_collected') {
+                $employerQuery->whereHas('employees', function($q) {
+                    $q->where('status', '!=', 'registration_cancelled')
+                      ->whereNotNull('biometrics_collected_at');
+                });
+            } elseif ($filter === 'biometrics_not_collected') {
+                $employerQuery->whereHas('employees', function($q) {
+                    $q->where('status', '!=', 'registration_cancelled')
+                      ->whereNull('biometrics_collected_at');
+                });
+            } elseif (is_numeric($filter)) { // Step ID Filter
+                // Logic: Employee has this step.
+                // To approximate "Highest Step", we check if they have this step.
+                // Perfect "Highest Step" in SQL is hard.
+                // We'll filter for "Has Step X".
+                 $employerQuery->whereHas('employees', function($q) use ($filter) {
+                     $q->where('status', '!=', 'registration_cancelled')
+                       ->whereHas('registrationSteps', function($sq) use ($filter) {
+                           $sq->where('registration_steps.id', $filter);
+                       });
+                 });
+            }
+        }
+
+        // Only include employers who have relevant employees (unless searching specifically for employer)
+        // Previous logic: $filteredEmployerIds came from $allEmployees.
+        // We should ensure we don't show empty employers if they don't have relevant employees?
+        // Let's filter to those having at least one employee in (pending/completed/cancelled).
+        $employerQuery->whereHas('employees', function($q) {
+            $q->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+        });
+
+        // Eager Load Relations
+        $employerQuery->with(['jobOwner', 'customFields', 'addresses', 'registrationResolutionOrder']);
+
+        // Eager Load Employees for Stats Calculation (Only for the page)
+        // We load lightweight data for all relevant employees of these employers
+        $employerQuery->with(['employees' => function($q) {
+            $q->select('id', 'employer_id', 'status', 'biometrics_collected_at', 'employeeNameTh', 'employeeNameEn', 'employeePhoto', 'employeeNationality')
+              ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+              ->with(['registrationSteps' => function($sq) {
+                  $sq->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id');
+              }]);
+        }]);
+
+        // Sorting: Cancelled Employers last? Or logic from before:
+        // $employers = $employers->sortBy(fn($emp) => $emp->financeOrder->status === 'cancelled' ? 1 : 0);
+        // We can order by created_at or name by default, and put cancelled last if possible.
+        // Order by name is standard.
+        $employerQuery->orderBy('employerNameTh');
+
+        $employers = $employerQuery->paginate(15)->withQueryString();
 
         // Notification Setting
         $notificationSetting = NotificationSetting::firstOrNew(
@@ -122,83 +221,12 @@ class RegistrationController extends Controller
             ['days_before_expiry' => 3, 'is_enabled' => true]
         );
 
-        // --- 3. Fetch Employers (Optimization: No 'employees' eager load) ---
-        $employerQuery = Employer::withTrashed()->whereIn('id', $filteredEmployerIds)
-            ->with(['jobOwner', 'customFields', 'addresses']);
-
-        // NEW: Address options (before address filtering)
-        $addressOptions = $this->getAddressOptions($employerQuery);
-
-        // NEW: Apply address filters
-        $employerQuery = $this->applyAddressFilters($employerQuery, $request);
-
-        if (auth()->user()->can('manage-tickets')) {
-            $employerQuery->withoutGlobalScope('employerTenancy');
-        }
-
-        // Apply Server-Side Filtering to the Employer List if 'filter' param is present
-        // Note: The filter logic here is slightly complex because we need to know WHICH employers have matching employees.
-        // We can use the $employeesByEmployer collection we already have!
-        if ($request->has('filter') && $request->filter) {
-            $filter = $request->filter;
-            // Filter the $filteredEmployerIds based on the $employeesByEmployer data
-            $filteredEmployerIds = $filteredEmployerIds->filter(function($empId) use ($employeesByEmployer, $filter, $stepOneId) {
-                $emps = $employeesByEmployer[$empId] ?? collect();
-
-                if ($filter === 'cancelled_employer') {
-                    // Check employer status - need to check financeOrder later or fetch it here.
-                    // This is tricky because we fetch financeOrder later.
-                    // Let's defer 'cancelled_employer' filter until after fetching employers?
-                    // Or join/whereHas. 'cancelled_employer' is finance status.
-                    // Let's handle it in the PHP loop below.
-                    return true;
-                }
-
-                if ($filter === 'not_started') {
-                    return $emps->contains(function($e) use ($stepOneId) {
-                         return $e->status !== 'registration_cancelled' && !$e->registrationSteps->contains('id', $stepOneId);
-                    });
-                }
-                if ($filter === 'saved') {
-                     return $emps->contains('status', 'registration_completed');
-                }
-                if ($filter === 'cancelled') {
-                     return $emps->contains('status', 'registration_cancelled');
-                }
-                // Biometrics Filters
-                if ($filter === 'biometrics_collected') {
-                     return $emps->contains(function($e) {
-                         return $e->status !== 'registration_cancelled' && $e->biometrics_collected_at;
-                     });
-                }
-                if ($filter === 'biometrics_not_collected') {
-                     return $emps->contains(function($e) {
-                         return $e->status !== 'registration_cancelled' && !$e->biometrics_collected_at;
-                     });
-                }
-                // Step Filter
-                return $emps->contains(function($e) use ($filter) {
-                     if ($e->status === 'registration_cancelled') return false;
-                     $h = $e->registrationSteps->sortByDesc('order')->first();
-                     return $h && $h->id == $filter;
-                });
-            });
-
-            // Re-apply IDs to query
-            $employerQuery->whereIn('id', $filteredEmployerIds);
-        }
-
-        $employers = $employerQuery->get();
-
-        // --- 4. Process Employers (Assign Stats) ---
+        // 4. Process Employers (Stats & Finance Lazy Create)
         foreach ($employers as $employer) {
-            // Finance Order Logic (Same as before)
-            $financeOrder = ProductionOrder::with(['financialGroups.transactions.items', 'items.employee'])
-                ->where('employer_id', $employer->id)
-                ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
-                ->first();
+            $financeOrder = $employer->registrationResolutionOrder;
 
             if (!$financeOrder) {
+                // Lazy create if missing
                 $financeOrder = ProductionOrder::create([
                     'employer_id' => $employer->id,
                     'status'      => 'registration_resolution',
@@ -206,51 +234,28 @@ class RegistrationController extends Controller
                     'project_name' => 'Registration Resolution - ' . $employer->employerNameTh,
                     'financial_data' => []
                 ]);
+                // Refresh to get it
+                $employer->setRelation('registrationResolutionOrder', $financeOrder);
             }
-            $employer->financeOrder = $financeOrder;
+            $employer->financeOrder = $financeOrder; // Alias for view
 
-            // Ensure at least one default financial group exists
-            if ($financeOrder->financialGroups->isEmpty()) {
-                $financeOrder->financialGroups()->create([
+            // Ensure financial group (Lazy)
+            if ($financeOrder->financialGroups()->count() === 0) {
+                 $financeOrder->financialGroups()->create([
                     'name' => 'General',
                     'financial_data' => $financeOrder->financial_data ?? []
                 ]);
-                $financeOrder->load('financialGroups.transactions.items');
             }
+            // We don't eager load transactions here to save time, as the view lazy loads finance tab content?
+            // Actually, the view uses $employer->activeEmployeesList for Finance Tab modal?
+            // Yes: @include('production.partials.financial-tab', ['employees' => $employer->activeEmployeesList ...])
+            // So we need activeEmployeesList.
 
-            // Calculate Employer-Specific Stats from our Lightweight Collection
-            $myEmps = $employeesByEmployer[$employer->id] ?? collect();
+            $myEmps = $employer->employees; // Eager loaded above
 
-            // --- Financial Status Logic ---
-            $employeeFinancialStatus = [];
-            foreach ($financeOrder->financialGroups as $group) {
-                foreach ($group->transactions as $transaction) {
-                    foreach ($transaction->items as $item) {
-                        if (!$item->employee_id) continue;
-
-                        $empId = $item->employee_id;
-                        $currentStatus = $employeeFinancialStatus[$empId] ?? 'none';
-                        $txStatus = $transaction->status;
-
-                        // Logic:
-                        // If any transaction is pending/partial -> Partial/Pending
-                        // If all transactions are paid -> Paid
-                        if ($txStatus === 'paid') {
-                            if ($currentStatus === 'none') {
-                                $employeeFinancialStatus[$empId] = 'paid';
-                            }
-                        } else {
-                            // pending, partial, overdue
-                            $employeeFinancialStatus[$empId] = 'partial';
-                        }
-                    }
-                }
-            }
-
-            // Prepare Candidates List for Finance Tab
             $employer->activeEmployeesList = $myEmps->where('status', '!=', 'registration_cancelled')->values();
 
-            // Initialize Employer Stats
+            // Stats
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
             $empNotStarted = 0;
             $empActiveCount = 0;
@@ -259,12 +264,9 @@ class RegistrationController extends Controller
             $empBiometricsCollected = 0;
 
             foreach ($myEmps as $emp) {
-                // Attach Financial Status
-                $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
-
                 if ($emp->status === 'registration_cancelled') {
                     $empCancelledCount++;
-                    continue;
+                    continue; // Cancelled not counted in active stats
                 }
 
                 $empActiveCount++;
@@ -287,31 +289,13 @@ class RegistrationController extends Controller
                 }
             }
 
-            // Assign stats to employer object (used in view)
             $employer->stepStats = $empStats;
             $employer->notStartedCount = $empNotStarted;
             $employer->activeEmployeesCount = $empActiveCount;
             $employer->cancelledCount = $empCancelledCount;
             $employer->savedCount = $empSavedCount;
             $employer->biometricsCollectedCount = $empBiometricsCollected;
-
-            // NOTE: We do NOT assign $employer->employees here to keep response light.
-            // The view will lazily load them.
         }
-
-        // Post-Fetch Filter for Cancelled Employer
-        if ($request->input('filter') === 'cancelled_employer') {
-            $employers = $employers->filter(function($emp) {
-                return $emp->financeOrder->status === 'registration_resolution_cancelled';
-            });
-        }
-
-        // Sort Employers
-        $employers = $employers->sortBy(function($emp) {
-            return $emp->financeOrder->status === 'registration_resolution_cancelled' ? 1 : 0;
-        });
-
-        $cancelledEmployersCount = $employers->where('financeOrder.status', 'registration_resolution_cancelled')->count();
 
         return view('production.registration.index', compact(
             'totalEmployees',

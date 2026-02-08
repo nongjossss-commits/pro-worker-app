@@ -86,6 +86,13 @@ class Employer extends Model
         return $this->hasMany(Employee::class);
     }
 
+    public function registrationResolutionOrder()
+    {
+        return $this->hasOne(ProductionOrder::class)
+                    ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+                    ->latest();
+    }
+
     public function addresses()
     {
         return $this->morphMany(Address::class, 'addressable');

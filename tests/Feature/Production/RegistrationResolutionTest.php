@@ -33,6 +33,13 @@ class RegistrationResolutionTest extends TestCase
         $this->adminUser = User::factory()->create();
         $this->adminUser->assignRole($role);
 
+        // Create permissions
+        Permission::firstOrCreate(['name' => 'manage-tickets']);
+        Permission::firstOrCreate(['name' => 'edit-employees']);
+        Permission::firstOrCreate(['name' => 'view-employers']);
+
+        $this->adminUser->givePermissionTo(['manage-tickets', 'edit-employees', 'view-employers']);
+
         // 3. Create Employer
         $this->employer = Employer::factory()->create([
             'employerNameTh' => 'Test Employer TH',
@@ -77,8 +84,19 @@ class RegistrationResolutionTest extends TestCase
                          ->get(route('production.registration.index', ['search' => 'Somchai']));
 
         $response->assertStatus(200);
-        $response->assertSee('Somchai Test');
-        $response->assertDontSee('John Doe');
+        // Employer should be visible because they have a matching employee
+        $response->assertSee('Test Employer TH');
+
+        // Employees are lazy loaded, so check the AJAX endpoint
+        $responseAjax = $this->actingAs($this->adminUser)
+             ->get(route('production.registration.employer.employees', [
+                 'employer' => $this->employer->id,
+                 'search' => 'Somchai'
+             ]));
+
+        $responseAjax->assertStatus(200);
+        $responseAjax->assertSee('Somchai Test');
+        $responseAjax->assertDontSee('John Doe');
     }
 
     public function test_highest_step_counting_logic()
