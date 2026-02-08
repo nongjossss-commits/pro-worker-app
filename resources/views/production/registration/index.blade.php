@@ -593,6 +593,11 @@
             </div> {{-- End employer-card-container --}}
         @endforeach
     </div>
+
+    {{-- Pagination Links --}}
+    <div class="d-flex justify-content-center mt-4">
+        {{ $employers->links() }}
+    </div>
 </div>
 
 {{-- Include Drawer --}}
