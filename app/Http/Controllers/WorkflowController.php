@@ -308,14 +308,17 @@ class WorkflowController extends Controller
                 $employeeId ? \Illuminate\Validation\Rule::unique('employees', 'email')->ignore($employeeId) : 'unique:employees,email'
             ],
             'password' => 'nullable|string|max:255',
+            'outsource_code' => 'nullable|string|max:255',
         ]);
 
         if ($item->employee) {
             try {
-                $item->employee->update([
-                    'email' => $request->email,
-                    'password' => $request->password,
-                ]);
+                $data = [];
+                if ($request->has('email')) $data['email'] = $request->email;
+                if ($request->has('password')) $data['password'] = $request->password;
+                if ($request->has('outsource_code')) $data['outsource_code'] = $request->outsource_code;
+
+                $item->employee->update($data);
             } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
@@ -986,7 +989,7 @@ class WorkflowController extends Controller
                 'employer_id', 'employeeTitleTh', 'employeeNameTh', 'employeeTitleEn', 'employeeNameEn',
                 'father_name', 'mother_name', 'employeeGender', 'employeeDob', 'employeeAge', 'employeePhone',
                 'employeeNationality', 'passportType', 'passport_type_cambodia', 'employeePassport',
-                'passport_issue_date', 'passportExpiryDate', 'pinkCardNo', 'visaType', 'visaExpiryDate',
+                'passport_issue_date', 'passportExpiryDate', 'pinkCardNo', 'visaExpiryDate',
                 'job_title', 'job_description', 'startDate', 'employeeWorkPermit', 'workPermitExpiryDate',
                 'workPermitType', 'workPermitMOUGroup', 'workPermitMOUGroupOther', 'ninetyDayReportDate',
                 'name_list_number', 'request_number', 'employee_id_number', 'tax_id_number',

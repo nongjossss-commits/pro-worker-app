@@ -22,8 +22,8 @@
             @forelse($items as $item)
                 <tr id="trash-row-{{ $item->id }}">
                     <td>
-                        <div class="fw-bold">{{ $item->order->project_name ?? '-' }}</div>
-                        <div class="small text-muted">{{ $item->order->employer->employerNameTh ?? '-' }}</div>
+                        <div class="fw-bold">{{ $item->order?->project_name ?? '-' }}</div>
+                        <div class="small text-muted">{{ $item->order?->employer?->employerNameTh ?? '-' }}</div>
                     </td>
                     <td>
                         @if($item->employee)
