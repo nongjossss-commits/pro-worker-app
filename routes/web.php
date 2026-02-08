@@ -346,16 +346,16 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('workflow/item/{item}/team', [\App\Http\Controllers\WorkflowController::class, 'updateItemTeam'])->name('workflow.item.team');
 
-    Route::get('workflow/{id}', [\App\Http\Controllers\WorkflowController::class, 'show'])->name('workflow.show'); // Board
-    Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');
-    Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
-    Route::post('workflow/item/{item}/update-credentials', [\App\Http\Controllers\WorkflowController::class, 'updateCredentials'])->name('workflow.item.update_credentials');
-
     // Workflow Trash Routes
     Route::get('workflow/trash', [\App\Http\Controllers\WorkflowController::class, 'fetchTrash'])->name('workflow.trash');
     Route::post('workflow/trash/{id}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreTrash'])->name('workflow.trash.restore');
     Route::delete('workflow/trash/{id}/force-delete', [\App\Http\Controllers\WorkflowController::class, 'forceDeleteTrash'])->name('workflow.trash.force_delete');
     Route::post('workflow/trash/settings', [\App\Http\Controllers\WorkflowController::class, 'updateTrashSettings'])->name('workflow.trash.settings.update');
+
+    Route::get('workflow/{id}', [\App\Http\Controllers\WorkflowController::class, 'show'])->name('workflow.show'); // Board
+    Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');
+    Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
+    Route::post('workflow/item/{item}/update-credentials', [\App\Http\Controllers\WorkflowController::class, 'updateCredentials'])->name('workflow.item.update_credentials');
 
     // Workflow API Routes
     Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
