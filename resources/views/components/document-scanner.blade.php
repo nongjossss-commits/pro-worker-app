@@ -19,11 +19,6 @@
         <div x-text="loadingMessage">Loading Scanner Resources...</div>
     </div>
 
-    <style>
-        /* Hide the sequence number on the item being dragged to imply numbers are static slots */
-        .sortable-drag .seq-number { opacity: 0; }
-    </style>
-
     <div class="bg-white w-full h-full md:w-[90%] md:h-[90%] md:rounded-lg shadow-xl flex flex-col relative overflow-hidden">
 
         <!-- Header -->
@@ -177,61 +172,88 @@
                 </div>
 
                 <div class="flex-grow overflow-y-auto p-3 pb-24">
-                    <div class="text-center mb-3" x-show="scanMode === 'id_card'">
-                         <span class="badge bg-primary fs-6">
-                            <i class="bi bi-info-circle me-1"></i> เลือกรูปภาพเพื่อจัดวางรูปแบบ
-                         </span>
+                    <!-- Top Controls for Review Mode -->
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <div x-show="scanMode === 'id_card'">
+                             <span class="badge bg-primary fs-6">
+                                <i class="bi bi-info-circle me-1"></i> เลือกรูปภาพเพื่อจัดวางรูปแบบ
+                             </span>
+                        </div>
+                        <div x-show="scanMode !== 'id_card'" class="flex gap-2 w-full justify-end">
+                            <button x-show="!isSorting" @click="startSorting()" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                <i class="bi bi-sort-numeric-down"></i> จัดลำดับหน้า
+                            </button>
+
+                            <div x-show="isSorting" class="flex gap-2 items-center bg-white p-1 rounded-pill shadow-sm border">
+                                <span class="text-xs font-bold text-primary px-2">โหมดจัดลำดับ</span>
+                                <button @click="resetSorting()" class="btn btn-xs btn-light rounded-circle" title="รีเซ็ต">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                                <button @click="applySorting()" class="btn btn-xs btn-success text-white rounded-pill px-3">
+                                    <i class="bi bi-check-lg"></i> ยืนยัน
+                                </button>
+                                <button @click="cancelSorting()" class="btn btn-xs btn-secondary rounded-pill px-2">
+                                    ยกเลิก
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" x-ref="sortableGrid">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         <template x-for="(img, index) in capturedImages" :key="img.id">
-                            <div class="sortable-item relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
-                                 :data-id="img.id"
-                                 :class="selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : ''">
+                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
+                                 :class="(isSorting && sortOrder.includes(img.id)) ? 'ring-2 ring-success bg-green-50' : (selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : '')">
 
-                                <!-- Selection Checkbox Overlay -->
-                                <div class="absolute top-2 left-2 z-10">
+                                <!-- Normal Mode: Selection Checkbox -->
+                                <div class="absolute top-2 left-2 z-10" x-show="!isSorting">
                                     <input type="checkbox"
                                            :checked="selectedIndices.includes(index)"
                                            @change="toggleSelection(index)"
                                            class="form-check-input w-5 h-5 cursor-pointer shadow-sm border-gray-300">
                                 </div>
 
-                                <!-- Show CROPPED version -->
+                                <!-- Sort Mode: Sequence Badge -->
+                                <div class="absolute top-2 left-2 z-10" x-show="isSorting">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-md transition-all transform scale-100"
+                                         :class="sortOrder.includes(img.id) ? 'bg-success' : 'bg-gray-300 scale-90 opacity-50'"
+                                         @click.stop="toggleSort(img.id)">
+                                        <span x-text="getSortIndex(img.id)"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Image -->
                                 <img :src="img.cropped"
                                      class="w-full h-40 object-contain bg-gray-50 border rounded cursor-pointer"
-                                     @click="toggleSelection(index)">
+                                     :class="isSorting ? (sortOrder.includes(img.id) ? '' : 'opacity-60 grayscale') : ''"
+                                     @click="handleImageClick(index, img.id)">
 
-                                <div class="absolute top-1 right-1 flex gap-1 z-10">
+                                <!-- Actions (Hidden during sort) -->
+                                <div class="absolute top-1 right-1 flex gap-1 z-10" x-show="!isSorting">
                                     <button @click.stop="removeImage(index)" class="btn btn-sm btn-danger rounded-circle shadow-sm p-1 leading-none w-6 h-6 flex items-center justify-center">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 </div>
-                                <div class="absolute bottom-1 right-1 z-10">
+                                <div class="absolute bottom-1 right-1 z-10" x-show="!isSorting">
                                      <button @click.stop="startEdit(index)" class="btn btn-sm btn-primary shadow-sm py-1 px-2 text-xs rounded-pill">
                                         <i class="bi bi-crop"></i> ปรับแต่ง
                                     </button>
                                 </div>
-                                <!-- Drag Handle -->
-                                <div class="absolute bottom-1 left-1 z-10">
-                                     <button class="drag-handle btn btn-sm btn-light shadow-sm p-1 leading-none w-6 h-6 flex items-center justify-center cursor-move" title="ลากเพื่อย้ายตำแหน่ง">
-                                        <i class="bi bi-arrows-move"></i>
-                                    </button>
-                                </div>
-                                <div class="seq-number absolute top-1 left-8 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded pointer-events-none transition-opacity">
+
+                                <!-- Sequence Number Display (Normal Mode) -->
+                                <div class="absolute top-1 left-8 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded pointer-events-none transition-opacity" x-show="!isSorting">
                                     <span x-text="index + 1"></span>
                                 </div>
                             </div>
                         </template>
 
-                        <!-- Add More Button (Universal) -->
-                        <div @click="view = 'camera'; startCamera()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                        <!-- Add More Button (Universal - Hidden in sort mode) -->
+                        <div x-show="!isSorting" @click="view = 'camera'; startCamera()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-plus-lg text-3xl mb-1"></i>
                             <span class="text-sm">ถ่ายเพิ่ม</span>
                         </div>
 
-                        <!-- Import Button (Universal) -->
-                        <div @click="$refs.fileInput.click()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
+                        <!-- Import Button (Universal - Hidden in sort mode) -->
+                        <div x-show="!isSorting" @click="$refs.fileInput.click()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-file-earmark-plus text-3xl mb-1"></i>
                             <span class="text-sm">นำเข้าไฟล์</span>
                         </div>
@@ -312,11 +334,21 @@
                             <!-- Polygon Line -->
                             <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
 
-                            <!-- Handles -->
-                            <circle :cx="corners[0].x" :cy="corners[0].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(0, $event)" @touchstart="startDrag(0, $event)" />
-                            <circle :cx="corners[1].x" :cy="corners[1].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(1, $event)" @touchstart="startDrag(1, $event)" />
-                            <circle :cx="corners[2].x" :cy="corners[2].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(2, $event)" @touchstart="startDrag(2, $event)" />
-                            <circle :cx="corners[3].x" :cy="corners[3].y" r="10" fill="#0d6efd" stroke="white" stroke-width="2" class="pointer-events-auto cursor-move" @mousedown="startDrag(3, $event)" @touchstart="startDrag(3, $event)" />
+                            <!-- Edge Click Areas (Transparent Thick Lines) -->
+                            <!-- Top (0-1) -->
+                            <line :x1="corners[0].x" :y1="corners[0].y" :x2="corners[1].x" :y2="corners[1].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 0, $event)" @touchstart="startDrag('edge', 0, $event)" />
+                            <!-- Right (1-2) -->
+                            <line :x1="corners[1].x" :y1="corners[1].y" :x2="corners[2].x" :y2="corners[2].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 1, $event)" @touchstart="startDrag('edge', 1, $event)" />
+                            <!-- Bottom (2-3) -->
+                            <line :x1="corners[2].x" :y1="corners[2].y" :x2="corners[3].x" :y2="corners[3].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 2, $event)" @touchstart="startDrag('edge', 2, $event)" />
+                            <!-- Left (3-0) -->
+                            <line :x1="corners[3].x" :y1="corners[3].y" :x2="corners[0].x" :y2="corners[0].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 3, $event)" @touchstart="startDrag('edge', 3, $event)" />
+
+                            <!-- Handles (Larger) -->
+                            <circle :cx="corners[0].x" :cy="corners[0].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 0, $event)" @touchstart="startDrag('corner', 0, $event)" />
+                            <circle :cx="corners[1].x" :cy="corners[1].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 1, $event)" @touchstart="startDrag('corner', 1, $event)" />
+                            <circle :cx="corners[2].x" :cy="corners[2].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 2, $event)" @touchstart="startDrag('corner', 2, $event)" />
+                            <circle :cx="corners[3].x" :cy="corners[3].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 3, $event)" @touchstart="startDrag('corner', 3, $event)" />
                         </svg>
                     </div>
                 </div>
@@ -354,7 +386,6 @@
 <!-- Load Libraries (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script async src="https://docs.opencv.org/4.x/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
 
 <script>
@@ -369,7 +400,10 @@
             targetInputId: null,
             targetPreviewId: null,
             flash: false,
-            sortableInstance: null,
+
+            // Reordering State
+            isSorting: false,
+            sortOrder: [], // Array of IDs in selected order
 
             // Camera
             stream: null,
@@ -395,6 +429,8 @@
             scaleX: 1,
             scaleY: 1,
             activeDragIndex: -1,
+            activeDragEdge: -1,
+            previousMousePosition: { x: 0, y: 0 },
             rotation: 0, // Current rotation in degrees (0, 90, 180, 270)
 
             init() {
@@ -413,63 +449,6 @@
                 window.addEventListener('mouseup', () => this.stopDrag());
                 window.addEventListener('touchmove', (e) => this.onDrag(e), {passive: false});
                 window.addEventListener('touchend', () => this.stopDrag());
-
-                this.$nextTick(() => {
-                    if (typeof Sortable !== 'undefined') {
-                        this.initSortable();
-                    } else {
-                        // Retry once in case script is loading
-                        setTimeout(() => {
-                            if (typeof Sortable !== 'undefined') this.initSortable();
-                        }, 1000);
-                    }
-                });
-            },
-
-            initSortable() {
-                if (this.sortableInstance) return;
-                const el = this.$refs.sortableGrid;
-                if (!el) return;
-
-                this.sortableInstance = new Sortable(el, {
-                    animation: 150,
-                    handle: '.drag-handle',
-                    draggable: '.sortable-item',
-                    filter: '.static-item',
-                    onMove: (evt) => {
-                        // Prevent moving items past static items (Add/Import buttons)
-                        return !evt.related.classList.contains('static-item');
-                    },
-                    onEnd: (evt) => {
-                        // Strict DOM-to-Data Sync
-                        // Instead of relying on oldIndex/newIndex which can be flaky with templates and static items,
-                        // we read the actual DOM order of the items and re-align our data to match.
-                        // Add delay to ensure Sortable animation/DOM updates are settled
-                        setTimeout(() => {
-                            this.syncOrderFromDom();
-                        }, 50);
-                    }
-                });
-            },
-
-            syncOrderFromDom() {
-                const el = this.$refs.sortableGrid;
-                // Query only the draggable items to get the new order of IDs
-                const domItems = Array.from(el.querySelectorAll('.sortable-item'));
-                const newOrderIds = domItems.map(item => item.dataset.id);
-
-                // Reconstruct the array based on this order
-                // Note: We cast id to string for comparison if needed, but usually they match types.
-                // We use a Map for O(1) lookup or just find. Since list is small, find is fine.
-                const newCapturedImages = newOrderIds.map(id => {
-                    return this.capturedImages.find(img => String(img.id) === String(id));
-                }).filter(Boolean); // Filter out undefined just in case
-
-                // Update State - Force new array reference for Alpine
-                this.capturedImages = [...newCapturedImages];
-
-                // Clear selection to avoid confusion
-                this.selectedIndices = [];
             },
 
             getHeaderTitle() {
@@ -749,99 +728,102 @@
                 let bestCorners = [];
                 let isFound = false;
 
-                // Helper to check contour consistency
-                const checkContour = (cnt) => {
-                    const area = cv.contourArea(cnt);
-                    // Filter: Must be at least 5% of the image area
-                    if (area < (width * height * 0.05)) return null;
+                try {
+                    // 1. Preprocessing (Resize for speed & noise reduction if image is huge)
+                    let processingSrc = src;
+                    let scale = 1;
+                    const maxDim = 800; // Work on a smaller scale
 
-                    let peri = cv.arcLength(cnt, true);
-                    let approx = new cv.Mat();
-                    // Approximation accuracy: 0.02 * perimeter
-                    cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-
-                    // Must be convex and have 4 corners (Quadrilateral)
-                    if (approx.rows === 4 && cv.isContourConvex(approx)) {
-                        const points = [];
-                        for(let i=0; i<4; i++) {
-                            points.push({
-                                x: approx.data32S[i*2],
-                                y: approx.data32S[i*2+1]
-                            });
-                        }
-                        approx.delete();
-                        return { points, area };
+                    if (Math.max(width, height) > maxDim) {
+                        scale = maxDim / Math.max(width, height);
+                        processingSrc = new cv.Mat();
+                        cv.resize(src, processingSrc, new cv.Size(0, 0), scale, scale, cv.INTER_AREA);
                     }
-                    approx.delete();
-                    return null;
-                };
 
-                // Processing Strategy
-                const runDetectionPass = (method) => {
+                    const pWidth = processingSrc.cols;
+                    const pHeight = processingSrc.rows;
+
                     const gray = new cv.Mat();
-                    const blurred = new cv.Mat();
-                    const processed = new cv.Mat();
+                    cv.cvtColor(processingSrc, gray, cv.COLOR_RGBA2GRAY, 0);
 
-                    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+                    // 2. Denoise (Gaussian Blur)
+                    const blurred = new cv.Mat();
                     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
 
-                    if (method === 'canny') {
-                        // Pass 1: Canny Edge Detection
-                        // Lower thresholds (30, 150) to catch fainter edges
-                        cv.Canny(blurred, processed, 30, 150);
+                    // 3. Edge Detection / Thresholding
+                    // Strategy: Adaptive Thresholding is better for uneven lighting
+                    const binary = new cv.Mat();
+                    // Block size 11, C=2. Tweakable.
+                    cv.adaptiveThreshold(blurred, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
 
-                        // Dilate to close small gaps in edges
-                        const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-                        cv.morphologyEx(processed, processed, cv.MORPH_DILATE, kernel);
-                        kernel.delete();
-                    }
-                    else if (method === 'threshold') {
-                        // Pass 2: Otsu's Thresholding
-                        // Effective for high contrast (e.g., White paper on Dark desk)
-                        cv.threshold(blurred, processed, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
-                    }
+                    // 4. Morphological Operations (Close gaps)
+                    // Dilate then Erode (Close) or just Dilate?
+                    // Using Close to fill small black holes inside white paper and connect edge gaps.
+                    const kernel = cv.Mat.ones(5, 5, cv.CV_8U);
+                    const closed = new cv.Mat();
+                    cv.morphologyEx(binary, closed, cv.MORPH_CLOSE, kernel); // Connect edges
+                    // Also maybe Erode slightly to separate paper from background noise?
+                    // cv.morphologyEx(closed, closed, cv.MORPH_OPEN, kernel);
 
+                    // 5. Find Contours
+                    // RETR_EXTERNAL to find only the outer boundary (ignore photos inside)
                     const contours = new cv.MatVector();
                     const hierarchy = new cv.Mat();
-                    cv.findContours(processed, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                    cv.findContours(closed, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
+                    // 6. Find Best Quadrilateral
                     let maxArea = 0;
                     let bestCandidate = null;
+                    const minArea = pWidth * pHeight * 0.10; // Must be at least 10% of image
 
                     for (let i = 0; i < contours.size(); ++i) {
-                        const res = checkContour(contours.get(i));
-                        if (res && res.area > maxArea) {
-                            maxArea = res.area;
-                            bestCandidate = res.points;
+                        const cnt = contours.get(i);
+                        const area = cv.contourArea(cnt);
+
+                        if (area < minArea) continue;
+
+                        let peri = cv.arcLength(cnt, true);
+                        let approx = new cv.Mat();
+                        // 0.02 is standard approx accuracy
+                        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+
+                        // Looking for 4 corners
+                        // Also check if convex
+                        if (approx.rows === 4 && cv.isContourConvex(approx)) {
+                            if (area > maxArea) {
+                                maxArea = area;
+                                bestCandidate = [];
+                                for(let j=0; j<4; j++) {
+                                    bestCandidate.push({
+                                        x: approx.data32S[j*2] / scale, // Scale back up
+                                        y: approx.data32S[j*2+1] / scale
+                                    });
+                                }
+                            }
+                        } else {
+                            // Sometimes corners are slightly rounded or noise adds extra vertices (5 or 6).
+                            // If it's a large convex shape with ~4 vertices, we might want to take its bounding box or convex hull?
+                            // For now, strict 4 corners is safest for perspective warp.
+                            // We could try to simplify further if rows > 4?
                         }
+                        approx.delete();
                     }
 
-                    gray.delete(); blurred.delete(); processed.delete();
-                    contours.delete(); hierarchy.delete();
+                    // Clean up
+                    if (scale !== 1) processingSrc.delete();
+                    gray.delete(); blurred.delete(); binary.delete(); closed.delete();
+                    kernel.delete(); contours.delete(); hierarchy.delete();
 
-                    return bestCandidate;
-                };
-
-                // Execution
-                try {
-                    // Try Canny First (Standard)
-                    let result = runDetectionPass('canny');
-
-                    // If failed, try Threshold (High Contrast)
-                    if (!result) {
-                        result = runDetectionPass('threshold');
-                    }
-
-                    if (result) {
-                        bestCorners = this.sortPoints(result);
+                    if (bestCandidate) {
+                        bestCorners = this.sortPoints(bestCandidate);
                         isFound = true;
                     } else {
-                        // Fallback: Full Image
                         bestCorners = this.getDefaultCorners(width, height);
                         isFound = false;
                     }
+
                 } catch(e) {
-                    console.error("Detection Error:", e);
+                    console.error("Detection Logic Error:", e);
                     bestCorners = this.getDefaultCorners(width, height);
                     isFound = false;
                 }
@@ -924,6 +906,77 @@
                 } else {
                     this.selectedIndices.push(index);
                 }
+            },
+
+            // --- SORTING LOGIC ---
+            startSorting() {
+                this.isSorting = true;
+                this.sortOrder = [];
+                this.selectedIndices = []; // Clear layout selection to avoid confusion
+            },
+
+            cancelSorting() {
+                this.isSorting = false;
+                this.sortOrder = [];
+            },
+
+            resetSorting() {
+                this.sortOrder = [];
+            },
+
+            handleImageClick(index, id) {
+                if (this.isSorting) {
+                    this.toggleSort(id);
+                } else {
+                    this.toggleSelection(index);
+                }
+            },
+
+            toggleSort(id) {
+                const idx = this.sortOrder.indexOf(id);
+                if (idx === -1) {
+                    // Add to end
+                    this.sortOrder.push(id);
+                } else {
+                    // Only allow removing if it's the LAST item
+                    if (idx === this.sortOrder.length - 1) {
+                        this.sortOrder.pop();
+                    } else {
+                        // Optional: Feedback that you can't remove middle items
+                        // alert("Can only undo the last selection");
+                    }
+                }
+            },
+
+            getSortIndex(id) {
+                const idx = this.sortOrder.indexOf(id);
+                return idx !== -1 ? idx + 1 : '';
+            },
+
+            applySorting() {
+                if (this.sortOrder.length === 0) {
+                    this.cancelSorting();
+                    return;
+                }
+
+                // Create new array based on sortOrder
+                const newImages = [];
+
+                // 1. Add sorted items
+                this.sortOrder.forEach(id => {
+                    const img = this.capturedImages.find(i => i.id === id);
+                    if (img) newImages.push(img);
+                });
+
+                // 2. Append remaining items (that weren't selected)
+                this.capturedImages.forEach(img => {
+                    if (!this.sortOrder.includes(img.id)) {
+                        newImages.push(img);
+                    }
+                });
+
+                this.capturedImages = newImages;
+                this.cancelSorting();
             },
 
             async generateLayout(type) {
@@ -1375,32 +1428,80 @@
                 return this.corners.map(c => `${c.x},${c.y}`).join(' ');
             },
 
-            startDrag(index, e) {
+            startDrag(type, index, e) {
                 e.preventDefault();
-                this.activeDragIndex = index;
+                e.stopPropagation();
+
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                this.previousMousePosition = { x: clientX, y: clientY };
+
+                if (type === 'corner') {
+                    this.activeDragIndex = index;
+                    this.activeDragEdge = -1;
+                } else if (type === 'edge') {
+                    this.activeDragEdge = index;
+                    this.activeDragIndex = -1;
+                }
             },
 
             onDrag(e) {
-                if (this.activeDragIndex === -1) return;
+                if (this.activeDragIndex === -1 && this.activeDragEdge === -1) return;
                 e.preventDefault();
 
                 const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
-                const rect = this.$refs.cropContainer.getBoundingClientRect();
+                // Calculate Delta
+                const dx = clientX - this.previousMousePosition.x;
+                const dy = clientY - this.previousMousePosition.y;
+
+                // Update prev position for next frame
+                this.previousMousePosition = { x: clientX, y: clientY };
+
+                // Get Canvas Rect to check bounds relative to canvas
                 const canvasRect = this.$refs.cropCanvas.getBoundingClientRect();
 
-                let x = clientX - canvasRect.left;
-                let y = clientY - canvasRect.top;
+                // Helper to move a point with bounds check
+                const movePoint = (idx, deltaX, deltaY) => {
+                     let newX = this.corners[idx].x + deltaX;
+                     let newY = this.corners[idx].y + deltaY;
 
-                x = Math.max(0, Math.min(x, this.canvasWidth));
-                y = Math.max(0, Math.min(y, this.canvasHeight));
+                     // Clamping
+                     newX = Math.max(0, Math.min(newX, this.canvasWidth));
+                     newY = Math.max(0, Math.min(newY, this.canvasHeight));
 
-                this.corners[this.activeDragIndex] = {x, y};
+                     this.corners[idx] = { x: newX, y: newY };
+                };
+
+                if (this.activeDragIndex !== -1) {
+                    // Moving a Corner: Absolute position calculation is smoother for corners than delta,
+                    // but delta is consistent with edge dragging.
+                    // Let's switch corner dragging to absolute position like before to prevent drift?
+                    // Actually, "snap to mouse" is better for corners.
+
+                    let x = clientX - canvasRect.left;
+                    let y = clientY - canvasRect.top;
+                    x = Math.max(0, Math.min(x, this.canvasWidth));
+                    y = Math.max(0, Math.min(y, this.canvasHeight));
+                    this.corners[this.activeDragIndex] = {x, y};
+
+                } else if (this.activeDragEdge !== -1) {
+                    // Moving an Edge: Apply delta to both endpoints
+                    const edgeIdx = this.activeDragEdge;
+                    // Edge 0: 0-1, Edge 1: 1-2, Edge 2: 2-3, Edge 3: 3-0
+                    const p1 = edgeIdx;
+                    const p2 = (edgeIdx + 1) % 4;
+
+                    movePoint(p1, dx, dy);
+                    movePoint(p2, dx, dy);
+                }
             },
 
             stopDrag() {
                 this.activeDragIndex = -1;
+                this.activeDragEdge = -1;
             },
 
             // --- FINALIZATION ---
