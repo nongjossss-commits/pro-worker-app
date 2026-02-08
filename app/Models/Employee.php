@@ -229,13 +229,15 @@ class Employee extends Model
             ->get()
             ->map(function ($item) {
                 // Determine status label based on Order status
-                $statusLabel = $item->order->status === 'pre_production'
-                    ? 'Pre-Production'
-                    : 'กำลังดำเนินการ'; // "Processing"
+                $isPreProduction = $item->order->status === 'pre_production';
+                $statusLabel = $isPreProduction
+                    ? 'Preparing (Pre-Production)'
+                    : 'Processing';
 
                 return (object) [
                     'name' => $item->order->workType->name ?? 'Unknown',
                     'status_label' => $statusLabel,
+                    'is_pre_production' => $isPreProduction,
                     'order_id' => $item->production_order_id,
                     'item_id' => $item->id,
                     'tab_slug' => $item->order->workType->slug ?? '',
