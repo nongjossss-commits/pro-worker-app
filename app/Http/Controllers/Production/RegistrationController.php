@@ -146,11 +146,7 @@ class RegistrationController extends Controller
                 $emps = $employeesByEmployer[$empId] ?? collect();
 
                 if ($filter === 'cancelled_employer') {
-                    // Check employer status - need to check financeOrder later or fetch it here.
-                    // This is tricky because we fetch financeOrder later.
-                    // Let's defer 'cancelled_employer' filter until after fetching employers?
-                    // Or join/whereHas. 'cancelled_employer' is finance status.
-                    // Let's handle it in the PHP loop below.
+                    // Handled via Query (whereHas) below to allow pagination
                     return true;
                 }
 
@@ -188,7 +184,27 @@ class RegistrationController extends Controller
             $employerQuery->whereIn('id', $filteredEmployerIds);
         }
 
-        $employers = $employerQuery->get();
+        // Apply Cancelled Employer Filter via Query (for Pagination)
+        if ($request->input('filter') === 'cancelled_employer') {
+            $employerQuery->whereHas('productionOrders', function($q) {
+                $q->where('status', 'registration_resolution_cancelled');
+            });
+        }
+
+        // Calculate Cancelled Count (Global for these filtered IDs)
+        // Note: We need a fresh query or count on IDs because $employerQuery will be paginated
+        // We can assume filteredEmployerIds is the base set, then filter by status.
+        $cancelledEmployersCount = Employer::whereIn('id', $filteredEmployerIds)
+            ->whereHas('productionOrders', function($q) {
+                $q->where('status', 'registration_resolution_cancelled');
+            })->count();
+
+        $perPage = $request->input('per_page', 20);
+        if (!in_array($perPage, [20, 50, 100])) {
+            $perPage = 20;
+        }
+
+        $employers = $employerQuery->paginate($perPage)->withQueryString();
 
         // --- 4. Process Employers (Assign Stats) ---
         foreach ($employers as $employer) {
@@ -299,19 +315,13 @@ class RegistrationController extends Controller
             // The view will lazily load them.
         }
 
-        // Post-Fetch Filter for Cancelled Employer
-        if ($request->input('filter') === 'cancelled_employer') {
-            $employers = $employers->filter(function($emp) {
-                return $emp->financeOrder->status === 'registration_resolution_cancelled';
-            });
-        }
-
-        // Sort Employers
-        $employers = $employers->sortBy(function($emp) {
+        // Sort Employers (Current Page Only)
+        // To sort globally, we would need to join tables, but pagination breaks "bottom of list".
+        // We sort the current page to keep consistency.
+        $sortedCollection = $employers->getCollection()->sortBy(function($emp) {
             return $emp->financeOrder->status === 'registration_resolution_cancelled' ? 1 : 0;
         });
-
-        $cancelledEmployersCount = $employers->where('financeOrder.status', 'registration_resolution_cancelled')->count();
+        $employers->setCollection($sortedCollection);
 
         return view('production.registration.index', compact(
             'totalEmployees',

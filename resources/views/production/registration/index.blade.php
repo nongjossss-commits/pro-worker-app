@@ -593,6 +593,13 @@
             </div> {{-- End employer-card-container --}}
         @endforeach
     </div>
+
+    <div class="mt-4 d-flex justify-content-between align-items-center mb-5">
+        @include('partials.per_page_selector')
+        <div>
+            {{ $employers->links() }}
+        </div>
+    </div>
 </div>
 
 {{-- Include Drawer --}}
