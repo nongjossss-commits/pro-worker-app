@@ -127,7 +127,7 @@
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         {{-- Total Employees --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer" onclick="window.location.href = window.location.pathname + '?tab={{ $activeTab->slug }}';" style="background-color: #FBBF24;">
+            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer" onclick="window.location.href = '{{ route('production.index', ['tab' => $activeTab->slug ?? null]) }}';" style="background-color: #FBBF24;">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
