@@ -397,6 +397,7 @@ class ProductionController extends Controller
              // The JS sends a clean JSON body.
 
              $jsonPayload = $request->json()->all();
+             $createdItemIds = [];
 
              // Handle Price Tier Item Creation (Auto-convert candidates to items)
              if (isset($jsonPayload['pricing_tiers']) && is_array($jsonPayload['pricing_tiers'])) {
@@ -418,6 +419,7 @@ class ProductionController extends Controller
                                      ]
                                  );
                                  $newItemIds[] = $item->id;
+                                 $createdItemIds[] = $item->id;
                              } else {
                                  $newItemIds[] = $itemId;
                              }
@@ -431,9 +433,34 @@ class ProductionController extends Controller
 
              $group->financial_data = $jsonPayload;
              $group->save();
-        }
 
-        return response()->json(['success' => true, 'group' => $group->fresh()]);
+             // Fetch newly created items to return to frontend
+             $newItems = [];
+             if (!empty($createdItemIds)) {
+                 $rawItems = \App\Models\ProductionItem::with('employee')
+                     ->whereIn('id', $createdItemIds)
+                     ->get();
+
+                 $newItems = $rawItems->map(function($item) {
+                     $emp = $item->employee;
+                     return [
+                         'id' => $item->id,
+                         'name' => $emp ? ($emp->employeeNameTh ?? $emp->employeeNameEn ?? 'New Employee') : 'New Item',
+                         'name_en' => $emp->employeeNameEn ?? '',
+                         'title_en' => $emp->employeeTitleEn ?? '',
+                         'photo' => $emp->photo_url ?? '',
+                         'nationality' => $emp->employeeNationality ?? '',
+                         'employee_id' => $item->employee_id,
+                     ];
+                 });
+             }
+
+             return response()->json([
+                 'success' => true,
+                 'group' => $group->fresh(),
+                 'new_items' => $newItems
+             ]);
+        }
     }
 
     public function destroyFinancialGroup(Request $request, $id, $groupId)

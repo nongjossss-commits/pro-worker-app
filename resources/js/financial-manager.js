@@ -781,6 +781,25 @@ if (typeof window.financialManager === 'undefined') {
                                 this.switchGroup(this.activeGroupId);
                             }
                         }
+
+                        // Add new items (converted from candidates) to productionItems list
+                        if (data.new_items && Array.isArray(data.new_items)) {
+                            data.new_items.forEach(newItem => {
+                                const exists = this.productionItems.find(pi => pi.id === newItem.id);
+                                if (!exists) {
+                                    this.productionItems.push({
+                                        id: newItem.id,
+                                        name: newItem.name,
+                                        name_en: newItem.name_en,
+                                        title_en: newItem.title_en,
+                                        photo: newItem.photo,
+                                        nationality: newItem.nationality,
+                                        employee_id: newItem.employee_id
+                                    });
+                                }
+                            });
+                        }
+
                         Swal.fire({ icon: 'success', title: 'Saved', text: 'Settings updated.', timer: 1000, showConfirmButton: false });
                     }
                 })
