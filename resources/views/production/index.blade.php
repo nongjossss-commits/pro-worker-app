@@ -513,7 +513,7 @@
 
         fetch('{{ route("production.steps.store") }}', { // New Route
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ work_type_id: activeTabId, name: name })
         }).then(res => res.json()).then(data => {
             if(data.success) location.reload();
@@ -524,7 +524,7 @@
          if(!confirm('Delete this step?')) return;
         fetch(`/workflow/steps/${id}`, { // Can reuse existing delete endpoint as ID is unique
             method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken }
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
         }).then(res => res.json()).then(data => {
             if(data.success) location.reload();
         });
@@ -543,7 +543,7 @@
             if (result.isConfirmed) {
                 fetch(`/production/item/${itemId}/send-to-workflow`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -578,7 +578,9 @@
 
     // --- Helper to Refresh Card ---
     window.refreshItemCard = function(itemId) {
-        fetch(`/workflow/item/${itemId}/card`)
+        fetch(`/workflow/item/${itemId}/card`, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
         .then(res => res.json())
         .then(data => {
             if(data.html) {
@@ -643,7 +645,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -667,7 +669,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/finalize`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -708,7 +710,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/cancel`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -749,7 +751,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/restore`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -826,7 +828,7 @@
 
         fetch(`/workflow/item/${itemId}/group`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ group_name: groupName })
         })
         .then(res => res.json())
@@ -882,7 +884,7 @@
 
         fetch(`/workflow/item/${itemId}/step-toggle`, { // Reuse Workflow endpoint
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ step_id: stepId, completed: completed })
         });
     }

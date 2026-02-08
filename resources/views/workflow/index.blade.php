@@ -599,7 +599,7 @@
         const name = document.getElementById('newStepName').value;
         fetch('{{ route("workflow.steps.store") }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ work_type_id: activeTabId, name: name })
         }).then(res => res.json()).then(data => {
             if(data.success) location.reload();
@@ -619,7 +619,7 @@
         const newName = item.querySelector('.step-edit-input').value;
         fetch(`/workflow/steps/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ name: newName })
         }).then(res => res.json()).then(data => {
             if(data.success) location.reload();
@@ -630,7 +630,7 @@
         if(!confirm('Delete this step?')) return;
         fetch(`/workflow/steps/${id}`, {
             method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken }
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
         }).then(res => res.json()).then(data => {
             if(data.success) location.reload();
         });
@@ -652,7 +652,7 @@
 
         fetch('{{ route("workflow.steps.reorder") }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ order: order })
         });
         setTimeout(() => location.reload(), 500);
@@ -762,7 +762,7 @@
 
         fetch(`/workflow/item/${itemId}/step-toggle`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ step_id: stepId, completed: completed })
         })
         .then(res => res.json())
@@ -838,7 +838,9 @@
 
     // --- Helper to Refresh Card ---
     window.refreshItemCard = function(itemId) {
-        fetch(`/workflow/item/${itemId}/card`)
+        fetch(`/workflow/item/${itemId}/card`, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
         .then(res => res.json())
         .then(data => {
             if(data.html) {
@@ -912,7 +914,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/finalize`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => {
                     if (!res.ok) throw new Error(res.statusText);
@@ -964,7 +966,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/cancel`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -1007,7 +1009,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/restore`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -1049,7 +1051,7 @@
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -1068,7 +1070,7 @@
 
         fetch(`/workflow/settings/${activeTabId}/notification`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ notify_days_advance: days })
         })
         .then(res => res.json())
@@ -1127,7 +1129,7 @@
 
         fetch(`/workflow/item/${itemId}/group`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ group_name: groupName })
         })
         .then(res => res.json())
@@ -1162,7 +1164,7 @@
     window.checkDaily = function(itemId) {
         fetch(`/workflow/item/${itemId}/check-daily`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
         })
         .then(res => res.json())
         .then(data => {
