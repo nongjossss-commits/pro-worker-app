@@ -315,6 +315,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Workflow Routes
     Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->name('workflow.index');
+    Route::get('workflow/history/mou-import', [\App\Http\Controllers\WorkflowController::class, 'mouImportHistory'])->name('workflow.mou_import.history');
     Route::post('workflow/store', [\App\Http\Controllers\WorkflowController::class, 'store'])->name('workflow.store');
     Route::get('workflow/{order}/items', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderItems'])->name('workflow.items');
     Route::get('workflow/{order}/history', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderHistory'])->name('workflow.history');

@@ -433,6 +433,7 @@
                 </button>
 
                 @if(!$isReadOnly)
+                    @if(!$isPreProduction)
                     {{-- Manage Team --}}
                     <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
                         onclick="openManageTeamModal({{ $item->id }}, this)"
@@ -441,6 +442,7 @@
                         title="{{ __('Manage Team') }}">
                         <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
                     </button>
+                    @endif
 
                     {{-- SAVE TO DB (Finalize) --}}
                     <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"

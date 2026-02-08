@@ -186,7 +186,12 @@
                                 </div>
                                 <div>
                                     <h5 class="fw-bold mb-0 text-dark">
-                                        {{ $order->employer->employerNameTh ?? $order->project_name }}
+                                        @if($order->workType && $order->workType->slug === 'mou_import')
+                                            {{ $order->project_name }} <span class="text-muted small">({{ $order->employer->employerNameTh ?? '' }})</span>
+                                        @else
+                                            {{ $order->employer->employerNameTh ?? $order->project_name }}
+                                        @endif
+
                                         @if(request('addrProvince') && $order->employer)
                                             @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
                                                 <span class="badge bg-info text-white small ms-1" style="font-size: 0.7rem;">{{ $label }}</span>
@@ -375,39 +380,6 @@
     </div>
 </div>
 
-{{-- Manage Team Modal (Copied from Workflow for consistency) --}}
-<div class="modal fade" id="manageTeamModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-people-fill me-2"></i>{{ __('Manage Team / Batch') }}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="team_item_id">
-
-                <div class="mb-4">
-                    <label for="workflow_team_name" class="form-label fw-bold text-dark">{{ __('Team Name / Batch') }}</label>
-                    <input type="text" class="form-control form-control-lg" id="workflow_team_name" placeholder="{{ __('e.g., Batch 1, Arrived 25/10') }}">
-                    <div class="form-text text-muted">{{ __('Assign a group name to organize employees in this job.') }}</div>
-                </div>
-
-                <div id="existing-teams-wrapper" class="d-none">
-                    <h6 class="fw-bold text-secondary mb-3 small text-uppercase">{{ __('Existing Teams in this Job') }}</h6>
-                    <div class="d-flex flex-wrap gap-2" id="existing-teams-list">
-                        <!-- Chips loaded via JS -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-primary px-4" onclick="saveItemTeam()">
-                    <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 @include('employees.partials._edit_scripts')
 @include('production.registration.partials.edit_modal_script')
@@ -548,9 +520,30 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        // Remove card from UI
-                        document.getElementById(`item-card-${itemId}`).remove();
-                        Swal.fire('{{ __("Sent!") }}', '{{ __("Employee moved to Workflow.") }}', 'success');
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            // Remove card from UI
+                            document.getElementById(`item-card-${itemId}`).remove();
+                            Swal.fire('{{ __("Sent!") }}', '{{ __("Employee moved to Workflow.") }}', 'success');
+                        }
+                    } else if (data.status === 'cancelled_found') {
+                        // Handle Cancelled Item Collision
+                        Swal.fire({
+                            title: '{{ __("Employee Cancelled Previously") }}',
+                            text: '{{ __("This employee has a cancelled item in the active workflow. Do you want to go to it?") }}',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: '{{ __("Yes, Go to Item") }}',
+                            cancelButtonText: '{{ __("Cancel") }}',
+                            confirmButtonColor: '#ffc107'
+                        }).then((res) => {
+                            if (res.isConfirmed) {
+                                // Redirect to Workflow with highlight params
+                                const url = `{{ route('workflow.index') }}?tab=${data.tab}&highlight_order=${data.order_id}&highlight_item=${data.item_id}`;
+                                window.location.href = url;
+                            }
+                        });
                     } else {
                         Swal.fire('{{ __("Error") }}', data.message, 'error');
                     }
@@ -779,83 +772,6 @@
         });
     }
 
-    // --- Manage Team JS (Copied from Workflow) ---
-    window.openManageTeamModal = function(itemId, btn) {
-        const groupName = btn.dataset.groupName || '';
-        const orderId = btn.dataset.orderId;
-
-        document.getElementById('team_item_id').value = itemId;
-        const nameInput = document.getElementById('workflow_team_name');
-        nameInput.value = groupName;
-
-        // Existing Teams (Scan DOM)
-        const wrapper = document.getElementById('existing-teams-wrapper');
-        const list = document.getElementById('existing-teams-list');
-        list.innerHTML = '';
-        wrapper.classList.add('d-none');
-
-        if(orderId) {
-            const container = document.getElementById(`order-content-${orderId}`);
-            if(container) {
-                // Find group headers (h6.fw-bold.text-dark.mb-0)
-                const headers = container.querySelectorAll('h6.fw-bold.text-dark.mb-0');
-                const uniqueGroups = new Set();
-                headers.forEach(h => uniqueGroups.add(h.innerText.trim()));
-
-                if(uniqueGroups.size > 0) {
-                    wrapper.classList.remove('d-none');
-                    uniqueGroups.forEach(name => {
-                        const badge = document.createElement('button');
-                        badge.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3';
-                        badge.type = 'button';
-                        badge.innerText = name;
-                        badge.onclick = () => { nameInput.value = name; };
-                        list.appendChild(badge);
-                    });
-                }
-            }
-        }
-
-        const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
-        modal.show();
-    }
-
-    window.saveItemTeam = function() {
-        const itemId = document.getElementById('team_item_id').value;
-        const groupName = document.getElementById('workflow_team_name').value;
-
-        fetch(`/workflow/item/${itemId}/group`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ group_name: groupName })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('manageTeamModal')).hide();
-                Swal.fire({
-                    icon: 'success',
-                    title: '{{ __('Saved') }}',
-                    text: '{{ __('Team assigned successfully.') }}',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-
-                // Update UI: Reload the order items to reflect new grouping
-                // Find Order ID
-                const card = document.getElementById(`item-card-${itemId}`);
-                if (card) {
-                    const wrapper = card.closest('.order-content-wrapper');
-                    if (wrapper) {
-                        const orderId = wrapper.id.replace('order-content-', '');
-                        refreshOrderContent(orderId);
-                    }
-                }
-            } else {
-                 Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to assign team.') }}', 'error');
-            }
-        });
-    }
 
     // --- Reuse Toggle Step from Workflow (Global Function) ---
     // Make sure toggleWorkStep exists or include it here if not globally available.

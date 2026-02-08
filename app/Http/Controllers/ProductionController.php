@@ -159,8 +159,9 @@ class ProductionController extends Controller
      */
     public function sendToWorkflow(Request $request, $itemId)
     {
-        $item = ProductionItem::with(['order', 'employee'])->findOrFail($itemId);
+        $item = ProductionItem::with(['order.workType', 'employee'])->findOrFail($itemId);
         $currentOrder = $item->order;
+        $workType = $currentOrder->workType;
 
         if ($currentOrder->status !== 'pre_production') {
             return response()->json(['success' => false, 'message' => 'Item is already in Workflow.'], 400);
@@ -168,39 +169,81 @@ class ProductionController extends Controller
 
         DB::beginTransaction();
         try {
-            // Find an Active Order for this Employer + WorkType
+            // CASE A: MOU Import (Move the Entire Card)
+            if ($workType && $workType->slug === 'mou_import') {
+                // For MOU Import, we move the order itself to active status.
+                // Logic: 1 Card = 1 Project.
+                $currentOrder->update(['status' => 'active']);
+
+                // Reset all items inside to pending?
+                // Or keep them as is? Usually "sending" implies they are ready to start workflow.
+                // Assuming we reset item status to 'pending' if they were 'completed' (saved in Pre-Prod).
+                // And clear Pre-Prod steps.
+                foreach ($currentOrder->items as $orderItem) {
+                    $orderItem->update([
+                        'status' => 'pending',
+                        'last_checked_at' => null,
+                        // Ensure group_name is preserved or handled? User said "No grouping in Pre-Prod", so it should be null.
+                    ]);
+                    $orderItem->completedWorkTypeSteps()->detach();
+                }
+
+                DB::commit();
+                return response()->json(['success' => true, 'redirect' => route('workflow.index', ['tab' => 'mou_import'])]);
+            }
+
+            // CASE B: Standard Workflows (Merge into Active Order)
+            // 1. Find an Active Order for this Employer + WorkType
             $activeOrder = ProductionOrder::where('employer_id', $currentOrder->employer_id)
                                 ->where('work_type_id', $currentOrder->work_type_id)
-                                ->where('status', '!=', 'pre_production') // Active
+                                ->where('status', '!=', 'pre_production')
+                                ->where('status', '!=', 'completed') // Don't merge into completed history orders
                                 ->latest()
                                 ->first();
 
+            // 2. Check for Cancelled Item Collision in the Target Order
+            if ($activeOrder && $item->employee_id) {
+                $cancelledItem = ProductionItem::where('production_order_id', $activeOrder->id)
+                                    ->where('employee_id', $item->employee_id)
+                                    ->where('status', 'cancelled')
+                                    ->first();
+
+                if ($cancelledItem) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'status' => 'cancelled_found',
+                        'message' => 'Employee exists in cancelled state.',
+                        'order_id' => $activeOrder->id,
+                        'item_id' => $cancelledItem->id,
+                        'tab' => $workType->slug ?? ''
+                    ]);
+                }
+            }
+
+            // 3. Create Active Order if needed
             if (!$activeOrder) {
-                // Create new Active Order
                 $activeOrder = ProductionOrder::create([
                     'employer_id' => $currentOrder->employer_id,
                     'work_type_id' => $currentOrder->work_type_id,
                     'type' => $currentOrder->type,
-                    'project_name' => $currentOrder->project_name . ' (Workflow)', // Or keep same name?
+                    'project_name' => $workType->name . ' - ' . ($currentOrder->employer->employerNameTh ?? 'Unknown'),
                     'description' => $currentOrder->description,
                     'status' => 'active',
                     'created_by' => auth()->id(),
                 ]);
             }
 
-            // Move Item
+            // 4. Move Item
             $item->update([
                 'production_order_id' => $activeOrder->id,
-                'status' => 'pending', // Reset status to pending in workflow
-                'last_checked_at' => null, // Reset checks
+                'status' => 'pending', // Reset status
+                'last_checked_at' => null,
+                'group_name' => null // Ensure no grouping from Pre-Prod carries over (though it should be empty)
             ]);
 
             // Clear Completed Steps (User said steps don't follow)
             $item->completedWorkTypeSteps()->detach();
-
-            // If the old order is empty, should we delete it?
-            // Maybe keep it as empty shell or delete. User didn't specify.
-            // Let's leave it for now.
 
             DB::commit();
             return response()->json(['success' => true]);

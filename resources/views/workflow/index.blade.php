@@ -258,7 +258,12 @@
                                 </div>
                                 <div>
                                     <h5 class="fw-bold mb-0 text-primary">
-                                        {{ $order->employer->employerNameTh ?? $order->project_name }}
+                                        @if($order->workType && $order->workType->slug === 'mou_import')
+                                            {{ $order->project_name }} <span class="text-muted small">({{ $order->employer->employerNameTh ?? '' }})</span>
+                                        @else
+                                            {{ $order->employer->employerNameTh ?? $order->project_name }}
+                                        @endif
+
                                         @if(request('addrProvince') && $order->employer)
                                             @foreach($order->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
                                                 <span class="badge bg-info text-white small ms-1" style="font-size: 0.7rem;">{{ $label }}</span>
@@ -1185,8 +1190,9 @@
     // --- GPS / Deep Linking ---
     document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
-        const targetOrderId = urlParams.get('order');
-        const targetItemId = urlParams.get('item');
+        // Support both naming conventions
+        const targetOrderId = urlParams.get('order') || urlParams.get('highlight_order');
+        const targetItemId = urlParams.get('item') || urlParams.get('highlight_item');
 
         if (targetOrderId && targetItemId) {
             const orderHeading = document.getElementById('heading-' + targetOrderId);

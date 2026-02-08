@@ -122,7 +122,7 @@ class WorkflowController extends Controller
                 }
 
                 // Not Started Logic
-                if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+                if ($item->completedWorkTypeSteps->isEmpty()) {
                     $notStarted++;
                 }
 
@@ -619,7 +619,7 @@ class WorkflowController extends Controller
                 $completed++;
             }
 
-            if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+            if ($item->completedWorkTypeSteps->isEmpty()) {
                 $notStarted++;
             }
 
@@ -1155,6 +1155,22 @@ class WorkflowController extends Controller
                 ]);
             }
         }
+    }
+
+    /**
+     * Display History of Completed MOU Import Projects.
+     */
+    public function mouImportHistory()
+    {
+        $workType = WorkType::where('slug', 'mou_import')->firstOrFail();
+
+        $orders = ProductionOrder::where('work_type_id', $workType->id)
+            ->where('status', 'completed')
+            ->with(['employer', 'items.employee'])
+            ->orderByDesc('completed_at')
+            ->paginate(20);
+
+        return view('workflow.history_mou', compact('orders', 'workType'));
     }
 
     public function show($id)

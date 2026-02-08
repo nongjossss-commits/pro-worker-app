@@ -25,12 +25,14 @@ class ProductionOrder extends Model
         'missing_documents',
         'financial_approved_at',
         'financial_approved_by',
+        'completed_at', // NEW
     ];
 
     protected $casts = [
         'financial_data' => 'array',
         'document_ready_at' => 'datetime',
         'financial_approved_at' => 'datetime',
+        'completed_at' => 'datetime', // NEW
     ];
 
     public function employer()
