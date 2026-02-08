@@ -323,6 +323,14 @@
                                         $description .= " (" . $itemCount . " Employees)";
                                     }
                                 }
+
+                                // Logic for Customer Override (Bill To Client)
+                                // If billing a client (Agent/Customer), replace "Installment" with "Employer Name"
+                                // so the client knows which job this bill belongs to.
+                                if (isset($financial['customer_override']) && !empty($financial['customer_override']['name']) && $t->type === 'installment') {
+                                     $employerName = $production->employer->employerNameTh ?? $production->employer->employerNameEn ?? 'Employer';
+                                     $description = $employerName;
+                                }
                             @endphp
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
