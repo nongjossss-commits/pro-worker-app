@@ -586,7 +586,7 @@
                         </button>
                     </div>
                     <div class="list-group list-group-flush border rounded small" style="max-height: 300px; overflow-y: auto;">
-                        <template x-for="item in productionItems" :key="item.id">
+                        <template x-for="item in allEmployeesForTier" :key="item.id">
                             <label class="list-group-item list-group-item-action d-flex gap-2 align-items-center py-2"
                                    x-show="!modalSearch || item.name.toLowerCase().includes(modalSearch.toLowerCase())"
                                    style="cursor: pointer;">
@@ -613,7 +613,7 @@
                                 </template>
                             </label>
                         </template>
-                        <div x-show="productionItems.length === 0" class="p-3 text-center text-muted">No employees found.</div>
+                        <div x-show="allEmployeesForTier.length === 0" class="p-3 text-center text-muted">No employees found.</div>
                     </div>
                 </div>
                 <div class="modal-footer py-1 bg-light">
@@ -793,6 +793,10 @@
                                         <option value="partial">Partial</option>
                                         <option value="paid">Paid</option>
                                     </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">Notes</label>
+                                    <textarea class="form-control form-control-sm" x-model="editingTransaction.notes" rows="2"></textarea>
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Upload Slip</label>

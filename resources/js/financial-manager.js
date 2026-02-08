@@ -13,6 +13,11 @@ if (typeof window.financialManager === 'undefined') {
             employeeCount: initialData.employeeCount || 0,
             discount: 0,
 
+            // Manage Employees Modal State
+            activeTierIndex: null,
+            modalSelectedIds: [],
+            modalSearch: '',
+
             // Advance Items
             advanceItems: [],
             productionItems: initialData.productionItems || [], // List of {id, name, employee_id}
@@ -98,15 +103,134 @@ if (typeof window.financialManager === 'undefined') {
                 this.useCustomCustomer = !!data.customer_override;
                 this.customCustomerData = data.customer_override || { name:'', address:'', tax_id:'', phone:'' };
 
+                // Initialize item_ids if missing
+                this.pricingTiers.forEach(t => {
+                    if (!Array.isArray(t.item_ids)) t.item_ids = [];
+                });
+
                 // Default tier if empty
                 if (this.pricingMode === 'per_head' && this.pricingTiers.length === 0) {
-                    this.pricingTiers.push({ price: 0, count: this.employeeCount, note: 'Standard Price' });
+                    this.pricingTiers.push({ price: 0, count: this.employeeCount, note: 'Standard Price', item_ids: [] });
                 }
 
                 this.updateTotal();
             },
 
+            // --- Helper Methods for Tier Management ---
+            getTierForItem(itemId) {
+                // Returns the tier object if the item is assigned to one
+                return this.pricingTiers.find(t => {
+                    if (!t.item_ids) return false;
+                    if (typeof itemId === 'string' && itemId.startsWith('emp_')) {
+                        return t.item_ids.includes(itemId);
+                    }
+                    return t.item_ids.includes(parseInt(itemId));
+                });
+            },
+
+            getItemPrice(itemId) {
+                const tier = this.getTierForItem(itemId);
+                return tier ? parseFloat(tier.price || 0) : 0;
+            },
+
+            assignItemsToTier(tierIndex, itemIds) {
+                // Ensure IDs are integers OR emp_ strings
+                // Fix: Do not parseInt candidate IDs (emp_ prefix)
+                const processedIds = itemIds.map(id => {
+                    if (typeof id === 'string' && id.startsWith('emp_')) return id;
+                    return parseInt(id);
+                });
+
+                // 1. Remove these items from all other tiers
+                this.pricingTiers.forEach((t, idx) => {
+                    if (idx !== tierIndex && t.item_ids) {
+                        // Filter out if present in the new selection
+                        t.item_ids = t.item_ids.filter(existingId => {
+                            // Check if existingId is in processedIds
+                            // Need to handle type safety carefully
+                            return !processedIds.some(newId => newId == existingId);
+                        });
+                    }
+                });
+
+                // 2. Overwrite target tier with new selection
+                const targetTier = this.pricingTiers[tierIndex];
+                targetTier.item_ids = processedIds;
+
+                // 3. Update count for display
+                targetTier.count = targetTier.item_ids.length;
+
+                this.updateTotal();
+            },
+
+            selectAllForModal() {
+                if (this.modalSearch) {
+                    const term = this.modalSearch.toLowerCase();
+                    const visibleIds = this.productionItems
+                        .filter(i => i.name.toLowerCase().includes(term))
+                        .map(i => i.id);
+
+                    // Union with existing selection
+                    this.modalSelectedIds = [...new Set([...this.modalSelectedIds, ...visibleIds])];
+                } else {
+                    this.modalSelectedIds = this.productionItems.map(i => i.id);
+                }
+            },
+
+            deselectAllForModal() {
+                this.modalSelectedIds = [];
+            },
+
+            unassignItem(itemId) {
+                 this.pricingTiers.forEach(t => {
+                    if (t.item_ids) {
+                        t.item_ids = t.item_ids.filter(id => {
+                            if (typeof itemId === 'string' && itemId.startsWith('emp_')) {
+                                return id !== itemId;
+                            }
+                            return id !== parseInt(itemId);
+                        });
+                        t.count = t.item_ids.length;
+                    }
+                });
+                this.updateTotal();
+            },
+
             // --- Employee Filter Logic ---
+            get allEmployeesForTier() {
+                // Return Merged List for Price Tier Modal
+                // This includes Existing ProductionItems AND Candidates (Employees not yet in Order)
+                // This fixes the issue where new employees don't show up in Price Tier selection.
+
+                const list = [];
+                const itemsByEmpId = {};
+
+                // 1. Production Items
+                this.productionItems.forEach(item => {
+                    if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
+                    list.push({ ...item, type: 'item' });
+                });
+
+                // 2. Candidates
+                this.employees.forEach(emp => {
+                    if (itemsByEmpId[emp.id]) return; // Already exists as item
+
+                    list.push({
+                        id: 'emp_' + emp.id,
+                        name: emp.name,
+                        // Map properties from employee object to match item structure
+                        name_en: emp.name_en,
+                        title_en: emp.title_en,
+                        photo: emp.photo,
+                        nationality: emp.nationality,
+                        employee_id: emp.id,
+                        type: 'employee'
+                    });
+                });
+
+                return list;
+            },
+
             get availableItems() {
                 if (!this.activeGroupId) return [];
 
@@ -134,6 +258,20 @@ if (typeof window.financialManager === 'undefined') {
                     // Skip if used
                     if (usedItemIds.has(item.id)) return;
 
+                    // Pricing Mode Filter: In 'per_head', skip if not in any tier
+                    // Note: 'emp_' items (candidates) are never in a tier yet, so they are effectively blocked from installment
+                    // until added to a tier. But adding to a tier creates a ProductionItem?
+                    // No, tiers store ProductionItem IDs. So candidates must be "converted" or created first?
+                    // Actually, for simplicity, we only allow existing Production Items in Per Head mode Installments.
+                    // If user wants to add a new person, they add to job card first (creating ProductionItem), then assign tier.
+
+                    let hasPrice = true;
+                    if (this.pricingMode === 'per_head') {
+                         hasPrice = !!this.getTierForItem(item.id);
+                    }
+
+                    if (this.pricingMode === 'per_head' && !hasPrice) return;
+
                     if (item.employee_id) {
                         itemsByEmpId[item.employee_id] = item.id;
                         // Also skip if employee ID is considered used
@@ -143,23 +281,34 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: item.id, // Value
                         name: item.name,
+                        photo: item.photo,
+                        name_en: item.name_en,
+                        title_en: item.title_en,
+                        nationality: item.nationality,
                         type: 'item'
                     });
                 });
 
                 // 3. Add Candidates (Employees)
-                this.employees.forEach(emp => {
-                    // Check if this employee is already represented by an existing Production Item
-                    if (itemsByEmpId[emp.id]) return;
-                    // Check if already used in another transaction
-                    if (usedEmployeeIds.has(emp.id)) return;
+                // Only show candidates if NOT in per_head mode (since they can't have a price yet)
+                if (this.pricingMode !== 'per_head') {
+                    this.employees.forEach(emp => {
+                        // Check if this employee is already represented by an existing Production Item
+                        if (itemsByEmpId[emp.id]) return;
+                        // Check if already used in another transaction
+                        if (usedEmployeeIds.has(emp.id)) return;
 
-                    list.push({
-                        id: 'emp_' + emp.id, // Value with prefix to distinguish
-                        name: emp.name,
-                        type: 'employee'
+                        list.push({
+                            id: 'emp_' + emp.id, // Value with prefix to distinguish
+                            name: emp.name,
+                            photo: emp.photo,
+                            name_en: emp.name_en,
+                            title_en: emp.title_en,
+                            nationality: emp.nationality,
+                            type: 'employee'
+                        });
                     });
-                });
+                }
 
                 return list;
             },
@@ -202,6 +351,10 @@ if (typeof window.financialManager === 'undefined') {
                          list.push({
                             id: item.id,
                             name: item.name,
+                            photo: item.photo,
+                            name_en: item.name_en,
+                            title_en: item.title_en,
+                            nationality: item.nationality,
                             type: 'item',
                             attached: isAttached
                         });
@@ -216,6 +369,10 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: 'emp_' + emp.id,
                         name: emp.name,
+                        photo: emp.photo,
+                        name_en: emp.name_en,
+                        title_en: emp.title_en,
+                        nationality: emp.nationality,
                         type: 'employee',
                         attached: false
                     });
@@ -232,10 +389,15 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             recalcAmount() {
-                if (this.pricingMode === 'per_head' && this.pricingTiers.length > 0) {
-                    const count = this.selectedTransactionItems.length;
-                    const price = parseFloat(this.pricingTiers[0].price || 0);
-                    this.newTransaction.amount = count * price;
+                if (this.pricingMode === 'per_head') {
+                    let total = 0;
+                    this.selectedTransactionItems.forEach(val => {
+                        // Only ProductionItems have tiers
+                        if (!String(val).startsWith('emp_')) {
+                             total += this.getItemPrice(val);
+                        }
+                    });
+                    this.newTransaction.amount = total;
                 }
             },
 
@@ -333,6 +495,7 @@ if (typeof window.financialManager === 'undefined') {
                 formData.append('_method', 'PUT');
                 formData.append('paid_amount', this.editingTransaction.paid_amount);
                 formData.append('status', this.editingTransaction.status);
+                formData.append('notes', this.editingTransaction.notes || '');
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
 
                 this.selectedTransactionItems.forEach(val => {
@@ -463,14 +626,38 @@ if (typeof window.financialManager === 'undefined') {
 
             // --- Pricing Logic ---
             addTier() {
-                this.pricingTiers.push({ price: 0, count: 0, note: '' });
+                this.pricingTiers.push({ price: 0, count: 0, note: '', item_ids: [] });
             },
             removeTier(index) {
                 this.pricingTiers.splice(index, 1);
                 this.updateTotal();
             },
             get tierCountSum() {
-                return this.pricingTiers.reduce((sum, t) => sum + parseInt(t.count || 0), 0);
+                // Use item_ids.length for accurate count
+                return this.pricingTiers.reduce((sum, t) => sum + (t.item_ids ? t.item_ids.length : 0), 0);
+            },
+
+            // Manage Employees Modal Actions
+            openManageEmployeesModal(index) {
+                this.activeTierIndex = index;
+                this.modalSearch = '';
+                this.modalSelectedIds = [...(this.pricingTiers[index].item_ids || [])];
+
+                const el = document.getElementById('manageEmployeesModal-' + this.productionId);
+                if (el && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getOrCreateInstance(el);
+                    modal.show();
+                }
+            },
+
+            saveTierSelection() {
+                if (this.activeTierIndex === null) return;
+                this.assignItemsToTier(this.activeTierIndex, this.modalSelectedIds);
+
+                const el = document.getElementById('manageEmployeesModal-' + this.productionId);
+                if (el && typeof bootstrap !== 'undefined') {
+                    bootstrap.Modal.getInstance(el).hide();
+                }
             },
 
             // --- Advance Logic ---
@@ -485,7 +672,10 @@ if (typeof window.financialManager === 'undefined') {
             updateTotal() {
                 let gross = 0;
                 if (this.pricingMode === 'per_head') {
-                    gross = this.pricingTiers.reduce((sum, t) => sum + (parseFloat(t.price || 0) * parseFloat(t.count || 0)), 0);
+                    gross = this.pricingTiers.reduce((sum, t) => {
+                         const count = t.item_ids ? t.item_ids.length : (parseInt(t.count) || 0); // Fallback for legacy
+                         return sum + (parseFloat(t.price || 0) * count);
+                    }, 0);
                 } else {
                     gross = parseFloat(this.fixedTotal) || 0;
                 }

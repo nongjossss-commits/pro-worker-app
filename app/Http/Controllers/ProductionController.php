@@ -400,7 +400,41 @@ class ProductionController extends Controller
              // Filter out token or method if present, though $request->all() usually has them.
              // Typically we want to save the payload as financial_data.
              // The JS sends a clean JSON body.
-             $group->financial_data = $request->json()->all();
+
+             $jsonPayload = $request->json()->all();
+
+             // Handle Price Tier Item Creation (Auto-convert candidates to items)
+             if (isset($jsonPayload['pricing_tiers']) && is_array($jsonPayload['pricing_tiers'])) {
+                 foreach ($jsonPayload['pricing_tiers'] as &$tier) {
+                     if (isset($tier['item_ids']) && is_array($tier['item_ids'])) {
+                         $newItemIds = [];
+                         foreach ($tier['item_ids'] as $itemId) {
+                             if (is_string($itemId) && str_starts_with($itemId, 'emp_')) {
+                                 $empId = str_replace('emp_', '', $itemId);
+                                 // Create Item if not exists
+                                 $item = \App\Models\ProductionItem::firstOrCreate(
+                                     [
+                                         'production_order_id' => $id,
+                                         'employee_id' => $empId
+                                     ],
+                                     [
+                                         'status' => 'pending', // Default status
+                                         'group_name' => null
+                                     ]
+                                 );
+                                 $newItemIds[] = $item->id;
+                             } else {
+                                 $newItemIds[] = $itemId;
+                             }
+                         }
+                         $tier['item_ids'] = $newItemIds;
+                         // Update count based on real items
+                         $tier['count'] = count($newItemIds);
+                     }
+                 }
+             }
+
+             $group->financial_data = $jsonPayload;
              $group->save();
         }
 

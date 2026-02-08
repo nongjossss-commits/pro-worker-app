@@ -95,12 +95,17 @@ class FinancialController extends Controller
         $rules = [
             'paid_amount' => 'nullable|numeric',
             'status' => 'nullable|in:pending,partial,paid,overdue',
+            'notes' => 'nullable|string',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
             'item_ids' => 'nullable', // Can be array or string "1,2,3" if FormData
             'employee_ids' => 'nullable' // Can be array or string
         ];
 
         $request->validate($rules);
+
+        if ($request->has('notes')) {
+            $transaction->notes = $request->notes;
+        }
 
         if ($request->hasFile('slip_file')) {
             // Delete old slip if exists
