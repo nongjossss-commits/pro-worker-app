@@ -173,6 +173,9 @@
         {{-- Actions --}}
         @if(!$isReadOnly)
         <div class="d-flex gap-2">
+            <button class="btn btn-secondary shadow-sm" onclick="openTrashModal()">
+                <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
+            </button>
             <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}', 'workflow')">
                 <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
             </button>
@@ -574,6 +577,23 @@
             <div class="modal-body bg-light" id="historyModalBody">
                  <div class="d-flex justify-content-center py-5">
                      <div class="spinner-border text-secondary" role="status"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Trash Modal --}}
+<div class="modal fade" id="trashModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-trash-fill me-2"></i>{{ __('Trash Bin') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light" id="trashModalBody">
+                 <div class="d-flex justify-content-center py-5">
+                     <div class="spinner-border text-danger" role="status"></div>
                  </div>
             </div>
         </div>
@@ -1178,6 +1198,63 @@
                     const checkBtn = card.querySelector('button[title="Daily Check"]');
                     if(checkBtn) checkBtn.remove();
                 }
+            }
+        });
+    }
+
+    // --- Trash Feature ---
+    window.openTrashModal = function() {
+        const el = document.getElementById('trashModal');
+        const modal = new bootstrap.Modal(el);
+        modal.show();
+
+        const body = document.getElementById('trashModalBody');
+        body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-danger" role="status"></div></div>';
+
+        fetch('{{ route("workflow.trash") }}')
+            .then(res => res.text())
+            .then(html => {
+                body.innerHTML = html;
+            })
+            .catch(err => {
+                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load trash.</div>';
+            });
+    }
+
+    window.restoreTrashItem = function(id) {
+        Swal.fire({
+            title: '{{ __("Restore Item?") }}',
+            text: '{{ __("Restore this item from trash?") }}',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes, Restore") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/trash/${id}/restore`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        // Refresh modal content
+                        fetch('{{ route("workflow.trash") }}')
+                            .then(res => res.text())
+                            .then(html => {
+                                document.getElementById('trashModalBody').innerHTML = html;
+                            });
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Restored") }}',
+                            text: '{{ __("Item restored successfully.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
+                });
             }
         });
     }
