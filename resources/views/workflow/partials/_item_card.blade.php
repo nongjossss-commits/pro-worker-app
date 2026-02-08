@@ -191,7 +191,7 @@
                     toggleAppComplete() {
                         fetch('/workflow/item/{{ $item->id }}/appointment-complete', {
                             method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
                         }).then(res => res.json()).then(data => {
                             if(data.success) {
                                 // this.isAppCompleted is already toggled by x-model, but let's confirm logic
@@ -214,7 +214,7 @@
                             if (result.isConfirmed) {
                                 fetch('/workflow/item/{{ $item->id }}/appointment', {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                                     body: JSON.stringify({ appointment_date: this.dateValue, appointment_location: this.locationValue })
                                 }).then(res => res.json()).then(data => {
                                     if(data.success) {
@@ -310,7 +310,7 @@
                     save() {
                         fetch('/workflow/item/{{ $item->id }}/update-credentials', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                             body: JSON.stringify({ email: this.email, password: this.password })
                         })
                         .then(res => {
