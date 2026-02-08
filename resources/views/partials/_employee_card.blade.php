@@ -24,14 +24,33 @@
 
 <div id="{{ $cardId }}" class="employee-card card mb-3 position-relative">
     @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
+        @php
+            // Determine primary status for card overlay color (Priority: Workflow (Yellow) > Pre-Production (Blue))
+            $hasStandardWorkflow = $employee->active_workflows->contains('is_pre_production', false);
+
+            if ($hasStandardWorkflow) {
+                // Yellow (Standard Workflow)
+                $overlayStyle = 'background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107;';
+            } else {
+                // Light Blue (Pre-Production)
+                $overlayStyle = 'background-color: rgba(13, 202, 240, 0.15); border: 2px solid #0dcaf0;';
+            }
+        @endphp
         <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded"
-             style="background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107; z-index: 10; pointer-events: none;">
+             style="{{ $overlayStyle }} z-index: 10; pointer-events: none;">
              <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
                 @foreach($employee->active_workflows as $wf)
-                    <a href="{{ route('workflow.index', ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]) }}"
-                       class="badge bg-warning text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
+                    @php
+                        $route = $wf->is_pre_production ? 'production.index' : 'workflow.index';
+                        $badgeClass = $wf->is_pre_production ? 'bg-info' : 'bg-warning';
+                        $icon = $wf->is_pre_production ? 'bi-hourglass-split' : 'bi-gear-fill';
+                        $tooltip = $wf->is_pre_production ? __('Go to Pre-Production') : __('Go to Workflow');
+                    @endphp
+                    <a href="{{ route($route, ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]) }}"
+                       class="badge {{ $badgeClass }} text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
+                       title="{{ $tooltip }}"
                        style="max-width: 90%;">
-                       <i class="bi bi-gear-fill me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
+                       <i class="bi {{ $icon }} me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
                     </a>
                 @endforeach
              </div>
