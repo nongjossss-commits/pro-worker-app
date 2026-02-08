@@ -85,7 +85,9 @@ if (typeof window.financialManager === 'undefined') {
 
                 this.pricingMode = data.pricing_mode || 'per_head';
                 this.fixedTotal = data.fixed_base_amount || 0;
-                this.pricingTiers = data.pricing_tiers || [];
+                // Ensure reference sharing with group data
+                if (!data.pricing_tiers) data.pricing_tiers = [];
+                this.pricingTiers = data.pricing_tiers;
                 this.discount = data.discount || 0;
 
                 // Load Advance Items
@@ -392,10 +394,7 @@ if (typeof window.financialManager === 'undefined') {
                 if (this.pricingMode === 'per_head') {
                     let total = 0;
                     this.selectedTransactionItems.forEach(val => {
-                        // Only ProductionItems have tiers
-                        if (!String(val).startsWith('emp_')) {
-                             total += this.getItemPrice(val);
-                        }
+                         total += this.getItemPrice(val);
                     });
                     this.newTransaction.amount = total;
                 }
@@ -773,6 +772,15 @@ if (typeof window.financialManager === 'undefined') {
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
+                        if (data.group) {
+                            // Update local group data to match server (especially ID conversions)
+                            const idx = this.financialGroups.findIndex(g => g.id === this.activeGroupId);
+                            if (idx !== -1) {
+                                this.financialGroups[idx] = data.group;
+                                // Re-sync active state without full reset if possible, or just reload data
+                                this.switchGroup(this.activeGroupId);
+                            }
+                        }
                         Swal.fire({ icon: 'success', title: 'Saved', text: 'Settings updated.', timer: 1000, showConfirmButton: false });
                     }
                 })

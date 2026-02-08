@@ -422,7 +422,7 @@ class ProductionController extends Controller
              $group->save();
         }
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'group' => $group->fresh()]);
     }
 
     public function destroyFinancialGroup(Request $request, $id, $groupId)
