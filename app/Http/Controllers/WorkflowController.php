@@ -1223,4 +1223,74 @@ class WorkflowController extends Controller
 
         return response()->json(['html' => $html]);
     }
+
+    /**
+     * Fetch Trashed Items (Soft Deleted)
+     */
+    public function fetchTrash(Request $request)
+    {
+        $isPreProduction = $request->boolean('is_pre_production');
+
+        $query = ProductionItem::onlyTrashed()
+            ->with(['order' => fn($q) => $q->withTrashed(), 'order.employer' => fn($q) => $q->withTrashed(), 'employee' => fn($q) => $q->withTrashed()])
+            ->whereHas('order', function($q) use ($isPreProduction) {
+                // We must use withTrashed() for the whereHas query if the order itself is deleted
+                $q->withTrashed();
+                if ($isPreProduction) {
+                    $q->where('status', 'pre_production');
+                } else {
+                    $q->where('status', '!=', 'pre_production');
+                }
+            })
+            ->latest('deleted_at');
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('employee', function($e) use ($search) {
+                    $e->withTrashed()
+                      ->where('employeeNameTh', 'like', "%{$search}%")
+                      ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                      ->orWhere('employeePassport', 'like', "%{$search}%");
+                })
+                ->orWhereHas('order', function($o) use ($search) {
+                    $o->withTrashed()
+                      ->where('project_name', 'like', "%{$search}%")
+                      ->orWhereHas('employer', function($emp) use ($search) {
+                          $emp->withTrashed()->where('employerNameTh', 'like', "%{$search}%");
+                      });
+                });
+            });
+        }
+
+        $items = $query->paginate(10);
+
+        return view('workflow.partials.trash_list', compact('items'));
+    }
+
+    /**
+     * Restore Trashed Item
+     */
+    public function restoreTrash(Request $request, $id)
+    {
+        // Permission check
+        // Assuming 'edit-employees' or 'manage-own-workflow' is appropriate
+        if (!auth()->user()->can('edit-employees') && !auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
+        $item = ProductionItem::onlyTrashed()->with(['employee' => fn($q) => $q->withTrashed(), 'order' => fn($q) => $q->withTrashed()])->findOrFail($id);
+
+        $item->restore();
+
+        if ($item->employee && $item->employee->trashed()) {
+            $item->employee->restore();
+        }
+
+        if ($item->order && $item->order->trashed()) {
+            $item->order->restore();
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

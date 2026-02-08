@@ -1654,4 +1654,55 @@ class RegistrationController extends Controller
 
         return response()->json(['html' => $html]);
     }
+
+    /**
+     * Fetch Trash (Deleted Employees with Registration Status)
+     */
+    public function fetchTrash(Request $request)
+    {
+        $query = Employee::onlyTrashed()
+            ->with(['employer' => fn($q) => $q->withTrashed(), 'registrationSteps'])
+            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+            ->latest('deleted_at');
+
+        if ($request->has('search') && $request->search) {
+             $search = $request->search;
+             // Apply search logic manually to support withTrashed() on relations
+             $query->where(function($q) use ($search) {
+                 $q->where('employeeNameTh', 'like', "%{$search}%")
+                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                   ->orWhere('employeePassport', 'like', "%{$search}%")
+                   ->orWhereHas('employer', function($q2) use ($search) {
+                       $q2->withTrashed()
+                          ->where('employerNameTh', 'like', "%{$search}%")
+                          ->orWhere('employerNameEn', 'like', "%{$search}%");
+                   });
+             });
+        }
+
+        $items = $query->paginate(10);
+
+        return view('production.registration.partials.trash_list', compact('items'));
+    }
+
+    /**
+     * Restore Trash
+     */
+    public function restoreTrash(Request $request, $id)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $employee = Employee::onlyTrashed()->with(['employer' => fn($q) => $q->withTrashed()])->findOrFail($id);
+
+        // If employer is trashed, restore it too to avoid orphaned record issues
+        if ($employee->employer && $employee->employer->trashed()) {
+             $employee->employer->restore();
+        }
+
+        $employee->restore();
+
+        return response()->json(['success' => true]);
+    }
 }

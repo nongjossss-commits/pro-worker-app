@@ -224,9 +224,9 @@
                     <button class="btn btn-dark fw-bold" data-bs-toggle="modal" data-bs-target="#expiryConfigModal">
                         <i class="bi bi-calendar-check me-1"></i> {{ __('Configuration / Import by Expiry') }}
                     </button>
-                    <a href="{{ route('admin.trash.index', ['tab' => 'employees']) }}" class="btn btn-secondary fw-bold">
+                    <button class="btn btn-secondary fw-bold" onclick="openTrashModal()">
                         <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
-                    </a>
+                    </button>
                     <button class="btn btn-outline-secondary fw-bold ms-2" id="btn-global-toggle-cancelled" onclick="toggleGlobalCancelled()">
                         <i class="bi bi-eye-slash-fill me-1"></i> {{ __('Hide Cancelled') }}
                     </button>
@@ -776,6 +776,23 @@
             <div class="modal-body bg-light" id="historyModalBody">
                  <div class="d-flex justify-content-center py-5">
                      <div class="spinner-border text-secondary" role="status"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Trash Modal --}}
+<div class="modal fade" id="trashModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-trash-fill me-2"></i>{{ __('Trash Bin') }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light" id="trashModalBody">
+                 <div class="d-flex justify-content-center py-5">
+                     <div class="spinner-border text-danger" role="status"></div>
                  </div>
             </div>
         </div>
@@ -1941,6 +1958,63 @@
         // --- Sequence Number Logic ---
         // DEPRECATED: CSS Counters are now used for robust numbering.
         // function updateSequenceNumbers() { ... }
+
+    // --- Trash Feature ---
+    window.openTrashModal = function() {
+        const el = document.getElementById('trashModal');
+        const modal = new bootstrap.Modal(el);
+        modal.show();
+
+        const body = document.getElementById('trashModalBody');
+        body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-danger" role="status"></div></div>';
+
+        fetch('{{ route("production.renewal.trash") }}')
+            .then(res => res.text())
+            .then(html => {
+                body.innerHTML = html;
+            })
+            .catch(err => {
+                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load trash.</div>';
+            });
+    }
+
+    window.restoreTrashItem = function(id) {
+        Swal.fire({
+            title: '{{ __("Restore Item?") }}',
+            text: '{{ __("Restore this employee from trash?") }}',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes, Restore") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/production/renewal/trash/${id}/restore`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        // Refresh modal content
+                        fetch('{{ route("production.renewal.trash") }}')
+                            .then(res => res.text())
+                            .then(html => {
+                                document.getElementById('trashModalBody').innerHTML = html;
+                            });
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Restored") }}',
+                            text: '{{ __("Employee restored successfully.") }}',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
+                });
+            }
+        });
+    }
 
         // --- Restore UI State on Load (After Reload) ---
         const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id');

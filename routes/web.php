@@ -256,6 +256,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/notification', [App\Http\Controllers\Production\RegistrationController::class, 'updateNotificationSettings'])->name('settings.notification');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RegistrationController::class, 'getCalendarData'])->name('api.calendar');
         Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RegistrationController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');
+
+        // Trash Routes
+        Route::get('/trash', [App\Http\Controllers\Production\RegistrationController::class, 'fetchTrash'])->name('trash');
+        Route::post('/trash/{id}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restoreTrash'])->name('trash.restore');
     });
 
     // Renewal Resolution Routes (NEW)
@@ -286,6 +290,10 @@ Route::middleware(['auth'])->group(function () {
         // Employer Actions
         Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancelEmployer'])->name('cancel_employer');
         Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreEmployer'])->name('restore_employer');
+
+        // Trash Routes
+        Route::get('/trash', [App\Http\Controllers\Production\RenewalController::class, 'fetchTrash'])->name('trash');
+        Route::post('/trash/{id}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreTrash'])->name('trash.restore');
     });
 
     Route::resource('production', \App\Http\Controllers\ProductionController::class);
@@ -342,6 +350,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'showItem'])->name('workflow.item.show');
     Route::post('workflow/item/{item}/step', [\App\Http\Controllers\WorkflowController::class, 'storeStep'])->name('workflow.item.step.store');
     Route::post('workflow/item/{item}/update-credentials', [\App\Http\Controllers\WorkflowController::class, 'updateCredentials'])->name('workflow.item.update_credentials');
+
+    // Workflow Trash Routes
+    Route::get('workflow/trash', [\App\Http\Controllers\WorkflowController::class, 'fetchTrash'])->name('workflow.trash');
+    Route::post('workflow/trash/{id}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreTrash'])->name('workflow.trash.restore');
 
     // Workflow API Routes
     Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
