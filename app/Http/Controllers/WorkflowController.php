@@ -82,6 +82,26 @@ class WorkflowController extends Controller
             });
         }
 
+        // Filter (Status/Step)
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            $query->whereHas('items', function($q) use ($filter) {
+                if ($filter === 'not_started') {
+                    $q->where('status', 'pending')
+                      ->doesntHave('completedWorkTypeSteps');
+                } elseif ($filter === 'cancelled') {
+                    $q->where('status', 'cancelled');
+                } elseif ($filter === 'completed') {
+                    $q->where('status', 'completed');
+                } elseif (is_numeric($filter)) {
+                    // Highest Step ID match (approx for SQL: has this step)
+                    $q->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
+                        $s->where('work_type_steps.id', $filter);
+                    });
+                }
+            });
+        }
+
         // SORTING: Active items (not cancelled/completed) first, then updated_at
         $query->withCount(['items as active_items_count' => function ($q) {
             $q->whereNotIn('status', ['cancelled', 'completed']);
@@ -150,56 +170,44 @@ class WorkflowController extends Controller
             'not_started' => 0,
             'cancelled' => 0,
             'completed' => 0,
-            'step_stats' => [],
-            'pending_daily_check' => 0, // NEW
+            'step_stats' => $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray(),
+            'pending_daily_check' => 0,
         ];
 
         if ($activeTab) {
-            $statsQuery = ProductionOrder::where('work_type_id', $activeTab->id)
-                ->where('status', '!=', 'pre_production');
+            // Re-calculate stats based on current search/filter if present, or global for tab if not
+            $allMatchingOrders = $query->get(); // Re-run query without pagination
+            $stats['total_projects'] = $allMatchingOrders->count();
 
-            $stats['total_projects'] = $statsQuery->count();
+            foreach ($allMatchingOrders as $order) {
+                // Eager load for stats
+                $order->load(['items.completedWorkTypeSteps']);
+                foreach ($order->items as $item) {
+                     $stats['total_employees']++;
 
-            // Get all items for these orders to calculate step stats
-            $allTabItems = ProductionItem::whereIn('production_order_id', $statsQuery->select('id'))
-                ->with(['completedWorkTypeSteps' => function($q) {
-                    $q->select('work_type_steps.id', 'work_type_steps.order', 'production_item_step.production_item_id');
-                }])
-                ->select('id', 'status', 'production_order_id', 'last_checked_at', 'created_at')
-                ->get();
+                     if ($item->status === 'cancelled') {
+                         $stats['cancelled']++;
+                         continue;
+                     }
+                     if ($item->status === 'completed') {
+                         $stats['completed']++;
+                     }
+                     // Not Started: Pending + No Steps
+                     if ($item->status === 'pending' && $item->completedWorkTypeSteps->isEmpty()) {
+                         $stats['not_started']++;
+                     }
 
-            $globalStepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $stepOneId = $steps->sortBy('order')->first()?->id;
+                     // Daily Check
+                     if (!$item->is_checked_today && $item->status !== 'completed' && $item->status !== 'cancelled') {
+                         $stats['pending_daily_check']++;
+                     }
 
-            foreach ($allTabItems as $item) {
-                if ($item->status === 'cancelled') {
-                    $stats['cancelled']++;
-                    continue; // Cancelled items don't count towards step stats usually
-                }
-
-                $stats['total_employees']++;
-
-                if ($item->status === 'completed') {
-                    $stats['completed']++;
-                }
-
-                // Not Started
-                if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
-                    $stats['not_started']++;
-                }
-
-                // Highest Step
-                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
-                if ($highestStep && isset($globalStepStats[$highestStep->id])) {
-                    $globalStepStats[$highestStep->id]++;
-                }
-
-                // Daily Check (Pending if not checked today)
-                if (!$item->is_checked_today && $item->status !== 'completed' && $item->status !== 'cancelled') {
-                    $stats['pending_daily_check']++;
+                     $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                     if ($highestStep && isset($stats['step_stats'][$highestStep->id])) {
+                         $stats['step_stats'][$highestStep->id]++;
+                     }
                 }
             }
-            $stats['step_stats'] = $globalStepStats;
         }
 
         return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers'));
@@ -503,19 +511,52 @@ class WorkflowController extends Controller
     {
         $order = ProductionOrder::with(['workType.steps'])->findOrFail($orderId);
 
-        // Filter out "Historic" items (Completed > 24h ago)
-        $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
-            ->where('production_order_id', $orderId)
-            ->where(function($q) {
-                $q->where('status', '!=', 'completed')
-                  ->orWhere(function($sub) {
-                      $sub->where('status', 'completed')
-                          ->where('completed_at', '>=', now()->subHours(24));
-                  });
-            })
-            ->orderBy('group_name')
-            ->orderBy('id')
-            ->get();
+        // Query Items
+        $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
+            ->where('production_order_id', $orderId);
+
+        // 1. History Filter (Default: Hide completed > 24h)
+        // Unless we are filtering specifically for "Completed", we keep this rule.
+        // But if user clicks "Completed" pill, they might expect ALL completed?
+        // Usually history is separate. Let's stick to standard rule: Active List shows recent completions only.
+        $query->where(function($q) {
+            $q->where('status', '!=', 'completed')
+              ->orWhere(function($sub) {
+                  $sub->where('status', 'completed')
+                      ->where('completed_at', '>=', now()->subHours(24));
+              });
+        });
+
+        // 2. Apply Dashboard Filters (from Request)
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'not_started') {
+                 $query->where('status', 'pending')
+                       ->doesntHave('completedWorkTypeSteps');
+            } elseif ($filter === 'cancelled') {
+                 $query->where('status', 'cancelled');
+            } elseif ($filter === 'completed') {
+                 $query->where('status', 'completed');
+            } elseif (is_numeric($filter)) {
+                 // We will filter by exact highest step in PHP collection
+                 // But apply rough SQL filter first
+                 $query->where('status', '!=', 'cancelled');
+            }
+        }
+
+        $items = $query->orderBy('group_name')
+                       ->orderBy('id')
+                       ->get();
+
+        // 3. Precise Step Filtering (PHP)
+        if ($request->has('filter') && is_numeric($request->filter)) {
+            $stepId = $request->filter;
+            $items = $items->filter(function($item) use ($stepId) {
+                if ($item->status === 'cancelled') return false;
+                $highest = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                return $highest && $highest->id == $stepId;
+            });
+        }
 
         // Group the items collection by group_name for easier view rendering
         $groupedItems = $items->groupBy('group_name');
