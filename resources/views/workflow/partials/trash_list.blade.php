@@ -27,8 +27,16 @@
                     </td>
                     <td>
                         @if($item->employee)
-                            <div>{{ $item->employee->employeeNameTh ?? $item->employee->employeeNameEn }}</div>
-                            <div class="small text-muted">{{ $item->employee->employeePassport ?? '-' }}</div>
+                            <div class="d-flex align-items-center gap-3">
+                                @php
+                                    $empPhoto = $item->employee->employeePhoto ? asset('storage/' . $item->employee->employeePhoto) : 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
+                                @endphp
+                                <img src="{{ $empPhoto }}" class="rounded-circle border shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                                <div>
+                                    <div class="fw-bold text-dark">{{ $item->employee->employeeNameTh ?? $item->employee->employeeNameEn }}</div>
+                                    <div class="small text-muted">{{ $item->employee->employeePassport ?? '-' }}</div>
+                                </div>
+                            </div>
                         @else
                             <span class="text-muted">{{ __('No Employee') }}</span>
                         @endif

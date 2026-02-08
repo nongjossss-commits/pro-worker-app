@@ -17,16 +17,6 @@
     .custom-scrollbar::-webkit-scrollbar { height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
 
-    /* CSS Counters */
-    #productionAccordion {
-        counter-reset: employer-counter;
-    }
-    .production-order-card-container:not(.d-none) {
-        counter-increment: employer-counter;
-    }
-    .employer-sequence-number::before {
-        content: counter(employer-counter);
-    }
     .employer-sequence-number {
         min-width: 50px;
         text-align: center;
@@ -36,16 +26,6 @@
         opacity: 0.5;
     }
 
-    /* CSS Counters for Employees (Per Order) */
-    .order-content-wrapper {
-        counter-reset: employee-counter;
-    }
-    .item-card-wrapper:not(.d-none) {
-        counter-increment: employee-counter;
-    }
-    .item-sequence-number::before {
-        content: counter(employee-counter);
-    }
     .item-sequence-number {
         min-width: 40px;
         text-align: right;
@@ -532,6 +512,30 @@
         if(createJobInput) createJobInput.value = '1';
     });
 
+    // --- Dynamic Numbering ---
+    window.recalculateSequenceNumbers = function() {
+        // 1. Employer/Order Cards
+        let orderCount = 1;
+        document.querySelectorAll('.production-order-card-container').forEach(card => {
+            if (card.offsetParent !== null) { // Visible check
+                const numEl = card.querySelector('.employer-sequence-number');
+                if(numEl) numEl.innerText = orderCount++;
+            }
+        });
+
+        // 2. Employee/Item Cards (Per Order)
+        document.querySelectorAll('.order-content-wrapper').forEach(wrapper => {
+            let itemCount = 1;
+            wrapper.querySelectorAll('.item-card-wrapper').forEach(card => {
+                // Check visibility
+                if (card.offsetParent !== null) {
+                    const numEl = card.querySelector('.item-sequence-number');
+                    if(numEl) numEl.innerText = itemCount++;
+                }
+            });
+        });
+    };
+
     // --- Lazy Load ---
     const loadedOrders = {};
     document.getElementById('productionAccordion').addEventListener('show.bs.collapse', function (e) {
@@ -552,9 +556,11 @@
                     container.innerHTML = html;
                     loadedOrders[orderId] = true;
                     if(window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
+                    recalculateSequenceNumbers();
                 });
             } else {
                  if(window.refreshGlobalSelectionUI) setTimeout(window.refreshGlobalSelectionUI, 100);
+                 setTimeout(recalculateSequenceNumbers, 50);
             }
         }
     });
@@ -572,6 +578,7 @@
                 if (pill) pill.classList.add('filter-active');
             }
         }
+        setTimeout(recalculateSequenceNumbers, 100);
     });
 
     window.toggleFilter = function(filterKey) {
@@ -689,6 +696,7 @@
                         const card = document.getElementById(`item-card-${itemId}`);
                         const wrapper = card.closest('.order-content-wrapper');
                         card.remove();
+                        recalculateSequenceNumbers();
 
                         // Check if wrapper is empty
                         if(wrapper && wrapper.querySelectorAll('.item-card-wrapper').length === 0) {
@@ -732,6 +740,7 @@
                 container.innerHTML = html;
                 container.style.opacity = '1';
                 container.style.minHeight = '';
+                recalculateSequenceNumbers();
             });
         }
     };
@@ -747,7 +756,7 @@
                 const card = document.getElementById(`item-card-${itemId}`);
                 if(card) {
                     card.outerHTML = data.html;
-                    // Optional: re-init Alpine if needed
+                    setTimeout(recalculateSequenceNumbers, 50);
                 }
             }
         });
@@ -760,7 +769,10 @@
             card.style.transition = 'all 0.3s ease';
             card.style.opacity = '0';
             card.style.transform = 'scale(0.95)';
-            setTimeout(() => card.remove(), 300);
+            setTimeout(() => {
+                card.remove();
+                recalculateSequenceNumbers();
+            }, 300);
         }
     }
 

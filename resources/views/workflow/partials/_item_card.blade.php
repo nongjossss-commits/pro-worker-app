@@ -91,7 +91,7 @@
     }
 @endphp
 
-<div class="d-flex align-items-center item-card-outer mb-3 item-card-wrapper"
+<div class="d-flex align-items-center item-card-outer mb-3"
      id="item-card-{{ $item->id }}"
      data-status="{{ $status }}"
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
