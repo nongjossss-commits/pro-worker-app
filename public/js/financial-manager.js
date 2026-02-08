@@ -177,6 +177,11 @@ if (typeof window.financialManager === 'undefined') {
                 this.updateTotal();
             },
 
+            get allEmployeesForTier() {
+                if (!this.activeGroupId) return [];
+                return this.productionItems;
+            },
+
             // --- Employee Filter Logic ---
             get availableItems() {
                 if (!this.activeGroupId) return [];
@@ -228,6 +233,10 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: item.id, // Value
                         name: item.name,
+                        name_en: item.name_en,
+                        title_en: item.title_en,
+                        photo: item.photo,
+                        nationality: item.nationality,
                         type: 'item'
                     });
                 });
@@ -244,6 +253,10 @@ if (typeof window.financialManager === 'undefined') {
                         list.push({
                             id: 'emp_' + emp.id, // Value with prefix to distinguish
                             name: emp.name,
+                            name_en: emp.name_en,
+                            title_en: emp.title_en,
+                            photo: emp.photo,
+                            nationality: emp.nationality,
                             type: 'employee'
                         });
                     });
@@ -290,6 +303,10 @@ if (typeof window.financialManager === 'undefined') {
                          list.push({
                             id: item.id,
                             name: item.name,
+                            name_en: item.name_en,
+                            title_en: item.title_en,
+                            photo: item.photo,
+                            nationality: item.nationality,
                             type: 'item',
                             attached: isAttached
                         });
@@ -304,6 +321,10 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: 'emp_' + emp.id,
                         name: emp.name,
+                        name_en: emp.name_en,
+                        title_en: emp.title_en,
+                        photo: emp.photo,
+                        nationality: emp.nationality,
                         type: 'employee',
                         attached: false
                     });

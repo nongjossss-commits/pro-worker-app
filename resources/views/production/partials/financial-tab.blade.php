@@ -13,7 +13,16 @@
             'employee_id' => $item->employee_id
         ];
     })) }},
-    employees: {{ json_encode($employees ?? []) }},
+    employees: {{ json_encode(($employees ?? collect())->map(function($emp) {
+        return [
+            'id' => $emp->id,
+            'name' => $emp->employeeNameTh ?? $emp->employeeNameEn,
+            'name_en' => $emp->employeeNameEn,
+            'title_en' => $emp->employeeTitleEn,
+            'photo' => $emp->photo_url,
+            'nationality' => $emp->employeeNationality,
+        ];
+    })) }},
     productionId: {{ $production->id }},
     employeeCount: {{ $employeeCount ?? $production->items->count() }},
     csrfToken: '{{ csrf_token() }}'
