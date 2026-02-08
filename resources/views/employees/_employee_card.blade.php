@@ -84,7 +84,25 @@
                     @endif
                 </small>
             </div>
-            <p class="mb-1">{{ trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})</p>
+            <p class="mb-1">
+                {{ trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})
+
+                {{-- Active Workflow / Pre-Production Status Badges --}}
+                @foreach($employee->active_workflows as $workflow)
+                    @php
+                        $badgeClass = $workflow->is_pre_production ? 'bg-info text-dark' : 'bg-warning text-dark';
+                        $route = $workflow->is_pre_production ? 'production.index' : 'workflow.index';
+                        $icon = $workflow->is_pre_production ? 'bi-hourglass-split' : 'bi-gear-wide-connected';
+                    @endphp
+                    <a href="{{ route($route, ['tab' => $workflow->tab_slug, 'search' => $employee->employeeNameEn]) }}"
+                       class="badge rounded-pill {{ $badgeClass }} text-decoration-none ms-1 border border-dark shadow-sm"
+                       title="{{ $workflow->status_label }}"
+                       target="_blank">
+                        <i class="bi {{ $icon }} me-1"></i> {{ $workflow->name }}
+                        @if($workflow->is_pre_production) <small>({{ __('Prep') }})</small> @endif
+                    </a>
+                @endforeach
+            </p>
             <small class="text-muted d-block">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ optional($employee->passportExpiryDate)->format('d/m/Y') ?? '-' }})</small>
             <small class="text-muted d-block">Work Permit: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> (หมดอายุ: {{ optional($employee->workPermitExpiryDate)->format('d/m/Y') ?? '-' }})</small>
             <small class="text-muted d-block">Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ optional($employee->ninetyDayReportDate)->format('d/m/Y') ?? '-' }}</small>

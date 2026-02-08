@@ -685,7 +685,18 @@
                 .then(data => {
                     if(data.success) {
                         // Remove card from UI
-                        document.getElementById(`item-card-${itemId}`).remove();
+                        const card = document.getElementById(`item-card-${itemId}`);
+                        const wrapper = card.closest('.order-content-wrapper');
+                        card.remove();
+
+                        // Check if wrapper is empty
+                        if(wrapper && wrapper.querySelectorAll('.item-card-wrapper').length === 0) {
+                            const orderCard = wrapper.closest('.production-order-card');
+                            if(orderCard) {
+                                orderCard.classList.add('grayscale-mode');
+                            }
+                        }
+
                         Swal.fire('{{ __("Sent!") }}', '{{ __("Employee moved to Workflow.") }}', 'success');
                     } else {
                         Swal.fire('{{ __("Error") }}', data.message, 'error');

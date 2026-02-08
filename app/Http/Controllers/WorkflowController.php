@@ -843,6 +843,7 @@ class WorkflowController extends Controller
 
         // 1. Validation: Check for duplicates (Existing Employees)
         // Ensure an employee cannot be in the same WorkType workflow (Active or Pre-Production) twice.
+        // User Requirement: Strict One-to-One. Employee cannot be in Pre-Prod OR Active Workflow for the same Process.
         if ($request->has('employee_ids') && is_array($request->employee_ids)) {
             if ($workTypeId) {
                 // Find any items for these employees in this WorkType that are NOT cancelled or completed.
@@ -852,20 +853,27 @@ class WorkflowController extends Controller
                           ->where('status', '!=', 'cancelled'); // Ensure order is not cancelled
                     })
                     ->whereNotIn('status', ['cancelled', 'completed'])
-                    ->with('employee')
+                    ->with(['employee', 'order'])
                     ->get();
 
                 if ($duplicates->isNotEmpty()) {
-                    $names = $duplicates->map(fn($item) => $item->employee->employeeNameEn ?? $item->employee->employeeNameTh)->unique()->implode(', ');
+                    // Generate specific error messages
+                    $messages = [];
+                    foreach ($duplicates as $item) {
+                        $name = $item->employee->employeeNameEn ?? $item->employee->employeeNameTh ?? 'Unknown';
+                        $status = $item->order->status === 'pre_production' ? 'Pre-Production' : 'Workflow';
+                        $messages[] = "$name is already in $status";
+                    }
+                    $errorMsg = implode(', ', $messages) . ". Please complete or cancel the existing process first.";
 
                     if ($request->ajax() || $request->wantsJson()) {
                         return response()->json([
                             'success' => false,
-                            'message' => "Employees already in this workflow: $names"
+                            'message' => $errorMsg
                         ]);
                     }
 
-                    return back()->with('duplicate_error', "Employees already in this workflow: $names. Please complete their current process first.");
+                    return back()->with('duplicate_error', $errorMsg);
                 }
             }
         }
@@ -915,8 +923,14 @@ class WorkflowController extends Controller
             $groupName = $request->group_name ?? null;
 
             foreach ($ids as $empId) {
-                // Locking: Check if employee is already in an active workflow
+                // Locking: Check if employee is already in an active workflow (Scoped to WorkType)
+                // We allow employees to be in different workflows (e.g. Visa Renewal AND Change Employer) concurrently if needed,
+                // but strictly ONE per WorkType.
                 $hasActiveWorkflow = ProductionItem::where('employee_id', $empId)
+                    ->whereHas('order', function($q) use ($workTypeId) {
+                         if ($workTypeId) $q->where('work_type_id', $workTypeId);
+                         $q->where('status', '!=', 'cancelled');
+                    })
                     ->whereNotIn('status', ['completed', 'cancelled'])
                     ->exists();
 

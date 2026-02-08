@@ -277,41 +277,65 @@ class ProductionController extends Controller
             return response()->json(['success' => false, 'message' => 'Item is already in Workflow.'], 400);
         }
 
+        // Strict Validation: Check if employee already exists in any Active Workflow for this WorkType
+        // "Active" means status != 'pre_production' (could be 'active' or 'completed' in workflow context?)
+        // User Requirement: Cannot be in Workflow if moving from Pre-Production.
+        $hasDuplicate = ProductionItem::where('employee_id', $item->employee_id)
+            ->whereHas('order', function($q) use ($currentOrder) {
+                $q->where('work_type_id', $currentOrder->work_type_id)
+                  ->where('status', '!=', 'pre_production') // Active Workflow Order
+                  ->where('status', '!=', 'cancelled');
+            })
+            ->whereNotIn('status', ['cancelled', 'completed']) // Assuming completed allows new entry? No, strict One-to-One.
+            ->exists();
+
+        if ($hasDuplicate) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'This employee is already active in the Workflow for this process. Please resolve the existing item first.'
+             ], 400);
+        }
+
         DB::beginTransaction();
         try {
             // Find an Active Order for this Employer + WorkType
             $activeOrder = ProductionOrder::where('employer_id', $currentOrder->employer_id)
                                 ->where('work_type_id', $currentOrder->work_type_id)
                                 ->where('status', '!=', 'pre_production') // Active
+                                ->where('status', '!=', 'cancelled')
                                 ->latest()
                                 ->first();
 
             if (!$activeOrder) {
                 // Create new Active Order
+                // Use the same project name or a clean one
+                $workTypeName = $currentOrder->workType->name ?? 'Job';
+                $employerName = $currentOrder->employer->employerNameTh ?? 'Unknown';
+
                 $activeOrder = ProductionOrder::create([
                     'employer_id' => $currentOrder->employer_id,
                     'work_type_id' => $currentOrder->work_type_id,
                     'type' => $currentOrder->type,
-                    'project_name' => $currentOrder->project_name . ' (Workflow)', // Or keep same name?
+                    // Format: "WorkType - EmployerName" as requested implicitly by "Show on Employer Card"
+                    'project_name' => "$workTypeName - $employerName",
                     'description' => $currentOrder->description,
                     'status' => 'active',
                     'created_by' => auth()->id(),
                 ]);
             }
 
-            // Move Item
+            // Move Item: Update the production_order_id to the new active order
             $item->update([
                 'production_order_id' => $activeOrder->id,
                 'status' => 'pending', // Reset status to pending in workflow
                 'last_checked_at' => null, // Reset checks
+                'appointment_date' => null, // Reset appointment date as it is stage-specific
+                'appointment_location' => null,
+                'appointment_completed_at' => null,
             ]);
 
-            // Clear Completed Steps (User said steps don't follow)
+            // Clear Completed Steps (Preparation steps do not map to Workflow steps 1:1)
             $item->completedWorkTypeSteps()->detach();
-
-            // If the old order is empty, should we delete it?
-            // Maybe keep it as empty shell or delete. User didn't specify.
-            // Let's leave it for now.
 
             DB::commit();
             return response()->json(['success' => true]);

@@ -21,7 +21,10 @@
     } elseif ($isCancelled) {
         $cardClass = 'bg-light border-0 text-secondary grayscale-mode';
         $overlayClass = 'opacity-50 pointer-events-none';
-    } elseif (!$isCheckedToday && !$isPreProduction) {
+    } elseif ($isPreProduction) {
+        // Pre-Production: Blue Border/Glow + "Preparing" visual cue (User Request: Blue/Cyan for Pre-Production)
+        $cardClass = 'bg-white border border-info border-3 shadow';
+    } elseif (!$isCheckedToday) {
         // Highlight Pending Check (Orange Border/Glow) ONLY in Workflow
         $cardClass = 'bg-white border border-warning border-3 shadow';
     }
@@ -137,6 +140,10 @@
                              {{-- Resolution Badge --}}
                              @if($mouGroup !== 'N/A')
                                 <span class="badge rounded-pill {{ $mouBadgeClass }} small" style="font-size: 0.65rem;">{{ $mouGroup }}</span>
+                             @endif
+                             {{-- Pre-Production Badge --}}
+                             @if($isPreProduction)
+                                <span class="badge rounded-pill bg-info text-dark small" style="font-size: 0.65rem;">{{ __('Preparing') }}</span>
                              @endif
                         </div>
                         <div class="text-muted small">
