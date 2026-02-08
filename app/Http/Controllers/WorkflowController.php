@@ -9,6 +9,7 @@ use App\Models\WorkType;
 use App\Models\WorkTypeStep;
 use App\Models\Employee;
 use App\Models\Employer;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -639,7 +640,21 @@ class WorkflowController extends Controller
         // Ensure relations are loaded
         $order->load(['items.completedWorkTypeSteps', 'workType.steps']);
         $items = $order->items;
-        $steps = $order->workType->steps ?? collect();
+
+        // Determine Steps based on Stage
+        if ($order->status === 'pre_production') {
+             $steps = WorkTypeStep::where('work_type_id', $order->work_type_id)
+                        ->where('stage', 'preparation')
+                        ->orderBy('order')
+                        ->get();
+        } else {
+             // Default to existing logic (all steps or workflow steps)
+             // To be safe and match Index logic:
+             $steps = $order->workType->steps ?? collect();
+             // Ideally we should filter out preparation steps if this is main workflow,
+             // but strictly following existing Index logic which uses $activeTab->steps.
+        }
+
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         $total = 0;
@@ -1320,7 +1335,11 @@ class WorkflowController extends Controller
 
         $items = $query->paginate(10);
 
-        return view('workflow.partials.trash_list', compact('items'));
+        // Get Retention Setting
+        $retentionSetting = SystemSetting::where('key', 'trash_retention_days')->first();
+        $retentionDays = $retentionSetting ? $retentionSetting->value : '30'; // Default 30
+
+        return view('workflow.partials.trash_list', compact('items', 'retentionDays'));
     }
 
     /**
@@ -1345,6 +1364,42 @@ class WorkflowController extends Controller
         if ($item->order && $item->order->trashed()) {
             $item->order->restore();
         }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Permanently Delete Item (Force Delete)
+     */
+    public function forceDeleteTrash(Request $request, $id)
+    {
+        if (!auth()->user()->can('edit-employees') && !auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
+        $item = ProductionItem::onlyTrashed()->findOrFail($id);
+        $item->forceDelete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Update Trash Retention Settings
+     */
+    public function updateTrashSettings(Request $request)
+    {
+        if (!auth()->user()->can('manage-own-workflow')) { // Or admin check
+             abort(403);
+        }
+
+        $request->validate([
+            'retention_days' => 'required|string', // 'forever' or numeric
+        ]);
+
+        SystemSetting::updateOrCreate(
+            ['key' => 'trash_retention_days'],
+            ['value' => $request->retention_days, 'group' => 'workflow']
+        );
 
         return response()->json(['success' => true]);
     }

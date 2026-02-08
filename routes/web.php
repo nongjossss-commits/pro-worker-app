@@ -354,6 +354,8 @@ Route::middleware(['auth'])->group(function () {
     // Workflow Trash Routes
     Route::get('workflow/trash', [\App\Http\Controllers\WorkflowController::class, 'fetchTrash'])->name('workflow.trash');
     Route::post('workflow/trash/{id}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreTrash'])->name('workflow.trash.restore');
+    Route::delete('workflow/trash/{id}/force-delete', [\App\Http\Controllers\WorkflowController::class, 'forceDeleteTrash'])->name('workflow.trash.force_delete');
+    Route::post('workflow/trash/settings', [\App\Http\Controllers\WorkflowController::class, 'updateTrashSettings'])->name('workflow.trash.settings.update');
 
     // Workflow API Routes
     Route::post('workflow/api/bulk-step', [\App\Http\Controllers\WorkflowController::class, 'bulkStoreStep'])->name('workflow.api.bulk_step');
