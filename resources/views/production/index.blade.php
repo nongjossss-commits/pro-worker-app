@@ -52,6 +52,13 @@
         font-weight: bold;
         white-space: nowrap;
     }
+    .filter-active {
+        transform: scale(1.05);
+        border: 2px solid #3b82f6 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 10;
+        transition: all 0.2s ease-in-out;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -118,26 +125,94 @@
         </div>
     </div>
 
-    {{-- Active Tab Steps (Global for Tab) --}}
+    {{-- Scoreboard --}}
     @if(isset($activeTab))
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body p-3">
-                <div class="d-flex align-items-center mb-2">
-                    <h6 class="fw-bold text-secondary mb-0 me-3">{{ __('Preparation Steps') }}</h6>
-                    <span class="badge bg-info text-dark">{{ $activeTab->name }}</span>
-                </div>
-                <div class="d-flex gap-2 flex-wrap">
-                     @foreach($steps as $step)
-                        <div class="badge bg-light text-dark border px-3 py-2">
-                            {{ $step->name }}
-                        </div>
-                     @endforeach
-                     @if($steps->isEmpty())
-                        <span class="text-muted small">{{ __('No preparation steps configured. Click the gear icon to add steps.') }}</span>
-                     @endif
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+        {{-- Total Employees --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer" onclick="window.location.href = window.location.pathname + '?tab={{ $activeTab->slug }}';" style="background-color: #FBBF24;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
                 </div>
             </div>
         </div>
+
+        {{-- Not Started --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer filter-card" id="filter-not-started" onclick="toggleFilter('not_started')" style="background-color: #EF4444;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['not_started'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Not Started') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Cancelled --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer filter-card" id="filter-cancelled" onclick="toggleFilter('cancelled')" style="background-color: #6B7280;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['cancelled'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Cancelled') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Completed --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer filter-card" id="filter-completed" onclick="toggleFilter('completed')" style="background-color: #10B981;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['completed'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Completed') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Total Projects --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 bg-primary bg-gradient">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_projects'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Active Projects') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Steps Progress Bar --}}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title fw-bold text-secondary mb-0">
+                    <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Preparation Progress') }}
+                </h5>
+                @if(!$isReadOnly)
+                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                    <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
+                </button>
+                @endif
+            </div>
+            <div class="d-flex gap-2 flex-wrap justify-content-start align-items-center">
+                 @foreach($steps as $step)
+                    @php
+                        $count = $stats['step_stats'][$step->id] ?? 0;
+                        $bgClass = $count > 0 ? "bg-success" : "bg-secondary bg-opacity-50 text-white";
+                    @endphp
+                    <div class="d-inline-flex align-items-center bg-white border rounded-pill py-2 px-3 shadow-sm gap-2 cursor-pointer filter-pill"
+                         id="filter-step-{{ $step->id }}"
+                         onclick="toggleFilter('{{ $step->id }}')">
+                        <span class="badge rounded-circle {{ $bgClass }} shadow-sm d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            {{ $count }}
+                        </span>
+                        <span class="fw-bold text-dark fs-6">{{ $step->name }}</span>
+                    </div>
+                 @endforeach
+                 @if($steps->isEmpty())
+                    <span class="text-muted small">{{ __('No preparation steps configured.') }}</span>
+                 @endif
+            </div>
+        </div>
+    </div>
     @endif
 
     {{-- Bulk Action Bar --}}
@@ -196,10 +271,19 @@
                                             @endforeach
                                         @endif
                                     </h5>
-                                    <div class="text-muted small">
-                                        {{ $order->employer->employerNameTh ?? 'Unknown Employer' }} &bull;
-                                        <i class="bi bi-person-circle me-1"></i> {{ $order->creator->name ?? 'System' }} &bull;
-                                        {{ $order->updated_at->diffForHumans() }}
+                                    @if($order->employer && $order->employer->employerNameEn)
+                                        <div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
+                                    @endif
+                                    <div class="text-muted small mt-1">
+                                        @if($order->creator)
+                                            <i class="bi bi-person-circle me-1"></i>
+                                            <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->creator->name]) }}" class="text-decoration-none text-secondary">
+                                                {{ $order->creator->name }}
+                                            </a>
+                                        @else
+                                            <i class="bi bi-person-circle me-1"></i> System
+                                        @endif
+                                        &bull; {{ $order->updated_at->diffForHumans() }}
                                     </div>
                                 </div>
                             </button>
@@ -454,9 +538,14 @@
             const orderId = e.target.id.replace('collapse-', '');
             if (!loadedOrders[orderId]) {
                 const container = document.getElementById(`order-content-${orderId}`);
-                // Reusing Workflow item fetcher, passing order ID.
-                // Since structure is identical, this returns _item_card.blade.php loops.
-                fetch(`{{ route('workflow.index') }}/${orderId}/items`)
+
+                // Construct URL with current params (filter, search)
+                const baseUrl = `{{ route('workflow.index') }}/${orderId}/items`;
+                const url = new URL(baseUrl, window.location.origin);
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.forEach((value, key) => url.searchParams.append(key, value));
+
+                fetch(url)
                 .then(res => res.text())
                 .then(html => {
                     container.innerHTML = html;
@@ -468,6 +557,33 @@
             }
         }
     });
+
+    // --- Filter Logic ---
+    const currentStepFilter = @json(request('filter'));
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (currentStepFilter) {
+            if (currentStepFilter === 'not_started') document.getElementById('filter-not-started')?.classList.add('filter-active');
+            else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
+            else if (currentStepFilter === 'completed') document.getElementById('filter-completed')?.classList.add('filter-active');
+            else {
+                const pill = document.getElementById(`filter-step-${currentStepFilter}`);
+                if (pill) pill.classList.add('filter-active');
+            }
+        }
+    });
+
+    window.toggleFilter = function(filterKey) {
+        const url = new URL(window.location.href);
+        const currentFilter = url.searchParams.get('filter');
+
+        if (currentFilter == filterKey) {
+            url.searchParams.delete('filter');
+        } else {
+            url.searchParams.set('filter', filterKey);
+        }
+        window.location.href = url.toString();
+    }
 
     // --- Bulk Actions ---
     document.getElementById('bulk-advanced-export-btn')?.addEventListener('click', function(e) {
