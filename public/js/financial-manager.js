@@ -119,7 +119,7 @@ if (typeof window.financialManager === 'undefined') {
             // --- Helper Methods for Tier Management ---
             getTierForItem(itemId) {
                 // Returns the tier object if the item is assigned to one
-                return this.pricingTiers.find(t => t.item_ids && t.item_ids.includes(parseInt(itemId)));
+                return this.pricingTiers.find(t => t.item_ids && t.item_ids.includes(String(itemId).startsWith('emp_') ? itemId : parseInt(itemId)));
             },
 
             getItemPrice(itemId) {
@@ -128,20 +128,20 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             assignItemsToTier(tierIndex, itemIds) {
-                // Ensure IDs are integers
-                const intIds = itemIds.map(id => parseInt(id));
+                // Normalize IDs (keep emp_ strings, parse others)
+                const normalizedIds = itemIds.map(id => String(id).startsWith('emp_') ? id : parseInt(id));
 
                 // 1. Remove these items from all other tiers
                 this.pricingTiers.forEach((t, idx) => {
                     if (idx !== tierIndex && t.item_ids) {
-                        t.item_ids = t.item_ids.filter(id => !intIds.includes(parseInt(id)));
+                         t.item_ids = t.item_ids.filter(existingId => !normalizedIds.includes(String(existingId).startsWith('emp_') ? existingId : parseInt(existingId)));
                     }
                 });
 
                 // 2. Overwrite target tier with new selection
                 // This handles both adding new items and removing unchecked items
                 const targetTier = this.pricingTiers[tierIndex];
-                targetTier.item_ids = intIds;
+                targetTier.item_ids = normalizedIds;
 
                 // 3. Update count for display (though we use item_ids.length now)
                 targetTier.count = targetTier.item_ids.length;
@@ -152,14 +152,14 @@ if (typeof window.financialManager === 'undefined') {
             selectAllForModal() {
                 if (this.modalSearch) {
                     const term = this.modalSearch.toLowerCase();
-                    const visibleIds = this.productionItems
+                    const visibleIds = this.allEmployeesForTier
                         .filter(i => i.name.toLowerCase().includes(term))
                         .map(i => i.id);
 
                     // Union with existing selection
                     this.modalSelectedIds = [...new Set([...this.modalSelectedIds, ...visibleIds])];
                 } else {
-                    this.modalSelectedIds = this.productionItems.map(i => i.id);
+                    this.modalSelectedIds = this.allEmployeesForTier.map(i => i.id);
                 }
             },
 
@@ -168,9 +168,10 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             unassignItem(itemId) {
+                 const idToUnassign = String(itemId).startsWith('emp_') ? itemId : parseInt(itemId);
                  this.pricingTiers.forEach(t => {
                     if (t.item_ids) {
-                        t.item_ids = t.item_ids.filter(id => id !== parseInt(itemId));
+                        t.item_ids = t.item_ids.filter(id => id !== idToUnassign);
                         t.count = t.item_ids.length;
                     }
                 });
@@ -179,7 +180,28 @@ if (typeof window.financialManager === 'undefined') {
 
             get allEmployeesForTier() {
                 if (!this.activeGroupId) return [];
-                return this.productionItems;
+
+                // Return both Production Items AND Candidates
+                const list = [...this.productionItems];
+
+                // Track existing employee IDs to avoid duplicates
+                const existingEmpIds = new Set(this.productionItems.map(i => i.employee_id).filter(id => id));
+
+                this.employees.forEach(emp => {
+                    if (!existingEmpIds.has(emp.id)) {
+                        list.push({
+                            id: 'emp_' + emp.id,
+                            name: emp.name,
+                            name_en: emp.name_en,
+                            title_en: emp.title_en,
+                            photo: emp.photo,
+                            nationality: emp.nationality,
+                            type: 'employee'
+                        });
+                    }
+                });
+
+                return list;
             },
 
             // --- Employee Filter Logic ---
@@ -211,12 +233,6 @@ if (typeof window.financialManager === 'undefined') {
                     if (usedItemIds.has(item.id)) return;
 
                     // Pricing Mode Filter: In 'per_head', skip if not in any tier
-                    // Note: 'emp_' items (candidates) are never in a tier yet, so they are effectively blocked from installment
-                    // until added to a tier. But adding to a tier creates a ProductionItem?
-                    // No, tiers store ProductionItem IDs. So candidates must be "converted" or created first?
-                    // Actually, for simplicity, we only allow existing Production Items in Per Head mode Installments.
-                    // If user wants to add a new person, they add to job card first (creating ProductionItem), then assign tier.
-
                     let hasPrice = true;
                     if (this.pricingMode === 'per_head') {
                          hasPrice = !!this.getTierForItem(item.id);
@@ -242,25 +258,27 @@ if (typeof window.financialManager === 'undefined') {
                 });
 
                 // 3. Add Candidates (Employees)
-                // Only show candidates if NOT in per_head mode (since they can't have a price yet)
-                if (this.pricingMode !== 'per_head') {
-                    this.employees.forEach(emp => {
-                        // Check if this employee is already represented by an existing Production Item
-                        if (itemsByEmpId[emp.id]) return;
-                        // Check if already used in another transaction
-                        if (usedEmployeeIds.has(emp.id)) return;
+                this.employees.forEach(emp => {
+                    // Check if this employee is already represented by an existing Production Item
+                    if (itemsByEmpId[emp.id]) return;
+                    // Check if already used in another transaction
+                    if (usedEmployeeIds.has(emp.id)) return;
 
-                        list.push({
-                            id: 'emp_' + emp.id, // Value with prefix to distinguish
-                            name: emp.name,
-                            name_en: emp.name_en,
-                            title_en: emp.title_en,
-                            photo: emp.photo,
-                            nationality: emp.nationality,
-                            type: 'employee'
-                        });
+                    // If per_head, only allow if they are assigned to a tier (even if just in-memory as 'emp_')
+                    if (this.pricingMode === 'per_head') {
+                         if (!this.getTierForItem('emp_' + emp.id)) return;
+                    }
+
+                    list.push({
+                        id: 'emp_' + emp.id, // Value with prefix to distinguish
+                        name: emp.name,
+                        name_en: emp.name_en,
+                        title_en: emp.title_en,
+                        photo: emp.photo,
+                        nationality: emp.nationality,
+                        type: 'employee'
                     });
-                }
+                });
 
                 return list;
             },
