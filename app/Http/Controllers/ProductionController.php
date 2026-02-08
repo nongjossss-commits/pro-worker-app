@@ -35,150 +35,131 @@ class ProductionController extends Controller
 
         // 2. Determine Active Tab
         $activeTabSlug = $request->query('tab');
-
-        // If no tab is selected, default to the first one (unlike Workflow dashboard)
-        // or keep "Overview" if preferred. Let's default to first tab if no dashboard desired.
-        // User requested "Same structure as Workflow", so we keep Dashboard?
-        // User said: "Pre-Production is preparation... structure same as Workflow".
-        // Let's implement Dashboard for Pre-Prod too if needed, but for now let's focus on Tabs.
-
         $activeTab = null;
         if ($activeTabSlug) {
             $activeTab = $tabs->where('slug', $activeTabSlug)->first();
         }
 
-        // 3. Query Orders for this Tab
-        $query = ProductionOrder::with(['employer', 'workType'])
-                    ->whereHas('employer')
-                    ->where('status', 'pre_production');
-
-        if ($activeTab) {
-            $query->where('work_type_id', $activeTab->id);
-        }
-
-        // Address Filtering
-        $addressOptions = $this->getAddressOptions($query, 'employer_id');
-        $query = $this->applyAddressFilters($query, $request, 'employer');
-
-        // Search
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('project_name', 'like', "%{$search}%")
-                  ->orWhereHas('employer', function($e) use ($search) {
-                      $e->where('employerNameTh', 'like', "%{$search}%")
-                        ->orWhere('employerNameEn', 'like', "%{$search}%")
-                        ->orWhere(function($addrQ) use ($search) {
-                            $addrQ->filterByAddress($search);
-                        });
-                  })
-                  ->orWhereHas('items.employee', function($emp) use ($search) {
-                      $emp->where('employeeNameTh', 'like', "%{$search}%")
-                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                          ->orWhere('employeePassport', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('creator', function($creator) use ($search) {
-                      $creator->where('name', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Filter (Status/Step)
-        if ($request->has('filter') && $request->filter) {
-            $filter = $request->filter;
-            // Filter Orders that have at least one matching Item
-            $query->whereHas('items', function($q) use ($filter) {
-                if ($filter === 'not_started') {
-                    // Pending status AND no completed steps (for current order context)
-                    $q->where('status', 'pending')
-                      ->doesntHave('completedWorkTypeSteps');
-                } elseif ($filter === 'cancelled') {
-                    $q->where('status', 'cancelled');
-                } elseif ($filter === 'completed') {
-                    $q->where('status', 'completed');
-                } elseif (is_numeric($filter)) {
-                    // Highest Step ID match
-                    // This is complex in SQL. Simplified: Has this step completed?
-                    // Better: whereHas completedWorkTypeSteps with ID.
-                    // Ideally, user wants to see items AT this stage.
-                    // For filtering orders list, "Has this step completed" is a good approximation.
-                    $q->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
-                        $s->where('work_type_steps.id', $filter);
-                    });
-                }
-            });
-        }
-
-        // SORTING: Active items count first (desc), then updated_at (desc)
-        // For Pre-Production, Active means status != 'cancelled' (and usually not 'completed' either as completed means sent)
-        $query->withCount(['items as active_items_count' => function ($q) {
-            $q->whereNotIn('status', ['cancelled', 'completed']);
-        }]);
-
-        $orders = $query->orderByDesc('active_items_count')
-                        ->latest('updated_at')
-                        ->paginate(15)
-                        ->withQueryString();
-
-        // Load Relations for View
-        // Note: steps for Pre-Production might be different.
-        // We filter steps by stage = 'preparation' (if we decide to split) or just use all steps but allow independent checking.
-        // Based on user: "Steps... independent of workflow... user sets freely".
-        // So we fetch steps for this WorkType, but maybe filter by 'stage' if we implemented it.
-        // Let's fetch 'preparation' steps if they exist, else all.
-
-        $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
-
+        // Initialize empty Orders and Steps
+        $orders = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
         $steps = collect();
-        if ($activeTab) {
-            // Get steps specifically for 'preparation' stage
-            $steps = WorkTypeStep::where('work_type_id', $activeTab->id)
-                        ->where('stage', 'preparation')
-                        ->orderBy('order')
-                        ->get();
-        }
 
-        // Calculate Global Scoreboard Stats (For the View)
+        // 3. Global Stats Calculation (Default)
+        // If no tab is selected, we calculate stats across ALL Pre-Production orders.
+        // If a tab is selected, we override these with tab-specific stats.
         $stats = [
-            'total_projects' => $orders->total(),
+            'total_projects' => 0,
             'total_employees' => 0,
             'not_started' => 0,
             'cancelled' => 0,
             'completed' => 0,
-            'step_stats' => $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray(),
+            'step_stats' => [],
         ];
 
-        if ($activeTab) {
-            // Re-query for stats (without pagination, but respecting search/filter)
-            // Use a separate query to get aggregate item stats
-            $statsOrderQuery = clone $query;
-            // We need to count ITEMS across these orders
-            // Easiest is to fetch IDs and query Items table
-            // But query might be heavy. Let's do a simplified approach if search is active.
-            // If search is active, we only count items within the matched orders?
-            // Or typically, "Scoreboard" shows Global totals for the Tab, unless filtered.
-            // Registration shows Global totals for the SEARCH result.
+        // If Active Tab is NULL: Calculate Global Stats Only, do not fetch Orders.
+        if (!$activeTab) {
+             // Efficient Global Stats
+             $baseItemsQuery = ProductionItem::whereHas('order', function($q) {
+                 $q->where('status', 'pre_production');
+             });
 
-            // Let's stick to: Stats reflect the current filtered set of Orders.
-            $orderIds = $orders->pluck('id'); // Only current page? No, should be all matching query.
-            // If we use $query->pluck('id'), it executes the query again without pagination.
-            // Let's do that for accurate stats.
+             $stats['total_projects'] = ProductionOrder::where('status', 'pre_production')->count();
+             $stats['total_employees'] = (clone $baseItemsQuery)->count();
+             $stats['not_started'] = (clone $baseItemsQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
+             $stats['cancelled'] = (clone $baseItemsQuery)->where('status', 'cancelled')->count();
+             $stats['completed'] = (clone $baseItemsQuery)->where('status', 'completed')->count();
+             // Step stats are meaningless globally if steps vary by WorkType, leaving empty or handled per-type (too complex for summary)
+        } else {
+            // 4. Active Tab Logic: Query Orders and Calculate Specific Stats
 
-            // Optimization: If no search/filter, just count all items in this WorkType/Status.
+            // Query Orders for this Tab
+            $query = ProductionOrder::with(['employer', 'workType'])
+                        ->whereHas('employer')
+                        ->where('status', 'pre_production')
+                        ->where('work_type_id', $activeTab->id);
+
+            // Address Filtering
+            $addressOptions = $this->getAddressOptions($query, 'employer_id');
+            $query = $this->applyAddressFilters($query, $request, 'employer');
+
+            // Search
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('project_name', 'like', "%{$search}%")
+                      ->orWhereHas('employer', function($e) use ($search) {
+                          $e->where('employerNameTh', 'like', "%{$search}%")
+                            ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhere(function($addrQ) use ($search) {
+                                $addrQ->filterByAddress($search);
+                            });
+                      })
+                      ->orWhereHas('items.employee', function($emp) use ($search) {
+                          $emp->where('employeeNameTh', 'like', "%{$search}%")
+                              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('employeePassport', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('creator', function($creator) use ($search) {
+                          $creator->where('name', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            // Filter (Status/Step)
+            if ($request->has('filter') && $request->filter) {
+                $filter = $request->filter;
+                $query->whereHas('items', function($q) use ($filter) {
+                    if ($filter === 'not_started') {
+                        $q->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+                    } elseif ($filter === 'cancelled') {
+                        $q->where('status', 'cancelled');
+                    } elseif ($filter === 'completed') {
+                        $q->where('status', 'completed');
+                    } elseif (is_numeric($filter)) {
+                        $q->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
+                            $s->where('work_type_steps.id', $filter);
+                        });
+                    }
+                });
+            }
+
+            // SORTING
+            $query->withCount(['items as active_items_count' => function ($q) {
+                $q->whereNotIn('status', ['cancelled', 'completed']);
+            }]);
+
+            $orders = $query->orderByDesc('active_items_count')
+                            ->latest('updated_at')
+                            ->paginate(15)
+                            ->withQueryString();
+
+            // Load Relations
+            $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
+
+            // Get Steps
+            $steps = WorkTypeStep::where('work_type_id', $activeTab->id)
+                        ->where('stage', 'preparation')
+                        ->orderBy('order')
+                        ->get();
+
+            // Init Step Stats
+            $stats['step_stats'] = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+
+            // Calculate Stats for Active Tab
             if (!$request->has('search') && !$request->has('filter')) {
                  $baseItemsQuery = ProductionItem::whereHas('order', function($q) use ($activeTab) {
                      $q->where('work_type_id', $activeTab->id)
                        ->where('status', 'pre_production');
                  });
+                 $stats['total_projects'] = ProductionOrder::where('work_type_id', $activeTab->id)->where('status', 'pre_production')->count();
                  $stats['total_employees'] = (clone $baseItemsQuery)->count();
                  $stats['not_started'] = (clone $baseItemsQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
                  $stats['cancelled'] = (clone $baseItemsQuery)->where('status', 'cancelled')->count();
                  $stats['completed'] = (clone $baseItemsQuery)->where('status', 'completed')->count();
 
-                 // Step Stats
                  $allStepItems = (clone $baseItemsQuery)
-                     ->with('completedWorkTypeSteps:id,order') // optimize selection
-                     ->get(); // Could be large, but usually manageable per tab
+                     ->with('completedWorkTypeSteps:id,order')
+                     ->get();
 
                  foreach ($allStepItems as $item) {
                      if ($item->status === 'cancelled') continue;
@@ -188,14 +169,10 @@ class ProductionController extends Controller
                      }
                  }
             } else {
-                 // Search/Filter Active: Count items within the matching orders
-                 // Re-run query without pagination
-                 $allMatchingOrders = $query->get(); // This respects search & filter
+                 $allMatchingOrders = $query->get();
                  $stats['total_projects'] = $allMatchingOrders->count();
 
                  foreach ($allMatchingOrders as $order) {
-                     // We need to fetch items for stats calculation
-                     // (Ideally we should use `withCount` or eager load items if not too many)
                      $order->load(['items.completedWorkTypeSteps']);
                      foreach ($order->items as $item) {
                          $stats['total_employees']++;
@@ -218,48 +195,51 @@ class ProductionController extends Controller
                      }
                  }
             }
-        }
 
-        // Calculate Stats (Per Order for Accordion Header)
-        foreach ($orders as $order) {
-            $items = $order->items;
-            $total = 0;
-            $notStarted = 0;
-            $cancelled = 0;
-            $completed = 0;
-            $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            // Per Order Stats
+            foreach ($orders as $order) {
+                $items = $order->items;
+                $total = 0;
+                $notStarted = 0;
+                $cancelled = 0;
+                $completed = 0;
+                $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
-            foreach ($items as $item) {
-                if ($item->status === 'cancelled') {
-                    $cancelled++;
-                    continue;
+                foreach ($items as $item) {
+                    if ($item->status === 'cancelled') {
+                        $cancelled++;
+                        continue;
+                    }
+                    $total++;
+                    if ($item->status === 'completed') {
+                        $completed++;
+                    }
+                    $completedSteps = $item->completedWorkTypeSteps->pluck('id')->toArray();
+                    if (empty($completedSteps)) {
+                        $notStarted++;
+                    }
+                    $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                    if ($highestStep && isset($stepStats[$highestStep->id])) {
+                        $stepStats[$highestStep->id]++;
+                    }
                 }
-                $total++;
-                if ($item->status === 'completed') {
-                    $completed++;
-                }
-                $completedSteps = $item->completedWorkTypeSteps->pluck('id')->toArray();
-                if (empty($completedSteps)) {
-                    $notStarted++;
-                }
-                // Highest Step Logic
-                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
-                if ($highestStep && isset($stepStats[$highestStep->id])) {
-                    $stepStats[$highestStep->id]++;
-                }
+
+                $order->computedStats = [
+                    'total' => $total,
+                    'not_started' => $notStarted,
+                    'cancelled' => $cancelled,
+                    'completed' => $completed,
+                    'step_stats' => $stepStats,
+                    'active_items_count' => $order->active_items_count
+                ];
             }
-
-            $order->computedStats = [
-                'total' => $total,
-                'not_started' => $notStarted,
-                'cancelled' => $cancelled,
-                'completed' => $completed,
-                'step_stats' => $stepStats,
-                'active_items_count' => $order->active_items_count
-            ];
         }
 
         // Employers for Dropdown (Global Add Employee)
+        // Need to pass addressOptions even if not used (empty array)
+        if (!isset($addressOptions)) {
+            $addressOptions = ['provinces' => [], 'districts' => [], 'subDistricts' => []];
+        }
         $employers = Employer::orderBy('employerNameTh')->get();
 
         return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'addressOptions', 'employers', 'stats'));

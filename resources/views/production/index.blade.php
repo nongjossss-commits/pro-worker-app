@@ -88,16 +88,14 @@
         </form>
 
         {{-- Actions --}}
-        @if(!$isReadOnly)
+        @if(!$isReadOnly && isset($activeTab))
         <div class="d-flex gap-2">
             <button class="btn btn-secondary btn-sm shadow-sm" onclick="openTrashModal()">
                 <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
             </button>
-            @if(isset($activeTab))
-                <button class="btn btn-light btn-sm shadow-sm border" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                    <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
-                </button>
-            @endif
+            <button class="btn btn-light btn-sm shadow-sm border" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
+            </button>
             <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}', 'production')">
                 <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
             </button>
@@ -126,7 +124,6 @@
     </div>
 
     {{-- Scoreboard --}}
-    @if(isset($activeTab))
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         {{-- Total Employees --}}
         <div class="col">
@@ -180,6 +177,7 @@
     </div>
 
     {{-- Steps Progress Bar --}}
+    @if(isset($activeTab))
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -677,7 +675,7 @@
             confirmButtonColor: '#0d6efd'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`/production/item/${itemId}/send-to-workflow`, {
+                fetch(`/production/${itemId}/send-to-workflow`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
