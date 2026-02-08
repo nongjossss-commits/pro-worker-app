@@ -305,7 +305,7 @@
                 <div class="ms-md-4" x-data="{
                     isEditing: false,
                     email: {{ json_encode($item->employee->email ?? '') }},
-                    password: {{ json_encode($item->employee->password ?? '') }},
+                    outsource_code: {{ json_encode($item->employee->outsource_code ?? '') }},
                     copy(el, text) {
                         if (!text) return;
                         navigator.clipboard.writeText(text).then(() => {
@@ -318,7 +318,7 @@
                         fetch('/workflow/item/{{ $item->id }}/update-credentials', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                            body: JSON.stringify({ email: this.email, password: this.password })
+                            body: JSON.stringify({ email: this.email, outsource_code: this.outsource_code })
                         })
                         .then(res => {
                             if (!res.ok) {
@@ -367,8 +367,8 @@
                              </div>
                              <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm" style="min-width: 200px;">
                                 <i class="bi bi-key text-muted me-1"></i>
-                                <span x-text="password || '-'" class="small text-truncate" style="max-width: 150px;" :title="password"></span>
-                                <button @click="copy($event.currentTarget, password)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Password" x-show="password">
+                                <span x-text="outsource_code || '-'" class="small text-truncate" style="max-width: 150px;" :title="outsource_code"></span>
+                                <button @click="copy($event.currentTarget, outsource_code)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Outsource Code" x-show="outsource_code">
                                     <i class="bi bi-clipboard"></i>
                                 </button>
                              </div>
@@ -383,7 +383,7 @@
                     {{-- Edit Mode --}}
                     <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" :class="{ 'd-flex': isEditing }" style="display: none; min-width: 220px;">
                         <input x-model="email" type="email" class="form-control form-control-sm" placeholder="Email">
-                        <input x-model="password" type="text" class="form-control form-control-sm" placeholder="Password">
+                        <input x-model="outsource_code" type="text" class="form-control form-control-sm" placeholder="Outsource Code">
                         <div class="d-flex gap-1 mt-1">
                             <button @click="save()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i></button>
                             <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
