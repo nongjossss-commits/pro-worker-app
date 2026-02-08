@@ -6,6 +6,10 @@
         return [
             'id' => $item->id,
             'name' => $item->employee ? ($item->employee->name_th ?? $item->employee->name_en) : 'New Employee',
+            'name_en' => $item->employee ? $item->employee->employeeNameEn : '',
+            'title_en' => $item->employee ? $item->employee->employeeTitleEn : '',
+            'photo' => $item->employee ? $item->employee->photo_url : '',
+            'nationality' => $item->employee ? $item->employee->employeeNationality : '',
             'employee_id' => $item->employee_id
         ];
     })) }},
@@ -587,7 +591,19 @@
                                    x-show="!modalSearch || item.name.toLowerCase().includes(modalSearch.toLowerCase())"
                                    style="cursor: pointer;">
                                 <input class="form-check-input me-1 mt-0" type="checkbox" :value="item.id" x-model="modalSelectedIds">
-                                <span class="text-truncate" x-text="item.name"></span>
+
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
+                                    <div class="d-flex flex-column" style="line-height: 1.2; min-width: 0;">
+                                        <div class="fw-bold text-truncate" style="font-size: 0.85rem;" x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></div>
+                                        <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.75rem;">
+                                             <span class="text-truncate" x-text="item.nationality"></span>
+                                             <template x-if="item.nationality === 'Myanmar' || item.nationality === 'เมียนมา' || item.nationality === 'พม่า'"><span style="font-size: 1rem;">🇲🇲</span></template>
+                                             <template x-if="item.nationality === 'Laos' || item.nationality === 'ลาว'"><span style="font-size: 1rem;">🇱🇦</span></template>
+                                             <template x-if="item.nationality === 'Cambodia' || item.nationality === 'กัมพูชา'"><span style="font-size: 1rem;">🇰🇭</span></template>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <!-- Indicator if assigned to another tier -->
                                 <template x-if="getTierForItem(item.id) && activeTierIndex !== null && pricingTiers.indexOf(getTierForItem(item.id)) !== activeTierIndex">
@@ -726,7 +742,18 @@
                                         <template x-for="item in availableItems" :key="item.id">
                                             <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
                                                 <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcAmount()">
-                                                <span class="text-truncate" x-text="item.name"></span>
+                                                <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
+                                                    <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
+                                                    <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
+                                                        <div class="fw-bold text-truncate" x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></div>
+                                                        <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.7rem;">
+                                                             <span class="text-truncate" x-text="item.nationality"></span>
+                                                             <template x-if="item.nationality === 'Myanmar' || item.nationality === 'เมียนมา' || item.nationality === 'พม่า'"><span style="font-size: 0.8rem;">🇲🇲</span></template>
+                                                             <template x-if="item.nationality === 'Laos' || item.nationality === 'ลาว'"><span style="font-size: 0.8rem;">🇱🇦</span></template>
+                                                             <template x-if="item.nationality === 'Cambodia' || item.nationality === 'กัมพูชา'"><span style="font-size: 0.8rem;">🇰🇭</span></template>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </label>
                                         </template>
                                         <div x-show="availableItems.length === 0" class="p-2 text-center text-muted small">
@@ -780,8 +807,19 @@
                                         <template x-for="item in editModalItems" :key="item.id">
                                             <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
                                                 <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems">
-                                                <span class="text-truncate" x-text="item.name"></span>
-                                                <span x-show="isItemAttached(item.id)" class="badge bg-success ms-auto" style="font-size: 0.6em;">Linked</span>
+                                                <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
+                                                    <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
+                                                    <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
+                                                        <div class="fw-bold text-truncate" x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></div>
+                                                        <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.7rem;">
+                                                             <span class="text-truncate" x-text="item.nationality"></span>
+                                                             <template x-if="item.nationality === 'Myanmar' || item.nationality === 'เมียนมา' || item.nationality === 'พม่า'"><span style="font-size: 0.8rem;">🇲🇲</span></template>
+                                                             <template x-if="item.nationality === 'Laos' || item.nationality === 'ลาว'"><span style="font-size: 0.8rem;">🇱🇦</span></template>
+                                                             <template x-if="item.nationality === 'Cambodia' || item.nationality === 'กัมพูชา'"><span style="font-size: 0.8rem;">🇰🇭</span></template>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span x-show="isItemAttached(item.id)" class="badge bg-success ms-auto flex-shrink-0" style="font-size: 0.6em;">Linked</span>
                                             </label>
                                         </template>
                                     </div>

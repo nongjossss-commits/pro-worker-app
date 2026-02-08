@@ -44,7 +44,7 @@ class RegistrationController extends Controller
         // We only fetch ID, Status, EmployerID to keep it fast.
         $employeeQuery = Employee::query()
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
-            ->select('id', 'employer_id', 'status', 'biometrics_collected_at', 'employee_doc_9', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn'); // Lightweight Select + Names
+            ->select('id', 'employer_id', 'status', 'biometrics_collected_at', 'employee_doc_9', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeeNationality'); // Lightweight Select + Names + Photo + Nationality
 
         if (auth()->user()->can('manage-tickets')) {
             $employeeQuery->withoutGlobalScope('employerTenancy');
@@ -193,7 +193,7 @@ class RegistrationController extends Controller
         // --- 4. Process Employers (Assign Stats) ---
         foreach ($employers as $employer) {
             // Finance Order Logic (Same as before)
-            $financeOrder = ProductionOrder::with('financialGroups.transactions.items')
+            $financeOrder = ProductionOrder::with(['financialGroups.transactions.items', 'items.employee'])
                 ->where('employer_id', $employer->id)
                 ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
                 ->first();
