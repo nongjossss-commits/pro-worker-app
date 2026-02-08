@@ -460,11 +460,22 @@ if (typeof window.financialManager === 'undefined') {
                 bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
             },
 
+            selectAllAvailable() {
+                this.selectedTransactionItems = this.availableItems.map(i => i.id);
+                this.recalcAmount();
+            },
+
+            deselectAllTransactionItems() {
+                this.selectedTransactionItems = [];
+                this.recalcAmount();
+            },
+
             updateTransaction() {
                 const formData = new FormData();
                 formData.append('_method', 'PUT');
                 formData.append('paid_amount', this.editingTransaction.paid_amount);
                 formData.append('status', this.editingTransaction.status);
+                formData.append('notes', this.editingTransaction.notes || '');
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
 
                 this.selectedTransactionItems.forEach(val => {
