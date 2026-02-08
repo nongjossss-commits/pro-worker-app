@@ -318,7 +318,11 @@ class ProductionController extends Controller
             $item->completedWorkTypeSteps()->detach();
 
             DB::commit();
-            return response()->json(['success' => true]);
+
+            // Calculate Stats for the OLD order (Preparation) to update UI
+            $orderStats = $this->calculateOrderStats($currentOrder);
+
+            return response()->json(['success' => true, 'order_stats' => $orderStats]);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -457,5 +461,54 @@ class ProductionController extends Controller
          // we might use a similar Modal to create jobs.
 
          return parent::callAction('store', [$request]); // Fallback or implement
+    }
+
+    /**
+     * Helper to calculate stats for a single order (Production/Preparation Context).
+     */
+    private function calculateOrderStats(ProductionOrder $order)
+    {
+        // Ensure relations are loaded
+        $order->load(['items.completedWorkTypeSteps']);
+
+        // Get Preparation Steps for this WorkType
+        $steps = WorkTypeStep::where('work_type_id', $order->work_type_id)
+                    ->where('stage', 'preparation')
+                    ->orderBy('order')
+                    ->get();
+
+        $items = $order->items;
+        $total = 0;
+        $notStarted = 0;
+        $cancelled = 0;
+        $completed = 0;
+        $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+
+        foreach ($items as $item) {
+            if ($item->status === 'cancelled') {
+                $cancelled++;
+                continue;
+            }
+            $total++;
+            if ($item->status === 'completed') {
+                $completed++;
+            }
+            $completedSteps = $item->completedWorkTypeSteps->pluck('id')->toArray();
+            if (empty($completedSteps)) {
+                $notStarted++;
+            }
+            $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+            if ($highestStep && isset($stepStats[$highestStep->id])) {
+                $stepStats[$highestStep->id]++;
+            }
+        }
+
+        return [
+            'total' => $total,
+            'not_started' => $notStarted,
+            'cancelled' => $cancelled,
+            'completed' => $completed,
+            'step_stats' => $stepStats
+        ];
     }
 }

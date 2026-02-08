@@ -696,6 +696,18 @@
                         }
 
                         Swal.fire('{{ __("Sent!") }}', '{{ __("Employee moved to Workflow.") }}', 'success');
+
+                        if(data.order_stats) {
+                             const card = document.getElementById(`item-card-${itemId}`);
+                             // The card is removed above, but we can get orderId from wrapper if we saved reference,
+                             // OR we assume we can find the order header by ID if we pass orderId.
+                             // But wait, the card is removed!
+                             // "const wrapper = card.closest('.order-content-wrapper');" was called BEFORE removal.
+                             if(wrapper) {
+                                 const orderId = wrapper.id.replace('order-content-', '');
+                                 updateOrderHeaderStats(orderId, data.order_stats);
+                             }
+                        }
                     } else {
                         Swal.fire('{{ __("Error") }}', data.message, 'error');
                     }
@@ -749,7 +761,7 @@
         }
     }
 
-    function updateOrderHeaderStats(orderId, stats) {
+    window.updateOrderHeaderStats = function(orderId, stats) {
         if (!stats) return;
         // Basic implementation for Pre-Production if needed (badges are slightly different)
         // Usually Pre-Prod doesn't have detailed stats like Workflow, but if badges exist:

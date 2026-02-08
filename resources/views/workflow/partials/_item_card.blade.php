@@ -38,7 +38,7 @@
     $nameTh = $item->employee->employeeNameTh ?? $item->new_employee_data['name_th'] ?? '';
     $empNameTh = trim("$titleTh $nameTh");
 
-    $empPhoto = $item->employee && $item->employee->employeePhoto ? asset('storage/' . $item->employee->employeePhoto) : 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
+    $empPhoto = $item->employee && $item->employee->employeePhoto ? asset('storage/' . $item->employee->employeePhoto) . '?t=' . time() : 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
     $empPassport = $item->employee->employeePassport ?? $item->new_employee_data['passport_no'] ?? '-';
     $empNationality = $item->employee->employeeNationality ?? $item->new_employee_data['nationality'] ?? '-';
     $empId = $item->employee_id;
