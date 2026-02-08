@@ -1091,5 +1091,67 @@
         });
     }
 
+    // --- GPS / Deep Linking ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetOrderId = urlParams.get('order');
+        const targetItemId = urlParams.get('item');
+
+        if (targetOrderId && targetItemId) {
+            const orderHeading = document.getElementById('heading-' + targetOrderId);
+            const collapseElement = document.getElementById('collapse-' + targetOrderId);
+
+            if (orderHeading && collapseElement) {
+                // Scroll to Order
+                orderHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Check if collapsed
+                if (!collapseElement.classList.contains('show')) {
+                    // Trigger click on the button
+                    const btn = orderHeading.querySelector('button[data-bs-toggle="collapse"]');
+                    if(btn) btn.click();
+                }
+
+                // Wait for Item to Load
+                const observer = new MutationObserver(function(mutations, obs) {
+                    const itemCard = document.getElementById('item-card-' + targetItemId);
+                    if (itemCard) {
+                        // Found it!
+                        setTimeout(() => {
+                             itemCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                             // Add highlight class
+                             const innerCard = itemCard.querySelector('.card') || itemCard;
+                             // Use info border for pre-production to match
+                             innerCard.classList.add('border-info', 'border-3', 'shadow-lg');
+                             // Optional: Blink effect removal
+                             setTimeout(() => {
+                                 innerCard.classList.remove('border-info', 'border-3', 'shadow-lg');
+                                 innerCard.classList.add('shadow-sm');
+                             }, 5000);
+                        }, 500); // Small delay for rendering
+                        obs.disconnect();
+                    }
+                });
+
+                // Start observing the content wrapper
+                const contentWrapper = document.getElementById('order-content-' + targetOrderId);
+                if (contentWrapper) {
+                    observer.observe(contentWrapper, { childList: true, subtree: true });
+
+                    // Fallback check
+                    setTimeout(() => {
+                         const itemCard = document.getElementById('item-card-' + targetItemId);
+                         if(itemCard) {
+                             const innerCard = itemCard.querySelector('.card') || itemCard;
+                             itemCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                             innerCard.classList.add('border-info', 'border-3', 'shadow-lg');
+                             observer.disconnect();
+                         }
+                    }, 1500);
+                }
+            }
+        }
+    });
+
 </script>
 @endpush
