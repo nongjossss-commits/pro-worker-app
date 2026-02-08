@@ -108,9 +108,14 @@ class WorkflowController extends Controller
             $q->whereNotIn('status', ['cancelled', 'completed']);
         }]);
 
+        $perPage = $request->input('per_page', 20);
+        if (!in_array($perPage, [20, 50, 100])) {
+            $perPage = 20;
+        }
+
         $orders = $query->orderByDesc('active_items_count')
                         ->latest('updated_at')
-                        ->paginate(15)
+                        ->paginate($perPage)
                         ->withQueryString();
 
         // Calculate Stats PER ORDER for the view (Accordion Header)

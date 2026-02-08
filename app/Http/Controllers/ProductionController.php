@@ -41,7 +41,12 @@ class ProductionController extends Controller
         }
 
         // Initialize empty Orders and Steps
-        $orders = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+        $perPage = $request->input('per_page', 20);
+        if (!in_array($perPage, [20, 50, 100])) {
+            $perPage = 20;
+        }
+
+        $orders = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage);
         $steps = collect();
 
         // 3. Global Stats Calculation (Default)
@@ -130,7 +135,7 @@ class ProductionController extends Controller
 
             $orders = $query->orderByDesc('active_items_count')
                             ->latest('updated_at')
-                            ->paginate(15)
+                            ->paginate($perPage)
                             ->withQueryString();
 
             // Load Relations

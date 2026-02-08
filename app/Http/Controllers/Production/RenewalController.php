@@ -129,7 +129,18 @@ class RenewalController extends Controller
             $employerQuery->whereIn('id', $filteredEmployerIds);
         }
 
-        $employers = $employerQuery->get();
+        // Calculate Cancelled Count (Global for these filtered IDs)
+        $cancelledEmployersCount = Employer::whereIn('id', $filteredEmployerIds)
+            ->whereHas('productionOrders', function($q) {
+                $q->where('status', 'renewal_resolution_cancelled');
+            })->count();
+
+        $perPage = $request->input('per_page', 20);
+        if (!in_array($perPage, [20, 50, 100])) {
+            $perPage = 20;
+        }
+
+        $employers = $employerQuery->paginate($perPage)->withQueryString();
 
         // --- 5. Process Employers ---
         foreach ($employers as $employer) {
@@ -196,11 +207,11 @@ class RenewalController extends Controller
             $employer->savedCount = $empSavedCount;
         }
 
-        $employers = $employers->sortBy(function($emp) {
+        // Sort Employers (Current Page Only)
+        $sortedCollection = $employers->getCollection()->sortBy(function($emp) {
             return $emp->financeOrder->status === 'renewal_resolution_cancelled' ? 1 : 0;
         });
-
-        $cancelledEmployersCount = $employers->where('financeOrder.status', 'renewal_resolution_cancelled')->count();
+        $employers->setCollection($sortedCollection);
 
         // Get Current Expiry Setting
         $currentExpiryConfig = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');

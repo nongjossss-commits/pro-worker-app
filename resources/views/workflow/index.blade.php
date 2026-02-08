@@ -411,8 +411,11 @@
         @endforelse
     </div>
 
-    <div class="mt-4">
-        {{ $orders->links() }}
+    <div class="mt-4 d-flex justify-content-between align-items-center">
+        @include('partials.per_page_selector')
+        <div>
+            {{ $orders->links() }}
+        </div>
     </div>
 </div>
 
