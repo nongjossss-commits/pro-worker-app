@@ -140,6 +140,15 @@ class RenewalController extends Controller
             $perPage = 20;
         }
 
+        // SORTING: Push cancelled employers to the end
+        $employerQuery->orderByRaw("(
+            SELECT CASE WHEN status = 'renewal_resolution_cancelled' THEN 1 ELSE 0 END
+            FROM production_orders
+            WHERE production_orders.employer_id = employers.id
+            AND production_orders.status IN ('renewal_resolution', 'renewal_resolution_cancelled')
+            LIMIT 1
+        ) ASC");
+
         $employers = $employerQuery->paginate($perPage)->withQueryString();
 
         // --- 5. Process Employers ---
@@ -206,12 +215,6 @@ class RenewalController extends Controller
             $employer->cancelledCount = $empCancelledCount;
             $employer->savedCount = $empSavedCount;
         }
-
-        // Sort Employers (Current Page Only)
-        $sortedCollection = $employers->getCollection()->sortBy(function($emp) {
-            return $emp->financeOrder->status === 'renewal_resolution_cancelled' ? 1 : 0;
-        });
-        $employers->setCollection($sortedCollection);
 
         // Get Current Expiry Setting
         $currentExpiryConfig = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');

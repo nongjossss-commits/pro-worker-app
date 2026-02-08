@@ -104,16 +104,23 @@ class WorkflowController extends Controller
         }
 
         // SORTING: Active items (not cancelled/completed) first, then updated_at
-        $query->withCount(['items as active_items_count' => function ($q) {
-            $q->whereNotIn('status', ['cancelled', 'completed']);
-        }]);
+        $query->withCount([
+            'items as active_items_count' => function ($q) {
+                $q->whereNotIn('status', ['cancelled', 'completed']);
+            },
+            'items as cancelled_items_count' => function ($q) {
+                $q->where('status', 'cancelled');
+            }
+        ]);
 
         $perPage = $request->input('per_page', 20);
         if (!in_array($perPage, [20, 50, 100])) {
             $perPage = 20;
         }
 
-        $orders = $query->orderByDesc('active_items_count')
+        $orders = $query->orderByRaw("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END")
+                        ->orderByDesc('active_items_count')
+                        ->orderBy('cancelled_items_count')
                         ->latest('updated_at')
                         ->paginate($perPage)
                         ->withQueryString();

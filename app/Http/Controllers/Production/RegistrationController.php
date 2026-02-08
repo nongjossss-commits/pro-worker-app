@@ -204,6 +204,15 @@ class RegistrationController extends Controller
             $perPage = 20;
         }
 
+        // SORTING: Push cancelled employers to the end
+        $employerQuery->orderByRaw("(
+            SELECT CASE WHEN status = 'registration_resolution_cancelled' THEN 1 ELSE 0 END
+            FROM production_orders
+            WHERE production_orders.employer_id = employers.id
+            AND production_orders.status IN ('registration_resolution', 'registration_resolution_cancelled')
+            LIMIT 1
+        ) ASC");
+
         $employers = $employerQuery->paginate($perPage)->withQueryString();
 
         // --- 4. Process Employers (Assign Stats) ---
@@ -314,14 +323,6 @@ class RegistrationController extends Controller
             // NOTE: We do NOT assign $employer->employees here to keep response light.
             // The view will lazily load them.
         }
-
-        // Sort Employers (Current Page Only)
-        // To sort globally, we would need to join tables, but pagination breaks "bottom of list".
-        // We sort the current page to keep consistency.
-        $sortedCollection = $employers->getCollection()->sortBy(function($emp) {
-            return $emp->financeOrder->status === 'registration_resolution_cancelled' ? 1 : 0;
-        });
-        $employers->setCollection($sortedCollection);
 
         return view('production.registration.index', compact(
             'totalEmployees',

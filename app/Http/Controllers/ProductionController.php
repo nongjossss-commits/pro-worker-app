@@ -129,11 +129,17 @@ class ProductionController extends Controller
             }
 
             // SORTING
-            $query->withCount(['items as active_items_count' => function ($q) {
-                $q->whereNotIn('status', ['cancelled', 'completed']);
-            }]);
+            $query->withCount([
+                'items as active_items_count' => function ($q) {
+                    $q->whereNotIn('status', ['cancelled', 'completed']);
+                },
+                'items as cancelled_items_count' => function ($q) {
+                    $q->where('status', 'cancelled');
+                }
+            ]);
 
             $orders = $query->orderByDesc('active_items_count')
+                            ->orderBy('cancelled_items_count')
                             ->latest('updated_at')
                             ->paginate($perPage)
                             ->withQueryString();
