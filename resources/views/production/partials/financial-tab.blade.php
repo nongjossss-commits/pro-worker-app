@@ -741,9 +741,15 @@
                             </div>
                             <div class="col-md-6 border-start">
                                 <label class="form-label small fw-bold mb-1">Select Employees</label>
-                                <div class="small text-muted mb-2" style="font-size: 0.75rem;">
-                                    Selected: <span x-text="selectedTransactionItems.length"></span>
-                                    <span x-show="pricingMode === 'per_head'">(Auto-calc active)</span>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="small text-muted" style="font-size: 0.75rem;">
+                                        Selected: <span x-text="selectedTransactionItems.length"></span>
+                                        <span x-show="pricingMode === 'per_head'">(Auto-calc active)</span>
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectAllAvailable()">All</button>
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="deselectAllTransactionItems()">None</button>
+                                    </div>
                                 </div>
                                 <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
                                     <div class="list-group list-group-flush">

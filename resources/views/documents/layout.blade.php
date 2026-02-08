@@ -313,21 +313,23 @@
 
                                 $qty = 1;
                                 $unitPrice = $amount;
-                                $description = ucfirst(str_replace('_', ' ', $t->type));
+                                // Use Note as description if available
+                                $description = $t->notes ?: ucfirst(str_replace('_', ' ', $t->type));
 
                                 if ($itemCount > 0) {
                                     if ($pricingMode === 'per_head') {
                                         $qty = $itemCount;
                                         $unitPrice = ($qty > 0) ? ($amount / $qty) : 0;
                                     } else {
-                                        $description .= " (" . $itemCount . " Employees)";
+                                        if (!$t->notes) {
+                                            $description .= " (" . $itemCount . " Employees)";
+                                        }
                                     }
                                 }
 
                                 // Logic for Customer Override (Bill To Client)
-                                // If billing a client (Agent/Customer), replace "Installment" with "Employer Name"
-                                // so the client knows which job this bill belongs to.
-                                if (isset($financial['customer_override']) && !empty($financial['customer_override']['name']) && $t->type === 'installment') {
+                                // Only apply if no custom note
+                                if (!$t->notes && isset($financial['customer_override']) && !empty($financial['customer_override']['name']) && $t->type === 'installment') {
                                      $employerName = $production->employer->employerNameTh ?? $production->employer->employerNameEn ?? 'Employer';
                                      $description = $employerName;
                                 }
@@ -336,7 +338,6 @@
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>
                                     <strong>{{ $description }}</strong>
-                                    @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
                                     @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
                                     @if($isReceiptContext && $t->amount > $amount)
                                         <br><span class="badge" style="font-size: 10px; background: #eee; padding: 2px 4px; border-radius: 4px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
@@ -384,12 +385,12 @@
                         @foreach($advanceTransactions as $index => $t)
                             @php
                                 $amount = $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
+                                $description = $t->notes ?: ucfirst(str_replace('_', ' ', $t->type));
                             @endphp
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>
-                                    <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
-                                    @if($t->notes)<br><span style="color: #666; font-size: 12px;">{{ $t->notes }}</span>@endif
+                                    <strong>{{ $description }}</strong>
                                      @if($isReceiptContext && $t->amount > $amount)
                                         <br><span class="badge" style="font-size: 10px; background: #eee; padding: 2px 4px; border-radius: 4px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
                                     @endif
