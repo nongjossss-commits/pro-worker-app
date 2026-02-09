@@ -159,10 +159,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const cropImageBtn = document.getElementById('cropImageBtn');
     let cropper;
     let originalFile;
+    let outputMimeType = null; // Track mime type for transparency
 
     function handleFileSelect(event) {
         if (event.target.files && event.target.files.length > 0) {
             originalFile = event.target.files[0];
+            outputMimeType = originalFile.type; // Set initial mime type
         } else {
             return;
         }
@@ -224,6 +226,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (loadingText && text) loadingText.textContent = text;
                     });
 
+                    // Update Mime Type for Saving
+                    if (action === 'transparent') {
+                        outputMimeType = 'image/png';
+                    } else {
+                        outputMimeType = 'image/jpeg';
+                    }
+
                     // Replace Image
                     const newUrl = URL.createObjectURL(processedBlob);
                     imageToCrop.src = newUrl;
@@ -276,6 +285,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 imageSmoothingQuality: 'high',
             });
 
+            // Determine output format
+            let finalMimeType = outputMimeType || (originalFile.type || 'image/jpeg');
+
             canvas.toBlob(function (blob) {
                 if (!blob) return;
 
@@ -283,8 +295,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (employeePhotoPreview) employeePhotoPreview.src = croppedImageUrl;
 
                 // Create a new File object
-                const croppedFile = new File([blob], originalFile.name, {
-                    type: originalFile.type || 'image/jpeg',
+                const fileName = originalFile ? originalFile.name : 'cropped-image.jpg';
+                // Adjust extension
+                let finalName = fileName;
+                if (finalMimeType === 'image/png' && !finalName.toLowerCase().endsWith('.png')) {
+                    finalName = finalName.replace(/\.[^/.]+$/, "") + ".png";
+                } else if (finalMimeType === 'image/jpeg' && !finalName.toLowerCase().match(/\.(jpg|jpeg)$/)) {
+                    finalName = finalName.replace(/\.[^/.]+$/, "") + ".jpg";
+                }
+
+                const croppedFile = new File([blob], finalName, {
+                    type: finalMimeType,
                     lastModified: Date.now()
                 });
 
@@ -297,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (cropperModal) cropperModal.hide();
 
-            }, originalFile.type || 'image/jpeg');
+            }, finalMimeType);
         });
     }
 
