@@ -353,6 +353,22 @@
                     </div>
                 </div>
 
+                <!-- Filter Toolbar -->
+                <div class="bg-black/90 p-2 flex justify-center gap-2 overflow-x-auto shrink-0 border-b border-gray-700">
+                    <button @click="activeFilter = 'original'" :class="activeFilter === 'original' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
+                        <i class="bi bi-image"></i> ต้นฉบับ
+                    </button>
+                    <button @click="activeFilter = 'magic'" :class="activeFilter === 'magic' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
+                        <i class="bi bi-magic"></i> สแกนสี (Magic)
+                    </button>
+                    <button @click="activeFilter = 'bw'" :class="activeFilter === 'bw' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
+                        <i class="bi bi-file-earmark-text"></i> ขาวดำ (B/W)
+                    </button>
+                    <button @click="activeFilter = 'gray'" :class="activeFilter === 'gray' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
+                        <i class="bi bi-circle-half"></i> เทา
+                    </button>
+                </div>
+
                 <div class="p-3 bg-black/80 flex justify-between items-center shrink-0 gap-2">
                     <button @click="cancelCrop()" class="btn btn-secondary">
                         <i class="bi bi-x-lg"></i> ยกเลิก
@@ -432,6 +448,7 @@
             activeDragEdge: -1,
             previousMousePosition: { x: 0, y: 0 },
             rotation: 0, // Current rotation in degrees (0, 90, 180, 270)
+            activeFilter: 'original', // original, bw, magic, gray
 
             init() {
                 // Initialize PDF.js worker
@@ -729,10 +746,10 @@
                 let isFound = false;
 
                 try {
-                    // 1. Preprocessing (Resize for speed & noise reduction if image is huge)
+                    // 1. Preprocessing (Resize for speed & noise reduction)
                     let processingSrc = src;
                     let scale = 1;
-                    const maxDim = 800; // Work on a smaller scale
+                    const maxDim = 800;
 
                     if (Math.max(width, height) > maxDim) {
                         scale = maxDim / Math.max(width, height);
@@ -750,31 +767,25 @@
                     const blurred = new cv.Mat();
                     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
 
-                    // 3. Edge Detection / Thresholding
-                    // Strategy: Adaptive Thresholding is better for uneven lighting
-                    const binary = new cv.Mat();
-                    // Block size 11, C=2. Tweakable.
-                    cv.adaptiveThreshold(blurred, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
+                    // 3. Edge Detection (Canny is generally more structural than simple thresholding)
+                    const edges = new cv.Mat();
+                    // Thresholds: Lower 75, Upper 200 is a standard starting point
+                    cv.Canny(blurred, edges, 75, 200);
 
-                    // 4. Morphological Operations (Close gaps)
-                    // Dilate then Erode (Close) or just Dilate?
-                    // Using Close to fill small black holes inside white paper and connect edge gaps.
-                    const kernel = cv.Mat.ones(5, 5, cv.CV_8U);
-                    const closed = new cv.Mat();
-                    cv.morphologyEx(binary, closed, cv.MORPH_CLOSE, kernel); // Connect edges
-                    // Also maybe Erode slightly to separate paper from background noise?
-                    // cv.morphologyEx(closed, closed, cv.MORPH_OPEN, kernel);
+                    // 4. Dilate to connect broken edges
+                    const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+                    const dilated = new cv.Mat();
+                    cv.dilate(edges, dilated, kernel);
 
                     // 5. Find Contours
-                    // RETR_EXTERNAL to find only the outer boundary (ignore photos inside)
                     const contours = new cv.MatVector();
                     const hierarchy = new cv.Mat();
-                    cv.findContours(closed, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                    cv.findContours(dilated, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
                     // 6. Find Best Quadrilateral
                     let maxArea = 0;
                     let bestCandidate = null;
-                    const minArea = pWidth * pHeight * 0.10; // Must be at least 10% of image
+                    const minArea = pWidth * pHeight * 0.10; // Must be at least 10%
 
                     for (let i = 0; i < contours.size(); ++i) {
                         const cnt = contours.get(i);
@@ -784,34 +795,28 @@
 
                         let peri = cv.arcLength(cnt, true);
                         let approx = new cv.Mat();
-                        // 0.02 is standard approx accuracy
                         cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-                        // Looking for 4 corners
-                        // Also check if convex
+                        // Looking for 4 corners and convexity
                         if (approx.rows === 4 && cv.isContourConvex(approx)) {
                             if (area > maxArea) {
                                 maxArea = area;
                                 bestCandidate = [];
                                 for(let j=0; j<4; j++) {
                                     bestCandidate.push({
-                                        x: approx.data32S[j*2] / scale, // Scale back up
+                                        x: approx.data32S[j*2] / scale,
                                         y: approx.data32S[j*2+1] / scale
                                     });
                                 }
                             }
-                        } else {
-                            // Sometimes corners are slightly rounded or noise adds extra vertices (5 or 6).
-                            // If it's a large convex shape with ~4 vertices, we might want to take its bounding box or convex hull?
-                            // For now, strict 4 corners is safest for perspective warp.
-                            // We could try to simplify further if rows > 4?
                         }
+
                         approx.delete();
                     }
 
                     // Clean up
                     if (scale !== 1) processingSrc.delete();
-                    gray.delete(); blurred.delete(); binary.delete(); closed.delete();
+                    gray.delete(); blurred.delete(); edges.delete(); dilated.delete();
                     kernel.delete(); contours.delete(); hierarchy.delete();
 
                     if (bestCandidate) {
@@ -831,7 +836,7 @@
                 return { corners: bestCorners, found: isFound };
             },
 
-            performWarp(src, corners, width, height) {
+            performWarp(src, corners, width, height, filterType = 'original') {
                  // Convert corners array to flat array for OpenCV
                  const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
                     corners[0].x, corners[0].y,
@@ -860,13 +865,21 @@
                 const dst = new cv.Mat();
                 cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
 
+                // Apply Filter
+                let finalDst = dst;
+                if (filterType && filterType !== 'original') {
+                    finalDst = this.applyFilter(dst, filterType);
+                }
+
                 // Draw to temp canvas
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = maxWidth;
                 tempCanvas.height = maxHeight;
-                cv.imshow(tempCanvas, dst);
+                cv.imshow(tempCanvas, finalDst);
                 const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
 
+                // Clean up
+                if (finalDst !== dst) finalDst.delete();
                 srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
                 return dataUrl;
             },
@@ -1187,6 +1200,7 @@
                 this.currentEditIndex = index;
                 this.view = 'crop';
                 this.rotation = 0; // Reset rotation
+                this.activeFilter = 'original'; // Reset filter
                 const item = this.capturedImages[index];
 
                 this.$nextTick(() => {
@@ -1349,7 +1363,7 @@
 
                             // Read from rotated canvas
                             const src = cv.imread(canvas);
-                            const newCroppedUrl = this.performWarp(src, realCorners, canvas.width, canvas.height);
+                            const newCroppedUrl = this.performWarp(src, realCorners, canvas.width, canvas.height, this.activeFilter);
                             src.delete();
 
                             // Create updated object (Deep Copy)
@@ -1388,40 +1402,98 @@
                 this.view = 'review';
             },
 
+            // --- FILTERS ---
+
+            applyFilter(src, type) {
+                const dst = new cv.Mat();
+                try {
+                    if (type === 'original' || type === 'photo') {
+                        src.copyTo(dst);
+                    }
+                    else if (type === 'gray') {
+                        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+                    }
+                    else if (type === 'bw') {
+                        const gray = new cv.Mat();
+                        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                        // Block Size: 15, C: 10 (High contrast)
+                        cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 10);
+                        gray.delete();
+                    }
+                    else if (type === 'magic') {
+                         // Magic Color: Shadow Removal + Contrast
+                         // 1. Convert to RGB (Drop Alpha)
+                         const rgb = new cv.Mat();
+                         cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
+
+                         // 2. Convert to HSV
+                         const hsv = new cv.Mat();
+                         cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
+
+                         // 3. Split channels
+                         const planes = new cv.MatVector();
+                         cv.split(hsv, planes);
+
+                         const h = planes.get(0);
+                         const s = planes.get(1);
+                         const v = planes.get(2);
+
+                         // 4. Estimate Background (Shadows) via Gaussian Blur on V
+                         const bg = new cv.Mat();
+                         // Kernel size ~ 50. Must be odd.
+                         cv.GaussianBlur(v, bg, new cv.Size(51, 51), 0, 0, cv.BORDER_DEFAULT);
+
+                         // 5. Divide V by Background (Normalize)
+                         // V_new = V_old / Bg * 255
+                         const diff = new cv.Mat();
+                         cv.divide(v, bg, diff, 255);
+
+                         // 6. Merge Back
+                         const newPlanes = new cv.MatVector();
+                         newPlanes.push_back(h);
+                         newPlanes.push_back(s);
+                         newPlanes.push_back(diff);
+
+                         cv.merge(newPlanes, hsv);
+
+                         // 7. Back to RGB
+                         cv.cvtColor(hsv, dst, cv.COLOR_HSV2RGB); // Result is RGB
+
+                         // Cleanup
+                         rgb.delete(); hsv.delete(); planes.delete();
+                         h.delete(); s.delete(); v.delete();
+                         bg.delete(); diff.delete(); newPlanes.delete();
+                    }
+                    else {
+                        src.copyTo(dst);
+                    }
+                } catch (e) {
+                    console.error("Filter Error (" + type + "):", e);
+                    src.copyTo(dst); // Fallback to original
+                }
+                return dst;
+            },
+
             // --- UTILS ---
 
             sortPoints(points) {
-                // Reliable sorting for TL, TR, BR, BL
-                // Find Center
-                const center = points.reduce((acc, p) => ({x: acc.x + p.x, y: acc.y + p.y}), {x:0, y:0});
-                center.x /= 4;
-                center.y /= 4;
-
-                const top = [], bottom = [];
-                points.forEach(p => {
-                    if (p.y < center.y) top.push(p);
-                    else bottom.push(p);
-                });
-
-                // Sort top by x (TL, TR)
-                top.sort((a,b) => a.x - b.x);
-                // Sort bottom by x (BL, BR) -> We need BR, BL usually, but let's stick to standard order order: TL, TR, BR, BL
-                bottom.sort((a,b) => b.x - a.x); // Right first for standard "circle" order?
-                // Perspective Transform Expects: TL, TR, BR, BL?
-                // Actually my performWarp uses: corners[0], corners[1], corners[2], corners[3]
-                // Mapping to: 0,0 (TL) -> maxW,0 (TR) -> maxW,maxH (BR) -> 0,maxH (BL)
-                // So order must be TL, TR, BR, BL.
-
-                // Refined Sort:
-                // Sort by Y first
+                // Sort by Y to separate Top/Bottom pairs
                 points.sort((a,b) => a.y - b.y);
 
-                // Top 2 are top
-                const t = points.slice(0, 2).sort((a,b) => a.x - b.x);
-                // Bottom 2 are bottom
-                const b = points.slice(2, 4).sort((a,b) => a.x - b.x);
+                // Top 2 (TL, TR) - Sort by X
+                const top = points.slice(0, 2).sort((a,b) => a.x - b.x);
 
-                return [t[0], t[1], b[1], b[0]];
+                // Bottom 2 (BL, BR) - Sort by X (BL is left, BR is right)
+                // My performWarp expects [TL, TR, BR, BL] based on the destination mapping.
+                // Dest: [0,0] (TL), [w,0] (TR), [w,h] (BR), [0,h] (BL)
+                // So index 2 must be BR (largest X in bottom pair), index 3 must be BL (smallest X in bottom pair).
+
+                const bottom = points.slice(2, 4).sort((a,b) => a.x - b.x);
+
+                // top[0]=TL, top[1]=TR
+                // bottom[0]=BL, bottom[1]=BR
+                // Return Order: TL, TR, BR, BL
+                return [top[0], top[1], bottom[1], bottom[0]];
             },
 
             getPolygonPoints() {
