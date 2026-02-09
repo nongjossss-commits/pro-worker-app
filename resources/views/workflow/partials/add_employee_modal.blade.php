@@ -450,7 +450,7 @@
     function selectEmployer(emp) {
         document.getElementById('modal_employer_id').value = emp.id;
         document.getElementById('employer-search-input').value = emp.employerNameTh || emp.employerNameEn;
-        document.getElementById('selected-employer-text').innerText = `Selected: ${emp.employerNameTh} (${emp.employerId})`;
+        document.getElementById('selected-employer-text').innerText = `Selected: ${emp.employerNameTh || emp.employerNameEn} (${emp.employerId})`;
         document.getElementById('employer-search-results').style.display = 'none';
         document.getElementById('btn-clear-employer').classList.remove('d-none');
 

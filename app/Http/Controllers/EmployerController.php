@@ -618,7 +618,7 @@ class EmployerController extends Controller
             });
         }
 
-        $employers = $query->select(['id', 'employerNameTh', 'employerId'])->take(10)->get();
+        $employers = $query->select(['id', 'employerNameTh', 'employerNameEn', 'employerId'])->take(10)->get();
         return response()->json($employers);
     }
 
