@@ -251,6 +251,13 @@
                         <i class="bi bi-person-bounding-box me-1"></i>
                     </button>
 
+                    <button class="btn btn-outline-warning fw-bold"
+                            id="btn-global-filter-biometrics-not"
+                            onclick="toggleFilter('biometrics_not_collected')"
+                            title="{{ __('Filter Biometrics Not Collected') }}">
+                        <i class="bi bi-person me-1"></i>
+                    </button>
+
                     @can('edit-employees')
                     <a href="{{ route('production.registration.create') }}" class="btn btn-warning text-white fw-bold">
                         <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
@@ -1061,6 +1068,10 @@
                  // Highlight global button too
                  const btn = document.getElementById('btn-global-filter-biometrics');
                  if(btn) btn.classList.add('active', 'bg-info', 'text-white');
+             }
+             else if (currentStepFilter === 'biometrics_not_collected') {
+                 const btn = document.getElementById('btn-global-filter-biometrics-not');
+                 if(btn) btn.classList.add('active', 'bg-warning', 'text-dark');
              }
              else {
                  const pill = document.getElementById(`filter-step-${currentStepFilter}`);
