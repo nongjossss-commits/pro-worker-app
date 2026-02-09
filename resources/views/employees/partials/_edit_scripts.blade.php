@@ -11,6 +11,51 @@
         targetPreviewId: null
     };
 
+    window.openCropperWithUrl = async function(url, targetInputId, targetPreviewId) {
+        // 1. Ensure global cropper logic is ready
+        window.initCropperGlobal();
+
+        const imageToCrop = document.getElementById('imageToCrop');
+        const cropperModalEl = document.getElementById('cropperModal');
+
+        if (!imageToCrop || !cropperModalEl) {
+             console.error('Cropper elements not found');
+             return;
+        }
+
+        try {
+            // Fetch the image
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const blob = await response.blob();
+
+            // Create a File object
+            // Try to guess extension from blob type
+            let extension = 'jpg';
+            if (blob.type === 'image/png') extension = 'png';
+            else if (blob.type === 'image/webp') extension = 'webp';
+
+            const file = new File([blob], `existing-image.${extension}`, { type: blob.type });
+
+            // Update global state
+            window.cropperManager.originalFile = file;
+            window.cropperManager.mimeType = blob.type;
+            window.cropperManager.targetInputId = targetInputId;
+            window.cropperManager.targetPreviewId = targetPreviewId;
+
+            // Update Image Source
+            imageToCrop.src = URL.createObjectURL(blob);
+
+            // Open Modal
+            const modal = bootstrap.Modal.getOrCreateInstance(cropperModalEl);
+            modal.show();
+
+        } catch (error) {
+            console.error('Error loading image for cropping:', error);
+            alert('ไม่สามารถโหลดรูปภาพได้: ' + error.message);
+        }
+    };
+
     window.initCropperGlobal = function() {
         if (window.cropperManager.initialized) return;
 

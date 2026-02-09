@@ -51,15 +51,20 @@
                                 onProgress(true, `Processing: ${percent}%`);
                             }
                         },
-                        model: 'medium', // Use medium model for balance of quality/speed
+                        model: 'small', // Use small model for faster processing
                         output: {
                             format: 'image/png',
                             quality: 0.8
                         }
                     };
 
-                    // Execute removal
-                    transparentBlob = await removeBackgroundFn(file, config);
+                    // Execute removal with timeout race
+                    const processPromise = removeBackgroundFn(file, config);
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Processing timed out (30s). Please check your connection.')), 30000)
+                    );
+
+                    transparentBlob = await Promise.race([processPromise, timeoutPromise]);
 
                     this.cache.transparentBlob = transparentBlob;
                 } catch (error) {
@@ -104,7 +109,7 @@
                         resolve(window.imglyRemoveBackground);
                     }
                     retries++;
-                    if (retries > 50) { // 5 seconds
+                    if (retries > 100) { // 10 seconds
                         clearInterval(interval);
                         reject(new Error('Background Removal Library failed to load. Please refresh the page.'));
                     }
