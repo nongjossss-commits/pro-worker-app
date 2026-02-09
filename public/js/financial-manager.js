@@ -422,6 +422,16 @@ if (typeof window.financialManager === 'undefined') {
                 }
             },
 
+            selectAllAvailable() {
+                this.selectedTransactionItems = this.availableItems.map(i => i.id);
+                this.recalcAmount();
+            },
+
+            deselectAllTransactionItems() {
+                this.selectedTransactionItems = [];
+                this.recalcAmount();
+            },
+
             // --- Transaction Actions ---
             openAddModal() {
                 this.selectedTransactionItems = [];
@@ -770,6 +780,10 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             saveFinancialData() {
+                if (!this.activeGroupId) {
+                    Swal.fire('Error', 'Please select a financial tab first.', 'error');
+                    return;
+                }
                 this.isSavingSettings = true;
                 const payload = {
                     pricing_mode: this.pricingMode,
