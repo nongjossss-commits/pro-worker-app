@@ -315,7 +315,7 @@ class WorkflowController extends Controller
         $request->validate([
             'email' => [
                 'nullable',
-                'email',
+                'string',
                 'max:255',
                 $employeeId ? \Illuminate\Validation\Rule::unique('employees', 'email')->ignore($employeeId) : 'unique:employees,email'
             ],
