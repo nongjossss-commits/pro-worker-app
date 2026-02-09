@@ -361,6 +361,12 @@
                     <button @click="activeFilter = 'magic'" :class="activeFilter === 'magic' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
                         <i class="bi bi-magic"></i> สแกนสี (Magic)
                     </button>
+                    <button @click="activeFilter = 'scan_doc'" :class="activeFilter === 'scan_doc' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
+                        <i class="bi bi-file-earmark-check"></i> สแกนเอกสาร
+                    </button>
+                    <button @click="activeFilter = 'high_contrast'" :class="activeFilter === 'high_contrast' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
+                        <i class="bi bi-brightness-high"></i> เพิ่มความคมชัด
+                    </button>
                     <button @click="activeFilter = 'bw'" :class="activeFilter === 'bw' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
                         <i class="bi bi-file-earmark-text"></i> ขาวดำ (B/W)
                     </button>
@@ -1410,6 +1416,55 @@
                     if (type === 'original' || type === 'photo') {
                         src.copyTo(dst);
                     }
+                    else if (type === 'scan_doc') {
+                        // NEW: Scan Document (Clean White Background)
+                        const gray = new cv.Mat();
+                        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+                        // Mild blur to reduce noise specks
+                        cv.GaussianBlur(gray, gray, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
+
+                        // Block Size 31 (large area), C 15 (aggressive cutoff for white background)
+                        cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 31, 15);
+
+                        gray.delete();
+                    }
+                    else if (type === 'high_contrast') {
+                         // NEW: High Contrast (Color Enhancement)
+                         const rgb = new cv.Mat();
+                         cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
+
+                         const lab = new cv.Mat();
+                         cv.cvtColor(rgb, lab, cv.COLOR_RGB2Lab);
+
+                         const planes = new cv.MatVector();
+                         cv.split(lab, planes);
+
+                         const l = planes.get(0);
+                         const a = planes.get(1);
+                         const b = planes.get(2);
+
+                         // CLAHE (Contrast Limited Adaptive Histogram Equalization)
+                         const clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
+                         clahe.apply(l, l);
+
+                         // Merge
+                         const mergedPlanes = new cv.MatVector();
+                         mergedPlanes.push_back(l);
+                         mergedPlanes.push_back(a);
+                         mergedPlanes.push_back(b);
+
+                         cv.merge(mergedPlanes, lab);
+
+                         // Convert back to RGBA
+                         const resultRGB = new cv.Mat();
+                         cv.cvtColor(lab, resultRGB, cv.COLOR_Lab2RGB);
+                         cv.cvtColor(resultRGB, dst, cv.COLOR_RGB2RGBA);
+
+                         // Cleanup
+                         rgb.delete(); lab.delete(); planes.delete(); mergedPlanes.delete();
+                         l.delete(); a.delete(); b.delete(); clahe.delete(); resultRGB.delete();
+                    }
                     else if (type === 'gray') {
                         cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
                     }
@@ -1422,15 +1477,12 @@
                     }
                     else if (type === 'magic') {
                          // Magic Color: Shadow Removal + Contrast
-                         // 1. Convert to RGB (Drop Alpha)
                          const rgb = new cv.Mat();
                          cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
 
-                         // 2. Convert to HSV
                          const hsv = new cv.Mat();
                          cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
 
-                         // 3. Split channels
                          const planes = new cv.MatVector();
                          cv.split(hsv, planes);
 
@@ -1438,17 +1490,12 @@
                          const s = planes.get(1);
                          const v = planes.get(2);
 
-                         // 4. Estimate Background (Shadows) via Gaussian Blur on V
                          const bg = new cv.Mat();
-                         // Kernel size ~ 50. Must be odd.
                          cv.GaussianBlur(v, bg, new cv.Size(51, 51), 0, 0, cv.BORDER_DEFAULT);
 
-                         // 5. Divide V by Background (Normalize)
-                         // V_new = V_old / Bg * 255
                          const diff = new cv.Mat();
                          cv.divide(v, bg, diff, 255);
 
-                         // 6. Merge Back
                          const newPlanes = new cv.MatVector();
                          newPlanes.push_back(h);
                          newPlanes.push_back(s);
@@ -1456,13 +1503,14 @@
 
                          cv.merge(newPlanes, hsv);
 
-                         // 7. Back to RGB
-                         cv.cvtColor(hsv, dst, cv.COLOR_HSV2RGB); // Result is RGB
+                         const resultRGB = new cv.Mat();
+                         cv.cvtColor(hsv, resultRGB, cv.COLOR_HSV2RGB);
+                         cv.cvtColor(resultRGB, dst, cv.COLOR_RGB2RGBA);
 
                          // Cleanup
-                         rgb.delete(); hsv.delete(); planes.delete();
+                         rgb.delete(); hsv.delete(); planes.delete(); newPlanes.delete();
                          h.delete(); s.delete(); v.delete();
-                         bg.delete(); diff.delete(); newPlanes.delete();
+                         bg.delete(); diff.delete(); resultRGB.delete();
                     }
                     else {
                         src.copyTo(dst);
