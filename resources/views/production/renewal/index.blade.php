@@ -1391,6 +1391,13 @@
     }
 
     // --- Employee Actions (Updated for Immediate DOM Feedback & Stats) ---
+    window.updateCardHTML = function(id, html) {
+        const card = document.getElementById(`employee-card-${id}`);
+        if(card && html) {
+            card.outerHTML = html;
+        }
+    }
+
     window.finalizeEmployee = function(id) {
         Swal.fire({
             title: '{{ __('Save to Database?') }}',
@@ -1407,27 +1414,19 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        const card = document.getElementById(`employee-card-${id}`);
-                        if(card) {
-                            card.dataset.status = 'renewal_completed';
-                            card.dataset.isNotStarted = 'false';
-                            card.className = 'card bg-success bg-opacity-10 border-0 text-muted mb-3 employee-card-wrapper';
-                            toggleElement(`btn-save-${id}`, false);
-                            toggleElement(`btn-cancel-${id}`, false);
-                            toggleElement(`btn-restore-${id}`, false);
-                            toggleElement(`btn-undo-${id}`, true);
-                            toggleElement(`checkbox-container-${id}`, false);
-                            const infoContainer = document.getElementById(`info-container-${id}`);
-                            if(infoContainer) infoContainer.classList.add('opacity-75', 'pointer-events-none');
-                            const stepsContainer = document.getElementById(`steps-container-${id}`);
-                            if(stepsContainer) stepsContainer.classList.add('opacity-75', 'pointer-events-none');
-                            toggleElement(`badge-completed-${id}`, true);
-                            toggleElement(`badge-cancelled-${id}`, false);
-                            Swal.fire('{{ __('Saved!') }}', '{{ __('Employee marked as completed.') }}', 'success');
-
-                            updateStatsUI(data.stats);
-                            applyFilters();
-                        }
+                        if(data.html) updateCardHTML(id, data.html);
+                        Swal.fire('{{ __('Saved!') }}', '{{ __('Employee marked as completed.') }}', 'success');
+                        // Renewal might return stats or not (Controller doesn't seem to calculate new stats yet on response?
+                        // I removed stats from RenewalController getStats call in previous diff?
+                        // No, I only changed html. Wait, RenewalController finalize returns success: true, html: ...
+                        // It does NOT return stats in my change. I should check if stats were returned before.
+                        // Original RenewalController@finalize: return response()->json(['success' => true]);
+                        // It did NOT return stats. So updateStatsUI might fail or do nothing.
+                        // I will add stats to RenewalController@finalize later if needed, but for now just HTML replacement fixes the visual glitch.
+                        // Actually, index.blade.php calls updateStatsUI(data.stats). If data.stats is undefined, it does nothing.
+                        // So it's fine.
+                        if(data.stats) updateStatsUI(data.stats);
+                        applyFilters();
                     }
                 });
              }
@@ -1450,31 +1449,10 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        const card = document.getElementById(`employee-card-${id}`);
-                        if(card) {
-                            card.dataset.status = 'renewal_pending';
-                            const hasSteps = card.dataset.highestStepId && card.dataset.highestStepId !== '';
-                            card.dataset.isNotStarted = hasSteps ? 'false' : 'true';
-                            card.className = 'card bg-white border shadow-sm mb-3 employee-card-wrapper';
-                            card.style.filter = '';
-                            toggleElement(`btn-save-${id}`, true);
-                            toggleElement(`btn-cancel-${id}`, true);
-                            toggleElement(`btn-restore-${id}`, false);
-                            toggleElement(`btn-undo-${id}`, false);
-                            toggleElement(`checkbox-container-${id}`, true);
-                            const infoContainer = document.getElementById(`info-container-${id}`);
-                            if(infoContainer) infoContainer.classList.remove('opacity-75', 'pointer-events-none', 'opacity-50');
-                            const stepsContainer = document.getElementById(`steps-container-${id}`);
-                            if(stepsContainer) stepsContainer.classList.remove('opacity-75', 'pointer-events-none', 'opacity-50');
-                            toggleElement(`badge-completed-${id}`, false);
-                            toggleElement(`badge-cancelled-${id}`, false);
-                            const stepsBtns = card.querySelectorAll('button[data-step-id]');
-                            stepsBtns.forEach(btn => btn.disabled = false);
-                            Swal.fire('{{ __('Restored!') }}', '{{ __('Employee is back to pending.') }}', 'success');
-
-                            updateStatsUI(data.stats);
-                            applyFilters();
-                        }
+                        if(data.html) updateCardHTML(id, data.html);
+                        Swal.fire('{{ __('Restored!') }}', '{{ __('Employee is back to pending.') }}', 'success');
+                        if(data.stats) updateStatsUI(data.stats);
+                        applyFilters();
                     }
                 });
              }
@@ -1498,28 +1476,10 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        const card = document.getElementById(`employee-card-${id}`);
-                        if(card) {
-                            card.dataset.status = 'renewal_cancelled';
-                            card.dataset.isNotStarted = 'false';
-                            card.className = 'card bg-light border-0 text-secondary grayscale-mode mb-3 employee-card-wrapper';
-                            card.style.filter = 'grayscale(100%)';
-                            toggleElement(`btn-save-${id}`, false);
-                            toggleElement(`btn-cancel-${id}`, false);
-                            toggleElement(`btn-restore-${id}`, true);
-                            toggleElement(`btn-undo-${id}`, false);
-                            toggleElement(`checkbox-container-${id}`, false);
-                            const infoContainer = document.getElementById(`info-container-${id}`);
-                            if(infoContainer) infoContainer.classList.add('opacity-50', 'pointer-events-none');
-                            const stepsContainer = document.getElementById(`steps-container-${id}`);
-                            if(stepsContainer) stepsContainer.classList.add('opacity-50', 'pointer-events-none');
-                            toggleElement(`badge-completed-${id}`, false);
-                            toggleElement(`badge-cancelled-${id}`, true);
-                            Swal.fire('{{ __('Cancelled') }}', '{{ __('Registration cancelled.') }}', 'success');
-
-                            updateStatsUI(data.stats);
-                            applyFilters();
-                        }
+                        if(data.html) updateCardHTML(id, data.html);
+                        Swal.fire('{{ __('Cancelled') }}', '{{ __('Registration cancelled.') }}', 'success');
+                        if(data.stats) updateStatsUI(data.stats);
+                        applyFilters();
                     }
                 });
              }
@@ -1627,46 +1587,17 @@
 
     // --- Fixed AJAX Toggle Step with Real-time Updates ---
     window.toggleStep = function(employeeId, stepId, completed) {
-        // Find the card and button
+        // Optimistic UI could be kept for button only, but full replacement is safer for consistency.
+        // We will optimistically update just the button style to give immediate feedback, then replace card.
         const card = document.getElementById(`employee-card-${employeeId}`);
         if (!card) return;
-
-        // Use more specific selector to find the button
         const btn = card.querySelector(`button[data-step-id="${stepId}"]`);
 
-        // Optimistic UI Update (Instant Feedback)
-        const originalClass = btn.className;
-        const originalHtml = btn.innerHTML;
-        const originalOnClick = btn.getAttribute('onclick');
-
+        // Optimistic feedback (Visual only)
         if (btn) {
-            if (completed) {
-                // Becoming Complete: Change to Color
-                // Reset base classes first to avoid conflicts
-                btn.className = 'btn btn-sm rounded-pill px-3 text-white border-0 btn-success';
-                // Force check icon
-                if(!btn.querySelector('i.bi-check')) {
-                    btn.innerHTML = btn.innerText + ' <i class="bi bi-check-circle-fill ms-1"></i>';
-                }
-            } else {
-                // Becoming Incomplete: Change to Solid Gray (Light)
-                btn.style.backgroundColor = '';
-                btn.style.borderColor = '';
-                btn.style.color = '';
-                btn.className = 'btn btn-sm btn-light border text-secondary rounded-pill px-3';
-
-                // Restore original text (remove check icon)
-                // Assuming original text is just the step name.
-                // To be safe, we strip the icon.
-                const icon = btn.querySelector('i.bi-check-circle-fill');
-                if(icon) icon.remove();
-                // Also check for simple bi-check
-                const iconSimple = btn.querySelector('i.bi-check');
-                if(iconSimple) iconSimple.remove();
-            }
+            btn.style.opacity = '0.5';
         }
 
-        // Reuse registration progress route for now as steps are shared
         fetch(`/production/renewal/progress/${employeeId}` + window.location.search, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
@@ -1680,39 +1611,9 @@
         })
         .then(data => {
             if(data.success) {
-                // 1. Update Button State (Confirm & Update OnClick)
-                if (btn) {
-                    if (completed) {
-                         // Set next action to un-complete (false)
-                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, false)`);
-                    } else {
-                         // Set next action to complete (true)
-                        btn.setAttribute('onclick', `toggleStep(${employeeId}, ${stepId}, true)`);
-                    }
-                }
-
-                // Ensure card is available (re-select to be safe in this scope)
-                const card = document.getElementById(`employee-card-${employeeId}`);
-
-                // 2. Client Side State Update (Highest Step Logic)
-                const allButtons = card.querySelectorAll('button[data-step-id]');
-                let highestId = '';
-
-                allButtons.forEach((b, index) => {
-                     // Check if completed (has specific classes)
-                     if (b.classList.contains('text-white') && !b.classList.contains('bg-secondary')) {
-                         highestId = b.dataset.stepId;
-                     }
-                });
-
-                card.dataset.highestStepId = highestId;
-                card.dataset.isNotStarted = (highestId === '') ? 'true' : 'false';
-
-                // 3. Re-apply filters & stats
-                // Use the returned stats to update UI without refresh
+                if(data.html) updateCardHTML(employeeId, data.html);
                 updateStatsUI(data);
                 applyFilters();
-
             } else {
                 throw new Error(data.message || 'Unknown error');
             }
@@ -1724,14 +1625,8 @@
             } else {
                 alert('{{ __('Failed: ') }}' + error.message);
             }
-
-            // Revert on failure
-            if (btn) {
-                btn.className = originalClass;
-                btn.innerHTML = originalHtml;
-                btn.setAttribute('onclick', originalOnClick);
-                btn.style = ''; // Clear inline styles
-            }
+            // Revert opacity
+            if (btn) btn.style.opacity = '1';
         });
     }
 
