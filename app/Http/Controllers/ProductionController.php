@@ -434,6 +434,19 @@ class ProductionController extends Controller
              $group->financial_data = $jsonPayload;
              $group->save();
 
+             // Sync Advance Items (Table Storage)
+             if (isset($jsonPayload['advance_items']) && is_array($jsonPayload['advance_items'])) {
+                 $group->advanceItems()->delete(); // Clear existing
+                 foreach ($jsonPayload['advance_items'] as $advItem) {
+                     $group->advanceItems()->create([
+                         'description' => $advItem['description'] ?? '',
+                         'quantity' => $advItem['quantity'] ?? 1,
+                         'unit_price' => $advItem['unit_price'] ?? 0,
+                         'total' => ($advItem['quantity'] ?? 1) * ($advItem['unit_price'] ?? 0),
+                     ]);
+                 }
+             }
+
              // Fetch newly created items to return to frontend
              $newItems = [];
              if (!empty($createdItemIds)) {
@@ -457,7 +470,7 @@ class ProductionController extends Controller
 
              return response()->json([
                  'success' => true,
-                 'group' => $group->fresh(),
+                 'group' => $group->fresh(['advanceItems']),
                  'new_items' => $newItems
              ]);
         }

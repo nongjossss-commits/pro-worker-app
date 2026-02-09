@@ -218,7 +218,7 @@ class RegistrationController extends Controller
         // --- 4. Process Employers (Assign Stats) ---
         foreach ($employers as $employer) {
             // Finance Order Logic (Same as before)
-            $financeOrder = ProductionOrder::with(['financialGroups.transactions.items', 'items.employee'])
+            $financeOrder = ProductionOrder::with(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee'])
                 ->where('employer_id', $employer->id)
                 ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
                 ->first();

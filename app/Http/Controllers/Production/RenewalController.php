@@ -154,7 +154,7 @@ class RenewalController extends Controller
         // --- 5. Process Employers ---
         foreach ($employers as $employer) {
             // Finance Order Logic
-            $financeOrder = ProductionOrder::with('financialGroups.transactions')
+            $financeOrder = ProductionOrder::with(['financialGroups.transactions', 'financialGroups.advanceItems'])
                 ->where('employer_id', $employer->id)
                 ->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])
                 ->first();
