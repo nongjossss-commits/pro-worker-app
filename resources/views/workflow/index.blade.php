@@ -322,6 +322,15 @@
                                      <i class="bi bi-clock-history"></i>
                                  </button>
 
+                                 {{-- Finance Button --}}
+                                 @can('view-finance')
+                                 <button class="btn btn-outline-primary btn-sm rounded-circle me-1"
+                                    data-bs-toggle="modal" data-bs-target="#financeModal-{{ $order->id }}" onclick="event.stopPropagation()"
+                                    title="{{ __('Finance') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </button>
+                                @endcan
+
                                  {{-- Toggle Cancelled --}}
                                  <button class="btn btn-outline-secondary btn-sm rounded-circle me-1"
                                     onclick="toggleCancelled({{ $order->id }}, this)"
@@ -377,6 +386,25 @@
                         </div>
                     </div>
                 </div>
+
+            {{-- Finance Modal for this Order --}}
+            <div class="modal fade" id="financeModal-{{ $order->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{{ __('Finance') }}: {{ $order->project_name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body bg-light">
+                            @include('production.partials.financial-tab', [
+                                'production' => $order,
+                                'employeeCount' => $order->items->count(),
+                                'employees' => $order->items->pluck('employee')->filter()->values()
+                            ])
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
         @empty
             <div class="text-center py-5">

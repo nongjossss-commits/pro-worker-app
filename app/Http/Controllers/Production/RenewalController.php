@@ -180,6 +180,9 @@ class RenewalController extends Controller
             // Stats
             $myEmps = $employeesByEmployer[$employer->id] ?? collect();
 
+            // Prepare Candidates List for Finance Tab
+            $employer->activeEmployeesList = $myEmps->where('status', '!=', 'renewal_cancelled')->values();
+
             // Initialize Employer Stats
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
             $empNotStarted = 0;
