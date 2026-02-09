@@ -31,17 +31,61 @@
                             <input type="hidden" name="is_pre_production" id="add_employee_is_pre_production" value="0">
 
                             {{-- Employer Search (Visible only if no Order ID) --}}
-                            <div id="section-select-employer" class="mb-3 d-none">
+                            <div id="section-select-employer" class="mb-3 d-none" x-data="employerSearchApp()" @reset-employer-search.window="resetSearch($event.detail)">
                                 <label class="form-label fw-bold">{{ __('Select Employer') }} <span class="text-danger">*</span></label>
-                                <div class="position-relative">
+                                <div class="position-relative" @click.outside="open = false">
                                     <div class="input-group">
-                                        <span class="input-group-text"><i class="bi bi-building"></i></span>
-                                        <input type="text" class="form-control" id="employer-search-input" placeholder="{{ __('Type to search employer...') }}" autocomplete="off">
-                                        <button class="btn btn-outline-secondary d-none" type="button" id="btn-clear-employer"><i class="bi bi-x-lg"></i></button>
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        <input type="text"
+                                               class="form-control"
+                                               placeholder="{{ __('Type to search employer...') }}"
+                                               x-model="search"
+                                               @focus="open = true"
+                                               @input="onInput"
+                                               @keydown.escape="open = false"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
                                     </div>
-                                    <div class="list-group position-absolute w-100 shadow-sm custom-scrollbar" id="employer-search-results" style="max-height: 200px; z-index: 1050; display: none;"></div>
+
+                                    {{-- Dropdown List --}}
+                                    <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
+                                         style="z-index: 1050; max-height: 250px; overflow-y: auto;"
+                                         x-show="open && results.length > 0"
+                                         x-transition
+                                         style="display: none;">
+                                        <ul class="list-group list-group-flush">
+                                            <template x-for="emp in results" :key="emp.id">
+                                                <li class="list-group-item list-group-item-action cursor-pointer"
+                                                    @click="selectEmployer(emp)">
+                                                    <div class="fw-bold" x-text="emp.employerNameTh || emp.employerNameEn"></div>
+                                                    <div class="small text-muted" x-text="emp.employerNameEn"></div>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
+
+                                    {{-- No Results --}}
+                                    <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
+                                         style="z-index: 1050;"
+                                         x-show="open && results.length === 0 && search.length >= 2 && !loading"
+                                         x-transition
+                                         style="display: none;">
+                                         <div class="list-group list-group-flush">
+                                            <div class="list-group-item text-muted text-center">{{ __('No employers found.') }}</div>
+                                         </div>
+                                    </div>
+
+                                    {{-- Loading --}}
+                                    <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
+                                         style="z-index: 1050;"
+                                         x-show="open && loading"
+                                         x-transition
+                                         style="display: none;">
+                                         <div class="list-group list-group-flush">
+                                            <div class="list-group-item text-muted text-center"><span class="spinner-border spinner-border-sm"></span> Searching...</div>
+                                         </div>
+                                    </div>
                                 </div>
-                                <div class="form-text text-muted" id="selected-employer-text"></div>
                             </div>
 
                             <div class="mb-3">
@@ -116,6 +160,64 @@
 </div>
 
 <script>
+    function employerSearchApp() {
+        return {
+            search: '',
+            open: false,
+            results: [],
+            loading: false,
+            searchTimeout: null,
+
+            onInput() {
+                this.open = true;
+                this.loading = true;
+                // Clear current selection
+                document.getElementById('modal_employer_id').value = '';
+
+                clearTimeout(this.searchTimeout);
+
+                if (this.search.length < 2) {
+                    this.results = [];
+                    this.loading = false;
+                    return;
+                }
+
+                this.searchTimeout = setTimeout(() => {
+                    fetch(`{{ route('api-web.employers.list') }}?search=${encodeURIComponent(this.search)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            this.results = data;
+                            this.loading = false;
+                        })
+                        .catch(() => {
+                            this.loading = false;
+                            this.results = [];
+                        });
+                }, 300);
+            },
+
+            selectEmployer(emp) {
+                this.search = emp.employerNameTh || emp.employerNameEn;
+                this.open = false;
+
+                document.getElementById('modal_employer_id').value = emp.id;
+
+                // Dispatch legacy event for other parts
+                window.dispatchEvent(new CustomEvent('set-employer-id', {
+                    detail: { id: emp.id }
+                }));
+            },
+
+            resetSearch(detail) {
+                this.search = '';
+                this.results = [];
+                this.open = false;
+                this.loading = false;
+                document.getElementById('modal_employer_id').value = '';
+            }
+        }
+    }
+
     window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug, context = 'workflow') {
         // Set values for Existing Form
         document.getElementById('modal_employer_id').value = employerId || '';
@@ -150,17 +252,12 @@
 
         // Toggle Employer Search Section
         const employerSearchSection = document.getElementById('section-select-employer');
-        const employerSearchInput = document.getElementById('employer-search-input');
-        const employerClearBtn = document.getElementById('btn-clear-employer');
-        const selectedEmployerText = document.getElementById('selected-employer-text');
 
         if (!orderId && !employerId) {
             // Global Add Mode
             employerSearchSection.classList.remove('d-none');
-            employerSearchInput.value = '';
-            employerClearBtn.classList.add('d-none');
-            selectedEmployerText.innerText = '';
-            document.getElementById('modal_employer_id').value = '';
+            // Reset Alpine Component
+            window.dispatchEvent(new CustomEvent('reset-employer-search'));
         } else {
             // Contextual Mode
             employerSearchSection.classList.add('d-none');
@@ -372,91 +469,4 @@
         });
     }
 
-    // Employer Search Logic (Existing Tab)
-    let employerSearchTimeout;
-    const employerInput = document.getElementById('employer-search-input');
-    const employerResults = document.getElementById('employer-search-results');
-    const employerClearBtn = document.getElementById('btn-clear-employer');
-
-    if (employerInput) {
-        employerInput.addEventListener('input', function(e) {
-            clearTimeout(employerSearchTimeout);
-            const query = e.target.value.trim();
-
-            if (query.length < 2) {
-                employerResults.style.display = 'none';
-                return;
-            }
-
-            employerSearchTimeout = setTimeout(() => {
-                fetch(`{{ route('api-web.employers.list') }}?search=${encodeURIComponent(query)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        employerResults.innerHTML = '';
-                        if (data.length === 0) {
-                            employerResults.innerHTML = '<div class="list-group-item text-muted text-center py-2">{{ __("No employers found.") }}</div>';
-                        } else {
-                            data.forEach(emp => {
-                                const item = document.createElement('a');
-                                item.href = '#';
-                                item.className = 'list-group-item list-group-item-action';
-
-                                const nameDiv = document.createElement('div');
-                                nameDiv.className = 'fw-bold';
-                                nameDiv.textContent = emp.employerNameTh || emp.employerNameEn;
-
-                                const subDiv = document.createElement('small');
-                                subDiv.className = 'text-muted';
-                                subDiv.textContent = emp.employerNameEn || '';
-
-                                item.appendChild(nameDiv);
-                                item.appendChild(subDiv);
-
-                                item.onclick = (e) => {
-                                    e.preventDefault();
-                                    selectEmployer(emp);
-                                };
-                                employerResults.appendChild(item);
-                            });
-                        }
-                        employerResults.style.display = 'block';
-                    })
-                    .catch(err => {
-                        employerResults.innerHTML = '<div class="list-group-item text-danger text-center py-2">Error searching.</div>';
-                        employerResults.style.display = 'block';
-                    });
-            }, 300);
-        });
-
-        // Hide results on click outside
-        document.addEventListener('click', function(e) {
-            if (!employerInput.contains(e.target) && !employerResults.contains(e.target)) {
-                employerResults.style.display = 'none';
-            }
-        });
-
-        // Clear Button
-        if (employerClearBtn) {
-            employerClearBtn.addEventListener('click', function() {
-                employerInput.value = '';
-                document.getElementById('modal_employer_id').value = '';
-                document.getElementById('selected-employer-text').innerText = '';
-                employerClearBtn.classList.add('d-none');
-                employerInput.focus();
-            });
-        }
-    }
-
-    function selectEmployer(emp) {
-        document.getElementById('modal_employer_id').value = emp.id;
-        document.getElementById('employer-search-input').value = emp.employerNameTh || emp.employerNameEn;
-        document.getElementById('selected-employer-text').innerText = `Selected: ${emp.employerNameTh || emp.employerNameEn} (${emp.employerId})`;
-        document.getElementById('employer-search-results').style.display = 'none';
-        document.getElementById('btn-clear-employer').classList.remove('d-none');
-
-        // Sync with New Employee Tab
-        window.dispatchEvent(new CustomEvent('set-employer-id', {
-            detail: { id: emp.id }
-        }));
-    }
 </script>
