@@ -744,8 +744,12 @@ class RenewalController extends Controller
                  }
             }
 
+            // Reload steps for correct HTML rendering
+            $employee->load('registrationSteps');
+
             return response()->json([
                 'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee),
                 'globalStats' => $globalStats,
                 'globalNotStarted' => $globalNotStarted,
                 'employerStats' => $employerStats,
@@ -768,7 +772,10 @@ class RenewalController extends Controller
             'resolution_completed_at' => now()
         ]);
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee)
+            ]);
         }
         return back()->with('success', 'Employee saved.');
     }
@@ -778,7 +785,10 @@ class RenewalController extends Controller
         if (!auth()->user()->can('edit-employees')) abort(403);
         $employee->update(['status' => 'renewal_cancelled']);
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee)
+            ]);
         }
         return back()->with('success', 'Employee cancelled.');
     }
@@ -791,7 +801,10 @@ class RenewalController extends Controller
             'resolution_completed_at' => null
         ]);
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee)
+            ]);
         }
         return back()->with('success', 'Employee restored.');
     }
@@ -963,5 +976,19 @@ class RenewalController extends Controller
         $employee->restore();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Helper to render employee card HTML.
+     */
+    private function getEmployeeCardHtml(Employee $employee)
+    {
+        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+        // Uses the shared partial but with renewal steps
+        return view('production.registration._employee_card', [
+            'employee' => $employee,
+            'steps' => $steps,
+            'isHistory' => false
+        ])->render();
     }
 }

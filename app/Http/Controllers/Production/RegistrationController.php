@@ -536,6 +536,7 @@ class RegistrationController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee),
                 'stats' => $this->getStats($employee->employer_id, $request)
             ]);
         }
@@ -556,6 +557,7 @@ class RegistrationController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee),
                 'stats' => $this->getStats($employee->employer_id, $request)
             ]);
         }
@@ -579,6 +581,7 @@ class RegistrationController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee),
                 'stats' => $this->getStats($employee->employer_id, $request)
             ]);
         }
@@ -1055,8 +1058,12 @@ class RegistrationController extends Controller
                  }
             }
 
+            // Reload steps for correct HTML rendering
+            $employee->load('registrationSteps');
+
             return response()->json([
                 'success' => true,
+                'html' => $this->getEmployeeCardHtml($employee),
                 'globalStats' => $globalStats,
                 'globalNotStarted' => $globalNotStarted,
                 'employerStats' => $employerStats,
@@ -1448,6 +1455,7 @@ class RegistrationController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Biometrics updated successfully.',
+                'html' => $this->getEmployeeCardHtml($employee),
                 'stats' => $this->getStats($employee->employer_id, $request)
             ]);
         }
@@ -1478,6 +1486,7 @@ class RegistrationController extends Controller
             'success' => true,
             'message' => $message,
             'collected' => !$isCollected,
+            'html' => $this->getEmployeeCardHtml($employee),
             'stats' => $this->getStats($employee->employer_id, $request)
         ]);
     }
@@ -1715,5 +1724,18 @@ class RegistrationController extends Controller
         $employee->restore();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Helper to render employee card HTML.
+     */
+    private function getEmployeeCardHtml(Employee $employee)
+    {
+        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        return view('production.registration._employee_card', [
+            'employee' => $employee,
+            'steps' => $steps,
+            'isHistory' => false
+        ])->render();
     }
 }
