@@ -37,7 +37,7 @@ class RenewalController extends Controller
         // --- 2. Global Employee Query (Lightweight) ---
         $employeeQuery = Employee::query()
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->select('id', 'employer_id', 'status');
+            ->select('id', 'employer_id', 'status', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeeNationality');
 
         if (auth()->user()->can('manage-tickets')) {
             $employeeQuery->withoutGlobalScope('employerTenancy');

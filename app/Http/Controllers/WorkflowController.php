@@ -126,7 +126,7 @@ class WorkflowController extends Controller
                         ->withQueryString();
 
         // Calculate Stats PER ORDER for the view (Accordion Header)
-        $orders->load(['items.completedWorkTypeSteps', 'employer.addresses', 'financialGroups.transactions.items']);
+        $orders->load(['items.completedWorkTypeSteps', 'items.employee', 'employer.addresses', 'financialGroups.transactions.items']);
 
         // Employers for Dropdown
         $employers = Employer::orderBy('employerNameTh')->get();
