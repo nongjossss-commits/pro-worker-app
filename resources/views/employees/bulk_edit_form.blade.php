@@ -398,6 +398,7 @@
             // --- 3. Cropper Logic (Event Delegation) ---
             let currentEmployeeId = null;
             let currentOriginalFile = null;
+            let outputMimeType = null; // Track mime type for transparency
             let cropper = null;
 
             const cropperModalEl = container.querySelector('#cropperModal'); // Scope to container
@@ -432,6 +433,7 @@
             function handleFileSelect(event) {
                 if (event.target.files && event.target.files.length > 0) {
                     currentOriginalFile = event.target.files[0];
+                    outputMimeType = currentOriginalFile.type; // Set initial mime type
                 } else {
                     return;
                 }
@@ -471,6 +473,13 @@
                         const processedBlob = await window.backgroundRemoval.process(currentOriginalFile, action, (active, text) => {
                             if (loadingText && text) loadingText.textContent = text;
                         });
+
+                        // Update Mime Type for Saving
+                        if (action === 'transparent') {
+                            outputMimeType = 'image/png';
+                        } else {
+                            outputMimeType = 'image/jpeg';
+                        }
 
                         const newUrl = URL.createObjectURL(processedBlob);
                         imageToCrop.src = newUrl;
@@ -545,6 +554,9 @@
                         imageSmoothingQuality: 'high',
                     });
 
+                    // Determine output format
+                    let finalMimeType = outputMimeType || (currentOriginalFile.type || 'image/jpeg');
+
                     canvas.toBlob(function (blob) {
                         if (!blob) return;
 
@@ -556,10 +568,16 @@
 
                         // Use a fallback name if currentOriginalFile.name is missing (safety)
                         const fileName = currentOriginalFile.name || 'cropped-image.jpg';
-                        const fileType = currentOriginalFile.type || 'image/jpeg';
+                        // Adjust extension
+                        let finalName = fileName;
+                        if (finalMimeType === 'image/png' && !finalName.toLowerCase().endsWith('.png')) {
+                            finalName = finalName.replace(/\.[^/.]+$/, "") + ".png";
+                        } else if (finalMimeType === 'image/jpeg' && !finalName.toLowerCase().match(/\.(jpg|jpeg)$/)) {
+                            finalName = finalName.replace(/\.[^/.]+$/, "") + ".jpg";
+                        }
 
-                        const croppedFile = new File([blob], fileName, {
-                            type: fileType,
+                        const croppedFile = new File([blob], finalName, {
+                            type: finalMimeType,
                             lastModified: Date.now()
                         });
 
@@ -574,7 +592,7 @@
 
                         cropperModal.hide();
 
-                    }, currentOriginalFile.type || 'image/jpeg');
+                    }, finalMimeType);
                 });
             }
 

@@ -6,6 +6,7 @@
         initialized: false,
         instance: null,
         originalFile: null,
+        mimeType: null, // Track mime type for transparency support
         targetInputId: null,
         targetPreviewId: null
     };
@@ -85,6 +86,16 @@
                         if (loadingText && text) loadingText.textContent = text;
                     });
 
+                    // Update Mime Type for Saving
+                    if (action === 'transparent') {
+                        window.cropperManager.mimeType = 'image/png';
+                    } else {
+                        // For colored backgrounds or original, default to JPEG for efficiency
+                        // unless original was something else we want to keep?
+                        // For now, forcing JPEG for non-transparent ensures small file size.
+                        window.cropperManager.mimeType = 'image/jpeg';
+                    }
+
                     // Replace Image
                     const newUrl = URL.createObjectURL(processedBlob);
                     imageToCrop.src = newUrl;
@@ -161,6 +172,13 @@
                 return;
             }
 
+            // Determine output format
+            // Use explicitly set mimeType (from BG removal) OR fallback to original file type OR default to JPEG
+            let outputType = window.cropperManager.mimeType;
+            if (!outputType) {
+                outputType = (originalFile && originalFile.type) ? originalFile.type : 'image/jpeg';
+            }
+
             canvas.toBlob(function (blob) {
                 if (!blob) return;
 
@@ -173,11 +191,19 @@
                 }
 
                 // Create a new File object
-                const fileType = originalFile ? (originalFile.type || 'image/jpeg') : 'image/jpeg';
                 const fileName = originalFile ? originalFile.name : 'cropped-image.jpg';
+                // Adjust extension if type changed (e.g. jpeg -> png)
+                // But keeping original name is usually fine for uploads, backend might rename.
+                // Or we can be smart:
+                let finalName = fileName;
+                if (outputType === 'image/png' && !finalName.toLowerCase().endsWith('.png')) {
+                    finalName = finalName.replace(/\.[^/.]+$/, "") + ".png";
+                } else if (outputType === 'image/jpeg' && !finalName.toLowerCase().match(/\.(jpg|jpeg)$/)) {
+                    finalName = finalName.replace(/\.[^/.]+$/, "") + ".jpg";
+                }
 
-                const croppedFile = new File([blob], fileName, {
-                    type: fileType,
+                const croppedFile = new File([blob], finalName, {
+                    type: outputType,
                     lastModified: Date.now()
                 });
 
@@ -195,7 +221,7 @@
                 // Hide the modal
                 cropperModal.hide();
 
-            }, (originalFile && originalFile.type) ? originalFile.type : 'image/jpeg');
+            }, outputType);
         });
     };
 
@@ -226,6 +252,7 @@
             if (event.target.files && event.target.files.length > 0) {
                 // Update global state with selected file
                 window.cropperManager.originalFile = event.target.files[0];
+                window.cropperManager.mimeType = event.target.files[0].type; // Set initial mime type
                 // Set Targets based on prefix
                 window.cropperManager.targetInputId = prefix + 'employeePhotoInput';
                 window.cropperManager.targetPreviewId = prefix + 'employeePhotoPreview';

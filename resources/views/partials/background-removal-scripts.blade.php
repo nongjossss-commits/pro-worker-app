@@ -1,6 +1,9 @@
-<!-- @imgly/background-removal CDN with Fallback -->
-<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.3.0/dist/imgly-background-removal.min.js"
-        onerror="console.error('Failed to load imgly from jsdelivr, trying unpkg...'); this.onerror=null; this.src='https://unpkg.com/@imgly/background-removal@1.3.0/dist/imgly-background-removal.min.js';"></script>
+<!-- @imgly/background-removal CDN via ESM (Modern) -->
+<script type="module">
+    import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm';
+    window.imglyRemoveBackground = removeBackground;
+    console.log('Background Removal Library (ESM) loaded.');
+</script>
 
 <script>
     window.backgroundRemoval = {
@@ -33,28 +36,38 @@
 
             if (!transparentBlob) {
                 try {
-                    if (onProgress) onProgress(true, 'Removing background...');
+                    if (onProgress) onProgress(true, 'Initializing AI Model...');
 
-                    // Check if library is loaded
-                    let removeBackgroundFn;
-                    if (typeof imgly !== 'undefined' && imgly.removeBackground) {
-                        removeBackgroundFn = imgly.removeBackground;
-                    } else if (typeof imglyRemoveBackground !== 'undefined') {
-                        removeBackgroundFn = imglyRemoveBackground;
-                    } else {
-                        throw new Error('Background removal library (imgly) is not loaded. Please check your internet connection.');
-                    }
+                    // Check if library is loaded (Wait up to 10 seconds)
+                    const removeBackgroundFn = await this.waitForLibrary();
 
-                    // imgly.removeBackground returns a Promise<Blob>
-                    transparentBlob = await removeBackgroundFn(file, {
+                    if (onProgress) onProgress(true, 'Removing background (this may take a moment)...');
+
+                    // Configuration for better quality and progress tracking
+                    const config = {
                         progress: (key, current, total) => {
-                             // console.log(`Downloading ${key}: ${current} of ${total}`);
+                            if (onProgress) {
+                                const percent = Math.round((current / total) * 100);
+                                onProgress(true, `Processing: ${percent}%`);
+                            }
+                        },
+                        model: 'medium', // Use medium model for balance of quality/speed
+                        output: {
+                            format: 'image/png',
+                            quality: 0.8
                         }
-                    });
+                    };
+
+                    // Execute removal
+                    transparentBlob = await removeBackgroundFn(file, config);
 
                     this.cache.transparentBlob = transparentBlob;
                 } catch (error) {
                     console.error('Background removal failed:', error);
+                    // Provide user-friendly error
+                    if (error.message && error.message.includes('fetch')) {
+                        throw new Error('Failed to download AI model. Please check your internet connection.');
+                    }
                     throw error;
                 } finally {
                     if (onProgress) onProgress(false);
@@ -76,6 +89,29 @@
             }
         },
 
+        // Helper to wait for the ESM module to load
+        waitForLibrary() {
+            return new Promise((resolve, reject) => {
+                if (window.imglyRemoveBackground) {
+                    resolve(window.imglyRemoveBackground);
+                    return;
+                }
+
+                let retries = 0;
+                const interval = setInterval(() => {
+                    if (window.imglyRemoveBackground) {
+                        clearInterval(interval);
+                        resolve(window.imglyRemoveBackground);
+                    }
+                    retries++;
+                    if (retries > 50) { // 5 seconds
+                        clearInterval(interval);
+                        reject(new Error('Background Removal Library failed to load. Please refresh the page.'));
+                    }
+                }, 100);
+            });
+        },
+
         // Helper to draw blob on colored canvas
         compositeBackground(imageBlob, colorHex) {
             return new Promise((resolve, reject) => {
@@ -93,7 +129,7 @@
                     // Draw image
                     ctx.drawImage(img, 0, 0);
 
-                    // Export
+                    // Export as JPEG (since no transparency needed)
                     canvas.toBlob((blob) => {
                         resolve(blob);
                     }, 'image/jpeg', 0.95);
