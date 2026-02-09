@@ -121,7 +121,13 @@ if (typeof window.financialManager === 'undefined') {
             // --- Helper Methods for Tier Management ---
             getTierForItem(itemId) {
                 // Returns the tier object if the item is assigned to one
-                return this.pricingTiers.find(t => t.item_ids && t.item_ids.includes(String(itemId).startsWith('emp_') ? itemId : parseInt(itemId)));
+                return this.pricingTiers.find(t => {
+                    if (!t.item_ids) return false;
+                    if (typeof itemId === 'string' && itemId.startsWith('emp_')) {
+                        return t.item_ids.includes(itemId);
+                    }
+                    return t.item_ids.includes(parseInt(itemId));
+                });
             },
 
             getItemPrice(itemId) {
@@ -130,38 +136,49 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             assignItemsToTier(tierIndex, itemIds) {
-                // Normalize IDs (keep emp_ strings, parse others)
-                const normalizedIds = itemIds.map(id => String(id).startsWith('emp_') ? id : parseInt(id));
+                // Ensure IDs are integers OR emp_ strings
+                // Fix: Do not parseInt candidate IDs (emp_ prefix)
+                const processedIds = itemIds.map(id => {
+                    if (typeof id === 'string' && id.startsWith('emp_')) return id;
+                    return parseInt(id);
+                });
 
                 // 1. Remove these items from all other tiers
                 this.pricingTiers.forEach((t, idx) => {
                     if (idx !== tierIndex && t.item_ids) {
-                         t.item_ids = t.item_ids.filter(existingId => !normalizedIds.includes(String(existingId).startsWith('emp_') ? existingId : parseInt(existingId)));
+                        // Filter out if present in the new selection
+                        t.item_ids = t.item_ids.filter(existingId => {
+                            // Check if existingId is in processedIds
+                            // Need to handle type safety carefully
+                            return !processedIds.some(newId => newId == existingId);
+                        });
                     }
                 });
 
                 // 2. Overwrite target tier with new selection
-                // This handles both adding new items and removing unchecked items
                 const targetTier = this.pricingTiers[tierIndex];
-                targetTier.item_ids = normalizedIds;
+                targetTier.item_ids = processedIds;
 
-                // 3. Update count for display (though we use item_ids.length now)
+                // 3. Update count for display
                 targetTier.count = targetTier.item_ids.length;
 
                 this.updateTotal();
             },
 
             selectAllForModal() {
+                // Use allEmployeesForTier to respect filters (locked items) and include candidates
+                const sourceList = this.allEmployeesForTier;
+
                 if (this.modalSearch) {
                     const term = this.modalSearch.toLowerCase();
-                    const visibleIds = this.allEmployeesForTier
+                    const visibleIds = sourceList
                         .filter(i => i.name.toLowerCase().includes(term))
                         .map(i => i.id);
 
                     // Union with existing selection
                     this.modalSelectedIds = [...new Set([...this.modalSelectedIds, ...visibleIds])];
                 } else {
-                    this.modalSelectedIds = this.allEmployeesForTier.map(i => i.id);
+                    this.modalSelectedIds = sourceList.map(i => i.id);
                 }
             },
 
@@ -170,43 +187,74 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             unassignItem(itemId) {
-                 const idToUnassign = String(itemId).startsWith('emp_') ? itemId : parseInt(itemId);
                  this.pricingTiers.forEach(t => {
                     if (t.item_ids) {
-                        t.item_ids = t.item_ids.filter(id => id !== idToUnassign);
+                        t.item_ids = t.item_ids.filter(id => {
+                            if (typeof itemId === 'string' && itemId.startsWith('emp_')) {
+                                return id !== itemId;
+                            }
+                            return id !== parseInt(itemId);
+                        });
                         t.count = t.item_ids.length;
                     }
                 });
                 this.updateTotal();
             },
 
+            // --- Employee Filter Logic ---
             get allEmployeesForTier() {
-                if (!this.activeGroupId) return [];
+                // Return Merged List for Price Tier Modal
+                // This includes Existing ProductionItems AND Candidates (Employees not yet in Order)
+                // This fixes the issue where new employees don't show up in Price Tier selection.
 
-                // Return both Production Items AND Candidates
-                const list = [...this.productionItems];
+                // Filter logic: Exclude items that are currently used in an Installment (Transaction)
+                const usedItemIds = new Set();
+                const usedEmployeeIds = new Set();
 
-                // Track existing employee IDs to avoid duplicates
-                const existingEmpIds = new Set(this.productionItems.map(i => i.employee_id).filter(id => id));
-
-                this.employees.forEach(emp => {
-                    if (!existingEmpIds.has(emp.id)) {
-                        list.push({
-                            id: 'emp_' + emp.id,
-                            name: emp.name,
-                            name_en: emp.name_en,
-                            title_en: emp.title_en,
-                            photo: emp.photo,
-                            nationality: emp.nationality,
-                            type: 'employee'
+                // Scan all transactions (using this.transactions as single source of truth)
+                this.transactions.forEach(t => {
+                    if (t.items && Array.isArray(t.items)) {
+                        t.items.forEach(item => {
+                            usedItemIds.add(item.id);
+                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
                         });
                     }
+                });
+
+                const list = [];
+                const itemsByEmpId = {};
+
+                // 1. Production Items
+                this.productionItems.forEach(item => {
+                    // Skip if currently in an installment (LOCKED)
+                    if (usedItemIds.has(item.id)) return;
+
+                    if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
+                    list.push({ ...item, type: 'item' });
+                });
+
+                // 2. Candidates
+                this.employees.forEach(emp => {
+                    if (itemsByEmpId[emp.id]) return; // Already exists as item
+                    // Skip if currently in an installment via some other item (LOCKED)
+                    if (usedEmployeeIds.has(emp.id)) return;
+
+                    list.push({
+                        id: 'emp_' + emp.id,
+                        name: emp.name,
+                        // Map properties from employee object to match item structure
+                        name_en: emp.name_en,
+                        title_en: emp.title_en,
+                        photo: emp.photo,
+                        nationality: emp.nationality,
+                        employee_id: emp.id,
+                        type: 'employee'
+                    });
                 });
 
                 return list;
             },
 
-            // --- Employee Filter Logic ---
             get availableItems() {
                 if (!this.activeGroupId) return [];
 
@@ -235,6 +283,12 @@ if (typeof window.financialManager === 'undefined') {
                     if (usedItemIds.has(item.id)) return;
 
                     // Pricing Mode Filter: In 'per_head', skip if not in any tier
+                    // Note: 'emp_' items (candidates) are never in a tier yet, so they are effectively blocked from installment
+                    // until added to a tier. But adding to a tier creates a ProductionItem?
+                    // No, tiers store ProductionItem IDs. So candidates must be "converted" or created first?
+                    // Actually, for simplicity, we only allow existing Production Items in Per Head mode Installments.
+                    // If user wants to add a new person, they add to job card first (creating ProductionItem), then assign tier.
+
                     let hasPrice = true;
                     if (this.pricingMode === 'per_head') {
                          hasPrice = !!this.getTierForItem(item.id);
@@ -251,36 +305,34 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: item.id, // Value
                         name: item.name,
+                        photo: item.photo,
                         name_en: item.name_en,
                         title_en: item.title_en,
-                        photo: item.photo,
                         nationality: item.nationality,
                         type: 'item'
                     });
                 });
 
                 // 3. Add Candidates (Employees)
-                this.employees.forEach(emp => {
-                    // Check if this employee is already represented by an existing Production Item
-                    if (itemsByEmpId[emp.id]) return;
-                    // Check if already used in another transaction
-                    if (usedEmployeeIds.has(emp.id)) return;
+                // Only show candidates if NOT in per_head mode (since they can't have a price yet)
+                if (this.pricingMode !== 'per_head') {
+                    this.employees.forEach(emp => {
+                        // Check if this employee is already represented by an existing Production Item
+                        if (itemsByEmpId[emp.id]) return;
+                        // Check if already used in another transaction
+                        if (usedEmployeeIds.has(emp.id)) return;
 
-                    // If per_head, only allow if they are assigned to a tier (even if just in-memory as 'emp_')
-                    if (this.pricingMode === 'per_head') {
-                         if (!this.getTierForItem('emp_' + emp.id)) return;
-                    }
-
-                    list.push({
-                        id: 'emp_' + emp.id, // Value with prefix to distinguish
-                        name: emp.name,
-                        name_en: emp.name_en,
-                        title_en: emp.title_en,
-                        photo: emp.photo,
-                        nationality: emp.nationality,
-                        type: 'employee'
+                        list.push({
+                            id: 'emp_' + emp.id, // Value with prefix to distinguish
+                            name: emp.name,
+                            photo: emp.photo,
+                            name_en: emp.name_en,
+                            title_en: emp.title_en,
+                            nationality: emp.nationality,
+                            type: 'employee'
+                        });
                     });
-                });
+                }
 
                 return list;
             },
@@ -323,9 +375,9 @@ if (typeof window.financialManager === 'undefined') {
                          list.push({
                             id: item.id,
                             name: item.name,
+                            photo: item.photo,
                             name_en: item.name_en,
                             title_en: item.title_en,
-                            photo: item.photo,
                             nationality: item.nationality,
                             type: 'item',
                             attached: isAttached
@@ -341,9 +393,9 @@ if (typeof window.financialManager === 'undefined') {
                     list.push({
                         id: 'emp_' + emp.id,
                         name: emp.name,
+                        photo: emp.photo,
                         name_en: emp.name_en,
                         title_en: emp.title_en,
-                        photo: emp.photo,
                         nationality: emp.nationality,
                         type: 'employee',
                         attached: false
@@ -457,16 +509,6 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 this.selectedFile = null;
                 bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
-            },
-
-            selectAllAvailable() {
-                this.selectedTransactionItems = this.availableItems.map(i => i.id);
-                this.recalcAmount();
-            },
-
-            deselectAllTransactionItems() {
-                this.selectedTransactionItems = [];
-                this.recalcAmount();
             },
 
             updateTransaction() {
@@ -761,6 +803,25 @@ if (typeof window.financialManager === 'undefined') {
                                 this.switchGroup(this.activeGroupId);
                             }
                         }
+
+                        // Add new items (converted from candidates) to productionItems list
+                        if (data.new_items && Array.isArray(data.new_items)) {
+                            data.new_items.forEach(newItem => {
+                                const exists = this.productionItems.find(pi => pi.id === newItem.id);
+                                if (!exists) {
+                                    this.productionItems.push({
+                                        id: newItem.id,
+                                        name: newItem.name,
+                                        name_en: newItem.name_en,
+                                        title_en: newItem.title_en,
+                                        photo: newItem.photo,
+                                        nationality: newItem.nationality,
+                                        employee_id: newItem.employee_id
+                                    });
+                                }
+                            });
+                        }
+
                         Swal.fire({ icon: 'success', title: 'Saved', text: 'Settings updated.', timer: 1000, showConfirmButton: false });
                     }
                 })

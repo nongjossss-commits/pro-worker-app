@@ -166,16 +166,19 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             selectAllForModal() {
+                // Use allEmployeesForTier to respect filters (locked items) and include candidates
+                const sourceList = this.allEmployeesForTier;
+
                 if (this.modalSearch) {
                     const term = this.modalSearch.toLowerCase();
-                    const visibleIds = this.productionItems
+                    const visibleIds = sourceList
                         .filter(i => i.name.toLowerCase().includes(term))
                         .map(i => i.id);
 
                     // Union with existing selection
                     this.modalSelectedIds = [...new Set([...this.modalSelectedIds, ...visibleIds])];
                 } else {
-                    this.modalSelectedIds = this.productionItems.map(i => i.id);
+                    this.modalSelectedIds = sourceList.map(i => i.id);
                 }
             },
 
@@ -204,11 +207,28 @@ if (typeof window.financialManager === 'undefined') {
                 // This includes Existing ProductionItems AND Candidates (Employees not yet in Order)
                 // This fixes the issue where new employees don't show up in Price Tier selection.
 
+                // Filter logic: Exclude items that are currently used in an Installment (Transaction)
+                const usedItemIds = new Set();
+                const usedEmployeeIds = new Set();
+
+                // Scan all transactions (using this.transactions as single source of truth)
+                this.transactions.forEach(t => {
+                    if (t.items && Array.isArray(t.items)) {
+                        t.items.forEach(item => {
+                            usedItemIds.add(item.id);
+                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
+                        });
+                    }
+                });
+
                 const list = [];
                 const itemsByEmpId = {};
 
                 // 1. Production Items
                 this.productionItems.forEach(item => {
+                    // Skip if currently in an installment (LOCKED)
+                    if (usedItemIds.has(item.id)) return;
+
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
                     list.push({ ...item, type: 'item' });
                 });
@@ -216,6 +236,8 @@ if (typeof window.financialManager === 'undefined') {
                 // 2. Candidates
                 this.employees.forEach(emp => {
                     if (itemsByEmpId[emp.id]) return; // Already exists as item
+                    // Skip if currently in an installment via some other item (LOCKED)
+                    if (usedEmployeeIds.has(emp.id)) return;
 
                     list.push({
                         id: 'emp_' + emp.id,
