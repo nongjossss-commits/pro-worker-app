@@ -129,7 +129,7 @@
 <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
- <input type="email" class="form-control @error('employerEmail') is-invalid @enderror" id="employerEmail" name="employerEmail" value="{{ old('employerEmail', $employer->employerEmail ?? '') }}">
+ <input type="text" class="form-control @error('employerEmail') is-invalid @enderror" id="employerEmail" name="employerEmail" value="{{ old('employerEmail', $employer->employerEmail ?? '') }}">
  @error('employerEmail')
  <div class="invalid-feedback">{{ $message }}</div>
  @enderror

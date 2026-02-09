@@ -382,7 +382,7 @@
 
                     {{-- Edit Mode --}}
                     <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" :class="{ 'd-flex': isEditing }" style="display: none; min-width: 220px;">
-                        <input x-model="email" type="email" class="form-control form-control-sm" placeholder="Email">
+                        <input x-model="email" type="text" class="form-control form-control-sm" placeholder="Email">
                         <input x-model="outsource_code" type="text" class="form-control form-control-sm" placeholder="Outsource Code">
                         <div class="d-flex gap-1 mt-1">
                             <button @click="save()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i></button>
