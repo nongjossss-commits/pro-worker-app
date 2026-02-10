@@ -289,12 +289,11 @@
     </div>
 </div>
 
-@include('employees.partials._edit_scripts')
-@include('production.registration.partials.edit_modal_script')
-
 @endsection
 
 @push('scripts')
+@include('employees.partials._edit_scripts')
+@include('production.registration.partials.edit_modal_script')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script>
     function calendarApp() {

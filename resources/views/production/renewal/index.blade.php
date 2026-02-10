@@ -809,10 +809,9 @@
 
 @endsection
 
+@push('scripts')
 @include('employees.partials._edit_scripts')
 @include('production.registration.partials.edit_modal_script')
-
-@push('scripts')
 <script>
     // State for Global Server-Side Filter
     const currentStepFilter = @json(request('filter'));

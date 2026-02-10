@@ -631,13 +631,13 @@
     </div>
 </div>
 
-@endsection
-
-@include('employees.partials._edit_scripts')
-@include('production.registration.partials.edit_modal_script')
 @include('employees.modals.advanced_export')
 
+@endsection
+
 @push('scripts')
+@include('employees.partials._edit_scripts')
+@include('production.registration.partials.edit_modal_script')
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const activeTabId = @json($activeTab->id ?? null);
