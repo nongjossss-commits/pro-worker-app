@@ -48,8 +48,9 @@
                     if (onProgress) onProgress(true, 'Removing background (this may take a moment)...');
 
                     // Configuration for better quality and progress tracking
+                    // NOTE: Removed publicPath to let the library use its default (matching version 1.7.0).
+                    // This fixes the "Resource metadata not found" error caused by version mismatch.
                     const config = {
-                        publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.5/dist/',
                         debug: true,
                         progress: (key, current, total) => {
                             if (onProgress) {
@@ -57,10 +58,10 @@
                                 onProgress(true, `Processing: ${percent}%`);
                             }
                         },
-                        model: 'small', // Use small model for faster processing
+                        // model: 'small', // Removed to use default (medium/isnet_fp16) for higher quality ("state-of-the-art")
                         output: {
                             format: 'image/png',
-                            quality: 0.8
+                            quality: 0.95 // Increased for better output
                         }
                     };
 
