@@ -107,6 +107,9 @@
         const bgToolbar = document.getElementById('bgToolbar');
         const loadingOverlay = document.getElementById('cropperLoadingOverlay');
         const loadingText = document.getElementById('cropperLoadingText');
+        const cancelBtn = document.getElementById('cancelProcessingBtn'); // New button
+
+        let currentCancellationToken = null;
 
         if (bgToolbar) {
             bgToolbar.addEventListener('click', async function(e) {
@@ -121,15 +124,26 @@
                     return;
                 }
 
+                // Disable UI
+                const allButtons = cropperModalEl.querySelectorAll('button');
+                allButtons.forEach(b => b.disabled = true);
+                if(cancelBtn) cancelBtn.disabled = false;
+
                 try {
                     // Show Loading
                     if (loadingOverlay) loadingOverlay.classList.remove('d-none');
                     if (loadingText) loadingText.textContent = 'Processing...';
 
+                    // Create Token
+                    currentCancellationToken = { cancelled: false, onCancel: null };
+
                     // Process
                     const processedBlob = await window.backgroundRemoval.process(originalFile, action, (active, text) => {
                         if (loadingText && text) loadingText.textContent = text;
-                    });
+                    }, currentCancellationToken);
+
+                    // Check Cancellation
+                    if (currentCancellationToken.cancelled) return;
 
                     // Update Mime Type for Saving
                     if (action === 'transparent') {
@@ -150,11 +164,30 @@
                     initCropperInstance();
 
                 } catch (err) {
-                    console.error(err);
-                    alert('Failed to process image: ' + err.message);
+                    if (err.message === 'Cancelled by user') {
+                        console.log('Processing cancelled');
+                    } else {
+                        console.error(err);
+                        alert('Failed to process image: ' + err.message);
+                    }
                 } finally {
                     // Hide Loading
                     if (loadingOverlay) loadingOverlay.classList.add('d-none');
+                    // Enable UI
+                    const allButtons = cropperModalEl.querySelectorAll('button');
+                    allButtons.forEach(b => b.disabled = false);
+                    currentCancellationToken = null;
+                }
+            });
+        }
+
+        // Cancel Button Listener
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function() {
+                if (currentCancellationToken) {
+                    currentCancellationToken.cancelled = true;
+                    if (currentCancellationToken.onCancel) currentCancellationToken.onCancel();
+                    if (loadingText) loadingText.textContent = 'Cancelling...';
                 }
             });
         }

@@ -19,7 +19,7 @@
         },
 
         // Main function to process image
-        async process(file, colorType, onProgress) {
+        async process(file, colorType, onProgress, cancellationToken) {
             // 1. Reset cache if file changed
             if (this.cache.originalFile !== file) {
                 this.cache.originalFile = file;
@@ -39,12 +39,18 @@
                     if (onProgress) onProgress(true, 'Initializing AI Model...');
 
                     // Check if library is loaded (Wait up to 10 seconds)
-                    const removeBackgroundFn = await this.waitForLibrary();
+                    const removeBackgroundFn = await this.waitForLibrary(cancellationToken);
+
+                    if (cancellationToken && cancellationToken.cancelled) {
+                        throw new Error('Cancelled by user');
+                    }
 
                     if (onProgress) onProgress(true, 'Removing background (this may take a moment)...');
 
                     // Configuration for better quality and progress tracking
                     const config = {
+                        publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.7.0/dist/',
+                        debug: true,
                         progress: (key, current, total) => {
                             if (onProgress) {
                                 const percent = Math.round((current / total) * 100);
@@ -58,18 +64,29 @@
                         }
                     };
 
-                    // Execute removal with timeout race
+                    // Execute removal with timeout and cancellation race
                     const processPromise = removeBackgroundFn(file, config);
+
                     const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Processing timed out (30s). Please check your connection.')), 30000)
+                        setTimeout(() => reject(new Error('Processing timed out (60s). Please check your connection.')), 60000)
                     );
 
-                    transparentBlob = await Promise.race([processPromise, timeoutPromise]);
+                    const cancellationPromise = new Promise((_, reject) => {
+                        if (cancellationToken) {
+                            cancellationToken.onCancel = () => reject(new Error('Cancelled by user'));
+                            if (cancellationToken.cancelled) reject(new Error('Cancelled by user'));
+                        }
+                    });
+
+                    transparentBlob = await Promise.race([processPromise, timeoutPromise, cancellationPromise]);
 
                     this.cache.transparentBlob = transparentBlob;
                 } catch (error) {
                     console.error('Background removal failed:', error);
                     // Provide user-friendly error
+                    if (error.message === 'Cancelled by user') {
+                        throw error; // Propagate cancellation
+                    }
                     if (error.message && error.message.includes('fetch')) {
                         throw new Error('Failed to download AI model. Please check your internet connection.');
                     }
@@ -87,6 +104,9 @@
             // 5. Composite for colors
             if (onProgress) onProgress(true, 'Applying background color...');
             try {
+                // Check cancellation before compositing
+                if (cancellationToken && cancellationToken.cancelled) throw new Error('Cancelled by user');
+
                 const color = this.colors[colorType] || '#FFFFFF';
                 return await this.compositeBackground(transparentBlob, color);
             } finally {
@@ -95,7 +115,7 @@
         },
 
         // Helper to wait for the ESM module to load
-        waitForLibrary() {
+        waitForLibrary(cancellationToken) {
             return new Promise((resolve, reject) => {
                 if (window.imglyRemoveBackground) {
                     resolve(window.imglyRemoveBackground);
@@ -104,6 +124,11 @@
 
                 let retries = 0;
                 const interval = setInterval(() => {
+                    if (cancellationToken && cancellationToken.cancelled) {
+                        clearInterval(interval);
+                        reject(new Error('Cancelled by user'));
+                        return;
+                    }
                     if (window.imglyRemoveBackground) {
                         clearInterval(interval);
                         resolve(window.imglyRemoveBackground);
