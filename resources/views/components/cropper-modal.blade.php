@@ -12,6 +12,9 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <div id="cropperLoadingText" class="mt-2 text-primary fw-bold">{{ __('Processing...') }}</div>
+                    <button type="button" id="cancelProcessingBtn" class="btn btn-danger btn-sm mt-3">
+                        <i class="bi bi-x-circle"></i> {{ __('Cancel') }}
+                    </button>
                 </div>
 
                 <style>
