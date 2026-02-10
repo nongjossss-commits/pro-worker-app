@@ -1,7 +1,7 @@
 <form id="employeeEditForm" action="{{ route('employees.update', $employee->id) }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
-    <input type="hidden" name="_previous" value="{{ url()->previous() }}">
+    <input type="hidden" name="_previous" value="{{ route('employees.edit', $employee->id) }}">
     <input type="hidden" name="employer_id" value="{{ $employee->employer_id }}">
 
     {{-- Category 1: Personal Information --}}
