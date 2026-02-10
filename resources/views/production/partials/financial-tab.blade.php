@@ -116,7 +116,13 @@
                                         <td><input type="number" class="form-control form-control-sm" x-model="tier.price" @input="updateTotal()" placeholder="Price"></td>
                                         <td>
                                             <div class="input-group input-group-sm">
-                                                <input type="text" class="form-control text-center bg-white" readonly :value="tier.item_ids ? tier.item_ids.length : (tier.count || 0)">
+                                                <div class="input-group-text p-0 overflow-hidden" style="width: 60px;">
+                                                    <div class="d-flex flex-column w-100" style="font-size: 0.65rem; line-height: 1;">
+                                                        <span class="text-primary fw-bold" title="Remaining to Bill" x-text="getTierRemainingCount(index)"></span>
+                                                        <hr class="my-0">
+                                                        <span class="text-muted" title="Total Assigned" x-text="tier.item_ids ? tier.item_ids.length : 0"></span>
+                                                    </div>
+                                                </div>
                                                 <button class="btn btn-outline-secondary" type="button" @click="openManageEmployeesModal(index)" title="Manage Employees">
                                                     <i class="bi bi-people-fill"></i>
                                                 </button>
@@ -135,14 +141,15 @@
                     </div>
 
                     <!-- Validation Message -->
-                    <div class="d-flex justify-content-between small">
-                        <span>{{ __('Total Employees') }}: <strong x-text="employeeCount"></strong></span>
-                        <span :class="{'text-success': tierCountSum === employeeCount, 'text-danger': tierCountSum !== employeeCount}">
-                            {{ __('Assigned') }}: <strong x-text="tierCountSum"></strong>
-                        </span>
-                    </div>
-                    <div x-show="tierCountSum !== employeeCount" class="text-danger small mt-1">
-                        * Assigned count must equal total employees.
+                    <div class="d-flex flex-column gap-1 small mt-2">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ __('Total Employees') }}: <strong x-text="employeeCount"></strong></span>
+                            <span>{{ __('Assigned') }}: <strong x-text="tierCountSum"></strong></span>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                            <span>{{ __('Unassigned') }}: <strong class="text-warning" x-text="unassignedEmployeeCount"></strong></span>
+                            <span>{{ __('Billed') }}: <strong class="text-info" x-text="billedItemIds.size"></strong></span>
+                        </div>
                     </div>
                 </div>
 
@@ -236,7 +243,7 @@
                 </div>
 
                 <!-- Save Pricing Button -->
-                <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSavingSettings || (pricingMode === 'per_head' && tierCountSum !== employeeCount)">
+                <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSavingSettings">
                     <i class="bi bi-save me-1"></i> {{ __('Save Pricing & Advance Items') }}
                 </button>
             </div>
@@ -620,6 +627,11 @@
                                         In <span x-text="getTierForItem(item.id).price"></span>
                                     </span>
                                 </template>
+
+                                <!-- Indicator if already billed -->
+                                <template x-if="billedItemIds.has(item.id)">
+                                    <span class="badge bg-info ms-1 fw-normal" style="font-size: 0.7em;">Billed</span>
+                                </template>
                             </label>
                         </template>
                         <div x-show="allEmployeesForTier.length === 0" class="p-3 text-center text-muted">No employees found.</div>
@@ -757,6 +769,7 @@
                                         <template x-for="item in availableItems" :key="item.id">
                                             <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
                                                 <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcAmount()">
+                                                <span class="badge bg-light text-dark border ms-auto" x-text="getItemPrice(item.id)" style="font-size: 0.65rem;"></span>
                                                 <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
@@ -825,7 +838,8 @@
                                         <!-- Show ALL items for edit (Available + Currently Attached) -->
                                         <template x-for="item in editModalItems" :key="item.id">
                                             <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
-                                                <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems">
+                                                <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcEditAmount()">
+                                                <span class="badge bg-light text-dark border ms-auto" x-text="getItemPrice(item.id)" style="font-size: 0.65rem;"></span>
                                                 <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">

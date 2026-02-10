@@ -265,6 +265,14 @@
                  $advanceTotal = $advanceItems->sum('total');
             }
 
+            // Helper to get price for an item
+            $getPriceForItem = function($itemId, $tiers) {
+                foreach ($tiers as $tier) {
+                    if (in_array($itemId, $tier['item_ids'] ?? [])) return (float)($tier['price'] ?? 0);
+                }
+                return 0;
+            };
+
             // 4. VAT & Tax Logic
             $vatIncluded = $financial['vat_included'] ?? false;
             $vatRate = $financial['vat_rate'] ?? 7;
@@ -305,73 +313,90 @@
                     @endif
 
                     @if($hasSpecificTransactions)
-                         @foreach($serviceTransactions as $index => $t)
+                        @php $lineIdx = 1; @endphp
+                        @foreach($serviceTransactions as $t)
                             @php
                                 $amount = $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
-                                $itemCount = $t->items->count();
+                                $items = $t->items;
                                 $pricingMode = $financial['pricing_mode'] ?? 'per_head';
-
-                                $qty = 1;
-                                $unitPrice = $amount;
-                                // Use Note as description if available
-                                $description = $t->notes ?: ucfirst(str_replace('_', ' ', $t->type));
-
-                                if ($itemCount > 0) {
-                                    if ($pricingMode === 'per_head') {
-                                        $qty = $itemCount;
-                                        $unitPrice = ($qty > 0) ? ($amount / $qty) : 0;
-                                    } else {
-                                        if (!$t->notes) {
-                                            $description .= " (" . $itemCount . " Employees)";
-                                        }
-                                    }
-                                }
-
-                                // Logic for Customer Override (Bill To Client)
-                                // Only apply if no custom note
-                                if (!$t->notes && isset($financial['customer_override']) && !empty($financial['customer_override']['name']) && $t->type === 'installment') {
-                                     $employerName = $production->employer->employerNameTh ?? $production->employer->employerNameEn ?? 'Employer';
-                                     $description = $employerName;
-                                }
+                                $pricingTiers = $financial['pricing_tiers'] ?? [];
                             @endphp
-                            <tr>
-                                <td class="text-center">{{ $index + 1 }}</td>
-                                <td>
-                                    <strong>{{ $description }}</strong>
-                                    @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
-                                    @if($isReceiptContext && $t->amount > $amount)
-                                        <br><span class="badge" style="font-size: 10px; background: #eee; padding: 2px 4px; border-radius: 4px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">{{ $qty }}</td>
-                                <td class="text-right">{{ number_format($unitPrice, 2) }}</td>
-                                <td class="text-right">{{ number_format($amount, 2) }}</td>
-                            </tr>
+
+                            @if($pricingMode === 'per_head' && $items->isNotEmpty())
+                                {{-- Group items by price for breakdown --}}
+                                @php
+                                    $priceGroups = $items->groupBy(function($item) use ($getPriceForItem, $pricingTiers) {
+                                        return $getPriceForItem($item->id, $pricingTiers);
+                                    });
+                                @endphp
+
+                                @foreach($priceGroups as $price => $groupedItems)
+                                    @php
+                                        $count = $groupedItems->count();
+                                        $subtotal = $price * $count;
+                                        $desc = $t->notes ?: ucfirst(str_replace('_', ' ', $t->type));
+                                        if ($priceGroups->count() > 1) {
+                                            $desc .= " (Group: " . number_format($price) . " THB)";
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td class="text-center">{{ $lineIdx++ }}</td>
+                                        <td>
+                                            <strong>{{ $desc }}</strong>
+                                            <br><span class="text-muted" style="font-size: 11px;">{{ $count }} Employees @ {{ number_format($price, 2) }} ฿</span>
+                                            @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                        </td>
+                                        <td class="text-center">{{ $count }}</td>
+                                        <td class="text-right">{{ number_format($price, 2) }}</td>
+                                        <td class="text-right">{{ number_format($subtotal, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            @else
+                                {{-- Fixed mode or no items --}}
+                                <tr>
+                                    <td class="text-center">{{ $lineIdx++ }}</td>
+                                    <td>
+                                        <strong>{{ $t->notes ?: ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
+                                        @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                    </td>
+                                    <td class="text-center">1</td>
+                                    <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                    <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                </tr>
+                            @endif
                         @endforeach
                     @else
                         <!-- Fallback: Full Project Summary (Quotation Style) -->
                         @php
                              $pricingMode = $financial['pricing_mode'] ?? 'per_head';
-                             $empCount = $production->items->count();
-
-                             $qty = 1;
-                             $unitPrice = $serviceTotal;
-                             $description = $production->project_name ?? 'Service Fee for Recruitment';
-
-                             if ($pricingMode === 'per_head') {
-                                 $qty = $empCount;
-                                 $unitPrice = ($qty > 0) ? ($serviceTotal / $qty) : 0;
-                             } else {
-                                 $description .= " ({$empCount} Employees)";
-                             }
+                             $pricingTiers = $financial['pricing_tiers'] ?? [];
                         @endphp
-                        <tr>
-                            <td class="text-center">1</td>
-                            <td>{{ $description }}</td>
-                            <td class="text-center">{{ $qty }}</td>
-                            <td class="text-right">{{ number_format($unitPrice, 2) }}</td>
-                            <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
-                        </tr>
+
+                        @if($pricingMode === 'per_head' && !empty($pricingTiers))
+                            @foreach($pricingTiers as $idx => $tier)
+                                @php $count = count($tier['item_ids'] ?? []); @endphp
+                                @if($count > 0)
+                                    <tr>
+                                        <td class="text-center">{{ $idx + 1 }}</td>
+                                        <td>
+                                            <strong>{{ $production->project_name ?? 'Service Fee' }}</strong>
+                                            @if(!empty($tier['note'])) <br><small class="text-muted">({{ $tier['note'] }})</small> @endif
+                                        </td>
+                                        <td class="text-center">{{ $count }}</td>
+                                        <td class="text-right">{{ number_format($tier['price'], 2) }}</td>
+                                        <td class="text-right">{{ number_format($tier['price'] * $count, 2) }}</td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        @else
+                            <tr>
+                                <td class="text-center">1</td>
+                                <td>{{ $production->project_name ?? 'Service Fee' }}</td>
+                                <td class="text-center">1</td>
+                                <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
+                                <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
+                            </tr>
+                        @endif
                     @endif
                 @endif
 
