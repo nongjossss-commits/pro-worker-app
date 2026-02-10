@@ -859,11 +859,20 @@ class WorkflowController extends Controller
                 }
 
                 if ($request->ajax() || $request->wantsJson()) {
+                    $redirectRoute = $isPreProduction
+                        ? route('production.index', ['tab' => 'notify_out'])
+                        : route('workflow.index', ['tab' => 'notify_out']);
+
                     return response()->json([
                         'success' => true,
                         'message' => 'Employees processed into resignation lists.',
-                        'redirect_url' => route('workflow.index', ['tab' => 'notify_out']) // Force refresh
+                        'order_ids' => $updatedOrderIds,
+                        'redirect_url' => $redirectRoute
                     ]);
+                }
+
+                if ($isPreProduction) {
+                    return redirect()->route('production.index', ['tab' => 'notify_out'])->with('success', 'Employees processed.');
                 }
                 return redirect()->route('workflow.index', ['tab' => 'notify_out'])->with('success', 'Employees processed.');
             }
