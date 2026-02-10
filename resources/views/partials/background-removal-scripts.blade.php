@@ -45,28 +45,34 @@
                         throw new Error('Cancelled by user');
                     }
 
+                    // --- OPTIMIZATION: Resize large images ---
+                    // Downscaling to 1200px max dimension significantly speeds up processing (e.g. 10x faster for 12MP photos)
+                    // while retaining enough quality for ID cards.
+                    if (onProgress) onProgress(true, 'Optimizing image size...');
+                    const resizedFile = await this.resizeImage(file, 1200);
+
                     if (onProgress) onProgress(true, 'Removing background (this may take a moment)...');
 
                     // Configuration for better quality and progress tracking
-                    // NOTE: Removed publicPath to let the library use its default (matching version 1.7.0).
-                    // This fixes the "Resource metadata not found" error caused by version mismatch.
                     const config = {
                         debug: true,
+                        device: 'gpu', // Hint to use GPU if available
                         progress: (key, current, total) => {
                             if (onProgress) {
                                 const percent = Math.round((current / total) * 100);
                                 onProgress(true, `Processing: ${percent}%`);
                             }
                         },
-                        // model: 'small', // Removed to use default (medium/isnet_fp16) for higher quality ("state-of-the-art")
+                        // model: 'medium', // Default (isnet_fp16) is accurate. We rely on resizing for speed.
                         output: {
                             format: 'image/png',
-                            quality: 0.95 // Increased for better output
+                            quality: 0.95
                         }
                     };
 
                     // Execute removal with timeout and cancellation race
-                    const processPromise = removeBackgroundFn(file, config);
+                    // Use resizedFile instead of original file
+                    const processPromise = removeBackgroundFn(resizedFile, config);
 
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error('Processing timed out (60s). Please check your connection.')), 60000)
@@ -113,6 +119,63 @@
             } finally {
                 if (onProgress) onProgress(false);
             }
+        },
+
+        // Helper to resize image
+        resizeImage(file, maxDimension) {
+            return new Promise((resolve, reject) => {
+                if (!file.type.match(/image.*/)) {
+                    resolve(file); // Not an image, return original
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (readerEvent) => {
+                    const image = new Image();
+                    image.onload = () => {
+                        let width = image.width;
+                        let height = image.height;
+
+                        if (width <= maxDimension && height <= maxDimension) {
+                            resolve(file); // No need to resize
+                            return;
+                        }
+
+                        if (width > height) {
+                            if (width > maxDimension) {
+                                height *= maxDimension / width;
+                                width = maxDimension;
+                            }
+                        } else {
+                            if (height > maxDimension) {
+                                width *= maxDimension / height;
+                                height = maxDimension;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(image, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                resolve(file); // Fallback
+                                return;
+                            }
+                            resolve(new File([blob], file.name, {
+                                type: file.type,
+                                lastModified: Date.now(),
+                            }));
+                        }, file.type, 0.95);
+                    };
+                    image.onerror = () => resolve(file); // Fallback
+                    image.src = readerEvent.target.result;
+                };
+                reader.onerror = () => resolve(file); // Fallback
+                reader.readAsDataURL(file);
+            });
         },
 
         // Helper to wait for the ESM module to load
