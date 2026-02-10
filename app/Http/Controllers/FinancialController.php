@@ -116,6 +116,10 @@ class FinancialController extends Controller
             $transaction->slip_path = $path;
         }
 
+        if ($request->has('amount')) {
+            $transaction->amount = $request->amount;
+        }
+
         if ($request->has('paid_amount')) {
             $transaction->paid_amount = $request->paid_amount;
             if (!$transaction->paid_at && $transaction->paid_amount > 0) {
