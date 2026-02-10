@@ -521,6 +521,22 @@ if (typeof window.financialManager === 'undefined') {
                 bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
             },
 
+            openScannerForTransaction(t) {
+                this.openPayModal(t);
+                // Allow modal transition to start
+                setTimeout(() => {
+                    const inputId = 'editSlipInput';
+                    const initialUrl = t.slip_path ? '/storage/' + t.slip_path : null;
+
+                    window.dispatchEvent(new CustomEvent('open-document-scanner', {
+                        detail: {
+                            inputId: inputId,
+                            initialUrl: initialUrl
+                        }
+                    }));
+                }, 300);
+            },
+
             updateTransaction() {
                 const formData = new FormData();
                 formData.append('_method', 'PUT');

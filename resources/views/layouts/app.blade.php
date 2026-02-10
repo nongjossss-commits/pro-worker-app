@@ -634,6 +634,7 @@
     {{-- Document Scanner Component (Global) --}}
     @include('components.document-scanner')
 
+    <script src="{{ asset('js/global-scanner-interceptor.js') }}"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
 
     <script>

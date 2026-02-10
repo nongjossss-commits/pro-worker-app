@@ -38,7 +38,7 @@
             <!-- Hidden File Input -->
             <input type="file"
                    x-ref="fileInput"
-                   class="hidden"
+                   class="hidden scanner-internal-input"
                    accept="image/*,application/pdf"
                    multiple
                    @change="handleImport($event)">
@@ -1687,7 +1687,11 @@
                     const input = document.getElementById(this.targetInputId);
                     if (input) {
                         input.files = dt.files;
+                        // Mark as processed by scanner to prevent loop
+                        input.dataset.scannerProcessed = "true";
                         input.dispatchEvent(new Event('change', { bubbles: true }));
+                        // Clear flag after dispatch (optional, but safer to keep for a bit)
+                        setTimeout(() => delete input.dataset.scannerProcessed, 100);
                     }
 
                     // Handle Preview

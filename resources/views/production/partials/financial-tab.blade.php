@@ -419,8 +419,16 @@
                                     <td class="ps-3">
                                         <div class="fw-bold" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
-                                        <div x-show="t.slip_path" class="mt-1">
-                                            <a :href="'/storage/' + t.slip_path" target="_blank" class="badge bg-info text-decoration-none">View Slip</a>
+                                        <div x-show="t.slip_path" class="mt-1 btn-group btn-group-sm shadow-sm">
+                                            <button class="btn btn-warning py-0 px-2 text-dark" style="font-size: 0.7rem;" @click="openScannerForTransaction(t)" title="Edit Document">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </button>
+                                            <a :href="'/storage/' + t.slip_path" target="_blank" class="btn btn-success py-0 px-2" style="font-size: 0.7rem;" title="View Document">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <a :href="'/storage/' + t.slip_path" download class="btn btn-danger py-0 px-2" style="font-size: 0.7rem;" title="Download File">
+                                                <i class="bi bi-file-earmark-arrow-down"></i> Download
+                                            </a>
                                         </div>
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
@@ -468,8 +476,16 @@
                                     <td class="ps-3">
                                         <div class="fw-bold text-primary" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
-                                        <div x-show="t.slip_path" class="mt-1">
-                                            <a :href="'/storage/' + t.slip_path" target="_blank" class="badge bg-info text-decoration-none">View Slip</a>
+                                        <div x-show="t.slip_path" class="mt-1 btn-group btn-group-sm shadow-sm">
+                                            <button class="btn btn-warning py-0 px-2 text-dark" style="font-size: 0.7rem;" @click="openScannerForTransaction(t)" title="Edit Document">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </button>
+                                            <a :href="'/storage/' + t.slip_path" target="_blank" class="btn btn-success py-0 px-2" style="font-size: 0.7rem;" title="View Document">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <a :href="'/storage/' + t.slip_path" download class="btn btn-danger py-0 px-2" style="font-size: 0.7rem;" title="Download File">
+                                                <i class="bi bi-file-earmark-arrow-down"></i> Download
+                                            </a>
                                         </div>
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
@@ -815,7 +831,7 @@
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Upload Slip</label>
-                                    <input type="file" class="form-control form-control-sm" @change="handleFileSelect">
+                                    <input type="file" id="editSlipInput" x-ref="slipInput" class="form-control form-control-sm" @change="handleFileSelect">
                                 </div>
                              </div>
                              <div class="col-md-6 border-start">
