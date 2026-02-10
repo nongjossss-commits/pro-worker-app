@@ -31,7 +31,18 @@
                             <input type="hidden" name="is_pre_production" id="add_employee_is_pre_production" value="0">
 
                             {{-- Employer Search (Visible only if no Order ID) --}}
-                            <div id="section-select-employer" class="mb-3 d-none" x-data="employerSearchApp()" @reset-employer-search.window="resetSearch($event.detail)">
+                            @php
+                                $employerListInternal = isset($employers) ? $employers->map(fn($e) => [
+                                    'id' => $e->id,
+                                    'name_th' => $e->employerNameTh,
+                                    'name_en' => $e->employerNameEn,
+                                    'search_str' => strtolower(($e->employerNameTh ?? '') . ' ' . ($e->employerNameEn ?? ''))
+                                ])->values() : collect([]);
+                            @endphp
+
+                            <div id="section-select-employer" class="mb-3 d-none"
+                                 x-data='employerSelectorInternal(@json($employerListInternal))'
+                                 @reset-employer-search.window="resetSearch()">
                                 <label class="form-label fw-bold">{{ __('Select Employer') }} <span class="text-danger">*</span></label>
                                 <div class="position-relative" @click.outside="open = false">
                                     <div class="input-group">
@@ -41,7 +52,7 @@
                                                placeholder="{{ __('Type to search employer...') }}"
                                                x-model="search"
                                                @focus="open = true"
-                                               @input="onInput"
+                                               @input="open = true; selectedId = ''"
                                                @keydown.escape="open = false"
                                                autocomplete="off">
                                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
@@ -50,15 +61,15 @@
                                     {{-- Dropdown List --}}
                                     <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
                                          style="z-index: 1050; max-height: 250px; overflow-y: auto;"
-                                         x-show="open && results.length > 0"
+                                         x-show="open && filteredEmployers.length > 0"
                                          x-transition
                                          style="display: none;">
                                         <ul class="list-group list-group-flush">
-                                            <template x-for="emp in results" :key="emp.id">
+                                            <template x-for="emp in filteredEmployers" :key="emp.id">
                                                 <li class="list-group-item list-group-item-action cursor-pointer"
                                                     @click="selectEmployer(emp)">
-                                                    <div class="fw-bold" x-text="emp.employerNameTh || emp.employerNameEn"></div>
-                                                    <div class="small text-muted" x-text="emp.employerNameEn"></div>
+                                                    <div class="fw-bold" x-text="emp.name_th || emp.name_en"></div>
+                                                    <div class="small text-muted" x-text="emp.name_en"></div>
                                                 </li>
                                             </template>
                                         </ul>
@@ -67,22 +78,11 @@
                                     {{-- No Results --}}
                                     <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
                                          style="z-index: 1050;"
-                                         x-show="open && results.length === 0 && search.length >= 2 && !loading"
+                                         x-show="open && filteredEmployers.length === 0"
                                          x-transition
                                          style="display: none;">
                                          <div class="list-group list-group-flush">
                                             <div class="list-group-item text-muted text-center">{{ __('No employers found.') }}</div>
-                                         </div>
-                                    </div>
-
-                                    {{-- Loading --}}
-                                    <div class="card position-absolute w-100 shadow-sm mt-1 border-0"
-                                         style="z-index: 1050;"
-                                         x-show="open && loading"
-                                         x-transition
-                                         style="display: none;">
-                                         <div class="list-group list-group-flush">
-                                            <div class="list-group-item text-muted text-center"><span class="spinner-border spinner-border-sm"></span> Searching...</div>
                                          </div>
                                     </div>
                                 </div>
@@ -160,59 +160,36 @@
 </div>
 
 <script>
-    function employerSearchApp() {
+    function employerSelectorInternal(employersData) {
         return {
             search: '',
             open: false,
-            results: [],
-            loading: false,
-            searchTimeout: null,
+            selectedId: '',
+            employers: employersData,
 
-            onInput() {
-                this.open = true;
-                this.loading = true;
-                // Clear current selection
-                document.getElementById('modal_employer_id').value = '';
-
-                clearTimeout(this.searchTimeout);
-
-                if (this.search.length < 2) {
-                    this.results = [];
-                    this.loading = false;
-                    return;
-                }
-
-                this.searchTimeout = setTimeout(() => {
-                    fetch(`{{ route('api-web.employers.list') }}?search=${encodeURIComponent(this.search)}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            this.results = data;
-                            this.loading = false;
-                        })
-                        .catch(() => {
-                            this.loading = false;
-                            this.results = [];
-                        });
-                }, 300);
+            get filteredEmployers() {
+                if (this.search === '') return this.employers;
+                const term = this.search.toLowerCase();
+                return this.employers.filter(e => e.search_str.includes(term));
             },
 
             selectEmployer(emp) {
-                this.search = emp.employerNameTh || emp.employerNameEn;
+                this.selectedId = emp.id;
+                this.search = emp.name_th || emp.name_en;
                 this.open = false;
 
                 document.getElementById('modal_employer_id').value = emp.id;
 
-                // Dispatch legacy event for other parts
+                // Dispatch legacy event for other parts (if needed)
                 window.dispatchEvent(new CustomEvent('set-employer-id', {
                     detail: { id: emp.id }
                 }));
             },
 
-            resetSearch(detail) {
+            resetSearch() {
                 this.search = '';
-                this.results = [];
+                this.selectedId = '';
                 this.open = false;
-                this.loading = false;
                 document.getElementById('modal_employer_id').value = '';
             }
         }
@@ -360,16 +337,42 @@
                         });
 
                         // Dynamic Update
-                        if (data.order_id) {
+                        let handled = false;
+
+                        if (data.order_ids && Array.isArray(data.order_ids) && data.order_ids.length > 0) {
+                             // Multiple Orders (e.g. Resignation List Grouped)
+                             let anyUpdated = false;
+                             data.order_ids.forEach(id => {
+                                 if (window.refreshOrderContent) {
+                                     // Check if this order exists in current view
+                                     const container = document.getElementById(`order-content-${id}`);
+                                     if(container) {
+                                         window.refreshOrderContent(id);
+                                         anyUpdated = true;
+                                     }
+                                 }
+                             });
+
+                             if (anyUpdated) {
+                                 handled = true;
+                             }
+                        }
+
+                        if (!handled && data.order_id) {
                             if (window.refreshOrderContent) {
-                                window.refreshOrderContent(data.order_id);
-                            } else {
-                                location.reload();
+                                // Check if visible
+                                const container = document.getElementById(`order-content-${data.order_id}`);
+                                if (container) {
+                                    window.refreshOrderContent(data.order_id);
+                                    if (window.updateOrderHeaderStats && data.order_stats) {
+                                        window.updateOrderHeaderStats(data.order_id, data.order_stats);
+                                    }
+                                    handled = true;
+                                }
                             }
-                            if (window.updateOrderHeaderStats && data.order_stats) {
-                                window.updateOrderHeaderStats(data.order_id, data.order_stats);
-                            }
-                        } else {
+                        }
+
+                        if (!handled) {
                             if(data.redirect_url) {
                                 window.location.href = data.redirect_url;
                             } else {
