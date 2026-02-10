@@ -49,13 +49,23 @@
 
 <div class="container-fluid py-4">
     {{-- Scoreboard (Detailed Registration Style) --}}
-    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-6 g-3 mb-4">
         {{-- Total Employees --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 cursor-pointer" onclick="window.location.href = window.location.pathname + '?tab={{ $activeTab->slug ?? '' }}';" style="background-color: #FBBF24;">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Daily Check (Reset at Midnight) --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer filter-card" id="filter-daily-check" onclick="toggleFilter('pending_daily_check')" style="background-color: #F97316;">
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0">{{ $stats['pending_daily_check'] ?? 0 }}</h1>
+                    <p class="fs-5 fw-light mb-0">{{ __('Daily Check') }}</p>
                 </div>
             </div>
         </div>
@@ -775,6 +785,7 @@
             if (currentStepFilter === 'not_started') document.getElementById('filter-not-started')?.classList.add('filter-active');
             else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
             else if (currentStepFilter === 'completed') document.getElementById('filter-completed')?.classList.add('filter-active');
+            else if (currentStepFilter === 'pending_daily_check') document.getElementById('filter-daily-check')?.classList.add('filter-active');
             else {
                 const pill = document.getElementById(`filter-step-${currentStepFilter}`);
                 if (pill) pill.classList.add('filter-active');
@@ -1334,16 +1345,30 @@
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                // UI update: Remove the button and the orange border
-                const card = document.getElementById(`item-card-${itemId}`);
-                if(card) {
-                    const cardInner = card.querySelector('.card');
-                    // Remove border warning classes
-                    cardInner.classList.remove('border-warning', 'border-3', 'shadow');
-                    cardInner.classList.add('shadow-sm'); // Reset to default shadow
-                    // Find and remove the check button
-                    const checkBtn = card.querySelector('button[title="Daily Check"]');
-                    if(checkBtn) checkBtn.remove();
+                const urlParams = new URLSearchParams(window.location.search);
+                const currentFilter = urlParams.get('filter');
+
+                // If filtering by "Daily Check", remove the card completely
+                if (currentFilter === 'pending_daily_check') {
+                    removeItemCard(itemId);
+                    // Decrement scoreboard
+                    const scoreboard = document.querySelector('#filter-daily-check h1');
+                    if(scoreboard) {
+                        let count = parseInt(scoreboard.innerText);
+                        if(count > 0) scoreboard.innerText = count - 1;
+                    }
+                } else {
+                    // UI update: Remove the button and the orange border
+                    const card = document.getElementById(`item-card-${itemId}`);
+                    if(card) {
+                        const cardInner = card.querySelector('.card');
+                        // Remove border warning classes
+                        cardInner.classList.remove('border-warning', 'border-3', 'shadow');
+                        cardInner.classList.add('shadow-sm'); // Reset to default shadow
+                        // Find and remove the check button
+                        const checkBtn = card.querySelector('button[title="Daily Check"]');
+                        if(checkBtn) checkBtn.remove();
+                    }
                 }
             }
         });
