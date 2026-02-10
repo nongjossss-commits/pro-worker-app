@@ -455,6 +455,7 @@
             previousMousePosition: { x: 0, y: 0 },
             rotation: 0, // Current rotation in degrees (0, 90, 180, 270)
             activeFilter: 'original', // original, bw, magic, gray
+            editorSourceCanvas: null, // Store rotated source for preview
 
             init() {
                 // Initialize PDF.js worker
@@ -472,6 +473,13 @@
                 window.addEventListener('mouseup', () => this.stopDrag());
                 window.addEventListener('touchmove', (e) => this.onDrag(e), {passive: false});
                 window.addEventListener('touchend', () => this.stopDrag());
+
+                // Watch activeFilter for live preview
+                this.$watch('activeFilter', () => {
+                     if (this.view === 'crop') {
+                         this.renderEditorCanvas();
+                     }
+                });
             },
 
             getHeaderTitle() {
@@ -1284,6 +1292,9 @@
                     this.imageWidth = rotCanvas.width;
                     this.imageHeight = rotCanvas.height;
 
+                    // SAVE THIS for preview updates
+                    this.editorSourceCanvas = rotCanvas;
+
                     const canvas = this.$refs.cropCanvas;
                     const container = this.$refs.cropContainer;
 
@@ -1296,8 +1307,8 @@
                     canvas.width = this.canvasWidth;
                     canvas.height = this.canvasHeight;
 
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(rotCanvas, 0, 0, this.canvasWidth, this.canvasHeight);
+                    // Render with filter check
+                    this.renderEditorCanvas();
 
                     this.scaleX = this.canvasWidth / this.imageWidth;
                     this.scaleY = this.canvasHeight / this.imageHeight;
@@ -1321,6 +1332,29 @@
                     }
                 };
                 img.src = src;
+            },
+
+            renderEditorCanvas() {
+                if (!this.editorSourceCanvas) return;
+
+                const canvas = this.$refs.cropCanvas;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                // 1. Draw Original (Scaled) - effectively resetting the view
+                ctx.drawImage(this.editorSourceCanvas, 0, 0, this.canvasWidth, this.canvasHeight);
+
+                // 2. Apply Filter (if not original)
+                if (this.activeFilter !== 'original' && typeof cv !== 'undefined' && this.cvLoaded) {
+                    try {
+                        const srcMat = cv.imread(canvas);
+                        const dstMat = this.applyFilter(srcMat, this.activeFilter);
+                        cv.imshow(canvas, dstMat);
+                        srcMat.delete();
+                        if (dstMat !== srcMat) dstMat.delete();
+                    } catch (e) {
+                        console.error("Preview Filter Error:", e);
+                    }
+                }
             },
 
             resetToFull() {
