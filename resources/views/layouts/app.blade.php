@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const addressForm = document.getElementById('addressForm');
     const saveBtn = document.getElementById('saveAddressBtn');
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
+    await fetchThaiAddressData();
     // --- Form Fields ---
     const fields = {
         id: document.getElementById('address_id'),
@@ -1212,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Modal Opening Logic ---
     addressModalEl.addEventListener('show.bs.modal', async function(e) {
-        await fetchThaiAddressData();
+        // await fetchThaiAddressData();
         const button = e.relatedTarget;
         if (!button) return;
 
