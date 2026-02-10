@@ -49,7 +49,7 @@
 
                     // Configuration for better quality and progress tracking
                     const config = {
-                        publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.7.0/dist/',
+                        publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.5/dist/',
                         debug: true,
                         progress: (key, current, total) => {
                             if (onProgress) {
