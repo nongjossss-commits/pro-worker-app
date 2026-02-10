@@ -404,6 +404,15 @@
                             <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
                         </button>
                     @else
+                        {{-- Send Back to Pre-Production --}}
+                        @if(!$isCompleted && !$isCancelled)
+                        <button class="btn btn-info btn-sm fw-bold shadow-sm px-3 text-white"
+                                onclick="sendBackToPreProduction({{ $item->id }})"
+                                title="{{ __('Back to Preparation') }}">
+                             <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-lg-inline">{{ __('Back to Prep') }}</span>
+                        </button>
+                        @endif
+
                         {{-- Daily Check Button (Only in Workflow) --}}
                         @if(!$isCheckedToday && !$isCompleted && !$isCancelled)
                             <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="checkDaily({{ $item->id }})" title="Daily Check">

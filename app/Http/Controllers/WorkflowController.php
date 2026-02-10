@@ -1169,6 +1169,85 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Send an item back to Pre-Production (Preparation).
+     */
+    public function sendBackToPreProduction(Request $request, $itemId)
+    {
+        $item = ProductionItem::with(['order', 'employee'])->findOrFail($itemId);
+        $currentOrder = $item->order;
+
+        if ($currentOrder->status === 'pre_production') {
+            return response()->json(['success' => false, 'message' => 'Item is already in Pre-Production.'], 400);
+        }
+
+        // Check if employee is already in Pre-Production for this process
+        $hasDuplicate = ProductionItem::where('employee_id', $item->employee_id)
+            ->whereHas('order', function($q) use ($currentOrder) {
+                $q->where('work_type_id', $currentOrder->work_type_id)
+                  ->where('status', 'pre_production');
+            })
+            ->whereNotIn('status', ['cancelled', 'completed'])
+            ->exists();
+
+        if ($hasDuplicate) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'This employee is already in Pre-Production for this process.'
+             ], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Find a Pre-Production Order for this Employer + WorkType
+            $preProdOrder = ProductionOrder::where('employer_id', $currentOrder->employer_id)
+                                ->where('work_type_id', $currentOrder->work_type_id)
+                                ->where('status', 'pre_production')
+                                ->latest()
+                                ->first();
+
+            if (!$preProdOrder) {
+                // Create new Pre-Production Order
+                $workTypeName = $currentOrder->workType->name ?? 'Job';
+                $employerName = $currentOrder->employer->employerNameTh ?? 'Unknown';
+
+                $preProdOrder = ProductionOrder::create([
+                    'employer_id' => $currentOrder->employer_id,
+                    'work_type_id' => $currentOrder->work_type_id,
+                    'type' => $currentOrder->type,
+                    'project_name' => "$workTypeName - $employerName (Prep)",
+                    'description' => $currentOrder->description,
+                    'status' => 'pre_production',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            // Move Item
+            $item->update([
+                'production_order_id' => $preProdOrder->id,
+                'status' => 'pending',
+                'last_checked_at' => null,
+                'appointment_date' => null,
+                'appointment_location' => null,
+                'appointment_completed_at' => null,
+            ]);
+
+            // Clear Completed Steps (Workflow steps do not map to Preparation steps 1:1)
+            $item->completedWorkTypeSteps()->detach();
+
+            DB::commit();
+
+            // Calculate Stats for the OLD order (Workflow) to update UI
+            $orderStats = $this->calculateOrderStats($currentOrder);
+
+            return response()->json(['success' => true, 'order_stats' => $orderStats]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Soft Delete an Item.
      */
     public function destroyItem(Request $request, $itemId)

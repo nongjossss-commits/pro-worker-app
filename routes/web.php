@@ -336,6 +336,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeItem'])->name('workflow.item.finalize');
     Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');
     Route::post('workflow/item/{item}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreItem'])->name('workflow.item.restore');
+    Route::post('workflow/item/{item}/send-back', [\App\Http\Controllers\WorkflowController::class, 'sendBackToPreProduction'])->name('workflow.item.send_back');
     Route::delete('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'destroyItem'])->name('workflow.item.destroy');
     Route::get('workflow/api/resigned-employees', [\App\Http\Controllers\WorkflowController::class, 'searchResignedEmployees'])->name('workflow.api.resigned');
     Route::get('workflow/api/global-employees', [\App\Http\Controllers\WorkflowController::class, 'searchGlobalEmployees'])->name('workflow.api.global');
