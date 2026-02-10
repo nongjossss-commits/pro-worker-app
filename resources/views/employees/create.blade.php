@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const genderInput = document.getElementById('employeeGender');
     const dobInput = document.getElementById('employeeDob');
     const ageInput = document.getElementById('employeeAge');
+    const startDateInput = document.getElementById('startDate');
+    const workAgeInput = document.getElementById('workAge');
     const nationalitySelect = document.getElementById('employeeNationality');
     const mouGroupSelect = document.getElementById('workPermitMOUGroup');
     const triggerFileInput = document.getElementById('triggerFile');
@@ -117,6 +119,42 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
     if (dobInput) dobInput.addEventListener('change', calculateAge);
+
+    // --- Logic Block 2.5: Work Age Calculation ---
+    function calculateWorkAge() {
+        if (!startDateInput || !workAgeInput) return;
+        const startDate = new Date(startDateInput.value);
+        if (!isNaN(startDate.getTime())) {
+            const today = new Date();
+            let years = today.getFullYear() - startDate.getFullYear();
+            let months = today.getMonth() - startDate.getMonth();
+            let days = today.getDate() - startDate.getDate();
+
+            if (days < 0) {
+                months--;
+                const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                days += lastMonth.getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            const yLabel = "{{ __('Years') }}";
+            const mLabel = "{{ __('Months') }}";
+            const dLabel = "{{ __('Days') }}";
+
+            let result = [];
+            if (years > 0) result.push(`${years} ${yLabel}`);
+            if (months > 0) result.push(`${months} ${mLabel}`);
+            result.push(`${days} ${dLabel}`);
+
+            workAgeInput.value = result.join(' ');
+        } else {
+            workAgeInput.value = '';
+        }
+    }
+    if (startDateInput) startDateInput.addEventListener('change', calculateWorkAge);
 
 
     // --- Logic Block 3: Nationality Conditional Fields ---
@@ -329,6 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Initial State Setup on Page Load ---
     if (titleTh) updateGender();
     if (dobInput) calculateAge();
+    if (startDateInput) calculateWorkAge();
     if (nationalitySelect) toggleNationalityFields();
     if (mouGroupSelect) toggleMouGroupOther();
     if (insuranceSelect) toggleInsuranceVisibility();

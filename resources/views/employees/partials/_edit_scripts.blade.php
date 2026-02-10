@@ -282,6 +282,8 @@
         const genderInput = document.getElementById(prefix + 'employeeGender');
         const dobInput = document.getElementById(prefix + 'employeeDob');
         const ageInput = document.getElementById(prefix + 'employeeAge');
+        const startDateInput = document.getElementById(prefix + 'startDate');
+        const workAgeInput = document.getElementById(prefix + 'workAge');
         const nationalitySelect = document.getElementById(prefix + 'employeeNationality');
         const mouGroupSelect = document.getElementById(prefix + 'workPermitMOUGroup');
         const insuranceSelect = document.getElementById(prefix + 'insurance_type');
@@ -401,6 +403,45 @@
         if(dobInput) {
             dobInput.addEventListener('change', calculateAge);
             if(dobInput.value) calculateAge();
+        }
+
+        // --- Logic: Work Age Calculation ---
+        function calculateWorkAge() {
+            if (!startDateInput || !workAgeInput) return;
+            const startDate = new Date(startDateInput.value);
+            if (!isNaN(startDate.getTime())) {
+                const today = new Date();
+                let years = today.getFullYear() - startDate.getFullYear();
+                let months = today.getMonth() - startDate.getMonth();
+                let days = today.getDate() - startDate.getDate();
+
+                if (days < 0) {
+                    months--;
+                    const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                    days += lastMonth.getDate();
+                }
+                if (months < 0) {
+                    years--;
+                    months += 12;
+                }
+
+                const yLabel = "{{ __('Years') }}";
+                const mLabel = "{{ __('Months') }}";
+                const dLabel = "{{ __('Days') }}";
+
+                let result = [];
+                if (years > 0) result.push(`${years} ${yLabel}`);
+                if (months > 0) result.push(`${months} ${mLabel}`);
+                result.push(`${days} ${dLabel}`);
+
+                workAgeInput.value = result.join(' ');
+            } else {
+                workAgeInput.value = '';
+            }
+        }
+        if(startDateInput) {
+            startDateInput.addEventListener('change', calculateWorkAge);
+            if(startDateInput.value) calculateWorkAge();
         }
 
         // --- Logic: Nationality Conditionals ---

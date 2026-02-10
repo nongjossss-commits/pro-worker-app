@@ -72,10 +72,14 @@ class Employee extends Model
         'employee_id_number',
         'tax_id_number',
         'employer_employee_id',
+        'department',
         'employee_reference_id',
         'father_name',
         'mother_name',
+        'height',
+        'weight',
         'passport_issue_date',
+        'passport_issue_place',
         'passport_type_cambodia',
         'insurance_type',
         'insurance_detail',
@@ -122,6 +126,7 @@ class Employee extends Model
         'hospital_name',
         'passport_file_path',
         'visa_file_path',
+        'visa_issue_place',
         'work_permit_file_path',
         'pink_card_file_path',
         'medical_certificate_path',
@@ -171,6 +176,26 @@ class Employee extends Model
     {
         return Attribute::make(
             get: fn () => $this->employeeDob ? $this->employeeDob->age : 'N/A',
+        );
+    }
+
+    protected function workAge(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (!$this->startDate) return __('N/A');
+                $diff = $this->startDate->diff(now());
+                $years = $diff->y;
+                $months = $diff->m;
+                $days = $diff->d;
+
+                $result = [];
+                if ($years > 0) $result[] = $years . ' ' . __('Years');
+                if ($months > 0) $result[] = $months . ' ' . __('Months');
+                $result[] = $days . ' ' . __('Days');
+
+                return implode(' ', $result);
+            }
         );
     }
 

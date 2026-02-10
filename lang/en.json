@@ -487,5 +487,14 @@
     "Preview Employer Data": "Preview Employer Data",
     "TOTAL": "TOTAL",
     "Failed to update progress: ": "Failed to update progress: ",
-    "Failed: ": "Failed: "
+    "Failed: ": "Failed: ",
+    "Department": "Department",
+    "Height": "Height",
+    "Weight": "Weight",
+    "Passport Issue Place": "Passport Issue Place",
+    "Visa Issue Place": "Visa Issue Place",
+    "Work Age": "Work Age",
+    "Years": "Years",
+    "Months": "Months",
+    "Days": "Days"
 }

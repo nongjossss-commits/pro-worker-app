@@ -584,5 +584,14 @@
     "Preview Employer Data": "ดูข้อมูลนายจ้าง",
     "TOTAL": "รวม",
     "Failed to update progress: ": "อัปเดตความคืบหน้าล้มเหลว: ",
-    "Failed: ": "ล้มเหลว: "
+    "Failed: ": "ล้มเหลว: ",
+    "Department": "แผนกการทำงาน",
+    "Height": "ส่วนสูง",
+    "Weight": "น้ำหนัก",
+    "Passport Issue Place": "สถานที่ออกพาสปอร์ต",
+    "Visa Issue Place": "สถานที่ออกวีซ่า",
+    "Work Age": "อายุงาน",
+    "Years": "ปี",
+    "Months": "เดือน",
+    "Days": "วัน"
 }
