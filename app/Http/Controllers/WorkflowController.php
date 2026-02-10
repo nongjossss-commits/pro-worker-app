@@ -553,6 +553,11 @@ class WorkflowController extends Controller
                  $query->where('status', 'cancelled');
             } elseif ($filter === 'completed') {
                  $query->where('status', 'completed');
+            } elseif ($filter === 'pending_daily_check') {
+                 $query->where(function($q) {
+                     $q->whereNull('last_checked_at')
+                       ->orWhereDate('last_checked_at', '<', Carbon::today());
+                 })->whereNotIn('status', ['cancelled', 'completed']);
             } elseif (is_numeric($filter)) {
                  // We will filter by exact highest step in PHP collection
                  // But apply rough SQL filter first
