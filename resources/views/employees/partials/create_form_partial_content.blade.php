@@ -155,6 +155,17 @@
             </div>
         </div>
 
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="height" class="form-label">{{ __('Height') }} (cm)</label>
+                <input type="text" class="form-control" id="height" name="height" value="{{ old('height') }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="weight" class="form-label">{{ __('Weight') }} (kg)</label>
+                <input type="text" class="form-control" id="weight" name="weight" value="{{ old('weight') }}">
+            </div>
+        </div>
+
             <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="father_name" class="form-label">ชื่อพ่อ</label>
@@ -238,29 +249,37 @@
 <h5 class="mt-4"><i class="bi bi-passport"></i> 3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)</h5>
 <hr class="mb-4">
 <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="employeePassport" class="form-label">เลขพาสปอร์ต</label>
         <input type="text" class="form-control" id="employeePassport" name="employeePassport" value="{{ old('employeePassport') }}">
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
+        <label for="passport_issue_place" class="form-label">{{ __('Passport Issue Place') }}</label>
+        <input type="text" class="form-control" id="passport_issue_place" name="passport_issue_place" value="{{ old('passport_issue_place') }}">
+    </div>
+    <div class="col-md-3 mb-3">
         <label for="passport_issue_date" class="form-label">วันออกพาสปอร์ต</label>
         <input type="date" class="form-control" id="passport_issue_date" name="passport_issue_date" value="{{ old('passport_issue_date') }}">
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="passportExpiryDate" class="form-label">วันหมดอายุพาสปอร์ต</label>
         <input type="date" class="form-control" id="passportExpiryDate" name="passportExpiryDate" value="{{ old('passportExpiryDate') }}">
     </div>
 </div>
 <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="pinkCardNo" class="form-label">เลขบัตรชมพู</label>
         <input type="text" class="form-control" id="pinkCardNo" name="pinkCardNo" value="{{ old('pinkCardNo') }}">
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="visaType" class="form-label">ประเภทวีซ่า</label>
         <input type="text" class="form-control" id="visaType" name="visaType" value="{{ old('visaType') }}">
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
+        <label for="visa_issue_place" class="form-label">{{ __('Visa Issue Place') }}</label>
+        <input type="text" class="form-control" id="visa_issue_place" name="visa_issue_place" value="{{ old('visa_issue_place') }}">
+    </div>
+    <div class="col-md-3 mb-3">
         <label for="visaExpiryDate" class="form-label">วันหมดอายุวีซ่า</label>
         <input type="date" class="form-control" id="visaExpiryDate" name="visaExpiryDate" value="{{ old('visaExpiryDate') }}">
     </div>
@@ -270,17 +289,21 @@
 <h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> 4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)</h5>
 <hr class="mb-4">
 <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="job_title" class="form-label">ตำแหน่งงาน</label>
         <input type="text" class="form-control" id="job_title" name="job_title" value="{{ old('job_title') }}">
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="job_description" class="form-label">ลักษณะงาน</label>
         <input type="text" class="form-control" id="job_description" name="job_description" value="{{ old('job_description') }}">
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="startDate" class="form-label">วันที่เริ่มงาน</label>
         <input type="date" class="form-control" id="startDate" name="startDate" value="{{ old('startDate') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label for="workAge" class="form-label">{{ __('Work Age') }}</label>
+        <input type="text" class="form-control" id="workAge" value="" readonly>
     </div>
 </div>
 <div class="row">
@@ -319,6 +342,7 @@
         <div class="col-md-4 mb-3"><label for="employee_id_number" class="form-label">เลขประจำตัว</label><input type="text" class="form-control" id="employee_id_number" name="employee_id_number" value="{{ old('employee_id_number') }}"></div>
         <div class="col-md-4 mb-3"><label for="tax_id_number" class="form-label">เลขประจำตัวผู้เสียภาษี</label><input type="text" class="form-control" id="tax_id_number" name="tax_id_number" value="{{ old('tax_id_number') }}"></div>
         <div class="col-md-4 mb-3"><label for="employer_employee_id" class="form-label">รหัสคนงาน - ของนายจ้าง</label><input type="text" class="form-control" id="employer_employee_id" name="employer_employee_id" value="{{ old('employer_employee_id') }}"></div>
+        <div class="col-md-4 mb-3"><label for="department" class="form-label">{{ __('Department') }}</label><input type="text" class="form-control" id="department" name="department" value="{{ old('department') }}"></div>
         <div class="col-md-4 mb-3"><label for="employee_reference_id" class="form-label">เลขอ้างอิงคนงาน</label><input type="text" class="form-control" id="employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id') }}"></div>
         <div class="col-md-4 mb-3"><label for="bank_name" class="form-label">ชื่อธนาคาร</label><input type="text" class="form-control" id="bank_name" name="bank_name" value="{{ old('bank_name') }}"></div>
         <div class="col-md-4 mb-3"><label for="bank_account_number" class="form-label">เลขบัญชีธนาคาร</label><input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ old('bank_account_number') }}"></div>

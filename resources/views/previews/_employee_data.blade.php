@@ -23,6 +23,14 @@
                     <label class="form-label fw-bold">ชื่อพนักงาน (อังกฤษ)</label>
                     <p class="form-control-plaintext">{{ trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->employeeNameEn ?? '')) ?: 'N/A' }}</p>
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">{{ __('Height') }}</label>
+                    <p class="form-control-plaintext">{{ $employee->height ? $employee->height . ' cm' : 'N/A' }}</p>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">{{ __('Weight') }}</label>
+                    <p class="form-control-plaintext">{{ $employee->weight ? $employee->weight . ' kg' : 'N/A' }}</p>
+                </div>
             </div>
             <div class="row mb-3">
                 <div class="col-md-6">
@@ -55,11 +63,15 @@
                 </div>
             </div>
              <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-bold">เลขหนังสือเดินทาง</label>
                     <p class="form-control-plaintext">{{ $employee->employeePassport ?? 'N/A' }}</p>
                 </div>
-                 <div class="col-md-4">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">{{ __('Passport Issue Place') }}</label>
+                    <p class="form-control-plaintext">{{ $employee->passport_issue_place ?? 'N/A' }}</p>
+                </div>
+                 <div class="col-md-3">
                     <label class="form-label fw-bold">ประเภทหนังสือเดินทาง</label>
                      <p class="form-control-plaintext">
                         @if($employee->employeeNationality === 'กัมพูชา')
@@ -69,7 +81,7 @@
                         @endif
                     </p>
                 </div>
-                 <div class="col-md-4">
+                 <div class="col-md-3">
                     <label class="form-label fw-bold">วันหมดอายุหนังสือเดินทาง</label>
                     <p class="form-control-plaintext">{{ $employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : 'N/A' }}</p>
                 </div>
@@ -99,6 +111,7 @@
             </p>
         </div>
         <div class="col-md-4"><label class="form-label fw-bold">ประเภทวีซ่า</label><p class="form-control-plaintext">{{ $employee->visaType ?? 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">{{ __('Visa Issue Place') }}</label><p class="form-control-plaintext">{{ $employee->visa_issue_place ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุวีซ่า</label><p class="form-control-plaintext">{{ $employee->visaExpiryDate ? $employee->visaExpiryDate->format('d/m/Y') : 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">วันหมดอายุรายงานตัว 90 วัน</label><p class="form-control-plaintext">{{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : 'N/A' }}</p></div>
     </div>
@@ -111,6 +124,7 @@
         <div class="col-md-4"><label class="form-label fw-bold">ตำแหน่ง</label><p class="form-control-plaintext">{{ $employee->job_title ?? 'N/A' }}</p></div>
         <div class="col-md-8"><label class="form-label fw-bold">ลักษณะงาน (Nature of Work)</label><p class="form-control-plaintext">{{ $employee->job_description ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">วันเริ่มงาน</label><p class="form-control-plaintext">{{ $employee->startDate ? $employee->startDate->format('d/m/Y') : 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">{{ __('Work Age') }}</label><p class="form-control-plaintext">{{ $employee->work_age }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เบอร์โทรศัพท์</label><p class="form-control-plaintext">{{ $employee->employeePhone ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">อีเมล</label><p class="form-control-plaintext">{{ $employee->email ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">รหัสผ่านสำหรับอีเมล</label><p class="form-control-plaintext">{{ $employee->password ?? 'N/A' }}</p></div>
@@ -127,6 +141,7 @@
         <div class="col-md-4"><label class="form-label fw-bold">เลขอ้างอิงคนงาน</label><p class="form-control-plaintext">{{ $employee->employee_reference_id ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขประจำตัว</label><p class="form-control-plaintext">{{ $employee->employee_id_number ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">รหัสคนงาน (บริษัท)</label><p class="form-control-plaintext">{{ $employee->employer_employee_id ?? 'N/A' }}</p></div>
+        <div class="col-md-4"><label class="form-label fw-bold">{{ __('Department') }}</label><p class="form-control-plaintext">{{ $employee->department ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขบัตรชมพู</label><p class="form-control-plaintext">{{ $employee->pinkCardNo ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">เลขประจำตัวผู้เสียภาษี</label><p class="form-control-plaintext">{{ $employee->tax_id_number ?? 'N/A' }}</p></div>
         <div class="col-md-4"><label class="form-label fw-bold">ชื่อธนาคาร</label><p class="form-control-plaintext">{{ $employee->bank_name ?? 'N/A' }}</p></div>

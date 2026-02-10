@@ -30,6 +30,21 @@
             </div>
 
             <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="edit_height" class="form-label">{{ __('Height') }} (cm)
+                        @if(isset($missingFields) && in_array('height', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+                    </label>
+                    <input type="text" class="form-control" id="edit_height" name="height" value="{{ old('height', $employee->height) }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="edit_weight" class="form-label">{{ __('Weight') }} (kg)
+                        @if(isset($missingFields) && in_array('weight', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+                    </label>
+                    <input type="text" class="form-control" id="edit_weight" name="weight" value="{{ old('weight', $employee->weight) }}">
+                </div>
+            </div>
+
+            <div class="row">
                     <div class="col-md-6 mb-3">
                     <label for="edit_employeeTitleEn" class="form-label">Prefix (EN)
                         @if(isset($missingFields) && in_array('employeeTitleEn', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
@@ -153,19 +168,25 @@
     <h5 class="mt-4"><i class="bi bi-passport"></i> 3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)</h5>
     <hr class="mb-4">
     <div class="row">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_employeePassport" class="form-label">เลขพาสปอร์ต
                 @if(isset($missingFields) && in_array('employeePassport', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="edit_employeePassport" name="employeePassport" value="{{ old('employeePassport', $employee->employeePassport) }}">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
+            <label for="edit_passport_issue_place" class="form-label">{{ __('Passport Issue Place') }}
+                @if(isset($missingFields) && in_array('passport_issue_place', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label>
+            <input type="text" class="form-control" id="edit_passport_issue_place" name="passport_issue_place" value="{{ old('passport_issue_place', $employee->passport_issue_place) }}">
+        </div>
+        <div class="col-md-3 mb-3">
             <label for="edit_passport_issue_date" class="form-label">วันออกพาสปอร์ต
                 @if(isset($missingFields) && in_array('passport_issue_date', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="date" class="form-control" id="edit_passport_issue_date" name="passport_issue_date" value="{{ old('passport_issue_date', optional($employee->passport_issue_date)->format('Y-m-d')) }}">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_passportExpiryDate" class="form-label">วันหมดอายุพาสปอร์ต
                 @if(isset($missingFields) && in_array('passportExpiryDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
@@ -173,19 +194,25 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_pinkCardNo" class="form-label">เลขบัตรชมพู
                 @if(isset($missingFields) && in_array('pinkCardNo', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="edit_pinkCardNo" name="pinkCardNo" value="{{ old('pinkCardNo', $employee->pinkCardNo) }}">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_visaType" class="form-label">ประเภทวีซ่า
                 @if(isset($missingFields) && in_array('visaType', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="edit_visaType" name="visaType" value="{{ old('visaType', $employee->visaType) }}">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
+            <label for="edit_visa_issue_place" class="form-label">{{ __('Visa Issue Place') }}
+                @if(isset($missingFields) && in_array('visa_issue_place', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label>
+            <input type="text" class="form-control" id="edit_visa_issue_place" name="visa_issue_place" value="{{ old('visa_issue_place', $employee->visa_issue_place) }}">
+        </div>
+        <div class="col-md-3 mb-3">
             <label for="edit_visaExpiryDate" class="form-label">วันหมดอายุวีซ่า
                 @if(isset($missingFields) && in_array('visaExpiryDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
@@ -197,23 +224,27 @@
     <h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> 4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)</h5>
     <hr class="mb-4">
     <div class="row">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_job_title" class="form-label">ตำแหน่งงาน
                 @if(isset($missingFields) && in_array('job_title', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="edit_job_title" name="job_title" value="{{ old('job_title', $employee->job_title) }}">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_job_description" class="form-label">ลักษณะงาน
                 @if(isset($missingFields) && in_array('job_description', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="edit_job_description" name="job_description" value="{{ old('job_description', $employee->job_description) }}">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_startDate" class="form-label">วันที่เริ่มงาน
                 @if(isset($missingFields) && in_array('startDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="date" class="form-control" id="edit_startDate" name="startDate" value="{{ old('startDate', optional($employee->startDate)->format('Y-m-d')) }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="edit_workAge" class="form-label">{{ __('Work Age') }}</label>
+            <input type="text" class="form-control" id="edit_workAge" value="{{ $employee->work_age }}" readonly>
         </div>
     </div>
     <div class="row">
@@ -272,6 +303,9 @@
             <div class="col-md-4 mb-3"><label for="edit_employer_employee_id" class="form-label">รหัสคนงาน - ของนายจ้าง
                 @if(isset($missingFields) && in_array('employer_employee_id', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label><input type="text" class="form-control" id="edit_employer_employee_id" name="employer_employee_id" value="{{ old('employer_employee_id', $employee->employer_employee_id) }}"></div>
+            <div class="col-md-4 mb-3"><label for="edit_department" class="form-label">{{ __('Department') }}
+                @if(isset($missingFields) && in_array('department', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label><input type="text" class="form-control" id="edit_department" name="department" value="{{ old('department', $employee->department) }}"></div>
             <div class="col-md-4 mb-3"><label for="edit_employee_reference_id" class="form-label">เลขอ้างอิงคนงาน
                 @if(isset($missingFields) && in_array('employee_reference_id', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label><input type="text" class="form-control" id="edit_employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id', $employee->employee_reference_id) }}"></div>
