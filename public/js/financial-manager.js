@@ -925,6 +925,50 @@ if (typeof window.financialManager === 'undefined') {
             saveAsNewProfile() {
                  Swal.fire('Info', 'Feature coming soon.', 'info');
             },
+
+            get billedItemIds() {
+                const ids = new Set();
+                this.transactions.forEach(t => {
+                    // Only count active transactions
+                    if (t.status === 'cancelled') return;
+
+                    if (t.items && Array.isArray(t.items)) {
+                        t.items.forEach(i => ids.add(i.id));
+                    }
+                });
+                return ids;
+            },
+
+            getTierRemainingCount(index) {
+                const tier = this.pricingTiers[index];
+                if (!tier || !tier.item_ids) return 0;
+                // item_ids can be integers (ProductionItem) or strings (Candidate emp_X)
+                // billedItemIds are always integers (from transactions)
+                // So any 'emp_X' is automatically NOT billed (remains available)
+                // Any integer ID is checked against the set
+                const billed = this.billedItemIds;
+                return tier.item_ids.filter(id => {
+                    if (String(id).startsWith('emp_')) return true;
+                    return !billed.has(parseInt(id));
+                }).length;
+            },
+
+            get unassignedEmployeeCount() {
+                // Calculate Total Unique People Pool
+                // 1. All Production Items
+                const linkedEmployeeIds = new Set();
+                this.productionItems.forEach(pi => {
+                    if (pi.employee_id) linkedEmployeeIds.add(pi.employee_id);
+                });
+
+                // 2. Add Candidates who are NOT already linked to a ProductionItem
+                const uniqueCandidates = this.employees.filter(e => !linkedEmployeeIds.has(e.id)).length;
+
+                const totalPool = this.productionItems.length + uniqueCandidates;
+
+                return Math.max(0, totalPool - this.tierCountSum);
+            },
+
             loadAgentData() {
                 if(!this.selectedAgentId) return;
                 // Basic stub if we don't have an endpoint for this yet

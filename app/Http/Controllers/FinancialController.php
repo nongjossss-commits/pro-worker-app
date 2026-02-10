@@ -46,6 +46,7 @@ class FinancialController extends Controller
         ]);
 
         $finalItemIds = $request->item_ids ?? [];
+        $createdItemMap = []; // empId => itemId for syncing pricing tiers
 
         // Handle direct Employee IDs (Create items on the fly)
         if ($request->has('employee_ids') && is_array($request->employee_ids)) {
@@ -62,6 +63,7 @@ class FinancialController extends Controller
                     ]
                 );
                 $finalItemIds[] = $item->id;
+                $createdItemMap[$empId] = $item->id;
             }
         }
 
@@ -70,6 +72,10 @@ class FinancialController extends Controller
         if (!empty($finalItemIds)) {
             $transaction->items()->attach($finalItemIds);
         }
+
+        // Sync Pricing Tiers: Replace emp_X with new Item IDs in the pricing group
+        // This ensures invoices can map the new item back to its price tier correctly.
+        $this->syncPricingTiers($request->financial_group_id, $createdItemMap);
 
         // Return transaction with items to update frontend state if needed
         $transaction->load('items.employee'); // Load employee for name display
@@ -144,6 +150,7 @@ class FinancialController extends Controller
         if ($request->has('item_ids') || $request->has('employee_ids')) {
             $itemIds = $request->input('item_ids', []);
             $employeeIds = $request->input('employee_ids', []);
+            $createdItemMap = []; // empId => itemId
 
             // Handle FormData format (strings)
             if (is_string($itemIds)) {
@@ -169,6 +176,7 @@ class FinancialController extends Controller
                     ]
                 );
                 $itemIds[] = $item->id;
+                $createdItemMap[$empId] = $item->id;
             }
 
             $itemIds = array_unique($itemIds);
@@ -178,11 +186,61 @@ class FinancialController extends Controller
             if ($request->has('item_ids') || $request->has('employee_ids')) {
                 $transaction->items()->sync($itemIds);
             }
+
+            // Sync Pricing Tiers if items were created
+            if (!empty($createdItemMap)) {
+                $this->syncPricingTiers($transaction->production_financial_group_id, $createdItemMap);
+            }
         }
 
         $transaction->load('items.employee');
 
         return response()->json(['success' => true, 'transaction' => $transaction]);
+    }
+
+    /**
+     * Helper to update Pricing Tiers: Replace candidate emp_IDs with real ProductionItem IDs.
+     */
+    private function syncPricingTiers($financialGroupId, $createdItemMap)
+    {
+        if (empty($createdItemMap)) return;
+
+        $group = \App\Models\ProductionFinancialGroup::find($financialGroupId);
+        if (!$group) return;
+
+        $financialData = $group->financial_data;
+        $tiers = $financialData['pricing_tiers'] ?? [];
+        $updated = false;
+
+        foreach ($tiers as &$tier) {
+            if (isset($tier['item_ids']) && is_array($tier['item_ids'])) {
+                $newItemIds = [];
+                foreach ($tier['item_ids'] as $id) {
+                    // Check if this ID is a candidate placeholder (string starting with 'emp_')
+                    if (is_string($id) && str_starts_with($id, 'emp_')) {
+                        $empId = str_replace('emp_', '', $id);
+                        // If we have created a ProductionItem for this Employee ID, swap it
+                        if (isset($createdItemMap[$empId])) {
+                            $newItemIds[] = $createdItemMap[$empId];
+                            $updated = true;
+                        } else {
+                            $newItemIds[] = $id;
+                        }
+                    } else {
+                        $newItemIds[] = $id;
+                    }
+                }
+                $tier['item_ids'] = $newItemIds;
+                // Update count
+                $tier['count'] = count($newItemIds);
+            }
+        }
+
+        if ($updated) {
+            $financialData['pricing_tiers'] = $tiers;
+            $group->financial_data = $financialData;
+            $group->save();
+        }
     }
 
     /**
