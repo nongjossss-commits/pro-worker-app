@@ -1021,6 +1021,53 @@
     }
 
     // --- Item Actions ---
+    window.sendBackToPreProduction = function(itemId) {
+        Swal.fire({
+            title: '{{ __("Send Back to Preparation?") }}',
+            text: '{{ __("Employee will be moved back to Pre-Production list.") }}',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes, Send Back") }}',
+            confirmButtonColor: '#0dcaf0'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/workflow/item/${itemId}/send-back`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        // Remove card from UI
+                        const card = document.getElementById(`item-card-${itemId}`);
+                        const wrapper = card.closest('.order-content-wrapper');
+                        card.remove();
+                        recalculateSequenceNumbers();
+
+                        // Check if wrapper is empty
+                        if(wrapper && wrapper.querySelectorAll('.item-card-wrapper').length === 0) {
+                            const orderCard = wrapper.closest('.production-order-card');
+                            if(orderCard) {
+                                orderCard.classList.add('grayscale-mode');
+                            }
+                        }
+
+                        Swal.fire('{{ __("Sent Back!") }}', '{{ __("Employee moved to Pre-Production.") }}', 'success');
+
+                        if(data.order_stats) {
+                             if(wrapper) {
+                                 const orderId = wrapper.id.replace('order-content-', '');
+                                 updateOrderHeaderStats(orderId, data.order_stats);
+                             }
+                        }
+                    } else {
+                        Swal.fire('{{ __("Error") }}', data.message || '{{ __("Failed to send back.") }}', 'error');
+                    }
+                });
+            }
+        });
+    }
+
     window.finalizeItem = function(itemId) {
         Swal.fire({
             title: '{{ __("Complete Item?") }}',
