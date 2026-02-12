@@ -577,6 +577,44 @@ class WorkflowController extends Controller
             }
         }
 
+        // 3. Apply Search Filter
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+
+            // Check if Order matches the search criteria (Project, Employer, etc.)
+            // If it DOES match, we show ALL items (user found the order).
+            // If it DOES NOT match, we assume the user found the order via a specific item/employee, so we show ONLY matching items.
+            $orderMatches = ProductionOrder::where('id', $orderId)
+                ->where(function($q) use ($search) {
+                    $q->where('project_name', 'like', "%{$search}%")
+                      ->orWhereHas('employer', function($e) use ($search) {
+                          $e->where('employerNameTh', 'like', "%{$search}%")
+                            ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhere(function($addrQ) use ($search) {
+                                $addrQ->filterByAddress($search);
+                            });
+                      })
+                      ->orWhereHas('creator', function($creator) use ($search) {
+                          $creator->where('name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('updater', function($updater) use ($search) {
+                          $updater->where('name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('employer.jobOwner', function($owner) use ($search) {
+                          $owner->where('name', 'like', "%{$search}%");
+                      });
+                })
+                ->exists();
+
+            if (!$orderMatches) {
+                 $query->whereHas('employee', function($q) use ($search) {
+                      $q->where('employeeNameTh', 'like', "%{$search}%")
+                        ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                        ->orWhere('employeePassport', 'like', "%{$search}%");
+                 });
+            }
+        }
+
         $items = $query->orderBy('group_name')
                        ->orderBy('id')
                        ->get();
