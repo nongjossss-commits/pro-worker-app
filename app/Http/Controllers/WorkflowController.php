@@ -45,7 +45,7 @@ class WorkflowController extends Controller
         $activeTab = $tabs->where('slug', $activeTabSlug)->first();
 
         // 3. Query Orders for this Tab
-        $query = ProductionOrder::with(['employer', 'workType'])
+        $query = ProductionOrder::with(['employer.jobOwner', 'workType', 'creator', 'updater'])
             ->whereHas('employer')
             ->where('status', '!=', 'pre_production'); // Active workflows
 
@@ -79,6 +79,12 @@ class WorkflowController extends Controller
                   })
                   ->orWhereHas('creator', function($creator) use ($search) {
                       $creator->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('updater', function($updater) use ($search) {
+                      $updater->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('employer.jobOwner', function($owner) use ($search) {
+                      $owner->where('name', 'like', "%{$search}%");
                   });
             });
         }
