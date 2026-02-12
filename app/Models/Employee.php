@@ -245,7 +245,7 @@ class Employee extends Model
 
     public function getActiveWorkflowsAttribute()
     {
-        return $this->productionItems()
+        $workflows = $this->productionItems()
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->whereHas('order', function ($query) {
                 $query->whereNotIn('status', ['completed', 'cancelled']);
@@ -263,11 +263,45 @@ class Employee extends Model
                     'name' => $item->order->workType->name ?? 'Unknown',
                     'status_label' => $statusLabel,
                     'is_pre_production' => $isPreProduction,
+                    'is_registration' => false,
+                    'is_renewal' => false,
                     'order_id' => $item->production_order_id,
                     'item_id' => $item->id,
                     'tab_slug' => $item->order->workType->slug ?? '',
                 ];
             });
+
+        // Add Registration Resolution (Purple)
+        if (in_array($this->status, ['registration_pending', 'registration_completed'])) {
+            $workflows->push((object)[
+                'name' => 'Registration Resolution',
+                'status_label' => 'Resolution',
+                'is_pre_production' => false,
+                'is_registration' => true,
+                'is_renewal' => false,
+                'url' => route('production.registration.index', [
+                    'highlight_employer_id' => $this->employer_id,
+                    'highlight_employee_id' => $this->id
+                ]),
+            ]);
+        }
+
+        // Add Renewal Resolution (Pink)
+        if (in_array($this->status, ['renewal_pending', 'renewal_completed'])) {
+            $workflows->push((object)[
+                'name' => 'Renewal Resolution',
+                'status_label' => 'Resolution',
+                'is_pre_production' => false,
+                'is_registration' => false,
+                'is_renewal' => true,
+                'url' => route('production.renewal.index', [
+                    'highlight_employer_id' => $this->employer_id,
+                    'highlight_employee_id' => $this->id
+                ]),
+            ]);
+        }
+
+        return $workflows;
     }
 
     public function customFields()

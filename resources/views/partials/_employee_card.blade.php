@@ -25,10 +25,22 @@
 <div id="{{ $cardId }}" class="employee-card card mb-3 position-relative">
     @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
         @php
-            // Determine primary status for card overlay color (Priority: Workflow (Yellow) > Pre-Production (Blue))
-            $hasStandardWorkflow = $employee->active_workflows->contains('is_pre_production', false);
+            // Determine primary status for card overlay color
+            // Priority: Registration (Purple) > Renewal (Pink) > Workflow (Yellow) > Pre-Production (Blue)
+            $isRegistration = $employee->active_workflows->contains('is_registration', true);
+            $isRenewal = $employee->active_workflows->contains('is_renewal', true);
+            // Standard workflow is not pre-production AND not registration AND not renewal
+            $hasStandardWorkflow = $employee->active_workflows->contains(function ($value, $key) {
+                return ($value->is_pre_production === false) && (!isset($value->is_registration) || !$value->is_registration) && (!isset($value->is_renewal) || !$value->is_renewal);
+            });
 
-            if ($hasStandardWorkflow) {
+            if ($isRegistration) {
+                // Purple (Registration)
+                $overlayStyle = 'background-color: rgba(139, 92, 246, 0.15); border: 2px solid #8B5CF6;';
+            } elseif ($isRenewal) {
+                // Pink (Renewal)
+                $overlayStyle = 'background-color: rgba(236, 72, 153, 0.15); border: 2px solid #EC4899;';
+            } elseif ($hasStandardWorkflow) {
                 // Yellow (Standard Workflow)
                 $overlayStyle = 'background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107;';
             } else {
@@ -41,15 +53,39 @@
              <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
                 @foreach($employee->active_workflows as $wf)
                     @php
-                        $route = $wf->is_pre_production ? 'production.index' : 'workflow.index';
-                        $badgeClass = $wf->is_pre_production ? 'bg-info' : 'bg-warning';
-                        $icon = $wf->is_pre_production ? 'bi-hourglass-split' : 'bi-gear-fill';
-                        $tooltip = $wf->is_pre_production ? __('Go to Pre-Production') : __('Go to Workflow');
+                        if (isset($wf->url)) {
+                            // Synthetic Workflow (Registration / Renewal)
+                            $url = $wf->url;
+                            if (isset($wf->is_registration) && $wf->is_registration) {
+                                $style = 'background-color: #8B5CF6; color: white;';
+                                $icon = 'bi-person-badge';
+                                $tooltip = __('Go to Registration Resolution');
+                                $badgeClass = '';
+                            } elseif (isset($wf->is_renewal) && $wf->is_renewal) {
+                                $style = 'background-color: #EC4899; color: white;';
+                                $icon = 'bi-arrow-repeat';
+                                $tooltip = __('Go to Renewal Resolution');
+                                $badgeClass = '';
+                            } else {
+                                $style = '';
+                                $icon = 'bi-gear-fill';
+                                $tooltip = '';
+                                $badgeClass = 'bg-secondary';
+                            }
+                        } else {
+                            // Standard Workflow
+                            $route = $wf->is_pre_production ? 'production.index' : 'workflow.index';
+                            $url = route($route, ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]);
+                            $badgeClass = $wf->is_pre_production ? 'bg-info' : 'bg-warning';
+                            $style = '';
+                            $icon = $wf->is_pre_production ? 'bi-hourglass-split' : 'bi-gear-fill';
+                            $tooltip = $wf->is_pre_production ? __('Go to Pre-Production') : __('Go to Workflow');
+                        }
                     @endphp
-                    <a href="{{ route($route, ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]) }}"
+                    <a href="{{ $url }}"
                        class="badge {{ $badgeClass }} text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
                        title="{{ $tooltip }}"
-                       style="max-width: 90%;">
+                       style="max-width: 90%; {{ $style }}">
                        <i class="bi {{ $icon }} me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
                     </a>
                 @endforeach
