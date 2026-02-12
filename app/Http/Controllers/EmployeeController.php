@@ -416,6 +416,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $pythonCmd = $this->getPythonCommand();
 
+        if (!$pythonCmd) {
+            return response()->json(['error' => "Python is not installed. Please install Python to use this feature. See SETUP_PYTHON.md for details."], 500);
+        }
+
         // Use detected python command
         $process = new Process([$pythonCmd, $scriptPath, '--input', $fullPath, '--output', $fullOutputPath]);
         $process->setTimeout(120); // Increased timeout to 120s for model download/processing
@@ -428,7 +432,11 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
             // Check for common errors
             if (empty($errorOutput) || str_contains($errorOutput, 'not found') || str_contains($errorOutput, 'is not recognized')) {
-                return response()->json(['error' => "Python is not installed or configured correctly. (Command tried: $pythonCmd)"], 500);
+                return response()->json(['error' => "Python execution failed. Please check your installation. (Command tried: $pythonCmd)"], 500);
+            }
+
+            if (str_contains($errorOutput, 'ModuleNotFoundError') || str_contains($errorOutput, 'ImportError')) {
+                return response()->json(['error' => "Python dependencies are missing. Please run `scripts/install_python_deps.bat` (Windows) or `sh scripts/install_python_deps.sh` (Linux/Mac)."], 500);
             }
 
             // Fallback: If script fails but we have input, check if we can return useful error
@@ -464,7 +472,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         // Default fallback
-        return 'python';
+        return null;
     }
 
     public function show(Employee $employee)
