@@ -414,16 +414,45 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return response()->json(['error' => 'Enhancement script not found.'], 500);
         }
 
-        // Use python3
-        $process = new Process(['python3', $scriptPath, '--input', $fullPath, '--output', $fullOutputPath]);
-        $process->setTimeout(60); // 60 seconds timeout
+        $pythonCmd = $this->getPythonCommand();
+
+        $process = new Process([$pythonCmd, $scriptPath, '--input', $fullPath, '--output', $fullOutputPath]);
+        $process->setTimeout(120); // 120 seconds timeout (allow for model download)
         $process->run();
 
-        // Check if successful
+        // Check if successful (exit code 0)
         if (!$process->isSuccessful()) {
-            \Illuminate\Support\Facades\Log::error('Face Enhancement Failed: ' . $process->getErrorOutput());
-            // Fallback: If script fails but we have input, check if we can return useful error
+            \Illuminate\Support\Facades\Log::error('Face Enhancement Failed', [
+                'command' => $pythonCmd,
+                'error' => $process->getErrorOutput(),
+                'output' => $process->getOutput()
+            ]);
             return response()->json(['error' => 'Processing error: ' . $process->getErrorOutput()], 500);
+        }
+
+        // Parse JSON output
+        $output = $process->getOutput();
+        $result = json_decode($output, true);
+
+        // Handle case where output isn't valid JSON (e.g. unexpected prints from libraries)
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            \Illuminate\Support\Facades\Log::warning('Face Enhancement: Invalid JSON output', ['output' => $output]);
+            // Fallback: Check if file exists anyway
+            if (file_exists($fullOutputPath)) {
+                return response()->json([
+                    'success' => true,
+                    'url' => Storage::disk('public')->url($outputPath)
+                ]);
+            }
+            return response()->json(['error' => 'Invalid output from enhancement script.'], 500);
+        }
+
+        if (($result['status'] ?? 'error') === 'error') {
+            return response()->json(['error' => $result['message'] ?? 'Unknown error during enhancement'], 500);
+        }
+
+        if (($result['status'] ?? '') === 'fallback') {
+             \Illuminate\Support\Facades\Log::warning('Face Enhancement Fallback: ' . ($result['message'] ?? 'Unknown'));
         }
 
         if (!file_exists($fullOutputPath)) {
@@ -434,6 +463,33 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'success' => true,
             'url' => Storage::disk('public')->url($outputPath)
         ]);
+    }
+
+    private function getPythonCommand()
+    {
+        // 1. Check Config
+        $configPath = config('services.python.path');
+        if ($configPath) {
+            return $configPath;
+        }
+
+        // 2. Auto-detect
+        // We try common python commands to see which one works
+        $commands = ['python3', 'python', 'py'];
+        foreach ($commands as $cmd) {
+            try {
+                $process = new Process([$cmd, '--version']);
+                $process->run();
+                if ($process->isSuccessful()) {
+                    return $cmd;
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        // Default fallback
+        return 'python';
     }
 
     public function show(Employee $employee)

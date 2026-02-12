@@ -2,7 +2,7 @@ import argparse
 import sys
 import os
 import shutil
-import time
+import json
 
 # --- Setup Instructions ---
 # To enable AI Face Restoration, you must install the following dependencies on your server:
@@ -25,8 +25,15 @@ def main():
     input_path = args.input
     output_path = args.output
 
+    result = {
+        'status': 'error',
+        'message': 'Unknown error',
+        'output_path': output_path
+    }
+
     if not os.path.exists(input_path):
-        print(f"Error: Input file not found at {input_path}")
+        result['message'] = f"Input file not found at {input_path}"
+        print(json.dumps(result))
         sys.exit(1)
 
     # --- Try to Import GFPGAN ---
@@ -34,21 +41,21 @@ def main():
         import cv2
         from gfpgan import GFPGANer
 
-        # Check if model exists (optional, or let GFPGANer handle it/download it)
-        # For this script, we assume the user has set it up or GFPGANer will try to download to default location.
-        # Default model path usually: experiments/pretrained_models/GFPGANv1.4.pth
-
         # Initialize GFPGANer
+        # Note: GFPGANer will attempt to download the model if not found locally.
+        # Ideally, we should handle this explicitly or ensure the model is pre-downloaded.
         restorer = GFPGANer(
             model_path='https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth', # Auto-download
             upscale=args.upscale,
             arch='clean',
             channel_multiplier=2,
-            bg_upsampler=None # Disable background upsampler for speed/simplicity if not needed, or use 'realesrgan'
+            bg_upsampler=None
         )
 
         # Read image
         img = cv2.imread(input_path, cv2.IMREAD_COLOR)
+        if img is None:
+             raise ValueError("Could not read input image")
 
         # Restore
         # cropped_faces, restored_faces, restored_img
@@ -57,32 +64,39 @@ def main():
         # Save output
         if restored_img is not None:
             cv2.imwrite(output_path, restored_img)
-            print(f"Success: Image restored and saved to {output_path}")
+            result['status'] = 'success'
+            result['message'] = 'Image restored successfully'
         else:
-            print("Error: Restoration returned None.")
+            # Fallback if enhancement returns None (rare)
             shutil.copy(input_path, output_path)
+            result['status'] = 'fallback'
+            result['message'] = 'Restoration returned None, copied original'
 
     except ImportError as e:
         # --- Fallback Mode ---
-        sys.stderr.write(f"Warning: AI dependencies not found ({e}). Using fallback mode (copy).\n")
-        sys.stderr.write("To enable AI, install: pip install gfpgan basicsr opencv-python-headless\n")
-
         # Just copy the file so the web app flow completes
         try:
             shutil.copy(input_path, output_path)
-            print(f"Fallback: Image copied to {output_path}")
+            result['status'] = 'fallback'
+            result['message'] = f"AI dependencies not found ({str(e)}). Copied original."
         except Exception as copy_err:
-            print(f"Error copying file: {copy_err}")
+            result['message'] = f"Error copying file: {str(copy_err)}"
+            print(json.dumps(result))
             sys.exit(1)
 
     except Exception as e:
-        sys.stderr.write(f"Error during restoration: {e}\n")
         # Attempt fallback on crash
         try:
             shutil.copy(input_path, output_path)
-            print(f"Fallback (after error): Image copied to {output_path}")
-        except:
-            sys.exit(1)
+            result['status'] = 'fallback'
+            result['message'] = f"Error during restoration: {str(e)}. Copied original."
+        except Exception as copy_err:
+             result['message'] = f"Error copying file (after crash): {str(copy_err)}"
+             print(json.dumps(result))
+             sys.exit(1)
+
+    # Output JSON result
+    print(json.dumps(result))
 
 if __name__ == '__main__':
     main()
