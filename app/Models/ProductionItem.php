@@ -32,6 +32,20 @@ class ProductionItem extends Model
         'completed_at' => 'datetime',
     ];
 
+    protected static function booted()
+    {
+        $callback = function ($item) {
+            if ($item->order && auth()->check()) {
+                // Update parent order timestamp and updated_by
+                $item->order->update(['updated_by' => auth()->id()]);
+            }
+        };
+
+        static::created($callback);
+        static::updated($callback);
+        static::deleted($callback);
+    }
+
     public function order()
     {
         return $this->belongsTo(ProductionOrder::class, 'production_order_id');

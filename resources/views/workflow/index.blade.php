@@ -270,10 +270,25 @@
                                     @if($order->employer && $order->employer->employerNameEn)
                                         <div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
                                     @endif
+
+                                    @if($order->employer && $order->employer->jobOwner)
+                                        <div class="text-muted small border-start ps-2 mt-1 ms-1">
+                                            <i class="bi bi-person-badge me-1"></i>
+                                            <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
+                                                {{ $order->employer->jobOwner->name }}
+                                            </a>
+                                        </div>
+                                    @endif
+
                                     <div class="text-muted small mt-1">
-                                        @if($order->creator)
+                                        @if($order->updater)
+                                            <i class="bi bi-clock-history me-1"></i>
+                                            <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->updater->name]) }}" class="text-decoration-none text-secondary" title="{{ __('Last Modified By') }}">
+                                                {{ $order->updater->name }}
+                                            </a>
+                                        @elseif($order->creator)
                                             <i class="bi bi-person-circle me-1"></i>
-                                            <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->creator->name]) }}" class="text-decoration-none text-secondary">
+                                            <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->creator->name]) }}" class="text-decoration-none text-secondary" title="{{ __('Created By') }}">
                                                 {{ $order->creator->name }}
                                             </a>
                                         @else

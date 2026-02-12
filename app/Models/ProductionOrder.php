@@ -12,13 +12,14 @@ class ProductionOrder extends Model
 
     protected $fillable = [
         'employer_id',
-        'work_type_id', // NEW
+        'work_type_id',
         'type', // 'employer' or 'independent'
         'project_name',
         'description',
         'status',
         'financial_data',
         'created_by',
+        'updated_by', // NEW
         'document_ready_at',
         'document_ready_by',
         'waiting_for_documents',
@@ -33,6 +34,15 @@ class ProductionOrder extends Model
         'financial_approved_at' => 'datetime',
     ];
 
+    protected static function booted()
+    {
+        static::saving(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+    }
+
     public function employer()
     {
         return $this->belongsTo(Employer::class);
@@ -41,6 +51,11 @@ class ProductionOrder extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function workType()

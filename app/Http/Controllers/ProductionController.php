@@ -78,7 +78,7 @@ class ProductionController extends Controller
             // 4. Active Tab Logic: Query Orders and Calculate Specific Stats
 
             // Query Orders for this Tab
-            $query = ProductionOrder::with(['employer', 'workType'])
+            $query = ProductionOrder::with(['employer.jobOwner', 'workType', 'creator', 'updater'])
                         ->whereHas('employer')
                         ->where('status', 'pre_production')
                         ->where('work_type_id', $activeTab->id);
@@ -106,6 +106,12 @@ class ProductionController extends Controller
                       })
                       ->orWhereHas('creator', function($creator) use ($search) {
                           $creator->where('name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('updater', function($updater) use ($search) {
+                          $updater->where('name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('employer.jobOwner', function($owner) use ($search) {
+                          $owner->where('name', 'like', "%{$search}%");
                       });
                 });
             }
