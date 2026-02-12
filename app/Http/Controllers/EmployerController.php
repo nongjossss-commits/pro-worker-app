@@ -149,7 +149,7 @@ class EmployerController extends Controller
         $employeeQuery = $employer->employees()
             ->whereNull('terminated_at')
             ->where(function($q) {
-                $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
+                $q->whereNotIn('status', ['registration_cancelled'])
                   ->orWhereNull('status');
             });
 
@@ -422,7 +422,7 @@ class EmployerController extends Controller
             $query = $employer->employees()
                 ->whereNull('terminated_at')
                 ->where(function($q) {
-                    $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
+                    $q->whereNotIn('status', ['registration_cancelled'])
                       ->orWhereNull('status');
                 });
         }

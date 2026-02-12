@@ -1892,8 +1892,9 @@
     }
 
         // --- Restore UI State on Load (After Reload) ---
-        const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id');
-        const restoreEmployeeId = sessionStorage.getItem('registration_restore_employee_id');
+        const urlParams = new URLSearchParams(window.location.search);
+        const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id') || urlParams.get('highlight_employer_id');
+        const restoreEmployeeId = sessionStorage.getItem('registration_restore_employee_id') || urlParams.get('highlight_employee_id');
 
         if (restoreEmployerId) {
             sessionStorage.removeItem('registration_restore_employer_id'); // Clear immediately
@@ -1910,13 +1911,43 @@
                     // Wait for collapse animation (approx 350ms usually, but we can try slightly more)
                     // Or listen to event 'shown.bs.collapse'
                     collapseEl.addEventListener('shown.bs.collapse', function () {
-                        const employeeCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
-                        if (employeeCard) {
-                            employeeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            // Optional: Highlight effect
-                            employeeCard.classList.add('border-warning');
-                            setTimeout(() => employeeCard.classList.remove('border-warning'), 2000);
-                        }
+                        // Function to retry finding the element if lazy load takes time
+                        const scrollToCard = () => {
+                            const employeeCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
+                            if (employeeCard) {
+                                employeeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                // Optional: Highlight effect
+                                employeeCard.classList.add('filter-active'); // Use filter-active for stronger highlight
+                                setTimeout(() => employeeCard.classList.remove('filter-active'), 3000);
+                            } else {
+                                // Retry once after a short delay if loading
+                                setTimeout(() => {
+                                     const retryCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
+                                     if(retryCard) {
+                                         retryCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                         retryCard.classList.add('filter-active');
+                                         setTimeout(() => retryCard.classList.remove('filter-active'), 3000);
+                                     }
+                                }, 500);
+                            }
+                        };
+
+                        // Small delay to ensure lazy load content injection (if instantaneous) or wait for mutation observer?
+                        // loadEmployees is triggered by show.bs.collapse listener above in this file.
+                        // That listener triggers fetch. fetch takes time.
+                        // We need to wait for the fetch to complete.
+                        // We can hook into window.loadEmployees promise if we refactored it, but it returns nothing.
+                        // Workaround: Poll for element existence.
+                        let attempts = 0;
+                        const poller = setInterval(() => {
+                            const card = document.getElementById(`employee-card-${restoreEmployeeId}`);
+                            if (card) {
+                                clearInterval(poller);
+                                scrollToCard();
+                            }
+                            attempts++;
+                            if (attempts > 20) clearInterval(poller); // 2 seconds timeout
+                        }, 100);
                     }, { once: true });
                 }
             }
