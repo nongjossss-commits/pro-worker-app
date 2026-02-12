@@ -27,12 +27,23 @@
                         display: block;
                     }
                 </style>
-                <div class="img-container">
+                <div class="img-container" id="cropperContainer">
                     <img id="imageToCrop" src="" alt="Picture" style="display: block; max-width: 100%;">
                 </div>
 
+                <!-- Review Container -->
+                <div id="cropperReviewContainer" class="d-none text-center py-3 bg-light rounded">
+                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-eye"></i> {{ __('Review Result') }}</h6>
+                    <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                        <img id="reviewImage" src="" alt="Review" class="img-fluid border rounded shadow-sm" style="max-height: 400px; max-width: 100%;">
+                    </div>
+                    <div class="mt-3 text-muted small">
+                         <i class="bi bi-info-circle"></i> {{ __('If the face is blurry, try "AI Enhance".') }}
+                    </div>
+                </div>
+
                 <!-- Background Removal Toolbar -->
-                <div class="mt-3 border-top pt-3">
+                <div class="mt-3 border-top pt-3" id="bgToolbarContainer">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label fw-bold mb-0 text-primary"><i class="bi bi-magic"></i> {{ __('Smart Background Tools') }}</label>
                         <small class="text-muted" style="font-size: 0.8em;">Powered by AI</small>
@@ -57,8 +68,24 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('Crop & Save') }}</button>
+                <div id="cropToolbar" class="w-100 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('Crop & Review') }}</button>
+                </div>
+
+                <div id="reviewToolbar" class="d-none w-100 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary" id="backToCropBtn">
+                        <i class="bi bi-arrow-left"></i> {{ __('Back') }}
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-info text-white shadow-sm" id="enhanceBtn">
+                            <i class="bi bi-stars"></i> {{ __('AI Enhance') }}
+                        </button>
+                        <button type="button" class="btn btn-success shadow-sm" id="confirmSaveBtn">
+                            <i class="bi bi-check-lg"></i> {{ __('Use This Image') }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

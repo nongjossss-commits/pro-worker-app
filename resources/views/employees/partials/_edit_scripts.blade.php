@@ -67,6 +67,18 @@
 
         const imageToCrop = document.getElementById('imageToCrop');
         const cropImageBtn = document.getElementById('cropImageBtn');
+
+        // --- New Elements for Review ---
+        const cropperContainer = document.getElementById('cropperContainer');
+        const cropperReviewContainer = document.getElementById('cropperReviewContainer');
+        const reviewImage = document.getElementById('reviewImage');
+        const cropToolbar = document.getElementById('cropToolbar');
+        const reviewToolbar = document.getElementById('reviewToolbar');
+        const enhanceBtn = document.getElementById('enhanceBtn');
+        const confirmSaveBtn = document.getElementById('confirmSaveBtn');
+        const backToCropBtn = document.getElementById('backToCropBtn');
+        const bgToolbarContainer = document.getElementById('bgToolbarContainer');
+
         // Retrieve or create bootstrap modal instance
         let cropperModal = bootstrap.Modal.getOrCreateInstance(cropperModalEl);
 
@@ -196,6 +208,13 @@
         cropperModalEl.addEventListener('shown.bs.modal', function () {
             if (cropImageBtn) cropImageBtn.disabled = true;
 
+            // Reset View to Crop Mode
+            if(cropperContainer) cropperContainer.classList.remove('d-none');
+            if(cropToolbar) cropToolbar.classList.remove('d-none');
+            if(cropperReviewContainer) cropperReviewContainer.classList.add('d-none');
+            if(reviewToolbar) reviewToolbar.classList.add('d-none');
+            if(bgToolbarContainer) bgToolbarContainer.classList.remove('d-none');
+
             // Destroy existing cropper if any to be safe
             if (window.cropperManager.instance) {
                 window.cropperManager.instance.destroy();
@@ -220,17 +239,16 @@
             }
             // Clear image src to prevent flashing old content next time
             imageToCrop.src = '';
+            if(reviewImage) reviewImage.src = '';
             // Note: We do NOT clear window.cropperManager.originalFile here because
             // the save logic might need it (though save happens before hide).
             // Input value clearing is handled in handleFileSelect.
         });
 
-        // --- Event: Save Button Click ---
+        // --- Event: Crop & Review Button Click ---
         cropImageBtn.addEventListener('click', function () {
             const cropper = window.cropperManager.instance;
             const originalFile = window.cropperManager.originalFile;
-            const targetInputId = window.cropperManager.targetInputId;
-            const targetPreviewId = window.cropperManager.targetPreviewId;
 
             if (!cropper) {
                 alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
@@ -250,15 +268,88 @@
                 return;
             }
 
-            // Determine output format
-            // Use explicitly set mimeType (from BG removal) OR fallback to original file type OR default to JPEG
-            let outputType = window.cropperManager.mimeType;
-            if (!outputType) {
-                outputType = (originalFile && originalFile.type) ? originalFile.type : 'image/jpeg';
-            }
+            // Show Review
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            if(reviewImage) reviewImage.src = dataUrl;
 
-            canvas.toBlob(function (blob) {
-                if (!blob) return;
+            // Switch UI
+            if(cropperContainer) cropperContainer.classList.add('d-none');
+            if(cropToolbar) cropToolbar.classList.add('d-none');
+            if(bgToolbarContainer) bgToolbarContainer.classList.add('d-none');
+
+            if(cropperReviewContainer) cropperReviewContainer.classList.remove('d-none');
+            if(reviewToolbar) reviewToolbar.classList.remove('d-none');
+        });
+
+        // --- Event: Back to Crop ---
+        if(backToCropBtn) {
+            backToCropBtn.addEventListener('click', function() {
+                if(cropperContainer) cropperContainer.classList.remove('d-none');
+                if(cropToolbar) cropToolbar.classList.remove('d-none');
+                if(bgToolbarContainer) bgToolbarContainer.classList.remove('d-none');
+
+                if(cropperReviewContainer) cropperReviewContainer.classList.add('d-none');
+                if(reviewToolbar) reviewToolbar.classList.add('d-none');
+            });
+        }
+
+        // --- Event: Enhance Button ---
+        if(enhanceBtn) {
+            enhanceBtn.addEventListener('click', async function() {
+                if(!reviewImage.src) return;
+
+                try {
+                    // Show Loading
+                    if (loadingOverlay) loadingOverlay.classList.remove('d-none');
+                    if (loadingText) loadingText.textContent = 'Enhancing Face with AI...';
+
+                    // Convert src to Blob
+                    const res = await fetch(reviewImage.src);
+                    const blob = await res.blob();
+
+                    const formData = new FormData();
+                    formData.append('image', blob, 'to_enhance.jpg');
+                    // Add CSRF
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                    const response = await fetch('/employees/photo/enhance', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': token
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if(!response.ok) {
+                         throw new Error(data.error || 'Enhancement failed');
+                    }
+
+                    // Update Review Image
+                    reviewImage.src = data.url;
+
+                } catch (err) {
+                    console.error(err);
+                    alert('AI Enhancement Failed: ' + err.message);
+                } finally {
+                    if (loadingOverlay) loadingOverlay.classList.add('d-none');
+                }
+            });
+        }
+
+        // --- Event: Confirm Save ---
+        if(confirmSaveBtn) {
+            confirmSaveBtn.addEventListener('click', async function() {
+                if(!reviewImage.src) return;
+
+                const originalFile = window.cropperManager.originalFile;
+                const targetInputId = window.cropperManager.targetInputId;
+                const targetPreviewId = window.cropperManager.targetPreviewId;
+
+                // Convert src to Blob
+                const res = await fetch(reviewImage.src);
+                const blob = await res.blob();
 
                 const croppedImageUrl = URL.createObjectURL(blob);
 
@@ -269,10 +360,14 @@
                 }
 
                 // Create a new File object
+                // Use explicitly set mimeType or default to jpeg
+                let outputType = window.cropperManager.mimeType;
+                if (!outputType) {
+                    outputType = (originalFile && originalFile.type) ? originalFile.type : 'image/jpeg';
+                }
+
                 const fileName = originalFile ? originalFile.name : 'cropped-image.jpg';
-                // Adjust extension if type changed (e.g. jpeg -> png)
-                // But keeping original name is usually fine for uploads, backend might rename.
-                // Or we can be smart:
+                // Adjust extension
                 let finalName = fileName;
                 if (outputType === 'image/png' && !finalName.toLowerCase().endsWith('.png')) {
                     finalName = finalName.replace(/\.[^/.]+$/, "") + ".png";
@@ -280,14 +375,14 @@
                     finalName = finalName.replace(/\.[^/.]+$/, "") + ".jpg";
                 }
 
-                const croppedFile = new File([blob], finalName, {
+                const processedFile = new File([blob], finalName, {
                     type: outputType,
                     lastModified: Date.now()
                 });
 
-                // Use a DataTransfer to create a FileList for the input
+                // Update Input
                 const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(croppedFile);
+                dataTransfer.items.add(processedFile);
 
                 if (targetInputId) {
                     const actualInput = document.getElementById(targetInputId);
@@ -296,11 +391,10 @@
                     }
                 }
 
-                // Hide the modal
+                // Hide Modal
                 cropperModal.hide();
-
-            }, outputType);
-        });
+            });
+        }
     };
 
     // --- Generic Form Initialization ---

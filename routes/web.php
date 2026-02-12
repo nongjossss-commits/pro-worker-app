@@ -96,6 +96,8 @@ Route::middleware('auth')->group(function () {
     // Also allow POST for AJAX bulk update if needed, though PUT is standard resource
     Route::post('employees/bulk-update', [EmployeeController::class, 'bulkUpdate']);
 
+    Route::post('employees/photo/enhance', [EmployeeController::class, 'enhancePhoto'])->name('employees.photo.enhance');
+
     Route::resource('employees', EmployeeController::class);
     Route::resource('importers', ImporterController::class);
     Route::resource('agents', AgentController::class);
