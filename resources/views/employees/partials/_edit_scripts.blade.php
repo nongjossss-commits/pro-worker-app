@@ -694,14 +694,23 @@
             if (this.currentTool === 'smart_erase') {
                 // Collect points and draw visual trail
                 this.smartPoints.push(pos);
-                this.render(); // Redraw base
-                // Draw trail on top
+                // Draw only the new segment on the Display Canvas (Temporary Visual)
+                // We do NOT render() here to avoid full redraws.
                 this.ctx.beginPath();
                 this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
                 this.ctx.lineWidth = this.brushSize;
                 this.ctx.lineCap = 'round';
-                this.ctx.moveTo(this.smartPoints[0].x, this.smartPoints[0].y);
-                for(let p of this.smartPoints) this.ctx.lineTo(p.x, p.y);
+
+                // Draw from last point to current point
+                if (this.smartPoints.length > 1) {
+                    const prev = this.smartPoints[this.smartPoints.length - 2];
+                    this.ctx.moveTo(prev.x, prev.y);
+                    this.ctx.lineTo(pos.x, pos.y);
+                } else {
+                    // First point
+                    this.ctx.moveTo(pos.x, pos.y);
+                    this.ctx.lineTo(pos.x, pos.y);
+                }
                 this.ctx.stroke();
             } else {
                 // Interpolate for smooth stroke
@@ -722,84 +731,99 @@
 
         draw(pos) {
             const ctx = this.workCanvas.getContext('2d');
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.lineWidth = this.brushSize;
+            const dCtx = this.displayCanvas.getContext('2d'); // Display context
+
+            // Common Styles
+            const setupCtx = (c) => {
+                c.lineCap = 'round';
+                c.lineJoin = 'round';
+                c.lineWidth = this.brushSize;
+            };
+            setupCtx(ctx);
+            setupCtx(dCtx);
 
             if (this.currentTool === 'eraser') {
+                // Update Work Canvas
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
                 ctx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.globalCompositeOperation = 'source-over';
+
+                // Update Display Canvas (Visually Sync)
+                dCtx.globalCompositeOperation = 'destination-out';
+                dCtx.beginPath();
+                dCtx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
+                dCtx.fill();
+                dCtx.globalCompositeOperation = 'source-over';
+
             } else if (this.currentTool === 'restore') {
-                // Restore is tricky: We want to "reveal" the original image.
-                // Approach:
-                // 1. Create a temporary path on a temp canvas.
-                // 2. Use that path to clip the Original Image.
-                // 3. Draw the clipped part onto Work Canvas with source-over.
-
-                // Optimized approach:
-                // Draw the Original Image onto Work Canvas using 'source-over' BUT masked by the brush stroke?
-                // No, standard canvas doesn't support "Draw Image only where I brush" easily without composite ops.
-
-                // Composite Op Approach:
-                // 1. Save context.
-                // 2. Begin Path (Circle at pos).
-                // 3. Clip().
-                // 4. Draw Original Image (It will only draw inside the clip).
-                // 5. Restore context.
-
+                // Update Work Canvas
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
                 ctx.clip();
                 ctx.drawImage(this.originalImage, 0, 0, this.workCanvas.width, this.workCanvas.height);
                 ctx.restore();
+
+                // Update Display Canvas
+                dCtx.save();
+                dCtx.beginPath();
+                dCtx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
+                dCtx.clip();
+                dCtx.drawImage(this.originalImage, 0, 0, this.displayCanvas.width, this.displayCanvas.height);
+                dCtx.restore();
             }
 
-            this.render();
+            // Removed this.render() call to improve performance
         },
 
         drawLine(start, end) {
              const ctx = this.workCanvas.getContext('2d');
-             ctx.lineCap = 'round';
-             ctx.lineJoin = 'round';
-             ctx.lineWidth = this.brushSize;
+             const dCtx = this.displayCanvas.getContext('2d');
+
+             const setupCtx = (c) => {
+                 c.lineCap = 'round';
+                 c.lineJoin = 'round';
+                 c.lineWidth = this.brushSize;
+             };
+             setupCtx(ctx);
+             setupCtx(dCtx);
 
              if (this.currentTool === 'eraser') {
+                 // Work Canvas
                  ctx.globalCompositeOperation = 'destination-out';
                  ctx.beginPath();
                  ctx.moveTo(start.x, start.y);
                  ctx.lineTo(end.x, end.y);
                  ctx.stroke();
                  ctx.globalCompositeOperation = 'source-over';
+
+                 // Display Canvas
+                 dCtx.globalCompositeOperation = 'destination-out';
+                 dCtx.beginPath();
+                 dCtx.moveTo(start.x, start.y);
+                 dCtx.lineTo(end.x, end.y);
+                 dCtx.stroke();
+                 dCtx.globalCompositeOperation = 'source-over';
+
              } else if (this.currentTool === 'restore') {
-                 // For line, clipping is harder because lines self-intersect.
-                 // Better: Draw the line on a temp alpha mask.
-                 // Then composite Original * Mask onto Work.
-
-                 // Since this runs every mouse move (high freq), keeping it simple is key.
-                 // The "Clip" method works for lines too if we stroke the path?
-                 // No, ctx.clip() uses the path area. Stroking a path doesn't create a clip area of the stroke width easily.
-
-                 // Alternative:
-                 // 1. Draw line on a separate 'brushCanvas' (white on transparent).
-                 // 2. Composite 'brushCanvas' with 'OriginalImage' -> 'SourceIn' (Result = Original parts where brush is).
-                 // 3. Draw Result onto 'WorkCanvas'.
-
-                 // Let's implement this "Brush Mask" approach inline for performance?
-                 // Creating canvas every move is bad.
-                 // We can use a shared temp canvas.
+                 // Use shared temp canvas to create the brush mask
                  if (!this.tempCanvas) {
                      this.tempCanvas = document.createElement('canvas');
                      this.tempCanvas.width = this.workCanvas.width;
                      this.tempCanvas.height = this.workCanvas.height;
                  }
+
+                 // Note: Drawing lines for Restore efficiently is tricky without render().
+                 // We re-use the logic but apply to both canvases?
+                 // Since Restore copies from OriginalImage, and OriginalImage is static,
+                 // we can just repeat the composite operation on both.
+
                  const tCtx = this.tempCanvas.getContext('2d');
                  tCtx.clearRect(0,0, this.tempCanvas.width, this.tempCanvas.height);
 
-                 // Draw Stroke
+                 // Draw Stroke on Temp Mask
                  tCtx.lineCap = 'round';
                  tCtx.lineJoin = 'round';
                  tCtx.lineWidth = this.brushSize;
@@ -808,17 +832,18 @@
                  tCtx.moveTo(start.x, start.y);
                  tCtx.lineTo(end.x, end.y);
                  tCtx.stroke();
-
-                 // Composite Original In
                  tCtx.globalCompositeOperation = 'source-in';
                  tCtx.drawImage(this.originalImage, 0, 0, this.workCanvas.width, this.workCanvas.height);
+                 tCtx.globalCompositeOperation = 'source-over'; // Reset
 
-                 // Draw onto Work
-                 ctx.globalCompositeOperation = 'source-over';
+                 // Apply to Work Canvas
                  ctx.drawImage(this.tempCanvas, 0, 0);
+
+                 // Apply to Display Canvas
+                 dCtx.drawImage(this.tempCanvas, 0, 0);
              }
 
-             this.render();
+             // Removed this.render()
         },
 
         render() {
@@ -839,71 +864,58 @@
 
             // Use setTimeout to allow UI to render the loading state
             setTimeout(() => {
+                let srcMat, mask, bgdModel, fgdModel, binMask, one, alphaScale, finalMask;
+                let srcCanvas, maskCanvas;
+
                 try {
                     // 1. Setup Data
                     const width = this.workCanvas.width;
                     const height = this.workCanvas.height;
 
-                    // Downscale for performance?
-                    // GrabCut is O(N). 12MP image will crash browser.
-                    // Let's downscale to max 600px dimension for the mask calculation.
+                    // Downscale for performance
                     const maxDim = 600;
                     const scale = Math.min(1, maxDim / Math.max(width, height));
-                    const sW = width * scale;
-                    const sH = height * scale;
+                    // ENSURE INTEGERS using Math.floor to prevent OpenCV crash on some platforms
+                    const sW = Math.floor(width * scale);
+                    const sH = Math.floor(height * scale);
 
-                    // Read Current State (Source + Alpha) from WorkCanvas
-                    // We need the Original Image colors for GrabCut to distinguish FG/BG
-                    // But we use the Current Alpha as the Initial Mask.
+                    if (sW === 0 || sH === 0) throw new Error('Image too small for processing');
 
                     // Create Source Mat (Original Image) - Downscaled
-                    const srcCanvas = document.createElement('canvas');
+                    srcCanvas = document.createElement('canvas');
                     srcCanvas.width = sW;
                     srcCanvas.height = sH;
                     const srcCtx = srcCanvas.getContext('2d');
+                    if (!this.originalImage) throw new Error('Original image source missing');
                     srcCtx.drawImage(this.originalImage, 0, 0, sW, sH);
-                    const srcMat = cv.imread(srcCanvas); // RGBA
-                    cv.cvtColor(srcMat, srcMat, cv.COLOR_RGBA2RGB); // GrabCut needs RGB (3 channels)
+
+                    srcMat = cv.imread(srcCanvas); // RGBA
+                    if (srcMat.empty()) throw new Error('Failed to load source image into OpenCV');
+                    cv.cvtColor(srcMat, srcMat, cv.COLOR_RGBA2RGB); // GrabCut needs RGB
 
                     // Create Mask Mat (From WorkCanvas Alpha) - Downscaled
-                    const maskCanvas = document.createElement('canvas');
+                    maskCanvas = document.createElement('canvas');
                     maskCanvas.width = sW;
                     maskCanvas.height = sH;
                     const maskCtx = maskCanvas.getContext('2d');
                     maskCtx.drawImage(this.workCanvas, 0, 0, sW, sH);
+
                     const alphaMat = cv.imread(maskCanvas); // RGBA
-                    const mask = new cv.Mat();
+                    if (alphaMat.empty()) throw new Error('Failed to load mask into OpenCV');
+
+                    mask = new cv.Mat();
                     cv.cvtColor(alphaMat, mask, cv.COLOR_RGBA2GRAY); // 1 channel
 
                     // Initialize GrabCut Mask
-                    // Alpha > 200 -> GC_PR_FGD (3) (Probable Foreground)
-                    // Alpha < 10 -> GC_BGD (0) (Background)
-                    // Else -> GC_PR_BGD (2) ? Or keep as PR_FGD?
-                    // Let's assume current visible pixels are PR_FGD. Transparent are BGD.
-
-                    // Simple Threshold map
                     // mask = 0 (BGD) where alpha < 100
                     // mask = 3 (PR_FGD) where alpha >= 100
                     cv.threshold(mask, mask, 100, 3, cv.THRESH_BINARY); // 0 or 3
 
                     // Apply User Strokes as GC_BGD (0)
-                    // Draw user strokes onto a temp canvas then map to mask?
-                    // Better: iterate points and draw circles on the Mask Mat?
-                    // JS loop might be slow. Use canvas drawing on the maskCanvas before reading!
-
-                    // Re-do Mask Creation with User Input
+                    maskCtx.globalCompositeOperation = 'destination-out';
                     maskCtx.beginPath();
                     maskCtx.lineCap = 'round';
                     maskCtx.lineWidth = this.brushSize * scale;
-                    maskCtx.strokeStyle = '#000000'; // Draw Black (Alpha 255 -> RGB 0)
-                    // Wait, we need to manipulate the Alpha/Grayscale value directly.
-                    // Let's draw on a separate "Stroke Mask" and subtract?
-
-                    // Easier: Draw on the `maskCanvas` (which has the current alpha) BEFORE reading into Mat.
-                    // But we want to set these pixels to DEFINITE BACKGROUND (0).
-                    // The threshold logic maps <100 to 0. So if we erase (clear) pixels on maskCanvas, they become 0.
-                    maskCtx.globalCompositeOperation = 'destination-out';
-                    maskCtx.beginPath();
                     for(let i=0; i<this.smartPoints.length-1; i++) {
                         const p1 = this.smartPoints[i];
                         const p2 = this.smartPoints[i+1];
@@ -913,89 +925,35 @@
                     maskCtx.stroke();
                     maskCtx.globalCompositeOperation = 'source-over';
 
-                    // NOW read the mask
+                    // Read updated mask (with user strokes removed)
                     const finalAlphaMat = cv.imread(maskCanvas);
                     cv.cvtColor(finalAlphaMat, mask, cv.COLOR_RGBA2GRAY);
 
-                    // Remap:
-                    // If Pixel was ERASED (Transparent) -> It is 0 -> GC_BGD
-                    // If Pixel is OPAQUE (Visible) -> It is >0 -> GC_PR_FGD (3)
-                    // Note: cv.imread on transparent canvas puts 0 in channels? Yes.
-
-                    cv.threshold(mask, mask, 50, 3, cv.THRESH_BINARY); // 0 or 3
-                    // Now mask contains 0 (Background) and 3 (Probable Foreground).
-                    // This setup is perfect for GC_INIT_WITH_MASK.
-                    // The user's stroke became 0 (Definite Background).
-                    // The existing background is also 0.
-                    // The existing person is 3.
+                    // Re-threshold: Transparent areas become 0 (BGD), Visible become 3 (PR_FGD)
+                    cv.threshold(mask, mask, 50, 3, cv.THRESH_BINARY);
 
                     // Run GrabCut
-                    const bgdModel = new cv.Mat();
-                    const fgdModel = new cv.Mat();
-                    const rect = new cv.Rect();
+                    bgdModel = new cv.Mat();
+                    fgdModel = new cv.Mat();
+                    const rect = new cv.Rect(0, 0, sW, sH); // Valid Rect
 
                     cv.grabCut(srcMat, mask, rect, bgdModel, fgdModel, 3, cv.GC_INIT_WITH_MASK);
 
-                    // Extract Result
-                    // Mask values: 0(BGD), 1(FGD), 2(PR_BGD), 3(PR_FGD)
-                    // We want to keep 1 and 3.
-
-                    // Create Output Mask
-                    const binMask = new cv.Mat();
-                    // Set all 1 and 3 to 255, others to 0
-                    // Logic: (mask & 1) * 255 ?
-                    // GrabCut mask: 0, 1, 2, 3.
-                    // Foreground are 1 and 3. Odd numbers!
-                    // mask & 1 => 1 for FGD/PR_FGD, 0 for BGD/PR_BGD.
-
-                    // Using low-level loop or bitwise ops?
-                    // cv.threshold can't select 1 and 3 easily.
-                    // Helper: compare mask with 1 and 3?
-                    // Easier:
-                    // newMask = (mask == 1) | (mask == 3)
-
-                    // Since JS OpenCV is limited, let's use:
-                    // Set PR_BGD(2) to BGD(0)
-                    // Set PR_FGD(3) to FGD(1)
-                    // Then threshold > 0.
-
-                    // Actually, just thresholding > 0 might include PR_BGD(2)?
-                    // Yes. We want to exclude 2.
-                    // GrabCut usually converges 2 to 0 and 3 to 1.
-                    // But safely:
-                    // We can just iterate or use inRange?
-
-                    // Let's treat 2 (Probable BG) as BG (Transparent).
-                    // So we only keep 1 (FGD) and 3 (PR_FGD).
-
-                    // How to filter efficiently?
-                    // cv.bitwise_and(mask, 1) -> result is 1 for (1,3), 0 for (0,2).
-                    // This works perfectly!
-                    const one = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(1));
-                    cv.bitwise_and(mask, one, binMask);
+                    // Extract Result (Keep FG=1 and PR_FGD=3)
+                    binMask = new cv.Mat();
+                    one = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(1));
+                    cv.bitwise_and(mask, one, binMask); // result is 1 for (1,3), 0 for (0,2)
 
                     // Scale binMask to 255
-                    const alphaScale = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(255));
+                    alphaScale = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(255));
                     cv.multiply(binMask, alphaScale, binMask);
 
                     // Resize Mask back to Original Size
-                    const finalMask = new cv.Mat();
+                    finalMask = new cv.Mat();
                     cv.resize(binMask, finalMask, new cv.Size(width, height), 0, 0, cv.INTER_LINEAR);
 
                     // Apply to Work Canvas
-                    // We have the new Alpha Mask in finalMask (Grayscale).
-                    // We need to apply this alpha to the Work Canvas.
-
-                    // Convert finalMask to Canvas
                     cv.imshow(this.tempCanvas, finalMask);
-
-                    // Composite:
-                    // 1. Draw Original Image on WorkCanvas (Reset it)
-                    // 2. Composite TempCanvas (Alpha) -> Destination-In?
-                    //    Destination-In: Keeps Source where Dest is opaque.
-                    //    Here Source is Alpha Mask. Dest is Original Image?
-                    //    No. Dest-In: "The existing content is kept where the new shape overlaps".
-                    //    So: Draw Original. Draw Mask with 'destination-in'.
 
                     const ctx = this.workCanvas.getContext('2d');
                     ctx.clearRect(0, 0, width, height);
@@ -1005,17 +963,30 @@
                     ctx.drawImage(this.tempCanvas, 0, 0); // Cut out using new mask
                     ctx.globalCompositeOperation = 'source-over';
 
+                    // Final render to sync display
                     this.render();
 
-                    // Clean up
-                    srcMat.delete(); mask.delete(); bgdModel.delete(); fgdModel.delete();
-                    binMask.delete(); one.delete(); alphaScale.delete(); finalMask.delete();
-                    srcCanvas.remove(); maskCanvas.remove();
+                    // Cleanup OpenCV objects explicitly
+                    if(alphaMat) alphaMat.delete();
+                    if(finalAlphaMat) finalAlphaMat.delete();
 
                 } catch (err) {
                     console.error("Smart Erase Error:", err);
                     alert("Smart Erase failed: " + err.message);
                 } finally {
+                    // Safe cleanup
+                    if(srcMat && !srcMat.isDeleted()) srcMat.delete();
+                    if(mask && !mask.isDeleted()) mask.delete();
+                    if(bgdModel && !bgdModel.isDeleted()) bgdModel.delete();
+                    if(fgdModel && !fgdModel.isDeleted()) fgdModel.delete();
+                    if(binMask && !binMask.isDeleted()) binMask.delete();
+                    if(one && !one.isDeleted()) one.delete();
+                    if(alphaScale && !alphaScale.isDeleted()) alphaScale.delete();
+                    if(finalMask && !finalMask.isDeleted()) finalMask.delete();
+
+                    if(srcCanvas) srcCanvas.remove();
+                    if(maskCanvas) maskCanvas.remove();
+
                     this.toggleLoading(false);
                 }
             }, 50);
