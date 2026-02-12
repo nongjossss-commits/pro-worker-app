@@ -479,11 +479,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Fetch missing fields to highlight in the view
         $missingFields = \App\Helpers\CompletenessHelper::getMissingFields($employee);
 
+        $returnUrl = request('return_url');
+
         if (request()->ajax()) {
-            return view('employees.partials._edit_form', compact('employee', 'employers', 'missingFields'));
+            return view('employees.partials._edit_form', compact('employee', 'employers', 'missingFields', 'returnUrl'));
         }
 
-        return view('employees.edit', compact('employee', 'employers', 'missingFields'));
+        return view('employees.edit', compact('employee', 'employers', 'missingFields', 'returnUrl'));
     }
 
     public function update(Request $request, Employee $employee)
@@ -699,12 +701,40 @@ public function create(Request $request) // เพิ่ม Request $request เ
             ]);
         }
 
-        return redirect($request->input('_previous', route('employees.index')))
-            ->with('success', 'Employee updated successfully.');
+        // Determine redirect target
+        $redirectUrl = $request->input('_previous', route('employees.index'));
+
+        // Ensure the anchor is present for highlighting
+        if (strpos($redirectUrl, '#') === false) {
+            $redirectUrl .= '#employee-card-' . $employee->id;
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', 'Employee updated successfully.')
+            ->with('highlight_employee', $employee->id); // For legacy highlighting logic
     }
 
     public function locate(Employee $employee)
     {
+        // "Data to Know" / GPS Logic
+        // Check for active workflows/production items
+        $activeWorkflows = $employee->active_workflows;
+
+        if ($activeWorkflows && $activeWorkflows->isNotEmpty()) {
+            // Prioritize the first active workflow
+            $wf = $activeWorkflows->first();
+            $route = $wf->is_pre_production ? 'production.index' : 'workflow.index';
+
+            // Redirect to the dashboard with anchor to the item
+            // Note: The dashboards use order/item params for "GPS" expansion
+            return redirect()->route($route, [
+                'tab' => $wf->tab_slug,
+                'order' => $wf->order_id,
+                'item' => $wf->item_id
+            ])->with('highlight_item', $wf->item_id);
+        }
+
+        // Fallback: Go to Employer Structure (Employer Edit Page)
         return redirect()->route('employers.edit', $employee->employer_id)
                          ->with('highlight_employee', $employee->id);
     }

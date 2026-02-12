@@ -8,7 +8,7 @@
     
     {{-- Edit Button (Yellow) --}}
     @can('edit-employees')
-        <a href="{{ route('employees.edit', ['employee' => $employee->id]) }}" class="btn btn-sm btn-warning" title="{{ __('Edit Employee') }}">
+        <a href="{{ route('employees.edit', ['employee' => $employee->id, 'return_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-warning" title="{{ __('Edit Employee') }}">
             <i class="bi bi-pencil-fill"></i>
         </a>
     @endcan
