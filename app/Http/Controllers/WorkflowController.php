@@ -685,7 +685,7 @@ class WorkflowController extends Controller
             'completed' => 'required|boolean'
         ]);
 
-        $item = ProductionItem::findOrFail($itemId);
+        $item = ProductionItem::with('order.workType')->findOrFail($itemId);
 
         if ($request->completed) {
             $item->completedWorkTypeSteps()->syncWithoutDetaching([
@@ -702,10 +702,82 @@ class WorkflowController extends Controller
         $order = $item->order;
         $orderStats = $this->calculateOrderStats($order);
 
+        // Calculate Global/Tab Stats
+        $isPreProduction = $order->status === 'pre_production';
+        $tabStats = $this->calculateTabStats($order->workType, $isPreProduction);
+
         return response()->json([
             'success' => true,
-            'order_stats' => $orderStats
+            'order_stats' => $orderStats,
+            'tab_stats' => $tabStats
         ]);
+    }
+
+    /**
+     * Helper to calculate Global Stats for a Tab context.
+     */
+    private function calculateTabStats($workType, $isPreProduction)
+    {
+        $query = ProductionOrder::where('work_type_id', $workType->id);
+
+        if ($isPreProduction) {
+            $query->where('status', 'pre_production');
+            $steps = WorkTypeStep::where('work_type_id', $workType->id)
+                        ->where('stage', 'preparation')
+                        ->orderBy('order')
+                        ->get();
+        } else {
+            $query->where('status', '!=', 'pre_production');
+            $steps = $workType->workflowSteps;
+        }
+
+        // Optimize query by only selecting needed fields
+        // We need items and their completed steps
+        // This could be heavy if many orders, but we rely on eager loading.
+        $allOrders = $query->with(['items.completedWorkTypeSteps'])->get();
+
+        $stats = [
+            'total_projects' => $allOrders->count(),
+            'total_employees' => 0,
+            'not_started' => 0,
+            'cancelled' => 0,
+            'completed' => 0,
+            'step_stats' => $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray(),
+            'pending_daily_check' => 0,
+        ];
+
+        foreach ($allOrders as $order) {
+            foreach ($order->items as $item) {
+                $stats['total_employees']++;
+
+                if ($item->status === 'cancelled') {
+                    $stats['cancelled']++;
+                    continue;
+                }
+
+                if ($item->status === 'completed') {
+                    $stats['completed']++;
+                }
+
+                // Not Started: Pending + No Steps
+                if ($item->status === 'pending' && $item->completedWorkTypeSteps->isEmpty()) {
+                    $stats['not_started']++;
+                }
+
+                // Daily Check
+                if (!$item->is_checked_today && $item->status !== 'completed' && $item->status !== 'cancelled') {
+                    $stats['pending_daily_check']++;
+                }
+
+                // Step Stats
+                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($stats['step_stats'][$highestStep->id])) {
+                    $stats['step_stats'][$highestStep->id]++;
+                }
+            }
+        }
+
+        return $stats;
     }
 
     /**

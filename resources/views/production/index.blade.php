@@ -109,7 +109,7 @@
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 cursor-pointer" onclick="window.location.href = '{{ route('production.index', ['tab' => $activeTab->slug ?? null]) }}';" style="background-color: #FBBF24;">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
+                    <h1 class="display-4 fw-bold mb-0" id="stats-total-employees">{{ $stats['total_employees'] ?? 0 }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
                 </div>
             </div>
@@ -149,7 +149,7 @@
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 bg-primary bg-gradient">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_projects'] ?? 0 }}</h1>
+                    <h1 class="display-4 fw-bold mb-0" id="stats-total-projects">{{ $stats['total_projects'] ?? 0 }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Active Projects') }}</p>
                 </div>
             </div>
@@ -1040,7 +1040,68 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ step_id: stepId, completed: completed })
-        });
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                location.reload(); // Revert on failure
+            } else {
+                if (data.order_stats) {
+                     // Find order ID
+                     const card = document.getElementById(`item-card-${itemId}`);
+                     if (card) {
+                         const wrapper = card.closest('.order-content-wrapper');
+                         if (wrapper) {
+                             const orderId = wrapper.id.replace('order-content-', '');
+                             updateOrderHeaderStats(orderId, data.order_stats);
+                         }
+                     }
+                }
+                if (data.tab_stats) {
+                    updateGlobalStats(data.tab_stats);
+                }
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    window.updateGlobalStats = function(stats) {
+        if (!stats) return;
+
+        // Scoreboard
+        const setHtml = (id, html) => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = html;
+        };
+
+        const setText = (selector, text) => {
+            const el = document.querySelector(selector);
+            if(el) el.innerText = text;
+        };
+
+        // Counters
+        setHtml('stats-total-employees', stats.total_employees);
+        setHtml('stats-total-projects', stats.total_projects);
+        setText('#filter-not-started h1', stats.not_started);
+        setText('#filter-cancelled h1', stats.cancelled);
+        setText('#filter-completed h1', stats.completed);
+
+        // Global Progress Bar Pills
+        if (stats.step_stats) {
+            for (const [stepId, count] of Object.entries(stats.step_stats)) {
+                const badge = document.querySelector(`#filter-step-${stepId} .stat-badge`);
+                if (badge) {
+                    badge.innerText = count;
+                    if (count > 0) {
+                        badge.classList.remove('bg-secondary', 'bg-opacity-50', 'text-white');
+                        badge.classList.add('bg-success');
+                    } else {
+                        badge.classList.add('bg-secondary', 'bg-opacity-50', 'text-white');
+                        badge.classList.remove('bg-success');
+                    }
+                }
+            }
+        }
     }
 
     // --- Trash Feature ---
