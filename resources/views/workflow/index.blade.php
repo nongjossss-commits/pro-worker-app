@@ -54,7 +54,7 @@
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 cursor-pointer" onclick="window.location.href = window.location.pathname + '?tab={{ $activeTab->slug ?? '' }}';" style="background-color: #FBBF24;">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_employees'] ?? 0 }}</h1>
+                    <h1 class="display-4 fw-bold mb-0" id="stats-total-employees">{{ $stats['total_employees'] ?? 0 }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Total Employees') }}</p>
                 </div>
             </div>
@@ -64,7 +64,7 @@
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 cursor-pointer filter-card" id="filter-daily-check" onclick="toggleFilter('pending_daily_check')" style="background-color: #F97316;">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['pending_daily_check'] ?? 0 }}</h1>
+                    <h1 class="display-4 fw-bold mb-0" id="stats-daily-check">{{ $stats['pending_daily_check'] ?? 0 }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Daily Check') }}</p>
                 </div>
             </div>
@@ -104,7 +104,7 @@
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 bg-primary bg-gradient">
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['total_projects'] ?? 0 }}</h1>
+                    <h1 class="display-4 fw-bold mb-0" id="stats-total-projects">{{ $stats['total_projects'] ?? 0 }}</h1>
                     <p class="fs-5 fw-light mb-0">{{ __('Active Projects') }}</p>
                 </div>
             </div>
@@ -859,12 +859,12 @@
             if(completed) {
                 btn.classList.remove('btn-light', 'text-secondary', 'border');
                 btn.classList.add('btn-success', 'text-white');
-                if(!btn.innerHTML.includes('bi-check')) btn.innerHTML += ' <i class="bi bi-check-circle-fill ms-1"></i>';
+                 if(!btn.innerHTML.includes('bi-check')) btn.innerHTML += ' <i class="bi bi-check-circle-fill ms-1"></i>';
                 btn.setAttribute('onclick', `toggleWorkStep(${itemId}, ${stepId}, false)`);
             } else {
                 btn.classList.add('btn-light', 'text-secondary', 'border');
                 btn.classList.remove('btn-success', 'text-white');
-                const icon = btn.querySelector('i');
+                 const icon = btn.querySelector('i');
                 if(icon) icon.remove();
                 btn.setAttribute('onclick', `toggleWorkStep(${itemId}, ${stepId}, true)`);
             }
@@ -880,21 +880,64 @@
             if(!data.success) {
                 // Revert
                 location.reload();
-            } else if (data.order_stats) {
-                // Find order ID
-                const card = document.getElementById(`item-card-${itemId}`);
-                if (card) {
-                    const wrapper = card.closest('.order-content-wrapper');
-                    if (wrapper) {
-                        const orderId = wrapper.id.replace('order-content-', '');
-                        updateOrderHeaderStats(orderId, data.order_stats);
+            } else {
+                if (data.order_stats) {
+                    // Find order ID
+                    const card = document.getElementById(`item-card-${itemId}`);
+                    if (card) {
+                        const wrapper = card.closest('.order-content-wrapper');
+                        if (wrapper) {
+                            const orderId = wrapper.id.replace('order-content-', '');
+                            updateOrderHeaderStats(orderId, data.order_stats);
+                        }
                     }
+                }
+                if (data.tab_stats) {
+                    updateGlobalStats(data.tab_stats);
                 }
             }
         })
         .catch(err => {
             console.error(err);
         });
+    }
+
+    window.updateGlobalStats = function(stats) {
+        if (!stats) return;
+
+        const setHtml = (id, html) => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = html;
+        };
+
+        const setText = (selector, text) => {
+            const el = document.querySelector(selector);
+            if(el) el.innerText = text;
+        };
+
+        setHtml('stats-total-employees', stats.total_employees);
+        setHtml('stats-total-projects', stats.total_projects);
+        setHtml('stats-daily-check', stats.pending_daily_check);
+        setText('#filter-not-started h1', stats.not_started);
+        setText('#filter-cancelled h1', stats.cancelled);
+        setText('#filter-completed h1', stats.completed);
+
+        // Global Progress
+        if (stats.step_stats) {
+            for (const [stepId, count] of Object.entries(stats.step_stats)) {
+                const badge = document.querySelector(`#filter-step-${stepId} .stat-badge`);
+                if (badge) {
+                    badge.innerText = count;
+                    if (count > 0) {
+                        badge.classList.remove('bg-secondary', 'bg-opacity-50', 'text-white');
+                        badge.classList.add('bg-success');
+                    } else {
+                        badge.classList.add('bg-secondary', 'bg-opacity-50', 'text-white');
+                        badge.classList.remove('bg-success');
+                    }
+                }
+            }
+        }
     }
 
     function updateOrderHeaderStats(orderId, stats) {
