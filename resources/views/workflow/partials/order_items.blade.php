@@ -1,7 +1,7 @@
 {{-- resources/views/workflow/partials/order_items.blade.php --}}
 
 @php
-    $steps = $order->workType->steps ?? collect();
+    $steps = $steps ?? $order->workType->workflowSteps ?? collect();
 @endphp
 
 @if($groupedItems->isEmpty())

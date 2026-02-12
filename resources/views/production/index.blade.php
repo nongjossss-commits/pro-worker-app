@@ -164,11 +164,6 @@
                 <h5 class="card-title fw-bold text-secondary mb-0">
                     <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Preparation Progress') }}
                 </h5>
-                @if(!$isReadOnly)
-                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                    <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
-                </button>
-                @endif
             </div>
             <div class="d-flex gap-2 flex-wrap justify-content-start align-items-center">
                  @foreach($steps as $step)
