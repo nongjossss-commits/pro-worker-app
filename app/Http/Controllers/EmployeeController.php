@@ -14,6 +14,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use App\Traits\AddressFilterTrait;
+use Symfony\Component\Process\Process;
 
 class EmployeeController extends Controller
 {
@@ -388,6 +389,51 @@ public function create(Request $request) // เพิ่ม Request $request เ
             : route('employees.index');
 
         return redirect($redirectRoute)->with('success', 'Employee created successfully.');
+    }
+
+    public function enhancePhoto(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|max:5120', // 5MB max
+        ]);
+
+        $file = $request->file('image');
+        $filename = 'enhance_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+
+        // Store in public disk to be accessible
+        $path = $file->storeAs('temp/enhance', $filename, 'public');
+        $fullPath = Storage::disk('public')->path($path);
+
+        $outputFilename = 'enhanced_' . $filename;
+        $outputPath = 'temp/enhance/' . $outputFilename;
+        $fullOutputPath = Storage::disk('public')->path($outputPath);
+
+        // Run Python Script
+        $scriptPath = public_path('py/face_enhance.py');
+        if (!file_exists($scriptPath)) {
+            return response()->json(['error' => 'Enhancement script not found.'], 500);
+        }
+
+        // Use python3
+        $process = new Process(['python3', $scriptPath, '--input', $fullPath, '--output', $fullOutputPath]);
+        $process->setTimeout(60); // 60 seconds timeout
+        $process->run();
+
+        // Check if successful
+        if (!$process->isSuccessful()) {
+            \Illuminate\Support\Facades\Log::error('Face Enhancement Failed: ' . $process->getErrorOutput());
+            // Fallback: If script fails but we have input, check if we can return useful error
+            return response()->json(['error' => 'Processing error: ' . $process->getErrorOutput()], 500);
+        }
+
+        if (!file_exists($fullOutputPath)) {
+             return response()->json(['error' => 'Output file not generated.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'url' => Storage::disk('public')->url($outputPath)
+        ]);
     }
 
     public function show(Employee $employee)
