@@ -303,6 +303,656 @@
         });
     };
 
+    // --- Refine / Mask Editor Manager ---
+    window.refineManager = {
+        initialized: false,
+        isActive: false,
+
+        // State
+        originalImage: null,  // The full resolution original
+        workCanvas: null,     // The canvas we are editing (RGBA)
+        displayCanvas: null,  // The visible canvas
+        ctx: null,            // Context of displayCanvas
+
+        // History (Simple Undo)
+        history: [],
+        maxHistory: 10,
+
+        // Tools
+        currentTool: 'eraser', // eraser, restore, smart_erase
+        brushSize: 20,
+        isDrawing: false,
+        lastPos: { x: 0, y: 0 },
+
+        // Smart Erase State
+        smartPoints: [],
+
+        init: function() {
+            if (this.initialized) return;
+            this.initialized = true;
+
+            // DOM Elements
+            this.container = document.getElementById('refineEditorContainer');
+            this.displayCanvas = document.getElementById('refineCanvas');
+            this.ctx = this.displayCanvas.getContext('2d', { willReadFrequently: true });
+
+            this.btnStart = document.getElementById('btnStartRefine');
+            this.btnSave = document.getElementById('refineBtnSave');
+            this.btnCancel = document.getElementById('refineBtnCancel');
+            this.btnUndo = document.getElementById('refineBtnUndo');
+
+            this.toolEraser = document.getElementById('refineToolEraser');
+            this.toolRestore = document.getElementById('refineToolRestore');
+            this.toolSmart = document.getElementById('refineToolSmart');
+            this.rangeSize = document.getElementById('refineBrushSize');
+
+            // Attach Listeners
+            if(this.btnStart) this.btnStart.addEventListener('click', () => this.start());
+            if(this.btnSave) this.btnSave.addEventListener('click', () => this.save());
+            if(this.btnCancel) this.btnCancel.addEventListener('click', () => this.cancel());
+            if(this.btnUndo) this.btnUndo.addEventListener('click', () => this.undo());
+
+            if(this.toolEraser) this.toolEraser.addEventListener('click', () => this.setTool('eraser'));
+            if(this.toolRestore) this.toolRestore.addEventListener('click', () => this.setTool('restore'));
+            if(this.toolSmart) this.toolSmart.addEventListener('click', () => this.setTool('smart_erase'));
+
+            if(this.rangeSize) this.rangeSize.addEventListener('input', (e) => this.brushSize = parseInt(e.target.value));
+
+            // Canvas Interaction
+            this.displayCanvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+            this.displayCanvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+            window.addEventListener('mouseup', () => this.onMouseUp());
+
+            // Touch Support
+            this.displayCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); this.onMouseDown(e.touches[0]); }, { passive: false });
+            this.displayCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); this.onMouseMove(e.touches[0]); }, { passive: false });
+            this.displayCanvas.addEventListener('touchend', (e) => { e.preventDefault(); this.onMouseUp(); });
+        },
+
+        async start() {
+            if (this.isActive) return;
+
+            const imageToCrop = document.getElementById('imageToCrop');
+            if (!imageToCrop || !imageToCrop.src) {
+                alert('No image to refine.');
+                return;
+            }
+
+            // 1. Prepare UI
+            this.isActive = true;
+            document.querySelector('.img-container').style.display = 'none'; // Hide Cropper
+            // Hide Main Modal Footer to prevent confusion
+            const footer = document.querySelector('.modal-footer');
+            if(footer) footer.classList.add('d-none');
+
+            this.container.classList.remove('d-none');
+
+            // Show Loading
+            this.toggleLoading(true, 'Preparing Editor...');
+
+            try {
+                // 2. Load Images
+                // Current Result (starting point)
+                const currentSrc = imageToCrop.src;
+                const currentImg = await this.loadImage(currentSrc);
+
+                // Original Image (for Restore/Smart logic)
+                // Try to get from global manager, fallback to current if not available
+                let originalSrc = currentSrc;
+                if (window.cropperManager.originalFile) {
+                    originalSrc = URL.createObjectURL(window.cropperManager.originalFile);
+                }
+                this.originalImage = await this.loadImage(originalSrc);
+
+                // 3. Setup Canvases
+                // We use the dimensions of the Original Image to maintain quality
+                // But if it's huge, performance will suffer. Limit to 2000px?
+                // For now, keep original size for best quality.
+
+                const w = this.originalImage.width;
+                const h = this.originalImage.height;
+
+                this.displayCanvas.width = w;
+                this.displayCanvas.height = h;
+
+                // Create Offscreen Work Canvas
+                this.workCanvas = document.createElement('canvas');
+                this.workCanvas.width = w;
+                this.workCanvas.height = h;
+                const workCtx = this.workCanvas.getContext('2d');
+
+                // Initialize Temp Canvas (Used for Restore/Smart Erase)
+                this.tempCanvas = document.createElement('canvas');
+                this.tempCanvas.width = w;
+                this.tempCanvas.height = h;
+
+                // Initialize Work Canvas with Current Result
+                // Note: Current Result might be resized/different aspect if it came from Cropper output?
+                // Ideally we are refining the Pre-Crop image (the one IN the cropper).
+                // Yes, imageToCrop is the source FOR the cropper.
+                // But check if imageToCrop is different size than originalFile due to previous processing?
+                // Usually bg removal replaces imageToCrop with a new blob.
+
+                // Draw current image (which has transparency) onto work canvas
+                workCtx.drawImage(currentImg, 0, 0, w, h);
+
+                // 4. Initial Render
+                this.render();
+
+                // 5. Save Initial State for Undo
+                this.pushHistory();
+
+            } catch (e) {
+                console.error(e);
+                alert('Failed to start refine mode: ' + e.message);
+                this.cancel();
+            } finally {
+                this.toggleLoading(false);
+            }
+        },
+
+        save() {
+            if (!this.workCanvas) return;
+
+            this.toggleLoading(true, 'Saving...');
+
+            this.workCanvas.toBlob((blob) => {
+                if (blob) {
+                    // Update Main Image
+                    const newUrl = URL.createObjectURL(blob);
+                    const imageToCrop = document.getElementById('imageToCrop');
+                    imageToCrop.src = newUrl;
+
+                    // Update MimeType to PNG to support transparency
+                    window.cropperManager.mimeType = 'image/png';
+
+                    // Re-init Cropper
+                    if (window.cropperManager.instance) {
+                        window.cropperManager.instance.replace(newUrl);
+                    } else {
+                        // Or trigger init
+                         const modalEl = document.getElementById('cropperModal');
+                         // Triggering modal show again might work but might loop.
+                         // Better to manually call init if needed, but 'replace' handles it.
+                         // If instance destroyed, we need to rebuild.
+                         // _edit_scripts has initCropperGlobal which handles this logic but it's inside a function.
+                         // Let's assume standard flow:
+                         const triggerBtn = document.getElementById('cropImageBtn');
+                         if(triggerBtn) triggerBtn.disabled = false;
+
+                         // We need to re-create the cropper if it was destroyed or hidden?
+                         // We hid the .img-container.
+                    }
+                }
+                this.exit();
+            }, 'image/png');
+        },
+
+        cancel() {
+            this.exit();
+        },
+
+        exit() {
+            this.isActive = false;
+            this.container.classList.add('d-none');
+            document.querySelector('.img-container').style.display = 'block'; // Show Cropper
+
+            // Show Main Modal Footer
+            const footer = document.querySelector('.modal-footer');
+            if(footer) footer.classList.remove('d-none');
+
+            // Clean up
+            this.history = [];
+            this.workCanvas = null;
+            this.tempCanvas = null;
+            this.originalImage = null;
+            this.smartPoints = [];
+
+            // Re-enable/Sync Cropper View
+            if (window.cropperManager.instance) {
+                // If we didn't save, we don't need to do anything to the cropper
+                // It just becomes visible again.
+            } else {
+                 // Re-init if missing
+                 const imageToCrop = document.getElementById('imageToCrop');
+                 if(imageToCrop.complete) {
+                      // We can't easily access initCropperInstance from here as it is scoped.
+                      // But the Modal Shown event handles it usually.
+                      // A trick: fire 'shown.bs.modal' manually?
+                      // Or just rely on the user workflow.
+                      // Ideally we didn't destroy the instance, just hid the container.
+                      // If we destroyed it, we need to recreate.
+                      // Let's verify: In start(), we just hid .img-container.
+                      // Cropper instance is still attached to the image element.
+                 }
+            }
+        },
+
+        undo() {
+            if (this.history.length === 0) return;
+            const lastState = this.history.pop();
+            const img = new Image();
+            img.onload = () => {
+                const ctx = this.workCanvas.getContext('2d');
+                ctx.clearRect(0, 0, this.workCanvas.width, this.workCanvas.height);
+                ctx.drawImage(img, 0, 0);
+                this.render();
+                this.updateUndoButton();
+            };
+            img.src = lastState;
+        },
+
+        pushHistory() {
+            if (this.history.length >= this.maxHistory) this.history.shift();
+            this.history.push(this.workCanvas.toDataURL());
+            this.updateUndoButton();
+        },
+
+        updateUndoButton() {
+            if(this.btnUndo) this.btnUndo.disabled = this.history.length === 0;
+        },
+
+        setTool(tool) {
+            this.currentTool = tool;
+
+            // UI Update
+            [this.toolEraser, this.toolRestore, this.toolSmart].forEach(btn => {
+                if(btn) btn.classList.remove('active');
+            });
+
+            if (tool === 'eraser' && this.toolEraser) this.toolEraser.classList.add('active');
+            if (tool === 'restore' && this.toolRestore) this.toolRestore.classList.add('active');
+            if (tool === 'smart_erase' && this.toolSmart) this.toolSmart.classList.add('active');
+        },
+
+        // --- Drawing Logic ---
+
+        getMousePos(evt) {
+            const rect = this.displayCanvas.getBoundingClientRect();
+            // Scale if canvas display size differs from resolution
+            const scaleX = this.displayCanvas.width / rect.width;
+            const scaleY = this.displayCanvas.height / rect.height;
+
+            return {
+                x: (evt.clientX - rect.left) * scaleX,
+                y: (evt.clientY - rect.top) * scaleY
+            };
+        },
+
+        onMouseDown(e) {
+            if (!this.isActive) return;
+            this.isDrawing = true;
+            this.lastPos = this.getMousePos(e);
+
+            if (this.currentTool === 'smart_erase') {
+                this.smartPoints = []; // Start new stroke
+                this.smartPoints.push(this.lastPos);
+            } else {
+                this.pushHistory(); // Save state before stroke
+                this.draw(this.lastPos);
+            }
+        },
+
+        onMouseMove(e) {
+            if (!this.isActive || !this.isDrawing) return;
+            const pos = this.getMousePos(e);
+
+            if (this.currentTool === 'smart_erase') {
+                // Collect points and draw visual trail
+                this.smartPoints.push(pos);
+                this.render(); // Redraw base
+                // Draw trail on top
+                this.ctx.beginPath();
+                this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                this.ctx.lineWidth = this.brushSize;
+                this.ctx.lineCap = 'round';
+                this.ctx.moveTo(this.smartPoints[0].x, this.smartPoints[0].y);
+                for(let p of this.smartPoints) this.ctx.lineTo(p.x, p.y);
+                this.ctx.stroke();
+            } else {
+                // Interpolate for smooth stroke
+                this.drawLine(this.lastPos, pos);
+                this.lastPos = pos;
+            }
+        },
+
+        onMouseUp() {
+            if (!this.isActive || !this.isDrawing) return;
+            this.isDrawing = false;
+
+            if (this.currentTool === 'smart_erase') {
+                this.pushHistory(); // Save before applying smart erase
+                this.applySmartErase();
+            }
+        },
+
+        draw(pos) {
+            const ctx = this.workCanvas.getContext('2d');
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = this.brushSize;
+
+            if (this.currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            } else if (this.currentTool === 'restore') {
+                // Restore is tricky: We want to "reveal" the original image.
+                // Approach:
+                // 1. Create a temporary path on a temp canvas.
+                // 2. Use that path to clip the Original Image.
+                // 3. Draw the clipped part onto Work Canvas with source-over.
+
+                // Optimized approach:
+                // Draw the Original Image onto Work Canvas using 'source-over' BUT masked by the brush stroke?
+                // No, standard canvas doesn't support "Draw Image only where I brush" easily without composite ops.
+
+                // Composite Op Approach:
+                // 1. Save context.
+                // 2. Begin Path (Circle at pos).
+                // 3. Clip().
+                // 4. Draw Original Image (It will only draw inside the clip).
+                // 5. Restore context.
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(this.originalImage, 0, 0, this.workCanvas.width, this.workCanvas.height);
+                ctx.restore();
+            }
+
+            this.render();
+        },
+
+        drawLine(start, end) {
+             const ctx = this.workCanvas.getContext('2d');
+             ctx.lineCap = 'round';
+             ctx.lineJoin = 'round';
+             ctx.lineWidth = this.brushSize;
+
+             if (this.currentTool === 'eraser') {
+                 ctx.globalCompositeOperation = 'destination-out';
+                 ctx.beginPath();
+                 ctx.moveTo(start.x, start.y);
+                 ctx.lineTo(end.x, end.y);
+                 ctx.stroke();
+                 ctx.globalCompositeOperation = 'source-over';
+             } else if (this.currentTool === 'restore') {
+                 // For line, clipping is harder because lines self-intersect.
+                 // Better: Draw the line on a temp alpha mask.
+                 // Then composite Original * Mask onto Work.
+
+                 // Since this runs every mouse move (high freq), keeping it simple is key.
+                 // The "Clip" method works for lines too if we stroke the path?
+                 // No, ctx.clip() uses the path area. Stroking a path doesn't create a clip area of the stroke width easily.
+
+                 // Alternative:
+                 // 1. Draw line on a separate 'brushCanvas' (white on transparent).
+                 // 2. Composite 'brushCanvas' with 'OriginalImage' -> 'SourceIn' (Result = Original parts where brush is).
+                 // 3. Draw Result onto 'WorkCanvas'.
+
+                 // Let's implement this "Brush Mask" approach inline for performance?
+                 // Creating canvas every move is bad.
+                 // We can use a shared temp canvas.
+                 if (!this.tempCanvas) {
+                     this.tempCanvas = document.createElement('canvas');
+                     this.tempCanvas.width = this.workCanvas.width;
+                     this.tempCanvas.height = this.workCanvas.height;
+                 }
+                 const tCtx = this.tempCanvas.getContext('2d');
+                 tCtx.clearRect(0,0, this.tempCanvas.width, this.tempCanvas.height);
+
+                 // Draw Stroke
+                 tCtx.lineCap = 'round';
+                 tCtx.lineJoin = 'round';
+                 tCtx.lineWidth = this.brushSize;
+                 tCtx.strokeStyle = '#fff';
+                 tCtx.beginPath();
+                 tCtx.moveTo(start.x, start.y);
+                 tCtx.lineTo(end.x, end.y);
+                 tCtx.stroke();
+
+                 // Composite Original In
+                 tCtx.globalCompositeOperation = 'source-in';
+                 tCtx.drawImage(this.originalImage, 0, 0, this.workCanvas.width, this.workCanvas.height);
+
+                 // Draw onto Work
+                 ctx.globalCompositeOperation = 'source-over';
+                 ctx.drawImage(this.tempCanvas, 0, 0);
+             }
+
+             this.render();
+        },
+
+        render() {
+            // Simply copy Work Canvas to Display Canvas
+            // Note: Display Canvas has checkerboard CSS background, so transparency shows up.
+            this.ctx.clearRect(0, 0, this.displayCanvas.width, this.displayCanvas.height);
+            this.ctx.drawImage(this.workCanvas, 0, 0);
+        },
+
+        // --- Smart Erase Logic (OpenCV) ---
+        applySmartErase() {
+            if (typeof cv === 'undefined') {
+                alert('Smart Erase requires OpenCV. Please wait for it to load or check connection.');
+                return;
+            }
+
+            this.toggleLoading(true, 'Analyzing image...');
+
+            // Use setTimeout to allow UI to render the loading state
+            setTimeout(() => {
+                try {
+                    // 1. Setup Data
+                    const width = this.workCanvas.width;
+                    const height = this.workCanvas.height;
+
+                    // Downscale for performance?
+                    // GrabCut is O(N). 12MP image will crash browser.
+                    // Let's downscale to max 600px dimension for the mask calculation.
+                    const maxDim = 600;
+                    const scale = Math.min(1, maxDim / Math.max(width, height));
+                    const sW = width * scale;
+                    const sH = height * scale;
+
+                    // Read Current State (Source + Alpha) from WorkCanvas
+                    // We need the Original Image colors for GrabCut to distinguish FG/BG
+                    // But we use the Current Alpha as the Initial Mask.
+
+                    // Create Source Mat (Original Image) - Downscaled
+                    const srcCanvas = document.createElement('canvas');
+                    srcCanvas.width = sW;
+                    srcCanvas.height = sH;
+                    const srcCtx = srcCanvas.getContext('2d');
+                    srcCtx.drawImage(this.originalImage, 0, 0, sW, sH);
+                    const srcMat = cv.imread(srcCanvas); // RGBA
+                    cv.cvtColor(srcMat, srcMat, cv.COLOR_RGBA2RGB); // GrabCut needs RGB (3 channels)
+
+                    // Create Mask Mat (From WorkCanvas Alpha) - Downscaled
+                    const maskCanvas = document.createElement('canvas');
+                    maskCanvas.width = sW;
+                    maskCanvas.height = sH;
+                    const maskCtx = maskCanvas.getContext('2d');
+                    maskCtx.drawImage(this.workCanvas, 0, 0, sW, sH);
+                    const alphaMat = cv.imread(maskCanvas); // RGBA
+                    const mask = new cv.Mat();
+                    cv.cvtColor(alphaMat, mask, cv.COLOR_RGBA2GRAY); // 1 channel
+
+                    // Initialize GrabCut Mask
+                    // Alpha > 200 -> GC_PR_FGD (3) (Probable Foreground)
+                    // Alpha < 10 -> GC_BGD (0) (Background)
+                    // Else -> GC_PR_BGD (2) ? Or keep as PR_FGD?
+                    // Let's assume current visible pixels are PR_FGD. Transparent are BGD.
+
+                    // Simple Threshold map
+                    // mask = 0 (BGD) where alpha < 100
+                    // mask = 3 (PR_FGD) where alpha >= 100
+                    cv.threshold(mask, mask, 100, 3, cv.THRESH_BINARY); // 0 or 3
+
+                    // Apply User Strokes as GC_BGD (0)
+                    // Draw user strokes onto a temp canvas then map to mask?
+                    // Better: iterate points and draw circles on the Mask Mat?
+                    // JS loop might be slow. Use canvas drawing on the maskCanvas before reading!
+
+                    // Re-do Mask Creation with User Input
+                    maskCtx.beginPath();
+                    maskCtx.lineCap = 'round';
+                    maskCtx.lineWidth = this.brushSize * scale;
+                    maskCtx.strokeStyle = '#000000'; // Draw Black (Alpha 255 -> RGB 0)
+                    // Wait, we need to manipulate the Alpha/Grayscale value directly.
+                    // Let's draw on a separate "Stroke Mask" and subtract?
+
+                    // Easier: Draw on the `maskCanvas` (which has the current alpha) BEFORE reading into Mat.
+                    // But we want to set these pixels to DEFINITE BACKGROUND (0).
+                    // The threshold logic maps <100 to 0. So if we erase (clear) pixels on maskCanvas, they become 0.
+                    maskCtx.globalCompositeOperation = 'destination-out';
+                    maskCtx.beginPath();
+                    for(let i=0; i<this.smartPoints.length-1; i++) {
+                        const p1 = this.smartPoints[i];
+                        const p2 = this.smartPoints[i+1];
+                        maskCtx.moveTo(p1.x * scale, p1.y * scale);
+                        maskCtx.lineTo(p2.x * scale, p2.y * scale);
+                    }
+                    maskCtx.stroke();
+                    maskCtx.globalCompositeOperation = 'source-over';
+
+                    // NOW read the mask
+                    const finalAlphaMat = cv.imread(maskCanvas);
+                    cv.cvtColor(finalAlphaMat, mask, cv.COLOR_RGBA2GRAY);
+
+                    // Remap:
+                    // If Pixel was ERASED (Transparent) -> It is 0 -> GC_BGD
+                    // If Pixel is OPAQUE (Visible) -> It is >0 -> GC_PR_FGD (3)
+                    // Note: cv.imread on transparent canvas puts 0 in channels? Yes.
+
+                    cv.threshold(mask, mask, 50, 3, cv.THRESH_BINARY); // 0 or 3
+                    // Now mask contains 0 (Background) and 3 (Probable Foreground).
+                    // This setup is perfect for GC_INIT_WITH_MASK.
+                    // The user's stroke became 0 (Definite Background).
+                    // The existing background is also 0.
+                    // The existing person is 3.
+
+                    // Run GrabCut
+                    const bgdModel = new cv.Mat();
+                    const fgdModel = new cv.Mat();
+                    const rect = new cv.Rect();
+
+                    cv.grabCut(srcMat, mask, rect, bgdModel, fgdModel, 3, cv.GC_INIT_WITH_MASK);
+
+                    // Extract Result
+                    // Mask values: 0(BGD), 1(FGD), 2(PR_BGD), 3(PR_FGD)
+                    // We want to keep 1 and 3.
+
+                    // Create Output Mask
+                    const binMask = new cv.Mat();
+                    // Set all 1 and 3 to 255, others to 0
+                    // Logic: (mask & 1) * 255 ?
+                    // GrabCut mask: 0, 1, 2, 3.
+                    // Foreground are 1 and 3. Odd numbers!
+                    // mask & 1 => 1 for FGD/PR_FGD, 0 for BGD/PR_BGD.
+
+                    // Using low-level loop or bitwise ops?
+                    // cv.threshold can't select 1 and 3 easily.
+                    // Helper: compare mask with 1 and 3?
+                    // Easier:
+                    // newMask = (mask == 1) | (mask == 3)
+
+                    // Since JS OpenCV is limited, let's use:
+                    // Set PR_BGD(2) to BGD(0)
+                    // Set PR_FGD(3) to FGD(1)
+                    // Then threshold > 0.
+
+                    // Actually, just thresholding > 0 might include PR_BGD(2)?
+                    // Yes. We want to exclude 2.
+                    // GrabCut usually converges 2 to 0 and 3 to 1.
+                    // But safely:
+                    // We can just iterate or use inRange?
+
+                    // Let's treat 2 (Probable BG) as BG (Transparent).
+                    // So we only keep 1 (FGD) and 3 (PR_FGD).
+
+                    // How to filter efficiently?
+                    // cv.bitwise_and(mask, 1) -> result is 1 for (1,3), 0 for (0,2).
+                    // This works perfectly!
+                    const one = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(1));
+                    cv.bitwise_and(mask, one, binMask);
+
+                    // Scale binMask to 255
+                    const alphaScale = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(255));
+                    cv.multiply(binMask, alphaScale, binMask);
+
+                    // Resize Mask back to Original Size
+                    const finalMask = new cv.Mat();
+                    cv.resize(binMask, finalMask, new cv.Size(width, height), 0, 0, cv.INTER_LINEAR);
+
+                    // Apply to Work Canvas
+                    // We have the new Alpha Mask in finalMask (Grayscale).
+                    // We need to apply this alpha to the Work Canvas.
+
+                    // Convert finalMask to Canvas
+                    cv.imshow(this.tempCanvas, finalMask);
+
+                    // Composite:
+                    // 1. Draw Original Image on WorkCanvas (Reset it)
+                    // 2. Composite TempCanvas (Alpha) -> Destination-In?
+                    //    Destination-In: Keeps Source where Dest is opaque.
+                    //    Here Source is Alpha Mask. Dest is Original Image?
+                    //    No. Dest-In: "The existing content is kept where the new shape overlaps".
+                    //    So: Draw Original. Draw Mask with 'destination-in'.
+
+                    const ctx = this.workCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.drawImage(this.originalImage, 0, 0); // Restore full original
+                    ctx.globalCompositeOperation = 'destination-in';
+                    ctx.drawImage(this.tempCanvas, 0, 0); // Cut out using new mask
+                    ctx.globalCompositeOperation = 'source-over';
+
+                    this.render();
+
+                    // Clean up
+                    srcMat.delete(); mask.delete(); bgdModel.delete(); fgdModel.delete();
+                    binMask.delete(); one.delete(); alphaScale.delete(); finalMask.delete();
+                    srcCanvas.remove(); maskCanvas.remove();
+
+                } catch (err) {
+                    console.error("Smart Erase Error:", err);
+                    alert("Smart Erase failed: " + err.message);
+                } finally {
+                    this.toggleLoading(false);
+                }
+            }, 50);
+        },
+
+        loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        },
+
+        toggleLoading(show, text) {
+            const overlay = document.getElementById('cropperLoadingOverlay');
+            const txt = document.getElementById('cropperLoadingText');
+            if(overlay) {
+                if(show) overlay.classList.remove('d-none');
+                else overlay.classList.add('d-none');
+            }
+            if(txt && text) txt.textContent = text;
+        }
+    };
+
+    // Auto Init on Load
+    document.addEventListener('DOMContentLoaded', () => {
+        window.refineManager.init();
+    });
+
     // --- Generic Form Initialization ---
     // prefix: '' for Create Form, 'edit_' for Edit Form
     window.initEmployeeForm = function(prefix = '') {
