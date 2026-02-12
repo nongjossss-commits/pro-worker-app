@@ -784,6 +784,18 @@ if (typeof window.financialManager === 'undefined') {
             get scheduledAmount() {
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
             },
+            get totalPaidAmount() {
+                return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0);
+            },
+            get remainingBalance() {
+                return Math.max(0, this.grandTotalReceivable - this.totalPaidAmount);
+            },
+            get advancePaid() {
+                return this.advanceTransactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0);
+            },
+            get advanceRemaining() {
+                return Math.max(0, this.advanceTotal - this.advancePaid);
+            },
             get remainingSchedule() {
                 return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
             },

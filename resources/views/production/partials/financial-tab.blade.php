@@ -294,6 +294,15 @@
                     <span class="fw-bold fs-6 text-success" x-text="formatCurrency(grandTotalReceivable)"></span>
                 </div>
 
+                <div class="d-flex justify-content-between mb-1 small text-success">
+                    <span class="text-muted">{{ __('Total Paid') }}:</span>
+                    <span x-text="formatCurrency(totalPaidAmount)"></span>
+                </div>
+                <div class="d-flex justify-content-between mb-1 small text-danger fw-bold">
+                    <span class="text-muted">{{ __('Balance Due') }}:</span>
+                    <span x-text="formatCurrency(remainingBalance)"></span>
+                </div>
+
                 <hr>
 
                 <div class="d-flex justify-content-between mb-1 small">
@@ -813,6 +822,9 @@
                                 <div class="mb-2">
                                     <label class="form-label small">Paid Amount</label>
                                     <input type="number" step="0.01" class="form-control form-control-sm" x-model="editingTransaction.paid_amount">
+                                    <div class="form-text small text-danger fw-bold">
+                                        {{ __('Total Balance Due') }}: <span x-text="formatCurrency(remainingBalance)"></span>
+                                    </div>
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Status</label>
@@ -827,8 +839,43 @@
                                     <textarea class="form-control form-control-sm" x-model="editingTransaction.notes" rows="2"></textarea>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Upload Slip</label>
-                                    <input type="file" class="form-control form-control-sm" @change="handleFileSelect">
+                                    <label class="form-label small">Proof of Payment / Slip</label>
+                                    <!-- Hidden Input -->
+                                    <input type="file" class="d-none" :id="'slipInput-' + editingTransaction.id" @change="handleFileSelect">
+
+                                    <div class="d-flex flex-column gap-2 mt-1">
+                                        <div class="btn-group w-100">
+                                            <!-- Scan/Edit -->
+                                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                                    @click="$dispatch('open-document-scanner', {
+                                                        inputId: 'slipInput-' + editingTransaction.id,
+                                                        initialUrl: editingTransaction.slip_path ? '/storage/' + editingTransaction.slip_path : null
+                                                    })">
+                                                <i class="bi" :class="editingTransaction.slip_path ? 'bi-pencil-square' : 'bi-camera-fill'"></i>
+                                                <span x-text="editingTransaction.slip_path ? 'Edit / Scan' : 'Scan Document'"></span>
+                                            </button>
+
+                                            <!-- View -->
+                                            <template x-if="editingTransaction.slip_path">
+                                                <a :href="'/storage/' + editingTransaction.slip_path" target="_blank" class="btn btn-outline-secondary btn-sm" title="View">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </template>
+
+                                            <!-- Download -->
+                                            <template x-if="editingTransaction.slip_path">
+                                                <a :href="'/storage/' + editingTransaction.slip_path" download class="btn btn-outline-secondary btn-sm" title="Download">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            </template>
+                                        </div>
+
+                                        <!-- Selected File Name -->
+                                        <div x-show="selectedFile" class="small text-success">
+                                            <i class="bi bi-check-circle-fill me-1"></i>
+                                            <span x-text="selectedFile ? selectedFile.name : ''"></span>
+                                        </div>
+                                    </div>
                                 </div>
                              </div>
                              <div class="col-md-6 border-start">
