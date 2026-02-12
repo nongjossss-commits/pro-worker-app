@@ -414,16 +414,25 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return response()->json(['error' => 'Enhancement script not found.'], 500);
         }
 
-        // Use python3
-        $process = new Process(['python3', $scriptPath, '--input', $fullPath, '--output', $fullOutputPath]);
-        $process->setTimeout(60); // 60 seconds timeout
+        $pythonCmd = $this->getPythonCommand();
+
+        // Use detected python command
+        $process = new Process([$pythonCmd, $scriptPath, '--input', $fullPath, '--output', $fullOutputPath]);
+        $process->setTimeout(120); // Increased timeout to 120s for model download/processing
         $process->run();
 
         // Check if successful
         if (!$process->isSuccessful()) {
-            \Illuminate\Support\Facades\Log::error('Face Enhancement Failed: ' . $process->getErrorOutput());
+            $errorOutput = $process->getErrorOutput();
+            \Illuminate\Support\Facades\Log::error('Face Enhancement Failed: ' . $errorOutput);
+
+            // Check for common errors
+            if (empty($errorOutput) || str_contains($errorOutput, 'not found') || str_contains($errorOutput, 'is not recognized')) {
+                return response()->json(['error' => "Python is not installed or configured correctly. (Command tried: $pythonCmd)"], 500);
+            }
+
             // Fallback: If script fails but we have input, check if we can return useful error
-            return response()->json(['error' => 'Processing error: ' . $process->getErrorOutput()], 500);
+            return response()->json(['error' => 'Processing error: ' . $errorOutput], 500);
         }
 
         if (!file_exists($fullOutputPath)) {
@@ -434,6 +443,28 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'success' => true,
             'url' => Storage::disk('public')->url($outputPath)
         ]);
+    }
+
+    private function getPythonCommand()
+    {
+        // 1. Check Config
+        $configPath = config('services.python.path');
+        if ($configPath) {
+            return $configPath;
+        }
+
+        // 2. Try standard commands
+        $commands = ['python3', 'python', 'py'];
+        foreach ($commands as $cmd) {
+            $process = new Process([$cmd, '--version']);
+            $process->run();
+            if ($process->isSuccessful()) {
+                return $cmd;
+            }
+        }
+
+        // Default fallback
+        return 'python';
     }
 
     public function show(Employee $employee)
