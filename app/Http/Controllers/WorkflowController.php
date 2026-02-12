@@ -525,8 +525,13 @@ class WorkflowController extends Controller
      */
     public function fetchOrderItems(Request $request, $orderId)
     {
-        $order = ProductionOrder::with(['workType.workflowSteps'])->findOrFail($orderId);
-        $steps = $order->workType->workflowSteps ?? collect();
+        $order = ProductionOrder::with('workType')->findOrFail($orderId);
+
+        if ($order->status === 'pre_production') {
+            $steps = $order->workType->preparationSteps;
+        } else {
+            $steps = $order->workType->workflowSteps;
+        }
 
         // Query Items
         $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
@@ -600,8 +605,13 @@ class WorkflowController extends Controller
      */
     public function fetchOrderHistory(Request $request, $orderId)
     {
-        $order = ProductionOrder::with(['workType.workflowSteps'])->findOrFail($orderId);
-        $steps = $order->workType->workflowSteps ?? collect();
+        $order = ProductionOrder::with('workType')->findOrFail($orderId);
+
+        if ($order->status === 'pre_production') {
+            $steps = $order->workType->preparationSteps;
+        } else {
+            $steps = $order->workType->workflowSteps;
+        }
 
         $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId)
@@ -1391,11 +1401,16 @@ class WorkflowController extends Controller
     public function getItemHtml($itemId)
     {
         // Load filtered workflowSteps
-        $item = ProductionItem::with(['employee', 'order.employer', 'order.workType.workflowSteps', 'completedWorkTypeSteps'])
+        $item = ProductionItem::with(['employee', 'order.employer', 'order.workType', 'completedWorkTypeSteps'])
             ->findOrFail($itemId);
 
         $order = $item->order;
-        $steps = $order->workType->workflowSteps ?? collect();
+
+        if ($order->status === 'pre_production') {
+            $steps = $order->workType->preparationSteps;
+        } else {
+            $steps = $order->workType->workflowSteps;
+        }
 
         // Render just the card partial
         $html = view('workflow.partials._item_card', compact('item', 'steps', 'order'))->render();
