@@ -759,9 +759,20 @@
                 let bestCorners = [];
                 let isFound = false;
 
+                // Declare Mats outside for cleanup
+                let processingSrc = null;
+                let gray = null;
+                let blurred = null;
+                let edges = null;
+                let dilated = null;
+                let kernel = null;
+                let contours = null;
+                let hierarchy = null;
+                let approx = null;
+
                 try {
                     // 1. Preprocessing (Resize for speed & noise reduction)
-                    let processingSrc = src;
+                    processingSrc = src; // Default alias
                     let scale = 1;
                     const maxDim = 800;
 
@@ -774,26 +785,26 @@
                     const pWidth = processingSrc.cols;
                     const pHeight = processingSrc.rows;
 
-                    const gray = new cv.Mat();
+                    gray = new cv.Mat();
                     cv.cvtColor(processingSrc, gray, cv.COLOR_RGBA2GRAY, 0);
 
                     // 2. Denoise (Gaussian Blur)
-                    const blurred = new cv.Mat();
+                    blurred = new cv.Mat();
                     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
 
                     // 3. Edge Detection (Canny is generally more structural than simple thresholding)
-                    const edges = new cv.Mat();
+                    edges = new cv.Mat();
                     // Thresholds: Lower 75, Upper 200 is a standard starting point
                     cv.Canny(blurred, edges, 75, 200);
 
                     // 4. Dilate to connect broken edges
-                    const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-                    const dilated = new cv.Mat();
+                    kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+                    dilated = new cv.Mat();
                     cv.dilate(edges, dilated, kernel);
 
                     // 5. Find Contours
-                    const contours = new cv.MatVector();
-                    const hierarchy = new cv.Mat();
+                    contours = new cv.MatVector();
+                    hierarchy = new cv.Mat();
                     cv.findContours(dilated, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
                     // 6. Find Best Quadrilateral
@@ -808,7 +819,7 @@
                         if (area < minArea) continue;
 
                         let peri = cv.arcLength(cnt, true);
-                        let approx = new cv.Mat();
+                        approx = new cv.Mat();
                         cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
                         // Looking for 4 corners and convexity
@@ -826,12 +837,8 @@
                         }
 
                         approx.delete();
+                        approx = null;
                     }
-
-                    // Clean up
-                    if (scale !== 1) processingSrc.delete();
-                    gray.delete(); blurred.delete(); edges.delete(); dilated.delete();
-                    kernel.delete(); contours.delete(); hierarchy.delete();
 
                     if (bestCandidate) {
                         bestCorners = this.sortPoints(bestCandidate);
@@ -845,57 +852,85 @@
                     console.error("Detection Logic Error:", e);
                     bestCorners = this.getDefaultCorners(width, height);
                     isFound = false;
+                } finally {
+                    if (approx) approx.delete();
+                    if (processingSrc && processingSrc !== src) processingSrc.delete();
+                    if (gray) gray.delete();
+                    if (blurred) blurred.delete();
+                    if (edges) edges.delete();
+                    if (dilated) dilated.delete();
+                    if (kernel) kernel.delete();
+                    if (contours) contours.delete();
+                    if (hierarchy) hierarchy.delete();
                 }
 
                 return { corners: bestCorners, found: isFound };
             },
 
             performWarp(src, corners, width, height, filterType = 'original') {
-                 // Convert corners array to flat array for OpenCV
-                 const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-                    corners[0].x, corners[0].y,
-                    corners[1].x, corners[1].y,
-                    corners[2].x, corners[2].y,
-                    corners[3].x, corners[3].y
-                ]);
+                let srcTri = null;
+                let dstTri = null;
+                let M = null;
+                let dst = null;
+                let finalDst = null;
 
-                // Calculate dimensions of the new cropped image
-                const wTop = Math.hypot(corners[1].x - corners[0].x, corners[1].y - corners[0].y);
-                const wBot = Math.hypot(corners[2].x - corners[3].x, corners[2].y - corners[3].y);
-                const hLeft = Math.hypot(corners[3].x - corners[0].x, corners[3].y - corners[0].y);
-                const hRight = Math.hypot(corners[2].x - corners[1].x, corners[2].y - corners[1].y);
+                try {
+                     // Convert corners array to flat array for OpenCV
+                     srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                        corners[0].x, corners[0].y,
+                        corners[1].x, corners[1].y,
+                        corners[2].x, corners[2].y,
+                        corners[3].x, corners[3].y
+                    ]);
 
-                const maxWidth = Math.round(Math.max(wTop, wBot));
-                const maxHeight = Math.round(Math.max(hLeft, hRight));
+                    // Calculate dimensions of the new cropped image
+                    const wTop = Math.hypot(corners[1].x - corners[0].x, corners[1].y - corners[0].y);
+                    const wBot = Math.hypot(corners[2].x - corners[3].x, corners[2].y - corners[3].y);
+                    const hLeft = Math.hypot(corners[3].x - corners[0].x, corners[3].y - corners[0].y);
+                    const hRight = Math.hypot(corners[2].x - corners[1].x, corners[2].y - corners[1].y);
 
-                const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-                    0, 0,
-                    maxWidth, 0,
-                    maxWidth, maxHeight,
-                    0, maxHeight
-                ]);
+                    let maxWidth = Math.round(Math.max(wTop, wBot));
+                    let maxHeight = Math.round(Math.max(hLeft, hRight));
 
-                const M = cv.getPerspectiveTransform(srcTri, dstTri);
-                const dst = new cv.Mat();
-                cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+                    // Validation: Ensure valid dimensions to prevent WASM table index errors
+                    if (maxWidth < 1) maxWidth = 1;
+                    if (maxHeight < 1) maxHeight = 1;
 
-                // Apply Filter
-                let finalDst = dst;
-                if (filterType && filterType !== 'original') {
-                    finalDst = this.applyFilter(dst, filterType);
+                    dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                        0, 0,
+                        maxWidth, 0,
+                        maxWidth, maxHeight,
+                        0, maxHeight
+                    ]);
+
+                    M = cv.getPerspectiveTransform(srcTri, dstTri);
+                    dst = new cv.Mat();
+                    cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+                    // Apply Filter
+                    if (filterType && filterType !== 'original') {
+                        finalDst = this.applyFilter(dst, filterType);
+                    } else {
+                        finalDst = dst;
+                    }
+
+                    // Draw to temp canvas
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = maxWidth;
+                    tempCanvas.height = maxHeight;
+                    cv.imshow(tempCanvas, finalDst);
+                    return tempCanvas.toDataURL('image/jpeg', 0.95);
+
+                } catch (e) {
+                    console.error("Warp Error:", e);
+                    throw e;
+                } finally {
+                    if (finalDst && finalDst !== dst) finalDst.delete();
+                    if (srcTri) srcTri.delete();
+                    if (dstTri) dstTri.delete();
+                    if (M) M.delete();
+                    if (dst) dst.delete();
                 }
-
-                // Draw to temp canvas
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = maxWidth;
-                tempCanvas.height = maxHeight;
-                cv.imshow(tempCanvas, finalDst);
-                const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
-
-                // Clean up
-                if (finalDst !== dst) finalDst.delete();
-                srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
-                return dataUrl;
             },
 
             getDefaultCorners(w, h) {
@@ -1345,14 +1380,20 @@
 
                 // 2. Apply Filter (if not original)
                 if (this.activeFilter !== 'original' && typeof cv !== 'undefined' && this.cvLoaded) {
+                    let srcMat = null;
+                    let dstMat = null;
                     try {
-                        const srcMat = cv.imread(canvas);
-                        const dstMat = this.applyFilter(srcMat, this.activeFilter);
+                        srcMat = cv.imread(canvas);
+                        dstMat = this.applyFilter(srcMat, this.activeFilter);
                         cv.imshow(canvas, dstMat);
-                        srcMat.delete();
-                        if (dstMat !== srcMat) dstMat.delete();
                     } catch (e) {
                         console.error("Preview Filter Error:", e);
+                    } finally {
+                        if (srcMat) srcMat.delete();
+                        // applyFilter usually returns a NEW Mat, so we must delete it.
+                        // If it returned srcMat (unlikely per implementation), we shouldn't double delete.
+                        // But my applyFilter always returns a new Mat 'dst'.
+                        if (dstMat && dstMat !== srcMat) dstMat.delete();
                     }
                 }
             },
@@ -1384,6 +1425,7 @@
 
                     const img = new Image();
                     img.onload = () => {
+                        let src = null;
                         try {
                             // Apply Rotation to Source
                             const canvas = document.createElement('canvas');
@@ -1402,9 +1444,8 @@
                             ctx.drawImage(img, -img.width/2, -img.height/2);
 
                             // Read from rotated canvas
-                            const src = cv.imread(canvas);
+                            src = cv.imread(canvas);
                             const newCroppedUrl = this.performWarp(src, realCorners, canvas.width, canvas.height, this.activeFilter);
-                            src.delete();
 
                             // Create updated object (Deep Copy)
                             const updatedItem = {
@@ -1424,6 +1465,8 @@
                         } catch (innerError) {
                             console.error("Processing Error during Save:", innerError);
                             alert("Failed to process image rotation: " + innerError.message);
+                        } finally {
+                            if (src) src.delete();
                         }
                     };
                     img.onerror = (err) => {
@@ -1451,125 +1494,143 @@
                         src.copyTo(dst);
                     }
                     else if (type === 'scan_doc') {
-                        // Smart Grayscale: Removes shadows, evens out background, keeps anti-aliased text
+                        // Check image size for kernel
+                        if (src.cols < 105 || src.rows < 105) {
+                             src.copyTo(dst);
+                             return dst;
+                        }
+
+                        // Smart Grayscale
                         const gray = new cv.Mat();
-                        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-                        // 1. Estimate Illumination (Background)
-                        // Use a large kernel to blur away text, keeping only the background/lighting variation
                         const bg = new cv.Mat();
-                        cv.GaussianBlur(gray, bg, new cv.Size(101, 101), 0, 0, cv.BORDER_DEFAULT);
-
-                        // 2. Division Normalization (Demodulation)
-                        // Result = (Original / Background) * 255
-                        // This flattens the lighting: Background becomes white (255)
-                        cv.divide(gray, bg, dst, 255);
-
-                        // 3. Sharpen (Unsharp Masking)
-                        // Boost local contrast to make text pop against the white background
                         const blurred = new cv.Mat();
-                        cv.GaussianBlur(dst, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-                        cv.addWeighted(dst, 1.5, blurred, -0.5, 0, dst);
+                        try {
+                            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-                        // Cleanup
-                        gray.delete(); bg.delete(); blurred.delete();
+                            // 1. Estimate Illumination
+                            cv.GaussianBlur(gray, bg, new cv.Size(101, 101), 0, 0, cv.BORDER_DEFAULT);
+
+                            // 2. Division Normalization
+                            cv.divide(gray, bg, dst, 255);
+
+                            // 3. Sharpen
+                            cv.GaussianBlur(dst, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                            cv.addWeighted(dst, 1.5, blurred, -0.5, 0, dst);
+                        } finally {
+                            gray.delete(); bg.delete(); blurred.delete();
+                        }
                     }
                     else if (type === 'high_contrast') {
-                         // NEW: High Contrast (Color Enhancement)
                          const rgb = new cv.Mat();
-                         cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
-
                          const lab = new cv.Mat();
-                         cv.cvtColor(rgb, lab, cv.COLOR_RGB2Lab);
-
                          const planes = new cv.MatVector();
-                         cv.split(lab, planes);
-
-                         const l = planes.get(0);
-                         const a = planes.get(1);
-                         const b = planes.get(2);
-
-                         // CLAHE (Contrast Limited Adaptive Histogram Equalization)
-                         const clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
-                         clahe.apply(l, l);
-
-                         // Merge
                          const mergedPlanes = new cv.MatVector();
-                         mergedPlanes.push_back(l);
-                         mergedPlanes.push_back(a);
-                         mergedPlanes.push_back(b);
-
-                         cv.merge(mergedPlanes, lab);
-
-                         // Convert back to RGBA
                          const resultRGB = new cv.Mat();
-                         cv.cvtColor(lab, resultRGB, cv.COLOR_Lab2RGB);
-                         cv.cvtColor(resultRGB, dst, cv.COLOR_RGB2RGBA);
+                         let l = null, a = null, b = null, clahe = null;
 
-                         // Cleanup
-                         rgb.delete(); lab.delete(); planes.delete(); mergedPlanes.delete();
-                         l.delete(); a.delete(); b.delete(); clahe.delete(); resultRGB.delete();
+                         try {
+                             cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
+                             cv.cvtColor(rgb, lab, cv.COLOR_RGB2Lab);
+                             cv.split(lab, planes);
+
+                             l = planes.get(0);
+                             a = planes.get(1);
+                             b = planes.get(2);
+
+                             clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
+                             clahe.apply(l, l);
+
+                             mergedPlanes.push_back(l);
+                             mergedPlanes.push_back(a);
+                             mergedPlanes.push_back(b);
+
+                             cv.merge(mergedPlanes, lab);
+                             cv.cvtColor(lab, resultRGB, cv.COLOR_Lab2RGB);
+                             cv.cvtColor(resultRGB, dst, cv.COLOR_RGB2RGBA);
+                         } finally {
+                             if(rgb) rgb.delete();
+                             if(lab) lab.delete();
+                             if(planes) planes.delete();
+                             if(mergedPlanes) mergedPlanes.delete();
+                             if(l) l.delete();
+                             if(a) a.delete();
+                             if(b) b.delete();
+                             if(clahe) clahe.delete();
+                             if(resultRGB) resultRGB.delete();
+                         }
                     }
                     else if (type === 'gray') {
                         cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
                     }
                     else if (type === 'bw') {
                         const gray = new cv.Mat();
-                        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-                        // Block Size: 15, C: 10 (High contrast)
-                        cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 10);
-                        gray.delete();
+                        try {
+                            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                            cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 10);
+                        } finally {
+                            gray.delete();
+                        }
                     }
                     else if (type === 'magic') {
-                         // Magic Color: Shadow removal on V channel + Sharpening
+                         if (src.cols < 105 || src.rows < 105) {
+                             src.copyTo(dst);
+                             return dst;
+                         }
+
                          const rgb = new cv.Mat();
-                         cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
-
                          const hsv = new cv.Mat();
-                         cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
-
                          const planes = new cv.MatVector();
-                         cv.split(hsv, planes);
-
-                         const h = planes.get(0);
-                         const s = planes.get(1);
-                         const v = planes.get(2);
-
-                         // 1. Illumination Normalization on V (Value) Channel
-                         const bg = new cv.Mat();
-                         // Increased kernel size for better shadow estimation
-                         cv.GaussianBlur(v, bg, new cv.Size(101, 101), 0, 0, cv.BORDER_DEFAULT);
-
-                         // Division: Normalizes lighting to white (255)
-                         cv.divide(v, bg, v, 255);
-
-                         // 2. Sharpening on V Channel
-                         const blurredV = new cv.Mat();
-                         cv.GaussianBlur(v, blurredV, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-                         cv.addWeighted(v, 1.5, blurredV, -0.5, 0, v);
-
                          const newPlanes = new cv.MatVector();
-                         newPlanes.push_back(h);
-                         newPlanes.push_back(s);
-                         newPlanes.push_back(v);
-
-                         cv.merge(newPlanes, hsv);
-
+                         const bg = new cv.Mat();
+                         const blurredV = new cv.Mat();
                          const resultRGB = new cv.Mat();
-                         cv.cvtColor(hsv, resultRGB, cv.COLOR_HSV2RGB);
-                         cv.cvtColor(resultRGB, dst, cv.COLOR_RGB2RGBA);
+                         let h = null, s = null, v = null;
 
-                         // Cleanup
-                         rgb.delete(); hsv.delete(); planes.delete(); newPlanes.delete();
-                         h.delete(); s.delete(); v.delete();
-                         bg.delete(); blurredV.delete(); resultRGB.delete();
+                         try {
+                             cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
+                             cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
+                             cv.split(hsv, planes);
+
+                             h = planes.get(0);
+                             s = planes.get(1);
+                             v = planes.get(2);
+
+                             // 1. Illumination Normalization
+                             cv.GaussianBlur(v, bg, new cv.Size(101, 101), 0, 0, cv.BORDER_DEFAULT);
+                             cv.divide(v, bg, v, 255);
+
+                             // 2. Sharpening
+                             cv.GaussianBlur(v, blurredV, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                             cv.addWeighted(v, 1.5, blurredV, -0.5, 0, v);
+
+                             newPlanes.push_back(h);
+                             newPlanes.push_back(s);
+                             newPlanes.push_back(v);
+
+                             cv.merge(newPlanes, hsv);
+                             cv.cvtColor(hsv, resultRGB, cv.COLOR_HSV2RGB);
+                             cv.cvtColor(resultRGB, dst, cv.COLOR_RGB2RGBA);
+                         } finally {
+                             if(rgb) rgb.delete();
+                             if(hsv) hsv.delete();
+                             if(planes) planes.delete();
+                             if(newPlanes) newPlanes.delete();
+                             if(bg) bg.delete();
+                             if(blurredV) blurredV.delete();
+                             if(resultRGB) resultRGB.delete();
+                             if(h) h.delete();
+                             if(s) s.delete();
+                             if(v) v.delete();
+                         }
                     }
                     else {
                         src.copyTo(dst);
                     }
                 } catch (e) {
                     console.error("Filter Error (" + type + "):", e);
-                    src.copyTo(dst); // Fallback to original
+                    if (!dst.isDeleted()) {
+                         src.copyTo(dst); // Fallback to original
+                    }
                 }
                 return dst;
             },
