@@ -134,6 +134,7 @@
 
                 // Determine source file: use edited file if available, unless reverting to original
                 let fileToProcess = window.cropperManager.originalFile;
+                let isEdited = false;
 
                 if (action === 'original') {
                     // Explicitly revert to original
@@ -141,6 +142,7 @@
                 } else if (window.cropperManager.editedFile) {
                     // Use the edited version (e.g. manually erased)
                     fileToProcess = window.cropperManager.editedFile;
+                    isEdited = true;
                 }
 
                 if (!fileToProcess) {
@@ -164,7 +166,7 @@
                     // Process
                     const processedBlob = await window.backgroundRemoval.process(fileToProcess, action, (active, text) => {
                         if (loadingText && text) loadingText.textContent = text;
-                    }, currentCancellationToken);
+                    }, currentCancellationToken, isEdited);
 
                     // Check Cancellation
                     if (currentCancellationToken.cancelled) return;
@@ -963,8 +965,8 @@
                     tempMask = new cv.Mat();
                     cv.cvtColor(finalAlphaMat, tempMask, cv.COLOR_RGBA2GRAY);
                     cv.threshold(tempMask, mask, 50, 3, cv.THRESH_BINARY);
-                    tempMask.delete();
-                    tempMask = null; // Mark as deleted
+                    if (tempMask && !tempMask.isDeleted()) tempMask.delete();
+                    tempMask = null;
 
                     // Run GrabCut
                     // Explicitly allocate models with correct type/size (1, 65, CV_64FC1)
@@ -975,7 +977,12 @@
                     const rect = new cv.Rect(0, 0, sW, sH);
 
                     // GC_INIT_WITH_MASK (1)
-                    cv.grabCut(srcMat, mask, rect, bgdModel, fgdModel, 3, cv.GC_INIT_WITH_MASK);
+                    try {
+                        cv.grabCut(srcMat, mask, rect, bgdModel, fgdModel, 3, cv.GC_INIT_WITH_MASK);
+                    } catch (gcErr) {
+                         console.error("OpenCV GrabCut Error:", gcErr);
+                         throw new Error("Failed to segment object. Try using the simple Eraser tool.");
+                    }
 
                     // Extract Result (Keep FG=1 and PR_FGD=3)
                     binMask = new cv.Mat();
