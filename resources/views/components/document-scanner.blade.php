@@ -1451,17 +1451,28 @@
                         src.copyTo(dst);
                     }
                     else if (type === 'scan_doc') {
-                        // NEW: Scan Document (Clean White Background)
+                        // Smart Grayscale: Removes shadows, evens out background, keeps anti-aliased text
                         const gray = new cv.Mat();
                         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-                        // Mild blur to reduce noise specks
-                        cv.GaussianBlur(gray, gray, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
+                        // 1. Estimate Illumination (Background)
+                        // Use a large kernel to blur away text, keeping only the background/lighting variation
+                        const bg = new cv.Mat();
+                        cv.GaussianBlur(gray, bg, new cv.Size(101, 101), 0, 0, cv.BORDER_DEFAULT);
 
-                        // Block Size 31 (large area), C 15 (aggressive cutoff for white background)
-                        cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 31, 15);
+                        // 2. Division Normalization (Demodulation)
+                        // Result = (Original / Background) * 255
+                        // This flattens the lighting: Background becomes white (255)
+                        cv.divide(gray, bg, dst, 255);
 
-                        gray.delete();
+                        // 3. Sharpen (Unsharp Masking)
+                        // Boost local contrast to make text pop against the white background
+                        const blurred = new cv.Mat();
+                        cv.GaussianBlur(dst, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                        cv.addWeighted(dst, 1.5, blurred, -0.5, 0, dst);
+
+                        // Cleanup
+                        gray.delete(); bg.delete(); blurred.delete();
                     }
                     else if (type === 'high_contrast') {
                          // NEW: High Contrast (Color Enhancement)
@@ -1510,7 +1521,7 @@
                         gray.delete();
                     }
                     else if (type === 'magic') {
-                         // Magic Color: Shadow Removal + Contrast
+                         // Magic Color: Shadow removal on V channel + Sharpening
                          const rgb = new cv.Mat();
                          cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
 
@@ -1524,16 +1535,23 @@
                          const s = planes.get(1);
                          const v = planes.get(2);
 
+                         // 1. Illumination Normalization on V (Value) Channel
                          const bg = new cv.Mat();
-                         cv.GaussianBlur(v, bg, new cv.Size(51, 51), 0, 0, cv.BORDER_DEFAULT);
+                         // Increased kernel size for better shadow estimation
+                         cv.GaussianBlur(v, bg, new cv.Size(101, 101), 0, 0, cv.BORDER_DEFAULT);
 
-                         const diff = new cv.Mat();
-                         cv.divide(v, bg, diff, 255);
+                         // Division: Normalizes lighting to white (255)
+                         cv.divide(v, bg, v, 255);
+
+                         // 2. Sharpening on V Channel
+                         const blurredV = new cv.Mat();
+                         cv.GaussianBlur(v, blurredV, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                         cv.addWeighted(v, 1.5, blurredV, -0.5, 0, v);
 
                          const newPlanes = new cv.MatVector();
                          newPlanes.push_back(h);
                          newPlanes.push_back(s);
-                         newPlanes.push_back(diff);
+                         newPlanes.push_back(v);
 
                          cv.merge(newPlanes, hsv);
 
@@ -1544,7 +1562,7 @@
                          // Cleanup
                          rgb.delete(); hsv.delete(); planes.delete(); newPlanes.delete();
                          h.delete(); s.delete(); v.delete();
-                         bg.delete(); diff.delete(); resultRGB.delete();
+                         bg.delete(); blurredV.delete(); resultRGB.delete();
                     }
                     else {
                         src.copyTo(dst);
