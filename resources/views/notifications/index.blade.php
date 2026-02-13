@@ -121,8 +121,40 @@
         </div>
     </div>
 
+    <style>
+        /* Custom Styles for Notification Tabs */
+        #notificationTab {
+            gap: 12px; /* Increased spacing between items */
+            border-bottom: none; /* Remove standard tab underline */
+            padding-bottom: 5px;
+        }
+
+        #notificationTab .nav-link {
+            transition: all 0.2s ease-in-out;
+            border: 3px solid transparent; /* Reserve space for border to prevent layout shift */
+            opacity: 0.9;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #notificationTab .nav-link:hover {
+            transform: translateY(-2px);
+            opacity: 1;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            z-index: 5;
+        }
+
+        #notificationTab .nav-link.active {
+            transform: scale(1.05); /* Slight expansion */
+            border: 3px solid #FFD700 !important; /* Gold highlight border */
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+            z-index: 10;
+            opacity: 1;
+            font-weight: bold;
+        }
+    </style>
+
     <div class="mb-3">
-        <ul class="nav nav-tabs flex-wrap" id="notificationTab" role="tablist">
+        <ul class="nav nav-pills flex-wrap" id="notificationTab" role="tablist">
             @foreach($tabs as $type => $title)
                 @php
                     $count = $counts[$type]['total'] ?? 0;
