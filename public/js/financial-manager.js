@@ -442,7 +442,7 @@ if (typeof window.financialManager === 'undefined') {
                 }
             },
 
-            addTransaction() {
+            addTransaction(shouldClose = false) {
                 if (!this.activeGroupId) {
                     Swal.fire('Error', 'Please select a financial tab first.', 'error');
                     return;
@@ -477,7 +477,11 @@ if (typeof window.financialManager === 'undefined') {
                 .then(data => {
                     if(data.success) {
                         this.transactions.push(data.transaction);
-                        bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
+
+                        if (shouldClose) {
+                            bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
+                        }
+
                         this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
                         this.selectedTransactionItems = [];
 
@@ -495,12 +499,17 @@ if (typeof window.financialManager === 'undefined') {
                             });
                         }
 
-                        Swal.fire({
+                        // Use Toast for non-blocking success
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
                             icon: 'success',
-                            title: 'Success',
-                            text: 'Transaction added successfully',
-                            timer: 1500,
-                            showConfirmButton: false
+                            title: 'Transaction added successfully'
                         });
                     } else {
                          throw new Error(data.message || 'Unknown error');
@@ -562,12 +571,17 @@ if (typeof window.financialManager === 'undefined') {
                         }
 
                         bootstrap.Modal.getInstance(this.$refs.payModal).hide();
-                        Swal.fire({
+
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
                             icon: 'success',
-                            title: 'Success',
-                            text: 'Updated successfully',
-                            timer: 1500,
-                            showConfirmButton: false
+                            title: 'Updated successfully'
                         });
                     } else {
                         throw new Error(data.message || 'Unknown error');
@@ -836,7 +850,17 @@ if (typeof window.financialManager === 'undefined') {
                             });
                         }
 
-                        Swal.fire({ icon: 'success', title: 'Saved', text: 'Settings updated.', timer: 1000, showConfirmButton: false });
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Settings updated'
+                        });
                     }
                 })
                 .catch(err => Swal.fire('Error', 'Failed to save settings', 'error'))

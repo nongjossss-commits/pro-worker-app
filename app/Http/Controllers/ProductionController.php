@@ -390,19 +390,19 @@ class ProductionController extends Controller
     public function updateFinancialGroup(Request $request, $id, $groupId)
     {
         $group = \App\Models\ProductionFinancialGroup::where('production_order_id', $id)->findOrFail($groupId);
+        $jsonPayload = $request->json()->all();
 
-        $data = $request->all();
-
-        // If simple rename
-        if ($request->has('name') && count($data) === 1) {
+        // 1. Handle Rename (Explicitly check for name, and absence of complex data)
+        // If the request is just { name: "..." }, treat as rename.
+        // We check if 'pricing_tiers' is missing to confirm it's not a full save.
+        if ($request->has('name') && !isset($jsonPayload['pricing_tiers'])) {
              $group->update(['name' => $request->name]);
-        } else {
-             // Saving Settings
-             // Filter out token or method if present, though $request->all() usually has them.
-             // Typically we want to save the payload as financial_data.
-             // The JS sends a clean JSON body.
+             return response()->json(['success' => true, 'group' => $group]);
+        }
 
-             $jsonPayload = $request->json()->all();
+        // 2. Handle Full Settings Save
+        // Check for key indicators of a full save payload
+        if (isset($jsonPayload['pricing_tiers']) || isset($jsonPayload['fixed_base_amount'])) {
              $createdItemIds = [];
 
              // Handle Price Tier Item Creation (Auto-convert candidates to items)
@@ -480,6 +480,8 @@ class ProductionController extends Controller
                  'new_items' => $newItems
              ]);
         }
+
+        return response()->json(['success' => false, 'message' => 'Invalid payload'], 400);
     }
 
     public function destroyFinancialGroup(Request $request, $id, $groupId)
