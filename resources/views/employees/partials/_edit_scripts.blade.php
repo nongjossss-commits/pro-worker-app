@@ -587,6 +587,7 @@
         },
 
         exit() {
+            this.toggleLoading(false); // Ensure loading is cleared
             this.isActive = false;
             this.container.classList.add('d-none');
             document.querySelector('.img-container').style.display = 'block'; // Show Cropper
@@ -855,7 +856,7 @@
 
         // --- Smart Erase Logic (OpenCV) ---
         applySmartErase() {
-            if (typeof cv === 'undefined') {
+            if (typeof cv === 'undefined' || !cv.Mat) {
                 alert('Smart Erase requires OpenCV. Please wait for it to load or check connection.');
                 return;
             }
@@ -864,8 +865,10 @@
 
             // Use setTimeout to allow UI to render the loading state
             setTimeout(() => {
-                let srcMat, mask, bgdModel, fgdModel, binMask, one, alphaScale, finalMask;
-                let srcCanvas, maskCanvas;
+                let srcMat = null, mask = null, bgdModel = null, fgdModel = null;
+                let binMask = null, one = null, alphaScale = null, finalMask = null;
+                let alphaMat = null, finalAlphaMat = null, tempMask = null;
+                let srcCanvas = null, maskCanvas = null;
 
                 try {
                     // 1. Setup Data
@@ -891,7 +894,7 @@
 
                     srcMat = cv.imread(srcCanvas); // RGBA
                     if (srcMat.empty()) throw new Error('Failed to load source image into OpenCV');
-                    cv.cvtColor(srcMat, srcMat, cv.COLOR_RGBA2RGB); // GrabCut needs RGB
+                    cv.cvtColor(srcMat, srcMat, cv.COLOR_RGBA2RGB); // GrabCut needs RGB (CV_8UC3)
 
                     // Create Mask Mat (From WorkCanvas Alpha) - Downscaled
                     maskCanvas = document.createElement('canvas');
@@ -900,11 +903,11 @@
                     const maskCtx = maskCanvas.getContext('2d');
                     maskCtx.drawImage(this.workCanvas, 0, 0, sW, sH);
 
-                    const alphaMat = cv.imread(maskCanvas); // RGBA
+                    alphaMat = cv.imread(maskCanvas); // RGBA
                     if (alphaMat.empty()) throw new Error('Failed to load mask into OpenCV');
 
                     mask = new cv.Mat();
-                    cv.cvtColor(alphaMat, mask, cv.COLOR_RGBA2GRAY); // 1 channel
+                    cv.cvtColor(alphaMat, mask, cv.COLOR_RGBA2GRAY); // 1 channel (CV_8UC1)
 
                     // Initialize GrabCut Mask
                     // mask = 0 (BGD) where alpha < 100
@@ -926,17 +929,25 @@
                     maskCtx.globalCompositeOperation = 'source-over';
 
                     // Read updated mask (with user strokes removed)
-                    const finalAlphaMat = cv.imread(maskCanvas);
-                    cv.cvtColor(finalAlphaMat, mask, cv.COLOR_RGBA2GRAY);
+                    finalAlphaMat = cv.imread(maskCanvas);
+                    if (finalAlphaMat.empty()) throw new Error('Failed to read updated mask');
 
-                    // Re-threshold: Transparent areas become 0 (BGD), Visible become 3 (PR_FGD)
-                    cv.threshold(mask, mask, 50, 3, cv.THRESH_BINARY);
+                    // Update mask based on strokes: Transparent areas become 0 (BGD), Visible become 3 (PR_FGD)
+                    // We need to re-read into 'mask'
+                    // Note: 'mask' currently holds initial state. We overwrite it.
+                    tempMask = new cv.Mat();
+                    cv.cvtColor(finalAlphaMat, tempMask, cv.COLOR_RGBA2GRAY);
+                    cv.threshold(tempMask, mask, 50, 3, cv.THRESH_BINARY);
+                    tempMask.delete();
+                    tempMask = null; // Mark as deleted
 
                     // Run GrabCut
-                    bgdModel = new cv.Mat();
-                    fgdModel = new cv.Mat();
-                    const rect = new cv.Rect(0, 0, sW, sH); // Valid Rect
+                    // Explicitly allocate models with correct type/size (1, 65, CV_64FC1)
+                    bgdModel = new cv.Mat(1, 65, cv.CV_64FC1);
+                    fgdModel = new cv.Mat(1, 65, cv.CV_64FC1);
+                    const rect = new cv.Rect(0, 0, sW, sH); // Valid Rect covering whole image
 
+                    // GC_INIT_WITH_MASK (1)
                     cv.grabCut(srcMat, mask, rect, bgdModel, fgdModel, 3, cv.GC_INIT_WITH_MASK);
 
                     // Extract Result (Keep FG=1 and PR_FGD=3)
@@ -966,13 +977,9 @@
                     // Final render to sync display
                     this.render();
 
-                    // Cleanup OpenCV objects explicitly
-                    if(alphaMat) alphaMat.delete();
-                    if(finalAlphaMat) finalAlphaMat.delete();
-
                 } catch (err) {
                     console.error("Smart Erase Error:", err);
-                    alert("Smart Erase failed: " + err.message);
+                    alert("Smart Erase failed: " + err.message + "\nCheck console for details.");
                 } finally {
                     // Safe cleanup
                     if(srcMat && !srcMat.isDeleted()) srcMat.delete();
@@ -983,6 +990,9 @@
                     if(one && !one.isDeleted()) one.delete();
                     if(alphaScale && !alphaScale.isDeleted()) alphaScale.delete();
                     if(finalMask && !finalMask.isDeleted()) finalMask.delete();
+                    if(alphaMat && !alphaMat.isDeleted()) alphaMat.delete();
+                    if(finalAlphaMat && !finalAlphaMat.isDeleted()) finalAlphaMat.delete();
+                    if(tempMask && !tempMask.isDeleted()) tempMask.delete();
 
                     if(srcCanvas) srcCanvas.remove();
                     if(maskCanvas) maskCanvas.remove();
