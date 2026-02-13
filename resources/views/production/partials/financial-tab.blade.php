@@ -734,7 +734,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form @submit.prevent="addTransaction">
+                    <form @submit.prevent="addTransaction(false)">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-2">
@@ -800,7 +800,10 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100 mt-3" :disabled="isSavingTransaction">Save</button>
+                        <div class="d-flex gap-2 mt-3">
+                             <button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1" @click="if($el.closest('form').reportValidity()) { addTransaction(true); }" :disabled="isSavingTransaction">Save & Close</button>
+                             <button type="submit" class="btn btn-primary btn-sm flex-grow-1" :disabled="isSavingTransaction">Save & Add Another</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -822,8 +825,11 @@
                                 <div class="mb-2">
                                     <label class="form-label small">Paid Amount</label>
                                     <input type="number" step="0.01" class="form-control form-control-sm" x-model="editingTransaction.paid_amount">
-                                    <div class="form-text small text-danger fw-bold">
-                                        {{ __('Total Balance Due') }}: <span x-text="formatCurrency(remainingBalance)"></span>
+                                    <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 0.75rem;">
+                                         <span>Total: <span x-text="formatCurrency(editingTransaction.amount)"></span></span>
+                                         <span :class="(editingTransaction.amount - (parseFloat(editingTransaction.paid_amount) || 0)) > 0.01 ? 'text-danger fw-bold' : 'text-success'">
+                                             Remaining: <span x-text="formatCurrency(Math.max(0, editingTransaction.amount - (parseFloat(editingTransaction.paid_amount) || 0)))"></span>
+                                         </span>
                                     </div>
                                 </div>
                                 <div class="mb-2">
