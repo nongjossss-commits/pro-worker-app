@@ -893,6 +893,7 @@
                 let binMask = null, one = null, alphaScale = null, finalMask = null;
                 let alphaMat = null, finalAlphaMat = null, tempMask = null;
                 let srcCanvas = null, maskCanvas = null;
+                let rect = null;
 
                 try {
                     // 1. Setup Data
@@ -919,7 +920,9 @@
                     if (!this.originalImage) throw new Error('Original image source missing');
                     srcCtx.drawImage(this.originalImage, 0, 0, sW, sH);
 
-                    srcMat = cv.imread(srcCanvas); // RGBA
+                    // Use matFromImageData instead of imread to avoid potential internal canvas context issues
+                    const srcData = srcCtx.getImageData(0, 0, sW, sH);
+                    srcMat = cv.matFromImageData(srcData); // RGBA
                     if (srcMat.empty()) throw new Error('Failed to load source image into OpenCV');
                     cv.cvtColor(srcMat, srcMat, cv.COLOR_RGBA2RGB); // GrabCut needs RGB (CV_8UC3)
 
@@ -930,7 +933,8 @@
                     const maskCtx = maskCanvas.getContext('2d');
                     maskCtx.drawImage(this.workCanvas, 0, 0, sW, sH);
 
-                    alphaMat = cv.imread(maskCanvas); // RGBA
+                    const maskData = maskCtx.getImageData(0, 0, sW, sH);
+                    alphaMat = cv.matFromImageData(maskData); // RGBA
                     if (alphaMat.empty()) throw new Error('Failed to load mask into OpenCV');
 
                     mask = new cv.Mat();
@@ -956,7 +960,8 @@
                     maskCtx.globalCompositeOperation = 'source-over';
 
                     // Read updated mask (with user strokes removed)
-                    finalAlphaMat = cv.imread(maskCanvas);
+                    const finalMaskData = maskCtx.getImageData(0, 0, sW, sH);
+                    finalAlphaMat = cv.matFromImageData(finalMaskData);
                     if (finalAlphaMat.empty()) throw new Error('Failed to read updated mask');
 
                     // Update mask based on strokes: Transparent areas become 0 (BGD), Visible become 3 (PR_FGD)
@@ -974,7 +979,8 @@
                     fgdModel = new cv.Mat(1, 65, cv.CV_64FC1);
 
                     // Create valid rect within bounds (though ignored by GC_INIT_WITH_MASK, it must be valid)
-                    const rect = new cv.Rect(0, 0, sW, sH);
+                    // Warning: rect must be deleted explicitly to avoid leaks
+                    rect = new cv.Rect(0, 0, sW, sH);
 
                     // GC_INIT_WITH_MASK (1)
                     try {
@@ -1027,6 +1033,7 @@
                     if(alphaMat && !alphaMat.isDeleted()) alphaMat.delete();
                     if(finalAlphaMat && !finalAlphaMat.isDeleted()) finalAlphaMat.delete();
                     if(tempMask && !tempMask.isDeleted()) tempMask.delete();
+                    if(rect) rect.delete(); // Delete rect (it's a C++ object, not a Mat, so no isDeleted check usually needed but safe to check if it exists)
 
                     if(srcCanvas) srcCanvas.remove();
                     if(maskCanvas) maskCanvas.remove();
