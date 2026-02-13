@@ -408,7 +408,7 @@
 <!-- Load Libraries (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script async src="https://docs.opencv.org/4.x/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
+<script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
 
 <script>
     document.addEventListener('alpine:init', () => {
@@ -1336,8 +1336,8 @@
                     // Simple fit logic
                     const scale = Math.min(container.clientWidth / this.imageWidth, container.clientHeight / this.imageHeight) * 0.9;
 
-                    this.canvasWidth = this.imageWidth * scale;
-                    this.canvasHeight = this.imageHeight * scale;
+                    this.canvasWidth = Math.max(1, Math.floor(this.imageWidth * scale));
+                    this.canvasHeight = Math.max(1, Math.floor(this.imageHeight * scale));
 
                     canvas.width = this.canvasWidth;
                     canvas.height = this.canvasHeight;
@@ -1370,7 +1370,7 @@
             },
 
             renderEditorCanvas() {
-                if (!this.editorSourceCanvas) return;
+                if (!this.editorSourceCanvas || this.canvasWidth < 1 || this.canvasHeight < 1) return;
 
                 const canvas = this.$refs.cropCanvas;
                 const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -1628,8 +1628,12 @@
                     }
                 } catch (e) {
                     console.error("Filter Error (" + type + "):", e);
-                    if (!dst.isDeleted()) {
-                         src.copyTo(dst); // Fallback to original
+                    try {
+                        if (dst && !dst.isDeleted()) {
+                             src.copyTo(dst); // Fallback to original
+                        }
+                    } catch (err) {
+                        console.error("Fallback failed:", err);
                     }
                 }
                 return dst;
