@@ -19,7 +19,7 @@
         },
 
         // Main function to process image
-        async process(file, colorType, onProgress, cancellationToken) {
+        async process(file, colorType, onProgress, cancellationToken, skipAi = false) {
             // 1. Reset cache if file changed
             if (this.cache.originalFile !== file) {
                 this.cache.originalFile = file;
@@ -33,6 +33,12 @@
 
             // 3. Get Transparent Blob (Cached or New)
             let transparentBlob = this.cache.transparentBlob;
+
+            // If we are skipping AI (e.g. manually edited image), treat the file as the transparent source
+            if (skipAi && !transparentBlob) {
+                transparentBlob = file;
+                this.cache.transparentBlob = file;
+            }
 
             if (!transparentBlob) {
                 try {
