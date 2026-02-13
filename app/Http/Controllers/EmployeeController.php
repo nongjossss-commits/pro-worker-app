@@ -94,11 +94,12 @@ public function reinstate(Employee $employee)
 
     public function index(Request $request)
 {
-    // Filter out 'registration_pending' and 'registration_cancelled' statuses so they don't appear until finalized
+    // Filter out 'registration_cancelled' statuses so they don't appear until finalized
+    // Note: 'registration_pending' is now INCLUDED as per user request to show Resolution employees in the main list.
     $query = Employee::query()
         ->whereNull('terminated_at')
         ->where(function($q) {
-            $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
+            $q->whereNotIn('status', ['registration_cancelled'])
               ->orWhereNull('status');
         });
 
@@ -731,6 +732,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
         if ($activeWorkflows && $activeWorkflows->isNotEmpty()) {
             // Prioritize the first active workflow
             $wf = $activeWorkflows->first();
+
+            // Handle Synthetic Workflows (Registration / Renewal) which have a direct URL property
+            if (isset($wf->url)) {
+                return redirect($wf->url);
+            }
+
+            // Standard Workflows (Pre-Production / Workflow)
             $route = $wf->is_pre_production ? 'production.index' : 'workflow.index';
 
             // Redirect to the dashboard with anchor to the item
@@ -771,7 +779,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $query = Employee::query()
                 ->whereNull('terminated_at')
                 ->where(function($q) {
-                    $q->whereNotIn('status', ['registration_pending', 'registration_cancelled'])
+                    // Note: 'registration_pending' is now INCLUDED as per user request.
+                    $q->whereNotIn('status', ['registration_cancelled'])
                       ->orWhereNull('status');
                 });
         }
