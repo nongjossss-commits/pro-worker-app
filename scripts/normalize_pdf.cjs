@@ -16,7 +16,8 @@ async function normalize() {
     const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 
     // Convert to standard PDF structure
-    const pdfBytesSaved = await pdfDoc.save();
+    // Disable object streams for FPDI compatibility (FPDI free version does not support PDF 1.5+ compressed object streams)
+    const pdfBytesSaved = await pdfDoc.save({ useObjectStreams: false });
 
     fs.writeFileSync(outputPath, pdfBytesSaved);
     console.log("PDF normalized successfully");

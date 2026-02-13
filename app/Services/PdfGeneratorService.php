@@ -329,33 +329,32 @@ class PdfGeneratorService
         $nodeScriptPath = base_path('scripts/normalize_pdf.cjs');
         if (file_exists($nodeScriptPath)) {
 
-            // Check if node_modules exists to avoid silent failures or generic errors
+            // Check if node_modules exists
             $nodeModulesPath = base_path('node_modules/pdf-lib');
-            if (!file_exists($nodeModulesPath)) {
-                $errorMsg = "Node.js dependency 'pdf-lib' is missing. Please run 'npm install' to enable PDF repair.";
-                Log::error($errorMsg);
-                // Throw immediately so we don't try other strategies that will also fail or are less preferred
-                throw new \Exception($errorMsg);
+
+            // Only attempt Node strategy if dependencies exist
+            if (file_exists($nodeModulesPath)) {
+                $cmd = sprintf(
+                    'node %s %s %s 2>&1',
+                    escapeshellarg($nodeScriptPath),
+                    escapeshellarg($inputPath),
+                    escapeshellarg($outputPath)
+                );
+
+                exec($cmd, $output, $returnVar);
+
+                if ($returnVar === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
+                    return $outputPath;
+                }
+
+                Log::warning('Node.js PDF normalization failed', [
+                    'cmd' => $cmd,
+                    'return' => $returnVar,
+                    'output' => $output
+                ]);
+            } else {
+                Log::warning("Node.js dependency 'pdf-lib' missing. Skipping Node strategy.");
             }
-
-            $cmd = sprintf(
-                'node %s %s %s 2>&1',
-                escapeshellarg($nodeScriptPath),
-                escapeshellarg($inputPath),
-                escapeshellarg($outputPath)
-            );
-
-            exec($cmd, $output, $returnVar);
-
-            if ($returnVar === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
-                return $outputPath;
-            }
-
-            Log::warning('Node.js PDF normalization failed', [
-                'cmd' => $cmd,
-                'return' => $returnVar,
-                'output' => $output
-            ]);
         }
 
         // Fallback strategies: Ghostscript or Python
