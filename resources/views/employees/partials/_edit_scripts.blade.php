@@ -6,6 +6,7 @@
         initialized: false,
         instance: null,
         originalFile: null,
+        editedFile: null, // Track manually edited/refined file
         mimeType: null, // Track mime type for transparency support
         targetInputId: null,
         targetPreviewId: null
@@ -39,6 +40,7 @@
 
             // Update global state
             window.cropperManager.originalFile = file;
+            window.cropperManager.editedFile = null; // Reset
             window.cropperManager.mimeType = blob.type;
             window.cropperManager.targetInputId = targetInputId;
             window.cropperManager.targetPreviewId = targetPreviewId;
@@ -129,9 +131,19 @@
                 if (!btn) return;
 
                 const action = btn.dataset.bgAction;
-                const originalFile = window.cropperManager.originalFile;
 
-                if (!originalFile) {
+                // Determine source file: use edited file if available, unless reverting to original
+                let fileToProcess = window.cropperManager.originalFile;
+
+                if (action === 'original') {
+                    // Explicitly revert to original
+                    window.cropperManager.editedFile = null;
+                } else if (window.cropperManager.editedFile) {
+                    // Use the edited version (e.g. manually erased)
+                    fileToProcess = window.cropperManager.editedFile;
+                }
+
+                if (!fileToProcess) {
                     alert('No image selected');
                     return;
                 }
@@ -150,7 +162,7 @@
                     currentCancellationToken = { cancelled: false, onCancel: null };
 
                     // Process
-                    const processedBlob = await window.backgroundRemoval.process(originalFile, action, (active, text) => {
+                    const processedBlob = await window.backgroundRemoval.process(fileToProcess, action, (active, text) => {
                         if (loadingText && text) loadingText.textContent = text;
                     }, currentCancellationToken);
 
@@ -560,6 +572,16 @@
                     // Update MimeType to PNG to support transparency
                     window.cropperManager.mimeType = 'image/png';
 
+                    // Update Edited File State so Background Tools use this version
+                    // Create a File object
+                    const originalName = window.cropperManager.originalFile ? window.cropperManager.originalFile.name : 'image.png';
+                    const fileName = originalName.replace(/\.[^/.]+$/, "") + ".png"; // Force png extension
+
+                    window.cropperManager.editedFile = new File([blob], fileName, {
+                        type: 'image/png',
+                        lastModified: Date.now()
+                    });
+
                     // Re-init Cropper
                     if (window.cropperManager.instance) {
                         window.cropperManager.instance.replace(newUrl);
@@ -856,7 +878,7 @@
 
         // --- Smart Erase Logic (OpenCV) ---
         applySmartErase() {
-            if (typeof cv === 'undefined' || !cv.Mat) {
+            if (typeof cv === 'undefined' || !cv.Mat || !cv.grabCut) {
                 alert('Smart Erase requires OpenCV. Please wait for it to load or check connection.');
                 return;
             }
@@ -878,11 +900,14 @@
                     // Downscale for performance
                     const maxDim = 600;
                     const scale = Math.min(1, maxDim / Math.max(width, height));
-                    // ENSURE INTEGERS using Math.floor to prevent OpenCV crash on some platforms
+
+                    // ENSURE INTEGERS using Math.floor to prevent OpenCV WASM errors (table index out of bounds)
                     const sW = Math.floor(width * scale);
                     const sH = Math.floor(height * scale);
 
-                    if (sW === 0 || sH === 0) throw new Error('Image too small for processing');
+                    // Additional Safety Check
+                    if (sW < 1 || sH < 1) throw new Error('Image too small for processing');
+                    if (isNaN(sW) || isNaN(sH)) throw new Error('Invalid dimensions calculated');
 
                     // Create Source Mat (Original Image) - Downscaled
                     srcCanvas = document.createElement('canvas');
@@ -945,7 +970,9 @@
                     // Explicitly allocate models with correct type/size (1, 65, CV_64FC1)
                     bgdModel = new cv.Mat(1, 65, cv.CV_64FC1);
                     fgdModel = new cv.Mat(1, 65, cv.CV_64FC1);
-                    const rect = new cv.Rect(0, 0, sW, sH); // Valid Rect covering whole image
+
+                    // Create valid rect within bounds (though ignored by GC_INIT_WITH_MASK, it must be valid)
+                    const rect = new cv.Rect(0, 0, sW, sH);
 
                     // GC_INIT_WITH_MASK (1)
                     cv.grabCut(srcMat, mask, rect, bgdModel, fgdModel, 3, cv.GC_INIT_WITH_MASK);
@@ -1057,6 +1084,7 @@
             if (event.target.files && event.target.files.length > 0) {
                 // Update global state with selected file
                 window.cropperManager.originalFile = event.target.files[0];
+                window.cropperManager.editedFile = null; // Reset
                 window.cropperManager.mimeType = event.target.files[0].type; // Set initial mime type
                 // Set Targets based on prefix
                 window.cropperManager.targetInputId = prefix + 'employeePhotoInput';
