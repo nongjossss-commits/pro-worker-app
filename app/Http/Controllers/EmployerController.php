@@ -151,7 +151,9 @@ class EmployerController extends Controller
             ->where(function($q) {
                 $q->whereNotIn('status', ['registration_cancelled'])
                   ->orWhereNull('status');
-            });
+            })
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
 
         // Filter Logic
         if ($request->filled('search')) {
