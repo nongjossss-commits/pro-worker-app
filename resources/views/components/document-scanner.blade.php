@@ -882,13 +882,16 @@
                 let finalDst = null;
 
                 try {
+                     // Validate Corners for OpenCV
+                     const safeCorners = [
+                        Number(corners[0]?.x) || 0, Number(corners[0]?.y) || 0,
+                        Number(corners[1]?.x) || 0, Number(corners[1]?.y) || 0,
+                        Number(corners[2]?.x) || 0, Number(corners[2]?.y) || 0,
+                        Number(corners[3]?.x) || 0, Number(corners[3]?.y) || 0
+                     ];
+
                      // Convert corners array to flat array for OpenCV
-                     srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-                        corners[0].x, corners[0].y,
-                        corners[1].x, corners[1].y,
-                        corners[2].x, corners[2].y,
-                        corners[3].x, corners[3].y
-                    ]);
+                     srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, safeCorners);
 
                     // Calculate dimensions of the new cropped image
                     const wTop = Math.hypot(corners[1].x - corners[0].x, corners[1].y - corners[0].y);
@@ -1429,9 +1432,13 @@
                     // Fix: Ensure corners are sorted (TL, TR, BR, BL) to prevent twisting
                     this.corners = this.sortPoints(this.corners);
 
+                    // VALIDATION: Check Scaling Factors
+                    if (!Number.isFinite(this.scaleX) || this.scaleX <= 0) this.scaleX = 1;
+                    if (!Number.isFinite(this.scaleY) || this.scaleY <= 0) this.scaleY = 1;
+
                     const realCorners = this.corners.map(c => ({
-                        x: c.x / this.scaleX,
-                        y: c.y / this.scaleY
+                        x: Number.isFinite(c.x) ? (c.x / this.scaleX) : 0,
+                        y: Number.isFinite(c.y) ? (c.y / this.scaleY) : 0
                     }));
 
                     const img = new Image();
@@ -1442,11 +1449,11 @@
                             const canvas = document.createElement('canvas');
                             // Swap dims if 90/270
                             if (this.rotation % 180 !== 0) {
-                                canvas.width = img.height;
-                                canvas.height = img.width;
+                                canvas.width = Math.max(1, img.height);
+                                canvas.height = Math.max(1, img.width);
                             } else {
-                                canvas.width = img.width;
-                                canvas.height = img.height;
+                                canvas.width = Math.max(1, img.width);
+                                canvas.height = Math.max(1, img.height);
                             }
 
                             const ctx = canvas.getContext('2d');
