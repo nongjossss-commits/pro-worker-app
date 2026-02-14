@@ -704,7 +704,8 @@
                 try {
                     if (typeof cv !== 'undefined') {
                         // 1. Detect Edges (SMARTER)
-                        const src = cv.imread(canvas);
+                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const src = cv.matFromImageData(imgData);
                         const { corners, found } = this.detectDocument(src);
 
                         // 2. Warp (Crop)
@@ -1383,7 +1384,8 @@
                     let srcMat = null;
                     let dstMat = null;
                     try {
-                        srcMat = cv.imread(canvas);
+                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        srcMat = cv.matFromImageData(imgData);
                         dstMat = this.applyFilter(srcMat, this.activeFilter);
                         cv.imshow(canvas, dstMat);
                     } catch (e) {
@@ -1444,7 +1446,8 @@
                             ctx.drawImage(img, -img.width/2, -img.height/2);
 
                             // Read from rotated canvas
-                            src = cv.imread(canvas);
+                            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            src = cv.matFromImageData(imgData);
                             const newCroppedUrl = this.performWarp(src, realCorners, canvas.width, canvas.height, this.activeFilter);
 
                             // Create updated object (Deep Copy)
