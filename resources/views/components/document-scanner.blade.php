@@ -915,7 +915,7 @@
 
                     M = cv.getPerspectiveTransform(srcTri, dstTri);
                     dst = new cv.Mat();
-                    cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+                    cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(0, 0, 0, 0));
 
                     // Apply Filter
                     if (filterType && filterType !== 'original') {
@@ -1507,6 +1507,7 @@
             // --- FILTERS ---
 
             applyFilter(src, type) {
+                if (!src || src.isDeleted() || src.empty()) return src;
                 const dst = new cv.Mat();
                 try {
                     if (type === 'original' || type === 'photo') {
@@ -1556,8 +1557,14 @@
                              a = planes.get(1);
                              b = planes.get(2);
 
-                             clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
-                             clahe.apply(l, l);
+                             // CLAHE Constructor Check
+                             if (cv.CLAHE) {
+                                 clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
+                                 clahe.apply(l, l);
+                             } else {
+                                 // Fallback if CLAHE missing
+                                 console.warn("CLAHE not available");
+                             }
 
                              mergedPlanes.push_back(l);
                              mergedPlanes.push_back(a);
