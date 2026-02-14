@@ -6,7 +6,7 @@ import time
 
 # --- Setup Instructions ---
 # To enable AI Face Restoration, you must install the following dependencies on your server:
-# pip install gfpgan basicsr opencv-python-headless
+# pip install gfpgan basicsr opencv-python-headless torch torchvision
 #
 # You also need to download the GFPGAN model weights:
 # 1. Create a directory 'experiments/pretrained_models' in this folder or configure the path.
@@ -26,29 +26,50 @@ def main():
     output_path = args.output
 
     if not os.path.exists(input_path):
-        print(f"Error: Input file not found at {input_path}")
+        sys.stderr.write(f"Error: Input file not found at {input_path}\n")
         sys.exit(1)
 
-    # --- Try to Import GFPGAN ---
+    # --- Monkey Patch for torchvision compatibility (Fixes basicsr crash) ---
+    try:
+        import torchvision
+        from torchvision.transforms import functional as F
+        if 'torchvision.transforms.functional_tensor' not in sys.modules:
+            sys.modules['torchvision.transforms.functional_tensor'] = F
+    except ImportError:
+        pass # Will be caught later if modules missing
+
+    # --- Try to Import Dependencies ---
     try:
         import cv2
+        import torch
         from gfpgan import GFPGANer
 
-        # Check if model exists (optional, or let GFPGANer handle it/download it)
-        # For this script, we assume the user has set it up or GFPGANer will try to download to default location.
-        # Default model path usually: experiments/pretrained_models/GFPGANv1.4.pth
-
         # Initialize GFPGANer
+        # We use 'clean' arch for GFPGANv1.4
+        # upscale=2 is default, but can be increased via args
+        # bg_upsampler=None prevents background enhancement (faster but less sharp background)
+        # If user wants full sharpness, we could enable realesrgan, but it's CPU intensive.
+        # We stick to None for speed unless specifically requested.
+
+        # Check if CUDA is available for speed
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        if device == 'cpu':
+             sys.stderr.write("Warning: Running on CPU. This might be slow.\n")
+
         restorer = GFPGANer(
             model_path='https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth', # Auto-download
             upscale=args.upscale,
             arch='clean',
             channel_multiplier=2,
-            bg_upsampler=None # Disable background upsampler for speed/simplicity if not needed, or use 'realesrgan'
+            bg_upsampler=None, # Keep None for performance
+            device=torch.device(device)
         )
 
         # Read image
         img = cv2.imread(input_path, cv2.IMREAD_COLOR)
+        if img is None:
+             sys.stderr.write(f"Error: Failed to read image at {input_path}\n")
+             sys.exit(1)
 
         # Restore
         # cropped_faces, restored_faces, restored_img
@@ -57,32 +78,26 @@ def main():
         # Save output
         if restored_img is not None:
             cv2.imwrite(output_path, restored_img)
-            print(f"Success: Image restored and saved to {output_path}")
+            # Verify file exists
+            if os.path.exists(output_path):
+                print(f"Success: Image restored and saved to {output_path}")
+            else:
+                sys.stderr.write("Error: Output file failed to write.\n")
+                sys.exit(1)
         else:
-            print("Error: Restoration returned None.")
-            shutil.copy(input_path, output_path)
+            sys.stderr.write("Error: Restoration returned None.\n")
+            sys.exit(1)
 
     except ImportError as e:
-        # --- Fallback Mode ---
-        sys.stderr.write(f"Warning: AI dependencies not found ({e}). Using fallback mode (copy).\n")
-        sys.stderr.write("To enable AI, install: pip install gfpgan basicsr opencv-python-headless\n")
-
-        # Just copy the file so the web app flow completes
-        try:
-            shutil.copy(input_path, output_path)
-            print(f"Fallback: Image copied to {output_path}")
-        except Exception as copy_err:
-            print(f"Error copying file: {copy_err}")
-            sys.exit(1)
+        sys.stderr.write(f"Error: Missing Python dependencies: {e}\n")
+        sys.stderr.write("Please run: pip install gfpgan basicsr opencv-python-headless torch torchvision\n")
+        sys.exit(1)
 
     except Exception as e:
         sys.stderr.write(f"Error during restoration: {e}\n")
-        # Attempt fallback on crash
-        try:
-            shutil.copy(input_path, output_path)
-            print(f"Fallback (after error): Image copied to {output_path}")
-        except:
-            sys.exit(1)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
