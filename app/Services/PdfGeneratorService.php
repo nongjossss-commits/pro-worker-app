@@ -304,12 +304,11 @@ class PdfGeneratorService
                         $lineHeight = $fontSize / 2.83; // Approx height in mm
 
                         // Align Bottom: Top of box + BoxHeight - TextHeight
-                        $textY = $y + $boxH - $lineHeight;
-
                         // Visual correction: THSarabunNew has large line height, so strict bottom align might still look high
-                        // But compared to "Center", this moves it down significantly.
-                        // We might need a small adjustment if it sits *too* low, but user asked for bottom alignment.
-                        // Let's start with exact bottom alignment of the text block.
+                        // Modified to align baseline closer to bottom line (dotted line).
+                        // THSarabunNew has a large internal leading, so subtracting full lineHeight makes text float.
+                        // Subtracting ~80% of lineHeight places baseline roughly on the bottom line.
+                        $textY = $y + $boxH - ($lineHeight * 0.8);
 
                         $pdf->SetXY($textX, $textY);
                         $pdf->Write(0, $encodedText);
