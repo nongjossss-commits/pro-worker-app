@@ -725,34 +725,36 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function locate(Employee $employee)
     {
-        // "Data to Know" / GPS Logic
-        // Check for active workflows/production items
-        $activeWorkflows = $employee->active_workflows;
+        // GPS Logic: Always go to Employer Edit page and locate the employee card
 
-        if ($activeWorkflows && $activeWorkflows->isNotEmpty()) {
-            // Prioritize the first active workflow
-            $wf = $activeWorkflows->first();
+        $perPage = 10; // Default pagination size in EmployerController
 
-            // Handle Synthetic Workflows (Registration / Renewal) which have a direct URL property
-            if (isset($wf->url)) {
-                return redirect($wf->url);
-            }
+        // Base query matching EmployerController@edit default view
+        $query = $employee->employer->employees()
+            ->whereNull('terminated_at')
+            ->where(function($q) {
+                $q->whereNotIn('status', ['registration_cancelled'])
+                  ->orWhereNull('status');
+            });
 
-            // Standard Workflows (Pre-Production / Workflow)
-            $route = $wf->is_pre_production ? 'production.index' : 'workflow.index';
+        // Count employees appearing BEFORE the target based on sorting: created_at DESC, id DESC
+        // In DESC sort, "before" means (created_at > target) OR (created_at == target AND id > target)
+        $position = (clone $query)->where(function ($q) use ($employee) {
+            $q->where('created_at', '>', $employee->created_at)
+              ->orWhere(function ($subQ) use ($employee) {
+                  $subQ->where('created_at', $employee->created_at)
+                       ->where('id', '>', $employee->id);
+              });
+        })->count();
 
-            // Redirect to the dashboard with anchor to the item
-            // Note: The dashboards use order/item params for "GPS" expansion
-            return redirect()->route($route, [
-                'tab' => $wf->tab_slug,
-                'order' => $wf->order_id,
-                'item' => $wf->item_id
-            ])->with('highlight_item', $wf->item_id);
-        }
+        $page = floor($position / $perPage) + 1;
 
-        // Fallback: Go to Employer Structure (Employer Edit Page)
-        return redirect()->route('employers.edit', $employee->employer_id)
-                         ->with('highlight_employee', $employee->id);
+        // Redirect to Employer Structure (Employer Edit Page) with calculated page
+        return redirect()->route('employers.edit', [
+                'employer' => $employee->employer_id,
+                'page' => $page
+            ])
+            ->with('highlight_employee', $employee->id);
     }
 
     public function destroy(Employee $employee)
