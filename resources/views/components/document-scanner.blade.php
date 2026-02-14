@@ -1243,10 +1243,10 @@
                 }
                 else if (type === 'card') {
                     // Credit Card (ID-1): 85.6mm x 54mm @ 150DPI
-                    // W: (85.6 / 25.4) * 150 = 506 px
-                    // H: (54 / 25.4) * 150 = 319 px
-                    const cw = 506;
-                    const ch = 319;
+                    // W: (85.6 / 25.4) * 150 = 506 px -> +15% = 582 px
+                    // H: (54 / 25.4) * 150 = 319 px -> +15% = 367 px
+                    const cw = 582;
+                    const ch = 367;
                     if(images[0]) drawFit(images[0], (a4w - cw)/2, (a4h - ch)/2, cw, ch);
                 }
                 else if (type === 'half_v') {
@@ -1271,22 +1271,15 @@
                 }
                 else if (type === 'id_card_pair') {
                     // Specific ID Card Layout (Center Top / Center Bottom)
-                    // Standard ID-1 Size: 506 x 319 px
-                    const cardW = 506;
-                    const cardH = 319;
+                    // Standard ID-1 Size: 506 x 319 px -> +15% = 582 x 367 px
+                    const cardW = 582;
+                    const cardH = 367;
 
                     const topY = a4h/4 - cardH/2;
                     const botY = a4h*3/4 - cardH/2;
 
                     if(images[0]) drawFit(images[0], (a4w - cardW)/2, topY, cardW, cardH);
                     if(images[1]) drawFit(images[1], (a4w - cardW)/2, botY, cardW, cardH);
-
-                    // Labels
-                    ctx.font = '30px Arial';
-                    ctx.fillStyle = '#333';
-                    ctx.textAlign = 'center';
-                    if(images[0]) ctx.fillText('ด้านหน้า (Front)', a4w/2, topY - 20);
-                    if(images[1]) ctx.fillText('ด้านหลัง (Back)', a4w/2, botY - 20);
                 }
                 else if (type === 'grid') {
                     // 2x2 Grid for 3 or 4 images
