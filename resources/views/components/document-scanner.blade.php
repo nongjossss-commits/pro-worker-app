@@ -463,6 +463,12 @@
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                 }
 
+                // Fix Race Condition: Check if OpenCV is already loaded
+                if (typeof cv !== 'undefined' && cv.Mat) {
+                    this.cvLoaded = true;
+                    console.log('OpenCV Already Loaded');
+                }
+
                 document.addEventListener('opencv-loaded', () => {
                     this.cvLoaded = true;
                     console.log('OpenCV Loaded');
@@ -1413,7 +1419,10 @@
             },
 
             saveCropEdit() {
-                if (typeof cv === 'undefined') return;
+                if (typeof cv === 'undefined') {
+                    alert("Image Processing Engine (OpenCV) is not loaded. Cannot save edits.");
+                    return;
+                }
                 const item = this.capturedImages[this.currentEditIndex];
 
                 try {
@@ -1751,6 +1760,15 @@
                 this.loadingMessage = 'Generating Output...';
 
                 try {
+                    // 1. Validate Target Input
+                    if (!this.targetInputId) {
+                        throw new Error("Target input ID is missing.");
+                    }
+                    const input = document.getElementById(this.targetInputId);
+                    if (!input) {
+                        throw new Error(`Target input element (#${this.targetInputId}) not found.`);
+                    }
+
                     const dt = new DataTransfer();
 
                     // Standard Logic: Bundle everything into the input
@@ -1759,7 +1777,7 @@
                     // Note: If user created a Layout, it is just another image in the list.
                     // The user is expected to delete source images if they only want the layout.
 
-                    if(this.capturedImages.length === 1) {
+                    if (this.capturedImages.length === 1) {
                         // Check if we should generate PDF for single image to enforce A4 placement
                         // For now, we continue to return JPG for single images unless they are specifically from a layout.
                         // However, to ensure "Fit to A4" behavior is consistent, we might want to consider PDF.
@@ -1768,6 +1786,11 @@
                         dt.items.add(file);
 
                     } else if (this.capturedImages.length > 1) {
+                        // Check if jsPDF is loaded
+                        if (!window.jspdf) {
+                            throw new Error("PDF generation library (jsPDF) is not loaded. Please check your internet connection.");
+                        }
+
                         const { jsPDF } = window.jspdf;
                         const doc = new jsPDF(); // A4 Portrait by default
 
@@ -1804,11 +1827,8 @@
                     }
 
                     // Assign to Input
-                    const input = document.getElementById(this.targetInputId);
-                    if (input) {
-                        input.files = dt.files;
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
+                    input.files = dt.files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
 
                     // Handle Preview
                     if (this.targetPreviewId && dt.files.length > 0) {
