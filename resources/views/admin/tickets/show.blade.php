@@ -451,7 +451,7 @@
                     <div class="card-body">
                         {{-- Hidden File Input --}}
                         {{-- V2.5-S4 Bug Fix: Use the correct x-ref to match the trigger function --}}
-                        <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
+                        <input type="file" multiple class="d-none" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)" onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
 
                         {{-- Determine the correct route --}}
                         @php

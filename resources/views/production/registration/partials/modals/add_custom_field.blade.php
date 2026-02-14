@@ -37,7 +37,7 @@
 
                     <div class="mb-3 input-group-file-type d-none">
                         <label class="form-label">Select File</label>
-                        <input type="file" name="field_file" class="form-control">
+                        <input type="file" name="field_file" class="form-control" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                         <div class="mt-2">
                             <label class="form-label small">Description (Optional)</label>
                             <input type="text" name="field_value_desc" class="form-control form-control-sm" placeholder="File description...">

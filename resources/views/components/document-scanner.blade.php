@@ -411,6 +411,50 @@
 <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded'))"></script>
 
 <script>
+    // Global Interceptor Function
+    window.interceptFileSelect = function(event) {
+        const input = event.target;
+        const files = input.files;
+
+        // 1. Check if this change was triggered by the scanner itself
+        if (input.dataset.scannerSource === 'true') {
+            delete input.dataset.scannerSource; // Reset flag
+            return; // Allow normal processing
+        }
+
+        if (!files || files.length === 0) return;
+
+        // 2. Check if files are supported (Image or PDF)
+        let isSupported = true;
+        for (let i = 0; i < files.length; i++) {
+            const type = files[i].type;
+            if (!type.startsWith('image/') && type !== 'application/pdf') {
+                isSupported = false;
+                break;
+            }
+        }
+
+        // 3. If supported, intercept and open scanner
+        if (isSupported) {
+            // Stop other listeners (e.g. immediate upload)
+            event.stopImmediatePropagation();
+            // event.preventDefault(); // change event is not cancellable usually, but good practice
+
+            // Dispatch event with files
+            document.dispatchEvent(new CustomEvent('open-document-scanner', {
+                detail: {
+                    inputId: input.id,
+                    files: files
+                }
+            }));
+
+            // Clear the input so it's "empty" while scanning
+            // Note: This might not be strictly necessary if we stopped propagation,
+            // but keeps UI clean.
+            input.value = '';
+        }
+    };
+
     document.addEventListener('alpine:init', () => {
         Alpine.data('documentScanner', () => ({
             isOpen: false,
@@ -501,6 +545,7 @@
             },
 
             async openScanner(detail) {
+                console.log('Opening Scanner. Files:', detail.files ? detail.files.length : 0, 'URL:', detail.initialUrl);
                 this.targetInputId = detail.inputId;
                 this.targetPreviewId = detail.previewId || null;
                 this.isOpen = true;
@@ -508,10 +553,18 @@
                 this.view = 'camera';
                 this.scanMode = 'document'; // Default
 
-                // Handle Edit Mode (Initial File)
-                if (detail.initialUrl) {
+                // Handle Edit Mode (Initial File or Files Object)
+                if (detail.files && detail.files.length > 0) {
+                     console.log('Importing files directly');
+                     await this.handleImport({ target: { files: detail.files, value: '' } }, true); // Pass true to indicate direct file loading
+                } else if (detail.initialUrl) {
                     await this.loadInitialFile(detail.initialUrl);
                 }
+
+                const fileCount = detail.files ? detail.files.length : 0;
+                const hasFiles = fileCount > 0;
+                const hasInitialContent = !!detail.initialUrl || hasFiles;
+                console.log('Debug Calc:', { url: detail.initialUrl, fileCount, hasFiles, hasInitialContent });
 
                 if(!this.cvLoaded) {
                      this.isLoading = true;
@@ -522,7 +575,8 @@
                              this.cvLoaded = true;
                              this.isLoading = false;
                              clearInterval(checkInterval);
-                             if (!detail.initialUrl) this.startCamera();
+                             console.log('Interval check. hasInitialContent:', hasInitialContent);
+                             if (!hasInitialContent) this.startCamera();
                          }
                      }, 500);
 
@@ -531,11 +585,11 @@
                          if(!this.cvLoaded && this.isLoading) {
                              this.isLoading = false;
                              alert('Cannot load Image Processing Engine (OpenCV). Basic features only.');
-                             if (!detail.initialUrl) this.startCamera();
+                             if (!hasInitialContent) this.startCamera();
                          }
                      }, 10000);
                 } else {
-                    if (!detail.initialUrl) this.startCamera();
+                    if (!hasInitialContent) this.startCamera();
                 }
             },
 
@@ -571,7 +625,7 @@
                 this.isOpen = false;
             },
 
-            async handleImport(event) {
+            async handleImport(event, directLoad = false) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
 
@@ -592,8 +646,10 @@
                     this.stopCamera();
                     this.view = 'review';
 
-                    // Reset input
-                    event.target.value = '';
+                    // Reset input only if event came from actual input
+                    if (!directLoad && event.target) {
+                        event.target.value = '';
+                    }
                 } catch (err) {
                     console.error("Import Error:", err);
                     alert("เกิดข้อผิดพลาดในการนำเข้าไฟล์: " + err.message);
@@ -1841,6 +1897,8 @@
                     }
 
                     // Assign to Input
+                    // Flag the input so the interceptor knows this change comes from the scanner
+                    input.dataset.scannerSource = 'true';
                     input.files = dt.files;
                     input.dispatchEvent(new Event('change', { bubbles: true }));
 

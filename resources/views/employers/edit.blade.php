@@ -711,7 +711,7 @@
                     <div class="tab-pane fade" :class="{ 'show active': activeTab === 'upload' }">
                         <div class="mb-3">
                             <label class="form-label">{{ __('Upload Signature Image') }}</label>
-                            <input type="file" class="form-control" accept="image/png, image/jpeg" @change="handleFileSelect">
+                            <input type="file" class="form-control" accept="image/png, image/jpeg" @change="handleFileSelect" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                             <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
                         </div>
                     </div>

@@ -88,7 +88,7 @@
                                     @if(in_array($field, $fileFields))
                                         {{-- File Upload for Master --}}
                                         <div class="input-group">
-                                            <input type="file" class="form-control master-input" data-field="{{ $field }}" id="master_input_{{ $field }}">
+                                            <input type="file" class="form-control master-input" data-field="{{ $field }}" id="master_input_{{ $field }}" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                                             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'master_input_{{ $field }}' } }))">
                                                 <i class="bi bi-camera"></i>
                                             </button>
@@ -222,7 +222,7 @@
                                             @else
                                                 {{-- Standard File Upload --}}
                                                 <div class="input-group">
-                                                    <input type="file" class="form-control individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}" id="individual_input_{{ $employee->id }}_{{ $field }}">
+                                                    <input type="file" class="form-control individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}" id="individual_input_{{ $employee->id }}_{{ $field }}" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                                                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'individual_input_{{ $employee->id }}_{{ $field }}' } }))">
                                                         <i class="bi bi-camera"></i>
                                                     </button>

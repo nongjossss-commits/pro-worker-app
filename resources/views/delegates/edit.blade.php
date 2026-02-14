@@ -69,7 +69,7 @@
                 </div>
                 <div class="form-group">
                     <label for="delegatePhoto">Photo</label>
-                    <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control">
+                    <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     @if ($delegate->delegatePhoto)
                         <img src="{{ $delegate->delegatePhoto }}" alt="{{ $delegate->delegateNameEn }}" width="100" class="mt-2">
                     @endif

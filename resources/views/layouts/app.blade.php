@@ -530,7 +530,7 @@
                             {{-- File Attachment --}}
                             <div class="mb-3">
                                 <label for="attachment" class="form-label" id="attachment_label">{{ __('Attach document (if any)') }}:</label>
-                                <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png">
+                                <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                                 <div class="form-text text-muted" id="attachment_help"></div>
                             </div>
                         </div>

@@ -56,7 +56,7 @@
                             </div>
 
                             <div x-show="action === 'upload'" class="mt-2">
-                                <input type="file" name="signature_file" class="form-control" accept="image/png, image/jpeg">
+                                <input type="file" name="signature_file" class="form-control" accept="image/png, image/jpeg" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                                 <small class="text-muted">Recommended: Transparent PNG, approx 300x150px.</small>
                             </div>
 

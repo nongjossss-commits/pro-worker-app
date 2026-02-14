@@ -370,7 +370,7 @@
             <div class="d-flex gap-2 flex-wrap justify-content-end">
                  @can('edit-employees')
                  {{-- Biometrics Button --}}
-                 <input type="file" id="biometrics-input-{{ $employee->id }}" class="d-none" onchange="uploadBiometrics({{ $employee->id }})">
+                 <input type="file" id="biometrics-input-{{ $employee->id }}" class="d-none" onchange="if(window.interceptFileSelect) window.interceptFileSelect(event); if(this.files.length > 0) uploadBiometrics({{ $employee->id }})" multiple>
 
                  <div class="btn-group">
                      {{-- Toggle Tick Button --}}

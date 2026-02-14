@@ -568,7 +568,7 @@
                         <div class="mb-2">
                             <label class="form-label small">Logo</label>
                             <div class="d-flex align-items-center gap-2">
-                                <input type="file" class="form-control form-control-sm" x-ref="logoInput">
+                                <input type="file" class="form-control form-control-sm" x-ref="logoInput" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                                 <button class="btn btn-sm btn-outline-primary" @click="uploadLogo()">Upload</button>
                             </div>
                             <div x-show="customHeader.logo" class="mt-2">
@@ -847,7 +847,7 @@
                                 <div class="mb-2">
                                     <label class="form-label small">Proof of Payment / Slip</label>
                                     <!-- Hidden Input -->
-                                    <input type="file" class="d-none" :id="'slipInput-' + editingTransaction.id" @change="handleFileSelect">
+                                    <input type="file" class="d-none" :id="'slipInput-' + editingTransaction.id" @change="handleFileSelect" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
 
                                     <div class="d-flex flex-column gap-2 mt-1">
                                         <div class="btn-group w-100">

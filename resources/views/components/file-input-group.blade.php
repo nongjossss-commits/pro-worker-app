@@ -49,6 +49,8 @@
                id="{{ $id }}"
                name="{{ $name }}"
                accept="image/*,application/pdf"
+               multiple
+               onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)"
                {{ $attributes }}>
 
         <button type="button"

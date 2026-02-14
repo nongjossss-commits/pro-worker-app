@@ -59,7 +59,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Logo</label>
-                        <input type="file" name="logo" class="form-control" accept="image/*">
+                        <input type="file" name="logo" class="form-control" accept="image/*" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="is_default" value="1" id="isDefault">
