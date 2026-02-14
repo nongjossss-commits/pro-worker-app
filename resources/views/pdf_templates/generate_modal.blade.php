@@ -47,7 +47,7 @@
                                 );
                             @endphp
 
-                            <div x-data="employerSelector()" @click.outside="open = false">
+                            <div x-data="employerSelector()" @click.outside="open = false; search = selectedName">
                                 <div class="position-relative">
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -55,7 +55,7 @@
                                                class="form-control"
                                                placeholder="Type to search employer or select Global..."
                                                x-model="search"
-                                               @focus="open = true"
+                                               @focus="open = true; search = ''"
                                                @keydown.escape="open = false"
                                                autocomplete="off">
                                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>

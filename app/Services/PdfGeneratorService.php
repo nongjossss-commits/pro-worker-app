@@ -299,19 +299,14 @@ class PdfGeneratorService
                              $textX = $x + 1; // 1mm padding
                         }
 
-                        // 4. Vertical Alignment (Bottom)
-                        // We align vertically to the bottom of the box so users can align the box bottom with the line.
-                        $lineHeight = $fontSize / 2.83; // Approx height in mm
+                        // 4. Vertical Alignment (Bottom - Baseline)
+                        // We align the BASELINE of the text to the bottom of the box ($y + $boxH).
+                        // This allows Thai descenders (tails) to naturally protrude below the line,
+                        // while the main character body sits exactly on the line.
+                        $textY = $y + $boxH;
 
-                        // Align Bottom: Top of box + BoxHeight - TextHeight
-                        // Visual correction: THSarabunNew has large line height, so strict bottom align might still look high
-                        // Modified to align baseline closer to bottom line (dotted line).
-                        // THSarabunNew has a large internal leading, so subtracting full lineHeight makes text float.
-                        // Subtracting ~80% of lineHeight places baseline roughly on the bottom line.
-                        $textY = $y + $boxH - ($lineHeight * 0.8);
-
-                        $pdf->SetXY($textX, $textY);
-                        $pdf->Write(0, $encodedText);
+                        // Use Text() instead of Write() because Text() accepts baseline coordinates directly.
+                        $pdf->Text($textX, $textY, $encodedText);
                     }
                 }
             }
