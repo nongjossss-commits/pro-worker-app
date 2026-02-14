@@ -91,7 +91,7 @@
             // For file type editing, we need to allow re-upload
             if (field.field_type === 'file') {
                  // Append file input to editInputHtml
-                 editInputHtml += `<input type="file" name="field_file" class="form-control form-control-sm mb-2">`;
+                 editInputHtml += `<input type="file" name="field_file" class="form-control form-control-sm mb-2" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">`;
             }
 
             return `

@@ -221,7 +221,7 @@
             <div class="col-md-6">
                 <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }}</label>
                 <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_company' } }))">
                         <i class="bi bi-camera"></i>
                     </button>
@@ -242,7 +242,7 @@
             <div class="col-md-6">
                 <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }}</label>
                 <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_lease' } }))">
                         <i class="bi bi-camera"></i>
                     </button>
@@ -254,7 +254,7 @@
             <div class="col-md-6">
                 <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }}</label>
                 <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_construction' } }))">
                         <i class="bi bi-camera"></i>
                     </button>
@@ -268,7 +268,7 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1</label>
                 <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_1' } }))">
                         <i class="bi bi-camera"></i>
                     </button>
@@ -281,7 +281,7 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2</label>
                 <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_2' } }))">
                         <i class="bi bi-camera"></i>
                     </button>
@@ -294,7 +294,7 @@
             <div class="col-md-4">
                 <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3</label>
                 <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3">
+                    <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_3' } }))">
                         <i class="bi bi-camera"></i>
                     </button>

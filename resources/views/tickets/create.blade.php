@@ -37,7 +37,7 @@
         @include('tickets.partials._basket_form_inputs')
 
         {{-- V2.4-S7: Hidden File Input (Triggered by the button) --}}
-        <input type="file" multiple class="d-none" id="general-attachment-input" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)">
+        <input type="file" multiple class="d-none" id="general-attachment-input" x-ref="generalFileInput" accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.xls,.xlsx" @change="handleGeneralFileUpload($event)" onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
 
         <div class="row">
             {{-- Column 1: Main Information (Left Side) --}}

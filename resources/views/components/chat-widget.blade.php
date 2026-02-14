@@ -301,7 +301,7 @@
                              <li><a class="dropdown-item small" href="#" @click.prevent="triggerFileUpload(chat.uniqueKey)"><i class="bi bi-file-earmark me-2"></i>{{ __('Upload File') }}</a></li>
                         </ul>
                     </div>
-                    <input type="file" :id="'file-input-'+chat.uniqueKey" class="d-none" @change="handleFileUpload($event, chat.uniqueKey)">
+                    <input type="file" :id="'file-input-'+chat.uniqueKey" class="d-none" @change="handleFileUpload($event, chat.uniqueKey)" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
 
                     <textarea class="form-control form-control-sm" rows="1" style="resize: none;"
                               placeholder="{{ __('Type @ to mention...') }}"
@@ -362,7 +362,7 @@
                 <div class="mb-3 text-center">
                     <label class="cursor-pointer">
                          <img :src="newGroupPreviewUrl || '/images/group-icon.png'" class="rounded-circle border" width="80" height="80">
-                         <input type="file" @change="handleNewGroupAvatar" class="d-none" accept="image/*">
+                         <input type="file" @change="handleNewGroupAvatar" class="d-none" accept="image/*" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                          <div class="small text-muted mt-1">{{ __('Click to set icon') }}</div>
                     </label>
                 </div>
@@ -404,7 +404,7 @@
                     <label class="cursor-pointer">
                          <img :src="editGroupPreviewUrl || editGroupForm.original_avatar_url" class="rounded-circle border" width="80" height="80"
                               onerror="this.src='https://ui-avatars.com/api/?name=G&color=7F9CF5&background=EBF4FF'">
-                         <input type="file" @change="handleEditGroupAvatar" class="d-none" accept="image/*">
+                         <input type="file" @change="handleEditGroupAvatar" class="d-none" accept="image/*" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                          <div class="small text-muted mt-1">{{ __('Change Icon') }}</div>
                     </label>
                     <div class="mt-2">
@@ -495,7 +495,7 @@
                         <img :src="profilePreviewUrl || profileForm.original_avatar_url" class="rounded-circle object-fit-cover border" width="80" height="80">
                         <label class="position-absolute bottom-0 end-0 bg-light rounded-circle border p-1 cursor-pointer shadow-sm">
                             <i class="bi bi-camera-fill text-primary"></i>
-                            <input type="file" @change="handleAvatarUpload" class="d-none" accept="image/*">
+                            <input type="file" @change="handleAvatarUpload" class="d-none" accept="image/*" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                         </label>
                      </div>
                 </div>

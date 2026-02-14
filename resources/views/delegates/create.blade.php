@@ -68,7 +68,7 @@
                 </div>
                 <div class="form-group">
                     <label for="delegatePhoto">Photo</label>
-                    <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control">
+                    <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                 </div>
                 <button type="submit" class="btn btn-primary">Add Delegate</button>
             </form>

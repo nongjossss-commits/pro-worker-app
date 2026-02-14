@@ -419,6 +419,12 @@ function hybridAttachmentManager(config = {}) {
         },
 
         async handleFileUpload(event, fieldName) {
+            const input = event.target;
+
+            // Note: Scanner Interceptor logic is now handled globally via inline onchange="window.interceptFileSelect(event)"
+            // If execution reaches here, it means the file is either not intercepted or has been processed by scanner.
+            // We just need to ensure we don't process the 'scannerSource' flag logic here as it's handled by the interceptor.
+
             const file = event.target.files[0];
             if (!file) return;
 
@@ -509,6 +515,10 @@ function hybridAttachmentManager(config = {}) {
         },
 
         async handleGeneralFileUpload(event) {
+            const input = event.target;
+
+            // Note: Scanner Interceptor logic is now handled globally via inline onchange="window.interceptFileSelect(event)"
+
             const files = event.target.files;
             if (files.length === 0) return;
 
