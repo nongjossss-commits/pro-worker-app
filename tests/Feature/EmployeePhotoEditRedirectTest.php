@@ -43,7 +43,9 @@ class EmployeePhotoEditRedirectTest extends TestCase
                          ->put(route('employees.update', $employee->id), $updateData);
 
         // 4. Assert: Check redirection to Edit Page
-        $response->assertRedirect(route('employees.edit', $employee->id));
+        // The redirection appends #employee-card-{id}
+        $expectedUrl = route('employees.edit', $employee->id) . '#employee-card-' . $employee->id;
+        $response->assertRedirect($expectedUrl);
 
         // Verify data update
         $this->assertDatabaseHas('employees', [
