@@ -83,6 +83,16 @@ class PdfGeneratorService
     public function generateSinglePdf(PdfTemplate $template, Employee $employee)
     {
         $pdf = new Fpdi();
+
+        // Ensure FPDF looks in public/fonts for custom fonts
+        // fontpath is protected in FPDF class, so we use Reflection to set it.
+        $reflection = new \ReflectionClass($pdf);
+        if ($reflection->hasProperty('fontpath')) {
+            $property = $reflection->getProperty('fontpath');
+            $property->setAccessible(true);
+            $property->setValue($pdf, public_path('fonts') . DIRECTORY_SEPARATOR);
+        }
+
         $templatePath = Storage::disk('public')->path($template->file_path);
 
         $fontLoaded = false;
@@ -289,15 +299,17 @@ class PdfGeneratorService
                              $textX = $x + 1; // 1mm padding
                         }
 
-                        // 4. Vertical Alignment (Center)
-                        // We align vertically to the middle of the box
+                        // 4. Vertical Alignment (Bottom)
+                        // We align vertically to the bottom of the box so users can align the box bottom with the line.
                         $lineHeight = $fontSize / 2.83; // Approx height in mm
 
-                        // Center Vertically: Top + (BoxHeight - LineHeight) / 2
-                        $textY = $y + ($boxH - $lineHeight) / 2;
+                        // Align Bottom: Top of box + BoxHeight - TextHeight
+                        $textY = $y + $boxH - $lineHeight;
 
-                        // Visual correction: Move slightly up (10%) to account for descenders vs cap height
-                        $textY -= ($lineHeight * 0.1);
+                        // Visual correction: THSarabunNew has large line height, so strict bottom align might still look high
+                        // But compared to "Center", this moves it down significantly.
+                        // We might need a small adjustment if it sits *too* low, but user asked for bottom alignment.
+                        // Let's start with exact bottom alignment of the text block.
 
                         $pdf->SetXY($textX, $textY);
                         $pdf->Write(0, $encodedText);
