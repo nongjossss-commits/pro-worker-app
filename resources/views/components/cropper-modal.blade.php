@@ -150,5 +150,3 @@
     </div>
 </div>
 
-<!-- Load OpenCV for Smart Eraser -->
-<script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="document.dispatchEvent(new Event('opencv-loaded-cropper'))"></script>
