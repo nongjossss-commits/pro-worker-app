@@ -892,6 +892,7 @@
                 let srcMat = null, mask = null, bgdModel = null, fgdModel = null;
                 let binMask = null, one = null, alphaScale = null, finalMask = null;
                 let alphaMat = null, finalAlphaMat = null, tempMask = null;
+                let rgbaPlanes = null, finalRGBA = null; // New Mats for Alpha Merge
                 let srcCanvas = null, maskCanvas = null;
                 let rect = null;
 
@@ -1003,8 +1004,22 @@
                     finalMask = new cv.Mat();
                     cv.resize(binMask, finalMask, new cv.Size(width, height), 0, 0, cv.INTER_LINEAR);
 
+                    // Create RGBA Mat where Alpha = finalMask to ensure destination-in works correctly
+                    // (destination-in uses the Source Alpha to mask the Destination)
+                    rgbaPlanes = new cv.MatVector();
+                    finalRGBA = new cv.Mat();
+
+                    // Push finalMask into all channels (R, G, B, A)
+                    // We only strictly need it in Alpha, but filling all is safe.
+                    rgbaPlanes.push_back(finalMask);
+                    rgbaPlanes.push_back(finalMask);
+                    rgbaPlanes.push_back(finalMask);
+                    rgbaPlanes.push_back(finalMask);
+
+                    cv.merge(rgbaPlanes, finalRGBA);
+
                     // Apply to Work Canvas
-                    cv.imshow(this.tempCanvas, finalMask);
+                    cv.imshow(this.tempCanvas, finalRGBA);
 
                     const ctx = this.workCanvas.getContext('2d');
                     ctx.clearRect(0, 0, width, height);
@@ -1033,6 +1048,8 @@
                     if(alphaMat && !alphaMat.isDeleted()) alphaMat.delete();
                     if(finalAlphaMat && !finalAlphaMat.isDeleted()) finalAlphaMat.delete();
                     if(tempMask && !tempMask.isDeleted()) tempMask.delete();
+                    if(finalRGBA && !finalRGBA.isDeleted()) finalRGBA.delete();
+                    if(rgbaPlanes && !rgbaPlanes.isDeleted()) rgbaPlanes.delete();
                     if(rect) rect.delete(); // Delete rect (it's a C++ object, not a Mat, so no isDeleted check usually needed but safe to check if it exists)
 
                     if(srcCanvas) srcCanvas.remove();
