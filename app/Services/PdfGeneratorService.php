@@ -238,24 +238,12 @@ class PdfGeneratorService
                     }
 
                     if ($text) {
-                        // Font Size & Positioning Logic
-                        // Default size
-                        $fontSize = $item['fontSize'] ?? 12;
+                        // Dimensions
+                        $boxW = ($item['w'] / 100) * $size['width'];
+                        $boxH = ($item['h'] / 100) * $size['height'];
 
-                        // 1. Check Auto-Fit (Fit to Height)
-                        if (!empty($item['autoFit'])) {
-                            $boxH = ($item['h'] / 100) * $size['height'];
-                            // Conversion: 1 pt = 1/72 inch. 1 unit ~ 1mm (approx in FPDF default).
-                            // A rough heuristic: Font size (pt) ~ Box Height (mm) * 2
-                            // But accurate math depends on PDF unit. Assuming mm (default FPDF).
-                            // 14pt font ~= 5mm height visually.
-                            // So $fontSize = $boxH * 2.8;
-                            $fontSize = $boxH * 2.5;
-                        }
-
-                        $pdf->SetFontSize($fontSize);
-
-                        // 2. Encoding
+                        // 1. Encoding
+                        // Encode first so we can measure width accurately
                         if ($fontLoaded) {
                             $encodedText = @iconv('UTF-8', 'cp874', $text);
                             if ($encodedText === false) $encodedText = $text;
@@ -263,42 +251,53 @@ class PdfGeneratorService
                             $encodedText = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
                         }
 
-                        // 3. Alignment (Center vs Left)
-                        // Requirement: Default to center, but allow overrides.
-                        $boxW = ($item['w'] / 100) * $size['width'];
-                        $align = $item['align'] ?? 'center'; // Default changed to center as per user request
+                        // 2. Font Size Logic
+                        $fontSize = $item['fontSize'] ?? 12;
+
+                        if (!empty($item['autoFit'])) {
+                            // Start with a max font size that fits height comfortably (approx 70% of box height)
+                            // 1mm = 2.83 pt. If box is 10mm high, max font size ~ 20pt (7mm)
+                            $maxFontSizeH = ($boxH * 0.7) * 2.83;
+
+                            // Temporarily set font to measure width
+                            $pdf->SetFontSize($maxFontSizeH);
+                            $textWidth = $pdf->GetStringWidth($encodedText);
+
+                            // Check Width Constraint (95% of box width)
+                            if ($textWidth > ($boxW * 0.95)) {
+                                // Scale down
+                                $ratio = ($boxW * 0.95) / $textWidth;
+                                $fontSize = $maxFontSizeH * $ratio;
+                            } else {
+                                $fontSize = $maxFontSizeH;
+                            }
+                        }
+
+                        $pdf->SetFontSize($fontSize);
+
+                        // 3. Horizontal Alignment
+                        $align = $item['align'] ?? 'center';
+                        $textWidth = $pdf->GetStringWidth($encodedText);
                         $textX = $x;
 
                         if ($align === 'center') {
-                            $textWidth = $pdf->GetStringWidth($encodedText);
-                            // Center in box: X + (BoxW - TextW) / 2
                             $textX = $x + ($boxW - $textWidth) / 2;
+                        } elseif ($align === 'right') {
+                             $textX = $x + $boxW - $textWidth - 1; // 1mm padding
+                        } else {
+                             // Left
+                             $textX = $x + 1; // 1mm padding
                         }
 
-                        // 4. Vertical Alignment (Bottom Anchor)
-                        // Requirement: Anchor text to the bottom edge of the box so users can align it precisely.
-                        // Standard FPDF Write() prints text *below* the current Y position.
-                        // To align text so its baseline is near the bottom of the box, we need to set the Y position
-                        // such that (Y + LineHeight) ≈ BoxBottom.
-                        // Note: $fontSize is in points (pt), coordinates are usually in user units (often mm).
-                        // 1 pt = 0.3528 mm.
+                        // 4. Vertical Alignment (Center)
+                        // We align vertically to the middle of the box
+                        $lineHeight = $fontSize / 2.83; // Approx height in mm
 
-                        $boxH = ($item['h'] / 100) * $size['height'];
-                        $bottomY = $y + $boxH;
+                        // Center Vertically: Top + (BoxHeight - LineHeight) / 2
+                        $textY = $y + ($boxH - $lineHeight) / 2;
 
-                        // Calculate appropriate Line Height (usually ~1.2x font size)
-                        // Converting font size (pt) to user units (approx) for calculation
-                        // Assuming 1 unit = 1mm for standard FPDF.
-                        $fontSizeInUnits = $fontSize / 2.83; // 2.83 pts per mm
-                        $lineHeight = $fontSizeInUnits * 1.0;
-
-                        // We want the text to sit on the bottom line.
-                        // If we Write at $textY, the text appears in the band [$textY, $textY + $lineHeight].
-                        // So we want $textY + $lineHeight = $bottomY.
-                        // Thus $textY = $bottomY - $lineHeight.
-
-                        // Adding a tiny padding (0.5mm) so it doesn't touch the line exactly
-                        $textY = $bottomY - $lineHeight - 0.5;
+                        // Visual correction: Move slightly up (10%) to account for descenders vs cap height
+                        $textY -= ($lineHeight * 0.1);
 
                         $pdf->SetXY($textX, $textY);
                         $pdf->Write(0, $encodedText);
