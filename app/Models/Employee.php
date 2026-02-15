@@ -259,6 +259,13 @@ class Employee extends Model
                     ? 'Preparing (Pre-Production)'
                     : 'Processing';
 
+                $routeName = $isPreProduction ? 'production.index' : 'workflow.index';
+                $url = route($routeName, [
+                    'tab' => $item->order->workType->slug ?? '',
+                    'order' => $item->production_order_id,
+                    'item' => $item->id
+                ]);
+
                 return (object) [
                     'name' => $item->order->workType->name ?? 'Unknown',
                     'status_label' => $statusLabel,
@@ -268,6 +275,7 @@ class Employee extends Model
                     'order_id' => $item->production_order_id,
                     'item_id' => $item->id,
                     'tab_slug' => $item->order->workType->slug ?? '',
+                    'url' => $url,
                 ];
             });
 

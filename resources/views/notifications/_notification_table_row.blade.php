@@ -53,7 +53,7 @@
 
                         @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
                             @foreach($employee->active_workflows as $wf)
-                                <a href="{{ route('workflow.index', ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]) }}"
+                                <a href="{{ $wf->url }}"
                                    class="badge bg-warning text-dark text-decoration-none ms-1"
                                    title="{{ $wf->status_label }}: {{ $wf->name }}">
                                    <i class="bi bi-gear-fill me-1"></i>{{ $wf->status_label }}

@@ -53,33 +53,27 @@
              <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
                 @foreach($employee->active_workflows as $wf)
                     @php
-                        if (isset($wf->url)) {
-                            // Synthetic Workflow (Registration / Renewal)
-                            $url = $wf->url;
-                            if (isset($wf->is_registration) && $wf->is_registration) {
-                                $style = 'background-color: #8B5CF6; color: white;';
-                                $icon = 'bi-person-badge';
-                                $tooltip = __('Go to Registration Resolution');
-                                $badgeClass = '';
-                            } elseif (isset($wf->is_renewal) && $wf->is_renewal) {
-                                $style = 'background-color: #EC4899; color: white;';
-                                $icon = 'bi-arrow-repeat';
-                                $tooltip = __('Go to Renewal Resolution');
-                                $badgeClass = '';
-                            } else {
-                                $style = '';
-                                $icon = 'bi-gear-fill';
-                                $tooltip = '';
-                                $badgeClass = 'bg-secondary';
-                            }
-                        } else {
-                            // Standard Workflow
-                            $route = $wf->is_pre_production ? 'production.index' : 'workflow.index';
-                            $url = route($route, ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]);
-                            $badgeClass = $wf->is_pre_production ? 'bg-info' : 'bg-warning';
+                        $url = $wf->url;
+                        if (isset($wf->is_registration) && $wf->is_registration) {
+                            $style = 'background-color: #8B5CF6; color: white;';
+                            $icon = 'bi-person-badge';
+                            $tooltip = __('Go to Registration Resolution');
+                            $badgeClass = '';
+                        } elseif (isset($wf->is_renewal) && $wf->is_renewal) {
+                            $style = 'background-color: #EC4899; color: white;';
+                            $icon = 'bi-arrow-repeat';
+                            $tooltip = __('Go to Renewal Resolution');
+                            $badgeClass = '';
+                        } elseif (isset($wf->is_pre_production) && $wf->is_pre_production) {
                             $style = '';
-                            $icon = $wf->is_pre_production ? 'bi-hourglass-split' : 'bi-gear-fill';
-                            $tooltip = $wf->is_pre_production ? __('Go to Pre-Production') : __('Go to Workflow');
+                            $icon = 'bi-hourglass-split';
+                            $tooltip = __('Go to Pre-Production');
+                            $badgeClass = 'bg-info';
+                        } else {
+                            $style = '';
+                            $icon = 'bi-gear-fill';
+                            $tooltip = __('Go to Workflow');
+                            $badgeClass = 'bg-warning';
                         }
                     @endphp
                     <a href="{{ $url }}"
