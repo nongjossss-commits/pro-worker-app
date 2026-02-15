@@ -33,10 +33,20 @@ def main():
     try:
         import torchvision
         from torchvision.transforms import functional as F
+
+        # Patch 1: Add to sys.modules so 'import torchvision.transforms.functional_tensor' works
         if 'torchvision.transforms.functional_tensor' not in sys.modules:
             sys.modules['torchvision.transforms.functional_tensor'] = F
-    except ImportError:
-        pass # Will be caught later if modules missing
+
+        # Patch 2: Add as attribute to transforms so 'from torchvision.transforms import functional_tensor' works
+        if hasattr(torchvision, 'transforms') and not hasattr(torchvision.transforms, 'functional_tensor'):
+            setattr(torchvision.transforms, 'functional_tensor', F)
+
+    except ImportError as e:
+        # Log warning but continue; main import block will catch if critical
+        sys.stderr.write(f"Warning: Failed to apply torchvision monkey patch: {e}\n")
+    except Exception as e:
+        sys.stderr.write(f"Warning: Unexpected error applying torchvision monkey patch: {e}\n")
 
     # --- Try to Import Dependencies ---
     try:
@@ -89,7 +99,8 @@ def main():
             sys.exit(1)
 
     except ImportError as e:
-        sys.stderr.write(f"Error: Missing Python dependencies: {e}\n")
+        # Include exception type so PHP can detect it
+        sys.stderr.write(f"Error: Missing Python dependencies: {type(e).__name__}: {e}\n")
         sys.stderr.write("Please run: pip install gfpgan basicsr opencv-python-headless torch torchvision\n")
         sys.exit(1)
 
