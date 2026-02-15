@@ -21,7 +21,7 @@ class RedirectIfAuthenticated
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 // Explicitly redirect to dashboard to fix PWA/Mobile session loop issues
-                return redirect('/dashboard');
+                return redirect('/index');
             }
         }
 

@@ -45,9 +45,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified', 'menu:dashboard'])->name('dashboard');
+Route::get('/index', [App\Http\Controllers\HomeController::class, 'index'])->middleware(['auth', 'verified'])->name('home');
+
+Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified', 'menu:dashboard'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/preview', [PreviewController::class, 'show'])->name('global.preview');
