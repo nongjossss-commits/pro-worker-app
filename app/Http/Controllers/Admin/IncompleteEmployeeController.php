@@ -110,7 +110,8 @@ class IncompleteEmployeeController extends Controller
                 'is_incomplete_view' => true,
                 'perPageOptions' => [12, 25, 50, 100],
                 'currentPerPage' => 12,
-                'currentView' => 'card'
+                'currentView' => 'card',
+                'addressOptions' => $addressOptions
             ]);
         }
 

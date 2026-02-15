@@ -94,7 +94,7 @@
                         $route = $workflow->is_pre_production ? 'production.index' : 'workflow.index';
                         $icon = $workflow->is_pre_production ? 'bi-hourglass-split' : 'bi-gear-wide-connected';
                     @endphp
-                    <a href="{{ route($route, ['tab' => $workflow->tab_slug, 'search' => $employee->employeeNameEn]) }}"
+                <a href="{{ $workflow->url }}"
                        class="badge rounded-pill {{ $badgeClass }} text-decoration-none ms-1 border border-dark shadow-sm"
                        title="{{ $workflow->status_label }}"
                        target="_blank">
