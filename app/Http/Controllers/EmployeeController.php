@@ -422,7 +422,19 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         // Use detected python command
-        $process = new Process([$pythonCmd, $scriptPath, '--input', $fullPath, '--output', $fullOutputPath]);
+        $env = [
+            'PATH' => getenv('PATH'),
+            'TEMP' => getenv('TEMP'),
+            'TMP' => getenv('TMP'),
+        ];
+
+        // Pass necessary environment variables for Windows
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $env['SystemRoot'] = getenv('SystemRoot') ?: 'C:\\Windows';
+            $env['COMSPEC'] = getenv('COMSPEC') ?: 'C:\\Windows\\System32\\cmd.exe';
+        }
+
+        $process = new Process([$pythonCmd, $scriptPath, '--input', $fullPath, '--output', $fullOutputPath], null, $env);
         $process->setTimeout(120); // Increased timeout to 120s for model download/processing
         $process->run();
 
