@@ -71,12 +71,44 @@
                     </div>
                     {{-- Row 5: Province --}}
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-6" x-data="searchableSelect('addrProvince')">
                             <label for="addrProvince" class="form-label">จังหวัด (Thai)</label>
-                            <select class="form-select" name="addrProvince" id="addrProvince">
-                                <option selected disabled value="">-- เลือกจังหวัด --</option>
-                            </select>
-                            <div class="invalid-feedback" id="addrProvinceError"></div>
+                            <div class="position-relative">
+                                <select class="form-select d-none" name="addrProvince" id="addrProvince" x-ref="select">
+                                    <option selected disabled value="">-- เลือกจังหวัด --</option>
+                                </select>
+                                <div class="dropdown">
+                                    <input type="text"
+                                           class="form-control"
+                                           x-model="search"
+                                           @focus="open()"
+                                           @click="open()"
+                                           @input="filter()"
+                                           @keydown.escape="close()"
+                                           @click.outside="close()"
+                                           placeholder="-- เลือกจังหวัด --"
+                                           :class="{'is-invalid': hasError}"
+                                           :disabled="isDisabled"
+                                    >
+                                    <ul class="dropdown-menu w-100"
+                                        style="max-height: 250px; overflow-y: auto;"
+                                        x-show="isOpen"
+                                        :class="{'show': isOpen}"
+                                        x-transition>
+                                        <template x-for="option in filteredOptions" :key="option.value">
+                                            <li>
+                                                <button type="button"
+                                                        class="dropdown-item"
+                                                        @click="select(option)"
+                                                        :class="{'active': option.value === value}"
+                                                        x-text="option.text"></button>
+                                            </li>
+                                        </template>
+                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">ไม่พบข้อมูล (No results)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback" id="addrProvinceError" x-show="hasError" style="display: block;"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrProvinceEn" class="form-label">Province (EN)</label>
@@ -85,12 +117,44 @@
                     </div>
                     {{-- Row 6: District --}}
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-6" x-data="searchableSelect('addrDistrict')">
                             <label for="addrDistrict" class="form-label">อำเภอ/เขต (Thai)</label>
-                            <select class="form-select" name="addrDistrict" id="addrDistrict" disabled>
-                                <option selected disabled value="">-- เลือกอำเภอ/เขต --</option>
-                            </select>
-                             <div class="invalid-feedback" id="addrDistrictError"></div>
+                            <div class="position-relative">
+                                <select class="form-select d-none" name="addrDistrict" id="addrDistrict" x-ref="select" disabled>
+                                    <option selected disabled value="">-- เลือกอำเภอ/เขต --</option>
+                                </select>
+                                <div class="dropdown">
+                                    <input type="text"
+                                           class="form-control"
+                                           x-model="search"
+                                           @focus="open()"
+                                           @click="open()"
+                                           @input="filter()"
+                                           @keydown.escape="close()"
+                                           @click.outside="close()"
+                                           placeholder="-- เลือกอำเภอ/เขต --"
+                                           :class="{'is-invalid': hasError}"
+                                           :disabled="isDisabled"
+                                    >
+                                    <ul class="dropdown-menu w-100"
+                                        style="max-height: 250px; overflow-y: auto;"
+                                        x-show="isOpen"
+                                        :class="{'show': isOpen}"
+                                        x-transition>
+                                        <template x-for="option in filteredOptions" :key="option.value">
+                                            <li>
+                                                <button type="button"
+                                                        class="dropdown-item"
+                                                        @click="select(option)"
+                                                        :class="{'active': option.value === value}"
+                                                        x-text="option.text"></button>
+                                            </li>
+                                        </template>
+                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">ไม่พบข้อมูล (No results)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                             <div class="invalid-feedback" id="addrDistrictError" x-show="hasError" style="display: block;"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrDistrictEn" class="form-label">District (EN)</label>
@@ -99,12 +163,44 @@
                     </div>
                     {{-- Row 7: SubDistrict --}}
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-6" x-data="searchableSelect('addrSubDistrict')">
                             <label for="addrSubDistrict" class="form-label">ตำบล/แขวง (Thai)</label>
-                            <select class="form-select" name="addrSubDistrict" id="addrSubDistrict" disabled>
-                                <option selected disabled value="">-- เลือกตำบล/แขวง --</option>
-                            </select>
-                             <div class="invalid-feedback" id="addrSubDistrictError"></div>
+                            <div class="position-relative">
+                                <select class="form-select d-none" name="addrSubDistrict" id="addrSubDistrict" x-ref="select" disabled>
+                                    <option selected disabled value="">-- เลือกตำบล/แขวง --</option>
+                                </select>
+                                <div class="dropdown">
+                                    <input type="text"
+                                           class="form-control"
+                                           x-model="search"
+                                           @focus="open()"
+                                           @click="open()"
+                                           @input="filter()"
+                                           @keydown.escape="close()"
+                                           @click.outside="close()"
+                                           placeholder="-- เลือกตำบล/แขวง --"
+                                           :class="{'is-invalid': hasError}"
+                                           :disabled="isDisabled"
+                                    >
+                                    <ul class="dropdown-menu w-100"
+                                        style="max-height: 250px; overflow-y: auto;"
+                                        x-show="isOpen"
+                                        :class="{'show': isOpen}"
+                                        x-transition>
+                                        <template x-for="option in filteredOptions" :key="option.value">
+                                            <li>
+                                                <button type="button"
+                                                        class="dropdown-item"
+                                                        @click="select(option)"
+                                                        :class="{'active': option.value === value}"
+                                                        x-text="option.text"></button>
+                                            </li>
+                                        </template>
+                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">ไม่พบข้อมูล (No results)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                             <div class="invalid-feedback" id="addrSubDistrictError" x-show="hasError" style="display: block;"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="addrSubDistrictEn" class="form-label">Sub-district (EN)</label>
@@ -128,3 +224,131 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('searchableSelect', (selectId) => ({
+            options: [],
+            search: '',
+            value: '',
+            isOpen: false,
+            isDisabled: false,
+            hasError: false,
+            el: null,
+            observer: null,
+
+            init() {
+                this.el = document.getElementById(selectId);
+                // Initial sync
+                this.updateFromSelect();
+
+                // 1. Observe changes to options (childList) and attributes (disabled, class)
+                this.observer = new MutationObserver((mutations) => {
+                    this.updateFromSelect();
+                    // Check specifically for class changes to sync validation error
+                    mutations.forEach(m => {
+                         if (m.type === 'attributes' && m.attributeName === 'class') {
+                             this.hasError = this.el.classList.contains('is-invalid');
+                         }
+                    });
+                });
+                this.observer.observe(this.el, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'class', 'style'] });
+
+                // 2. Listen for 'change' events dispatched by other scripts
+                this.el.addEventListener('change', () => {
+                    this.updateValue();
+                });
+
+                // 3. Listen for specific modal events if necessary.
+                const modal = document.getElementById('addressModal');
+                if(modal) {
+                     modal.addEventListener('shown.bs.modal', () => {
+                         setTimeout(() => this.updateFromSelect(), 100);
+                     });
+                     // Also on hidden to reset
+                     modal.addEventListener('hidden.bs.modal', () => {
+                         this.updateFromSelect();
+                         this.isOpen = false;
+                     });
+                }
+            },
+
+            updateFromSelect() {
+                // Sync Options
+                this.options = Array.from(this.el.options)
+                    .filter(opt => opt.value !== "") // Filter out placeholder
+                    .map(opt => ({
+                        value: opt.value,
+                        text: opt.text
+                    }));
+
+                // Sync Disabled State
+                this.isDisabled = this.el.disabled;
+
+                // Sync Error State
+                this.hasError = this.el.classList.contains('is-invalid');
+
+                // Sync Value
+                this.updateValue();
+            },
+
+            updateValue() {
+                this.value = this.el.value;
+                const selectedOption = this.options.find(o => o.value === this.value);
+                if (selectedOption) {
+                    this.search = selectedOption.text;
+                } else {
+                    this.search = '';
+                }
+            },
+
+            get filteredOptions() {
+                if (this.search === '') {
+                    return this.options;
+                }
+                const lowerSearch = this.search.toLowerCase();
+                return this.options.filter(o =>
+                    o.text.toLowerCase().includes(lowerSearch)
+                );
+            },
+
+            open() {
+                if (this.isDisabled) return;
+                this.isOpen = true;
+                if(this.search === '') {
+                     // If empty, maybe show all? Yes, handled by filteredOptions
+                }
+            },
+
+            close() {
+                this.isOpen = false;
+                // If closed without selecting
+                const match = this.options.find(o => o.text === this.search);
+                if (!match && this.search !== '') {
+                     // Revert to last valid value
+                     this.updateValue();
+                } else if (this.search === '') {
+                    if (this.value !== '') {
+                        // Clear selection
+                        this.select({value: '', text: ''});
+                    }
+                }
+            },
+
+            filter() {
+                this.isOpen = true;
+            },
+
+            select(option) {
+                this.value = option.value;
+                this.search = option.text;
+                this.el.value = option.value;
+                this.isOpen = false;
+                // Dispatch change event so vanilla JS cascading works
+                this.el.dispatchEvent(new Event('change'));
+            }
+        }));
+    });
+</script>
+@endpush
