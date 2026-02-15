@@ -139,6 +139,9 @@ class SettingsController extends Controller
      */
     public function renderSidebar()
     {
-        return view('partials.sidebar-menu');
+        return response(view('partials.sidebar-menu'))
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 }
