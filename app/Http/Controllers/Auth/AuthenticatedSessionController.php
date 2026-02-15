@@ -36,7 +36,7 @@ class AuthenticatedSessionController extends Controller
             \Illuminate\Support\Facades\App::setLocale('th');
 
             // เปลี่ยนจาก RouteServiceProvider::HOME เป็น '/dashboard' โดยตรง
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/index');
         }
 
         return back()->withErrors([
