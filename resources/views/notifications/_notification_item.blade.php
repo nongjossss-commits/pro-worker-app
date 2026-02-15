@@ -61,7 +61,7 @@
              style="background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107; z-index: 10; pointer-events: none;">
              <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
                 @foreach($employee->active_workflows as $wf)
-                    <a href="{{ route('workflow.index', ['tab' => $wf->tab_slug, 'order' => $wf->order_id, 'item' => $wf->item_id]) }}"
+                <a href="{{ $wf->url }}"
                        class="badge bg-warning text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
                        style="max-width: 90%;">
                        <i class="bi bi-gear-fill me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
