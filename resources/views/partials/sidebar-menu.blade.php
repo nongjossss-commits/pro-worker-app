@@ -5,11 +5,11 @@
 @endif
 
 @if(\App\Facades\SuperAdmin::isVisible('activity_logs'))
-@role('admin')
+@hasanyrole('admin|super-admin')
 <a href="{{ route('admin.activity-logs.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
     <i class="bi bi-activity me-2"></i>{{ __('Activity Logs') }}
 </a>
-@endrole
+@endhasanyrole
 @endif
 
 @if(\App\Facades\SuperAdmin::isVisible('notifications'))
