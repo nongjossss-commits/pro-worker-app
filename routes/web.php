@@ -21,6 +21,18 @@ use App\Http\Controllers\Admin\TicketStatusController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FinancialController; // Import
+use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsController;
+
+Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+    Route::get('/settings', [SuperAdminSettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
+});
+
+// Menu Unlock Routes (Publicly accessible for auth users)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/menu-unlock/{key}', [SuperAdminSettingsController::class, 'unlockForm'])->name('menu.unlock.form');
+    Route::post('/menu-unlock/{key}', [SuperAdminSettingsController::class, 'unlock'])->name('menu.unlock');
+});
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 
@@ -33,7 +45,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'menu:dashboard'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/preview', [PreviewController::class, 'show'])->name('global.preview');
@@ -64,7 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employers/export', [EmployerController::class, 'export'])->name('employers.export');
     Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
     Route::get('/employers/{employer}/export-history', [EmployerController::class, 'exportHistory'])->name('employers.exportHistory');
-    Route::resource('employers', EmployerController::class);
+    Route::resource('employers', EmployerController::class)->middleware('menu:employers');
     Route::get('/employers/{employer}/locate', [EmployerController::class, 'locate'])->name('employers.locate');
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
@@ -98,10 +110,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('employees/photo/enhance', [EmployeeController::class, 'enhancePhoto'])->name('employees.photo.enhance');
 
-    Route::resource('employees', EmployeeController::class);
-    Route::resource('importers', ImporterController::class);
-    Route::resource('agents', AgentController::class);
-    Route::resource('delegates', DelegateController::class);
+    Route::resource('employees', EmployeeController::class)->middleware('menu:employees');
+    Route::resource('importers', ImporterController::class)->middleware('menu:importers');
+    Route::resource('agents', AgentController::class)->middleware('menu:agents');
+    Route::resource('delegates', DelegateController::class)->middleware('menu:delegates');
 
     Route::get('/notifications/export', [NotificationController::class, 'export'])->name('notifications.export');
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
@@ -114,7 +126,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'update'])->name('addresses.update');
     Route::delete('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'destroy'])->name('addresses.destroy');
 
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications', [NotificationController::class, 'index'])->middleware('menu:notifications')->name('notifications.index');
     Route::post('/notifications/check-expiries', [NotificationController::class, 'checkExpiries'])->name('notifications.check-expiries');
     Route::get('/notifications/{notification}/view-employee', [NotificationController::class, 'viewEmployee'])->name('notifications.view-employee');
     Route::post('/notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('notifications.cancel');
@@ -128,7 +140,7 @@ Route::middleware('auth')->group(function () {
     // --- V2.4: Employer Ticket Routes ---
     Route::resource('tickets', TicketController::class)->only([
         'index', 'create', 'store', 'show', 'destroy'
-    ]);
+    ])->middleware('menu:employer_ticket');
 
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
     Route::delete('tickets/messages/{message}', [\App\Http\Controllers\TicketMessageController::class, 'destroy'])->name('tickets.messages.destroy');
@@ -163,7 +175,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // === V2.4: Admin/Staff Ticket Management Routes (NEW Group) ===
-Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('tickets/create', [AdminJobTicketController::class, 'create'])->name('tickets.create');
     Route::post('tickets', [AdminJobTicketController::class, 'store'])->name('tickets.store');
 
@@ -181,7 +193,7 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
     // PDF Templates
     Route::get('pdf-templates/list-templates', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'listTemplates'])->name('pdf-templates.list'); // AJAX API
     Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
-    Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->except(['show']);
+    Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->middleware('menu:pdf_templates')->except(['show']);
     Route::get('pdf-templates/{pdf_template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
 
     Route::post('tickets/{ticket}/resolve', [TicketStatusController::class, 'resolve'])->name('tickets.resolve');
@@ -207,7 +219,7 @@ Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name(
 Route::middleware(['auth'])->group(function () {
     // Registration Resolution Routes (P Production > Registration)
     // MOVED ABOVE 'production' resource to prevent route masking
-    Route::prefix('production/registration')->name('production.registration.')->group(function () {
+    Route::prefix('production/registration')->middleware('menu:registration_resolution')->name('production.registration.')->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('index');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RegistrationController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
         Route::get('/employer/{employer}/history', [App\Http\Controllers\Production\RegistrationController::class, 'fetchHistory'])->name('employer.history');
@@ -265,7 +277,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Renewal Resolution Routes (NEW)
-    Route::prefix('production/renewal')->name('production.renewal.')->group(function () {
+    Route::prefix('production/renewal')->middleware('menu:renewal_resolution')->name('production.renewal.')->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\Production\RenewalController::class, 'create'])->name('create');
         Route::post('/store', [App\Http\Controllers\Production\RenewalController::class, 'store'])->name('store');
@@ -298,7 +310,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/trash/{id}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreTrash'])->name('trash.restore');
     });
 
-    Route::resource('production', \App\Http\Controllers\ProductionController::class);
+    Route::resource('production', \App\Http\Controllers\ProductionController::class)->middleware('menu:production');
 
     // Additional Production Routes
     Route::post('production/{id}/add-employee', [\App\Http\Controllers\ProductionController::class, 'addEmployee'])->name('production.add_employee');
@@ -324,7 +336,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('production/{id}/documents/{type}', [App\Http\Controllers\ProductionDocumentController::class, 'show'])->name('production.documents.show');
 
     // Workflow Routes
-    Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->name('workflow.index');
+    Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->middleware('menu:workflow')->name('workflow.index');
     Route::post('workflow/store', [\App\Http\Controllers\WorkflowController::class, 'store'])->name('workflow.store');
     Route::get('workflow/{order}/items', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderItems'])->name('workflow.items');
     Route::get('workflow/{order}/history', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderHistory'])->name('workflow.history');
@@ -376,7 +388,7 @@ use App\Http\Controllers\Admin\ActivityLogController;
 
 // === Existing Admin Routes (role:admin) ===
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->middleware('menu:activity_logs')->name('activity-logs.index');
     Route::get('/activity-logs/search', [ActivityLogController::class, 'search'])->name('activity-logs.search');
     Route::get('/activity-logs/{year}', [ActivityLogController::class, 'showYear'])->name('activity-logs.year');
     Route::get('/activity-logs/{year}/{month}', [ActivityLogController::class, 'showMonth'])->name('activity-logs.month');
@@ -384,8 +396,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/notification-settings', [NotificationSettingController::class, 'index'])->name('notification_settings.index');
     Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');
-    Route::resource('users', UserController::class);
-    Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->name('roles_permissions.index');
+    Route::resource('users', UserController::class)->middleware('menu:user_management');
+    Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->middleware('menu:roles_permissions')->name('roles_permissions.index');
 
     Route::get('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'index'])->name('settings.completeness.index');
     Route::post('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'store'])->name('settings.completeness.store');
@@ -407,12 +419,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 });
 
 // === Incomplete Employees ===
-Route::middleware(['auth', 'permission:manage-tickets'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'permission:manage-tickets', 'menu:incomplete_data'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/incomplete-employees', [App\Http\Controllers\Admin\IncompleteEmployeeController::class, 'index'])->name('incomplete_employees.index');
 });
 
 // --- Central Trash System ---
-Route::middleware(['auth', 'permission:view-trash'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'permission:view-trash', 'menu:central_trash'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/trash', [\App\Http\Controllers\Admin\TrashController::class, 'index'])
          ->name('trash.index');
