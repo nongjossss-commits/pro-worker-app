@@ -387,7 +387,7 @@ use App\Http\Controllers\Admin\NotificationSettingController;
 use App\Http\Controllers\Admin\ActivityLogController;
 
 // === Existing Admin Routes (role:admin) ===
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->middleware('menu:activity_logs')->name('activity-logs.index');
     Route::get('/activity-logs/search', [ActivityLogController::class, 'search'])->name('activity-logs.search');
     Route::get('/activity-logs/{year}', [ActivityLogController::class, 'showYear'])->name('activity-logs.year');
