@@ -34,11 +34,17 @@
                                 <td class="fw-bold">{{ $label }}</td>
                                 <td class="text-muted small"><code>{{ $key }}</code></td>
                                 <td class="text-center">
-                                    @if($isVisible)
-                                        <span class="badge bg-success"><i class="bi bi-eye-fill me-1"></i> Visible</span>
-                                    @else
-                                        <span class="badge bg-danger"><i class="bi bi-eye-slash-fill me-1"></i> Hidden</span>
-                                    @endif
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="toggle-{{ $key }}"
+                                               {{ $isVisible ? 'checked' : '' }}
+                                               onchange="toggleVisibility('{{ $key }}', this.checked)">
+                                        <label class="form-check-label ms-2" for="toggle-{{ $key }}">
+                                            <span class="badge {{ $isVisible ? 'bg-success' : 'bg-danger' }}" id="badge-{{ $key }}">
+                                                {{ $isVisible ? 'Visible' : 'Hidden' }}
+                                            </span>
+                                        </label>
+                                    </div>
                                 </td>
                                 <td class="text-center">
                                     @if($hasPassword)
@@ -67,20 +73,6 @@
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
-
-                                                <!-- Visibility Toggle -->
-                                                <div class="mb-4">
-                                                    <label class="form-label fw-bold">Visibility Status</label>
-                                                    <div class="form-check form-switch">
-                                                        <input class="form-check-input" type="checkbox" id="isVisible-{{ $key }}" name="is_visible" value="1" {{ $isVisible ? 'checked' : '' }}>
-                                                        <label class="form-check-label" for="isVisible-{{ $key }}">Show this menu to users</label>
-                                                    </div>
-                                                    <div class="form-text">
-                                                        If unchecked, this menu will be hidden for EVERYONE (including Admins).
-                                                    </div>
-                                                </div>
-
-                                                <hr>
 
                                                 <!-- Password Setting -->
                                                 <div class="mb-3">
@@ -123,4 +115,66 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function toggleVisibility(key, isVisible) {
+        // Optimistic UI Update
+        const badge = document.getElementById('badge-' + key);
+        if (isVisible) {
+            badge.classList.remove('bg-danger');
+            badge.classList.add('bg-success');
+            badge.textContent = 'Visible';
+        } else {
+            badge.classList.remove('bg-success');
+            badge.classList.add('bg-danger');
+            badge.textContent = 'Hidden';
+        }
+
+        fetch('{{ route('super-admin.settings.update-visibility') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ key: key, is_visible: isVisible })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                // Update Sidebar
+                reloadSidebar();
+                showToast('Visibility updated successfully', 'success');
+            } else {
+                showToast('Update failed', 'danger');
+                // Revert checkbox and badge if failed
+                document.getElementById('toggle-' + key).checked = !isVisible;
+                if (!isVisible) { // we tried to hide, so revert to visible
+                    badge.classList.remove('bg-danger');
+                    badge.classList.add('bg-success');
+                    badge.textContent = 'Visible';
+                } else {
+                    badge.classList.remove('bg-success');
+                    badge.classList.add('bg-danger');
+                    badge.textContent = 'Hidden';
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Network error', 'danger');
+             // Revert checkbox
+             document.getElementById('toggle-' + key).checked = !isVisible;
+        });
+    }
+
+    function reloadSidebar() {
+        fetch('{{ route('super-admin.sidebar') }}')
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('main-nav').innerHTML = html;
+        });
+    }
+</script>
+@endpush
 @endsection

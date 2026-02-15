@@ -26,6 +26,8 @@ use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsCont
 Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/settings', [SuperAdminSettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/visibility', [SuperAdminSettingsController::class, 'updateVisibility'])->name('settings.update-visibility');
+    Route::get('/sidebar', [SuperAdminSettingsController::class, 'renderSidebar'])->name('sidebar');
 });
 
 // Menu Unlock Routes (Publicly accessible for auth users)
