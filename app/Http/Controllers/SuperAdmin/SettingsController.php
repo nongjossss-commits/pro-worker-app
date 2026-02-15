@@ -124,9 +124,21 @@ class SettingsController extends Controller
         ]);
 
         $key = $request->input('key');
+        $isVisible = $request->boolean('is_visible');
+
+        // Logic Change: If setting to visible and no password, delete the record to use default (true)
+        // This prevents issues where 'true' is stored but not read correctly, or cache issues.
         $setting = SuperAdminSetting::firstOrNew(['key' => $key]);
-        $setting->is_visible = $request->boolean('is_visible');
-        $setting->save();
+
+        if ($isVisible && empty($setting->access_password)) {
+            if ($setting->exists) {
+                $setting->delete();
+            }
+            // If it was new, we just don't create it.
+        } else {
+            $setting->is_visible = $isVisible;
+            $setting->save();
+        }
 
         // Clear cache to apply changes immediately
         Cache::forget(\App\Services\SuperAdminService::CACHE_KEY);
@@ -137,8 +149,13 @@ class SettingsController extends Controller
     /**
      * Render the sidebar menu HTML.
      */
-    public function renderSidebar()
+    public function renderSidebar(Request $request)
     {
+        // Force cache clear if requested (e.g., immediately after update)
+        if ($request->has('refresh')) {
+            Cache::forget(\App\Services\SuperAdminService::CACHE_KEY);
+        }
+
         return response(view('partials.sidebar-menu'))
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('Pragma', 'no-cache')

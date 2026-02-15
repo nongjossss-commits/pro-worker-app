@@ -169,8 +169,8 @@
     }
 
     function reloadSidebar() {
-        // Append timestamp to prevent browser caching
-        const url = '{{ route('super-admin.sidebar') }}' + '?t=' + new Date().getTime();
+        // Append timestamp to prevent browser caching, and 'refresh' to force server cache clear
+        const url = '{{ route('super-admin.sidebar') }}' + '?t=' + new Date().getTime() + '&refresh=1';
         fetch(url)
         .then(res => res.text())
         .then(html => {
