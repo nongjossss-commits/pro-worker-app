@@ -428,6 +428,14 @@
                     </a>
                 @endcan
                 @endif
+
+                @role('super-admin')
+                <hr>
+                <a class="list-group-item list-group-item-action {{ request()->routeIs('super-admin.settings.index') ? 'active' : '' }}" href="{{ route('super-admin.settings.index') }}">
+                    <i class="bi bi-gear-fill me-2"></i>
+                    {{ __('Super Admin Settings') }}
+                </a>
+                @endrole
             </div>
             </div>
         </aside>
