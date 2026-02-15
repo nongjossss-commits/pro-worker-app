@@ -448,7 +448,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 return response()->json(['error' => "Python execution failed. Please check your installation. (Command tried: $pythonCmd)"], 500);
             }
 
-            if (str_contains($errorOutput, 'ModuleNotFoundError') || str_contains($errorOutput, 'ImportError')) {
+            if (str_contains($errorOutput, 'ModuleNotFoundError') || str_contains($errorOutput, 'ImportError') || str_contains($errorOutput, 'No module named')) {
                 return response()->json(['error' => "Python dependencies are missing. Please run `scripts/install_python_deps.bat` (Windows) or `sh scripts/install_python_deps.sh` (Linux/Mac)."], 500);
             }
 
