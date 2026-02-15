@@ -706,6 +706,12 @@
             if (this.currentTool === 'smart_erase') {
                 this.smartPoints = []; // Start new stroke
                 this.smartPoints.push(this.lastPos);
+
+                // Visual Feedback for click
+                this.ctx.beginPath();
+                this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                this.ctx.arc(this.lastPos.x, this.lastPos.y, this.brushSize / 2, 0, Math.PI * 2);
+                this.ctx.fill();
             } else {
                 this.pushHistory(); // Save state before stroke
                 this.draw(this.lastPos);
@@ -949,15 +955,22 @@
                     // Apply User Strokes as GC_BGD (0)
                     maskCtx.globalCompositeOperation = 'destination-out';
                     maskCtx.beginPath();
-                    maskCtx.lineCap = 'round';
-                    maskCtx.lineWidth = this.brushSize * scale;
-                    for(let i=0; i<this.smartPoints.length-1; i++) {
-                        const p1 = this.smartPoints[i];
-                        const p2 = this.smartPoints[i+1];
-                        maskCtx.moveTo(p1.x * scale, p1.y * scale);
-                        maskCtx.lineTo(p2.x * scale, p2.y * scale);
+
+                    if (this.smartPoints.length === 1) {
+                         const p = this.smartPoints[0];
+                         maskCtx.arc(p.x * scale, p.y * scale, (this.brushSize * scale) / 2, 0, Math.PI * 2);
+                         maskCtx.fill();
+                    } else {
+                        maskCtx.lineCap = 'round';
+                        maskCtx.lineWidth = this.brushSize * scale;
+                        for(let i=0; i<this.smartPoints.length-1; i++) {
+                            const p1 = this.smartPoints[i];
+                            const p2 = this.smartPoints[i+1];
+                            maskCtx.moveTo(p1.x * scale, p1.y * scale);
+                            maskCtx.lineTo(p2.x * scale, p2.y * scale);
+                        }
+                        maskCtx.stroke();
                     }
-                    maskCtx.stroke();
                     maskCtx.globalCompositeOperation = 'source-over';
 
                     // Read updated mask (with user strokes removed)
