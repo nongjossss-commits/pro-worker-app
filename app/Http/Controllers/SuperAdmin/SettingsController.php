@@ -112,4 +112,33 @@ class SettingsController extends Controller
 
         return back()->withErrors(['password' => 'Incorrect password for this menu.']);
     }
+
+    /**
+     * Update menu visibility via AJAX.
+     */
+    public function updateVisibility(Request $request)
+    {
+        $request->validate([
+            'key' => 'required|string',
+            'is_visible' => 'required|boolean',
+        ]);
+
+        $key = $request->input('key');
+        $setting = SuperAdminSetting::firstOrNew(['key' => $key]);
+        $setting->is_visible = $request->boolean('is_visible');
+        $setting->save();
+
+        // Clear cache to apply changes immediately
+        Cache::forget(\App\Services\SuperAdminService::CACHE_KEY);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Render the sidebar menu HTML.
+     */
+    public function renderSidebar()
+    {
+        return view('partials.sidebar-menu');
+    }
 }
