@@ -84,7 +84,7 @@
         @endif
     </td>
     <td>
-        {{ $employer->employerNameTh ?? 'N/A' }}
+        {{ $employer?->employerNameTh ?? 'N/A' }}
         @if(request('addrProvince') && $employer)
             @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
                 <div class="text-primary small fw-bold">{{ $label }}</div>

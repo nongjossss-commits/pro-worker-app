@@ -113,7 +113,7 @@
                     <p class="mb-1 small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }}</p>
                 @endif
                 <p class="mb-1 small">
-                    <strong>นายจ้าง:</strong> {{ $employer->employerNameTh ?? 'N/A' }}
+                    <strong>นายจ้าง:</strong> {{ $employer?->employerNameTh ?? 'N/A' }}
                     @if(request('addrProvince') && $employer)
                         @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
                             <span class="text-primary small fw-bold ms-1">{{ $label }}</span>

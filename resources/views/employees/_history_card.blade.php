@@ -1,5 +1,5 @@
 @php
-    $employerName = $employee->employer->employerNameTh ?? 'N/A';
+    $employerName = $employee->employer?->employerNameTh ?? 'N/A';
     $employeeFullNameTh = ($employee->employeeTitleTh ? $employee->employeeTitleTh . ' ' : '') . ($employee->employeeNameTh ?? 'N/A');
     $employeeFullNameEn = ($employee->employeeTitleEn ? $employee->employeeTitleEn . ' ' : '') . ($employee->employeeNameEn ?? 'N/A');
     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
