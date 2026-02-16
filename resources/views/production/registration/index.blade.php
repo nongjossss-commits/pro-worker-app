@@ -881,6 +881,7 @@
 @include('production.registration.partials.edit_modal_script')
 
 @push('scripts')
+<script src="{{ asset('js/financial-manager.js') }}"></script>
 <script>
     // State for Global Server-Side Filter
     const currentStepFilter = @json(request('filter'));
