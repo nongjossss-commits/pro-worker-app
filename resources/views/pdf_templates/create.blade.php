@@ -8,7 +8,44 @@
                 <div class="card-header bg-white py-3">
                     <h5 class="mb-0 fw-bold">Upload New PDF Template</h5>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body p-4"
+                     x-data="{
+                        type: '{{ old('type', 'global') }}',
+                        employerId: '{{ old('employer_id') }}',
+                        search: '',
+                        open: false,
+                        selectedEmployerName: '',
+                        employers: @if(isset($employers) && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))) {{ $employers->map(fn($e) => [
+                            'id' => $e->id,
+                            'name' => $e->employerNameTh . ' (' . $e->employerNameEn . ')',
+                            'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
+                        ])->values()->toJson() }} @else [] @endif,
+
+                        init() {
+                             // Initialize selected employer name if old value exists
+                             if (this.employerId && this.employers.length > 0) {
+                                 const emp = this.employers.find(e => e.id == this.employerId);
+                                 if (emp) {
+                                     this.selectedEmployerName = emp.name;
+                                     this.search = emp.name;
+                                 }
+                             }
+                        },
+
+                        get filteredEmployers() {
+                            if (this.search === '') return this.employers;
+                            const term = this.search.toLowerCase();
+                            return this.employers.filter(e => e.search_str.includes(term));
+                        },
+
+                        selectEmployer(emp) {
+                            this.employerId = emp.id;
+                            this.selectedEmployerName = emp.name;
+                            this.search = emp.name;
+                            this.open = false;
+                        }
+                     }"
+                >
                     <form action="{{ route('admin.pdf-templates.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
@@ -19,25 +56,58 @@
 
                         <div class="mb-3">
                             <label class="form-label">Template Type</label>
-                            <select name="type" class="form-select" id="typeSelect" x-data="{ type: 'global' }" x-model="type">
+                            <select name="type" class="form-select" x-model="type">
                                 <option value="global">Global (All Employers)</option>
                                 @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
                                     <option value="employer">Specific Employer</option>
                                 @elseif(auth()->user()->hasRole('employer'))
-                                    <option value="employer" selected>My Organization</option>
+                                    <option value="employer" {{ old('type') == 'employer' ? 'selected' : '' }}>My Organization</option>
                                 @endif
                             </select>
                         </div>
 
                         @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
-                        <div class="mb-3" id="employerSelectDiv" style="display: none;">
+                        <div class="mb-3" x-show="type === 'employer'" style="display: none;" x-transition>
                             <label class="form-label">Select Employer</label>
-                            <select name="employer_id" class="form-select">
-                                <option value="">-- Choose Employer --</option>
-                                @foreach($employers as $employer)
-                                    <option value="{{ $employer->id }}">{{ $employer->employerNameTh }} ({{ $employer->employerNameEn }})</option>
-                                @endforeach
-                            </select>
+
+                            <!-- Hidden Input for Form Submission -->
+                            <input type="hidden" name="employer_id" :value="employerId">
+
+                            <!-- Searchable Dropdown -->
+                            <div class="position-relative" @click.outside="open = false; search = selectedEmployerName">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text"
+                                           class="form-control"
+                                           placeholder="Type to search employer..."
+                                           x-model="search"
+                                           @focus="open = true; search = ''"
+                                           @keydown.escape="open = false"
+                                           autocomplete="off">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
+                                </div>
+
+                                <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                     style="z-index: 1050; max-height: 250px; overflow-y: auto;"
+                                     x-show="open"
+                                     x-transition>
+                                    <ul class="list-group list-group-flush">
+                                        <template x-for="emp in filteredEmployers" :key="emp.id">
+                                            <li class="list-group-item list-group-item-action cursor-pointer"
+                                                @click="selectEmployer(emp)"
+                                                :class="{'active': employerId == emp.id}">
+                                                <span x-text="emp.name"></span>
+                                            </li>
+                                        </template>
+                                        <li class="list-group-item text-muted text-center" x-show="filteredEmployers.length === 0">
+                                            No employers found
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            @error('employer_id')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
                         @else
                             <input type="hidden" name="employer_id" value="{{ auth()->user()->employer->id ?? '' }}">
@@ -59,28 +129,4 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const typeSelect = document.getElementById('typeSelect');
-        const employerSelectDiv = document.getElementById('employerSelectDiv');
-
-        function toggleEmployerSelect() {
-            if (employerSelectDiv) {
-                if (typeSelect.value === 'employer') {
-                    employerSelectDiv.style.display = 'block';
-                } else {
-                    employerSelectDiv.style.display = 'none';
-                }
-            }
-        }
-
-        if(typeSelect) {
-            typeSelect.addEventListener('change', toggleEmployerSelect);
-            toggleEmployerSelect(); // Initial state
-        }
-    });
-</script>
-@endpush
 @endsection
