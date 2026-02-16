@@ -12,7 +12,7 @@
     </div>
 
     {{-- Filter Section --}}
-    @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff') || auth()->user()->hasRole('caretaker'))
+    @if(auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff') || auth()->user()->hasRole('caretaker'))
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body bg-light rounded">
             <form action="{{ route('admin.pdf-templates.index') }}" method="GET" class="row g-3 align-items-end">
