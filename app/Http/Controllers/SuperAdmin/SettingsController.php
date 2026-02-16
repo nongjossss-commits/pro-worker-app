@@ -19,6 +19,7 @@ class SettingsController extends Controller
         // Define all menu keys and their labels
         $menus = [
             'dashboard' => 'Dashboard',
+            'finance' => 'Finance (การเงิน)',
             'activity_logs' => 'Activity Logs',
             'notifications' => 'Notifications',
             'incomplete_data' => 'Incomplete Data',

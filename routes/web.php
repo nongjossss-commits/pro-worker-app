@@ -330,6 +330,13 @@ Route::middleware(['auth'])->group(function () {
     Route::put('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'updateFinancialGroup'])->name('production.financial_groups.update');
     Route::delete('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'destroyFinancialGroup'])->name('production.financial_groups.destroy');
 
+    // Financial Hub Routes (Central Menu)
+    Route::middleware('menu:finance')->prefix('finance')->name('finance.')->group(function () {
+        Route::get('/', [App\Http\Controllers\FinancialHubController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
+        Route::post('/store', [App\Http\Controllers\FinancialHubController::class, 'storeManual'])->name('store');
+    });
+
     // Financial Routes
     Route::post('production/{id}/transactions', [FinancialController::class, 'storeTransaction']);
     Route::put('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For status updates

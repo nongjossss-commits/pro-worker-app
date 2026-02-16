@@ -91,6 +91,14 @@
 @endcan
 @endif
 
+@if(\App\Facades\SuperAdmin::isVisible('finance'))
+@hasanyrole('admin|super-admin')
+<a href="{{ route('finance.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.*') ? 'active' : '' }}">
+    <i class="bi bi-cash-coin me-2"></i>{{ __('Finance') }}
+</a>
+@endhasanyrole
+@endif
+
 {{-- V2.4-S14: Production & Workflow Menus --}}
 @if(Route::has('production.index'))
     @if(\App\Facades\SuperAdmin::isVisible('production'))
