@@ -1,6 +1,6 @@
 @if(\App\Facades\SuperAdmin::isVisible('dashboard'))
 @can('view-dashboard')
-<a href="#" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Dashboard') }}</a>
+<a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Dashboard') }}</a>
 @endcan
 @endif
 

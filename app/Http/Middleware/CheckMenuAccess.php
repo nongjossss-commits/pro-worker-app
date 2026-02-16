@@ -37,6 +37,9 @@ class CheckMenuAccess
 
             if (!$expiry || now()->timestamp > $expiry) {
                 // Redirect to unlock screen
+                if ($request->isMethod('get') && !$request->ajax()) {
+                    session()->put('url.intended', $request->fullUrl());
+                }
                 return redirect()->route('menu.unlock.form', ['key' => $key]);
             }
 
