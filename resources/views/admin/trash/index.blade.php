@@ -35,6 +35,13 @@
                     <input type="hidden" name="tab" id="active-tab-input" value="{{ $initActiveTab }}">
                     <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
                     <button type="submit" class="btn btn-primary">Search</button>
+
+                    <select name="per_page" class="form-select w-auto" onchange="this.form.submit()">
+                        <option value="25" {{ ($perPage ?? 25) == 25 ? 'selected' : '' }}>25 items</option>
+                        <option value="50" {{ ($perPage ?? 25) == 50 ? 'selected' : '' }}>50 items</option>
+                        <option value="100" {{ ($perPage ?? 25) == 100 ? 'selected' : '' }}>100 items</option>
+                    </select>
+
                     <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">Export</a>
                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#trashSettingsModal">
                         <i class="bi bi-gear"></i>
@@ -216,6 +223,10 @@
                                     </table>
                                 </div>
                                 @endif
+
+                                <div class="mt-3">
+                                    {{ $items->links() }}
+                                </div>
                             </div>
                         @endif
                     @endforeach

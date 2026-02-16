@@ -35,6 +35,12 @@ class TrashController extends Controller
         $searchTerm = $request->input('search');
         $retentionSettings = [];
 
+        // Validate per_page, default to 25 if invalid or missing
+        $perPage = $request->input('per_page', 25);
+        if (!in_array($perPage, [25, 50, 100])) {
+            $perPage = 25;
+        }
+
         foreach ($models as $modelName => $modelClass) {
             $query = $modelClass::onlyTrashed();
 
@@ -83,9 +89,9 @@ class TrashController extends Controller
                 });
             }
 
-            $trashedData[$modelName] = $query->paginate(10, ['*'], $modelName . '_page')
+            $trashedData[$modelName] = $query->paginate($perPage, ['*'], $modelName . '_page')
                 ->withQueryString()
-                ->appends(['tab' => $modelName]);
+                ->appends(['tab' => $modelName, 'per_page' => $perPage]);
 
             // Fetch retention settings for the view
             $retentionSettings[$modelName] = SystemConfig::where('key', "trash_retention_days_{$modelName}")->value('value');
@@ -94,6 +100,7 @@ class TrashController extends Controller
         return view('admin.trash.index', [
             'trashedData' => $trashedData,
             'search' => $searchTerm,
+            'perPage' => $perPage,
             'currentView' => $request->input('view', 'table'), // Pass the view state
             'retentionSettings' => $retentionSettings,
         ]);
