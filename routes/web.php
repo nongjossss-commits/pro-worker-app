@@ -271,6 +271,11 @@ Route::middleware(['auth'])->group(function () {
         // Appointments (NEW)
         Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RegistrationController::class, 'updateAppointment'])->name('appointment');
         Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RegistrationController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
+
+        // Daily Check
+        Route::post('/{employee}/check-daily', [App\Http\Controllers\Production\RegistrationController::class, 'checkDaily'])->name('check_daily');
+        Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RegistrationController::class, 'toggleDailyCheck'])->name('toggle_daily_check');
+
         Route::post('/settings/notification', [App\Http\Controllers\Production\RegistrationController::class, 'updateNotificationSettings'])->name('settings.notification');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RegistrationController::class, 'getCalendarData'])->name('api.calendar');
         Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RegistrationController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');
@@ -298,6 +303,10 @@ Route::middleware(['auth'])->group(function () {
 
         // Progress Updates (Missing in original file, needed for Renewal toggle step)
         Route::post('/progress/{employee}', [App\Http\Controllers\Production\RenewalController::class, 'updateProgress'])->name('progress.update');
+
+        // Daily Check
+        Route::post('/{employee}/check-daily', [App\Http\Controllers\Production\RenewalController::class, 'checkDaily'])->name('check_daily');
+        Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RenewalController::class, 'toggleDailyCheck'])->name('toggle_daily_check');
 
         // Actions
         Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RenewalController::class, 'finalize'])->name('finalize');

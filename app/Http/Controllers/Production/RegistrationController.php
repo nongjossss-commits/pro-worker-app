@@ -17,10 +17,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\AddressFilterTrait;
+use App\Traits\DailyCheckTrait;
 
 class RegistrationController extends Controller
 {
-    use AddressFilterTrait;
+    use AddressFilterTrait, DailyCheckTrait;
 
     public function __construct()
     {
@@ -78,6 +79,15 @@ class RegistrationController extends Controller
         $totalAppointments = $totalAppointments->whereIn('status', ['registration_pending', 'registration_completed'])
             ->whereNotNull('appointment_date')
             ->count();
+
+        // Total Daily Check Pending (Global)
+        $totalDailyCheckPending = (clone $statsQuery)
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->where('daily_check_enabled', true)
+            ->where(function ($q) {
+                $q->whereNull('last_daily_checked_at')
+                  ->orWhereDate('last_daily_checked_at', '<', now()->today());
+            })->count();
 
         // Total Employers (Global, relevant to search)
         $totalEmployers = (clone $statsQuery)
@@ -254,6 +264,7 @@ class RegistrationController extends Controller
             $empCancelledCount = 0;
             $empSavedCount = 0;
             $empBiometricsCollected = 0;
+            $empDailyCheckPending = 0;
 
             foreach ($myEmps as $emp) {
                 $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
@@ -277,6 +288,10 @@ class RegistrationController extends Controller
                     $empBiometricsCollected++;
                 }
 
+                if ($emp->is_daily_check_pending) {
+                    $empDailyCheckPending++;
+                }
+
                 $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
                 if ($highestStep && isset($empStats[$highestStep->id])) {
                     $empStats[$highestStep->id]++;
@@ -289,6 +304,7 @@ class RegistrationController extends Controller
             $employer->cancelledCount = $empCancelledCount;
             $employer->savedCount = $empSavedCount;
             $employer->biometricsCollectedCount = $empBiometricsCollected;
+            $employer->dailyCheckPendingCount = $empDailyCheckPending;
         }
 
         return view('production.registration.index', compact(
@@ -300,6 +316,7 @@ class RegistrationController extends Controller
             'notStartedCount',
             'totalBiometricsCollected',
             'totalAppointments',
+            'totalDailyCheckPending',
             'steps',
             'stepStats',
             'employers',
@@ -1430,6 +1447,15 @@ class RegistrationController extends Controller
         // 6. Total Biometrics Collected
         $globalBiometrics = (clone $globalQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
 
+        // 7. Total Daily Check Pending
+        $globalDailyCheckPending = (clone $globalQuery)
+            ->whereIn('status', $activeStatuses)
+            ->where('daily_check_enabled', true)
+            ->where(function ($q) {
+                $q->whereNull('last_daily_checked_at')
+                  ->orWhereDate('last_daily_checked_at', '<', now()->today());
+            })->count();
+
         $stats = [
             'global' => [
                 'total' => $globalTotal,
@@ -1437,7 +1463,8 @@ class RegistrationController extends Controller
                 'cancelled' => $globalCancelled,
                 'saved' => $globalSaved,
                 'employers_count' => $globalEmployers,
-                'biometrics_collected' => $globalBiometrics
+                'biometrics_collected' => $globalBiometrics,
+                'daily_check_pending' => $globalDailyCheckPending
             ]
         ];
 
@@ -1475,13 +1502,22 @@ class RegistrationController extends Controller
             $empSaved = (clone $empQuery)->where('status', 'registration_completed')->count();
             $empBiometrics = (clone $empQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
 
+            $empDailyCheckPending = (clone $empQuery)
+                ->whereIn('status', $activeStatuses)
+                ->where('daily_check_enabled', true)
+                ->where(function ($q) {
+                    $q->whereNull('last_daily_checked_at')
+                      ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                })->count();
+
             $stats['employer'] = [
                 'id' => $employerId,
                 'total' => $empTotal,
                 'not_started' => $empNotStarted,
                 'cancelled' => $empCancelled,
                 'saved' => $empSaved,
-                'biometrics_collected' => $empBiometrics
+                'biometrics_collected' => $empBiometrics,
+                'daily_check_pending' => $empDailyCheckPending
             ];
         }
 
