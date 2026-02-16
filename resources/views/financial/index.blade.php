@@ -167,7 +167,7 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 @if($txn->slip_path)
-                                    <a href="{{ Storage::url($txn->slip_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View Slip">
+                                    <a href="{{ asset('storage/' . $txn->slip_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View Slip">
                                         <i class="bi bi-receipt"></i>
                                     </a>
                                 @endif

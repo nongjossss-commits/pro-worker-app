@@ -354,6 +354,18 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab) {
+            const tabEl = document.querySelector(`#${tab}-tab`);
+            if (tabEl) {
+                const tabInstance = new bootstrap.Tab(tabEl);
+                tabInstance.show();
+            }
+        }
+    });
+
     function preparationManager() {
         return {
             documentReady: {{ $production->document_ready_at ? 'true' : 'false' }},
