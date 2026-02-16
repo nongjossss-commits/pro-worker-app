@@ -25,7 +25,7 @@
         @media print {
             body { background: white; padding: 0; }
             .page { border: none; box-shadow: none; padding: 0; margin: 0; width: 100%; height: auto; min-height: auto; }
-            @page { margin: 15mm; size: A4 portrait; }
+            @page { margin: 0; size: A4 portrait; } /* Removed margin to let our padding control it */
             .no-print { display: none !important; }
         }
 
@@ -41,14 +41,14 @@
         .doc-title { text-align: right; vertical-align: top; }
         .doc-title h1 {
             margin: 0 0 10px 0;
-            font-size: 20px; /* Reduced from 24px to prevent wrapping */
+            font-size: 20px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #333;
-            white-space: nowrap; /* Force single line */
+            white-space: nowrap;
         }
         .meta-table { float: right; font-size: 14px; border-collapse: collapse; }
-        .meta-table td { padding: 3px 0 3px 15px; } /* Increased spacing */
+        .meta-table td { padding: 3px 0 3px 15px; }
         .meta-label { font-weight: bold; text-align: right; color: #555; }
 
         /* Client Info */
@@ -84,7 +84,7 @@
         .text-center { text-align: center; }
 
         /* Totals Section */
-        .totals-container { width: 45%; margin-left: auto; }
+        .totals-container { width: 50%; margin-left: auto; }
         table.totals-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         table.totals-table td { padding: 5px 0; }
         .total-label { text-align: left; color: #555; }
@@ -101,9 +101,10 @@
 
         /* Signatures */
         .signatures { margin-top: 60px; display: flex; justify-content: space-between; page-break-inside: avoid; }
-        .sig-block { width: 40%; text-align: center; }
+        .sig-block { width: 40%; text-align: center; position: relative; } /* Added relative for positioning context if needed locally */
         .sig-line { border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; }
         .sig-text { font-size: 14px; color: #555; }
+        .sig-title { font-weight: bold; margin-bottom: 40px; }
 
         /* Footer */
         .footer {
@@ -133,7 +134,6 @@
         .btn { padding: 8px 15px; background: white; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px;}
         .btn:hover { background: #eee; }
 
-        /* New: Section Separator */
         .section-header {
             background-color: #e5e7eb;
             padding: 5px 10px;
@@ -143,6 +143,8 @@
             margin-top: 10px;
             border-bottom: 1px solid #ccc;
         }
+
+        .en-label { color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px; }
     </style>
 </head>
 <body>
@@ -158,7 +160,6 @@
         <!-- Header -->
         <table class="header-table">
             <tr>
-                <!-- Increased width for company info to avoid cramping, but kept balance -->
                 <td style="width: 55%;">
                     @if($profile->logo_path)
                         <img src="{{ asset('storage/' . $profile->logo_path) }}" class="company-logo" alt="Logo">
@@ -168,7 +169,6 @@
                     @if($profile->tax_id)<div class="tax-id">Tax ID: {{ $profile->tax_id }}</div>@endif
                     @if($profile->phone)<div class="tax-id">Tel: {{ $profile->phone }}</div>@endif
                 </td>
-                <!-- Widen the title column to support longer Thai/English titles on one line -->
                 <td style="width: 45%;" class="doc-title">
                     <h1>{{ $title ?? ucfirst($type) }}</h1>
                     <table class="meta-table">
@@ -177,7 +177,7 @@
                             <td>{{ $doc_number ?? 'DRAFT' }}</td>
                         </tr>
                         <tr>
-                            <td class="meta-label">Date:</td>
+                            <td class="meta-label">Date <span class="en-label">/ วันที่</span>:</td>
                             <td>{{ date('d/m/Y') }}</td>
                         </tr>
                         <tr>
@@ -191,7 +191,7 @@
 
         <!-- Client Info -->
         <div class="client-box">
-            <div class="client-label">Bill To</div>
+            <div class="client-label">Bill To <span class="en-label">/ ลูกค้า</span></div>
             @if(isset($financial['customer_override']) && $financial['customer_override']['name'])
                  <div class="client-name">{{ $financial['customer_override']['name'] }}</div>
                  <div>{!! nl2br(e($financial['customer_override']['address'] ?? '-')) !!}</div>
@@ -204,82 +204,71 @@
             @endif
         </div>
 
-        <!-- Logic Setup -->
         @php
             use Illuminate\Support\Str;
 
-            $mode = $mode ?? 'combined'; // combined, service_only, advance_only
-            // Receipt Context: If true, show 'paid_amount' if available. If false (Invoice), show 'amount'.
+            $mode = $mode ?? 'combined';
             $isReceiptContext = Str::contains($type, ['Receipt', 'Tax Invoice']);
 
-            // 1. Classify Transactions (if filtering/selection is used)
             $serviceTransactions = collect();
             $advanceTransactions = collect();
             $hasSpecificTransactions = $transactions->isNotEmpty();
 
             if ($hasSpecificTransactions) {
-                // Split logic
                 $serviceTransactions = $transactions->filter(fn($t) => in_array($t->type, ['installment', 'down_payment', 'full_payment']));
                 $advanceTransactions = $transactions->filter(fn($t) => $t->type === 'advance_payment');
             }
 
-            // 2. Determine Display Logic
-            // Show Service Section IF:
-            // - Mode allows it ('combined' OR 'service_only')
-            // - AND (We are in "Project View" [no specific transactions] OR We have specific Service transactions to show)
             $showService = ($mode === 'combined' || $mode === 'service_only');
             if ($hasSpecificTransactions && $serviceTransactions->isEmpty()) {
-                $showService = false; // Hide service section if we only selected advance payments
+                $showService = false;
             }
 
-            // Show Advance Section IF:
-            // - Mode allows it ('combined' OR 'advance_only')
-            // - AND (We have specific Advance transactions OR We are in "Project View" and have planned items)
             $showAdvance = ($mode === 'combined' || $mode === 'advance_only');
 
-            // 3. Calculate Totals
             $serviceTotal = 0;
             $advanceTotal = 0;
 
-            // Service Fee Calculation
             if ($hasSpecificTransactions) {
-                // Sum based on context
                 $serviceTotal = $serviceTransactions->sum(function($t) use ($isReceiptContext) {
                     return $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
                 });
             } elseif ($showService) {
-                // If no specific transactions, assume full project value for Quotation/Project context
-                // For Receipts in Project Context (Rare?), we might still use total_amount
                 $serviceTotal = $financial['total_amount'] ?? 0;
             }
 
-            // Advance Calculation
-            // Scenario A: Specific Advance Transactions selected (e.g. Receipt for Deposit)
-            // Scenario B: Project View (Quotation) -> Sum of planned items
             if ($advanceTransactions->isNotEmpty()) {
                  $advanceTotal = $advanceTransactions->sum(function($t) use ($isReceiptContext) {
                     return $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
                 });
             } elseif ($showAdvance && !$hasSpecificTransactions && isset($advanceItems)) {
-                 // Only show planned items sum if NO specific transactions are selected
                  $advanceTotal = $advanceItems->sum('total');
             }
 
-            // Helper to get price for an item
-            $getPriceForItem = function($itemId, $tiers) {
+            // Helper to get Tier Object for an Item
+            $getTierForItem = function($itemId, $tiers) {
+                // Returns the entire tier object or null
                 foreach ($tiers as $tier) {
-                    if (in_array($itemId, $tier['item_ids'] ?? [])) return (float)($tier['price'] ?? 0);
+                    if (in_array($itemId, $tier['item_ids'] ?? [])) return $tier;
                 }
-                return 0;
+                return null;
             };
 
-            // 4. VAT & Tax Logic
+            // Helper to generate a unique key for grouping (Price + Note)
+            // Actually, we should group by Tier Index or Unique Content
+            // Since tiers don't have IDs, we use the tier object itself (or its properties)
+            $getTierKey = function($itemId, $tiers) {
+                foreach ($tiers as $idx => $tier) {
+                    if (in_array($itemId, $tier['item_ids'] ?? [])) return $idx; // Use Index as Key
+                }
+                return -1; // Not in tier
+            };
+
             $vatIncluded = $financial['vat_included'] ?? false;
             $vatRate = $financial['vat_rate'] ?? 7;
             $whtEnabled = $financial['wht_enabled'] ?? false;
             $whtRate = $financial['wht_rate'] ?? 3;
 
-            // Deconstruct Service Fee
             if ($vatIncluded) {
                 $totalServiceIncVat = $serviceTotal;
                 $serviceBase = ($vatRate > 0) ? $totalServiceIncVat / (1 + ($vatRate/100)) : $totalServiceIncVat;
@@ -296,17 +285,16 @@
             <thead>
                 <tr>
                     <th style="width: 5%;" class="text-center">#</th>
-                    <th style="width: 60%;">Description</th>
-                    <th style="width: 10%;" class="text-center">Qty</th>
-                    <th style="width: 10%;" class="text-right">Unit Price</th>
-                    <th style="width: 15%;" class="text-right">Amount</th>
+                    <th style="width: 60%;">Description <span class="en-label">/ รายการ</span></th>
+                    <th style="width: 10%;" class="text-center">Qty <span class="en-label">/ จำนวน</span></th>
+                    <th style="width: 10%;" class="text-right">Unit Price <span class="en-label">/ ราคา</span></th>
+                    <th style="width: 15%;" class="text-right">Amount <span class="en-label">/ รวม</span></th>
                 </tr>
             </thead>
             <tbody>
                 <!-- SERVICE FEE SECTION -->
                 @if($showService)
                     @if($hasSpecificTransactions || ($mode !== 'service_only'))
-                       <!-- Show Header if mixed content or specific transactions -->
                         <tr>
                             <td colspan="5" class="section-header">Service Charges (ค่าบริการ)</td>
                         </tr>
@@ -323,20 +311,31 @@
                             @endphp
 
                             @if($pricingMode === 'per_head' && $items->isNotEmpty())
-                                {{-- Group items by price for breakdown --}}
+                                {{-- Group items by Tier Index to preserve Note grouping --}}
                                 @php
-                                    $priceGroups = $items->groupBy(function($item) use ($getPriceForItem, $pricingTiers) {
-                                        return $getPriceForItem($item->id, $pricingTiers);
+                                    $tierGroups = $items->groupBy(function($item) use ($getTierKey, $pricingTiers) {
+                                        return $getTierKey($item->id, $pricingTiers);
                                     });
                                 @endphp
 
-                                @foreach($priceGroups as $price => $groupedItems)
+                                @foreach($tierGroups as $tierIdx => $groupedItems)
                                     @php
                                         $count = $groupedItems->count();
+                                        // Get tier data
+                                        $tier = ($tierIdx >= 0 && isset($pricingTiers[$tierIdx])) ? $pricingTiers[$tierIdx] : null;
+                                        $price = $tier ? ($tier['price'] ?? 0) : 0; // Fallback price? Or should we calc from transaction?
+
+                                        // Wait, the transaction amount is fixed. We are just "breaking it down".
+                                        // If transaction has partial items from a tier, we show partial count.
                                         $subtotal = $price * $count;
+
                                         $desc = $t->notes ?: ucfirst(str_replace('_', ' ', $t->type));
-                                        if ($priceGroups->count() > 1) {
-                                            $desc .= " (Group: " . number_format($price) . " THB)";
+
+                                        // Append Tier Note
+                                        if ($tier && !empty($tier['note'])) {
+                                            $desc .= " (" . $tier['note'] . ")";
+                                        } elseif ($tierGroups->count() > 1) {
+                                             $desc .= " (Group: " . number_format($price) . " THB)";
                                         }
                                     @endphp
                                     <tr>
@@ -402,7 +401,6 @@
 
                 <!-- ADVANCE PAYMENT SECTION -->
                 @if($showAdvance)
-                    <!-- CASE 1: Specific Advance Transactions (Actual Receipts) -->
                     @if($advanceTransactions->isNotEmpty())
                          <tr>
                             <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย)</td>
@@ -426,8 +424,6 @@
                             </tr>
                         @endforeach
 
-                    <!-- CASE 2: Planned Items List (Quotation / Project Overview) -->
-                    <!-- Only show if NO specific transactions were selected -->
                     @elseif(!$hasSpecificTransactions && isset($advanceItems) && $advanceItems->isNotEmpty())
                         <tr>
                             <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
@@ -449,10 +445,9 @@
         <!-- Calculations -->
         <div class="totals-container">
             <table class="totals-table">
-                <!-- Service Fee Breakdown -->
                 @if($showService)
                     <tr>
-                        <td class="total-label"><strong>Service Base (Excl. VAT)</strong></td>
+                        <td class="total-label"><strong>Service Base <span class="en-label">/ มูลค่าบริการ (ก่อน VAT)</span></strong></td>
                         <td class="total-value">{{ number_format($serviceBase, 2) }}</td>
                     </tr>
                     @if($vatRate > 0)
@@ -462,20 +457,18 @@
                     </tr>
                     @endif
                     <tr>
-                        <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total (Inc. VAT)</td>
+                        <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total <span class="en-label">/ รวมค่าบริการ (รวม VAT)</span></td>
                         <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
                     </tr>
                 @endif
 
-                <!-- Advance Breakdown -->
                 @if($showAdvance && $advanceTotal > 0)
                     <tr>
-                        <td class="total-label" style="color: #ea580c;"><strong>Total Advance Payments</strong></td>
+                        <td class="total-label" style="color: #ea580c;"><strong>Total Advance Payments <span class="en-label">/ รวมเงินสำรองจ่าย</span></strong></td>
                         <td class="total-value" style="color: #ea580c;">{{ number_format($advanceTotal, 2) }}</td>
                     </tr>
                 @endif
 
-                <!-- Grand Total -->
                 @php
                     $grandTotal = ($showService ? $totalServiceIncVat : 0) + ($showAdvance ? $advanceTotal : 0);
                     $whtAmount = ($showService && $whtEnabled) ? ($serviceBase * ($whtRate/100)) : 0;
@@ -483,18 +476,17 @@
                 @endphp
 
                 <tr class="grand-total-row">
-                    <td>Grand Total</td>
+                    <td>Grand Total <span class="en-label">/ รวมทั้งสิ้น</span></td>
                     <td class="total-value">{{ number_format($grandTotal, 2) }}</td>
                 </tr>
 
-                <!-- WHT -->
                 @if($showService && $whtEnabled)
                 <tr style="color: #EF4444;">
                     <td class="total-label">Less WHT ({{ $whtRate }}% on Service)</td>
                     <td class="total-value">-{{ number_format($whtAmount, 2) }}</td>
                 </tr>
                 <tr style="font-weight: bold; border-top: 1px dashed #ccc;">
-                    <td class="total-label" style="padding-top: 5px;">Net Payable</td>
+                    <td class="total-label" style="padding-top: 5px;">Net Payable <span class="en-label">/ ยอดสุทธิ</span></td>
                     <td class="total-value" style="padding-top: 5px;">{{ number_format($netPayable, 2) }}</td>
                 </tr>
                 @endif
@@ -506,23 +498,47 @@
             ( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )
         </div>
 
-        <!-- Signatures -->
+        <!-- Signatures Section -->
         <div class="signatures">
             <div class="sig-block">
-                <div class="sig-text" style="margin-bottom: 40px;">Received By</div>
+                <div class="sig-title">Received By <span class="en-label">/ ผู้รับเงิน</span></div>
                 <div class="sig-line"></div>
-                <div class="sig-text">Date: ____/____/______</div>
+                <div class="sig-text">Date <span class="en-label">/ วันที่</span>: ____/____/______</div>
             </div>
+
             <div class="sig-block">
-                <div class="sig-text" style="margin-bottom: 40px;">Authorized Signature</div>
+                <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
                 <div class="sig-line"></div>
                 <div class="sig-text">{{ $profile->name }}</div>
             </div>
         </div>
 
+        <!-- Absolute Positioned Elements (Direct children of .page) -->
+        @if($profile->use_signature && $profile->signature_path)
+            @php
+                $sigPos = is_array($profile->signature_pos) ? $profile->signature_pos : (is_string($profile->signature_pos) ? json_decode($profile->signature_pos, true) : null);
+                $sigLeft = $sigPos['x'] ?? 50;
+                $sigTop = $sigPos['y'] ?? 75;
+                $sigWidth = $sigPos['w'] ?? 20;
+            @endphp
+                <img src="{{ asset('storage/' . $profile->signature_path) }}"
+                    style="position: absolute; left: {{ $sigLeft }}%; top: {{ $sigTop }}%; width: {{ $sigWidth }}%; z-index: 10;">
+        @endif
+
+        @if($profile->use_stamp && $profile->stamp_path)
+            @php
+                $stampPos = is_array($profile->stamp_pos) ? $profile->stamp_pos : (is_string($profile->stamp_pos) ? json_decode($profile->stamp_pos, true) : null);
+                $stampLeft = $stampPos['x'] ?? 55;
+                $stampTop = $stampPos['y'] ?? 70;
+                $stampWidth = $stampPos['w'] ?? 20;
+            @endphp
+                <img src="{{ asset('storage/' . $profile->stamp_path) }}"
+                    style="position: absolute; left: {{ $stampLeft }}%; top: {{ $stampTop }}%; width: {{ $stampWidth }}%; z-index: 5; opacity: 0.8;">
+        @endif
+
         <!-- Footer -->
         <div class="footer">
-            Thank you for your business.<br>
+            Thank you for your business. <br>
             Please check the correctness of this document.
         </div>
     </div>

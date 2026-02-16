@@ -335,9 +335,11 @@ class FinancialController extends Controller
         $request->validate([
             'name' => 'required',
             'logo' => 'nullable',
+            'signature' => 'nullable',
+            'stamp' => 'nullable',
         ]);
 
-        $data = $request->except('logo');
+        $data = $request->except(['logo', 'signature', 'stamp']);
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->store('company_logos', 'public');
@@ -346,9 +348,28 @@ class FinancialController extends Controller
             $data['logo_path'] = $request->logo;
         }
 
+        if ($request->hasFile('signature')) {
+            $data['signature_path'] = $request->file('signature')->store('company_signatures', 'public');
+        }
+
+        if ($request->hasFile('stamp')) {
+            $data['stamp_path'] = $request->file('stamp')->store('company_stamps', 'public');
+        }
+
+        // JSON Positions
+        if ($request->has('signature_pos') && is_string($request->signature_pos)) {
+             $data['signature_pos'] = json_decode($request->signature_pos, true);
+        }
+        if ($request->has('stamp_pos') && is_string($request->stamp_pos)) {
+             $data['stamp_pos'] = json_decode($request->stamp_pos, true);
+        }
+
         if ($request->is_default) {
             CompanyProfile::where('is_default', true)->update(['is_default' => false]);
         }
+
+        $data['use_signature'] = $request->has('use_signature');
+        $data['use_stamp'] = $request->has('use_stamp');
 
         $profile = CompanyProfile::create($data);
 
@@ -357,5 +378,63 @@ class FinancialController extends Controller
         }
 
         return back()->with('success', 'Profile created');
+    }
+
+    public function updateProfile(Request $request, $id)
+    {
+        $profile = CompanyProfile::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required',
+            'logo' => 'nullable',
+            'signature' => 'nullable',
+            'stamp' => 'nullable',
+            'signature_pos' => 'nullable|string',
+            'stamp_pos' => 'nullable|string',
+        ]);
+
+        $data = $request->except(['logo', 'signature', 'stamp']);
+
+        // Handle File Uploads
+        if ($request->hasFile('logo')) {
+            if ($profile->logo_path) Storage::disk('public')->delete($profile->logo_path);
+            $data['logo_path'] = $request->file('logo')->store('company_logos', 'public');
+        }
+
+        if ($request->hasFile('signature')) {
+            if ($profile->signature_path) Storage::disk('public')->delete($profile->signature_path);
+            $data['signature_path'] = $request->file('signature')->store('company_signatures', 'public');
+        }
+
+        if ($request->hasFile('stamp')) {
+            if ($profile->stamp_path) Storage::disk('public')->delete($profile->stamp_path);
+            $data['stamp_path'] = $request->file('stamp')->store('company_stamps', 'public');
+        }
+
+        // Handle JSON positions
+        if ($request->has('signature_pos') && is_string($request->signature_pos)) {
+             $data['signature_pos'] = json_decode($request->signature_pos, true);
+        }
+        if ($request->has('stamp_pos') && is_string($request->stamp_pos)) {
+             $data['stamp_pos'] = json_decode($request->stamp_pos, true);
+        }
+
+        // Handle Default Toggle
+        if ($request->is_default) {
+            CompanyProfile::where('id', '!=', $id)->where('is_default', true)->update(['is_default' => false]);
+        }
+
+        // Handle Booleans
+        $data['use_signature'] = $request->has('use_signature');
+        $data['use_stamp'] = $request->has('use_stamp');
+        $data['is_default'] = $request->has('is_default');
+
+        $profile->update($data);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'profile' => $profile]);
+        }
+
+        return back()->with('success', 'Profile updated');
     }
 }
