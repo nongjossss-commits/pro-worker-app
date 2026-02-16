@@ -30,7 +30,7 @@ class EmployerController extends Controller
 
     public function index(Request $request)
     {
-        $query = Employer::with(['jobOwner', 'assignedStaff', 'addresses'])->latest();
+        $query = Employer::with(['jobOwner', 'caretakers', 'addresses'])->latest();
 
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
@@ -42,7 +42,7 @@ class EmployerController extends Controller
                   ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
                       $subQ->where('name', 'like', $searchTerm);
                   })
-                  ->orWhereHas('assignedStaff', function($subQ) use ($searchTerm) {
+                  ->orWhereHas('caretakers', function($subQ) use ($searchTerm) {
                       $subQ->where('name', 'like', $searchTerm);
                   })
                   ->orWhere(function($subQ) use ($searchTerm) {
@@ -104,7 +104,8 @@ class EmployerController extends Controller
             'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
-            'assigned_staff_id' => 'nullable|exists:users,id',
+            'assigned_staff_ids' => 'nullable|array',
+            'assigned_staff_ids.*' => 'exists:users,id',
             // Signatures
             'signature_1_file' => 'nullable|image|max:2048',
             'signature_2_file' => 'nullable|image|max:2048',
@@ -137,12 +138,18 @@ class EmployerController extends Controller
         unset($validated['signature_1_file']);
         unset($validated['signature_2_file']);
 
-        Employer::create($validated);
+        $staffIds = $validated['assigned_staff_ids'] ?? [];
+        unset($validated['assigned_staff_ids']);
+
+        $employer = Employer::create($validated);
+        $employer->caretakers()->sync($staffIds);
+
         return redirect()->route('employers.index')->with('success', 'Employer created successfully.');
     }
 
     public function edit(Request $request, Employer $employer)
     {
+        $employer->load('caretakers');
         $jobOwners = JobOwner::orderBy('name')->get();
         $staffUsers = User::role(['admin', 'staff', 'caretaker'])->orderBy('name')->get();
 
@@ -272,7 +279,8 @@ class EmployerController extends Controller
             'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'employer_doc_other_3_desc' => 'nullable|string|max:255',
             'job_owner_id' => 'required|exists:job_owners,id',
-            'assigned_staff_id' => 'nullable|exists:users,id',
+            'assigned_staff_ids' => 'nullable|array',
+            'assigned_staff_ids.*' => 'exists:users,id',
             // Signatures
             'signature_1_action' => 'nullable|in:keep,generate,upload,draw',
             'signature_1_file' => 'nullable|required_if:signature_1_action,upload|image|max:2048',
@@ -352,7 +360,11 @@ class EmployerController extends Controller
         unset($validated['signature_2_file']);
         unset($validated['signature_2_base64']);
 
+        $staffIds = $validated['assigned_staff_ids'] ?? [];
+        unset($validated['assigned_staff_ids']);
+
         $employer->update($validated);
+        $employer->caretakers()->sync($staffIds);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
