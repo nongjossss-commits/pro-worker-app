@@ -11,26 +11,26 @@
 
     {{-- Summary Cards --}}
     <div class="row g-3 mb-4">
-        {{-- Total Employees --}}
+        {{-- Total Employees (All Time) --}}
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 bg-primary text-white bg-gradient">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="card-title mb-0 fw-bold">{{ __('Total Employees') }}</h6>
+                        <h6 class="card-title mb-0 fw-bold">{{ __('Total History') }}</h6>
                         <i class="bi bi-people-fill fs-4 text-white-50"></i>
                     </div>
                     <h2 class="display-6 fw-bold mb-0">{{ number_format($totalEmployees) }}</h2>
-                    <div class="small mt-2 text-white-50">{{ __('Registered in system') }}</div>
+                    <div class="small mt-2 text-white-50">{{ __('All-time records') }}</div>
                 </div>
             </div>
         </div>
 
-        {{-- Active Employees --}}
+        {{-- Active Employees (Current Workforce) --}}
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 bg-success text-white bg-gradient">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="card-title mb-0 fw-bold">{{ __('Active Employees') }}</h6>
+                        <h6 class="card-title mb-0 fw-bold">{{ __('Current Workforce') }}</h6>
                         <i class="bi bi-person-check-fill fs-4 text-white-50"></i>
                     </div>
                     <h2 class="display-6 fw-bold mb-0">{{ number_format($activeEmployees) }}</h2>
@@ -77,7 +77,10 @@
                     <h6 class="fw-bold mb-0"><i class="bi bi-activity me-2"></i>{{ __('System Activity (Last 14 Days)') }}</h6>
                 </div>
                 <div class="card-body">
-                    <canvas id="activityChart" height="300"></canvas>
+                    {{-- Added wrapper div to fix infinite resize loop --}}
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="activityChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -89,16 +92,29 @@
                     <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Employee Status') }}</h6>
                 </div>
                 <div class="card-body">
-                    <canvas id="statusChart" height="250"></canvas>
+                    {{-- Added wrapper div to fix infinite resize loop --}}
+                    <div style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
                     <div class="mt-4">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                {{ __('Active') }}
-                                <span class="badge bg-success rounded-pill">{{ $activeEmployees }}</span>
+                                {{ __('Active (Confirmed)') }}
+                                <span class="badge bg-success rounded-pill">{{ $statusBreakdown['active'] }}</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                {{ __('Registration Pending') }}
+                                <span class="badge bg-info rounded-pill">{{ $statusBreakdown['registration_pending'] }}</span>
+                            </li>
+                            @if($statusBreakdown['renewal_pending'] > 0)
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                {{ __('Renewal Pending') }}
+                                <span class="badge bg-warning text-dark rounded-pill">{{ $statusBreakdown['renewal_pending'] }}</span>
+                            </li>
+                            @endif
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                                 {{ __('Terminated/Resigned') }}
-                                <span class="badge bg-danger rounded-pill">{{ $resignedEmployees }}</span>
+                                <span class="badge bg-danger rounded-pill">{{ $statusBreakdown['terminated'] }}</span>
                             </li>
                         </ul>
                     </div>
@@ -116,7 +132,10 @@
                     <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill me-2"></i>{{ __('Item Status Breakdown') }}</h6>
                 </div>
                 <div class="card-body">
-                     <canvas id="workflowChart" height="250"></canvas>
+                    {{-- Added wrapper div to fix infinite resize loop --}}
+                    <div style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="workflowChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -188,10 +207,25 @@
         new Chart(ctxStatus, {
             type: 'doughnut',
             data: {
-                labels: ['{{ __("Active") }}', '{{ __("Terminated") }}'],
+                labels: [
+                    '{{ __("Active") }}',
+                    '{{ __("Registration Pending") }}',
+                    @if($statusBreakdown['renewal_pending'] > 0) '{{ __("Renewal Pending") }}', @endif
+                    '{{ __("Terminated") }}'
+                ],
                 datasets: [{
-                    data: [{{ $activeEmployees }}, {{ $resignedEmployees }}],
-                    backgroundColor: ['#198754', '#dc3545'],
+                    data: [
+                        {{ $statusBreakdown['active'] }},
+                        {{ $statusBreakdown['registration_pending'] }},
+                        @if($statusBreakdown['renewal_pending'] > 0) {{ $statusBreakdown['renewal_pending'] }}, @endif
+                        {{ $statusBreakdown['terminated'] }}
+                    ],
+                    backgroundColor: [
+                        '#198754', // Active - Green
+                        '#0dcaf0', // Reg Pending - Cyan/Info
+                        @if($statusBreakdown['renewal_pending'] > 0) '#ffc107', @endif // Renewal - Yellow/Warning
+                        '#dc3545'  // Terminated - Red
+                    ],
                     borderWidth: 0
                 }]
             },

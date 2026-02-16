@@ -15,9 +15,18 @@ class DashboardController extends Controller
     public function index()
     {
         // 1. Employee Stats
-        $totalEmployees = Employee::count();
-        $activeEmployees = Employee::where('status', '!=', 'terminated')->count();
-        $resignedEmployees = Employee::onlyTrashed()->count() + Employee::where('status', 'terminated')->count();
+        $totalEmployees = Employee::withTrashed()->count(); // Changed to all-time history (including deleted)
+        $activeEmployees = Employee::where('status', '!=', 'terminated')->count(); // Currently employed
+
+        // Detailed breakdown for charts
+        $statusBreakdown = [
+            'active' => Employee::where('status', 'active')->count(),
+            'registration_pending' => Employee::where('status', 'registration_pending')->count(),
+            'renewal_pending' => Employee::where('status', 'renewal_pending')->count(),
+            'terminated' => Employee::onlyTrashed()->count() + Employee::where('status', 'terminated')->count(),
+        ];
+
+        $resignedEmployees = $statusBreakdown['terminated']; // Alias for view
 
         // 2. Production/Workflow Stats
         $preProductionOrders = ProductionOrder::where('status', 'pre_production')->count();
@@ -47,6 +56,7 @@ class DashboardController extends Controller
             'totalEmployees',
             'activeEmployees',
             'resignedEmployees',
+            'statusBreakdown',
             'preProductionOrders',
             'activeOrders',
             'completedOrders',
