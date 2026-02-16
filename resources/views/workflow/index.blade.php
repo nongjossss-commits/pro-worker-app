@@ -350,7 +350,7 @@
                                  {{-- Finance Button --}}
                                  @can('view-finance')
                                  <button class="btn btn-outline-primary btn-sm rounded-circle me-1"
-                                    data-bs-toggle="modal" data-bs-target="#financeModal-{{ $order->id }}" onclick="event.stopPropagation()"
+                                    onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => new bootstrap.Modal(document.getElementById('financeModal-{{ $order->id }}')).show())"
                                     title="{{ __('Finance') }}">
                                     <i class="bi bi-currency-dollar"></i>
                                 </button>

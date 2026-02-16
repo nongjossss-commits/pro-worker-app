@@ -34,6 +34,7 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
 Route::middleware(['auth'])->group(function () {
     Route::get('/menu-unlock/{key}', [SuperAdminSettingsController::class, 'unlockForm'])->name('menu.unlock.form');
     Route::post('/menu-unlock/{key}', [SuperAdminSettingsController::class, 'unlock'])->name('menu.unlock');
+    Route::get('/menu-check/{key}', [SuperAdminSettingsController::class, 'checkAccess'])->name('menu.check'); // NEW AJAX Check
 });
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
@@ -335,9 +336,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
     Route::post('production/{id}/upload-logo', [\App\Http\Controllers\ProductionController::class, 'uploadLogo'])->name('production.upload_logo');
-    Route::post('production/{id}/financial-groups', [\App\Http\Controllers\ProductionController::class, 'storeFinancialGroup'])->name('production.financial_groups.store');
-    Route::put('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'updateFinancialGroup'])->name('production.financial_groups.update');
-    Route::delete('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'destroyFinancialGroup'])->name('production.financial_groups.destroy');
+
+    Route::middleware('menu:finance')->group(function() {
+        Route::post('production/{id}/financial-groups', [\App\Http\Controllers\ProductionController::class, 'storeFinancialGroup'])->name('production.financial_groups.store');
+        Route::put('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'updateFinancialGroup'])->name('production.financial_groups.update');
+        Route::delete('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'destroyFinancialGroup'])->name('production.financial_groups.destroy');
+    });
 
     // Financial Hub Routes (Central Menu)
     Route::middleware('menu:finance')->prefix('finance')->name('finance.')->group(function () {
@@ -347,10 +351,12 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Financial Routes
-    Route::post('production/{id}/transactions', [FinancialController::class, 'storeTransaction']);
-    Route::put('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For status updates
-    Route::post('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For file uploads (method spoofing)
-    Route::delete('production/transactions/{id}', [FinancialController::class, 'destroyTransaction']);
+    Route::middleware('menu:finance')->group(function() {
+        Route::post('production/{id}/transactions', [FinancialController::class, 'storeTransaction']);
+        Route::put('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For status updates
+        Route::post('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For file uploads (method spoofing)
+        Route::delete('production/transactions/{id}', [FinancialController::class, 'destroyTransaction']);
+    });
     // Replaced by dedicated ProductionDocumentController
     // Route::get('production/{id}/documents/{type}', [FinancialController::class, 'generateDocument']);
     Route::get('production/{id}/documents/{type}', [App\Http\Controllers\ProductionDocumentController::class, 'show'])->name('production.documents.show');
