@@ -481,7 +481,7 @@
 
                                  {{-- Finance Button --}}
                                  @can('view-finance')
-                                 <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => new bootstrap.Modal(document.getElementById('financeModal-{{ $employer->id }}')).show())">
+                                 <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => openFinanceModal({{ $employer->id }}))">
                                     <i class="bi bi-currency-dollar"></i> {{ __('Finance') }}
                                 </button>
                                 @endcan
@@ -598,12 +598,11 @@
                             <h5 class="modal-title">{{ __('Finance') }}: {{ $employer->employerNameTh }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body bg-light">
-                            @include('production.partials.financial-tab', [
-                                'production' => $employer->financeOrder,
-                                'employeeCount' => $employer->activeEmployeesCount ?? 0,
-                                'employees' => $employer->activeEmployeesList ?? collect()
-                            ])
+                        <div class="modal-body bg-light" id="finance-modal-body-{{ $employer->id }}">
+                            <div class="d-flex justify-content-center align-items-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <span class="ms-2 small text-muted">{{ __('Loading financial data...') }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1027,8 +1026,76 @@
         });
     }
 
+    // --- Stats & Finance Lazy Loading ---
+    window.openFinanceModal = function(employerId) {
+        const modalEl = document.getElementById(`financeModal-${employerId}`);
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        const body = document.getElementById(`finance-modal-body-${employerId}`);
+        // Check if already loaded by checking for Alpine component root
+        if (body.querySelector('[x-data]')) return;
+
+        fetch(`{{ route('production.registration.index') }}/employer/${employerId}/finance-tab`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to load');
+                return res.text();
+            })
+            .then(html => {
+                body.innerHTML = html;
+            })
+            .catch(err => {
+                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load data.</div>';
+                console.error(err);
+            });
+    }
+
+    window.loadBatchStats = function() {
+        const containers = document.querySelectorAll('.employer-card-container');
+        const employerIds = Array.from(containers).map(el => el.id.replace('employer-card-', ''));
+
+        if (employerIds.length === 0) return;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const search = urlParams.get('search');
+
+        fetch('{{ route("production.registration.stats.batch") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                employer_ids: employerIds,
+                search: search
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            for (const [empId, stats] of Object.entries(data)) {
+                updateText(`employer-total-${empId}`, stats.activeEmployeesCount);
+                updateText(`employer-not-started-${empId}`, stats.notStartedCount);
+                updateText(`employer-cancelled-${empId}`, stats.cancelledCount);
+                updateText(`employer-saved-${empId}`, stats.savedCount);
+                updateText(`employer-biometrics-collected-${empId}`, stats.biometricsCollectedCount);
+
+                const container = document.getElementById(`employer-stats-${empId}`);
+                if (container && stats.stepStats) {
+                    for (const [stepId, count] of Object.entries(stats.stepStats)) {
+                        const badge = container.querySelector(`.employer-stat-badge[data-step-id="${stepId}"]`);
+                        if (badge) badge.innerText = count;
+                    }
+                }
+            }
+        })
+        .catch(err => console.error('Stats loading failed', err));
+    }
+
     // Listen for Accordion Expand
     document.addEventListener('DOMContentLoaded', function() {
+        // Trigger Stats Load
+        loadBatchStats();
+
         const accordion = document.getElementById('employersAccordion');
         if (accordion) {
             accordion.addEventListener('show.bs.collapse', function (e) {

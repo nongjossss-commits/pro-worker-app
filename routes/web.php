@@ -232,6 +232,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/create', [App\Http\Controllers\Production\RegistrationController::class, 'create'])->name('create');
         Route::post('/store', [App\Http\Controllers\Production\RegistrationController::class, 'store'])->name('store');
 
+        // Stats & Lazy Loading Routes
+        Route::post('/stats-batch', [App\Http\Controllers\Production\RegistrationController::class, 'batchStats'])->name('stats.batch');
+        Route::get('/employer/{employer}/finance-tab', [App\Http\Controllers\Production\RegistrationController::class, 'loadFinancialTab'])->name('finance.tab');
+
         // Step Management
         Route::post('/steps', [App\Http\Controllers\Production\RegistrationController::class, 'storeStep'])->name('steps.store');
         Route::put('/steps/{step}', [App\Http\Controllers\Production\RegistrationController::class, 'updateStep'])->name('steps.update');

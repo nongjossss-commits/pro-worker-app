@@ -128,8 +128,7 @@ class RegistrationController extends Controller
 
         // Eager load Production Orders to avoid N+1
         $employerQuery->with(['productionOrders' => function($q) {
-             $q->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
-               ->with(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee']);
+             $q->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled']);
         }]);
 
         // Sort and Paginate
@@ -161,150 +160,24 @@ class RegistrationController extends Controller
 
 
         // --- 3. Process Visible Employers ---
-        // Eager load employees for these 20 employers to calculate their stats
-        // We load ALL relevant employees for these employers so we can calculate stats in PHP accurately.
-        $employers->load(['employees' => function($q) {
-             $q->select('id', 'employer_id', 'status', 'biometrics_collected_at', 'employeeNameTh', 'employeeNameEn', 'employeePassport');
-             $q->with(['registrationSteps' => function($sq) {
-                 $sq->select('registration_steps.id', 'registration_steps.order', 'employee_registration_status.employee_id');
-             }]);
-             $q->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
-        }]);
+        // OPTIMIZATION: Removed heavy hydration and PHP loops.
+        // We now load stats via AJAX (batchStats) and financial tab via lazy loading.
 
         foreach ($employers as $employer) {
-            // Finance Order Logic
+            // Eager load just the finance order relation to check status for visual grey-out
+            // But we don't create it if missing, nor load items.
             $financeOrder = $employer->productionOrders->first();
-
-            if (!$financeOrder) {
-                $financeOrder = ProductionOrder::create([
-                    'employer_id' => $employer->id,
-                    'status'      => 'registration_resolution',
-                    'type'         => 'employer',
-                    'project_name' => 'Registration Resolution - ' . $employer->employerNameTh,
-                    'financial_data' => []
-                ]);
-            }
             $employer->financeOrder = $financeOrder;
 
-            if ($financeOrder->financialGroups->isEmpty()) {
-                $financeOrder->financialGroups()->create([
-                    'name' => 'General',
-                    'financial_data' => $financeOrder->financial_data ?? []
-                ]);
-                $financeOrder->load('financialGroups.transactions.items');
-            }
-
-            // --- Stats Calculation ---
-            // We must filter $employer->employees based on Search if present
-            $myEmps = $employer->employees;
-
-            if ($request->has('search') && $request->search) {
-                // If employer itself matches search, show all. Else filter employees.
-                $search = trim($request->search);
-                $cleanedSearch = str_replace(' ', '', $search);
-
-                $employerMatches = false;
-                $empNameThClean = str_replace(' ', '', $employer->employerNameTh ?? '');
-                $empNameEnClean = str_replace(' ', '', $employer->employerNameEn ?? '');
-
-                if (stripos($employer->employerNameTh, $search) !== false ||
-                    stripos($employer->employerNameEn, $search) !== false ||
-                    stripos($empNameThClean, $cleanedSearch) !== false ||
-                    stripos($empNameEnClean, $cleanedSearch) !== false) {
-                    $employerMatches = true;
-                }
-
-                if (!$employerMatches && $employer->jobOwner && stripos($employer->jobOwner->name, $search) !== false) {
-                    $employerMatches = true;
-                }
-
-                // Address match logic is complex to check in PHP loop efficiently without loading addresses.
-                // But we eager loaded addresses.
-                if (!$employerMatches) {
-                     foreach($employer->addresses as $addr) {
-                         if (stripos($addr->addrProvince, $search) !== false || stripos($addr->addrDistrict, $search) !== false) {
-                             $employerMatches = true;
-                             break;
-                         }
-                     }
-                }
-
-                if (!$employerMatches) {
-                    // Filter employees
-                    $myEmps = $myEmps->filter(function($emp) use ($search, $cleanedSearch) {
-                        return stripos($emp->employeeNameTh, $search) !== false ||
-                               stripos($emp->employeeNameEn, $search) !== false ||
-                               stripos($emp->employeePassport, $search) !== false ||
-                               stripos(str_replace(' ', '', $emp->employeeNameTh), $cleanedSearch) !== false ||
-                               stripos(str_replace(' ', '', $emp->employeeNameEn), $cleanedSearch) !== false;
-                    });
-                }
-            }
-
-            // Determine Financial Status (Optimization: Map only relevant IDs)
-            $employeeFinancialStatus = [];
-            foreach ($financeOrder->financialGroups as $group) {
-                foreach ($group->transactions as $transaction) {
-                    foreach ($transaction->items as $item) {
-                        if (!$item->employee_id) continue;
-                        $empId = $item->employee_id;
-                        // Logic simplified for stats presence
-                        $employeeFinancialStatus[$empId] = ($transaction->status === 'paid' && ($employeeFinancialStatus[$empId] ?? 'none') === 'none') ? 'paid' : 'partial';
-                    }
-                }
-            }
-
-            // Prepare Candidates List
-            $employer->activeEmployeesList = $myEmps->where('status', '!=', 'registration_cancelled')->values();
-
-            // Initialize Stats
-            $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $empNotStarted = 0;
-            $empActiveCount = 0;
-            $empCancelledCount = 0;
-            $empSavedCount = 0;
-            $empBiometricsCollected = 0;
-            $empDailyCheckPending = 0;
-
-            foreach ($myEmps as $emp) {
-                $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
-
-                if ($emp->status === 'registration_cancelled') {
-                    $empCancelledCount++;
-                    continue;
-                }
-
-                $empActiveCount++;
-
-                if ($emp->status === 'registration_completed') {
-                    $empSavedCount++;
-                }
-
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
-                    $empNotStarted++;
-                }
-
-                if ($emp->biometrics_collected_at) {
-                    $empBiometricsCollected++;
-                }
-
-                if ($emp->is_daily_check_pending) {
-                    $empDailyCheckPending++;
-                }
-
-                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
-                if ($highestStep && isset($empStats[$highestStep->id])) {
-                    $empStats[$highestStep->id]++;
-                }
-            }
-
-            $employer->stepStats = $empStats;
-            $employer->notStartedCount = $empNotStarted;
-            $employer->activeEmployeesCount = $empActiveCount;
-            $employer->cancelledCount = $empCancelledCount;
-            $employer->savedCount = $empSavedCount;
-            $employer->biometricsCollectedCount = $empBiometricsCollected;
-            $employer->dailyCheckPendingCount = $empDailyCheckPending;
+            // Placeholders for view (will be updated via AJAX)
+            $employer->stepStats = [];
+            $employer->notStartedCount = 0;
+            $employer->activeEmployeesCount = 0;
+            $employer->cancelledCount = 0;
+            $employer->savedCount = 0;
+            $employer->biometricsCollectedCount = 0;
+            $employer->dailyCheckPendingCount = 0;
+            // activeEmployeesList is removed as it's now loaded in the financial tab AJAX call
         }
 
         return view('production.registration.index', compact(
@@ -423,6 +296,195 @@ class RegistrationController extends Controller
                  // I will stick to "Has this step" for now as it's faster and usually sufficient for finding people.
             }
         });
+    }
+
+    /**
+     * AJAX: Fetch stats for a batch of employers (to avoid N+1 on initial load).
+     */
+    public function batchStats(Request $request)
+    {
+        $request->validate([
+            'employer_ids' => 'required|array',
+            'employer_ids.*' => 'exists:employers,id',
+            'search' => 'nullable|string'
+        ]);
+
+        $employerIds = $request->input('employer_ids');
+        $search = $request->input('search');
+
+        // Fetch visible employers to apply logic
+        $employers = Employer::with(['jobOwner', 'addresses'])->whereIn('id', $employerIds)->get();
+        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
+        $results = [];
+
+        foreach ($employers as $employer) {
+            // Apply Search Filter Logic
+            // Reuse the exact logic from original index() to determine if we filter employees or take all.
+            $employerMatches = false;
+
+            if ($search) {
+                $trimmedSearch = trim($search);
+                $cleanedSearch = str_replace(' ', '', $trimmedSearch);
+
+                $empNameThClean = str_replace(' ', '', $employer->employerNameTh ?? '');
+                $empNameEnClean = str_replace(' ', '', $employer->employerNameEn ?? '');
+
+                if (stripos($employer->employerNameTh, $trimmedSearch) !== false ||
+                    stripos($employer->employerNameEn, $trimmedSearch) !== false ||
+                    stripos($empNameThClean, $cleanedSearch) !== false ||
+                    stripos($empNameEnClean, $cleanedSearch) !== false) {
+                    $employerMatches = true;
+                }
+
+                if (!$employerMatches && $employer->jobOwner && stripos($employer->jobOwner->name, $trimmedSearch) !== false) {
+                    $employerMatches = true;
+                }
+
+                if (!$employerMatches) {
+                     foreach($employer->addresses as $addr) {
+                         if (stripos($addr->addrProvince, $trimmedSearch) !== false || stripos($addr->addrDistrict, $trimmedSearch) !== false) {
+                             $employerMatches = true;
+                             break;
+                         }
+                     }
+                }
+            } else {
+                // No search -> "Employer Matches" implicitly means "Show all relevant employees"
+                $employerMatches = true;
+            }
+
+            // Build Query for this employer
+            $query = $employer->employees();
+
+            if (auth()->user()->can('manage-tickets')) {
+                $query->withoutGlobalScope('employerTenancy');
+            }
+
+            // Base status filter
+            $query->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+
+            if (!$employerMatches && $search) {
+                // Filter employees by name/passport
+                 $trimmedSearch = trim($search);
+                 $cleanedSearch = str_replace(' ', '', $trimmedSearch);
+                 $query->where(function($q) use ($trimmedSearch, $cleanedSearch) {
+                        $q->where('employeeNameTh', 'like', "%{$trimmedSearch}%")
+                               ->orWhere('employeeNameEn', 'like', "%{$trimmedSearch}%")
+                               ->orWhere('employeePassport', 'like', "%{$trimmedSearch}%")
+                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                 });
+            }
+
+            // Fetch necessary columns efficiently
+            // We include biometrics and daily check fields
+            // Loading full registrationSteps relation to ensure pivot data and keys are correctly loaded without risk
+            $employees = $query->with('registrationSteps')->select('id', 'status', 'biometrics_collected_at', 'daily_check_enabled', 'last_daily_checked_at')->get();
+
+            // Calculate in PHP
+            $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            $empNotStarted = 0;
+            $empActiveCount = 0;
+            $empCancelledCount = 0;
+            $empSavedCount = 0;
+            $empBiometricsCollected = 0;
+            $empDailyCheckPending = 0;
+
+            foreach ($employees as $emp) {
+                if ($emp->status === 'registration_cancelled') {
+                    $empCancelledCount++;
+                    continue;
+                }
+
+                $empActiveCount++;
+
+                if ($emp->status === 'registration_completed') {
+                    $empSavedCount++;
+                }
+
+                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                    $empNotStarted++;
+                }
+
+                if ($emp->biometrics_collected_at) {
+                    $empBiometricsCollected++;
+                }
+
+                if ($emp->daily_check_enabled) {
+                    $last = $emp->last_daily_checked_at ? Carbon::parse($emp->last_daily_checked_at) : null;
+                    if (!$last || $last->lt(now()->startOfDay())) {
+                        $empDailyCheckPending++;
+                    }
+                }
+
+                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($empStats[$highestStep->id])) {
+                    $empStats[$highestStep->id]++;
+                }
+            }
+
+            $results[$employer->id] = [
+                'stepStats' => $empStats,
+                'notStartedCount' => $empNotStarted,
+                'activeEmployeesCount' => $empActiveCount,
+                'cancelledCount' => $empCancelledCount,
+                'savedCount' => $empSavedCount,
+                'biometricsCollectedCount' => $empBiometricsCollected,
+                'dailyCheckPendingCount' => $empDailyCheckPending
+            ];
+        }
+
+        return response()->json($results);
+    }
+
+    /**
+     * AJAX: Load Financial Tab Content (Lazy Load).
+     */
+    public function loadFinancialTab(Request $request, Employer $employer)
+    {
+        // Permission Check
+        if (!auth()->user()->can('view-finance') && !auth()->user()->can('edit-employees')) {
+             abort(403);
+        }
+
+        // Finance Order Logic
+        $financeOrder = $employer->productionOrders()->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])->first();
+
+        if (!$financeOrder) {
+            $financeOrder = ProductionOrder::create([
+                'employer_id' => $employer->id,
+                'status'      => 'registration_resolution',
+                'type'         => 'employer',
+                'project_name' => 'Registration Resolution - ' . $employer->employerNameTh,
+                'financial_data' => []
+            ]);
+        }
+
+        if ($financeOrder->financialGroups->isEmpty()) {
+            $financeOrder->financialGroups()->create([
+                'name' => 'General',
+                'financial_data' => $financeOrder->financial_data ?? []
+            ]);
+        }
+
+        // Load relationships needed for the view
+        $financeOrder->load(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee']);
+
+        // Fetch ALL Active Employees for this employer (ignoring search)
+        $query = $employer->employees();
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $employees = $query->where('status', '!=', 'registration_cancelled')->get();
+
+        return view('production.partials.financial-tab', [
+            'production' => $financeOrder,
+            'employeeCount' => $employees->count(),
+            'employees' => $employees
+        ]);
     }
 
     /**
