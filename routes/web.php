@@ -435,6 +435,7 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('ad
     // Financial Settings
     Route::get('/settings/financial', [FinancialController::class, 'indexSettings'])->name('settings.financial.index');
     Route::post('/settings/financial', [FinancialController::class, 'storeProfile'])->name('settings.financial.store');
+    Route::post('/settings/financial/{id}', [FinancialController::class, 'updateProfile'])->name('settings.financial.update');
 
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::resource('notifications', App\Http\Controllers\Admin\NotificationSettingController::class);

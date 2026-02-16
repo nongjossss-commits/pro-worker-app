@@ -34,33 +34,41 @@ class ProductionDocumentController extends Controller
         $advanceItems = $activeGroup ? $activeGroup->advanceItems : collect();
 
         // --- Header Logic ---
+        $profileId = $financialData['profile_id'] ?? $request->query('profile_id');
+        $baseProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::where('is_default', true)->first();
+
+        // Fallback Base
+        if (!$baseProfile) {
+            $baseProfile = CompanyProfile::first() ?? new CompanyProfile([
+                'name' => 'Company Name (Default)',
+                'address' => 'Please configure a company profile in settings.',
+                'tax_id' => '0000000000000',
+                'phone' => '-',
+                'email' => '-',
+            ]);
+        }
+
         $customHeader = $financialData['custom_header'] ?? null;
 
-        // If Custom Header exists and is not null, wrap it in an object similar to CompanyProfile
-        if ($customHeader) {
-            $companyProfile = (object) [
-                'name' => $customHeader['name'] ?? 'Custom Company',
-                'address' => $customHeader['address'] ?? '',
-                'tax_id' => $customHeader['tax_id'] ?? '',
-                'phone' => $customHeader['phone'] ?? '',
-                'email' => $customHeader['email'] ?? '',
-                'logo_path' => $customHeader['logo'] ?? null,
-            ];
-        } else {
-            // Fallback to System Profile
-            $profileId = $financialData['profile_id'] ?? $request->query('profile_id');
-            $companyProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::where('is_default', true)->first();
+        // If Custom Header exists, merge it with Base Profile
+        if ($customHeader && !empty($customHeader['name'])) {
+            $attributes = $baseProfile->toArray();
 
-            if (!$companyProfile) {
-                // Last resort: First available profile or dummy
-                $companyProfile = CompanyProfile::first() ?? new CompanyProfile([
-                    'name' => 'Company Name (Default)',
-                    'address' => 'Please configure a company profile in settings.',
-                    'tax_id' => '0000000000000',
-                    'phone' => '-',
-                    'email' => '-',
-                ]);
+            // Merge Overrides
+            $attributes['name'] = $customHeader['name'];
+            $attributes['address'] = $customHeader['address'] ?? ($attributes['address'] ?? '');
+            $attributes['tax_id'] = $customHeader['tax_id'] ?? ($attributes['tax_id'] ?? '');
+            $attributes['phone'] = $customHeader['phone'] ?? ($attributes['phone'] ?? '');
+            $attributes['email'] = $customHeader['email'] ?? ($attributes['email'] ?? '');
+
+            // Only override logo if provided in custom header
+            if (!empty($customHeader['logo'])) {
+                $attributes['logo_path'] = $customHeader['logo'];
             }
+
+            $companyProfile = new CompanyProfile($attributes);
+        } else {
+            $companyProfile = $baseProfile;
         }
 
         // --- Bill To Logic (Customer Override) ---
