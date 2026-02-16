@@ -15,6 +15,7 @@ use Illuminate\Auth\Events\Logout;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +32,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Implicitly grant "super-admin" role all permissions
+        // "admin" is also granted here for consistency, ensuring both roles bypass standard checks
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('super-admin') || $user->hasRole('admin') ? true : null;
+        });
+
         Paginator::useBootstrapFive();
         Employer::observe(EmployerObserver::class);
         Employee::observe(EmployeeObserver::class);

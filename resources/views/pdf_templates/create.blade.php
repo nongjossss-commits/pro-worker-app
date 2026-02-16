@@ -15,7 +15,7 @@
                         search: '',
                         open: false,
                         selectedEmployerName: '',
-                        employers: @if(isset($employers) && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))) {{ $employers->map(fn($e) => [
+                        employers: @if(isset($employers) && (auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))) {{ $employers->map(fn($e) => [
                             'id' => $e->id,
                             'name' => $e->employerNameTh . ' (' . $e->employerNameEn . ')',
                             'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
@@ -58,7 +58,7 @@
                             <label class="form-label">Template Type</label>
                             <select name="type" class="form-select" x-model="type">
                                 <option value="global">Global (All Employers)</option>
-                                @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
+                                @if(auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
                                     <option value="employer">Specific Employer</option>
                                 @elseif(auth()->user()->hasRole('employer'))
                                     <option value="employer" {{ old('type') == 'employer' ? 'selected' : '' }}>My Organization</option>
@@ -66,7 +66,7 @@
                             </select>
                         </div>
 
-                        @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
+                        @if(auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
                         <div class="mb-3" x-show="type === 'employer'" style="display: none;" x-transition>
                             <label class="form-label">Select Employer</label>
 

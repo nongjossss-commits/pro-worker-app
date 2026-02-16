@@ -21,8 +21,8 @@ class PdfTemplateController extends Controller
 
         $user = Auth::user();
 
-        // Admin/Staff filtering logic
-        if ($user->hasRole('admin') || $user->hasRole('staff')) {
+        // Admin/Staff/SuperAdmin filtering logic
+        if ($user->hasRole('super-admin') || $user->hasRole('admin') || $user->hasRole('staff')) {
             if ($request->filled('employer_id')) {
                 if ($request->employer_id === 'global') {
                     $query->where('type', 'global');
@@ -69,7 +69,7 @@ class PdfTemplateController extends Controller
 
         // Prepare employers list for filter dropdown (if admin/staff)
         $employers = [];
-        if ($user->hasRole('admin') || $user->hasRole('staff') || $user->hasRole('caretaker')) {
+        if ($user->hasRole('super-admin') || $user->hasRole('admin') || $user->hasRole('staff') || $user->hasRole('caretaker')) {
              // Optimize: only select necessary columns
              $empQuery = Employer::select('id', 'employerNameTh', 'employerNameEn');
              if ($user->hasRole('caretaker')) {
