@@ -491,8 +491,30 @@ class ProductionController extends Controller
         return response()->json(['success' => true]);
     }
 
-    // ... (Keep other methods like edit, update, etc. if they are still relevant or redirect them)
-    // For now, we are replacing the main Index logic.
+    /**
+     * Show the form for editing the specified Production Order (or specific tabs).
+     */
+    public function edit(Request $request, $id)
+    {
+        // 1. Find Order with Relations needed for Financial Tab
+        $production = ProductionOrder::with([
+            'employer',
+            'items.employee',
+            'financialGroups.transactions.items', // Deep load for transaction items
+            'financialGroups.advanceItems'
+        ])->findOrFail($id);
+
+        // 2. Prepare Data for Partial
+        $employeeCount = $production->items->count();
+        // Get employees collection for dropdowns/management
+        $employees = $production->items->map(function($item) {
+            return $item->employee;
+        })->filter()->values();
+
+        // 3. Return View
+        return view('production.edit', compact('production', 'employeeCount', 'employees'));
+    }
+
     // The previous 'create', 'store' methods in ProductionController are still useful for creating the Pre-Prod job initially.
 
     public function create(Request $request)
