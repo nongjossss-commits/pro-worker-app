@@ -116,6 +116,12 @@ class RegistrationController extends Controller
             $this->applyFilterToEmployerQuery($employerQuery, $request->filter, $stepOneId);
         }
 
+        // Eager load Production Orders to avoid N+1
+        $employerQuery->with(['productionOrders' => function($q) {
+             $q->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+               ->with(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee']);
+        }]);
+
         // Sort and Paginate
         $employerQuery->orderByRaw("(
             SELECT CASE WHEN status = 'registration_resolution_cancelled' THEN 1 ELSE 0 END
@@ -157,10 +163,7 @@ class RegistrationController extends Controller
 
         foreach ($employers as $employer) {
             // Finance Order Logic
-            $financeOrder = ProductionOrder::with(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee'])
-                ->where('employer_id', $employer->id)
-                ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
-                ->first();
+            $financeOrder = $employer->productionOrders->first();
 
             if (!$financeOrder) {
                 $financeOrder = ProductionOrder::create([
@@ -376,7 +379,7 @@ class RegistrationController extends Controller
             if ($filter === 'not_started') {
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
-                       $sq->where('id', $stepOneId);
+                       $sq->where('registration_steps.id', $stepOneId);
                    });
             } elseif ($filter === 'saved') {
                  $q->where('status', 'registration_completed');
@@ -396,7 +399,7 @@ class RegistrationController extends Controller
                  // This matches "current progress" loosely.
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereHas('registrationSteps', function($sq) use ($filter) {
-                       $sq->where('id', $filter);
+                       $sq->where('registration_steps.id', $filter);
                    });
                  // Note: Exact highest step filtering in SQL requires subquery.
                  // e.g. where id = (select step_id from ... limit 1)
