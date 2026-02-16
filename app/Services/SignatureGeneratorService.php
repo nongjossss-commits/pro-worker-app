@@ -38,13 +38,13 @@ class SignatureGeneratorService
 
         // 5. Build Composition
         // Component 1: The Head (Large Initial)
-        $headType = mt_rand(0, 8);
+        $headType = mt_rand(0, 11);
         $this->drawComponent($image, 'head', $currentPos, $inkColor, $baseThickness * 1.2, $globalSlant, $globalJitter, $headType);
 
         // Component 2: The Body (Scribbles)
         $numSegments = mt_rand(2, 6);
         for ($i = 0; $i < $numSegments; $i++) {
-            $segmentType = mt_rand(0, 7);
+            $segmentType = mt_rand(0, 10);
             $this->drawComponent($image, 'body', $currentPos, $inkColor, $baseThickness * 0.9, $globalSlant, $globalJitter, $segmentType);
 
             // Randomly lift pen or add a small connector
@@ -55,7 +55,7 @@ class SignatureGeneratorService
         }
 
         // Component 3: The Tail / Flourish
-        $tailType = mt_rand(0, 9);
+        $tailType = mt_rand(0, 12);
         $this->drawComponent($image, 'tail', $currentPos, $inkColor, $baseThickness, $globalSlant, $globalJitter, $tailType, $width, $height);
 
         // 6. Output
@@ -123,6 +123,12 @@ class SignatureGeneratorService
                 $p = [[$x, $y], [$x+10, $y-40], [$x+20, $y], [$x+30, $y-40], [$x+40, $y]]; break;
             case 8: // Fancy 'T' / 'F'
                 $p = [[$x-10, $y-40], [$x+40, $y-40], [$x+15, $y-40], [$x+15, $y+20], [$x+5, $y+10]]; break;
+            case 9: // Simple 'C' curve
+                $p = [[$x+40, $y-30], [$x+10, $y-30], [$x+10, $y+10], [$x+40, $y+10]]; break;
+            case 10: // Upward hook
+                $p = [[$x+10, $y+20], [$x+10, $y-20], [$x+30, $y-40]]; break;
+            case 11: // Lightning bolt start
+                $p = [[$x+10, $y-30], [$x, $y], [$x+20, $y-10], [$x+10, $y+20], [$x+40, $y]]; break;
         }
         return $this->arrayToPoints($p);
     }
@@ -149,6 +155,12 @@ class SignatureGeneratorService
                 $p = [[$x, $y], [$x+$w/2, $y+5], [$x+$w, $y-5], [$x+$w*1.5, $y]]; break;
             case 7: // Connected loops (cursive)
                 $p = [[$x, $y], [$x+10, $y-20], [$x+15, $y], [$x+25, $y-20], [$x+30, $y]]; break;
+            case 8: // Flat line with bump
+                $p = [[$x, $y], [$x+10, $y], [$x+15, $y-10], [$x+20, $y], [$x+30, $y]]; break;
+            case 9: // Sawtooth
+                $p = [[$x, $y], [$x+5, $y-10], [$x+10, $y], [$x+15, $y-10], [$x+20, $y]]; break;
+            case 10: // Loop-de-loop
+                $p = [[$x, $y], [$x+10, $y-15], [$x+5, $y-5], [$x+15, $y-20], [$x+20, $y]]; break;
         }
         return $this->arrayToPoints($p);
     }
@@ -177,6 +189,12 @@ class SignatureGeneratorService
                 $p = [[$x, $y], [$x+10, $y-15], [$x+20, $y], [$x, $y+20], [$x-20, $y], [$x-10, $y-15], [$x, $y]]; break;
             case 9: // Parallel underlines
                 $p = [[$x-100, $y+25], [$x+20, $y+25], [$x+10, $y+32], [$x-90, $y+32]]; break;
+            case 10: // Circle dot
+                $p = [[$x+20, $y+10], [$x+22, $y+10], [$x+21, $y+11], [$x+20, $y+10]]; break;
+            case 11: // Long dash
+                $p = [[$x+10, $y], [$x+60, $y]]; break;
+            case 12: // Curly Q
+                $p = [[$x, $y], [$x+20, $y+20], [$x+10, $y+10], [$x+30, $y-10]]; break;
         }
         return $this->arrayToPoints($p);
     }

@@ -128,30 +128,23 @@ class PdfGeneratorService
         // --- Signature Logic ---
         $tempSigPaths = [];
 
-        // 1. Employee Signature (Persist Check)
-        // Per user request: Signatures must be random every time for documents.
-        // We will ALWAYS generate a new one here if we want per-document uniqueness,
-        // BUT the legacy logic was: Check if exists -> Use it.
-        // To fulfill "Random New Every Time for Employees creating documents", we should regenerate it
-        // OR simply generate a temp one for this PDF without saving it to the profile.
-        // DECISION: Generate a unique temp signature for this PDF instance. Do not overwrite profile unless empty.
-
+        // 1. Employee Signature (Persistent Logic)
         $empSigPath = null;
-        // Option A: Use existing if set? User said "Random new every time".
-        // This implies ignoring the saved profile signature for the document generation.
-        // Let's generate a fresh one for the PDF.
-        $seed = 'EMP-' . $employee->id . '-' . uniqid(more_entropy: true);
-        $content = $this->signatureService->generate($seed);
-        $temp = tempnam(sys_get_temp_dir(), 'sig_emp_');
-        file_put_contents($temp, $content);
-        $empSigPath = $temp;
-        $tempSigPaths[] = $temp;
 
-        // Also update the profile if it was empty, so they have *something*
-        if (!$employee->signature_path || !Storage::disk('public')->exists($employee->signature_path)) {
-             $filename = 'signatures/employees/emp_' . $employee->id . '_' . time() . '.png';
-             Storage::disk('public')->put($filename, $content);
-             $employee->update(['signature_path' => $filename]);
+        if ($employee->signature_path && Storage::disk('public')->exists($employee->signature_path)) {
+            // Use existing persistent signature
+            $empSigPath = Storage::disk('public')->path($employee->signature_path);
+        } else {
+            // Generate new persistent signature
+            // Use a random seed for initial creation to ensure uniqueness across employees
+            $seed = 'EMP-' . $employee->id . '-' . uniqid(more_entropy: true);
+            $content = $this->signatureService->generate($seed);
+
+            $filename = 'signatures/employees/emp_' . $employee->id . '_' . time() . '.png';
+            Storage::disk('public')->put($filename, $content);
+            $employee->update(['signature_path' => $filename]);
+
+            $empSigPath = Storage::disk('public')->path($filename);
         }
 
         // 2. Employer Signatures (Check file -> Generate Fallback)
