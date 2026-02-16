@@ -438,7 +438,7 @@
 
                                  {{-- Finance Button --}}
                                  @can('view-finance')
-                                 <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#financeModal-{{ $employer->id }}" onclick="event.stopPropagation()">
+                                 <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => new bootstrap.Modal(document.getElementById('financeModal-{{ $employer->id }}')).show())">
                                     <i class="bi bi-currency-dollar"></i> {{ __('Finance') }}
                                 </button>
                                 @endcan

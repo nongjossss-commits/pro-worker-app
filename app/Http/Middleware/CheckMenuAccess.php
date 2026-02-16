@@ -36,8 +36,12 @@ class CheckMenuAccess
             $expiry = session()->get($sessionKey);
 
             if (!$expiry || now()->timestamp > $expiry) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['message' => 'Password required for this feature.', 'locked' => true], 403);
+                }
+
                 // Redirect to unlock screen
-                if ($request->isMethod('get') && !$request->ajax()) {
+                if ($request->isMethod('get')) {
                     session()->put('url.intended', $request->fullUrl());
                 }
                 return redirect()->route('menu.unlock.form', ['key' => $key]);

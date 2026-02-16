@@ -102,16 +102,62 @@ class SettingsController extends Controller
 
         // If no password is set, or setting doesn't exist, just let them through (or redirect to home)
         if (!$setting || empty($setting->access_password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true]);
+            }
             return redirect()->intended('/dashboard');
         }
 
         if (Hash::check($request->password, $setting->access_password)) {
             // Unlock session for 30 minutes
             Session::put('menu_unlocked_' . $key, now()->addMinutes(30)->timestamp);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true]);
+            }
             return redirect()->intended('/dashboard'); // Go to where they wanted to go
         }
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => false, 'message' => 'Incorrect password.'], 401);
+        }
+
         return back()->withErrors(['password' => 'Incorrect password for this menu.']);
+    }
+
+    /**
+     * Check if a menu is unlocked (AJAX).
+     */
+    public function checkAccess(Request $request, $key)
+    {
+        // 1. Check if invisible (global disable)
+        $setting = SuperAdminSetting::where('key', $key)->first();
+        $isVisible = $setting ? $setting->is_visible : true; // Default true if no record
+
+        if (!$isVisible) {
+            return response()->json([
+                'locked' => true,
+                'reason' => 'disabled',
+                'message' => 'This feature is currently disabled by the administrator.'
+            ]);
+        }
+
+        // 2. Check Password
+        if (!$setting || empty($setting->access_password)) {
+            return response()->json(['locked' => false]);
+        }
+
+        // 3. Check Session
+        $sessionKey = 'menu_unlocked_' . $key;
+        $expiry = Session::get($sessionKey);
+
+        if ($expiry && now()->timestamp < $expiry) {
+            // Unlocked and valid. Extend session on activity.
+            Session::put($sessionKey, now()->addMinutes(30)->timestamp);
+            return response()->json(['locked' => false]);
+        }
+
+        return response()->json(['locked' => true, 'reason' => 'password']);
     }
 
     /**
