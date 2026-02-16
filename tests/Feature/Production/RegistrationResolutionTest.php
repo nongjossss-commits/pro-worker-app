@@ -25,9 +25,8 @@ class RegistrationResolutionTest extends TestCase
 
         // 1. Create Role & Permission
         $role = Role::firstOrCreate(['name' => 'admin']);
-        // If there are specific permissions for this page, assign them.
-        // The controller uses just 'auth' middleware for now, or maybe permission middleware?
-        // RegistrationController::construct uses $this->middleware('auth');
+        $role->givePermissionTo(Permission::create(['name' => 'view-finance']));
+        $role->givePermissionTo(Permission::create(['name' => 'edit-employees']));
 
         // 2. Create Admin User
         $this->adminUser = User::factory()->create();
@@ -148,5 +147,42 @@ class RegistrationResolutionTest extends TestCase
         // Global Stats: Step 3 should be 1. Step 2 should be 0 (since it's no longer highest).
         $this->assertEquals(1, $json['globalStats'][$this->steps[2]->id]);
         $this->assertEquals(0, $json['globalStats'][$this->steps[1]->id]);
+    }
+
+    public function test_financial_tab_loads_only_registration_employees()
+    {
+        $target = Employee::factory()->create([
+            'employer_id' => $this->employer->id,
+            'status' => 'registration_pending',
+            'employeeNameTh' => 'Target Registration'
+        ]);
+
+        $active = Employee::factory()->create([
+            'employer_id' => $this->employer->id,
+            'status' => 'active',
+            'employeeNameTh' => 'Active Regular'
+        ]);
+
+        $renewal = Employee::factory()->create([
+            'employer_id' => $this->employer->id,
+            'status' => 'renewal_pending',
+            'employeeNameTh' => 'Renewal Candidate'
+        ]);
+
+        // Route: production.registration.finance.tab
+        $response = $this->actingAs($this->adminUser)
+                         ->get(route('production.registration.finance.tab', $this->employer->id));
+
+        $response->assertStatus(200);
+
+        // Check view data
+        $employees = $response->viewData('employees');
+
+        // Should contain Target
+        $this->assertTrue($employees->contains($target->id));
+
+        // Should NOT contain Active or Renewal
+        $this->assertFalse($employees->contains($active->id));
+        $this->assertFalse($employees->contains($renewal->id));
     }
 }

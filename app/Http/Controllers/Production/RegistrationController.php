@@ -478,7 +478,7 @@ class RegistrationController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $employees = $query->where('status', '!=', 'registration_cancelled')->get();
+        $employees = $query->whereIn('status', ['registration_pending', 'registration_completed'])->get();
 
         return view('production.partials.financial-tab', [
             'production' => $financeOrder,
