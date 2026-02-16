@@ -368,6 +368,61 @@
 
             {{-- Actions --}}
             <div class="d-flex gap-2 flex-wrap justify-content-end">
+                 {{-- Daily Check --}}
+                 <div class="d-flex align-items-center me-2" x-data="{
+                    dailyCheckEnabled: {{ $employee->daily_check_enabled ? 'true' : 'false' }},
+                    isPending: {{ $employee->is_daily_check_pending ? 'true' : 'false' }},
+                    checking: false,
+                    toggleDailyCheck() {
+                        let url = '{{ request()->is('production/registration*') ? route('production.registration.toggle_daily_check', $employee->id) : route('production.renewal.toggle_daily_check', $employee->id) }}';
+                        fetch(url, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) {
+                                this.dailyCheckEnabled = data.enabled;
+                                this.isPending = data.pending;
+                                if (typeof updateDailyCheckScoreboard === 'function') {
+                                    updateDailyCheckScoreboard(data.enabled, data.pending);
+                                }
+                            }
+                        });
+                    },
+                    checkDaily() {
+                        if(this.checking) return;
+                        this.checking = true;
+                        let url = '{{ request()->is('production/registration*') ? route('production.registration.check_daily', $employee->id) : route('production.renewal.check_daily', $employee->id) }}';
+                        fetch(url, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                        }).then(res => res.json()).then(data => {
+                            this.checking = false;
+                            if(data.success) {
+                                this.isPending = false;
+                                if (typeof updateDailyCheckScoreboard === 'function') {
+                                    updateDailyCheckScoreboard(true, false); // true=enabled, false=pending (decrements count)
+                                }
+                            }
+                        });
+                    }
+                 }">
+                    <span class="me-2 text-muted" style="font-size: 0.75rem;">Check</span>
+                    <div class="form-check form-switch mb-0" title="Enable Daily Check">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            :checked="dailyCheckEnabled"
+                            @change="toggleDailyCheck()">
+                    </div>
+
+                    <button x-show="dailyCheckEnabled && isPending"
+                        @click="checkDaily()"
+                        class="btn btn-warning btn-sm ms-2 rounded-circle animate__animated animate__pulse animate__infinite"
+                        style="width: 30px; height: 30px; padding: 0;"
+                        :disabled="checking"
+                        title="Mark as Checked Today">
+                        <i class="bi bi-calendar-check" :class="{'bi-arrow-clockwise fa-spin': checking}"></i>
+                    </button>
+                 </div>
+
                  @can('edit-employees')
                  {{-- Biometrics Button --}}
                  <input type="file" id="biometrics-input-{{ $employee->id }}" class="d-none" onchange="if(window.interceptFileSelect) window.interceptFileSelect(event); if(this.files.length > 0) uploadBiometrics({{ $employee->id }})" multiple>

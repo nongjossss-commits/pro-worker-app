@@ -139,6 +139,8 @@ class Employee extends Model
         'appointment_location',
         'appointment_completed_at',
         'resolution_completed_at',
+        'daily_check_enabled',
+        'last_daily_checked_at',
     ];
 
     protected $casts = [
@@ -148,6 +150,8 @@ class Employee extends Model
         'appointment_date' => 'datetime',
         'appointment_completed_at' => 'datetime',
         'resolution_completed_at' => 'datetime',
+        'last_daily_checked_at' => 'datetime',
+        'daily_check_enabled' => 'boolean',
         'visaExpiryDate' => 'date:Y-m-d',
         'ninetyDayReportDate' => 'date:Y-m-d',
         'employeeDob' => 'date:Y-m-d',
@@ -330,6 +334,33 @@ class Employee extends Model
                     return 0;
                 }
                 return floor(now()->diffInDays($this->terminated_at));
+            }
+        );
+    }
+
+    protected function isDailyCheckPending(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (!$this->daily_check_enabled) {
+                    return false;
+                }
+                if (is_null($this->last_daily_checked_at)) {
+                    return true;
+                }
+                return !$this->last_daily_checked_at->isToday();
+            }
+        );
+    }
+
+    protected function daysSinceLastDailyCheck(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (is_null($this->last_daily_checked_at)) {
+                    return null; // Never checked
+                }
+                return floor(now()->diffInDays($this->last_daily_checked_at));
             }
         );
     }

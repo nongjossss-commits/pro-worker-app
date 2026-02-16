@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\AddressFilterTrait;
+use App\Traits\DailyCheckTrait;
 
 class RenewalController extends Controller
 {
-    use AddressFilterTrait;
+    use AddressFilterTrait, DailyCheckTrait;
 
     public function __construct()
     {
@@ -58,6 +59,7 @@ class RenewalController extends Controller
         $totalCancelled = 0;
         $totalSaved = 0;
         $notStartedCount = 0;
+        $totalDailyCheckPending = 0;
         $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
         // Group by Employer
@@ -71,6 +73,11 @@ class RenewalController extends Controller
                 $totalEmployees++;
                 if ($emp->status === 'renewal_completed') {
                     $totalSaved++;
+                }
+
+                // Daily Check
+                if ($emp->is_daily_check_pending) {
+                    $totalDailyCheckPending++;
                 }
 
                 // Not Started Logic
@@ -189,6 +196,7 @@ class RenewalController extends Controller
             $empActiveCount = 0;
             $empCancelledCount = 0;
             $empSavedCount = 0;
+            $empDailyCheckPending = 0;
 
             foreach ($myEmps as $emp) {
                 if ($emp->status === 'renewal_cancelled') {
@@ -200,6 +208,10 @@ class RenewalController extends Controller
 
                 if ($emp->status === 'renewal_completed') {
                     $empSavedCount++;
+                }
+
+                if ($emp->is_daily_check_pending) {
+                    $empDailyCheckPending++;
                 }
 
                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
@@ -217,6 +229,7 @@ class RenewalController extends Controller
             $employer->activeEmployeesCount = $empActiveCount;
             $employer->cancelledCount = $empCancelledCount;
             $employer->savedCount = $empSavedCount;
+            $employer->dailyCheckPendingCount = $empDailyCheckPending;
         }
 
         // Get Current Expiry Setting
@@ -229,6 +242,7 @@ class RenewalController extends Controller
             'totalEmployers',
             'cancelledEmployersCount',
             'notStartedCount',
+            'totalDailyCheckPending',
             'employers',
             'currentExpiryConfig',
             'steps',
