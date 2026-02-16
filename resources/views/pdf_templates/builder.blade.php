@@ -109,33 +109,35 @@
                             <!-- Placed Items -->
                             <template x-for="(item, index) in items" :key="index">
                                 <div x-show="parseInt(item.page) === pageNum"
-                                     class="absolute border cursor-move group flex items-end px-1"
+                                     class="absolute border cursor-move group flex px-1"
                                      :class="{
-                                        'border-blue-500 bg-blue-100/50 hover:bg-blue-100/80': item.type === 'db',
-                                        'border-gray-500 bg-gray-100/50 hover:bg-gray-100/80': item.type === 'static',
-                                        'border-purple-500 bg-purple-100/50 hover:bg-purple-100/80': item.type === 'signature'
+                                        'border-blue-500 bg-blue-50/30 hover:bg-blue-100/50': item.type === 'db',
+                                        'border-gray-500 bg-gray-50/30 hover:bg-gray-100/50': item.type === 'static',
+                                        'border-purple-500 bg-purple-50/30 hover:bg-purple-100/50': item.type === 'signature'
                                      }"
-                                     :style="`left: ${item.x}%; top: ${item.y}%; width: ${item.w}%; height: ${item.h}%; font-size: ${item.fontSize ?? 12}px;`"
+                                     :style="`left: ${item.x}%; top: ${item.y}%; width: ${item.w}%; height: ${item.h}%;`"
                                      @mousedown.self="startMove($event, index, pageNum)">
 
-                                    <!-- Content -->
-                                    <div class="w-full h-full flex items-end pointer-events-none select-none">
-                                        <!-- Signature Icon/Preview -->
-                                        <template x-if="item.type === 'signature'">
-                                            <div class="w-full text-center text-purple-800 pb-1">
-                                                <i class="bi bi-pen"></i>
-                                                <span class="text-xs block" x-text="getSignatureLabel(item.signatureGroup)"></span>
-                                            </div>
-                                        </template>
+                                    <!-- Signature Content -->
+                                    <template x-if="item.type === 'signature'">
+                                        <div class="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none relative">
+                                            <!-- SVG Signature Placeholder -->
+                                            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgNTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmx1ZSIgc3Ryb2tlLXdpZHRoPSIyIj48cGF0aCBkPSJNMTAsNDAgUTMwLDEwIDUwLDQwIFQ5MCwyMCIgLz48L3N2Zz4="
+                                                 class="max-w-full max-h-full opacity-60" style="object-fit: contain;">
 
-                                        <!-- Text Content -->
-                                        <template x-if="item.type !== 'signature'">
-                                            <span class="truncate w-full leading-none mb-[2px]"
-                                                  :class="{'text-blue-800 font-bold': item.type === 'db', 'text-gray-800': item.type === 'static'}"
-                                                  :style="item.align === 'center' ? 'text-align: center;' : ''"
-                                                  x-text="item.type === 'static' ? (item.text || 'Static Text') : item.label"></span>
-                                        </template>
-                                    </div>
+                                            <!-- Label Overlay -->
+                                            <div class="absolute bottom-0 right-0 bg-white/80 text-[10px] px-1 rounded border border-purple-200 text-purple-800 font-bold"
+                                                 x-text="getSignatureLabel(item.signatureGroup)"></div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Text Content (DB & Static) -->
+                                    <template x-if="item.type !== 'signature'">
+                                        <div class="w-full h-full flex flex-col justify-end overflow-hidden pointer-events-none select-none"
+                                             :style="`font-family: 'THSarabunNew', sans-serif; font-size: ${getFontSize(item, pageNum)}; text-align: ${item.align || 'left'}; color: #000;`">
+                                            <span class="block w-full whitespace-nowrap" x-text="getPreviewText(item)" style="line-height: 1;"></span>
+                                        </div>
+                                    </template>
 
                                     <!-- Resize Handles (8 directions) -->
                                     <!-- Corners -->
@@ -222,6 +224,7 @@
                                 <select x-model="items[editingIndex].align" class="form-select">
                                     <option value="left">Left (Default)</option>
                                     <option value="center">Center</option>
+                                    <option value="right">Right</option>
                                 </select>
                             </div>
 
@@ -238,7 +241,7 @@
                     </template>
                      <template x-if="(items[editingIndex]?.type === 'db' || items[editingIndex]?.type === 'static') && !items[editingIndex]?.autoFit">
                         <div class="mb-3">
-                             <label class="form-label">Font Size (px)</label>
+                             <label class="form-label">Font Size (pt)</label>
                              <input type="number" x-model="items[editingIndex].fontSize" class="form-control" min="8" max="72">
                         </div>
                     </template>
@@ -300,13 +303,87 @@
                 totalPages: 1,
                 scale: 1.5,
                 pageDimensions: {},
-                // Fix Persistence: Ensure we parse the JSON safely if it's already a string, or use as is
                 items: @json($template->field_mapping ?? []),
                 metaData: @json($template->meta_data ?? ['auto_prefix_titles' => false]),
 
                 searchQuery: '',
                 isSaving: false,
                 editingIndex: null,
+
+                dummyData: {
+                    // Employee Personal
+                    'employeeNameTh': 'นายสมชาย ใจดี',
+                    'employeeNameEn': 'MR. SOMCHAI JAIDEE',
+                    'employeeTitleTh': 'นาย',
+                    'employeeTitleEn': 'Mr.',
+                    'employeeGender': 'ชาย',
+                    'age': '30',
+                    'employeeDob': '01/01/1993',
+                    'employeeNationality': 'Thai',
+                    'father_name': 'นายบิดา ใจดี',
+                    'mother_name': 'นางมารดา ใจดี',
+                    'employeePhone': '081-234-5678',
+                    'employee_id_number': '1-2345-67890-12-3',
+                    'tax_id_number': '1-2345-67890-12-3',
+                    'height': '175',
+                    'weight': '70',
+                    'bank_name': 'KBANK',
+                    'bank_account_number': '123-4-56789-0',
+
+                    // Documents
+                    'employeePassport': 'AA1234567',
+                    'passportIssueDate': '01/01/2023',
+                    'passportExpiryDate': '01/01/2028',
+                    'passport_issue_place': 'Bangkok',
+                    'passportType': 'Ordinary',
+                    'visaType': 'Non-B',
+                    'visaExpiryDate': '01/01/2025',
+                    'visa_issue_place': 'Bangkok',
+                    'employeeWorkPermit': 'WP123456',
+                    'workPermitExpiryDate': '01/01/2025',
+                    'pinkCardNo': '1234567890123',
+                    'name_list_number': '12345',
+                    'request_number': 'REQ-2023-001',
+
+                    // Job
+                    'job_title': 'Worker',
+                    'employeePosition': 'General Worker',
+                    'department': 'Production',
+                    'nature_of_work': 'General Duties',
+                    'startDate': '01/01/2023',
+                    'workAge': '1 Year',
+                    'social_security_number': '1234567890',
+                    'hospital_name': 'Bangkok Hospital',
+                    'insurance_company': 'AIA',
+                    'employer_employee_id': 'EMP001',
+                    'employee_reference_id': 'REF001',
+
+                    // Employer
+                    'employer.employerNameTh': 'บริษัท ตัวอย่าง จำกัด',
+                    'employer.employerNameEn': 'EXAMPLE COMPANY CO., LTD.',
+                    'employer.employerId': '0123456789012',
+                    'employer.employerTaxId': '0123456789012',
+                    'employer.employerPhone': '02-123-4567',
+                    'employer.employerEmail': 'hr@example.com',
+                    'employer.businessType': 'Manufacturing',
+                    'employer.regCapital': '1,000,000',
+                    'employer.regDate': '01/01/2020',
+                    'employer.minimum_wage': '350',
+                    'employer.socialSecurityHospital': 'Social Security Hospital',
+                    'employer.outsource_re_code': 'OS123',
+                    'employer.signerNameTh': 'นายกรรมการ ผู้มีอำนาจ',
+                    'employer.signerNameEn': 'MR. DIRECTOR AUTHORIZED',
+                    'employer.signer_2_name_th': 'นายกรรมการ สอง',
+                    'employer.signer_2_name_en': 'MR. DIRECTOR TWO',
+                    'employer.address_th': '123 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110',
+                    'employer.address_en': '123 Sukhumvit Rd, Khlong Toei, Bangkok 10110',
+
+                    // Witnesses
+                    'witness_1.name_th': 'นายพยาน หนึ่ง',
+                    'witness_1.name_en': 'MR. WITNESS ONE',
+                    'witness_2.name_th': 'นายพยาน สอง',
+                    'witness_2.name_en': 'MR. WITNESS TWO',
+                },
 
                 // Raw Fields Data
                 rawFields: [
@@ -660,6 +737,25 @@
                 return labels[group] || '(Unknown)';
             },
 
+            getPreviewText(item) {
+                if (item.type === 'static') return item.text || 'Static Text';
+                return this.dummyData[item.key] || item.label;
+            },
+
+            getFontSize(item, pageNum) {
+                if (item.type === 'signature') return '12px';
+
+                if (item.autoFit) {
+                    const dims = this.pageDimensions[pageNum];
+                    if (!dims) return '12px';
+                    const boxH = (item.h / 100) * dims.height;
+                    const sizePx = boxH * 0.7;
+                    return `${sizePx}px`;
+                } else {
+                    return `${item.fontSize || 12}pt`;
+                }
+            },
+
             async saveMapping() {
                 this.isSaving = true;
                 try {
@@ -703,6 +799,12 @@
     .cursor-move { cursor: move; }
     .resize-handle { display: none; }
     .group:hover .resize-handle { display: block; }
+
+    @font-face {
+        font-family: 'THSarabunNew';
+        src: url('/fonts/THSarabunNew.ttf') format('truetype');
+    }
+    .font-sarabun { font-family: 'THSarabunNew', sans-serif; }
 </style>
 @endpush
 @endsection
