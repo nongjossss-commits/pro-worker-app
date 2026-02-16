@@ -26,8 +26,10 @@ class Employer extends Model
                     $builder->where('user_id', $user->id);
                 } elseif ($user->hasRole('caretaker')) {
                     // This user is a 'caretaker'. Filter their view to *only*
-                    // Employer records where they are the assigned staff.
-                    $builder->where('assigned_staff_id', $user->id);
+                    // Employer records where they are one of the assigned caretakers.
+                    $builder->whereHas('caretakers', function ($q) use ($user) {
+                        $q->where('users.id', $user->id);
+                    });
                 }
             }
         });
@@ -109,6 +111,12 @@ class Employer extends Model
     public function assignedStaff()
     {
         return $this->belongsTo(User::class, 'assigned_staff_id');
+    }
+
+    public function caretakers()
+    {
+        return $this->belongsToMany(User::class, 'employer_user', 'employer_id', 'user_id')
+                    ->withTimestamps();
     }
 
     public function customFields()

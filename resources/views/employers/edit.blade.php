@@ -78,13 +78,37 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="assigned_staff_id" class="form-label">{{ __('Responsible Person') }}</label>
-                <select class="form-select" id="assigned_staff_id" name="assigned_staff_id">
-                    <option value="">{{ __('Select Responsible Person') }}</option>
-                    @foreach($staffUsers as $staff)
-                        <option value="{{ $staff->id }}" {{ $employer->assigned_staff_id == $staff->id ? 'selected' : '' }}>{{ $staff->name }}</option>
-                    @endforeach
-                </select>
+                <label class="form-label">{{ __('Responsible Person') }}</label>
+                <div class="position-relative" x-data="{
+                    open: false,
+                    selected: {{ json_encode(old('assigned_staff_ids', $employer->caretakers->pluck('id')->toArray())) }},
+                    options: {{ $staffUsers->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->toJson() }},
+                    search: '',
+                    get filteredOptions() {
+                        if (this.search === '') return this.options;
+                        return this.options.filter(option => option.name.toLowerCase().includes(this.search.toLowerCase()));
+                    },
+                    get buttonText() {
+                        if (this.selected.length === 0) return '{{ __('Select Responsible Person') }}';
+                        if (this.selected.length <= 2) {
+                            return this.selected.map(id => this.options.find(o => o.id == id)?.name).filter(Boolean).join(', ');
+                        }
+                        return this.selected.length + ' {{ __('Selected') }}';
+                    }
+                }">
+                    <button type="button" class="form-select text-start" @click="open = !open" x-text="buttonText"></button>
+
+                    <div x-show="open" @click.outside="open = false" style="display: none; z-index: 1050; max-height: 300px; overflow-y: auto;" class="position-absolute w-100 bg-white border rounded shadow mt-1 p-2">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="{{ __('Search...') }}" x-model="search">
+                        <template x-for="option in filteredOptions" :key="option.id">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" :id="'staff_' + option.id" :value="option.id" x-model="selected" name="assigned_staff_ids[]">
+                                <label class="form-check-label w-100" :for="'staff_' + option.id" x-text="option.name" style="cursor: pointer;"></label>
+                            </div>
+                        </template>
+                        <div x-show="filteredOptions.length === 0" class="text-muted small text-center">{{ __('No results found') }}</div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row mb-3">

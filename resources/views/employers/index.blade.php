@@ -80,7 +80,13 @@
                         <td>{{ $employer->employerId }}</td>
                         <td>{{ $employer->businessType }}</td>
                         <td>{{ $employer->jobOwner->name ?? 'N/A' }}</td>
-                        <td>{{ $employer->assignedStaff->name ?? '-' }}</td>
+                        <td>
+                            @if($employer->caretakers->isNotEmpty())
+                                {{ $employer->caretakers->pluck('name')->join(', ') }}
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td class="text-center">
                             <div class="d-flex flex-column flex-md-row gap-1 justify-content-center">
                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="{{ __('Preview Data') }}"> <i class="bi bi-search"></i> </button>
