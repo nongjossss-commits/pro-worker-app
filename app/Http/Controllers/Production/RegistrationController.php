@@ -169,8 +169,17 @@ class RegistrationController extends Controller
         }
         $cancelledEmployersCount = $cancelledEmployersQuery->count();
 
-        // Users for Filter
-        $users = User::orderBy('name')->get(['id', 'name']);
+        // Active Operators for Filter
+        $operatorIds = (clone $statsQuery)
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereNotNull('operator_id')
+            ->distinct()
+            ->pluck('operator_id');
+
+        $activeOperators = User::whereIn('id', $operatorIds)->orderBy('name')->get(['id', 'name']);
+
+        // All Users for Assignment
+        $allUsers = User::orderBy('name')->get(['id', 'name']);
 
         // --- 3. Process Visible Employers ---
         // OPTIMIZATION: Removed heavy hydration and PHP loops.
@@ -209,7 +218,8 @@ class RegistrationController extends Controller
             'lastStepId',
             'addressOptions',
             'notificationSetting',
-            'users'
+            'activeOperators',
+            'allUsers'
         ));
     }
 
@@ -1956,16 +1966,39 @@ class RegistrationController extends Controller
     public function toggleOperator(Request $request, $employeeId)
     {
         $employee = Employee::findOrFail($employeeId);
-        $userId = auth()->id();
 
-        if ($employee->operator_id === $userId) {
-            $employee->update(['operator_id' => null]);
-            $message = 'Operator unassigned.';
+        // Check for specific user assignment
+        if ($request->has('operator_id')) {
+            $userId = $request->input('operator_id');
+            // If explicit null or empty, remove operator
+            if (empty($userId)) {
+                $employee->update(['operator_id' => null]);
+                $message = 'Operator unassigned.';
+            } else {
+                $user = User::find($userId);
+                if ($user) {
+                    $employee->update(['operator_id' => $user->id]);
+                    $message = 'Operator assigned to ' . $user->name;
+                } else {
+                     return response()->json(['success' => false, 'message' => 'User not found'], 404);
+                }
+            }
         } else {
-            $employee->update(['operator_id' => $userId]);
-            $message = 'Operator assigned to ' . auth()->user()->name;
+            // Legacy Toggle Behavior (Toggle Me)
+            $userId = auth()->id();
+            if ($employee->operator_id === $userId) {
+                $employee->update(['operator_id' => null]);
+                $message = 'Operator unassigned.';
+            } else {
+                $employee->update(['operator_id' => $userId]);
+                $message = 'Operator assigned to ' . auth()->user()->name;
+            }
         }
 
-        return response()->json(['success' => true, 'message' => $message]);
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'html' => $this->getEmployeeCardHtml($employee)
+        ]);
     }
 }

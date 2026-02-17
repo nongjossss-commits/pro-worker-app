@@ -227,12 +227,12 @@
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-fill me-1"></i>
-                        {{ request('operator_filter') ? ($users->firstWhere('id', request('operator_filter'))->name ?? __('Operator')) : __('Operator') }}
+                        {{ request('operator_filter') ? ($activeOperators->firstWhere('id', request('operator_filter'))->name ?? __('Operator')) : __('Operator') }}
                     </button>
                     <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;">
                         <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['operator_filter' => null])) }}">{{ __('All Operators') }}</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        @foreach($users as $user)
+                        @foreach($activeOperators as $user)
                             <li><a class="dropdown-item {{ request('operator_filter') == $user->id ? 'active' : '' }}" href="{{ route('production.renewal.index', array_merge(request()->query(), ['operator_filter' => $user->id])) }}">{{ $user->name }}</a></li>
                         @endforeach
                     </ul>
@@ -815,6 +815,7 @@
     const currentStepFilter = @json(request('filter'));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const lastStepId = @json($lastStepId);
+    window.allUsers = @json($allUsers);
 
     // --- Lazy Loading Logic ---
     window.loadedEmployers = {};
@@ -887,39 +888,57 @@
     });
 
     // --- Operator Toggle ---
-    window.toggleOperator = function(employeeId, btn, hasOperator) {
-        const performToggle = () => {
-            btn.disabled = true;
-            fetch(`/production/renewal/${employeeId}/toggle-operator`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrfToken }
-            })
-            .then(res => res.json())
-            .then(data => {
+    window.toggleOperator = function(employeeId, btn, currentOperatorId, url) {
+        let options = {};
+        options[''] = '{{ __("No Operator") }}';
+        if (window.allUsers) {
+            window.allUsers.forEach(u => {
+                options[u.id] = u.name;
+            });
+        }
+
+        Swal.fire({
+            title: '{{ __("Assign Operator") }}',
+            input: 'select',
+            inputOptions: options,
+            inputValue: currentOperatorId || '',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Save") }}',
+            showLoaderOnConfirm: true,
+            preConfirm: (value) => {
+                const fetchUrl = url || `/production/renewal/${employeeId}/toggle-operator`;
+                return fetch(fetchUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ operator_id: value })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText)
+                    }
+                    return response.json()
+                })
+                .catch(error => {
+                    Swal.showValidationMessage(
+                        `Request failed: ${error}`
+                    )
+                })
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const data = result.value;
                 if(data.success) {
                     if(data.html) updateCardHTML(employeeId, data.html);
+                    Swal.fire('{{ __("Success") }}', data.message, 'success');
+                } else {
+                     Swal.fire('{{ __("Error") }}', data.message, 'error');
                 }
-                btn.disabled = false;
-            });
-        };
-
-        if (hasOperator) {
-            Swal.fire({
-                title: '{{ __("Change Operator?") }}',
-                text: '{{ __("Are you sure you want to change or remove the operator?") }}',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '{{ __("Yes, Change") }}',
-                confirmButtonColor: '#0d6efd',
-                cancelButtonText: '{{ __("Cancel") }}'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    performToggle();
-                }
-            });
-        } else {
-            performToggle();
-        }
+            }
+        });
     }
 
     // --- Resolution Status & Note Functions ---

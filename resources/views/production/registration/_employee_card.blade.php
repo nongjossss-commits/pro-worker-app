@@ -50,10 +50,15 @@
 
     {{-- Operator Badge (Bottom Right) --}}
     <div class="position-absolute bottom-0 end-0 m-2 z-index-10">
+        @php
+            $toggleUrl = request()->is('production/renewal*')
+                ? route('production.renewal.toggle_operator', $employee->id)
+                : route('production.registration.toggle_operator', $employee->id);
+        @endphp
         <button class="btn btn-sm {{ $operatorId ? ($isMe ? 'btn-primary' : 'btn-secondary') : 'btn-outline-secondary' }} rounded-pill shadow-sm py-0 px-2"
                 style="font-size: 0.75rem; border-width: 1px;"
-                onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this, {{ $operatorId ? 'true' : 'false' }}) : console.error('toggleOperator not defined')"
-                title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Claim' }}">
+                onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this, '{{ $operatorId ?? '' }}', '{{ $toggleUrl }}') : console.error('toggleOperator not defined')"
+                title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Assign' }}">
             <i class="bi bi-person-badge-fill"></i>
             @if($operatorName)
                 <span class="ms-1 fw-bold">{{ $operatorName }}</span>

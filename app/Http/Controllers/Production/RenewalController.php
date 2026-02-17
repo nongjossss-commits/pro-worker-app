@@ -39,7 +39,7 @@ class RenewalController extends Controller
         // --- 2. Global Employee Query (Lightweight) ---
         $employeeQuery = Employee::query()
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->select('id', 'employer_id', 'status', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeeNationality');
+            ->select('id', 'employer_id', 'status', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeeNationality', 'operator_id');
 
         if (auth()->user()->can('manage-tickets')) {
             $employeeQuery->withoutGlobalScope('employerTenancy');
@@ -152,8 +152,17 @@ class RenewalController extends Controller
                 $q->where('status', 'renewal_resolution_cancelled');
             })->count();
 
-        // Users for Filter
-        $users = User::orderBy('name')->get(['id', 'name']);
+        // Active Operators for Filter
+        $operatorIds = (clone $employeeQuery) // Reusing the global query which has operators
+            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereNotNull('operator_id')
+            ->distinct()
+            ->pluck('operator_id');
+
+        $activeOperators = User::whereIn('id', $operatorIds)->orderBy('name')->get(['id', 'name']);
+
+        // All Users for Assignment
+        $allUsers = User::orderBy('name')->get(['id', 'name']);
 
         $perPage = $request->input('per_page', 20);
         if (!in_array($perPage, [20, 50, 100])) {
@@ -262,7 +271,8 @@ class RenewalController extends Controller
             'stepStats',
             'lastStepId',
             'addressOptions',
-            'users'
+            'activeOperators',
+            'allUsers'
         ));
     }
 
@@ -1031,16 +1041,36 @@ class RenewalController extends Controller
     public function toggleOperator(Request $request, $employeeId)
     {
         $employee = Employee::findOrFail($employeeId);
-        $userId = auth()->id();
 
-        if ($employee->operator_id === $userId) {
-            $employee->update(['operator_id' => null]);
-            $message = 'Operator unassigned.';
+        if ($request->has('operator_id')) {
+            $userId = $request->input('operator_id');
+            if (empty($userId)) {
+                $employee->update(['operator_id' => null]);
+                $message = 'Operator unassigned.';
+            } else {
+                $user = User::find($userId);
+                if ($user) {
+                    $employee->update(['operator_id' => $user->id]);
+                    $message = 'Operator assigned to ' . $user->name;
+                } else {
+                     return response()->json(['success' => false, 'message' => 'User not found'], 404);
+                }
+            }
         } else {
-            $employee->update(['operator_id' => $userId]);
-            $message = 'Operator assigned to ' . auth()->user()->name;
+            $userId = auth()->id();
+            if ($employee->operator_id === $userId) {
+                $employee->update(['operator_id' => null]);
+                $message = 'Operator unassigned.';
+            } else {
+                $employee->update(['operator_id' => $userId]);
+                $message = 'Operator assigned to ' . auth()->user()->name;
+            }
         }
 
-        return response()->json(['success' => true, 'message' => $message]);
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'html' => $this->getEmployeeCardHtml($employee)
+        ]);
     }
 }
