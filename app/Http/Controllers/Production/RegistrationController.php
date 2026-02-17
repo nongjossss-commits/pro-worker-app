@@ -478,7 +478,11 @@ class RegistrationController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $employees = $query->whereIn('status', ['registration_pending', 'registration_completed'])->get();
+        $employees = $query->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereDoesntHave('productionItems', function($q) use ($financeOrder) {
+                $q->where('production_order_id', $financeOrder->id);
+            })
+            ->get();
 
         return view('production.partials.financial-tab', [
             'production' => $financeOrder,
