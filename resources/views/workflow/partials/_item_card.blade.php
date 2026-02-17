@@ -107,11 +107,11 @@
 
     <div class="card {{ $cardClass }} w-100 position-relative">
 
-    {{-- Operator Badge (Top Right) --}}
-    <div class="position-absolute top-0 end-0 m-2 z-index-10">
+    {{-- Operator Badge (Bottom Right) --}}
+    <div class="position-absolute bottom-0 end-0 m-2 z-index-10">
         <button class="btn btn-sm {{ $operatorId ? ($isMe ? 'btn-primary' : 'btn-secondary') : 'btn-outline-secondary' }} rounded-pill shadow-sm py-0 px-2"
                 style="font-size: 0.75rem; border-width: 1px;"
-                onclick="window.toggleOperator ? window.toggleOperator({{ $item->id }}, this) : console.error('toggleOperator not defined')"
+                onclick="window.toggleOperator ? window.toggleOperator({{ $item->id }}, this, {{ $operatorId ? 'true' : 'false' }}) : console.error('toggleOperator not defined')"
                 title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Claim' }}">
             <i class="bi bi-person-badge-fill"></i>
             @if($operatorName)
