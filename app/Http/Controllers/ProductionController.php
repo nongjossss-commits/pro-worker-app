@@ -8,6 +8,7 @@ use App\Models\Employer;
 use App\Models\Employee;
 use App\Models\WorkType;
 use App\Models\WorkTypeStep;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Traits\AddressFilterTrait;
@@ -163,7 +164,7 @@ class ProductionController extends Controller
             $stats['step_stats'] = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
             // Calculate Stats for Active Tab
-            if (!$request->has('search') && !$request->has('filter')) {
+            if (!$request->has('search') && !$request->has('filter') && !$request->has('operator_filter')) {
                  $baseItemsQuery = ProductionItem::whereHas('order', function($q) use ($activeTab) {
                      $q->where('work_type_id', $activeTab->id)
                        ->where('status', 'pre_production');
@@ -252,6 +253,14 @@ class ProductionController extends Controller
             }
         }
 
+        // Operator Filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $opFilter = $request->operator_filter;
+            $query->whereHas('items', function($q) use ($opFilter) {
+                $q->where('operator_id', $opFilter);
+            });
+        }
+
         // Employers for Dropdown (Global Add Employee)
         // Need to pass addressOptions even if not used (empty array)
         if (!isset($addressOptions)) {
@@ -259,7 +268,10 @@ class ProductionController extends Controller
         }
         $employers = Employer::orderBy('employerNameTh')->get();
 
-        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'addressOptions', 'employers', 'stats'));
+        // Users for Operator Filter
+        $users = User::orderBy('name')->get(['id', 'name']);
+
+        return view('production.index', compact('orders', 'tabs', 'activeTab', 'steps', 'addressOptions', 'employers', 'stats', 'users'));
     }
 
     /**
@@ -329,6 +341,7 @@ class ProductionController extends Controller
                 'appointment_date' => null, // Reset appointment date as it is stage-specific
                 'appointment_location' => null,
                 'appointment_completed_at' => null,
+                'operator_id' => null, // Reset operator as requested
             ]);
 
             // Clear Completed Steps (Preparation steps do not map to Workflow steps 1:1)

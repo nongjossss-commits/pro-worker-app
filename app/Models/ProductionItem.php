@@ -22,6 +22,7 @@ class ProductionItem extends Model
         'status',
         'completed_at', // NEW: Workflow finished
         'new_employee_data', // JSON for temp employees
+        'operator_id', // NEW: Assigned Operator
     ];
 
     protected $casts = [
@@ -54,6 +55,11 @@ class ProductionItem extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function operator()
+    {
+        return $this->belongsTo(User::class, 'operator_id');
     }
 
     // Legacy / Ad-hoc fields

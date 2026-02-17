@@ -10,6 +10,7 @@ use App\Models\WorkTypeStep;
 use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\SystemSetting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -137,6 +138,9 @@ class WorkflowController extends Controller
         // Employers for Dropdown
         $employers = Employer::orderBy('employerNameTh')->get();
 
+        // Users for Operator Filter
+        $users = User::orderBy('name')->get(['id', 'name', 'status']); // Assuming status exists from recent migrations
+
         $steps = $activeTab ? $activeTab->workflowSteps : collect();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
@@ -234,7 +238,15 @@ class WorkflowController extends Controller
             }
         }
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers'));
+        // Operator Filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $opFilter = $request->operator_filter;
+            $query->whereHas('items', function($q) use ($opFilter) {
+                $q->where('operator_id', $opFilter);
+            });
+        }
+
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users'));
     }
 
     /**
@@ -586,6 +598,11 @@ class WorkflowController extends Controller
                  // But apply rough SQL filter first
                  $query->where('status', '!=', 'cancelled');
             }
+        }
+
+        // 2.1 Apply Operator Filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $query->where('operator_id', $request->operator_filter);
         }
 
         // 3. Apply Search Filter
@@ -1658,5 +1675,24 @@ class WorkflowController extends Controller
         );
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Toggle Operator Assignment for a Production Item.
+     */
+    public function toggleOperator(Request $request, $itemId)
+    {
+        $item = ProductionItem::findOrFail($itemId);
+        $userId = auth()->id();
+
+        if ($item->operator_id === $userId) {
+            $item->update(['operator_id' => null]);
+            $message = 'Operator unassigned.';
+        } else {
+            $item->update(['operator_id' => $userId]);
+            $message = 'Operator assigned to ' . auth()->user()->name;
+        }
+
+        return response()->json(['success' => true, 'message' => $message]);
     }
 }
