@@ -138,3 +138,48 @@ test('tab stats exclude items from cancelled orders', function () {
     expect($stats['not_started'])->toBe(1)
         ->and($stats['cancelled'])->toBe(1);
 });
+
+test('dashboard stats exclude orders from deleted employers', function () {
+    $workType = WorkType::where('slug', 'notify_in')->first();
+
+    // Active Employer
+    $activeOrder = ProductionOrder::create([
+        'employer_id' => $this->employer->id,
+        'work_type_id' => $workType->id,
+        'status' => 'active',
+        'type' => 'employer',
+        'project_name' => 'Active Project',
+        'created_by' => $this->user->id,
+    ]);
+    ProductionItem::create([
+        'production_order_id' => $activeOrder->id,
+        'status' => 'pending',
+    ]);
+
+    // Deleted Employer
+    $deletedEmployer = Employer::create([
+        'employerNameTh' => 'Deleted Employer',
+        'employerId' => 'EMP-002',
+    ]);
+    $deletedOrder = ProductionOrder::create([
+        'employer_id' => $deletedEmployer->id,
+        'work_type_id' => $workType->id,
+        'status' => 'active',
+        'type' => 'employer',
+        'project_name' => 'Deleted Project',
+        'created_by' => $this->user->id,
+    ]);
+    ProductionItem::create([
+        'production_order_id' => $deletedOrder->id,
+        'status' => 'pending',
+    ]);
+
+    $deletedEmployer->delete();
+
+    $response = $this->get(route('workflow.index'));
+    $stats = $response->viewData('stats');
+
+    // Expect: Not Started = 1 (Active only)
+    expect($stats['not_started'])->toBe(1)
+        ->and($stats['total_employees'])->toBe(1);
+});
