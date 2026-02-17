@@ -242,11 +242,23 @@ class WorkflowController extends Controller
      */
     private function dashboard($tabs)
     {
-        // 1. Global Scoreboard Stats
-        $itemsQuery = ProductionItem::whereHas('order', fn($q) => $q->where('status', '!=', 'pre_production'));
+        // 1. Get Valid WorkType IDs (to match the displayed tabs)
+        $validWorkTypeIds = $tabs->pluck('id');
 
+        // 2. Base Query for Items that should be counted
+        // Must belong to a valid WorkType (Tab) AND have a valid Employer (same as index query)
+        $itemsQuery = ProductionItem::whereHas('order', function($q) use ($validWorkTypeIds) {
+            $q->where('status', '!=', 'pre_production')
+              ->whereIn('work_type_id', $validWorkTypeIds)
+              ->whereHas('employer');
+        });
+
+        // 3. Global Scoreboard Stats
         $stats = [
-            'total_projects' => ProductionOrder::where('status', '!=', 'pre_production')->count(),
+            'total_projects' => ProductionOrder::where('status', '!=', 'pre_production')
+                                    ->whereIn('work_type_id', $validWorkTypeIds)
+                                    ->whereHas('employer')
+                                    ->count(),
             'total_employees' => (clone $itemsQuery)->count(),
             'not_started' => (clone $itemsQuery)->where('status', 'pending')
                                            ->whereHas('order', fn($q) => $q->where('status', '!=', 'cancelled'))
