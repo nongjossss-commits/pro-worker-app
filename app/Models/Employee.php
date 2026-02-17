@@ -141,6 +141,7 @@ class Employee extends Model
         'resolution_completed_at',
         'daily_check_enabled',
         'last_daily_checked_at',
+        'operator_id',
     ];
 
     protected $casts = [
@@ -221,6 +222,11 @@ class Employee extends Model
     public function employer()
     {
         return $this->belongsTo(Employer::class);
+    }
+
+    public function operator()
+    {
+        return $this->belongsTo(User::class, 'operator_id');
     }
 
     public function notifications()

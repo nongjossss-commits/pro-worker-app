@@ -26,6 +26,12 @@
     $highestStepId = $highestStep ? $highestStep->id : '';
     // Determine if "Not Started" (only if active status and no steps)
     $isNotStarted = (!$isCompleted && !$isCancelled && !$highestStep);
+
+    // Operator Logic
+    $operator = $employee->operator;
+    $operatorName = $operator ? $operator->name : null;
+    $operatorId = $employee->operator_id;
+    $isMe = $operatorId === auth()->id();
 @endphp
 
 <div class="d-flex align-items-center employee-card-outer mb-3 employee-card-wrapper"
@@ -40,8 +46,22 @@
     {{-- Sequence Number (Outside Card) --}}
     <div class="employee-sequence-number me-2 fs-5 fw-bold text-muted opacity-50 text-end" style="min-width: 30px;"></div>
 
-    <div class="card {{ $cardClass }} w-100">
-    <div class="card-body p-3">
+    <div class="card {{ $cardClass }} w-100 position-relative">
+
+    {{-- Operator Badge (Top Right) --}}
+    <div class="position-absolute top-0 end-0 m-2 z-index-10">
+        <button class="btn btn-sm {{ $operatorId ? ($isMe ? 'btn-primary' : 'btn-secondary') : 'btn-outline-secondary' }} rounded-pill shadow-sm py-0 px-2"
+                style="font-size: 0.75rem; border-width: 1px;"
+                onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this) : console.error('toggleOperator not defined')"
+                title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Claim' }}">
+            <i class="bi bi-person-badge-fill"></i>
+            @if($operatorName)
+                <span class="ms-1 fw-bold">{{ $operatorName }}</span>
+            @endif
+        </button>
+    </div>
+
+    <div class="card-body p-3 pt-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-start gap-3 w-100">

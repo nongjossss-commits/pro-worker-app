@@ -245,6 +245,9 @@ Route::middleware(['auth'])->group(function () {
         // Progress Updates
         Route::post('/progress/{employee}', [App\Http\Controllers\Production\RegistrationController::class, 'updateProgress'])->name('progress.update');
 
+        // Operator
+        Route::post('/{employee}/toggle-operator', [App\Http\Controllers\Production\RegistrationController::class, 'toggleOperator'])->name('toggle_operator');
+
         // Custom Fields
         Route::post('/custom-fields/{employee}', [App\Http\Controllers\Production\RegistrationController::class, 'storeCustomField'])->name('custom_fields.store');
         Route::delete('/custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyCustomField'])->name('custom_fields.destroy');
@@ -309,6 +312,9 @@ Route::middleware(['auth'])->group(function () {
         // Progress Updates (Missing in original file, needed for Renewal toggle step)
         Route::post('/progress/{employee}', [App\Http\Controllers\Production\RenewalController::class, 'updateProgress'])->name('progress.update');
 
+        // Operator
+        Route::post('/{employee}/toggle-operator', [App\Http\Controllers\Production\RenewalController::class, 'toggleOperator'])->name('toggle_operator');
+
         // Daily Check
         Route::post('/{employee}/check-daily', [App\Http\Controllers\Production\RenewalController::class, 'checkDaily'])->name('check_daily');
         Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RenewalController::class, 'toggleDailyCheck'])->name('toggle_daily_check');
@@ -372,6 +378,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('workflow/{order}/history', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderHistory'])->name('workflow.history');
     Route::get('workflow/item/{item}/card', [\App\Http\Controllers\WorkflowController::class, 'getItemHtml'])->name('workflow.item.card');
     Route::post('workflow/item/{item}/step-toggle', [\App\Http\Controllers\WorkflowController::class, 'toggleStep'])->name('workflow.step.toggle');
+    Route::post('workflow/item/{item}/toggle-operator', [\App\Http\Controllers\WorkflowController::class, 'toggleOperator'])->name('workflow.item.toggle_operator');
     Route::post('workflow/item/{item}/appointment', [\App\Http\Controllers\WorkflowController::class, 'updateAppointmentDate'])->name('workflow.item.appointment');
     Route::post('workflow/item/{item}/appointment-complete', [\App\Http\Controllers\WorkflowController::class, 'toggleAppointmentComplete'])->name('workflow.item.appointment_complete');
     Route::post('workflow/appointments/export', [\App\Http\Controllers\WorkflowController::class, 'exportAppointments'])->name('workflow.appointments.export');

@@ -169,6 +169,21 @@
             </div>
         </form>
 
+        {{-- Operator Filter --}}
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-fill me-1"></i>
+                {{ request('operator_filter') ? ($users->firstWhere('id', request('operator_filter'))->name ?? __('Operator')) : __('Operator') }}
+            </button>
+            <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;">
+                <li><a class="dropdown-item" href="{{ route('workflow.index', array_merge(request()->query(), ['operator_filter' => null])) }}">{{ __('All Operators') }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                @foreach($users as $user)
+                    <li><a class="dropdown-item {{ request('operator_filter') == $user->id ? 'active' : '' }}" href="{{ route('workflow.index', array_merge(request()->query(), ['operator_filter' => $user->id])) }}">{{ $user->name }}</a></li>
+                @endforeach
+            </ul>
+        </div>
+
         {{-- Actions --}}
         @if(!$isReadOnly)
         <div class="d-flex gap-2">
@@ -1362,6 +1377,23 @@
                 }
             } else {
                  Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to assign team.') }}', 'error');
+            }
+        });
+    }
+
+    // --- Operator Toggle ---
+    window.toggleOperator = function(itemId, btn) {
+        btn.disabled = true;
+        fetch(`/workflow/item/${itemId}/toggle-operator`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                refreshItemCard(itemId);
+            } else {
+                btn.disabled = false;
             }
         });
     }

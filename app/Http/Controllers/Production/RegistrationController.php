@@ -10,6 +10,7 @@ use App\Models\RegistrationStep;
 use App\Models\EmployeeCustomField;
 use App\Models\ProductionCustomField;
 use App\Models\NotificationSetting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -126,6 +127,16 @@ class RegistrationController extends Controller
             $this->applyFilterToEmployerQuery($employerQuery, $request->filter, $stepOneId);
         }
 
+        // Operator Filter (Server-Side)
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $opFilter = $request->operator_filter;
+            $employerQuery->whereHas('employees', function($q) use ($opFilter) {
+                // Should only check relevant status?
+                $q->whereIn('status', ['registration_pending', 'registration_completed'])
+                  ->where('operator_id', $opFilter);
+            });
+        }
+
         // Eager load Production Orders to avoid N+1
         $employerQuery->with(['productionOrders' => function($q) {
              $q->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled']);
@@ -158,6 +169,8 @@ class RegistrationController extends Controller
         }
         $cancelledEmployersCount = $cancelledEmployersQuery->count();
 
+        // Users for Filter
+        $users = User::orderBy('name')->get(['id', 'name']);
 
         // --- 3. Process Visible Employers ---
         // OPTIMIZATION: Removed heavy hydration and PHP loops.
@@ -195,7 +208,8 @@ class RegistrationController extends Controller
             'employers',
             'lastStepId',
             'addressOptions',
-            'notificationSetting'
+            'notificationSetting',
+            'users'
         ));
     }
 
@@ -365,6 +379,11 @@ class RegistrationController extends Controller
             // Base status filter
             $query->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
 
+            // Operator Filter
+            if ($request->has('operator_filter') && $request->operator_filter) {
+                $query->where('operator_id', $request->operator_filter);
+            }
+
             if (!$employerMatches && $search) {
                 // Filter employees by name/passport
                  $trimmedSearch = trim($search);
@@ -527,6 +546,11 @@ class RegistrationController extends Controller
         // Apply Search (if global search is active)
         if ($request->has('search') && $request->search) {
             $this->applyEmployerSearchToQuery($query, $employer, $request->search);
+        }
+
+        // Operator Filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $query->where('operator_id', $request->operator_filter);
         }
 
         // Apply Filter
@@ -1927,5 +1951,21 @@ class RegistrationController extends Controller
             'steps' => $steps,
             'isHistory' => false
         ])->render();
+    }
+
+    public function toggleOperator(Request $request, $employeeId)
+    {
+        $employee = Employee::findOrFail($employeeId);
+        $userId = auth()->id();
+
+        if ($employee->operator_id === $userId) {
+            $employee->update(['operator_id' => null]);
+            $message = 'Operator unassigned.';
+        } else {
+            $employee->update(['operator_id' => $userId]);
+            $message = 'Operator assigned to ' . auth()->user()->name;
+        }
+
+        return response()->json(['success' => true, 'message' => $message]);
     }
 }

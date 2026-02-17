@@ -254,6 +254,20 @@
                     </div>
                 </form>
 
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-fill me-1"></i>
+                        {{ request('operator_filter') ? ($users->firstWhere('id', request('operator_filter'))->name ?? __('Operator')) : __('Operator') }}
+                    </button>
+                    <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;">
+                        <li><a class="dropdown-item" href="{{ route('production.registration.index', array_merge(request()->query(), ['operator_filter' => null])) }}">{{ __('All Operators') }}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        @foreach($users as $user)
+                            <li><a class="dropdown-item {{ request('operator_filter') == $user->id ? 'active' : '' }}" href="{{ route('production.registration.index', array_merge(request()->query(), ['operator_filter' => $user->id])) }}">{{ $user->name }}</a></li>
+                        @endforeach
+                    </ul>
+                </div>
+
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
                     <button class="btn btn-outline-info fw-bold"
                             id="btn-global-filter-biometrics"
@@ -1234,6 +1248,22 @@
                 });
             }
         }
+    }
+
+    // --- Operator Toggle ---
+    window.toggleOperator = function(employeeId, btn) {
+        btn.disabled = true;
+        fetch(`/production/registration/${employeeId}/toggle-operator`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                if(data.html) updateCardHTML(employeeId, data.html);
+            }
+            btn.disabled = false;
+        });
     }
 
     // --- Resolution Status & Note Functions ---

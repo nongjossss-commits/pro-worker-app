@@ -8,6 +8,7 @@ use App\Models\Employer;
 use App\Models\ProductionOrder;
 use App\Models\SystemConfig;
 use App\Models\RegistrationStep;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -136,11 +137,23 @@ class RenewalController extends Controller
             $employerQuery->whereIn('id', $filteredEmployerIds);
         }
 
+        // Operator Filter (Server-Side)
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $opFilter = $request->operator_filter;
+            $employerQuery->whereHas('employees', function($q) use ($opFilter) {
+                $q->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                  ->where('operator_id', $opFilter);
+            });
+        }
+
         // Calculate Cancelled Count (Global for these filtered IDs)
         $cancelledEmployersCount = Employer::whereIn('id', $filteredEmployerIds)
             ->whereHas('productionOrders', function($q) {
                 $q->where('status', 'renewal_resolution_cancelled');
             })->count();
+
+        // Users for Filter
+        $users = User::orderBy('name')->get(['id', 'name']);
 
         $perPage = $request->input('per_page', 20);
         if (!in_array($perPage, [20, 50, 100])) {
@@ -248,7 +261,8 @@ class RenewalController extends Controller
             'steps',
             'stepStats',
             'lastStepId',
-            'addressOptions'
+            'addressOptions',
+            'users'
         ));
     }
 
@@ -286,6 +300,11 @@ class RenewalController extends Controller
 
         if ($request->has('search') && $request->search) {
             $this->applyEmployerSearchToQuery($query, $employer, $request->search);
+        }
+
+        // Operator Filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $query->where('operator_id', $request->operator_filter);
         }
 
         if ($request->has('filter') && $request->filter) {
@@ -1007,5 +1026,21 @@ class RenewalController extends Controller
             'steps' => $steps,
             'isHistory' => false
         ])->render();
+    }
+
+    public function toggleOperator(Request $request, $employeeId)
+    {
+        $employee = Employee::findOrFail($employeeId);
+        $userId = auth()->id();
+
+        if ($employee->operator_id === $userId) {
+            $employee->update(['operator_id' => null]);
+            $message = 'Operator unassigned.';
+        } else {
+            $employee->update(['operator_id' => $userId]);
+            $message = 'Operator assigned to ' . auth()->user()->name;
+        }
+
+        return response()->json(['success' => true, 'message' => $message]);
     }
 }
