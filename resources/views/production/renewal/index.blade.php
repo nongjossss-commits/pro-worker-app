@@ -889,31 +889,29 @@
 
     // --- Operator Toggle ---
     window.toggleOperator = function(employeeId, btn, currentOperatorId, url) {
-        let options = {};
-        options[''] = '{{ __("No Operator") }}';
-        if (window.allUsers) {
-            window.allUsers.forEach(u => {
-                options[u.id] = u.name;
-            });
-        }
+        const hasOperator = !!currentOperatorId;
+        const confirmTitle = hasOperator ? '{{ __("Change Operator?") }}' : '{{ __("Assign Operator") }}';
+        const confirmText = hasOperator
+            ? '{{ __("Someone is already assigned. Do you want to take over or unassign?") }}'
+            : '{{ __("Confirm to set Operator?") }}';
 
         Swal.fire({
-            title: '{{ __("Assign Operator") }}',
-            input: 'select',
-            inputOptions: options,
-            inputValue: currentOperatorId || '',
+            title: confirmTitle,
+            text: confirmText,
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonText: '{{ __("Save") }}',
+            confirmButtonText: '{{ __("Yes, Confirm") }}',
+            confirmButtonColor: '#0d6efd',
+            cancelButtonText: '{{ __("Cancel") }}',
             showLoaderOnConfirm: true,
-            preConfirm: (value) => {
+            preConfirm: () => {
                 const fetchUrl = url || `/production/renewal/${employeeId}/toggle-operator`;
                 return fetch(fetchUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify({ operator_id: value })
+                    }
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -931,11 +929,13 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 const data = result.value;
-                if(data.success) {
+                if(data && data.success) {
                     if(data.html) updateCardHTML(employeeId, data.html);
-                    Swal.fire('{{ __("Success") }}', data.message, 'success');
+                    if(typeof showToast === 'function') {
+                        showToast(data.message, 'success');
+                    }
                 } else {
-                     Swal.fire('{{ __("Error") }}', data.message, 'error');
+                     Swal.fire('{{ __("Error") }}', data ? data.message : 'Unknown error', 'error');
                 }
             }
         });
