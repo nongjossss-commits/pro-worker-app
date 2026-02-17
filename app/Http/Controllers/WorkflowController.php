@@ -204,6 +204,11 @@ class WorkflowController extends Controller
                 foreach ($order->items as $item) {
                      $stats['total_employees']++;
 
+                     if ($order->status === 'cancelled') {
+                         $stats['cancelled']++;
+                         continue;
+                     }
+
                      if ($item->status === 'cancelled') {
                          $stats['cancelled']++;
                          continue;
@@ -244,12 +249,18 @@ class WorkflowController extends Controller
             'total_projects' => ProductionOrder::where('status', '!=', 'pre_production')->count(),
             'total_employees' => (clone $itemsQuery)->count(),
             'not_started' => (clone $itemsQuery)->where('status', 'pending')
+                                           ->whereHas('order', fn($q) => $q->where('status', '!=', 'cancelled'))
                                            ->doesntHave('completedWorkTypeSteps')
                                            ->count(),
-            'cancelled' => (clone $itemsQuery)->where('status', 'cancelled')->count(),
+            'cancelled' => (clone $itemsQuery)
+                                ->where(function($q) {
+                                    $q->where('status', 'cancelled')
+                                      ->orWhereHas('order', fn($o) => $o->where('status', 'cancelled'));
+                                })->count(),
             'completed' => (clone $itemsQuery)->where('status', 'completed')->count(),
             'pending_daily_check' => (clone $itemsQuery)
                 ->where('status', 'pending')
+                ->whereHas('order', fn($q) => $q->where('status', '!=', 'cancelled'))
                 ->where(function($q) {
                      $q->whereNull('last_checked_at')
                        ->orWhereDate('last_checked_at', '<', Carbon::today());
@@ -749,6 +760,11 @@ class WorkflowController extends Controller
         foreach ($allOrders as $order) {
             foreach ($order->items as $item) {
                 $stats['total_employees']++;
+
+                if ($order->status === 'cancelled') {
+                    $stats['cancelled']++;
+                    continue;
+                }
 
                 if ($item->status === 'cancelled') {
                     $stats['cancelled']++;
