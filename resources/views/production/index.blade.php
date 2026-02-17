@@ -1029,20 +1029,40 @@
     }
 
     // --- Operator Toggle ---
-    window.toggleOperator = function(itemId, btn) {
-        btn.disabled = true;
-        fetch(`/workflow/item/${itemId}/toggle-operator`, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                refreshItemCard(itemId);
-            } else {
-                btn.disabled = false;
-            }
-        });
+    window.toggleOperator = function(itemId, btn, hasOperator) {
+        const performToggle = () => {
+            btn.disabled = true;
+            fetch(`/workflow/item/${itemId}/toggle-operator`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    refreshItemCard(itemId);
+                } else {
+                    btn.disabled = false;
+                }
+            });
+        };
+
+        if (hasOperator) {
+            Swal.fire({
+                title: '{{ __("Change Operator?") }}',
+                text: '{{ __("Are you sure you want to change or remove the operator?") }}',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '{{ __("Yes, Change") }}',
+                confirmButtonColor: '#0d6efd',
+                cancelButtonText: '{{ __("Cancel") }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performToggle();
+                }
+            });
+        } else {
+            performToggle();
+        }
     }
 
     // --- Reuse Toggle Step from Workflow (Global Function) ---

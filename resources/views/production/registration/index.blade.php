@@ -1251,19 +1251,39 @@
     }
 
     // --- Operator Toggle ---
-    window.toggleOperator = function(employeeId, btn) {
-        btn.disabled = true;
-        fetch(`/production/registration/${employeeId}/toggle-operator`, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                if(data.html) updateCardHTML(employeeId, data.html);
-            }
-            btn.disabled = false;
-        });
+    window.toggleOperator = function(employeeId, btn, hasOperator) {
+        const performToggle = () => {
+            btn.disabled = true;
+            fetch(`/production/registration/${employeeId}/toggle-operator`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    if(data.html) updateCardHTML(employeeId, data.html);
+                }
+                btn.disabled = false;
+            });
+        };
+
+        if (hasOperator) {
+            Swal.fire({
+                title: '{{ __("Change Operator?") }}',
+                text: '{{ __("Are you sure you want to change or remove the operator?") }}',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '{{ __("Yes, Change") }}',
+                confirmButtonColor: '#0d6efd',
+                cancelButtonText: '{{ __("Cancel") }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performToggle();
+                }
+            });
+        } else {
+            performToggle();
+        }
     }
 
     // --- Resolution Status & Note Functions ---
