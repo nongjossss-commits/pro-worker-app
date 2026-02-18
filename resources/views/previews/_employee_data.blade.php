@@ -184,6 +184,14 @@
                 <p class="form-control-plaintext">{{ $employee->social_security_number ?? 'N/A' }}</p>
             </div>
             <div class="col-md-4">
+                <label class="form-label fw-bold">วันที่ออกบัตร</label>
+                <p class="form-control-plaintext">{{ $employee->sso_issue_date ? $employee->sso_issue_date->format('d/m/Y') : 'N/A' }}</p>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">วันหมดอายุ</label>
+                <p class="form-control-plaintext">{{ $employee->sso_expiry_date ? $employee->sso_expiry_date->format('d/m/Y') : 'N/A' }}</p>
+            </div>
+            <div class="col-md-4">
                 <label class="form-label fw-bold">โรงพยาบาลตามสิทธิ</label>
                 <p class="form-control-plaintext">{{ $employee->insurance_detail ?? 'N/A' }}</p>
             </div>

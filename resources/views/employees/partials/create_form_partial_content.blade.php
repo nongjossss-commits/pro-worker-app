@@ -396,6 +396,14 @@
                 label="แนบไฟล์เอกสารประกัน"
             />
         </div>
+        <div class="col-md-4 mb-3">
+            <label for="sso_issue_date" class="form-label">วันที่ออกบัตร (Issue Date)</label>
+            <input type="date" class="form-control" id="sso_issue_date" name="sso_issue_date" value="{{ old('sso_issue_date') }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="sso_expiry_date" class="form-label">วันหมดอายุ (Expiry Date)</label>
+            <input type="date" class="form-control" id="sso_expiry_date" name="sso_expiry_date" value="{{ old('sso_expiry_date') }}">
+        </div>
         </div>
 </div>
 {{-- Hospital Insurance Container --}}

@@ -278,6 +278,18 @@
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="sso_issue_date" id="col_ss_issue">
+                                        <label class="form-check-label" for="col_ss_issue">SS Issue Date</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="sso_expiry_date" id="col_ss_exp">
+                                        <label class="form-check-label" for="col_ss_exp">SS Expiry Date</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="insurance_detail" id="col_ins_hosp_right">
                                         <label class="form-check-label" for="col_ins_hosp_right">{{ __('Hospital Rights (SS)') }}</label>
                                     </div>

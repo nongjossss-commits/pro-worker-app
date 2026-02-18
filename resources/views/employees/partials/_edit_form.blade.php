@@ -366,6 +366,14 @@
                 </label>
                 <input type="text" class="form-control" id="edit_insurance_detail" name="insurance_detail" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
             </div>
+            <div class="col-md-4 mb-3">
+                <label for="edit_sso_issue_date" class="form-label">วันที่ออกบัตร (Issue Date)</label>
+                <input type="date" class="form-control" id="edit_sso_issue_date" name="sso_issue_date" value="{{ old('sso_issue_date', optional($employee->sso_issue_date)->format('Y-m-d')) }}">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="edit_sso_expiry_date" class="form-label">วันหมดอายุ (Expiry Date)</label>
+                <input type="date" class="form-control" id="edit_sso_expiry_date" name="sso_expiry_date" value="{{ old('sso_expiry_date', optional($employee->sso_expiry_date)->format('Y-m-d')) }}">
+            </div>
             </div>
     </div>
     {{-- Hospital Insurance Container --}}
