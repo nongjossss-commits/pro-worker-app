@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->date('sso_issue_date')->nullable()->after('insurance_detail_social');
+            $table->date('sso_issue_date')->nullable()->after('social_security_number');
             $table->date('sso_expiry_date')->nullable()->after('sso_issue_date');
         });
     }
