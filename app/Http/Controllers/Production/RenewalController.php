@@ -932,6 +932,9 @@ class RenewalController extends Controller
               ->orWhereHas('employer', function($q2) use ($search) {
                   $q2->where('employerNameTh', 'like', "%{$search}%")
                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                     ->orWhereHas('jobOwner', function($q3) use ($search) {
+                         $q3->where('name', 'like', "%{$search}%");
+                     })
                      ->orWhere(function($addrQ) use ($search) {
                          $addrQ->filterByAddress($search);
                      });

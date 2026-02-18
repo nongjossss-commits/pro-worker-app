@@ -306,18 +306,16 @@ class RegistrationController extends Controller
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereNull('biometrics_collected_at');
             } elseif (is_numeric($filter)) { // Step ID (Highest Step Logic approximation for filter)
-                 // Filtering by highest step in SQL is hard.
-                 // We can at least ensure they HAVE the step.
-                 // Ideally: check if they have this step AND NOT any higher step?
-                 // Simple approximation: Has this step.
-                 // This matches "current progress" loosely.
+                 // Strict Highest Step Filtering to match Employee List Logic
                  $q->where('status', '!=', 'registration_cancelled')
-                   ->whereHas('registrationSteps', function($sq) use ($filter) {
-                       $sq->where('registration_steps.id', $filter);
-                   });
-                 // Note: Exact highest step filtering in SQL requires subquery.
-                 // e.g. where id = (select step_id from ... limit 1)
-                 // I will stick to "Has this step" for now as it's faster and usually sufficient for finding people.
+                   ->whereRaw("
+                        (SELECT registration_step_id
+                         FROM employee_registration_status
+                         JOIN registration_steps ON employee_registration_status.registration_step_id = registration_steps.id
+                         WHERE employee_registration_status.employee_id = employees.id
+                         ORDER BY registration_steps.`order` DESC
+                         LIMIT 1
+                        ) = ?", [$filter]);
             }
         });
     }

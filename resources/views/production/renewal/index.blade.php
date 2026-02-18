@@ -401,7 +401,7 @@
                             @if($employer->jobOwner)
                                 <div class="text-muted small border-start ps-3">
                                     <i class="bi bi-person-badge me-1"></i>
-                                    <a href="{{ route('production.registration.index', ['search' => $employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
+                                    <a href="{{ route('production.renewal.index', ['search' => $employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
                                         {{ $employer->jobOwner->name }}
                                     </a>
                                 </div>
