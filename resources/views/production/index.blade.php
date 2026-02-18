@@ -221,6 +221,9 @@
                 <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+                @can('manage-tickets')
+                <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
+                @endcan
             </ul>
         </div>
         <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
@@ -610,6 +613,39 @@
             return;
         }
         if (window.openBulkDownloadModal) window.openBulkDownloadModal(selected);
+    });
+
+    document.getElementById('bulk-generate-pdf-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const selected = window.getGlobalSelectedIds();
+
+        if (selected.length === 0) {
+            showToast('{{ __('Please select employees first.') }}', 'danger');
+            return;
+        }
+
+        // Create form to post to generation modal setup
+        const form = document.createElement('form');
+        form.method = 'POST';
+        // Use relative path to avoid protocol mismatch (http vs https) redirects which strip POST data
+        form.action = '{{ route("admin.pdf-templates.generate.modal", [], false) }}';
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrf);
+
+        selected.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'employees[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
     });
 
     document.getElementById('bulk-advanced-edit-btn')?.addEventListener('click', function(e) {
