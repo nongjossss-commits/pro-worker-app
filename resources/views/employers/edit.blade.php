@@ -404,10 +404,23 @@
         </div>
         <div id="registeredAddressList" class="vstack gap-3">
             @forelse ($employer->addresses->where('type', 'registered') as $address)
-                <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
-                    <div>
+                <div class="address-card d-flex gap-3 align-items-start" id="address-card-{{$address->id}}">
+                    <div class="pt-1">
+                        <input type="radio"
+                               class="form-check-input"
+                               name="document_address_radio"
+                               value="{{ $address->id }}"
+                               {{ $address->is_document_address ? 'checked' : '' }}
+                               onchange="setDocumentAddress({{ $address->id }})"
+                               title="{{ __('Use this address for documents') }}"
+                               style="cursor: pointer;">
+                    </div>
+                    <div class="flex-grow-1">
                         <p class="mb-0"><strong>TH:</strong> {{ $address->full_address_th }}</p>
                         <p class="mb-0"><strong>EN:</strong> {{ $address->full_address_en }}</p>
+                        @if($address->is_document_address)
+                            <span class="badge bg-success text-white" style="font-size: 0.7rem;">{{ __('Default for Documents') }}</span>
+                        @endif
                     </div>
                     <div class="btn-group btn-group-sm">
                         <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>
@@ -433,10 +446,23 @@
         </div>
         <div id="workplaceAddressList" class="vstack gap-3">
             @forelse ($employer->addresses->where('type', 'workplace') as $address)
-                <div class="address-card d-flex justify-content-between align-items-start" id="address-card-{{$address->id}}">
-                    <div>
+                <div class="address-card d-flex gap-3 align-items-start" id="address-card-{{$address->id}}">
+                    <div class="pt-1">
+                        <input type="radio"
+                               class="form-check-input"
+                               name="document_address_radio"
+                               value="{{ $address->id }}"
+                               {{ $address->is_document_address ? 'checked' : '' }}
+                               onchange="setDocumentAddress({{ $address->id }})"
+                               title="{{ __('Use this address for documents') }}"
+                               style="cursor: pointer;">
+                    </div>
+                    <div class="flex-grow-1">
                         <p class="mb-0"><strong>TH:</strong> {{ $address->full_address_th }}</p>
                         <p class="mb-0"><strong>EN:</strong> {{ $address->full_address_en }}</p>
+                        @if($address->is_document_address)
+                            <span class="badge bg-success text-white" style="font-size: 0.7rem;">{{ __('Default for Documents') }}</span>
+                        @endif
                     </div>
                     <div class="btn-group btn-group-sm">
                         <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>
@@ -1332,5 +1358,44 @@
             }
         @endif
     });
+
+    window.setDocumentAddress = function(addressId) {
+        // Show loading state if desired (optional)
+        const radio = document.querySelector(`input[name="document_address_radio"][value="${addressId}"]`);
+
+        fetch(`/addresses/${addressId}/set-document`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh page to update badges? Or just toast.
+                // Since we added badges via PHP, they won't update without reload.
+                // However, the radio button state is correct.
+                // We can reload to show the badge correctly if we want.
+                // For now, a toast + reload is safest to ensure visual consistency.
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Updated',
+                    text: data.message,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire('Error', 'Failed to update document address', 'error');
+                // Revert radio?
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'An error occurred', 'error');
+        });
+    }
 </script>
 @endpush

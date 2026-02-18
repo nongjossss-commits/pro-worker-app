@@ -30,6 +30,11 @@ class Address extends Model
         'addrZipCodeEn',
         'addressable_id',
         'addressable_type',
+        'is_document_address',
+    ];
+
+    protected $casts = [
+        'is_document_address' => 'boolean',
     ];
 
     public function addressable()
