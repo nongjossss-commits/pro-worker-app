@@ -319,6 +319,15 @@
 
                                  {{-- Actions --}}
                                  @if(!$isReadOnly)
+                                 {{-- Finance Button --}}
+                                 @can('view-finance')
+                                 <button class="btn btn-outline-primary btn-sm rounded-circle me-1"
+                                    onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => new bootstrap.Modal(document.getElementById('financeModal-{{ $order->id }}')).show())"
+                                    title="{{ __('Finance') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </button>
+                                @endcan
+
                                  {{-- Add Employee Button --}}
                                  <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'production')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
