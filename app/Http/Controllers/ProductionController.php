@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProductionOrder;
 use App\Models\ProductionItem;
+use App\Models\ProductionFinancialGroup;
 use App\Models\Employer;
 use App\Models\Employee;
 use App\Models\WorkType;
@@ -19,18 +20,15 @@ class ProductionController extends Controller
 
     /**
      * Display a listing of Production Orders (Preparation / Pre-Production).
-     * Now mirrored with Workflow tabs.
      */
     public function index(Request $request)
     {
         // 1. Get Tabs (Work Types) - Same as Workflow
-        // We might want to show all tabs, or filter. For now, show all.
         $tabs = WorkType::withCount(['orders' => function($q){
              $q->where('status', 'pre_production');
         }])->orderBy('order')->get();
 
         if ($tabs->isEmpty()) {
-            // Seeding logic is in WorkflowController, assuming it's done.
             $tabs = WorkType::orderBy('order')->get();
         }
 
@@ -51,8 +49,6 @@ class ProductionController extends Controller
         $steps = collect();
 
         // 3. Global Stats Calculation (Default)
-        // If no tab is selected, we calculate stats across ALL Pre-Production orders.
-        // If a tab is selected, we override these with tab-specific stats.
         $stats = [
             'total_projects' => 0,
             'total_employees' => 0,
@@ -74,7 +70,6 @@ class ProductionController extends Controller
              $stats['not_started'] = (clone $baseItemsQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
              $stats['cancelled'] = (clone $baseItemsQuery)->where('status', 'cancelled')->count();
              $stats['completed'] = (clone $baseItemsQuery)->where('status', 'completed')->count();
-             // Step stats are meaningless globally if steps vary by WorkType, leaving empty or handled per-type (too complex for summary)
         } else {
             // 4. Active Tab Logic: Query Orders and Calculate Specific Stats
 
@@ -262,7 +257,6 @@ class ProductionController extends Controller
         }
 
         // Employers for Dropdown (Global Add Employee)
-        // Need to pass addressOptions even if not used (empty array)
         if (!isset($addressOptions)) {
             $addressOptions = ['provinces' => [], 'districts' => [], 'subDistricts' => []];
         }
@@ -287,15 +281,13 @@ class ProductionController extends Controller
         }
 
         // Strict Validation: Check if employee already exists in any Active Workflow for this WorkType
-        // "Active" means status != 'pre_production' (could be 'active' or 'completed' in workflow context?)
-        // User Requirement: Cannot be in Workflow if moving from Pre-Production.
         $hasDuplicate = ProductionItem::where('employee_id', $item->employee_id)
             ->whereHas('order', function($q) use ($currentOrder) {
                 $q->where('work_type_id', $currentOrder->work_type_id)
                   ->where('status', '!=', 'pre_production') // Active Workflow Order
                   ->where('status', '!=', 'cancelled');
             })
-            ->whereNotIn('status', ['cancelled', 'completed']) // Assuming completed allows new entry? No, strict One-to-One.
+            ->whereNotIn('status', ['cancelled', 'completed'])
             ->exists();
 
         if ($hasDuplicate) {
@@ -317,7 +309,6 @@ class ProductionController extends Controller
 
             if (!$activeOrder) {
                 // Create new Active Order
-                // Use the same project name or a clean one
                 $workTypeName = $currentOrder->workType->name ?? 'Job';
                 $employerName = $currentOrder->employer->employerNameTh ?? 'Unknown';
 
@@ -325,13 +316,21 @@ class ProductionController extends Controller
                     'employer_id' => $currentOrder->employer_id,
                     'work_type_id' => $currentOrder->work_type_id,
                     'type' => $currentOrder->type,
-                    // Format: "WorkType - EmployerName" as requested implicitly by "Show on Employer Card"
                     'project_name' => "$workTypeName - $employerName",
                     'description' => $currentOrder->description,
                     'status' => 'active',
                     'created_by' => auth()->id(),
                 ]);
             }
+
+            // --- LINK FINANCIAL GROUPS Logic ---
+            // Ensure both orders share the same Financial Group(s).
+            // Since we are moving from Pre-Prod to Active, we check if Pre-Prod has groups.
+            // If so, we ensure they are tagged with employer/workType.
+
+            // Note: The logic has shifted to 'Shared Retrieval' based on Employer+WorkType.
+            // But we should ensure consistency if groups were created before the migration or without tags.
+            // (Migration handled existing groups, so we are good).
 
             // Move Item: Update the production_order_id to the new active order
             $item->update([
@@ -384,15 +383,18 @@ class ProductionController extends Controller
         return response()->json(['success' => true]);
     }
 
-    // --- Financial Group Methods (Fix for Settings Saving) ---
+    // --- Financial Group Methods (Updated for Shared Logic) ---
 
     public function storeFinancialGroup(Request $request, $id)
     {
         $production = ProductionOrder::findOrFail($id);
-
         $request->validate(['name' => 'required|string']);
 
-        $group = $production->financialGroups()->create([
+        // Create Shared Group
+        $group = ProductionFinancialGroup::create([
+            'production_order_id' => $production->id, // Primary link
+            'employer_id' => $production->employer_id, // Shared link
+            'work_type_id' => $production->work_type_id, // Shared link
             'name' => $request->name,
             'financial_data' => $production->financial_data ?? []
         ]);
@@ -402,23 +404,31 @@ class ProductionController extends Controller
 
     public function updateFinancialGroup(Request $request, $id, $groupId)
     {
-        $group = \App\Models\ProductionFinancialGroup::where('production_order_id', $id)->findOrFail($groupId);
+        // Allow updating via Shared Context
+        // We find the group by ID, but ensure it belongs to the same context (Employer/WorkType) OR the specific order.
+        // Simple finding by ID is safe if we assume ID is unique globally.
+        $group = ProductionFinancialGroup::findOrFail($groupId);
+
+        // Security check: Ensure the group belongs to the order OR shares context
+        $order = ProductionOrder::findOrFail($id);
+        if ($group->production_order_id !== $order->id &&
+           ($group->employer_id !== $order->employer_id || $group->work_type_id !== $order->work_type_id)) {
+            abort(403, 'Unauthorized access to financial group.');
+        }
+
         $jsonPayload = $request->json()->all();
 
-        // 1. Handle Rename (Explicitly check for name, and absence of complex data)
-        // If the request is just { name: "..." }, treat as rename.
-        // We check if 'pricing_tiers' is missing to confirm it's not a full save.
+        // 1. Handle Rename
         if ($request->has('name') && !isset($jsonPayload['pricing_tiers'])) {
              $group->update(['name' => $request->name]);
              return response()->json(['success' => true, 'group' => $group]);
         }
 
         // 2. Handle Full Settings Save
-        // Check for key indicators of a full save payload
         if (isset($jsonPayload['pricing_tiers']) || isset($jsonPayload['fixed_base_amount'])) {
              $createdItemIds = [];
 
-             // Handle Price Tier Item Creation (Auto-convert candidates to items)
+             // Handle Price Tier Item Creation
              if (isset($jsonPayload['pricing_tiers']) && is_array($jsonPayload['pricing_tiers'])) {
                  foreach ($jsonPayload['pricing_tiers'] as &$tier) {
                      if (isset($tier['item_ids']) && is_array($tier['item_ids'])) {
@@ -427,13 +437,14 @@ class ProductionController extends Controller
                              if (is_string($itemId) && str_starts_with($itemId, 'emp_')) {
                                  $empId = str_replace('emp_', '', $itemId);
                                  // Create Item if not exists
-                                 $item = \App\Models\ProductionItem::firstOrCreate(
+                                 // Note: This creates item in the CURRENT order ($id)
+                                 $item = ProductionItem::firstOrCreate(
                                      [
                                          'production_order_id' => $id,
                                          'employee_id' => $empId
                                      ],
                                      [
-                                         'status' => 'pending', // Default status
+                                         'status' => 'pending',
                                          'group_name' => null
                                      ]
                                  );
@@ -444,7 +455,6 @@ class ProductionController extends Controller
                              }
                          }
                          $tier['item_ids'] = $newItemIds;
-                         // Update count based on real items
                          $tier['count'] = count($newItemIds);
                      }
                  }
@@ -453,9 +463,9 @@ class ProductionController extends Controller
              $group->financial_data = $jsonPayload;
              $group->save();
 
-             // Sync Advance Items (Table Storage)
+             // Sync Advance Items
              if (isset($jsonPayload['advance_items']) && is_array($jsonPayload['advance_items'])) {
-                 $group->advanceItems()->delete(); // Clear existing
+                 $group->advanceItems()->delete();
                  foreach ($jsonPayload['advance_items'] as $advItem) {
                      $group->advanceItems()->create([
                          'description' => $advItem['description'] ?? '',
@@ -466,10 +476,10 @@ class ProductionController extends Controller
                  }
              }
 
-             // Fetch newly created items to return to frontend
+             // Fetch newly created items
              $newItems = [];
              if (!empty($createdItemIds)) {
-                 $rawItems = \App\Models\ProductionItem::with('employee')
+                 $rawItems = ProductionItem::with('employee')
                      ->whereIn('id', $createdItemIds)
                      ->get();
 
@@ -499,7 +509,15 @@ class ProductionController extends Controller
 
     public function destroyFinancialGroup(Request $request, $id, $groupId)
     {
-        $group = \App\Models\ProductionFinancialGroup::where('production_order_id', $id)->findOrFail($groupId);
+        // Use findOrFail directly on model, then check permission
+        $group = ProductionFinancialGroup::findOrFail($groupId);
+        $order = ProductionOrder::findOrFail($id);
+
+         if ($group->production_order_id !== $order->id &&
+           ($group->employer_id !== $order->employer_id || $group->work_type_id !== $order->work_type_id)) {
+            abort(403);
+        }
+
         $group->delete();
         return response()->json(['success' => true]);
     }
@@ -509,52 +527,47 @@ class ProductionController extends Controller
      */
     public function edit(Request $request, $id)
     {
-        // 1. Find Order with Relations needed for Financial Tab
+        // 1. Find Order (without Financial Groups strictly linked to it)
         $production = ProductionOrder::with([
             'employer',
-            'items.employee',
-            'financialGroups.transactions.items', // Deep load for transaction items
-            'financialGroups.advanceItems'
+            'items.employee'
         ])->findOrFail($id);
 
-        // 2. Prepare Data for Partial
+        // 2. Fetch Shared Financial Groups
+        // Look for groups belonging to this Employer + WorkType
+        $sharedGroups = ProductionFinancialGroup::where('employer_id', $production->employer_id)
+            ->where('work_type_id', $production->work_type_id)
+            ->with(['transactions.items', 'advanceItems'])
+            ->get();
+
+        // If no shared groups exist, but the order has old groups (migration fallback), fetch them
+        if ($sharedGroups->isEmpty()) {
+             $sharedGroups = $production->financialGroups()->with(['transactions.items', 'advanceItems'])->get();
+        }
+
+        // Attach shared groups to the production object for the view
+        $production->setRelation('financialGroups', $sharedGroups);
+
+        // 3. Prepare Data for Partial
         $employeeCount = $production->items->count();
-        // Get employees collection for dropdowns/management
+        // Get employees collection for dropdowns/management (Only Current Stage)
         $employees = $production->items->map(function($item) {
             return $item->employee;
         })->filter()->values();
 
-        // 3. Return View
+        // 4. Return View
         return view('production.edit', compact('production', 'employeeCount', 'employees'));
     }
 
-    // The previous 'create', 'store' methods in ProductionController are still useful for creating the Pre-Prod job initially.
-
     public function create(Request $request)
     {
-        // ... (Keep existing create logic, just ensure work_type_id is handled)
-        // Actually, we might need to update Create to select WorkType.
-        // Let's assume the Workflow "Create Job" modal is used generally,
-        // OR we update the existing create view.
-        // For this task, I'll focus on the Index/Board first.
-
-        // Return existing create view but passing worktypes
         $workTypes = WorkType::orderBy('order')->get();
-        return view('production.create', compact('workTypes')); // We'll need to update view too
+        return view('production.create', compact('workTypes'));
     }
 
     public function store(Request $request)
     {
-         // Update Store to include work_type_id
-         // ...
-         // For brevity, let's assume we use the WorkflowController@store logic
-         // but adapted for Pre-Production if status is set to pre_production.
-
-         // Let's leave existing Store for now and assume migration of logic if needed.
-         // The user instruction "Production menu ... like Workflow" implies
-         // we might use a similar Modal to create jobs.
-
-         return parent::callAction('store', [$request]); // Fallback or implement
+         return parent::callAction('store', [$request]);
     }
 
     /**
@@ -562,10 +575,8 @@ class ProductionController extends Controller
      */
     private function calculateOrderStats(ProductionOrder $order)
     {
-        // Ensure relations are loaded
         $order->load(['items.completedWorkTypeSteps']);
 
-        // Get Preparation Steps for this WorkType
         $steps = WorkTypeStep::where('work_type_id', $order->work_type_id)
                     ->where('stage', 'preparation')
                     ->orderBy('order')

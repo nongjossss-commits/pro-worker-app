@@ -20,8 +20,8 @@ if (typeof window.financialManager === 'undefined') {
 
             // Advance Items
             advanceItems: [],
-            productionItems: initialData.productionItems || [], // List of {id, name, employee_id}
-            employees: initialData.employees || [], // List of candidates {id, name}
+            productionItems: initialData.productionItems || [], // List of {id, name, employee_id} (Scoped to Current Stage)
+            employees: initialData.employees || [], // List of candidates {id, name} (Scoped to Current Stage)
             selectedTransactionItems: [], // List of IDs (ProductionItem ID or 'emp_ID')
 
             // Tax Settings
@@ -149,17 +149,31 @@ if (typeof window.financialManager === 'undefined') {
                         // Filter out if present in the new selection
                         t.item_ids = t.item_ids.filter(existingId => {
                             // Check if existingId is in processedIds
-                            // Need to handle type safety carefully
                             return !processedIds.some(newId => newId == existingId);
                         });
                     }
                 });
 
                 // 2. Overwrite target tier with new selection
-                const targetTier = this.pricingTiers[tierIndex];
-                targetTier.item_ids = processedIds;
+                // KEY CHANGE: We must PRESERVE items that are NOT visible in the current stage (Pre-Prod vs Workflow)
+                // but are already in the tier.
+                // The `modalSelectedIds` (which feeds `itemIds` here) only represents the selection state of VISIBLE items.
 
-                // 3. Update count for display
+                const targetTier = this.pricingTiers[tierIndex];
+                const existingIds = targetTier.item_ids || [];
+
+                // Find items that are currently visible in the modal
+                // (i.e. those in allEmployeesForTier)
+                const visibleEmployees = this.allEmployeesForTier.map(e => e.id);
+
+                // Items that are in the tier but NOT in the visible list (belong to other stage)
+                // We must keep these safe.
+                const hiddenIds = existingIds.filter(id => !visibleEmployees.includes(id) && !visibleEmployees.includes(parseInt(id)));
+
+                // Combine hidden items + new selection from visible items
+                targetTier.item_ids = [...hiddenIds, ...processedIds];
+
+                // 3. Update count for display (Global Count)
                 targetTier.count = targetTier.item_ids.length;
 
                 this.updateTotal();
@@ -205,13 +219,14 @@ if (typeof window.financialManager === 'undefined') {
             get allEmployeesForTier() {
                 // Return Merged List for Price Tier Modal
                 // This includes Existing ProductionItems AND Candidates (Employees not yet in Order)
-                // This fixes the issue where new employees don't show up in Price Tier selection.
+                // This is SCOPED to the current Order (Pre-Prod OR Workflow) because `this.productionItems`
+                // and `this.employees` are filtered by the backend Controller to only include current stage items.
 
                 // Filter logic: Exclude items that are currently used in an Installment (Transaction)
+                // Note: Transactions are GLOBAL/SHARED. If an item in Pre-Prod has an installment, it's locked.
                 const usedItemIds = new Set();
                 const usedEmployeeIds = new Set();
 
-                // Scan all transactions (using this.transactions as single source of truth)
                 this.transactions.forEach(t => {
                     if (t.items && Array.isArray(t.items)) {
                         t.items.forEach(item => {
@@ -226,8 +241,7 @@ if (typeof window.financialManager === 'undefined') {
 
                 // 1. Production Items
                 this.productionItems.forEach(item => {
-                    // Skip if currently in an installment (LOCKED)
-                    if (usedItemIds.has(item.id)) return;
+                    if (usedItemIds.has(item.id)) return; // Locked by installment
 
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
                     list.push({ ...item, type: 'item' });
@@ -236,13 +250,11 @@ if (typeof window.financialManager === 'undefined') {
                 // 2. Candidates
                 this.employees.forEach(emp => {
                     if (itemsByEmpId[emp.id]) return; // Already exists as item
-                    // Skip if currently in an installment via some other item (LOCKED)
-                    if (usedEmployeeIds.has(emp.id)) return;
+                    if (usedEmployeeIds.has(emp.id)) return; // Locked
 
                     list.push({
                         id: 'emp_' + emp.id,
                         name: emp.name,
-                        // Map properties from employee object to match item structure
                         name_en: emp.name_en,
                         title_en: emp.title_en,
                         photo: emp.photo,
@@ -258,8 +270,6 @@ if (typeof window.financialManager === 'undefined') {
             get availableItems() {
                 if (!this.activeGroupId) return [];
 
-                // 1. Collect Used IDs (ProductionItem IDs) in this Group
-                // And check associated Employee IDs to prevent duplicates
                 const usedItemIds = new Set();
                 const usedEmployeeIds = new Set();
 
@@ -275,19 +285,11 @@ if (typeof window.financialManager === 'undefined') {
                 });
 
                 const list = [];
-                const itemsByEmpId = {}; // Map employee_id -> ProductionItem ID
+                const itemsByEmpId = {};
 
                 // 2. Add Existing Production Items
                 this.productionItems.forEach(item => {
-                    // Skip if used
                     if (usedItemIds.has(item.id)) return;
-
-                    // Pricing Mode Filter: In 'per_head', skip if not in any tier
-                    // Note: 'emp_' items (candidates) are never in a tier yet, so they are effectively blocked from installment
-                    // until added to a tier. But adding to a tier creates a ProductionItem?
-                    // No, tiers store ProductionItem IDs. So candidates must be "converted" or created first?
-                    // Actually, for simplicity, we only allow existing Production Items in Per Head mode Installments.
-                    // If user wants to add a new person, they add to job card first (creating ProductionItem), then assign tier.
 
                     let hasPrice = true;
                     if (this.pricingMode === 'per_head') {
@@ -298,7 +300,6 @@ if (typeof window.financialManager === 'undefined') {
 
                     if (item.employee_id) {
                         itemsByEmpId[item.employee_id] = item.id;
-                        // Also skip if employee ID is considered used
                         if (usedEmployeeIds.has(item.employee_id)) return;
                     }
 
@@ -314,16 +315,13 @@ if (typeof window.financialManager === 'undefined') {
                 });
 
                 // 3. Add Candidates (Employees)
-                // Only show candidates if NOT in per_head mode (since they can't have a price yet)
                 if (this.pricingMode !== 'per_head') {
                     this.employees.forEach(emp => {
-                        // Check if this employee is already represented by an existing Production Item
                         if (itemsByEmpId[emp.id]) return;
-                        // Check if already used in another transaction
                         if (usedEmployeeIds.has(emp.id)) return;
 
                         list.push({
-                            id: 'emp_' + emp.id, // Value with prefix to distinguish
+                            id: 'emp_' + emp.id,
                             name: emp.name,
                             photo: emp.photo,
                             name_en: emp.name_en,
@@ -338,16 +336,13 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             get editModalItems() {
-                // Show items that are available OR attached to this transaction
                 if (!this.activeGroupId) return [];
 
-                // IDs currently attached to editing transaction
                 const attachedItemIds = new Set();
                 if (this.editingTransaction.items && Array.isArray(this.editingTransaction.items)) {
                     this.editingTransaction.items.forEach(item => attachedItemIds.add(item.id));
                 }
 
-                // IDs used by OTHER transactions
                 const usedItemIds = new Set();
                 const usedEmployeeIds = new Set();
 
@@ -369,7 +364,7 @@ if (typeof window.financialManager === 'undefined') {
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
 
                     const isAttached = attachedItemIds.has(item.id);
-                    const isUsed = usedItemIds.has(item.id); // Used elsewhere
+                    const isUsed = usedItemIds.has(item.id);
 
                     if (isAttached || !isUsed) {
                          list.push({
@@ -407,7 +402,6 @@ if (typeof window.financialManager === 'undefined') {
 
             isItemAttached(itemId) {
                 if (!this.editingTransaction.items) return false;
-                // Only check numeric IDs for attachment status as candidates are never "attached" until saved
                 if (String(itemId).startsWith('emp_')) return false;
                 return this.editingTransaction.items.some(i => i.id == itemId);
             },
@@ -430,6 +424,19 @@ if (typeof window.financialManager === 'undefined') {
             deselectAllTransactionItems() {
                 this.selectedTransactionItems = [];
                 this.recalcAmount();
+            },
+
+            recalcEditAmount() {
+                 if (this.pricingMode === 'per_head') {
+                    let total = 0;
+                    this.selectedTransactionItems.forEach(val => {
+                         total += this.getItemPrice(val);
+                    });
+                    // For edit mode, we generally don't auto-update paid amount, only total guidance?
+                    // Or maybe we update the transaction total?
+                    // Let's update editingTransaction.amount for display, but it's not bound to input
+                    this.editingTransaction.amount = total;
+                }
             },
 
             // --- Transaction Actions ---
@@ -485,7 +492,6 @@ if (typeof window.financialManager === 'undefined') {
                         this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
                         this.selectedTransactionItems = [];
 
-                        // Update local productionItems list with potentially newly created items
                         if (data.transaction.items) {
                             data.transaction.items.forEach(newItem => {
                                 const exists = this.productionItems.find(pi => pi.id === newItem.id);
@@ -499,7 +505,6 @@ if (typeof window.financialManager === 'undefined') {
                             });
                         }
 
-                        // Use Toast for non-blocking success
                         const Toast = Swal.mixin({
                             toast: true,
                             position: 'top-end',
@@ -678,7 +683,7 @@ if (typeof window.financialManager === 'undefined') {
                 this.updateTotal();
             },
             get tierCountSum() {
-                // Use item_ids.length for accurate count
+                // Use item_ids.length for accurate count (including global invisible ones)
                 return this.pricingTiers.reduce((sum, t) => sum + (t.item_ids ? t.item_ids.length : 0), 0);
             },
 
@@ -686,7 +691,17 @@ if (typeof window.financialManager === 'undefined') {
             openManageEmployeesModal(index) {
                 this.activeTierIndex = index;
                 this.modalSearch = '';
-                this.modalSelectedIds = [...(this.pricingTiers[index].item_ids || [])];
+
+                // Initialize selection with CURRENT TIER items
+                // But filtered by visibility (only select items that are in the modal)
+                const currentTierIds = this.pricingTiers[index].item_ids || [];
+                const visibleIds = this.allEmployeesForTier.map(e => e.id);
+
+                // Pre-select items that are currently in the tier AND visible in the modal
+                this.modalSelectedIds = currentTierIds.filter(id => {
+                    // Check if id exists in visibleIds (handle string/int conversion)
+                    return visibleIds.includes(id) || visibleIds.includes(parseInt(id));
+                });
 
                 const el = document.getElementById('manageEmployeesModal-' + this.productionId);
                 if (el && typeof bootstrap !== 'undefined') {
@@ -718,7 +733,7 @@ if (typeof window.financialManager === 'undefined') {
                 let gross = 0;
                 if (this.pricingMode === 'per_head') {
                     gross = this.pricingTiers.reduce((sum, t) => {
-                         const count = t.item_ids ? t.item_ids.length : (parseInt(t.count) || 0); // Fallback for legacy
+                         const count = t.item_ids ? t.item_ids.length : (parseInt(t.count) || 0);
                          return sum + (parseFloat(t.price || 0) * count);
                     }, 0);
                 } else {
@@ -823,16 +838,13 @@ if (typeof window.financialManager === 'undefined') {
                 .then(data => {
                     if (data.success) {
                         if (data.group) {
-                            // Update local group data to match server (especially ID conversions)
                             const idx = this.financialGroups.findIndex(g => g.id === this.activeGroupId);
                             if (idx !== -1) {
                                 this.financialGroups[idx] = data.group;
-                                // Re-sync active state without full reset if possible, or just reload data
                                 this.switchGroup(this.activeGroupId);
                             }
                         }
 
-                        // Add new items (converted from candidates) to productionItems list
                         if (data.new_items && Array.isArray(data.new_items)) {
                             data.new_items.forEach(newItem => {
                                 const exists = this.productionItems.find(pi => pi.id === newItem.id);
@@ -978,24 +990,42 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             get unassignedEmployeeCount() {
-                // Calculate Total Unique People Pool
-                // 1. All Production Items
+                // Calculate Total Unique People Pool (Local View Only)
+                // We only care about employees visible in THIS screen for the count logic here,
+                // OR we want the global unassigned?
+                // The "Unassigned" warning should probably reflect the *active* screen context.
+                // If I am in Pre-Prod, I want to know how many Pre-Prod people have no price.
+
                 const linkedEmployeeIds = new Set();
                 this.productionItems.forEach(pi => {
                     if (pi.employee_id) linkedEmployeeIds.add(pi.employee_id);
                 });
 
-                // 2. Add Candidates who are NOT already linked to a ProductionItem
                 const uniqueCandidates = this.employees.filter(e => !linkedEmployeeIds.has(e.id)).length;
+                const totalLocalPool = this.productionItems.length + uniqueCandidates;
 
-                const totalPool = this.productionItems.length + uniqueCandidates;
+                // Assigned Count Calculation (Local View)
+                // We need to count how many LOCAL items are assigned to tiers.
+                let localAssignedCount = 0;
+                const localItemIds = new Set(this.productionItems.map(i => i.id));
 
-                return Math.max(0, totalPool - this.tierCountSum);
+                this.pricingTiers.forEach(t => {
+                    if (t.item_ids) {
+                        t.item_ids.forEach(id => {
+                            if (localItemIds.has(parseInt(id))) localAssignedCount++;
+                            else if (typeof id === 'string' && id.startsWith('emp_')) {
+                                // Candidates are local by definition
+                                localAssignedCount++;
+                            }
+                        });
+                    }
+                });
+
+                return Math.max(0, totalLocalPool - localAssignedCount);
             },
 
             loadAgentData() {
                 if(!this.selectedAgentId) return;
-                // Basic stub if we don't have an endpoint for this yet
                 const select = document.querySelector(`select[x-model="selectedAgentId"]`);
                 if(select) {
                     const option = select.options[select.selectedIndex];

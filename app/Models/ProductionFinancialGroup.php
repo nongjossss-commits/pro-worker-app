@@ -12,6 +12,8 @@ class ProductionFinancialGroup extends Model
 
     protected $fillable = [
         'production_order_id',
+        'employer_id',
+        'work_type_id',
         'name',
         'financial_data',
     ];
@@ -23,6 +25,16 @@ class ProductionFinancialGroup extends Model
     public function productionOrder()
     {
         return $this->belongsTo(ProductionOrder::class);
+    }
+
+    public function employer()
+    {
+        return $this->belongsTo(Employer::class);
+    }
+
+    public function workType()
+    {
+        return $this->belongsTo(WorkType::class);
     }
 
     public function transactions()
