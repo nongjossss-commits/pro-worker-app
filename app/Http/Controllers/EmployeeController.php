@@ -283,6 +283,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_detail' => 'nullable|string',
             'insurance_expiry_date' => 'nullable|date',
             'social_security_number' => 'nullable|string|max:255',
+            'sso_issue_date' => 'nullable|date',
+            'sso_expiry_date' => 'nullable|date',
             'insurance_detail_hospital' => 'nullable|string|max:255',
             'insurance_detail_private' => 'nullable|string|max:255',
             'insurance_expiry_date_private' => 'nullable|string|max:255',
@@ -334,6 +336,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         if ($validated['insuranceType'] === 'ประกันสังคม') {
             $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
             $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+            $validated['sso_issue_date'] = $validated['sso_issue_date'] ?? null;
+            $validated['sso_expiry_date'] = $validated['sso_expiry_date'] ?? null;
             $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
         } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
@@ -341,16 +345,22 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
             $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
             $validated['socialSecurityNumber'] = null;
             $validated['insuranceCompany'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         } else {
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
             $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         }
 
         // --- V6: Step 2: Handle email and password mapping & hashing ---
@@ -557,6 +567,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_detail' => 'nullable|string',
             'insurance_expiry_date' => 'nullable|date',
             'social_security_number' => 'nullable|string|max:255',
+            'sso_issue_date' => 'nullable|date',
+            'sso_expiry_date' => 'nullable|date',
             'insurance_detail_hospital' => 'nullable|string|max:255',
             'insurance_expiry_date_private' => 'nullable|string|max:255',
             'insurance_expiry_date_hospital' => 'nullable|string|max:255',
@@ -613,6 +625,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         if ($validated['insuranceType'] === 'ประกันสังคม') {
             $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
             $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+            $validated['sso_issue_date'] = $validated['sso_issue_date'] ?? null;
+            $validated['sso_expiry_date'] = $validated['sso_expiry_date'] ?? null;
             $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
         } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
@@ -620,17 +634,23 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
             $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
             $validated['socialSecurityNumber'] = null;
             $validated['insuranceCompany'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         } else {
             // For 'None' or other types, null out all specific fields
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
             $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         }
 
 
@@ -1239,6 +1259,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'Insurance' => [
                 'insurance_type' => 'Insurance Type',
                 'social_security_number' => 'Social Security Number',
+                'sso_issue_date' => 'Social Security Issue Date',
+                'sso_expiry_date' => 'Social Security Expiry Date',
                 'insurance_detail_hospital' => 'Hospital Name',
                 'insurance_expiry_date_hospital' => 'Hospital Expiry',
                 'insurance_detail_private' => 'Private Insurance Company',
@@ -1297,6 +1319,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeDob', 'passport_issue_date', 'passportExpiryDate',
             'visaExpiryDate', 'workPermitExpiryDate', 'startDate',
             'insurance_expiry_date_hospital', 'insurance_expiry_date_private',
+            'sso_issue_date', 'sso_expiry_date',
             'ninetyDayReportDate'
         ];
 
@@ -1350,6 +1373,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'startDate' => 'Start Date',
             'insurance_type' => 'Insurance Type',
             'social_security_number' => 'Social Security Number',
+            'sso_issue_date' => 'Social Security Issue Date',
+            'sso_expiry_date' => 'Social Security Expiry Date',
             'insurance_detail_hospital' => 'Hospital Name',
             'insurance_expiry_date_hospital' => 'Hospital Expiry',
             'insurance_detail_private' => 'Private Insurance Company',
@@ -1540,6 +1565,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_reference_id' => 'Reference ID',
             'insurance_type' => 'Insurance Type',
             'social_security_number' => 'SS Number',
+            'sso_issue_date' => 'SS Issue Date',
+            'sso_expiry_date' => 'SS Expiry Date',
             'insurance_detail' => 'Hospital Rights (SS)',
             'insurance_detail_hospital' => 'Hospital Name',
             'insurance_expiry_date_hospital' => 'Hospital Expiry',
@@ -1650,7 +1677,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $cell->setValue('No Photo');
                     }
 
-                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'])) {
+                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date'])) {
                     // Format Dates
                     $val = $employee->$col ? \Carbon\Carbon::parse($employee->$col)->format('d/m/Y') : '-';
                     $cell->setValue($val);

@@ -305,6 +305,10 @@ class NotificationController extends Controller
                     $fieldToUpdate = 'insurance_expiry_date_hospital';
                     // User instruction: Use same file field as private insurance
                     $fileField = 'insurance_document_path_private';
+                } elseif ($employee->insurance_type === 'ประกันสังคม') {
+                    $fieldToUpdate = 'sso_expiry_date';
+                    // User instruction: Use same file field as private insurance
+                    $fileField = 'insurance_document_path_private';
                 } else {
                     $fieldToUpdate = 'insurance_expiry_date';
                     $fileField = 'insurance_document_path';

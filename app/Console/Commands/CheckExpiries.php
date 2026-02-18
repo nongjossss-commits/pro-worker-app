@@ -323,16 +323,22 @@ class CheckExpiries extends Command
         $futureThreshold = $today->copy()->addDays($threshold);
         // Look back 365 days to ensure we catch expired documents
         $pastThreshold = $today->copy()->subDays(365);
-        $insuranceFields = ['insurance_expiry_date', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'];
+        $insuranceFields = ['insurance_expiry_date', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_expiry_date'];
 
         $allEmployeeIdsInScope = collect();
 
         foreach ($insuranceFields as $field) {
-            $employees = (clone $baseEmployeeQuery)
+            $query = (clone $baseEmployeeQuery)
                 ->whereNotNull($field)
-                ->where('insurance_type', '!=', 'ประกันสังคม')
-                ->whereBetween($field, [$pastThreshold, $futureThreshold])
-                ->get();
+                ->whereBetween($field, [$pastThreshold, $futureThreshold]);
+
+            if ($field === 'sso_expiry_date') {
+                $query->where('insurance_type', 'ประกันสังคม');
+            } else {
+                $query->where('insurance_type', '!=', 'ประกันสังคม');
+            }
+
+            $employees = $query->get();
 
             $allEmployeeIdsInScope = $allEmployeeIdsInScope->merge($employees->pluck('id'));
 

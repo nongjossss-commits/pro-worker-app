@@ -89,6 +89,8 @@ class Employee extends Model
         'insurance_detail_private',
         'insurance_expiry_date_private',
         'social_security_number',
+        'sso_issue_date',
+        'sso_expiry_date',
         'visaType',
         'employee_doc_1',
         'employee_doc_2',
@@ -161,6 +163,8 @@ class Employee extends Model
         'insurance_expiry_date' => 'date:Y-m-d',
         'insurance_expiry_date_hospital' => 'date:Y-m-d',
         'insurance_expiry_date_private' => 'date:Y-m-d',
+        'sso_issue_date' => 'date:Y-m-d',
+        'sso_expiry_date' => 'date:Y-m-d',
         'terminated_at' => 'datetime',
     ];
 
