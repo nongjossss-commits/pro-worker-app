@@ -458,11 +458,26 @@ class PdfGeneratorService
         if ($key === 'employer.signer_2_name_en') return $employee->employer->signer_2_name_en;
 
         // 3. Handle Special Employer Address Fields
-        if ($key === 'employer.address_th') {
-            return $this->formatAddress($employee->employer->addresses->first(), 'th');
-        }
-        if ($key === 'employer.address_en') {
-            return $this->formatAddress($employee->employer->addresses->first(), 'en');
+        if (str_starts_with($key, 'employer.address_')) {
+            $address = $this->getEmployerAddress($employee->employer);
+
+            // Full Formatted
+            if ($key === 'employer.address_th') return $this->formatAddress($address, 'th');
+            if ($key === 'employer.address_en') return $this->formatAddress($address, 'en');
+
+            if (!$address) return '-';
+
+            // Granular Thai
+            if (str_starts_with($key, 'employer.address_th.')) {
+                $field = str_replace('employer.address_th.', '', $key);
+                return (string) $address->{$field};
+            }
+
+             // Granular English
+            if (str_starts_with($key, 'employer.address_en.')) {
+                $field = str_replace('employer.address_en.', '', $key);
+                return (string) $address->{$field};
+            }
         }
 
         // 4. Handle Standard Dot Notation
@@ -479,6 +494,19 @@ class PdfGeneratorService
         }
 
         return (string) $value;
+    }
+
+    protected function getEmployerAddress($employer)
+    {
+        // Priority 1: Address marked as document address
+        $address = $employer->addresses()->where('is_document_address', true)->first();
+
+        // Priority 2: First created address (fallback)
+        if (!$address) {
+            $address = $employer->addresses()->orderBy('id', 'asc')->first();
+        }
+
+        return $address;
     }
 
     protected function applyAutoPrefix(Employee $employee, $key, $value)

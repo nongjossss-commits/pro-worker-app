@@ -130,6 +130,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/addresses/{address}/edit', [App\Http\Controllers\AddressController::class, 'edit'])->name('addresses.edit');
     Route::put('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'update'])->name('addresses.update');
     Route::delete('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'destroy'])->name('addresses.destroy');
+    Route::post('/addresses/{address}/set-document', [App\Http\Controllers\AddressController::class, 'setDocumentAddress'])->name('addresses.set_document');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('menu:notifications')->name('notifications.index');
     Route::post('/notifications/check-expiries', [NotificationController::class, 'checkExpiries'])->name('notifications.check-expiries');

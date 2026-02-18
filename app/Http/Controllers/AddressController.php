@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Address;
 use App\Models\Employer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AddressController extends Controller
 {
@@ -95,6 +96,25 @@ class AddressController extends Controller
 
         // Send the raw file with the correct JSON content type header
         return response()->file($path, ['Content-Type' => 'application/json']);
+    }
+
+    public function setDocumentAddress(Request $request, Address $address)
+    {
+        // This method sets the given address as the document address for its owner.
+        // It unsets all other addresses for the same owner first.
+
+        DB::transaction(function () use ($address) {
+             // 1. Unset all others for this owner
+             // We use query() on Address model directly to ensure we scope correctly by addressable
+             Address::where('addressable_type', $address->addressable_type)
+                    ->where('addressable_id', $address->addressable_id)
+                    ->update(['is_document_address' => false]);
+
+             // 2. Set this one
+             $address->update(['is_document_address' => true]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Document address updated successfully.']);
     }
 
 }
