@@ -108,14 +108,14 @@ class RegistrationController extends Controller
             $employerQuery->withoutGlobalScope('employerTenancy');
         }
 
+        // Always show only employers who have relevant employees (pending, completed, or cancelled)
+        $employerQuery->whereHas('employees', function($q) {
+             $q->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+        });
+
         // Apply Search to Employer Query
         if ($request->has('search') && $request->search) {
             $this->applyEmployerLevelSearch($employerQuery, $request->search);
-        } else {
-            // If no search, we only show employers who have relevant employees
-            $employerQuery->whereHas('employees', function($q) {
-                 $q->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
-            });
         }
 
         // Apply Address Filters
