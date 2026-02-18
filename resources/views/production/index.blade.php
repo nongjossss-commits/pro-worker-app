@@ -371,6 +371,25 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Finance Modal for this Order --}}
+                <div class="modal fade" id="financeModal-{{ $order->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">{{ __('Finance') }}: {{ $order->employer->employerNameTh ?? $order->project_name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body bg-light">
+                                @include('production.partials.financial-tab', [
+                                    'production' => $order,
+                                    'employeeCount' => $order->items->count(),
+                                    'employees' => $order->items->pluck('employee')->filter()->values()
+                                ])
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         @empty
             <div class="text-center py-5">

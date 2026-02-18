@@ -8,7 +8,21 @@ window.FinancialSecurity = {
                 'Accept': 'application/json'
             }
         })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                // If the response is not OK (e.g. 500, 404), throw an error
+                // Try to get JSON error message first, otherwise use status text
+                return res.text().then(text => {
+                    try {
+                        const json = JSON.parse(text);
+                        throw new Error(json.message || `Server Error (${res.status})`);
+                    } catch (e) {
+                        throw new Error(`Server Error (${res.status}): ${res.statusText}`);
+                    }
+                });
+            }
+            return res.json();
+        })
         .then(data => {
             if (data.locked) {
                 if (data.reason === 'disabled') {
@@ -62,7 +76,12 @@ window.FinancialSecurity = {
                     if (result.isConfirmed) {
                         // Unlocked successfully
                         if (typeof callback === 'function') {
-                            callback();
+                            try {
+                                callback();
+                            } catch (e) {
+                                console.error('Callback Execution Error', e);
+                                Swal.fire('Error', 'Action failed: ' + e.message, 'error');
+                            }
                         }
                     }
                 });
@@ -70,13 +89,20 @@ window.FinancialSecurity = {
             } else {
                 // Not locked, run immediately
                 if (typeof callback === 'function') {
-                    callback();
+                    try {
+                        callback();
+                    } catch (e) {
+                        console.error('Callback Execution Error', e);
+                        Swal.fire('Error', 'Action failed: ' + e.message, 'error');
+                    }
                 }
             }
         })
         .catch(err => {
             console.error('Security Check Error', err);
-            Swal.fire('Error', 'Failed to verify access permissions.', 'error');
+            // Show more specific error message if possible
+            const message = err.message || 'Failed to verify access permissions.';
+            Swal.fire('Error', message, 'error');
         });
     }
 };
