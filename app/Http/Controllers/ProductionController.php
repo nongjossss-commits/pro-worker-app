@@ -147,7 +147,13 @@ class ProductionController extends Controller
                             ->withQueryString();
 
             // Load Relations
-            $orders->load(['items.completedWorkTypeSteps', 'employer.addresses']);
+            $orders->load([
+                'items.completedWorkTypeSteps',
+                'items.employee',
+                'employer.addresses',
+                'financialGroups.transactions.items',
+                'financialGroups.advanceItems'
+            ]);
 
             // Get Steps
             $steps = WorkTypeStep::where('work_type_id', $activeTab->id)
