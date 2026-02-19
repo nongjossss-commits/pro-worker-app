@@ -144,9 +144,18 @@ class PdfTemplateController extends Controller
         $file = $request->file('file');
         $filePath = $file->getRealPath();
 
-        // Validate PDF Version (Must be <= 1.4 for FPDI compatibility)
-        // If not compatible, try to normalize immediately
-        if (!PdfHelper::isCompatible($filePath, 1.4)) {
+        // Validate compatibility by attempting to parse with FPDI
+        // This allows compatible 1.7 PDFs (without compressed streams) to pass
+        $isCompatible = false;
+        try {
+            $pdf = new \setasign\Fpdi\Fpdi();
+            $pdf->setSourceFile($filePath);
+            $isCompatible = true;
+        } catch (\Exception $e) {
+            $isCompatible = false;
+        }
+
+        if (!$isCompatible) {
             try {
                 // Attempt to normalize the temp file directly
                 $normalizedPath = $pdfService->tryNormalizePdf($filePath);
