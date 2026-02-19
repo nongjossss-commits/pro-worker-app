@@ -351,7 +351,7 @@ class PdfGeneratorService
                     'output' => $output
                 ]);
             } else {
-                Log::warning("Node.js dependency 'pdf-lib' missing. Skipping Node strategy.");
+                Log::warning("Node.js dependency 'pdf-lib' missing. Skipping Node strategy. Please run 'npm install'.");
             }
         }
 
@@ -432,7 +432,7 @@ class PdfGeneratorService
 
         // If we reach here, all strategies failed
         $errorMsg = "Automatic PDF repair failed. The system attempted to convert the PDF to version 1.4 but could not find the necessary tools (Node.js, Ghostscript, or Python).\n\n" .
-                    "SOLUTION: Please ensure 'node' is installed and 'pdf-lib' is added to package.json.";
+                    "SOLUTION: Please ensure 'node' is installed and run 'npm install' to install 'pdf-lib'. Alternatively, install Ghostscript or Python with 'pypdf'.";
 
         Log::error('PDF Normalization Failed', ['errors' => $errors]);
 
