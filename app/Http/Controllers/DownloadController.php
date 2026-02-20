@@ -65,7 +65,7 @@ class DownloadController extends Controller
         ]);
     }
 
-    public function download(DownloadTask $task)
+    public function download(Request $request, DownloadTask $task)
     {
         if ($task->user_id !== Auth::id()) {
             abort(403);
@@ -84,6 +84,15 @@ class DownloadController extends Controller
 
         if (!file_exists($fullPath)) {
             abort(404, 'File not found on server.');
+        }
+
+        $disposition = $request->input('disposition', 'attachment');
+
+        if ($disposition === 'inline') {
+            return response()->file($fullPath, [
+                'Content-Type' => mime_content_type($fullPath),
+                'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"'
+            ]);
         }
 
         return response()->download($fullPath);

@@ -59,10 +59,10 @@
                             <span class="small text-secondary text-truncate" style="max-width: 150px;">Attachment</span>
                         </div>
                         <div class="d-flex gap-1">
-                            <a href="/storage/${field.file_path}" target="_blank" class="btn btn-sm btn-success text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="View File">
+                            <a href="#" onclick="event.preventDefault(); viewPDF('/storage/${field.file_path}', '${field.field_name}')" class="btn btn-sm btn-success text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="View File">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
-                            <a href="/custom-fields/${field.id}/pdf?type=${context}" target="_blank" class="btn btn-sm btn-danger text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="Download PDF">
+                            <a href="#" onclick="event.preventDefault(); viewPDF('/custom-fields/${field.id}/pdf?type=${context}', '${field.field_name}')" class="btn btn-sm btn-danger text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="Download PDF">
                                 <i class="bi bi-file-earmark-pdf-fill"></i>
                             </a>
                         </div>

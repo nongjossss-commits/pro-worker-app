@@ -436,7 +436,7 @@
                                         <div class="fw-bold" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
                                         <div x-show="t.slip_path" class="mt-1">
-                                            <a :href="'/storage/' + t.slip_path" target="_blank" class="badge bg-info text-decoration-none">View Slip</a>
+                                            <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
                                         </div>
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
@@ -485,7 +485,7 @@
                                         <div class="fw-bold text-primary" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
                                         <div x-show="t.slip_path" class="mt-1">
-                                            <a :href="'/storage/' + t.slip_path" target="_blank" class="badge bg-info text-decoration-none">View Slip</a>
+                                            <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
                                         </div>
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
@@ -863,7 +863,7 @@
 
                                             <!-- View -->
                                             <template x-if="editingTransaction.slip_path">
-                                                <a :href="'/storage/' + editingTransaction.slip_path" target="_blank" class="btn btn-outline-secondary btn-sm" title="View">
+                                                <a href="#" @click.prevent="viewPDF('/storage/' + editingTransaction.slip_path, 'View Slip')" class="btn btn-outline-secondary btn-sm" title="View">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             </template>

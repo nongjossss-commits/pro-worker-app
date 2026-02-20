@@ -32,7 +32,8 @@ class CustomFieldController extends Controller
 
         $filePath = $field->file_path;
         $disk = 'public';
+        $disposition = $request->input('disposition', 'attachment');
 
-        return \App\Helpers\PdfHelper::streamFile($disk, $filePath);
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition);
     }
 }

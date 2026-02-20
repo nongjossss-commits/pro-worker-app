@@ -954,6 +954,26 @@
     @include('partials.background-removal-scripts')
     @stack('scripts')
 
+<!-- PDF Preview Modal -->
+<div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="height: 90vh;">
+        <div class="modal-content h-100">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfPreviewModalLabel">{{ __('PDF Preview') }}</h5>
+                <div class="d-flex gap-2">
+                    <a href="" id="pdfDownloadBtn" class="btn btn-sm btn-primary" download>
+                        <i class="bi bi-download"></i> {{ __('Download') }}
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 h-100 overflow-hidden">
+                <iframe id="pdfPreviewFrame" src="" class="w-100 h-100" style="border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Universal Preview Modal -->
 <div class="modal fade" id="universalPreviewModal" tabindex="-1" aria-labelledby="universalPreviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -974,6 +994,24 @@
 </div>
 
 <script>
+window.viewPDF = function(url, title = 'PDF Preview') {
+    const modalEl = document.getElementById('pdfPreviewModal');
+    const iframe = document.getElementById('pdfPreviewFrame');
+    const downloadBtn = document.getElementById('pdfDownloadBtn');
+    const modalTitle = document.getElementById('pdfPreviewModalLabel');
+
+    // Add disposition=inline to URL if it's one of our routes
+    const pdfUrl = new URL(url, window.location.origin);
+    pdfUrl.searchParams.set('disposition', 'inline');
+
+    modalTitle.textContent = title;
+    downloadBtn.href = url; // Keep original for download
+    iframe.src = pdfUrl.toString();
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+};
+
 // Full-Featured Address Management Script
 document.addEventListener('DOMContentLoaded', function () {
     // --- Configuration & Global State ---

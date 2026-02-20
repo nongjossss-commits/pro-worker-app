@@ -162,10 +162,10 @@
             <label class="form-label fw-bold">ใบรับรองแพทย์</label>
             @if($employee->medical_certificate_path)
                 <p class="form-control-plaintext">
-                    <a href="{{ Storage::disk('public')->url($employee->medical_certificate_path) }}" target="_blank" class="btn btn-success btn-sm text-white">
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ Storage::disk('public')->url($employee->medical_certificate_path) }}', 'ดูใบรับรองแพทย์')" class="btn btn-success btn-sm text-white">
                         <i class="bi bi-eye-fill"></i> ดูเอกสาร
                     </a>
-                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path']) }}" target="_blank" class="btn btn-danger btn-sm text-white ms-1">
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path']) }}', 'ใบรับรองแพทย์')" class="btn btn-danger btn-sm text-white ms-1">
                         <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                     </a>
                 </p>
@@ -226,10 +226,10 @@
             <label class="form-label fw-bold">ไฟล์แนบประกัน</label>
             @if($employee->insurance_document_path_private)
                 <p class="form-control-plaintext">
-                    <a href="{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}" target="_blank" class="btn btn-success btn-sm text-white">
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}', 'ดูประกัน')" class="btn btn-success btn-sm text-white">
                         <i class="bi bi-eye-fill"></i> ดูเอกสาร
                     </a>
-                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" target="_blank" class="btn btn-danger btn-sm text-white ms-1">
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}', 'ประกัน')" class="btn btn-danger btn-sm text-white ms-1">
                         <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                     </a>
                 </p>
@@ -280,10 +280,10 @@
                 <label class="form-label fw-bold">{{ $label }}</label>
                 @if($employee->{$field})
                     <p class="form-control-plaintext">
-                        <a href="{{ $url }}" target="_blank" class="btn btn-success btn-sm text-white">
+                        <a href="#" onclick="event.preventDefault(); viewPDF('{{ $url }}', 'ดูเอกสาร')" class="btn btn-success btn-sm text-white">
                             <i class="bi bi-eye-fill"></i> ดูเอกสาร
                         </a>
-                        <a href="{{ $pdfUrl }}" target="_blank" class="btn btn-danger btn-sm text-white ms-1">
+                        <a href="#" onclick="event.preventDefault(); viewPDF('{{ $pdfUrl }}', '{{ $label }}')" class="btn btn-danger btn-sm text-white ms-1">
                             <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                         </a>
                          @if($desc_field && $employee->{$desc_field})
