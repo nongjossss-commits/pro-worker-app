@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employer;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
@@ -51,7 +52,13 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::all();
+        // Filter Roles: Only Super Admin can see/select 'super-admin'
+        if (Auth::user()->hasRole('super-admin')) {
+            $roles = Role::all();
+        } else {
+            $roles = Role::where('name', '!=', 'super-admin')->get();
+        }
+
         $employers = Employer::whereNull('user_id')->get();
         return view('admin.users.create', compact('roles', 'employers'));
     }
@@ -68,6 +75,11 @@ class UserController extends Controller
             'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
             'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')],
         ]);
+
+        // Security Check: Prevent non-SuperAdmin from creating SuperAdmin
+        if ($request->role_name === 'super-admin' && !Auth::user()->hasRole('super-admin')) {
+            abort(403, 'Unauthorized action. Only Super Admin can create another Super Admin.');
+        }
 
         // Create User
         $user = User::create([
@@ -104,7 +116,18 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $roles = Role::all();
+        // Security Check: Prevent non-SuperAdmin from editing SuperAdmin
+        if ($user->hasRole('super-admin') && !Auth::user()->hasRole('super-admin')) {
+             abort(403, 'Unauthorized action. You cannot edit a Super Admin user.');
+        }
+
+        // Filter Roles: Only Super Admin can see/select 'super-admin'
+        if (Auth::user()->hasRole('super-admin')) {
+            $roles = Role::all();
+        } else {
+            $roles = Role::where('name', '!=', 'super-admin')->get();
+        }
+
         $allPermissions = Permission::all();
         $userPermissions = $user->permissions->pluck('name')->toArray();
 
@@ -124,6 +147,17 @@ class UserController extends Controller
     {
         // Check if this is a request from the full "Edit Form" (Feature D)
         if ($request->has('name')) {
+
+            // Security Check 1: Prevent non-SuperAdmin from updating SuperAdmin
+            if ($user->hasRole('super-admin') && !Auth::user()->hasRole('super-admin')) {
+                abort(403, 'Unauthorized action. You cannot update a Super Admin user.');
+            }
+
+            // Security Check 2: Prevent non-SuperAdmin from assigning SuperAdmin role
+            if ($request->role_name === 'super-admin' && !Auth::user()->hasRole('super-admin')) {
+                abort(403, 'Unauthorized action. Only Super Admin can assign the Super Admin role.');
+            }
+
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
@@ -172,6 +206,12 @@ class UserController extends Controller
             return redirect()->route('admin.users.index')->with('success', 'User permissions and details updated.');
         } else {
             // This is a request from the "Status Toggle" (Feature C)
+
+            // Security Check: Prevent non-SuperAdmin from toggling status of SuperAdmin
+            if ($user->hasRole('super-admin') && !Auth::user()->hasRole('super-admin')) {
+                 abort(403, 'Unauthorized action. You cannot change status of a Super Admin user.');
+            }
+
             $newStatus = $user->status === 'active' ? 'inactive' : 'active';
             $user->update(['status' => $newStatus]);
             return redirect()->route('admin.users.index')->with('success', 'User status updated successfully.');
