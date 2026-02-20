@@ -1025,7 +1025,7 @@ window.viewPDF = function(url, title = 'PDF Preview') {
 };
 
 // Full-Featured Address Management Script
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     // --- Configuration & Global State ---
     const thaiDataUrl = "/thai-addresses"; // Hardcoded URL
     let thaiAddressData = [];
