@@ -246,17 +246,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Auto download if ready
                     if (data.download_url) {
-                        if (type === 'pdf') {
-                            viewPDF(data.download_url, 'Employee PDF');
-                        } else {
-                            // For ZIP, use iframe to avoid navigation and "back closes app" issue
-                            const iframe = document.createElement('iframe');
-                            iframe.style.display = 'none';
-                            iframe.src = data.download_url;
-                            document.body.appendChild(iframe);
-                            // Cleanup iframe after a bit
-                            setTimeout(() => document.body.removeChild(iframe), 60000);
-                        }
+                        // Direct Download for all types using iframe method to prevent page reload/navigation
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = data.download_url;
+                        document.body.appendChild(iframe);
+                        // Cleanup iframe after a bit
+                        setTimeout(() => document.body.removeChild(iframe), 60000);
                     }
                 } else {
                     showToast('Error starting download.', 'danger');
@@ -297,11 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let actionBtn = '';
                     if (task.status === 'completed') {
                         const url = '{{ route("admin.downloads.download", ":id") }}'.replace(':id', task.id);
-                        if (task.type === 'pdf') {
-                            actionBtn = `<button onclick="viewPDF('${url}', 'Download PDF')" class="btn btn-sm btn-success"><i class="bi bi-eye"></i> View PDF</button>`;
-                        } else {
-                            actionBtn = `<a href="${url}" class="btn btn-sm btn-success" target="_blank"><i class="bi bi-download"></i> Download</a>`;
-                        }
+                        actionBtn = `<a href="${url}" class="btn btn-sm btn-success" download><i class="bi bi-download"></i> Download</a>`;
                     } else if (task.status === 'failed') {
                         actionBtn = `
                             <span class="text-danger fw-bold">Failed</span>

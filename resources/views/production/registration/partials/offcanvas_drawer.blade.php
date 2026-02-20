@@ -62,7 +62,7 @@
                             <a href="#" onclick="event.preventDefault(); viewPDF('/storage/${field.file_path}', '${field.field_name}')" class="btn btn-sm btn-success text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="View File">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
-                            <a href="#" onclick="event.preventDefault(); viewPDF('/custom-fields/${field.id}/pdf?type=${context}', '${field.field_name}')" class="btn btn-sm btn-danger text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="Download PDF">
+                            <a href="/custom-fields/${field.id}/pdf?type=${context}" download class="btn btn-sm btn-danger text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="Download PDF">
                                 <i class="bi bi-file-earmark-pdf-fill"></i>
                             </a>
                         </div>

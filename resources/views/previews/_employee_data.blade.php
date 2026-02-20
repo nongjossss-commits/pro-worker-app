@@ -283,7 +283,7 @@
                         <a href="#" onclick="event.preventDefault(); viewPDF('{{ $url }}', 'ดูเอกสาร')" class="btn btn-success btn-sm text-white">
                             <i class="bi bi-eye-fill"></i> ดูเอกสาร
                         </a>
-                        <a href="#" onclick="event.preventDefault(); viewPDF('{{ $pdfUrl }}', '{{ $label }}')" class="btn btn-danger btn-sm text-white ms-1">
+                        <a href="{{ $pdfUrl }}" download class="btn btn-danger btn-sm text-white ms-1">
                             <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                         </a>
                          @if($desc_field && $employee->{$desc_field})
