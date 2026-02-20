@@ -995,21 +995,33 @@
 
 <script>
 window.viewPDF = function(url, title = 'PDF Preview') {
+    if (typeof bootstrap === 'undefined') {
+        alert('{{ __("System is loading components... please try again in a moment.") }}');
+        return;
+    }
+
     const modalEl = document.getElementById('pdfPreviewModal');
     const iframe = document.getElementById('pdfPreviewFrame');
     const downloadBtn = document.getElementById('pdfDownloadBtn');
     const modalTitle = document.getElementById('pdfPreviewModalLabel');
 
-    // Add disposition=inline to URL if it's one of our routes
-    const pdfUrl = new URL(url, window.location.origin);
-    pdfUrl.searchParams.set('disposition', 'inline');
+    try {
+        // Add disposition=inline only if it's a local URL (to avoid breaking S3 signatures)
+        const pdfUrl = new URL(url, window.location.origin);
+        if (pdfUrl.origin === window.location.origin) {
+            pdfUrl.searchParams.set('disposition', 'inline');
+        }
 
-    modalTitle.textContent = title;
-    downloadBtn.href = url; // Keep original for download
-    iframe.src = pdfUrl.toString();
+        modalTitle.textContent = title;
+        downloadBtn.href = url; // Keep original for download
+        iframe.src = pdfUrl.toString();
 
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    } catch (e) {
+        console.error('Error opening PDF preview:', e);
+        alert('{{ __("Could not open preview. Please try downloading the file directly.") }}');
+    }
 };
 
 // Full-Featured Address Management Script
