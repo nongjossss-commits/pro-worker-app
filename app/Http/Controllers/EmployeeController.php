@@ -1082,7 +1082,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        $disposition = $request->input('disposition', 'attachment');
+        $disposition = $request->input('disposition', 'inline');
 
         return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition);
     }
