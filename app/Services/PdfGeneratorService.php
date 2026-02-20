@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Models\PdfTemplate;
 use App\Models\GlobalWitness;
+use App\Models\Employer;
 use setasign\Fpdi\Fpdi;
 use setasign\Fpdi\PdfParser\StreamReader;
 use Illuminate\Support\Facades\Storage;
@@ -31,13 +32,23 @@ class PdfGeneratorService
     {
         // Options: 'output_type' => 'download' | 'save_to_slot' | 'raw_content'
         //          'slot_name' => string (required if save_to_slot)
+        //          'target_employer_id' => int|null
+        //          'use_empty_employer' => bool
 
         $outputType = $options['output_type'] ?? 'download';
         $results = [];
 
+        // Resolve Target Employer (Optimization: Fetch once)
+        $targetEmployer = null;
+        if (!empty($options['target_employer_id'])) {
+            $targetEmployer = Employer::find($options['target_employer_id']);
+        }
+
+        $useEmptyEmployer = $options['use_empty_employer'] ?? false;
+
         foreach ($employees as $employee) {
             try {
-                $pdfContent = $this->generateSinglePdf($template, $employee);
+                $pdfContent = $this->generateSinglePdf($template, $employee, $targetEmployer, $useEmptyEmployer);
                 $filename = $this->generateFilename($template, $employee);
 
                 if ($outputType === 'save_to_slot') {
@@ -80,7 +91,7 @@ class PdfGeneratorService
         return $results;
     }
 
-    public function generateSinglePdf(PdfTemplate $template, Employee $employee)
+    public function generateSinglePdf(PdfTemplate $template, Employee $employee, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false)
     {
         $pdf = new Fpdi();
 
@@ -125,6 +136,21 @@ class PdfGeneratorService
              }
         }
 
+        // --- Determine Effective Employer ---
+        $effectiveEmployer = null;
+        if ($template->type === 'global') {
+            if ($targetEmployer) {
+                $effectiveEmployer = $targetEmployer;
+            } elseif ($useEmptyEmployer) {
+                $effectiveEmployer = null; // Explicitly empty
+            } else {
+                $effectiveEmployer = $employee->employer; // Fallback to current employer
+            }
+        } else {
+            $effectiveEmployer = $employee->employer;
+        }
+
+
         // --- Signature Logic ---
         $tempSigPaths = [];
 
@@ -148,31 +174,32 @@ class PdfGeneratorService
         }
 
         // 2. Employer Signatures (Check file -> Generate Fallback)
-        $employer = $employee->employer;
-
-        // Signer 1
         $emprSig1Path = null;
-        if ($employer->signature_1_path && Storage::disk('public')->exists($employer->signature_1_path)) {
-            $emprSig1Path = Storage::disk('public')->path($employer->signature_1_path);
-        } else {
-             // Generate temporary unique
-             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-1-' . uniqid());
-             $temp = tempnam(sys_get_temp_dir(), 'sig_empr1_');
-             file_put_contents($temp, $content);
-             $emprSig1Path = $temp;
-             $tempSigPaths[] = $temp;
-        }
-
-        // Signer 2
         $emprSig2Path = null;
-        if ($employer->signature_2_path && Storage::disk('public')->exists($employer->signature_2_path)) {
-            $emprSig2Path = Storage::disk('public')->path($employer->signature_2_path);
-        } else {
-             $content = $this->signatureService->generate('EMPR-' . $employer->id . '-2-' . uniqid());
-             $temp = tempnam(sys_get_temp_dir(), 'sig_empr2_');
-             file_put_contents($temp, $content);
-             $emprSig2Path = $temp;
-             $tempSigPaths[] = $temp;
+
+        if ($effectiveEmployer) {
+            // Signer 1
+            if ($effectiveEmployer->signature_1_path && Storage::disk('public')->exists($effectiveEmployer->signature_1_path)) {
+                $emprSig1Path = Storage::disk('public')->path($effectiveEmployer->signature_1_path);
+            } else {
+                // Generate temporary unique
+                $content = $this->signatureService->generate('EMPR-' . $effectiveEmployer->id . '-1-' . uniqid());
+                $temp = tempnam(sys_get_temp_dir(), 'sig_empr1_');
+                file_put_contents($temp, $content);
+                $emprSig1Path = $temp;
+                $tempSigPaths[] = $temp;
+            }
+
+            // Signer 2
+            if ($effectiveEmployer->signature_2_path && Storage::disk('public')->exists($effectiveEmployer->signature_2_path)) {
+                $emprSig2Path = Storage::disk('public')->path($effectiveEmployer->signature_2_path);
+            } else {
+                $content = $this->signatureService->generate('EMPR-' . $effectiveEmployer->id . '-2-' . uniqid());
+                $temp = tempnam(sys_get_temp_dir(), 'sig_empr2_');
+                file_put_contents($temp, $content);
+                $emprSig2Path = $temp;
+                $tempSigPaths[] = $temp;
+            }
         }
 
         // 3. Witness Signatures
@@ -237,7 +264,7 @@ class PdfGeneratorService
                     if ($item['type'] === 'static') {
                         $text = $item['text'] ?? '';
                     } elseif ($item['type'] === 'db') {
-                        $text = $this->resolveValue($employee, $item['key'], $template);
+                        $text = $this->resolveValue($employee, $item['key'], $template, $effectiveEmployer);
                     }
 
                     if ($text) {
@@ -439,7 +466,7 @@ class PdfGeneratorService
         throw new \Exception($errorMsg);
     }
 
-    protected function resolveValue(Employee $employee, $key, PdfTemplate $template = null)
+    protected function resolveValue(Employee $employee, $key, PdfTemplate $template = null, ?Employer $effectiveEmployer = null)
     {
         // 1. Handle Witness Fields
         if (str_starts_with($key, 'witness_')) {
@@ -454,12 +481,14 @@ class PdfGeneratorService
         }
 
         // 2. Handle Employer Signer 2
-        if ($key === 'employer.signer_2_name_th') return $employee->employer->signer_2_name_th;
-        if ($key === 'employer.signer_2_name_en') return $employee->employer->signer_2_name_en;
+        if ($key === 'employer.signer_2_name_th') return $effectiveEmployer ? $effectiveEmployer->signer_2_name_th : '';
+        if ($key === 'employer.signer_2_name_en') return $effectiveEmployer ? $effectiveEmployer->signer_2_name_en : '';
 
         // 3. Handle Special Employer Address Fields
         if (str_starts_with($key, 'employer.address_')) {
-            $address = $this->getEmployerAddress($employee->employer);
+            if (!$effectiveEmployer) return '';
+
+            $address = $this->getEmployerAddress($effectiveEmployer);
 
             // Full Formatted
             if ($key === 'employer.address_th') return $this->formatAddress($address, 'th');
@@ -480,15 +509,22 @@ class PdfGeneratorService
             }
         }
 
-        // 4. Handle Standard Dot Notation
+        // 4. Handle Employer Dot Notation (Intercept for Override)
+        if (str_starts_with($key, 'employer.')) {
+            if (!$effectiveEmployer) return '';
+            $subKey = substr($key, 9); // Remove 'employer.'
+            return data_get($effectiveEmployer, $subKey) ?? '';
+        }
+
+        // 5. Handle Standard Employee Fields
         $value = data_get($employee, $key);
 
-        // 5. Auto-Prefix Logic (NEW)
+        // 6. Auto-Prefix Logic (NEW)
         if ($template && !empty($template->meta_data['auto_prefix_titles'])) {
             $value = $this->applyAutoPrefix($employee, $key, $value);
         }
 
-        // 6. Formatting
+        // 7. Formatting
         if ($value instanceof Carbon) {
             return $value->format('d/m/Y');
         }

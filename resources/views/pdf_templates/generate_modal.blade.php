@@ -23,14 +23,13 @@
                             <input type="hidden" name="employees[]" value="{{ $id }}" class="hidden-employee-id">
                         @endforeach
 
-                        {{-- Section 1: Select Employer (For Filtering Templates) --}}
-                        @if(isset($employers) && $employers->count() > 0)
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">1. Select Employer (Owner of Template)</label>
+                        @php
+                            $filterEmployerOptions = collect([]);
+                            $targetEmployerOptions = collect([]);
 
-                            @php
-                                // Reusing the same structure as the index filter
-                                $employerOptions = collect([
+                            if(isset($employers) && $employers->count() > 0) {
+                                // Filter Options (Includes 'Global')
+                                $filterEmployerOptions = collect([
                                     [
                                         'id' => 'global',
                                         'name_th' => 'Global Templates Only (ส่วนกลาง)',
@@ -45,7 +44,21 @@
                                         'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
                                     ])
                                 );
-                            @endphp
+
+                                // Target Options (Real Employers Only)
+                                $targetEmployerOptions = $employers->map(fn($e) => [
+                                    'id' => $e->id,
+                                    'name_th' => $e->employerNameTh,
+                                    'name_en' => $e->employerNameEn,
+                                    'search_str' => strtolower($e->employerNameTh . ' ' . $e->employerNameEn)
+                                ])->values();
+                            }
+                        @endphp
+
+                        {{-- Section 1: Select Employer (For Filtering Templates) --}}
+                        @if(isset($employers) && $employers->count() > 0)
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">1. Select Employer (Owner of Template)</label>
 
                             <div x-data="employerSelector()" @click.outside="open = false; search = selectedName">
                                 <div class="position-relative">
@@ -86,7 +99,7 @@
                         </div>
                         @endif
 
-                        <!-- Template Selection -->
+                        <!-- Section 2: Template Selection -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">2. Select Template</label>
                             <div class="input-group">
@@ -103,7 +116,62 @@
                             <div class="form-text text-muted" x-show="isLoadingTemplates">Loading templates...</div>
                         </div>
 
-                        <!-- Output Option -->
+                        <!-- Section 2.5: Target Employer Selection (Only for Global) -->
+                        @if(isset($employers) && $employers->count() > 0)
+                        <div class="mb-4" x-show="selectedTemplateType === 'global'" x-transition>
+                            <label class="form-label fw-bold text-primary">2.5 Target Employer (For Document Data)</label>
+                            <p class="text-sm text-muted mb-2">
+                                <i class="bi bi-info-circle"></i>
+                                Since you selected a <strong>Global Template</strong>, you can optionally choose which employer's data to insert.
+                                If left blank, employer fields will be empty.
+                            </p>
+
+                            <!-- Hidden input bound to main scope -->
+                            <input type="hidden" name="target_employer_id" x-model="targetEmployerId">
+
+                            <div x-data="targetEmployerSelector()" @click.outside="open = false; search = selectedName">
+                                <div class="position-relative">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                        <input type="text"
+                                               class="form-control"
+                                               placeholder="Type to search Target Employer..."
+                                               x-model="search"
+                                               @focus="open = true; search = ''"
+                                               @keydown.escape="open = false"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
+                                        <button class="btn btn-outline-danger" type="button" @click="clearSelection()" title="Clear Selection" x-show="selectedEmployerId">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                         style="z-index: 1050; max-height: 250px; overflow-y: auto; display: none;"
+                                         x-show="open"
+                                         x-transition>
+                                        <ul class="list-group list-group-flush">
+                                            <template x-for="opt in filteredOptions" :key="opt.id">
+                                                <li class="list-group-item list-group-item-action cursor-pointer d-flex justify-content-between align-items-center"
+                                                    @click="selectOption(opt)">
+                                                    <div>
+                                                        <div class="fw-bold" x-text="opt.name_th"></div>
+                                                        <div class="small text-muted" x-text="opt.name_en"></div>
+                                                    </div>
+                                                    <i class="bi bi-check2 text-primary" x-show="selectedEmployerId == opt.id"></i>
+                                                </li>
+                                            </template>
+                                            <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">
+                                                No results found
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Section 3: Output Option -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">3. Output Destination</label>
                             <div class="d-flex gap-4">
@@ -133,8 +201,6 @@
                             <select name="slot_name" class="form-select" :required="outputType === 'save_to_slot'" x-model="slotName">
                                 <option value="">-- Select Slot --</option>
                                 <optgroup label="Employee Documents (เอกสารลูกจ้าง)">
-                                    {{-- Adjusted mapping based on user request and DB schema --}}
-                                    {{-- Other Doc 1 starts at employee_doc_9 --}}
                                     @for($i = 1; $i <= 10; $i++)
                                         @php $dbIndex = $i + 8; @endphp
                                         <option value="employee_doc_{{ $dbIndex }}">Employee Other Document {{ $i }} (เอกสารอื่นๆ {{ $i }})</option>
@@ -162,6 +228,7 @@
 
     {{-- Progress Modal (For Save to Slot) --}}
     <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <!-- (Same as before) -->
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-body text-center p-5">
@@ -192,6 +259,8 @@
 </div>
 
 @push('scripts')
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('pdfGenerator', () => ({
@@ -200,13 +269,30 @@
             slotName: '',
             templates: @json($templates),
             selectedTemplateId: '',
+            selectedTemplateType: '',
             isLoadingTemplates: false,
-            selectedEmployerId: 'global',
+            selectedEmployerId: 'global', // Filter
+            targetEmployerId: '', // Target (for Data)
 
             init() {
+                // Filter Listener
                 window.addEventListener('employer-selected', (e) => {
                     this.selectedEmployerId = e.detail.id;
                     this.fetchTemplates();
+                });
+
+                // Target Listener
+                window.addEventListener('target-employer-selected', (e) => {
+                    this.targetEmployerId = e.detail.id;
+                });
+
+                // Watch for template changes
+                this.$watch('selectedTemplateId', (val) => {
+                    const t = this.templates.find(x => x.id == val);
+                    this.selectedTemplateType = t ? t.type : '';
+                    if (this.selectedTemplateType !== 'global') {
+                         this.targetEmployerId = ''; // Reset target if not global
+                    }
                 });
             },
 
@@ -228,19 +314,40 @@
 
             handleSubmit(e) {
                 if (this.isProcessing) return;
+                const form = e.target;
 
-                // 1. Download Mode: Submit form normally (synchronous)
+                // Logic: Global Template + Empty Target
+                if (this.selectedTemplateType === 'global' && !this.targetEmployerId) {
+                     Swal.fire({
+                         title: 'No Target Employer Selected',
+                         text: 'You have selected a Global Template but no Target Employer. The employer fields in the document will be left blank. Are you sure?',
+                         icon: 'warning',
+                         showCancelButton: true,
+                         confirmButtonText: 'Yes, leave blank',
+                         cancelButtonText: 'No, let me select'
+                     }).then((result) => {
+                         if (result.isConfirmed) {
+                             this.processSubmit(form);
+                         }
+                     });
+                     return;
+                }
+
+                this.processSubmit(form);
+            },
+
+            processSubmit(form) {
+                // 1. Download Mode
                 if (this.outputType === 'download') {
                     this.isProcessing = true;
-                    e.target.submit();
-                    // Reset button after delay since download doesn't reload page
+                    form.submit();
                     setTimeout(() => this.isProcessing = false, 5000);
                     return;
                 }
 
-                // 2. Save to Slot Mode: AJAX Batch Processing
+                // 2. Save to Slot Mode
                 if (this.outputType === 'save_to_slot') {
-                    this.startBatchProcessing(e.target);
+                    this.startBatchProcessing(form);
                 }
             },
 
@@ -297,17 +404,15 @@
                                 employees: chunk,
                                 template_id: this.selectedTemplateId,
                                 output_type: 'save_to_slot',
-                                slot_name: this.slotName
+                                slot_name: this.slotName,
+                                target_employer_id: this.targetEmployerId
                             })
                         });
 
                         const result = await response.json();
 
-                        // Check for partial errors in result array if backend returns array
-                        // Or check if response was not OK
                         if (!response.ok) throw new Error('Network error');
 
-                        // Backend returns array of results
                         if (Array.isArray(result)) {
                             result.forEach(r => {
                                 if (r.status === 'error') {
@@ -321,7 +426,7 @@
 
                     } catch (err) {
                         console.error(err);
-                        failed += chunk.length; // Assume whole chunk failed
+                        failed += chunk.length;
                         const li = document.createElement('li');
                         li.textContent = `Batch error: ${err.message}`;
                         errorList.appendChild(li);
@@ -333,12 +438,10 @@
                     progressBar.textContent = `${percent}%`;
                 }
 
-                // Completion
                 if (failed > 0) {
                     progressText.textContent = `Completed with ${failed} errors.`;
                     progressBar.classList.add('bg-danger');
                     errorDiv.classList.remove('d-none');
-                    // Enable close
                     this.isProcessing = false;
                 } else {
                     progressText.textContent = 'All documents generated successfully!';
@@ -353,9 +456,9 @@
         Alpine.data('employerSelector', () => ({
             search: '',
             open: false,
-            selectedEmployerId: 'global', // Default to global
+            selectedEmployerId: 'global',
             selectedName: 'Global Templates Only (ส่วนกลาง)',
-            options: @json($employerOptions ?? []),
+            options: @json($filterEmployerOptions ?? []),
 
             init() {
                 this.search = this.selectedName;
@@ -372,9 +475,41 @@
                 this.selectedName = opt.name_th + ' (' + opt.name_en + ')';
                 this.search = opt.name_th;
                 this.open = false;
-
-                // Dispatch event to parent
                 window.dispatchEvent(new CustomEvent('employer-selected', { detail: { id: opt.id } }));
+            }
+        }));
+
+        // Clone of employerSelector for Target Selection
+        Alpine.data('targetEmployerSelector', () => ({
+            search: '',
+            open: false,
+            selectedEmployerId: '', // Default Empty
+            selectedName: '',
+            options: @json($targetEmployerOptions ?? []),
+
+            init() {
+                // No default selection
+            },
+
+            get filteredOptions() {
+                if (this.search === '') return this.options;
+                const term = this.search.toLowerCase();
+                return this.options.filter(o => o.search_str.includes(term));
+            },
+
+            selectOption(opt) {
+                this.selectedEmployerId = opt.id;
+                this.selectedName = opt.name_th + ' (' + opt.name_en + ')';
+                this.search = opt.name_th;
+                this.open = false;
+                window.dispatchEvent(new CustomEvent('target-employer-selected', { detail: { id: opt.id } }));
+            },
+
+            clearSelection() {
+                this.selectedEmployerId = '';
+                this.selectedName = '';
+                this.search = '';
+                window.dispatchEvent(new CustomEvent('target-employer-selected', { detail: { id: '' } }));
             }
         }));
     });
