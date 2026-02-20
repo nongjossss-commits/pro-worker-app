@@ -1013,12 +1013,26 @@ let imageZoomLevel = 1.0;
 let isImageFitToScreen = true;
 
 window.viewPDF = function(url, title = 'PDF Preview') {
+    // Check if URL is valid
+    if (!url) {
+        console.error('viewPDF called with empty URL');
+        return;
+    }
+
+    // Fallback if bootstrap is not loaded yet
     if (typeof bootstrap === 'undefined') {
-        alert('{{ __("System is loading components... please try again in a moment.") }}');
+        console.warn('Bootstrap not loaded, opening in new tab');
+        window.open(url, '_blank');
         return;
     }
 
     const modalEl = document.getElementById('pdfPreviewModal');
+    if (!modalEl) {
+        console.error('PDF Preview Modal element not found');
+        window.open(url, '_blank');
+        return;
+    }
+
     const iframe = document.getElementById('pdfPreviewFrame');
     const imageContainer = document.getElementById('imagePreviewContainer');
     const imagePreview = document.getElementById('imagePreview');
@@ -1028,59 +1042,67 @@ window.viewPDF = function(url, title = 'PDF Preview') {
     const modalTitle = document.getElementById('pdfPreviewModalLabel');
 
     try {
-        // Add disposition=inline only if it's a local URL (to avoid breaking S3 signatures)
+        // Construct URL object to parse parts
+        // Use window.location.origin as base for relative URLs
         const pdfUrl = new URL(url, window.location.origin);
-        if (pdfUrl.origin === window.location.origin) {
-            pdfUrl.searchParams.set('disposition', 'inline');
+
+        // Add disposition=inline for local URLs or routes
+        // We check if hostname matches to allow protocol mismatches (http vs https behind proxy)
+        if (pdfUrl.hostname === window.location.hostname) {
+             pdfUrl.searchParams.set('disposition', 'inline');
         }
 
-        modalTitle.textContent = title;
-        downloadBtn.href = url; // Keep original for download
+        if(modalTitle) modalTitle.textContent = title;
+        if(downloadBtn) downloadBtn.href = url; // Keep original URL for download button
 
-        // Detect if file is an image
+        // Detect if file is an image based on extension
         const pathname = pdfUrl.pathname.toLowerCase();
         const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(pathname);
 
         if (isImage) {
             // Image Mode
-            iframe.style.display = 'none';
-            imageContainer.classList.remove('d-none');
+            if(iframe) iframe.style.display = 'none';
+            if(imageContainer) imageContainer.classList.remove('d-none');
             if (zoomControls) zoomControls.classList.remove('d-none');
 
             // Reset Zoom
             isImageFitToScreen = true;
             imageZoomLevel = 1.0;
-            updateImageStyle();
+            if (typeof updateImageStyle === 'function') updateImageStyle();
 
             // Load Image
-            imageSpinner.classList.remove('d-none');
-            imagePreview.style.opacity = '0.5';
-            imagePreview.src = pdfUrl.toString();
+            if(imageSpinner) imageSpinner.classList.remove('d-none');
+            if(imagePreview) {
+                imagePreview.style.opacity = '0.5';
+                imagePreview.src = pdfUrl.toString();
 
-            imagePreview.onload = function() {
-                imageSpinner.classList.add('d-none');
-                imagePreview.style.opacity = '1';
-            };
-            imagePreview.onerror = function() {
-                imageSpinner.classList.add('d-none');
-                // Don't alert immediately, sometimes it's just a flicker, but if persistent it's an issue.
-                // Fallback to iframe if image fails? No, keep it simple.
-            };
+                imagePreview.onload = function() {
+                    if(imageSpinner) imageSpinner.classList.add('d-none');
+                    imagePreview.style.opacity = '1';
+                };
+                imagePreview.onerror = function() {
+                    if(imageSpinner) imageSpinner.classList.add('d-none');
+                    console.error('Image failed to load');
+                };
+            }
 
         } else {
             // PDF / Other Mode
-            iframe.style.display = 'block';
-            imageContainer.classList.add('d-none');
+            if(iframe) {
+                iframe.style.display = 'block';
+                iframe.src = pdfUrl.toString();
+            }
+            if(imageContainer) imageContainer.classList.add('d-none');
             if (zoomControls) zoomControls.classList.add('d-none');
-
-            iframe.src = pdfUrl.toString();
         }
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
+
     } catch (e) {
         console.error('Error opening preview:', e);
-        alert('{{ __("Could not open preview. Please try downloading the file directly.") }}');
+        // Fallback to new tab
+        window.open(url, '_blank');
     }
 };
 
