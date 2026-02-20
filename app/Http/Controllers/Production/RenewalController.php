@@ -123,6 +123,12 @@ class RenewalController extends Controller
                     });
                 }
 
+                if ($filter === 'pending_daily_check') {
+                    return $emps->contains(function($e) {
+                         return $e->status !== 'renewal_cancelled' && $e->is_daily_check_pending;
+                    });
+                }
+
                 // Step Filter
                 if (is_numeric($filter)) {
                     return $emps->contains(function($e) use ($filter) {
@@ -326,8 +332,14 @@ class RenewalController extends Controller
                        ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
                            $q->where('registration_steps.id', $stepOneId);
                        });
-            }
-            elseif (is_numeric($filter)) { // Step ID
+            } elseif ($filter === 'pending_daily_check') {
+                 $query->where('status', '!=', 'renewal_cancelled')
+                       ->where('daily_check_enabled', true)
+                       ->where(function ($sub) {
+                           $sub->whereNull('last_daily_checked_at')
+                             ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                       });
+            } elseif (is_numeric($filter)) { // Step ID
                  $query->where('status', '!=', 'renewal_cancelled');
                  // We filter by highest step in PHP below
             }
@@ -925,15 +937,23 @@ class RenewalController extends Controller
     // --- Helpers ---
     private function applySearchToQuery($query, $search)
     {
-        return $query->where(function($q) use ($search) {
+        $search = trim($search);
+        $cleanedSearch = str_replace(' ', '', $search);
+
+        return $query->where(function($q) use ($search, $cleanedSearch) {
             $q->where('employeeNameTh', 'like', "%{$search}%")
               ->orWhere('employeeNameEn', 'like', "%{$search}%")
               ->orWhere('employeePassport', 'like', "%{$search}%")
-              ->orWhereHas('employer', function($q2) use ($search) {
+              ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+              ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+              ->orWhereHas('employer', function($q2) use ($search, $cleanedSearch) {
                   $q2->where('employerNameTh', 'like', "%{$search}%")
                      ->orWhere('employerNameEn', 'like', "%{$search}%")
-                     ->orWhereHas('jobOwner', function($q3) use ($search) {
-                         $q3->where('name', 'like', "%{$search}%");
+                     ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                     ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                     ->orWhereHas('jobOwner', function($q3) use ($search, $cleanedSearch) {
+                         $q3->where('name', 'like', "%{$search}%")
+                            ->orWhereRaw("REPLACE(name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                      })
                      ->orWhere(function($addrQ) use ($search) {
                          $addrQ->filterByAddress($search);
@@ -944,9 +964,14 @@ class RenewalController extends Controller
 
     private function applyEmployerSearchToQuery($query, $employer, $search)
     {
+        $search = trim($search);
+        $cleanedSearch = str_replace(' ', '', $search);
+
         $employerMatches = false;
         if (stripos($employer->employerNameTh, $search) !== false ||
-            stripos($employer->employerNameEn, $search) !== false) {
+            stripos($employer->employerNameEn, $search) !== false ||
+            stripos(str_replace(' ', '', $employer->employerNameTh ?? ''), $cleanedSearch) !== false ||
+            stripos(str_replace(' ', '', $employer->employerNameEn ?? ''), $cleanedSearch) !== false) {
             $employerMatches = true;
         }
 
@@ -969,10 +994,12 @@ class RenewalController extends Controller
         if ($employerMatches) {
             return $query;
         } else {
-            return $query->where(function($q) use ($search) {
+            return $query->where(function($q) use ($search, $cleanedSearch) {
                 $q->where('employeeNameTh', 'like', "%{$search}%")
                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                  ->orWhere('employeePassport', 'like', "%{$search}%");
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                  ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
             });
         }
     }

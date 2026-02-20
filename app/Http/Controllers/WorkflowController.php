@@ -63,20 +63,26 @@ class WorkflowController extends Controller
 
         // Search
         if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $search = trim($request->search);
+            $cleanedSearch = str_replace(' ', '', $search);
+            $query->where(function($q) use ($search, $cleanedSearch) {
                 $q->where('project_name', 'like', "%{$search}%")
-                  ->orWhereHas('employer', function($e) use ($search) {
+                  ->orWhereRaw("REPLACE(project_name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                  ->orWhereHas('employer', function($e) use ($search, $cleanedSearch) {
                       $e->where('employerNameTh', 'like', "%{$search}%")
                         ->orWhere('employerNameEn', 'like', "%{$search}%")
+                        ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                        ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                         ->orWhere(function($addrQ) use ($search) {
                             $addrQ->filterByAddress($search);
                         });
                   })
-                  ->orWhereHas('items.employee', function($emp) use ($search) {
+                  ->orWhereHas('items.employee', function($emp) use ($search, $cleanedSearch) {
                       $emp->where('employeeNameTh', 'like', "%{$search}%")
                           ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                          ->orWhere('employeePassport', 'like', "%{$search}%");
+                          ->orWhere('employeePassport', 'like', "%{$search}%")
+                          ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                          ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                   })
                   ->orWhereHas('creator', function($creator) use ($search) {
                       $creator->where('name', 'like', "%{$search}%");
@@ -101,12 +107,25 @@ class WorkflowController extends Controller
                     $q->where('status', 'cancelled');
                 } elseif ($filter === 'completed') {
                     $q->where('status', 'completed');
+                } elseif ($filter === 'pending_daily_check') {
+                    $q->where(function($sub) {
+                        $sub->whereNull('last_checked_at')
+                            ->orWhereDate('last_checked_at', '<', Carbon::today());
+                    })->whereNotIn('status', ['cancelled', 'completed']);
                 } elseif (is_numeric($filter)) {
                     // Highest Step ID match (approx for SQL: has this step)
                     $q->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
                         $s->where('work_type_steps.id', $filter);
                     });
                 }
+            });
+        }
+
+        // Operator Filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $opFilter = $request->operator_filter;
+            $query->whereHas('items', function($q) use ($opFilter) {
+                $q->where('operator_id', $opFilter);
             });
         }
 
@@ -198,8 +217,42 @@ class WorkflowController extends Controller
         ];
 
         if ($activeTab) {
-            // Re-calculate stats based on current search/filter if present, or global for tab if not
-            $allMatchingOrders = $query->get(); // Re-run query without pagination
+            // Stats should reflect search but NOT the state filter
+            $statsQuery = ProductionOrder::where('status', '!=', 'pre_production')
+                ->where('work_type_id', $activeTab->id);
+
+            if ($request->has('search') && $request->search) {
+                $search = trim($request->search);
+                $cleanedSearch = str_replace(' ', '', $search);
+                $statsQuery->where(function($q) use ($search, $cleanedSearch) {
+                    $q->where('project_name', 'like', "%{$search}%")
+                      ->orWhereRaw("REPLACE(project_name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                      ->orWhereHas('employer', function($e) use ($search, $cleanedSearch) {
+                          $e->where('employerNameTh', 'like', "%{$search}%")
+                            ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                            ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                            ->orWhere(function($addrQ) use ($search) { $addrQ->filterByAddress($search); });
+                      })
+                      ->orWhereHas('items.employee', function($emp) use ($search, $cleanedSearch) {
+                          $emp->where('employeeNameTh', 'like', "%{$search}%")
+                              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                              ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                      })
+                      ->orWhereHas('employer.jobOwner', function($owner) use ($search) {
+                          $owner->where('name', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            if ($request->has('operator_filter') && $request->operator_filter) {
+                $opFilter = $request->operator_filter;
+                $statsQuery->whereHas('items', fn($q) => $q->where('operator_id', $opFilter));
+            }
+
+            $allMatchingOrders = $statsQuery->with(['items.completedWorkTypeSteps'])->get();
             $stats['total_projects'] = $allMatchingOrders->count();
 
             foreach ($allMatchingOrders as $order) {
@@ -236,14 +289,6 @@ class WorkflowController extends Controller
                      }
                 }
             }
-        }
-
-        // Operator Filter
-        if ($request->has('operator_filter') && $request->operator_filter) {
-            $opFilter = $request->operator_filter;
-            $query->whereHas('items', function($q) use ($opFilter) {
-                $q->where('operator_id', $opFilter);
-            });
         }
 
         return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users'));
@@ -619,26 +664,24 @@ class WorkflowController extends Controller
 
         // 3. Apply Search Filter
         if ($request->has('search') && $request->search) {
-            $search = $request->search;
+            $search = trim($request->search);
+            $cleanedSearch = str_replace(' ', '', $search);
 
             // Check if Order matches the search criteria (Project, Employer, etc.)
             // If it DOES match, we show ALL items (user found the order).
             // If it DOES NOT match, we assume the user found the order via a specific item/employee, so we show ONLY matching items.
             $orderMatches = ProductionOrder::where('id', $orderId)
-                ->where(function($q) use ($search) {
+                ->where(function($q) use ($search, $cleanedSearch) {
                     $q->where('project_name', 'like', "%{$search}%")
-                      ->orWhereHas('employer', function($e) use ($search) {
+                      ->orWhereRaw("REPLACE(project_name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                      ->orWhereHas('employer', function($e) use ($search, $cleanedSearch) {
                           $e->where('employerNameTh', 'like', "%{$search}%")
                             ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                            ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                             ->orWhere(function($addrQ) use ($search) {
                                 $addrQ->filterByAddress($search);
                             });
-                      })
-                      ->orWhereHas('creator', function($creator) use ($search) {
-                          $creator->where('name', 'like', "%{$search}%");
-                      })
-                      ->orWhereHas('updater', function($updater) use ($search) {
-                          $updater->where('name', 'like', "%{$search}%");
                       })
                       ->orWhereHas('employer.jobOwner', function($owner) use ($search) {
                           $owner->where('name', 'like', "%{$search}%");
@@ -647,10 +690,12 @@ class WorkflowController extends Controller
                 ->exists();
 
             if (!$orderMatches) {
-                 $query->whereHas('employee', function($q) use ($search) {
+                 $query->whereHas('employee', function($q) use ($search, $cleanedSearch) {
                       $q->where('employeeNameTh', 'like', "%{$search}%")
                         ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                        ->orWhere('employeePassport', 'like', "%{$search}%");
+                        ->orWhere('employeePassport', 'like', "%{$search}%")
+                        ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                        ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                  });
             }
         }

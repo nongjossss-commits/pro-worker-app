@@ -108,14 +108,14 @@ class RegistrationController extends Controller
             $employerQuery->withoutGlobalScope('employerTenancy');
         }
 
+        // Always scope to employers who have relevant employees for this menu
+        $employerQuery->whereHas('employees', function($q) {
+             $q->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+        });
+
         // Apply Search to Employer Query
         if ($request->has('search') && $request->search) {
             $this->applyEmployerLevelSearch($employerQuery, $request->search);
-        } else {
-            // If no search, we only show employers who have relevant employees
-            $employerQuery->whereHas('employees', function($q) {
-                 $q->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
-            });
         }
 
         // Apply Address Filters
@@ -258,20 +258,24 @@ class RegistrationController extends Controller
               ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               // Job Owner
-              ->orWhereHas('jobOwner', function($q2) use ($search) {
-                  $q2->where('name', 'like', "%{$search}%");
+              ->orWhereHas('jobOwner', function($q2) use ($search, $cleanedSearch) {
+                  $q2->where('name', 'like', "%{$search}%")
+                     ->orWhereRaw("REPLACE(name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
               })
               // Address
               ->orWhere(function($addrQ) use ($search) {
                   $addrQ->filterByAddress($search);
               })
-              // Employees (Robust Search)
+              // Employees (Robust Search) - Scoped to relevant statuses
               ->orWhereHas('employees', function($qEmp) use ($search, $cleanedSearch) {
-                  $qEmp->where('employeeNameTh', 'like', "%{$search}%")
-                       ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                       ->orWhere('employeePassport', 'like', "%{$search}%")
-                       ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                       ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                  $qEmp->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+                       ->where(function($sub) use ($search, $cleanedSearch) {
+                           $sub->where('employeeNameTh', 'like', "%{$search}%")
+                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                               ->orWhere('employeePassport', 'like', "%{$search}%")
+                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                       });
               });
         });
     }
@@ -305,6 +309,16 @@ class RegistrationController extends Controller
             } elseif ($filter === 'biometrics_not_collected') {
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereNull('biometrics_collected_at');
+            } elseif ($filter === 'total_appointments') {
+                 $q->whereIn('status', ['registration_pending', 'registration_completed'])
+                   ->whereNotNull('appointment_date');
+            } elseif ($filter === 'pending_daily_check') {
+                 $q->whereIn('status', ['registration_pending', 'registration_completed'])
+                   ->where('daily_check_enabled', true)
+                   ->where(function ($sub) {
+                       $sub->whereNull('last_daily_checked_at')
+                         ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                   });
             } elseif (is_numeric($filter)) { // Step ID (Highest Step Logic approximation for filter)
                  // Strict Highest Step Filtering to match Employee List Logic
                  $q->where('status', '!=', 'registration_cancelled')
@@ -579,6 +593,16 @@ class RegistrationController extends Controller
             } elseif ($filter === 'biometrics_not_collected') {
                  $query->where('status', '!=', 'registration_cancelled')
                        ->whereNull('biometrics_collected_at');
+            } elseif ($filter === 'total_appointments') {
+                 $query->whereIn('status', ['registration_pending', 'registration_completed'])
+                       ->whereNotNull('appointment_date');
+            } elseif ($filter === 'pending_daily_check') {
+                 $query->whereIn('status', ['registration_pending', 'registration_completed'])
+                       ->where('daily_check_enabled', true)
+                       ->where(function ($sub) {
+                           $sub->whereNull('last_daily_checked_at')
+                             ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                       });
             } elseif (is_numeric($filter)) { // Step ID
                  $query->where('status', '!=', 'registration_cancelled');
                  // We filter by highest step in PHP below
@@ -1712,8 +1736,9 @@ class RegistrationController extends Controller
                      ->orWhere('employerNameEn', 'like', "%{$search}%")
                      ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                      ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                     ->orWhereHas('jobOwner', function($q3) use ($search) {
-                         $q3->where('name', 'like', "%{$search}%");
+                     ->orWhereHas('jobOwner', function($q3) use ($search, $cleanedSearch) {
+                         $q3->where('name', 'like', "%{$search}%")
+                            ->orWhereRaw("REPLACE(name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                      })
                      ->orWhere(function($addrQ) use ($search) {
                          $addrQ->filterByAddress($search);
