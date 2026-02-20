@@ -31,10 +31,10 @@ class PdfGenerationController extends Controller
             return redirect()->back()->with('error', 'No employees selected.');
         }
 
-        // Fetch Employers for filtering (if admin/staff)
+        // Fetch Employers for filtering (if admin/staff) and for Target Employer selection
         $user = Auth::user();
         $employers = collect();
-        if ($user->hasRole('admin') || $user->hasRole('staff') || $user->hasRole('caretaker')) {
+        if ($user->hasRole('admin') || $user->hasRole('staff') || $user->hasRole('caretaker') || $user->hasRole('super-admin')) {
              $query = Employer::select('id', 'employerNameTh', 'employerNameEn');
              if ($user->hasRole('caretaker')) {
                  $query->where('assigned_staff_id', $user->id);
@@ -76,6 +76,7 @@ class PdfGenerationController extends Controller
             'template_id' => 'required|exists:pdf_templates,id',
             'output_type' => 'required|in:download,save_to_slot',
             'slot_name' => 'required_if:output_type,save_to_slot',
+            'target_employer_id' => 'nullable|exists:employers,id',
         ]);
 
         // Pre-flight check for Zip extension if download mode is selected
@@ -87,12 +88,13 @@ class PdfGenerationController extends Controller
         $templateId = $request->template_id;
         $outputType = $request->output_type;
         $slotName = $request->slot_name;
+        $targetEmployerId = $request->input('target_employer_id');
 
         // Force Synchronous Processing for ALL counts
-        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName);
+        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId);
     }
 
-    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName)
+    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId = null)
     {
         // Increase limits for large batches (e.g. 500 records)
         set_time_limit(0);
@@ -100,6 +102,12 @@ class PdfGenerationController extends Controller
 
         try {
             $template = PdfTemplate::findOrFail($templateId);
+
+            // Determine if we should use Empty Employer (Global Template + No Target Selected)
+            $useEmptyEmployer = false;
+            if ($template->type === 'global' && empty($targetEmployerId)) {
+                $useEmptyEmployer = true;
+            }
 
             // Efficiently fetch employees with relationships (include Trashed for consistency)
             $employees = Employee::withTrashed()->with('employer')->whereIn('id', $employeeIds)->get();
@@ -115,7 +123,9 @@ class PdfGenerationController extends Controller
                 // 'save_to_slot' is already memory efficient in service
                 $results = $this->pdfService->generateForEmployees($template, $employees, [
                     'output_type' => 'save_to_slot',
-                    'slot_name' => $slotName
+                    'slot_name' => $slotName,
+                    'target_employer_id' => $targetEmployerId,
+                    'use_empty_employer' => $useEmptyEmployer
                 ]);
 
                 // Detect AJAX request (using checks like expectsJson or X-Requested-With header)
@@ -140,6 +150,12 @@ class PdfGenerationController extends Controller
                 // Download Mode: Stream content to ZIP to save memory
                 // Do NOT use generateForEmployees (which accumulates content in array)
 
+                // Fetch Target Employer Model if needed
+                $targetEmployerModel = null;
+                if ($targetEmployerId) {
+                    $targetEmployerModel = Employer::find($targetEmployerId);
+                }
+
                 $zipName = 'export_' . date('Ymd_His') . '.zip';
                 $zipPath = storage_path('app/public/temp/' . $zipName);
                 if (!is_dir(dirname($zipPath))) mkdir(dirname($zipPath), 0755, true);
@@ -153,7 +169,7 @@ class PdfGenerationController extends Controller
                     foreach ($employees as $employee) {
                         try {
                             // Generate Single PDF
-                            $content = $this->pdfService->generateSinglePdf($template, $employee);
+                            $content = $this->pdfService->generateSinglePdf($template, $employee, $targetEmployerModel, $useEmptyEmployer);
                             $filename = $this->pdfService->generateFilename($template, $employee);
 
                             // Add to Zip
