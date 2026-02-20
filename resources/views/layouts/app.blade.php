@@ -960,15 +960,30 @@
         <div class="modal-content h-100">
             <div class="modal-header">
                 <h5 class="modal-title" id="pdfPreviewModalLabel">{{ __('PDF Preview') }}</h5>
-                <div class="d-flex gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Image Zoom Controls (Initially Hidden) -->
+                    <div id="imageZoomControls" class="d-none btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-secondary" onclick="zoomImage(-0.1)" title="Zoom Out"><i class="bi bi-dash-lg"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetZoom()" title="Reset Zoom"><i class="bi bi-arrows-fullscreen"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="zoomImage(0.1)" title="Zoom In"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+
                     <a href="" id="pdfDownloadBtn" class="btn btn-sm btn-primary" download>
                         <i class="bi bi-download"></i> {{ __('Download') }}
                     </a>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
             </div>
-            <div class="modal-body p-0 h-100 overflow-hidden">
+            <div class="modal-body p-0 h-100 overflow-hidden bg-dark position-relative">
                 <iframe id="pdfPreviewFrame" src="" class="w-100 h-100" style="border: none;"></iframe>
+
+                <!-- Image Preview Container -->
+                <div id="imagePreviewContainer" class="d-none w-100 h-100 overflow-auto d-flex bg-dark">
+                    <div id="imageLoadingSpinner" class="spinner-border text-light position-absolute top-50 start-50 translate-middle" role="status" style="z-index: 5;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <img id="imagePreview" src="" alt="Preview" class="m-auto" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+                </div>
             </div>
         </div>
     </div>
@@ -994,6 +1009,9 @@
 </div>
 
 <script>
+let imageZoomLevel = 1.0;
+let isImageFitToScreen = true;
+
 window.viewPDF = function(url, title = 'PDF Preview') {
     if (typeof bootstrap === 'undefined') {
         alert('{{ __("System is loading components... please try again in a moment.") }}');
@@ -1002,6 +1020,10 @@ window.viewPDF = function(url, title = 'PDF Preview') {
 
     const modalEl = document.getElementById('pdfPreviewModal');
     const iframe = document.getElementById('pdfPreviewFrame');
+    const imageContainer = document.getElementById('imagePreviewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageSpinner = document.getElementById('imageLoadingSpinner');
+    const zoomControls = document.getElementById('imageZoomControls');
     const downloadBtn = document.getElementById('pdfDownloadBtn');
     const modalTitle = document.getElementById('pdfPreviewModalLabel');
 
@@ -1014,14 +1036,102 @@ window.viewPDF = function(url, title = 'PDF Preview') {
 
         modalTitle.textContent = title;
         downloadBtn.href = url; // Keep original for download
-        iframe.src = pdfUrl.toString();
+
+        // Detect if file is an image
+        const pathname = pdfUrl.pathname.toLowerCase();
+        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(pathname);
+
+        if (isImage) {
+            // Image Mode
+            iframe.style.display = 'none';
+            imageContainer.classList.remove('d-none');
+            if (zoomControls) zoomControls.classList.remove('d-none');
+
+            // Reset Zoom
+            isImageFitToScreen = true;
+            imageZoomLevel = 1.0;
+            updateImageStyle();
+
+            // Load Image
+            imageSpinner.classList.remove('d-none');
+            imagePreview.style.opacity = '0.5';
+            imagePreview.src = pdfUrl.toString();
+
+            imagePreview.onload = function() {
+                imageSpinner.classList.add('d-none');
+                imagePreview.style.opacity = '1';
+            };
+            imagePreview.onerror = function() {
+                imageSpinner.classList.add('d-none');
+                // Don't alert immediately, sometimes it's just a flicker, but if persistent it's an issue.
+                // Fallback to iframe if image fails? No, keep it simple.
+            };
+
+        } else {
+            // PDF / Other Mode
+            iframe.style.display = 'block';
+            imageContainer.classList.add('d-none');
+            if (zoomControls) zoomControls.classList.add('d-none');
+
+            iframe.src = pdfUrl.toString();
+        }
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
     } catch (e) {
-        console.error('Error opening PDF preview:', e);
+        console.error('Error opening preview:', e);
         alert('{{ __("Could not open preview. Please try downloading the file directly.") }}');
     }
+};
+
+window.updateImageStyle = function() {
+    const img = document.getElementById('imagePreview');
+    if (!img) return;
+
+    if (isImageFitToScreen) {
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.style.width = 'auto';
+        img.style.height = 'auto';
+        img.style.cursor = 'zoom-in';
+    } else {
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+        if (img.naturalWidth) {
+             img.style.width = (img.naturalWidth * imageZoomLevel) + 'px';
+             img.style.height = 'auto';
+        }
+        img.style.cursor = 'grab';
+    }
+};
+
+window.zoomImage = function(delta) {
+    const img = document.getElementById('imagePreview');
+    if (!img) return;
+
+    if (isImageFitToScreen) {
+        isImageFitToScreen = false;
+        // Calculate starting zoom level based on current visual size vs natural size
+        const currentVisualWidth = img.width;
+        const naturalWidth = img.naturalWidth || currentVisualWidth;
+        // Start zoom from current visual scale + delta
+        if (naturalWidth > 0) {
+            imageZoomLevel = (currentVisualWidth / naturalWidth) + delta;
+        } else {
+            imageZoomLevel = 1.0 + delta;
+        }
+    } else {
+        imageZoomLevel += delta;
+    }
+
+    if (imageZoomLevel < 0.1) imageZoomLevel = 0.1;
+    updateImageStyle();
+};
+
+window.resetZoom = function() {
+    isImageFitToScreen = true;
+    imageZoomLevel = 1.0;
+    updateImageStyle();
 };
 
 // Full-Featured Address Management Script
