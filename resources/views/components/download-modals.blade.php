@@ -175,105 +175,112 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    let downloadModal = new bootstrap.Modal(document.getElementById('downloadOptionsModal'));
-    let downloadCenterModal = new bootstrap.Modal(document.getElementById('downloadCenterModal'));
-    let downloadCenterInterval = null;
+    const initDownloadModals = () => {
+        // Wait for bootstrap to be available (deferred loading)
+        if (typeof bootstrap === 'undefined') {
+            setTimeout(initDownloadModals, 100);
+            return;
+        }
 
-    // --- 1. Handle Triggering Download Options ---
-    // From Single Action
-    document.querySelectorAll('.btn-download-single').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const empId = this.dataset.employeeId;
-            document.getElementById('downloadEmployeeIds').value = JSON.stringify([empId]);
-            downloadModal.show();
+        let downloadModal = new bootstrap.Modal(document.getElementById('downloadOptionsModal'));
+        let downloadCenterModal = new bootstrap.Modal(document.getElementById('downloadCenterModal'));
+        let downloadCenterInterval = null;
+
+        // --- 1. Handle Triggering Download Options ---
+        // From Single Action
+        document.querySelectorAll('.btn-download-single').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const empId = this.dataset.employeeId;
+                document.getElementById('downloadEmployeeIds').value = JSON.stringify([empId]);
+                downloadModal.show();
+            });
         });
-    });
 
-    // From Bulk Action (This function should be called by your bulk action handler)
-    window.openBulkDownloadModal = function(employeeIds) {
-        if (!employeeIds || employeeIds.length === 0) {
-            showToast('Please select employees first.', 'danger');
-            return;
-        }
-        document.getElementById('downloadEmployeeIds').value = JSON.stringify(employeeIds);
-        downloadModal.show();
-    };
-
-    // --- 2. Handle Confirm Download ---
-    document.getElementById('btnConfirmDownload').addEventListener('click', function() {
-        const type = document.querySelector('input[name="download_type"]:checked').value;
-        const files = Array.from(document.querySelectorAll('input[name="files[]"]:checked')).map(cb => cb.value);
-        const empIds = JSON.parse(document.getElementById('downloadEmployeeIds').value || '[]');
-
-        if (files.length === 0) {
-            showToast('Please select at least one file type.', 'danger');
-            return;
-        }
-
-        const btn = this;
-        btn.disabled = true;
-        btn.innerText = 'Starting...';
-
-        fetch('{{ route("admin.downloads.initiate") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                employee_ids: empIds,
-                selected_files: files,
-                type: type
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                downloadModal.hide();
-                showToast(data.message, 'success');
-
-                // Open Download Center to show progress
-                loadDownloadTasks();
-                downloadCenterModal.show();
-
-                // Auto download if ready
-                if (data.download_url) {
-                    if (type === 'pdf') {
-                        viewPDF(data.download_url, 'Employee PDF');
-                    } else {
-                        // For ZIP, use iframe to avoid navigation and "back closes app" issue
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = data.download_url;
-                        document.body.appendChild(iframe);
-                        // Cleanup iframe after a bit
-                        setTimeout(() => document.body.removeChild(iframe), 60000);
-                    }
-                }
-            } else {
-                showToast('Error starting download.', 'danger');
+        // From Bulk Action (This function should be called by your bulk action handler)
+        window.openBulkDownloadModal = function(employeeIds) {
+            if (!employeeIds || employeeIds.length === 0) {
+                showToast('Please select employees first.', 'danger');
+                return;
             }
-        })
-        .catch(err => {
-            console.error(err);
-            showToast('An unexpected error occurred.', 'danger');
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerText = 'Start Download';
+            document.getElementById('downloadEmployeeIds').value = JSON.stringify(employeeIds);
+            downloadModal.show();
+        };
+
+        // --- 2. Handle Confirm Download ---
+        document.getElementById('btnConfirmDownload').addEventListener('click', function() {
+            const type = document.querySelector('input[name="download_type"]:checked').value;
+            const files = Array.from(document.querySelectorAll('input[name="files[]"]:checked')).map(cb => cb.value);
+            const empIds = JSON.parse(document.getElementById('downloadEmployeeIds').value || '[]');
+
+            if (files.length === 0) {
+                showToast('Please select at least one file type.', 'danger');
+                return;
+            }
+
+            const btn = this;
+            btn.disabled = true;
+            btn.innerText = 'Starting...';
+
+            fetch('{{ route("admin.downloads.initiate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    employee_ids: empIds,
+                    selected_files: files,
+                    type: type
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    downloadModal.hide();
+                    showToast(data.message, 'success');
+
+                    // Open Download Center to show progress
+                    loadDownloadTasks();
+                    downloadCenterModal.show();
+
+                    // Auto download if ready
+                    if (data.download_url) {
+                        if (type === 'pdf') {
+                            viewPDF(data.download_url, 'Employee PDF');
+                        } else {
+                            // For ZIP, use iframe to avoid navigation and "back closes app" issue
+                            const iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.src = data.download_url;
+                            document.body.appendChild(iframe);
+                            // Cleanup iframe after a bit
+                            setTimeout(() => document.body.removeChild(iframe), 60000);
+                        }
+                    }
+                } else {
+                    showToast('Error starting download.', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('An unexpected error occurred.', 'danger');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = 'Start Download';
+            });
         });
-    });
 
-    // --- 3. Handle Download Center ---
-    function loadDownloadTasks() {
-        const tbody = document.getElementById('downloadTasksTableBody');
-        // Only show loading if empty, to avoid flickering on refresh
-        if (!tbody.innerHTML.trim() || tbody.innerText.includes('Loading') || tbody.innerText.includes('No tasks')) {
-             tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
-        }
+        // --- 3. Handle Download Center ---
+        function loadDownloadTasks() {
+            const tbody = document.getElementById('downloadTasksTableBody');
+            // Only show loading if empty, to avoid flickering on refresh
+            if (!tbody.innerHTML.trim() || tbody.innerText.includes('Loading') || tbody.innerText.includes('No tasks')) {
+                 tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+            }
 
-        fetch('{{ route("admin.downloads.index") }}')
+            fetch('{{ route("admin.downloads.index") }}')
             .then(res => res.json())
             .then(tasks => {
                 tbody.innerHTML = '';
@@ -333,35 +340,37 @@ document.addEventListener('DOMContentLoaded', function() {
                      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading tasks.</td></tr>';
                 }
             });
-    }
-
-    document.getElementById('btnRefreshDownloads').addEventListener('click', loadDownloadTasks);
-
-    // Auto-refresh when modal is open
-    const centerModalEl = document.getElementById('downloadCenterModal');
-    centerModalEl.addEventListener('shown.bs.modal', function () {
-        loadDownloadTasks();
-        // Poll every 3 seconds
-        downloadCenterInterval = setInterval(loadDownloadTasks, 3000);
-    });
-
-    centerModalEl.addEventListener('hidden.bs.modal', function () {
-        if (downloadCenterInterval) {
-            clearInterval(downloadCenterInterval);
-            downloadCenterInterval = null;
         }
-    });
 
-    // Expose function globally if needed or just rely on button click
-    window.openDownloadCenter = function() {
-        loadDownloadTasks();
-        downloadCenterModal.show();
+        document.getElementById('btnRefreshDownloads').addEventListener('click', loadDownloadTasks);
+
+        // Auto-refresh when modal is open
+        const centerModalEl = document.getElementById('downloadCenterModal');
+        centerModalEl.addEventListener('shown.bs.modal', function () {
+            loadDownloadTasks();
+            // Poll every 3 seconds
+            downloadCenterInterval = setInterval(loadDownloadTasks, 3000);
+        });
+
+        centerModalEl.addEventListener('hidden.bs.modal', function () {
+            if (downloadCenterInterval) {
+                clearInterval(downloadCenterInterval);
+                downloadCenterInterval = null;
+            }
+        });
+
+        // Expose function globally if needed or just rely on button click
+        window.openDownloadCenter = function() {
+            loadDownloadTasks();
+            downloadCenterModal.show();
+        };
+
+        // Listen for a custom event (optional, if you add a navbar link)
+        document.addEventListener('open-download-center', function() {
+            window.openDownloadCenter();
+        });
     };
-
-    // Listen for a custom event (optional, if you add a navbar link)
-    document.addEventListener('open-download-center', function() {
-        window.openDownloadCenter();
-    });
+    initDownloadModals();
 });
 </script>
 @endpush

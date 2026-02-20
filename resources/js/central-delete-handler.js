@@ -11,40 +11,50 @@
  * - `data-is-force-delete`: ('true' or 'false') Controls the confirmation button's style.
  */
 document.addEventListener('DOMContentLoaded', () => {
-    const deleteModalEl = document.getElementById('centralDeleteConfirmationModal');
-    if (!deleteModalEl) return;
+    const initDeleteHandler = () => {
+        // Wait for bootstrap if not yet available
+        if (typeof bootstrap === 'undefined') {
+            setTimeout(initDeleteHandler, 100);
+            return;
+        }
 
-    const deleteModal = new bootstrap.Modal(deleteModalEl);
-    const modalMessage = document.getElementById('central-delete-modal-message');
-    const deleteForm = document.getElementById('central-delete-form');
-    const methodInput = document.getElementById('central-delete-form-method');
-    const confirmBtn = document.getElementById('central-delete-confirm-btn');
+        const deleteModalEl = document.getElementById('centralDeleteConfirmationModal');
+        if (!deleteModalEl) return;
 
-    deleteModalEl.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
+        const deleteModal = new bootstrap.Modal(deleteModalEl);
+        const modalMessage = document.getElementById('central-delete-modal-message');
+        const deleteForm = document.getElementById('central-delete-form');
+        const methodInput = document.getElementById('central-delete-form-method');
+        const confirmBtn = document.getElementById('central-delete-confirm-btn');
 
-        const action = button.getAttribute('data-action');
-        const message = button.getAttribute('data-message');
-        const isForceDelete = button.getAttribute('data-is-force-delete') === 'true';
+        deleteModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
 
-        // 1. Set the form's action URL
-        deleteForm.action = action;
+            const action = button.getAttribute('data-action');
+            const message = button.getAttribute('data-message');
+            const isForceDelete = button.getAttribute('data-is-force-delete') === 'true';
 
-        // 2. Set the confirmation message
-        modalMessage.textContent = message;
+            // 1. Set the form's action URL
+            deleteForm.action = action;
 
-        // 3. Set the form method (DELETE for soft delete, still DELETE for force, but we handle it in controller)
-        methodInput.value = 'DELETE';
+            // 2. Set the confirmation message
+            modalMessage.textContent = message;
 
-        // 4. Style the confirmation button
-        confirmBtn.textContent = isForceDelete ? 'Yes, force delete' : 'Yes, move to trash';
-        confirmBtn.classList.remove('btn-danger', 'btn-primary');
-        confirmBtn.classList.add(isForceDelete ? 'btn-danger' : 'btn-primary');
-    });
+            // 3. Set the form method (DELETE for soft delete, still DELETE for force, but we handle it in controller)
+            methodInput.value = 'DELETE';
 
-    // Optional: Reset form action when modal is hidden to prevent accidental submissions
-    deleteModalEl.addEventListener('hidden.bs.modal', function () {
-        deleteForm.action = '';
-        modalMessage.textContent = 'Are you sure?';
-    });
+            // 4. Style the confirmation button
+            confirmBtn.textContent = isForceDelete ? 'Yes, force delete' : 'Yes, move to trash';
+            confirmBtn.classList.remove('btn-danger', 'btn-primary');
+            confirmBtn.classList.add(isForceDelete ? 'btn-danger' : 'btn-primary');
+        });
+
+        // Optional: Reset form action when modal is hidden to prevent accidental submissions
+        deleteModalEl.addEventListener('hidden.bs.modal', function () {
+            deleteForm.action = '';
+            modalMessage.textContent = 'Are you sure?';
+        });
+    };
+
+    initDeleteHandler();
 });
