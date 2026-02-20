@@ -70,6 +70,11 @@ class ProductionController extends Controller
              $stats['not_started'] = (clone $baseItemsQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
              $stats['cancelled'] = (clone $baseItemsQuery)->where('status', 'cancelled')->count();
              $stats['completed'] = (clone $baseItemsQuery)->where('status', 'completed')->count();
+             $stats['pending_daily_check'] = (clone $baseItemsQuery)->whereNotIn('status', ['cancelled', 'completed'])
+                ->where(function($q) {
+                    $q->whereNull('last_checked_at')
+                      ->orWhereDate('last_checked_at', '<', now()->today());
+                })->count();
         } else {
             // 4. Active Tab Logic: Query Orders and Calculate Specific Stats
 
@@ -85,20 +90,26 @@ class ProductionController extends Controller
 
             // Search
             if ($request->has('search') && $request->search) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
+                $search = trim($request->search);
+                $cleanedSearch = str_replace(' ', '', $search);
+                $query->where(function($q) use ($search, $cleanedSearch) {
                     $q->where('project_name', 'like', "%{$search}%")
-                      ->orWhereHas('employer', function($e) use ($search) {
+                      ->orWhereRaw("REPLACE(project_name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                      ->orWhereHas('employer', function($e) use ($search, $cleanedSearch) {
                           $e->where('employerNameTh', 'like', "%{$search}%")
                             ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                            ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                             ->orWhere(function($addrQ) use ($search) {
                                 $addrQ->filterByAddress($search);
                             });
                       })
-                      ->orWhereHas('items.employee', function($emp) use ($search) {
+                      ->orWhereHas('items.employee', function($emp) use ($search, $cleanedSearch) {
                           $emp->where('employeeNameTh', 'like', "%{$search}%")
                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                              ->orWhere('employeePassport', 'like', "%{$search}%");
+                              ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                              ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                       })
                       ->orWhereHas('creator', function($creator) use ($search) {
                           $creator->where('name', 'like', "%{$search}%");
@@ -122,11 +133,24 @@ class ProductionController extends Controller
                         $q->where('status', 'cancelled');
                     } elseif ($filter === 'completed') {
                         $q->where('status', 'completed');
+                    } elseif ($filter === 'pending_daily_check') {
+                        $q->where(function($sub) {
+                            $sub->whereNull('last_checked_at')
+                                ->orWhereDate('last_checked_at', '<', now()->today());
+                        })->whereNotIn('status', ['cancelled', 'completed']);
                     } elseif (is_numeric($filter)) {
                         $q->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
                             $s->where('work_type_steps.id', $filter);
                         });
                     }
+                });
+            }
+
+            // Operator Filter
+            if ($request->has('operator_filter') && $request->operator_filter) {
+                $opFilter = $request->operator_filter;
+                $query->whereHas('items', function($q) use ($opFilter) {
+                    $q->where('operator_id', $opFilter);
                 });
             }
 
@@ -164,55 +188,65 @@ class ProductionController extends Controller
             // Init Step Stats
             $stats['step_stats'] = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
 
-            // Calculate Stats for Active Tab
-            if (!$request->has('search') && !$request->has('filter') && !$request->has('operator_filter')) {
-                 $baseItemsQuery = ProductionItem::whereHas('order', function($q) use ($activeTab) {
-                     $q->where('work_type_id', $activeTab->id)
-                       ->where('status', 'pre_production');
-                 });
-                 $stats['total_projects'] = ProductionOrder::where('work_type_id', $activeTab->id)->where('status', 'pre_production')->count();
-                 $stats['total_employees'] = (clone $baseItemsQuery)->count();
-                 $stats['not_started'] = (clone $baseItemsQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
-                 $stats['cancelled'] = (clone $baseItemsQuery)->where('status', 'cancelled')->count();
-                 $stats['completed'] = (clone $baseItemsQuery)->where('status', 'completed')->count();
+            // Stats should reflect search but NOT the state filter
+            $statsQuery = ProductionOrder::where('status', 'pre_production')
+                ->where('work_type_id', $activeTab->id);
 
-                 $allStepItems = (clone $baseItemsQuery)
-                     ->with('completedWorkTypeSteps:id,order')
-                     ->get();
+            if ($request->has('search') && $request->search) {
+                $search = trim($request->search);
+                $cleanedSearch = str_replace(' ', '', $search);
+                $statsQuery->where(function($q) use ($search, $cleanedSearch) {
+                    $q->where('project_name', 'like', "%{$search}%")
+                      ->orWhereRaw("REPLACE(project_name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                      ->orWhereHas('employer', function($e) use ($search, $cleanedSearch) {
+                          $e->where('employerNameTh', 'like', "%{$search}%")
+                            ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                            ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                            ->orWhere(function($addrQ) use ($search) { $addrQ->filterByAddress($search); });
+                      })
+                      ->orWhereHas('items.employee', function($emp) use ($search, $cleanedSearch) {
+                          $emp->where('employeeNameTh', 'like', "%{$search}%")
+                              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                              ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                      })
+                      ->orWhereHas('employer.jobOwner', function($owner) use ($search) {
+                          $owner->where('name', 'like', "%{$search}%");
+                      });
+                });
+            }
 
-                 foreach ($allStepItems as $item) {
-                     if ($item->status === 'cancelled') continue;
+            if ($request->has('operator_filter') && $request->operator_filter) {
+                $opFilter = $request->operator_filter;
+                $statsQuery->whereHas('items', fn($q) => $q->where('operator_id', $opFilter));
+            }
+
+            $allMatchingOrders = $statsQuery->with(['items.completedWorkTypeSteps'])->get();
+            $stats['total_projects'] = $allMatchingOrders->count();
+
+            foreach ($allMatchingOrders as $order) {
+                foreach ($order->items as $item) {
+                     $stats['total_employees']++;
+                     if ($item->status === 'cancelled') {
+                         $stats['cancelled']++;
+                         continue;
+                     }
+                     if ($item->status === 'completed') {
+                         $stats['completed']++;
+                     }
+                     if ($item->status === 'pending' && $item->completedWorkTypeSteps->isEmpty()) {
+                         $stats['not_started']++;
+                     }
+                     if (!$item->is_checked_today && $item->status !== 'completed' && $item->status !== 'cancelled') {
+                         $stats['pending_daily_check']++;
+                     }
                      $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
                      if ($highestStep && isset($stats['step_stats'][$highestStep->id])) {
                          $stats['step_stats'][$highestStep->id]++;
                      }
-                 }
-            } else {
-                 $allMatchingOrders = $query->get();
-                 $stats['total_projects'] = $allMatchingOrders->count();
-
-                 foreach ($allMatchingOrders as $order) {
-                     $order->load(['items.completedWorkTypeSteps']);
-                     foreach ($order->items as $item) {
-                         $stats['total_employees']++;
-
-                         if ($item->status === 'cancelled') {
-                             $stats['cancelled']++;
-                             continue;
-                         }
-                         if ($item->status === 'completed') {
-                             $stats['completed']++;
-                         }
-                         if ($item->status === 'pending' && $item->completedWorkTypeSteps->isEmpty()) {
-                             $stats['not_started']++;
-                         }
-
-                         $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
-                         if ($highestStep && isset($stats['step_stats'][$highestStep->id])) {
-                             $stats['step_stats'][$highestStep->id]++;
-                         }
-                     }
-                 }
+                }
             }
 
             // Per Order Stats
@@ -252,14 +286,6 @@ class ProductionController extends Controller
                     'active_items_count' => $order->active_items_count
                 ];
             }
-        }
-
-        // Operator Filter
-        if ($request->has('operator_filter') && $request->operator_filter) {
-            $opFilter = $request->operator_filter;
-            $query->whereHas('items', function($q) use ($opFilter) {
-                $q->where('operator_id', $opFilter);
-            });
         }
 
         // Employers for Dropdown (Global Add Employee)

@@ -86,8 +86,9 @@
 
         {{-- Appointments (NEW) --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm cursor-pointer"
-                 onclick="openCalendarModal()"
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-total_appointments"
+                 onclick="toggleFilter('total_appointments')"
                  style="background-color: #8B5CF6; border: none; transition: transform 0.2s;"> {{-- Purple --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-appointments-count">{{ $totalAppointments ?? 0 }}</h1>
@@ -98,7 +99,9 @@
 
         {{-- Daily Check Pending (NEW) --}}
         <div class="col">
-            <div class="card text-white h-100 shadow-sm cursor-pointer"
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-pending_daily_check"
+                 onclick="toggleFilter('pending_daily_check')"
                  style="background-color: #6366f1; border: none; transition: transform 0.2s;"> {{-- Indigo-500 --}}
                 <div class="card-body text-center d-flex flex-column justify-content-center py-4">
                     <h1 class="display-4 fw-bold mb-0" id="global-daily-check-pending-count">{{ $totalDailyCheckPending ?? 0 }}</h1>
