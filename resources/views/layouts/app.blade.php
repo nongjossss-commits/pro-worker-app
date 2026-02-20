@@ -1025,7 +1025,8 @@ window.viewPDF = function(url, title = 'PDF Preview') {
 };
 
 // Full-Featured Address Management Script
-document.addEventListener('DOMContentLoaded', async function () {
+document.addEventListener('DOMContentLoaded', function () {
+    (async () => {
     // --- Configuration & Global State ---
     const thaiDataUrl = "/thai-addresses"; // Hardcoded URL
     let thaiAddressData = [];
@@ -1237,6 +1238,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         populateDistricts('');
         document.getElementById('addressModalLabel').textContent = '{{ __('Add New Address') }}';
     });
+    })();
 });
 </script>
 
