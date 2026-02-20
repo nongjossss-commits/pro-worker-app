@@ -19,12 +19,12 @@
 
     @if($value)
         <div class="mb-2 d-flex gap-1 flex-wrap">
-            <a href="{{ asset('storage/' . $value) }}" target="_blank" class="btn btn-success btn-sm text-white">
+            <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $value) }}', '{{ $label }}')" class="btn btn-success btn-sm text-white">
                 <i class="bi bi-eye-fill"></i> <span class="d-none d-sm-inline">{{ __('View') }}</span>
             </a>
 
             @if($pdfRoute)
-                <a href="{{ $pdfRoute }}" target="_blank" class="btn btn-danger btn-sm text-white">
+                <a href="#" onclick="event.preventDefault(); viewPDF('{{ $pdfRoute }}', '{{ $label }}')" class="btn btn-danger btn-sm text-white">
                     <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                 </a>
             @endif

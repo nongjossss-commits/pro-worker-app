@@ -642,7 +642,7 @@ class EmployerController extends Controller
                          ->with('highlight_employer', $employer->id);
     }
 
-    public function downloadDocumentAsPdf(Employer $employer, $field)
+    public function downloadDocumentAsPdf(Request $request, Employer $employer, $field)
     {
         $allowedFields = [
             'employer_doc_company',
@@ -665,12 +665,8 @@ class EmployerController extends Controller
             abort(404, 'File not found.');
         }
 
-        $mimeType = Storage::disk($disk)->mimeType($filePath);
+        $disposition = $request->input('disposition', 'attachment');
 
-        if ($mimeType === 'application/pdf') {
-            return Storage::disk($disk)->download($filePath);
-        }
-
-        return \App\Helpers\PdfHelper::streamFile($disk, $filePath);
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition);
     }
 }

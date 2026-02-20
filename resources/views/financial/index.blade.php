@@ -167,7 +167,7 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 @if($txn->slip_path)
-                                    <a href="{{ asset('storage/' . $txn->slip_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View Slip">
+                                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $txn->slip_path) }}', 'View Slip')" class="btn btn-sm btn-outline-secondary" title="View Slip">
                                         <i class="bi bi-receipt"></i>
                                     </a>
                                 @endif

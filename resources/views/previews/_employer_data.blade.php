@@ -130,8 +130,8 @@
             <label class="form-label fw-bold">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
             @if($employer->employer_doc_company)
                 <p class="form-control-plaintext">
-                    <a href="{{ asset('storage/' . $employer->employer_doc_company) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
-                    <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_company) }}', 'ดูหนังสือรับรองบริษัท')" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company']) }}', 'หนังสือรับรองบริษัท')" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                 </p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
@@ -147,8 +147,8 @@
             <label class="form-label fw-bold">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
              @if($employer->employer_doc_lease)
                 <p class="form-control-plaintext">
-                    <a href="{{ asset('storage/' . $employer->employer_doc_lease) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
-                    <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_lease) }}', 'ดูสัญญาเช่า')" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease']) }}', 'สัญญาเช่า')" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                 </p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
@@ -158,8 +158,8 @@
             <label class="form-label fw-bold">3. สัญญาก่อสร้าง / แผนที่</label>
             @if($employer->employer_doc_construction)
                 <p class="form-control-plaintext">
-                    <a href="{{ asset('storage/' . $employer->employer_doc_construction) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
-                    <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_construction) }}', 'ดูใบอนุญาตก่อสร้าง')" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction']) }}', 'ใบอนุญาตก่อสร้าง')" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                 </p>
             @else
                 <p class="form-control-plaintext text-muted">ไม่มีเอกสาร</p>
@@ -171,8 +171,8 @@
             <label class="form-label fw-bold">4. เอกสารอื่นๆ 1</label>
             @if($employer->employer_doc_other_1)
                 <p class="form-control-plaintext">
-                    <a href="{{ asset('storage/' . $employer->employer_doc_other_1) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
-                    <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_other_1) }}', '{{ $employer->employer_doc_other_1_desc ?? 'ดูเอกสารอื่นๆ 1' }}')" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1']) }}', '{{ $employer->employer_doc_other_1_desc ?? 'เอกสารอื่นๆ 1' }}')" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     <br>({{ $employer->employer_doc_other_1_desc ?? 'N/A' }})
                 </p>
             @else
@@ -183,8 +183,8 @@
             <label class="form-label fw-bold">5. เอกสารอื่นๆ 2</label>
             @if($employer->employer_doc_other_2)
                 <p class="form-control-plaintext">
-                    <a href="{{ asset('storage/' . $employer->employer_doc_other_2) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
-                    <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_other_2) }}', '{{ $employer->employer_doc_other_2_desc ?? 'ดูเอกสารอื่นๆ 2' }}')" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2']) }}', '{{ $employer->employer_doc_other_2_desc ?? 'เอกสารอื่นๆ 2' }}')" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     <br>({{ $employer->employer_doc_other_2_desc ?? 'N/A' }})
                 </p>
             @else
@@ -195,8 +195,8 @@
             <label class="form-label fw-bold">6. เอกสารอื่นๆ 3</label>
             @if($employer->employer_doc_other_3)
                 <p class="form-control-plaintext">
-                    <a href="{{ asset('storage/' . $employer->employer_doc_other_3) }}" target="_blank" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
-                    <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3']) }}" target="_blank" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_other_3) }}', '{{ $employer->employer_doc_other_3_desc ?? 'ดูเอกสารอื่นๆ 3' }}')" class="btn btn-success btn-sm text-white"><i class="bi bi-eye-fill"></i> ดูไฟล์</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3']) }}', '{{ $employer->employer_doc_other_3_desc ?? 'เอกสารอื่นๆ 3' }}')" class="btn btn-danger btn-sm text-white"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     <br>({{ $employer->employer_doc_other_3_desc ?? 'N/A' }})
                 </p>
             @else

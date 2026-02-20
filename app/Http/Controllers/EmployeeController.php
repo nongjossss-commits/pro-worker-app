@@ -1047,7 +1047,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
     /**
      * Download a document as PDF (converting images if necessary).
      */
-    public function downloadDocumentAsPdf(Employee $employee, $field)
+    public function downloadDocumentAsPdf(Request $request, Employee $employee, $field)
     {
         // Allowed fields (same as serveDocument, plus 'insurance_document_path')
         $allowedFields = [
@@ -1082,14 +1082,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        $mimeType = Storage::disk($disk)->mimeType($filePath);
+        $disposition = $request->input('disposition', 'attachment');
 
-        // If it's already a PDF, download it directly
-        if ($mimeType === 'application/pdf') {
-            return Storage::disk($disk)->download($filePath);
-        }
-
-        return \App\Helpers\PdfHelper::streamFile($disk, $filePath);
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition);
     }
 
     /**

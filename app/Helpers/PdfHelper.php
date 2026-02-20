@@ -12,9 +12,10 @@ class PdfHelper
      *
      * @param string $disk
      * @param string $filePath
-     * @return \Illuminate\Http\Response
+     * @param string $disposition 'attachment' or 'inline'
+     * @return \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\BinaryFileResponse
      */
-    public static function streamFile($disk, $filePath)
+    public static function streamFile($disk, $filePath, $disposition = 'attachment')
     {
         if (!Storage::disk($disk)->exists($filePath)) {
             abort(404, 'File not found.');
@@ -22,8 +23,14 @@ class PdfHelper
 
         $mimeType = Storage::disk($disk)->mimeType($filePath);
 
-        // If it's already a PDF, download it directly
+        // If it's already a PDF
         if ($mimeType === 'application/pdf') {
+            if ($disposition === 'inline') {
+                return response()->file(Storage::disk($disk)->path($filePath), [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
+                ]);
+            }
             return Storage::disk($disk)->download($filePath);
         }
 
@@ -63,7 +70,7 @@ class PdfHelper
 
             return response($pdf->Output('S', basename($filePath) . '.pdf'))
                 ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'attachment; filename="' . basename($filePath) . '.pdf"');
+                ->header('Content-Disposition', $disposition . '; filename="' . basename($filePath) . '.pdf"');
         }
 
         // Fallback

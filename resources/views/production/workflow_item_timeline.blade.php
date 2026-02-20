@@ -71,7 +71,7 @@
                                                 <div class="flex-grow-1 text-truncate">
                                                     {{ $step->value_text ?? 'Attached File' }}
                                                 </div>
-                                                <a href="{{ Storage::url($step->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <a href="#" onclick="event.preventDefault(); viewPDF('{{ Storage::url($step->file_path) }}', 'View Document')" class="btn btn-sm btn-outline-primary">
                                                     View
                                                 </a>
                                             </div>

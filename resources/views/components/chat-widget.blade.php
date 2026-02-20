@@ -197,10 +197,10 @@
 
                                     <!-- ... (Other context types same as before) ... -->
                                     <template x-if="msg.context_data.type === 'image'">
-                                        <a :href="msg.context_data.url" target="_blank"><img :src="msg.context_data.url" class="img-fluid rounded" style="max-height: 120px;"></a>
+                                        <a href="#" @click.prevent="viewPDF(msg.context_data.url, 'Image Attachment')"><img :src="msg.context_data.url" class="img-fluid rounded" style="max-height: 120px;"></a>
                                     </template>
                                      <template x-if="msg.context_data.type === 'file'">
-                                        <a :href="msg.context_data.url" target="_blank" class="d-flex align-items-center text-decoration-none small" :class="msg.sender_id == currentUserId ? 'text-white' : 'text-primary'">
+                                        <a href="#" @click.prevent="viewPDF(msg.context_data.url, msg.context_data.name || 'File')" class="d-flex align-items-center text-decoration-none small" :class="msg.sender_id == currentUserId ? 'text-white' : 'text-primary'">
                                             <i class="bi bi-file-earmark-text me-1"></i><span x-text="msg.context_data.name || 'File'"></span>
                                         </a>
                                     </template>
