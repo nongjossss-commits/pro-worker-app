@@ -29,7 +29,9 @@ class Employee extends Model
                     }
                 } elseif ($user->hasRole('caretaker')) {
                     $builder->whereHas('employer', function ($q) use ($user) {
-                        $q->where('assigned_staff_id', $user->id);
+                        $q->whereHas('caretakers', function ($q2) use ($user) {
+                            $q2->where('users.id', $user->id);
+                        });
                     });
                 }
             }
