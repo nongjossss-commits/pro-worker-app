@@ -293,6 +293,14 @@
                 nameList: '{{ $employee->name_list_number }}',
                 reqNo: '{{ $employee->request_number }}',
                 refId: '{{ $employee->employee_reference_id }}',
+                copy(el, text) {
+                    if (!text) return;
+                    navigator.clipboard.writeText(text).then(() => {
+                        const originalHtml = el.innerHTML;
+                        el.innerHTML = '<i class=\'bi bi-check text-success\'></i>';
+                        setTimeout(() => el.innerHTML = originalHtml, 1000);
+                    });
+                },
                 fitText(el) {
                     if (!el) return;
                     el.style.fontSize = '';
@@ -357,7 +365,12 @@
                     {{-- Field 1: Name List (Renamed to RA) --}}
                     <div style="width: 140px;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
-                        <div x-show="!isEditing" x-ref="raDisplay" x-init="fitText($el)" class="small text-dark border rounded px-2 py-1 bg-light text-nowrap overflow-hidden" style="min-height: 31px;" x-text="nameList || '-'"></div>
+                        <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
+                            <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
+                            <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
+                                <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </div>
                         <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
                     </div>
 
@@ -378,14 +391,24 @@
                 {{-- Field 2: Request No --}}
                 <div style="width: 140px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
-                    <div x-show="!isEditing" x-ref="reqDisplay" x-init="fitText($el)" class="small text-dark border rounded px-2 py-1 bg-light text-nowrap overflow-hidden" style="min-height: 31px;" x-text="reqNo || '-'"></div>
+                    <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
+                        <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
+                        <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
+                            <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
+                        </button>
+                    </div>
                     <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
                 </div>
 
                 {{-- Field 3: Ref ID --}}
                 <div style="width: 140px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
-                    <div x-show="!isEditing" x-ref="refDisplay" x-init="fitText($el)" class="small text-dark border rounded px-2 py-1 bg-light text-nowrap overflow-hidden" style="min-height: 31px;" x-text="refId || '-'"></div>
+                    <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
+                        <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
+                        <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
+                            <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
+                        </button>
+                    </div>
                     <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
                 </div>
             </div>
