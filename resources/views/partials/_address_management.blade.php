@@ -346,7 +346,8 @@
                 this.el.value = option.value;
                 this.isOpen = false;
                 // Dispatch change event so vanilla JS cascading works
-                this.el.dispatchEvent(new Event('change'));
+                this.el.dispatchEvent(new Event('change', { bubbles: true }));
+                this.el.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }));
     });
