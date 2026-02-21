@@ -374,6 +374,163 @@
                         <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
                     </div>
 
+                    {{-- Insurance Type (Inserted Here for Renewal) --}}
+                    @if(request()->is('production/renewal*'))
+
+                    @once
+                    <script>
+                        document.addEventListener('alpine:init', () => {
+                            Alpine.data('insuranceManager', (config) => ({
+                                insuranceType: config.insuranceType,
+                                originalType: config.insuranceType,
+                                isEditing: false,
+                                data: config.data,
+                                updateUrl: config.updateUrl,
+                                employeeId: config.employeeId,
+
+                                async handleChange(e) {
+                                    const newType = this.insuranceType;
+                                    if (!newType) return;
+
+                                    const d = this.data;
+                                    const esc = (s) => s ? String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
+
+                                    let html = "";
+                                    let preConfirmFn = null;
+
+                                    if (newType === "ประกันสังคม") {
+                                        html = `
+                                            <div class="text-start">
+                                                <label class="form-label small">เลขประกันสังคม</label>
+                                                <input id="swal-sso-no" class="form-control mb-2" value="${esc(d.social_security_number)}">
+                                                <label class="form-label small">โรงพยาบาลตามสิทธิ์</label>
+                                                <input id="swal-sso-hospital" class="form-control mb-2" value="${esc(d.hospital_name)}">
+                                                <label class="form-label small">วันที่ออกบัตร</label>
+                                                <input id="swal-sso-issue" type="date" class="form-control mb-2" value="${esc(d.sso_issue_date)}">
+                                                <label class="form-label small">วันหมดอายุบัตร</label>
+                                                <input id="swal-sso-expiry" type="date" class="form-control mb-2" value="${esc(d.sso_expiry_date)}">
+                                            </div>`;
+                                        preConfirmFn = () => ({
+                                            insurance_type: newType,
+                                            social_security_number: document.getElementById("swal-sso-no").value,
+                                            hospital_name: document.getElementById("swal-sso-hospital").value,
+                                            sso_issue_date: document.getElementById("swal-sso-issue").value,
+                                            sso_expiry_date: document.getElementById("swal-sso-expiry").value,
+                                        });
+                                    } else if (newType === "ประกันโรงพยาบาล") {
+                                         html = `
+                                            <div class="text-start">
+                                                <label class="form-label small">โรงพยาบาล</label>
+                                                <input id="swal-hosp-name" class="form-control mb-2" value="${esc(d.insurance_detail_hospital)}">
+                                                <label class="form-label small">วันหมดอายุ</label>
+                                                <input id="swal-hosp-expiry" type="date" class="form-control mb-2" value="${esc(d.insurance_expiry_date_hospital)}">
+                                            </div>`;
+                                        preConfirmFn = () => ({
+                                            insurance_type: newType,
+                                            insurance_detail_hospital: document.getElementById("swal-hosp-name").value,
+                                            insurance_expiry_date_hospital: document.getElementById("swal-hosp-expiry").value,
+                                        });
+                                    } else if (newType === "ประกันเอกชน") {
+                                         html = `
+                                            <div class="text-start">
+                                                <label class="form-label small">รายละเอียดประกัน (บริษัท)</label>
+                                                <input id="swal-pvt-name" class="form-control mb-2" value="${esc(d.insurance_detail_private)}">
+                                                <label class="form-label small">วันหมดอายุ</label>
+                                                <input id="swal-pvt-expiry" type="date" class="form-control mb-2" value="${esc(d.insurance_expiry_date_private)}">
+                                            </div>`;
+                                        preConfirmFn = () => ({
+                                            insurance_type: newType,
+                                            insurance_detail_private: document.getElementById("swal-pvt-name").value,
+                                            insurance_expiry_date_private: document.getElementById("swal-pvt-expiry").value,
+                                        });
+                                    }
+
+                                    const { value: formValues } = await Swal.fire({
+                                        title: newType,
+                                        html: html,
+                                        focusConfirm: false,
+                                        showCancelButton: true,
+                                        confirmButtonText: "บันทึก (Save)",
+                                        cancelButtonText: "ยกเลิก (Cancel)",
+                                        preConfirm: preConfirmFn
+                                    });
+
+                                    if (formValues) {
+                                         fetch(this.updateUrl, {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                                "X-CSRF-TOKEN": document.querySelector("meta[name=csrf-token]").content
+                                            },
+                                            body: JSON.stringify(formValues)
+                                         })
+                                         .then(res => res.json())
+                                         .then(data => {
+                                             if(data.success) {
+                                                 if(data.html && window.updateCardHTML) {
+                                                    window.updateCardHTML(this.employeeId, data.html);
+                                                 } else {
+                                                    this.insuranceType = formValues.insurance_type;
+                                                    this.isEditing = false;
+                                                 }
+                                                 const Toast = Swal.mixin({
+                                                    toast: true,
+                                                    position: "top-end",
+                                                    showConfirmButton: false,
+                                                    timer: 3000,
+                                                    timerProgressBar: true
+                                                 });
+                                                 Toast.fire({
+                                                    icon: "success",
+                                                    title: "Saved successfully"
+                                                 });
+                                             }
+                                         });
+                                    } else {
+                                         this.insuranceType = this.originalType;
+                                         this.isEditing = false;
+                                    }
+                                }
+                            }));
+                        });
+                    </script>
+                    @endonce
+
+                    <div style="min-width: 140px;" x-data="insuranceManager({
+                        insuranceType: '{{ $employee->insurance_type }}',
+                        updateUrl: '{{ route('production.renewal.update_insurance', $employee->id) }}',
+                        employeeId: {{ $employee->id }},
+                        data: {{ json_encode([
+                            'social_security_number' => $employee->social_security_number,
+                            'hospital_name' => $employee->hospital_name,
+                            'sso_issue_date' => $employee->sso_issue_date ? $employee->sso_issue_date->format('Y-m-d') : null,
+                            'sso_expiry_date' => $employee->sso_expiry_date ? $employee->sso_expiry_date->format('Y-m-d') : null,
+                            'insurance_detail_hospital' => $employee->insurance_detail_hospital,
+                            'insurance_expiry_date_hospital' => $employee->insurance_expiry_date_hospital ? $employee->insurance_expiry_date_hospital->format('Y-m-d') : null,
+                            'insurance_detail_private' => $employee->insurance_detail_private,
+                            'insurance_expiry_date_private' => $employee->insurance_expiry_date_private ? $employee->insurance_expiry_date_private->format('Y-m-d') : null,
+                        ], JSON_HEX_APOS) }}
+                    })">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">ประเภทประกัน</small>
+
+                        {{-- View Mode --}}
+                        <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
+                             <div class="text-nowrap overflow-hidden flex-grow-1" x-text="insuranceType || '-'"></div>
+                             <button @click="isEditing = true" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="Edit Insurance">
+                                <i class="bi bi-pencil-fill" style="font-size: 0.8rem;"></i>
+                             </button>
+                        </div>
+
+                        {{-- Edit Mode --}}
+                        <select x-show="isEditing" class="form-select form-select-sm" x-model="insuranceType" @change="handleChange($event)">
+                            <option value="">-- เลือกประกัน --</option>
+                            <option value="ประกันสังคม">ประกันสังคม (SSO)</option>
+                            <option value="ประกันโรงพยาบาล">ประกันโรงพยาบาล (Hospital)</option>
+                            <option value="ประกันเอกชน">ประกันเอกชน (Private)</option>
+                        </select>
+                    </div>
+                    @endif
+
                     {{-- Action Buttons --}}
                     <div class="d-flex gap-1 mb-1">
                         <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Fields">
@@ -411,145 +568,6 @@
                     </div>
                     <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
                 </div>
-
-                @if(request()->is('production/renewal*'))
-                <div class="mt-1 w-100" x-data="{
-                    insuranceType: '{{ $employee->insurance_type }}',
-                    originalType: '{{ $employee->insurance_type }}',
-                    data: {{ json_encode([
-                        'social_security_number' => $employee->social_security_number,
-                        'hospital_name' => $employee->hospital_name,
-                        'sso_issue_date' => $employee->sso_issue_date ? $employee->sso_issue_date->format('Y-m-d') : null,
-                        'sso_expiry_date' => $employee->sso_expiry_date ? $employee->sso_expiry_date->format('Y-m-d') : null,
-                        'insurance_detail_hospital' => $employee->insurance_detail_hospital,
-                        'insurance_expiry_date_hospital' => $employee->insurance_expiry_date_hospital ? $employee->insurance_expiry_date_hospital->format('Y-m-d') : null,
-                        'insurance_detail_private' => $employee->insurance_detail_private,
-                        'insurance_expiry_date_private' => $employee->insurance_expiry_date_private ? $employee->insurance_expiry_date_private->format('Y-m-d') : null,
-                    ]) }},
-                    async handleChange(e) {
-                        const newType = this.insuranceType;
-                        if (!newType) return;
-
-                        // Helper to escape HTML to prevent XSS
-                        const escapeHtml = (unsafe) => {
-                            if (!unsafe) return '';
-                            return unsafe
-                                .replace(/&/g, "&amp;")
-                                .replace(/</g, "&lt;")
-                                .replace(/>/g, "&gt;")
-                                .replace(/"/g, "&quot;")
-                                .replace(/'/g, "&#039;");
-                        }
-
-                        let html = '';
-                        let preConfirmFn = null;
-
-                        if (newType === 'ประกันสังคม') {
-                            html = `
-                                <div class='text-start'>
-                                    <label class='form-label small'>เลขประกันสังคม</label>
-                                    <input id='swal-sso-no' class='form-control mb-2' value='${escapeHtml(this.data.social_security_number)}'>
-                                    <label class='form-label small'>โรงพยาบาลตามสิทธิ์</label>
-                                    <input id='swal-sso-hospital' class='form-control mb-2' value='${escapeHtml(this.data.hospital_name)}'>
-                                    <label class='form-label small'>วันที่ออกบัตร</label>
-                                    <input id='swal-sso-issue' type='date' class='form-control mb-2' value='${escapeHtml(this.data.sso_issue_date)}'>
-                                    <label class='form-label small'>วันหมดอายุบัตร</label>
-                                    <input id='swal-sso-expiry' type='date' class='form-control mb-2' value='${escapeHtml(this.data.sso_expiry_date)}'>
-                                </div>
-                            `;
-                            preConfirmFn = () => {
-                                return {
-                                    insurance_type: newType,
-                                    social_security_number: document.getElementById('swal-sso-no').value,
-                                    hospital_name: document.getElementById('swal-sso-hospital').value,
-                                    sso_issue_date: document.getElementById('swal-sso-issue').value,
-                                    sso_expiry_date: document.getElementById('swal-sso-expiry').value,
-                                };
-                            };
-                        } else if (newType === 'ประกันโรงพยาบาล') {
-                             html = `
-                                <div class='text-start'>
-                                    <label class='form-label small'>โรงพยาบาล</label>
-                                    <input id='swal-hosp-name' class='form-control mb-2' value='${escapeHtml(this.data.insurance_detail_hospital)}'>
-                                    <label class='form-label small'>วันหมดอายุ</label>
-                                    <input id='swal-hosp-expiry' type='date' class='form-control mb-2' value='${escapeHtml(this.data.insurance_expiry_date_hospital)}'>
-                                </div>
-                            `;
-                            preConfirmFn = () => {
-                                return {
-                                    insurance_type: newType,
-                                    insurance_detail_hospital: document.getElementById('swal-hosp-name').value,
-                                    insurance_expiry_date_hospital: document.getElementById('swal-hosp-expiry').value,
-                                };
-                            };
-                        } else if (newType === 'ประกันเอกชน') {
-                             html = `
-                                <div class='text-start'>
-                                    <label class='form-label small'>รายละเอียดประกัน (บริษัท)</label>
-                                    <input id='swal-pvt-name' class='form-control mb-2' value='${escapeHtml(this.data.insurance_detail_private)}'>
-                                    <label class='form-label small'>วันหมดอายุ</label>
-                                    <input id='swal-pvt-expiry' type='date' class='form-control mb-2' value='${escapeHtml(this.data.insurance_expiry_date_private)}'>
-                                </div>
-                            `;
-                            preConfirmFn = () => {
-                                return {
-                                    insurance_type: newType,
-                                    insurance_detail_private: document.getElementById('swal-pvt-name').value,
-                                    insurance_expiry_date_private: document.getElementById('swal-pvt-expiry').value,
-                                };
-                            };
-                        }
-
-                        const { value: formValues, isDismissed } = await Swal.fire({
-                            title: newType,
-                            html: html,
-                            focusConfirm: false,
-                            showCancelButton: true,
-                            confirmButtonText: 'บันทึก (Save)',
-                            cancelButtonText: 'ยกเลิก (Cancel)',
-                            preConfirm: preConfirmFn
-                        });
-
-                        if (formValues) {
-                             fetch('{{ route('production.renewal.update_insurance', $employee->id) }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                                },
-                                body: JSON.stringify(formValues)
-                             })
-                             .then(res => res.json())
-                             .then(data => {
-                                 if(data.success) {
-                                     if(data.html) window.updateCardHTML({{ $employee->id }}, data.html);
-                                     const Toast = Swal.mixin({
-                                        toast: true,
-                                        position: 'top-end',
-                                        showConfirmButton: false,
-                                        timer: 3000,
-                                        timerProgressBar: true
-                                     });
-                                     Toast.fire({
-                                        icon: 'success',
-                                        title: 'Saved successfully'
-                                     });
-                                 }
-                             });
-                        } else {
-                             this.insuranceType = this.originalType;
-                        }
-                    }
-                }">
-                    <label class="small text-muted fw-bold mb-1"><i class="bi bi-shield-check me-1"></i>ประเภทประกัน</label>
-                    <select class="form-select form-select-sm border-primary" x-model="insuranceType" @change="handleChange($event)">
-                        <option value="">-- เลือกประกัน --</option>
-                        <option value="ประกันสังคม">ประกันสังคม (SSO)</option>
-                        <option value="ประกันโรงพยาบาล">ประกันโรงพยาบาล (Hospital)</option>
-                        <option value="ประกันเอกชน">ประกันเอกชน (Private)</option>
-                    </select>
-                </div>
-                @endif
             </div>
             </div>
 
