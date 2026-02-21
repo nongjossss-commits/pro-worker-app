@@ -515,7 +515,7 @@
     {{-- Document Scanner Component (Global) --}}
     @include('components.document-scanner')
 
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
+    {{-- @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js']) --}}
     <script src="{{ asset('js/financial-security.js') }}"></script>
 
     <script>
