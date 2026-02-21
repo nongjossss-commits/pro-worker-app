@@ -1225,6 +1225,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function populateDistricts(province) {
         fields.addrDistrict.innerHTML = '<option value="">{{ __('Select District') }}</option>';
         fields.addrSubDistrict.innerHTML = '<option value="">{{ __('Select Sub-district') }}</option>'; // Reset sub-districts
+        fields.addrDistrict.disabled = true;
+        fields.addrSubDistrict.disabled = true;
+
         if (!province) return;
 
         const districts = [...new Set(thaiAddressData.filter(d => d.province_th === province).map(d => d.district_th))];
@@ -1233,10 +1236,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const option = new Option(district, district);
             fields.addrDistrict.add(option);
         });
+
+        if (districts.length > 0) {
+            fields.addrDistrict.disabled = false;
+        }
     }
 
     function populateSubDistricts(province, district) {
         fields.addrSubDistrict.innerHTML = '<option value="">{{ __('Select Sub-district') }}</option>';
+        fields.addrSubDistrict.disabled = true;
+
         if (!province || !district) return;
 
         const subDistricts = thaiAddressData.filter(d => d.province_th === province && d.district_th === district);
@@ -1245,6 +1254,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const option = new Option(sub.subdistrict_th, sub.subdistrict_th);
             fields.addrSubDistrict.add(option);
         });
+
+        if (subDistricts.length > 0) {
+            fields.addrSubDistrict.disabled = false;
+        }
     }
 
     // --- Event Listeners for Dropdowns ---
