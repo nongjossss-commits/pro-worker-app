@@ -152,6 +152,21 @@ class RenewalController extends Controller
             });
         }
 
+        // Insurance Filter (Server-Side)
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            $insFilter = $request->insurance_filter;
+            $employerQuery->whereHas('employees', function($q) use ($insFilter) {
+                $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
+                if ($insFilter === 'none') {
+                    $q->where(function($sq) {
+                        $sq->whereNull('insurance_type')->orWhere('insurance_type', '');
+                    });
+                } else {
+                    $q->where('insurance_type', $insFilter);
+                }
+            });
+        }
+
         // Calculate Cancelled Count (Global for these filtered IDs)
         $cancelledEmployersCount = Employer::whereIn('id', $filteredEmployerIds)
             ->whereHas('productionOrders', function($q) {
@@ -321,6 +336,18 @@ class RenewalController extends Controller
         // Operator Filter
         if ($request->has('operator_filter') && $request->operator_filter) {
             $query->where('operator_id', $request->operator_filter);
+        }
+
+        // Insurance Filter
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            $insFilter = $request->insurance_filter;
+            if ($insFilter === 'none') {
+                $query->where(function($sq) {
+                    $sq->whereNull('insurance_type')->orWhere('insurance_type', '');
+                });
+            } else {
+                $query->where('insurance_type', $insFilter);
+            }
         }
 
         if ($request->has('filter') && $request->filter) {
@@ -1100,6 +1127,48 @@ class RenewalController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
+            'html' => $this->getEmployeeCardHtml($employee)
+        ]);
+    }
+
+    public function updateInsurance(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'insurance_type' => 'required|string',
+            'social_security_number' => 'nullable|string',
+            'hospital_name' => 'nullable|string',
+            'sso_issue_date' => 'nullable|date',
+            'sso_expiry_date' => 'nullable|date',
+            'insurance_detail_hospital' => 'nullable|string',
+            'insurance_expiry_date_hospital' => 'nullable|date',
+            'insurance_detail_private' => 'nullable|string',
+            'insurance_expiry_date_private' => 'nullable|date',
+        ]);
+
+        $insuranceType = $validated['insurance_type'];
+        $updateData = ['insurance_type' => $insuranceType];
+
+        if ($insuranceType === 'ประกันสังคม') {
+            $updateData['social_security_number'] = $request->input('social_security_number');
+            $updateData['sso_issue_date'] = $request->input('sso_issue_date');
+            $updateData['sso_expiry_date'] = $request->input('sso_expiry_date');
+            $updateData['hospital_name'] = $request->input('hospital_name');
+        } elseif ($insuranceType === 'ประกันโรงพยาบาล') {
+            $updateData['insurance_detail_hospital'] = $request->input('insurance_detail_hospital');
+            $updateData['insurance_expiry_date_hospital'] = $request->input('insurance_expiry_date_hospital');
+        } elseif ($insuranceType === 'ประกันเอกชน') {
+            $updateData['insurance_detail_private'] = $request->input('insurance_detail_private');
+            $updateData['insurance_expiry_date_private'] = $request->input('insurance_expiry_date_private');
+        }
+
+        $employee->update($updateData);
+
+        return response()->json([
+            'success' => true,
             'html' => $this->getEmployeeCardHtml($employee)
         ]);
     }
