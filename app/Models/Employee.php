@@ -376,4 +376,20 @@ class Employee extends Model
             }
         );
     }
+
+    protected function insuranceDataFilled(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->insurance_type === 'ประกันสังคม') {
+                    return !empty($this->social_security_number);
+                } elseif ($this->insurance_type === 'ประกันโรงพยาบาล') {
+                    return !empty($this->insurance_detail_hospital);
+                } elseif ($this->insurance_type === 'ประกันเอกชน') {
+                    return !empty($this->insurance_detail_private);
+                }
+                return false;
+            }
+        );
+    }
 }

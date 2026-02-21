@@ -228,6 +228,27 @@
 
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-shield-check me-1"></i>
+                        @if(request('insurance_filter') === 'none')
+                            {{ __('No Insurance') }}
+                        @elseif(request('insurance_filter'))
+                            {{ request('insurance_filter') }}
+                        @else
+                            {{ __('Insurance Type') }}
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => null])) }}">{{ __('All Types') }}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {{ request('insurance_filter') == 'ประกันสังคม' ? 'active' : '' }}" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันสังคม'])) }}">ประกันสังคม (SSO)</a></li>
+                        <li><a class="dropdown-item {{ request('insurance_filter') == 'ประกันโรงพยาบาล' ? 'active' : '' }}" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันโรงพยาบาล'])) }}">ประกันโรงพยาบาล (Hospital)</a></li>
+                        <li><a class="dropdown-item {{ request('insurance_filter') == 'ประกันเอกชน' ? 'active' : '' }}" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันเอกชน'])) }}">ประกันเอกชน (Private)</a></li>
+                        <li><a class="dropdown-item {{ request('insurance_filter') == 'none' ? 'active' : '' }}" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'none'])) }}">{{ __('Not Specified') }}</a></li>
+                    </ul>
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-fill me-1"></i>
                         {{ request('operator_filter') ? ($activeOperators->firstWhere('id', request('operator_filter'))->name ?? __('Operator')) : __('Operator') }}
                     </button>

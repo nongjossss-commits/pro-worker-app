@@ -10,7 +10,9 @@
             'title_en' => $item->employee ? $item->employee->employeeTitleEn : '',
             'photo' => $item->employee ? $item->employee->photo_url : '',
             'nationality' => $item->employee ? $item->employee->employeeNationality : '',
-            'employee_id' => $item->employee_id
+            'employee_id' => $item->employee_id,
+            'insurance_type' => $item->employee ? $item->employee->insurance_type : null,
+            'insurance_filled' => $item->employee ? $item->employee->insurance_data_filled : false,
         ];
     })) }},
     employees: {{ json_encode(($employees ?? collect())->map(function($emp) {
@@ -21,6 +23,8 @@
             'title_en' => $emp->employeeTitleEn,
             'photo' => $emp->photo_url,
             'nationality' => $emp->employeeNationality,
+            'insurance_type' => $emp->insurance_type,
+            'insurance_filled' => $emp->insurance_data_filled,
         ];
     })) }},
     productionId: {{ $production->id }},
@@ -626,6 +630,14 @@
                                              <template x-if="item.nationality === 'Myanmar' || item.nationality === 'เมียนมา' || item.nationality === 'พม่า'"><span style="font-size: 1rem;">🇲🇲</span></template>
                                              <template x-if="item.nationality === 'Laos' || item.nationality === 'ลาว'"><span style="font-size: 1rem;">🇱🇦</span></template>
                                              <template x-if="item.nationality === 'Cambodia' || item.nationality === 'กัมพูชา'"><span style="font-size: 1rem;">🇰🇭</span></template>
+
+                                             <!-- Insurance Badge -->
+                                             <template x-if="item.insurance_type">
+                                                 <span class="badge bg-secondary ms-1" style="font-size: 0.7em;" x-text="item.insurance_type"></span>
+                                             </template>
+                                             <template x-if="item.insurance_filled">
+                                                 <i class="bi bi-check-circle-fill text-success ms-1" style="font-size: 0.8rem;" title="Insurance Data Filled"></i>
+                                             </template>
                                         </div>
                                     </div>
                                 </div>
