@@ -55,6 +55,7 @@ class ProductionController extends Controller
             'not_started' => 0,
             'cancelled' => 0,
             'completed' => 0,
+            'pending_daily_check' => 0,
             'step_stats' => [],
         ];
 
