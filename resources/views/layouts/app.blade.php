@@ -1229,8 +1229,9 @@ document.addEventListener('DOMContentLoaded', function () {
         fields.addrSubDistrict.disabled = true;
 
         if (!province) return;
+        const cleanProvince = province.trim();
 
-        const districts = [...new Set(thaiAddressData.filter(d => d.province_th === province).map(d => d.district_th))];
+        const districts = [...new Set(thaiAddressData.filter(d => d.province_th === cleanProvince).map(d => d.district_th))];
         districts.sort((a, b) => a.localeCompare(b, 'th'));
         districts.forEach(district => {
             const option = new Option(district, district);
@@ -1247,8 +1248,10 @@ document.addEventListener('DOMContentLoaded', function () {
         fields.addrSubDistrict.disabled = true;
 
         if (!province || !district) return;
+        const cleanProvince = province.trim();
+        const cleanDistrict = district.trim();
 
-        const subDistricts = thaiAddressData.filter(d => d.province_th === province && d.district_th === district);
+        const subDistricts = thaiAddressData.filter(d => d.province_th === cleanProvince && d.district_th === cleanDistrict);
         subDistricts.sort((a, b) => a.subdistrict_th.localeCompare(b.subdistrict_th, 'th'));
         subDistricts.forEach(sub => {
             const option = new Option(sub.subdistrict_th, sub.subdistrict_th);
@@ -1262,8 +1265,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Event Listeners for Dropdowns ---
     fields.addrProvince.addEventListener('change', function() {
-        populateDistricts(this.value);
-        const selectedData = thaiAddressData.find(d => d.province_th === this.value);
+        // Ensure we use the latest value
+        const val = this.value || '';
+        populateDistricts(val);
+        const cleanVal = val.trim();
+        const selectedData = thaiAddressData.find(d => d.province_th === cleanVal);
         fields.addrProvinceEn.value = selectedData ? selectedData.province_en : '';
         fields.addrDistrictEn.value = '';
         fields.addrSubDistrictEn.value = '';
@@ -1271,18 +1277,26 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     fields.addrDistrict.addEventListener('change', function() {
-        populateSubDistricts(fields.addrProvince.value, this.value);
-        const selectedData = thaiAddressData.find(d => d.province_th === fields.addrProvince.value && d.district_th === this.value);
+        const val = this.value || '';
+        populateSubDistricts(fields.addrProvince.value, val);
+        const cleanProvince = (fields.addrProvince.value || '').trim();
+        const cleanDistrict = val.trim();
+
+        const selectedData = thaiAddressData.find(d => d.province_th === cleanProvince && d.district_th === cleanDistrict);
         fields.addrDistrictEn.value = selectedData ? selectedData.district_en : '';
         fields.addrSubDistrictEn.value = '';
         fields.addrZipCode.value = '';
     });
 
     fields.addrSubDistrict.addEventListener('change', function() {
+        const cleanProvince = (fields.addrProvince.value || '').trim();
+        const cleanDistrict = (fields.addrDistrict.value || '').trim();
+        const cleanSubDistrict = (this.value || '').trim();
+
         const selectedData = thaiAddressData.find(d =>
-            d.province_th === fields.addrProvince.value &&
-            d.district_th === fields.addrDistrict.value &&
-            d.subdistrict_th === this.value
+            d.province_th === cleanProvince &&
+            d.district_th === cleanDistrict &&
+            d.subdistrict_th === cleanSubDistrict
         );
         if (selectedData) {
             fields.addrSubDistrictEn.value = selectedData.subdistrict_en;
