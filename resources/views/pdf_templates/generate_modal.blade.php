@@ -17,6 +17,7 @@
 
                     <form action="{{ route('admin.pdf-templates.generate.process') }}" method="POST" id="generateForm" @submit.prevent="handleSubmit">
                         @csrf
+                        <input type="hidden" name="redirect_url" value="{{ $redirect_url }}">
 
                         <!-- Hidden Employee IDs (Used for Sync Download) -->
                         @foreach($employees as $id)
@@ -215,7 +216,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <a href="{{ url()->previous() }}" class="btn btn-light">Cancel</a>
+                            <a href="{{ $redirect_url }}" class="btn btn-light">Cancel</a>
                             <button type="submit" class="btn btn-primary" :disabled="isProcessing">
                                 <i class="bi bi-file-earmark-pdf me-2"></i>Generate Documents
                             </button>
@@ -273,6 +274,7 @@
             isLoadingTemplates: false,
             selectedEmployerId: 'global', // Filter
             targetEmployerId: '', // Target (for Data)
+            redirectUrl: @json($redirect_url),
 
             init() {
                 // Filter Listener
@@ -447,7 +449,7 @@
                     progressText.textContent = 'All documents generated successfully!';
                     progressBar.classList.add('bg-success');
                     setTimeout(() => {
-                        window.location.href = '{{ route("employees.index") }}';
+                        window.location.href = this.redirectUrl;
                     }, 1500);
                 }
             }
