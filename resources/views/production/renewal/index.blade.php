@@ -834,6 +834,123 @@
 
 @push('scripts')
 <script>
+    // Alpine Component for Insurance Manager (Moved from _employee_card.blade.php)
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('insuranceManager', (config) => ({
+            insuranceType: config.insuranceType,
+            originalType: config.insuranceType,
+            isEditing: false,
+            data: config.data,
+            updateUrl: config.updateUrl,
+            employeeId: config.employeeId,
+
+            async handleChange(e) {
+                const newType = this.insuranceType;
+                if (!newType) return;
+
+                const d = this.data;
+                const esc = (s) => s ? String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
+
+                let html = "";
+                let preConfirmFn = null;
+
+                if (newType === "ประกันสังคม") {
+                    html = `
+                        <div class="text-start">
+                            <label class="form-label small">เลขประกันสังคม</label>
+                            <input id="swal-sso-no" class="form-control mb-2" value="${esc(d.social_security_number)}">
+                            <label class="form-label small">โรงพยาบาลตามสิทธิ์</label>
+                            <input id="swal-sso-hospital" class="form-control mb-2" value="${esc(d.hospital_name)}">
+                            <label class="form-label small">วันที่ออกบัตร</label>
+                            <input id="swal-sso-issue" type="date" class="form-control mb-2" value="${esc(d.sso_issue_date)}">
+                            <label class="form-label small">วันหมดอายุบัตร</label>
+                            <input id="swal-sso-expiry" type="date" class="form-control mb-2" value="${esc(d.sso_expiry_date)}">
+                        </div>`;
+                    preConfirmFn = () => ({
+                        insurance_type: newType,
+                        social_security_number: document.getElementById("swal-sso-no").value,
+                        hospital_name: document.getElementById("swal-sso-hospital").value,
+                        sso_issue_date: document.getElementById("swal-sso-issue").value,
+                        sso_expiry_date: document.getElementById("swal-sso-expiry").value,
+                    });
+                } else if (newType === "ประกันโรงพยาบาล") {
+                        html = `
+                        <div class="text-start">
+                            <label class="form-label small">โรงพยาบาล</label>
+                            <input id="swal-hosp-name" class="form-control mb-2" value="${esc(d.insurance_detail_hospital)}">
+                            <label class="form-label small">วันหมดอายุ</label>
+                            <input id="swal-hosp-expiry" type="date" class="form-control mb-2" value="${esc(d.insurance_expiry_date_hospital)}">
+                        </div>`;
+                    preConfirmFn = () => ({
+                        insurance_type: newType,
+                        insurance_detail_hospital: document.getElementById("swal-hosp-name").value,
+                        insurance_expiry_date_hospital: document.getElementById("swal-hosp-expiry").value,
+                    });
+                } else if (newType === "ประกันเอกชน") {
+                        html = `
+                        <div class="text-start">
+                            <label class="form-label small">รายละเอียดประกัน (บริษัท)</label>
+                            <input id="swal-pvt-name" class="form-control mb-2" value="${esc(d.insurance_detail_private)}">
+                            <label class="form-label small">วันหมดอายุ</label>
+                            <input id="swal-pvt-expiry" type="date" class="form-control mb-2" value="${esc(d.insurance_expiry_date_private)}">
+                        </div>`;
+                    preConfirmFn = () => ({
+                        insurance_type: newType,
+                        insurance_detail_private: document.getElementById("swal-pvt-name").value,
+                        insurance_expiry_date_private: document.getElementById("swal-pvt-expiry").value,
+                    });
+                }
+
+                const { value: formValues } = await Swal.fire({
+                    title: newType,
+                    html: html,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: "บันทึก (Save)",
+                    cancelButtonText: "ยกเลิก (Cancel)",
+                    preConfirm: preConfirmFn
+                });
+
+                if (formValues) {
+                        fetch(this.updateUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector("meta[name=csrf-token]").content
+                        },
+                        body: JSON.stringify(formValues)
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if(data.success) {
+                                if(data.html && window.updateCardHTML) {
+                                window.updateCardHTML(this.employeeId, data.html);
+                                } else {
+                                this.insuranceType = formValues.insurance_type;
+                                this.originalType = formValues.insurance_type;
+                                this.isEditing = false;
+                                }
+                                const Toast = Swal.mixin({
+                                toast: true,
+                                position: "top-end",
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true
+                                });
+                                Toast.fire({
+                                icon: "success",
+                                title: "Saved successfully"
+                                });
+                            }
+                        });
+                } else {
+                        this.insuranceType = this.originalType;
+                        this.isEditing = false;
+                }
+            }
+        }));
+    });
+
     // State for Global Server-Side Filter
     const currentStepFilter = @json(request('filter'));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

@@ -1,27 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AgentController;
-use App\Http\Controllers\DelegateController;
-use App\Http\Controllers\EmployerController;
-use App\Http\Controllers\ImporterController;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\JobController;
-use App\Http\Controllers\Admin\AdminJobTicketController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\JobOwnerController;
-use App\Http\Controllers\AddressController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\TicketController;
-use App\Http\Controllers\Admin\TicketController as AdminTicketController;
-use App\Http\Controllers\Api\EmployerEmployeeController;
-use App\Http\Controllers\Api\TemporaryUploadController;
-use App\Http\Controllers\TicketReplyController;
-use App\Http\Controllers\Admin\TicketStatusController;
-use App\Http\Controllers\PreviewController;
-use App\Http\Controllers\ChatController;
-use App\Http\Controllers\FinancialController; // Import
-use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsController;
+
 
 Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/settings', [SuperAdminSettingsController::class, 'index'])->name('settings.index');
