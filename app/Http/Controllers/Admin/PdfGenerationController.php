@@ -26,6 +26,7 @@ class PdfGenerationController extends Controller
         $this->authorize('view-pdf-templates');
 
         $employeeIds = $request->input('employees', []);
+        $redirectUrl = $request->input('redirect_url', url()->previous());
 
         if (empty($employeeIds)) {
             return redirect()->back()->with('error', 'No employees selected.');
@@ -62,7 +63,8 @@ class PdfGenerationController extends Controller
         return view('pdf_templates.generate_modal', [
             'employees' => $employeeIds,
             'templates' => $templates,
-            'employers' => $employers
+            'employers' => $employers,
+            'redirect_url' => $redirectUrl
         ]);
     }
 
@@ -89,13 +91,18 @@ class PdfGenerationController extends Controller
         $outputType = $request->output_type;
         $slotName = $request->slot_name;
         $targetEmployerId = $request->input('target_employer_id');
+        $redirectUrl = $request->input('redirect_url', route('employees.index'));
 
         // Force Synchronous Processing for ALL counts
-        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId);
+        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId, $redirectUrl);
     }
 
-    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId = null)
+    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId = null, $redirectUrl = null)
     {
+        if (!$redirectUrl) {
+            $redirectUrl = route('employees.index');
+        }
+
         // Increase limits for large batches (e.g. 500 records)
         set_time_limit(0);
         ini_set('memory_limit', '-1');
@@ -116,7 +123,7 @@ class PdfGenerationController extends Controller
                 if (request()->expectsJson() || request()->ajax()) {
                     return response()->json([], 200); // Empty result is valid but means nothing happened
                 }
-                return redirect()->route('employees.index')->with('warning', 'No valid employees found for generation.');
+                return redirect($redirectUrl)->with('warning', 'No valid employees found for generation.');
             }
 
             if ($outputType === 'save_to_slot') {
@@ -144,7 +151,7 @@ class PdfGenerationController extends Controller
                     $msg .= " (Failed: {$errorCount})";
                 }
 
-                return redirect()->route('employees.index')->with($errorCount > 0 ? 'warning' : 'success', $msg);
+                return redirect($redirectUrl)->with($errorCount > 0 ? 'warning' : 'success', $msg);
 
             } else {
                 // Download Mode: Stream content to ZIP to save memory
@@ -200,7 +207,7 @@ class PdfGenerationController extends Controller
                      if (!empty($errorLog)) {
                          $errorMessage .= " Details:\n" . $errorLog;
                      }
-                     return redirect()->route('employees.index')->with('danger', $errorMessage);
+                     return redirect($redirectUrl)->with('danger', $errorMessage);
                 }
 
                 return response()->download($zipPath)->deleteFileAfterSend(true);
@@ -215,7 +222,7 @@ class PdfGenerationController extends Controller
                  ], 500);
             }
 
-            return redirect()->route('employees.index')->with('danger', 'Generation Failed: ' . $e->getMessage());
+            return redirect($redirectUrl)->with('danger', 'Generation Failed: ' . $e->getMessage());
         }
     }
 }

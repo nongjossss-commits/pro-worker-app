@@ -855,6 +855,12 @@
         csrf.value = document.querySelector('meta[name="csrf-token"]').content;
         form.appendChild(csrf);
 
+        const redirectInput = document.createElement('input');
+        redirectInput.type = 'hidden';
+        redirectInput.name = 'redirect_url';
+        redirectInput.value = window.location.href;
+        form.appendChild(redirectInput);
+
         selected.forEach(id => {
             const input = document.createElement('input');
             input.type = 'hidden';
