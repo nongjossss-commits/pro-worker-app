@@ -39,7 +39,7 @@ class RenewalController extends Controller
         // --- 2. Global Employee Query (Lightweight) ---
         $employeeQuery = Employee::query()
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->select('id', 'employer_id', 'status', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeeNationality', 'operator_id');
+            ->select('id', 'employer_id', 'status', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeeNationality', 'operator_id', 'employeePassport', 'insurance_type');
 
         if (auth()->user()->can('manage-tickets')) {
             $employeeQuery->withoutGlobalScope('employerTenancy');
@@ -1150,17 +1150,13 @@ class RenewalController extends Controller
             // Clear others
             $updateData['insurance_detail_private'] = null;
             $updateData['insurance_detail_hospital'] = null;
-            // Also sync to legacy fields if necessary (based on store method)
-            $updateData['hospital_name'] = $validated['insurance_detail_social'] ?? null;
         } elseif ($validated['insurance_type'] === 'ประกันเอกชน') {
              $updateData['insurance_detail_private'] = $validated['insurance_detail_private'] ?? null;
              // Clear others
              $updateData['insurance_detail_social'] = null;
              $updateData['insurance_detail_hospital'] = null;
-             $updateData['hospital_name'] = null;
         } elseif ($validated['insurance_type'] === 'ประกันโรงพยาบาล') {
              $updateData['insurance_detail_hospital'] = $validated['insurance_detail_hospital'] ?? null;
-             $updateData['hospital_name'] = $validated['insurance_detail_hospital'] ?? null;
              // Clear others
              $updateData['insurance_detail_social'] = null;
              $updateData['insurance_detail_private'] = null;
@@ -1169,7 +1165,6 @@ class RenewalController extends Controller
             $updateData['insurance_detail_social'] = null;
             $updateData['insurance_detail_private'] = null;
             $updateData['insurance_detail_hospital'] = null;
-            $updateData['hospital_name'] = null;
         }
 
         $employee->update($updateData);
