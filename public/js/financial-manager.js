@@ -20,8 +20,8 @@ if (typeof window.financialManager === 'undefined') {
 
             // Advance Items
             advanceItems: [],
-            productionItems: initialData.productionItems || [], // List of {id, name, employee_id} (Scoped to Current Stage)
-            employees: initialData.employees || [], // List of candidates {id, name} (Scoped to Current Stage)
+            productionItems: initialData.productionItems || [], // List of {id, name, employee_id}
+            employees: initialData.employees || [], // List of candidates {id, name}
             selectedTransactionItems: [], // List of IDs (ProductionItem ID or 'emp_ID')
 
             // Tax Settings
@@ -149,31 +149,17 @@ if (typeof window.financialManager === 'undefined') {
                         // Filter out if present in the new selection
                         t.item_ids = t.item_ids.filter(existingId => {
                             // Check if existingId is in processedIds
+                            // Need to handle type safety carefully
                             return !processedIds.some(newId => newId == existingId);
                         });
                     }
                 });
 
                 // 2. Overwrite target tier with new selection
-                // KEY CHANGE: We must PRESERVE items that are NOT visible in the current stage (Pre-Prod vs Workflow)
-                // but are already in the tier.
-                // The `modalSelectedIds` (which feeds `itemIds` here) only represents the selection state of VISIBLE items.
-
                 const targetTier = this.pricingTiers[tierIndex];
-                const existingIds = targetTier.item_ids || [];
+                targetTier.item_ids = processedIds;
 
-                // Find items that are currently visible in the modal
-                // (i.e. those in allEmployeesForTier)
-                const visibleEmployees = this.allEmployeesForTier.map(e => e.id);
-
-                // Items that are in the tier but NOT in the visible list (belong to other stage)
-                // We must keep these safe.
-                const hiddenIds = existingIds.filter(id => !visibleEmployees.includes(id) && !visibleEmployees.includes(parseInt(id)));
-
-                // Combine hidden items + new selection from visible items
-                targetTier.item_ids = [...hiddenIds, ...processedIds];
-
-                // 3. Update count for display (Global Count)
+                // 3. Update count for display
                 targetTier.count = targetTier.item_ids.length;
 
                 this.updateTotal();
@@ -216,33 +202,52 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             // --- Employee Filter Logic ---
-            get allEmployeesForTier() {
-                // Return Merged List for Price Tier Modal
-                // This includes Existing ProductionItems AND Candidates (Employees not yet in Order)
-                // This is SCOPED to the current Order (Pre-Prod OR Workflow) because `this.productionItems`
-                // and `this.employees` are filtered by the backend Controller to only include current stage items.
+            get tierCountSum() {
+                // Use item_ids.length for accurate count
+                return this.pricingTiers.reduce((sum, t) => sum + (t.item_ids ? t.item_ids.length : 0), 0);
+            },
 
-                // Filter logic: Exclude items that are currently used in an Installment (Transaction)
-                // Note: Transactions are GLOBAL/SHARED. If an item in Pre-Prod has an installment, it's locked.
-                const usedItemIds = new Set();
-                const usedEmployeeIds = new Set();
-
-                this.transactions.forEach(t => {
+            get billedItemIds() {
+                const ids = new Set();
+                this.filteredTransactions.forEach(t => {
                     if (t.items && Array.isArray(t.items)) {
-                        t.items.forEach(item => {
-                            usedItemIds.add(item.id);
-                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
-                        });
+                        t.items.forEach(item => ids.add(item.id));
                     }
                 });
+                return ids;
+            },
+
+            get unassignedEmployeeCount() {
+                const assignedIds = new Set();
+                this.pricingTiers.forEach(t => {
+                    if (t.item_ids) t.item_ids.forEach(id => assignedIds.add(id));
+                });
+
+                let count = 0;
+                this.allEmployeesForTier.forEach(emp => {
+                    if (!assignedIds.has(emp.id)) count++;
+                });
+                return count;
+            },
+
+            getTierRemainingCount(index) {
+                const tier = this.pricingTiers[index];
+                if (!tier || !tier.item_ids) return 0;
+
+                const billedIds = this.billedItemIds;
+                return tier.item_ids.filter(id => !billedIds.has(id)).length;
+            },
+
+            get allEmployeesForTier() {
+                // Return Merged List for Price Tier Modal
+                // V2.6 Update: We now allow showing ALL employees even if they are in a transaction,
+                // but we might want to know they are "billed". However, for management, showing all is more flexible.
 
                 const list = [];
                 const itemsByEmpId = {};
 
                 // 1. Production Items
                 this.productionItems.forEach(item => {
-                    if (usedItemIds.has(item.id)) return; // Locked by installment
-
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
                     list.push({ ...item, type: 'item' });
                 });
@@ -250,11 +255,11 @@ if (typeof window.financialManager === 'undefined') {
                 // 2. Candidates
                 this.employees.forEach(emp => {
                     if (itemsByEmpId[emp.id]) return; // Already exists as item
-                    if (usedEmployeeIds.has(emp.id)) return; // Locked
 
                     list.push({
                         id: 'emp_' + emp.id,
                         name: emp.name,
+                        // Map properties from employee object to match item structure
                         name_en: emp.name_en,
                         title_en: emp.title_en,
                         photo: emp.photo,
@@ -270,27 +275,28 @@ if (typeof window.financialManager === 'undefined') {
             get availableItems() {
                 if (!this.activeGroupId) return [];
 
-                const usedItemIds = new Set();
+                // 1. Collect Used IDs (ProductionItem IDs) in this Group
+                const usedItemIds = this.billedItemIds;
                 const usedEmployeeIds = new Set();
-
                 this.filteredTransactions.forEach(t => {
-                    if (this.editingTransaction.id && t.id === this.editingTransaction.id) return;
-
-                    if (t.items && Array.isArray(t.items)) {
-                        t.items.forEach(item => {
-                            usedItemIds.add(item.id);
-                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
-                        });
-                    }
+                     if (this.editingTransaction.id && t.id === this.editingTransaction.id) return;
+                     if (t.items) t.items.forEach(i => { if(i.employee_id) usedEmployeeIds.add(i.employee_id); });
                 });
 
                 const list = [];
-                const itemsByEmpId = {};
+                const itemsByEmpId = {}; // Map employee_id -> ProductionItem ID
 
                 // 2. Add Existing Production Items
                 this.productionItems.forEach(item => {
-                    if (usedItemIds.has(item.id)) return;
+                    // Skip if used in another transaction in this group
+                    if (this.editingTransaction.id) {
+                        const isCurrentlyAttached = this.editingTransaction.items && this.editingTransaction.items.some(i => i.id === item.id);
+                        if (!isCurrentlyAttached && usedItemIds.has(item.id)) return;
+                    } else if (usedItemIds.has(item.id)) {
+                        return;
+                    }
 
+                    // V2.6 Update: Employees MUST have an assigned price to be billed in Per Head mode
                     let hasPrice = true;
                     if (this.pricingMode === 'per_head') {
                          hasPrice = !!this.getTierForItem(item.id);
@@ -300,7 +306,6 @@ if (typeof window.financialManager === 'undefined') {
 
                     if (item.employee_id) {
                         itemsByEmpId[item.employee_id] = item.id;
-                        if (usedEmployeeIds.has(item.employee_id)) return;
                     }
 
                     list.push({
@@ -315,13 +320,16 @@ if (typeof window.financialManager === 'undefined') {
                 });
 
                 // 3. Add Candidates (Employees)
+                // Only show candidates if NOT in per_head mode (since they can't have a price yet)
                 if (this.pricingMode !== 'per_head') {
                     this.employees.forEach(emp => {
+                        // Check if this employee is already represented by an existing Production Item
                         if (itemsByEmpId[emp.id]) return;
+                        // Check if already used in another transaction
                         if (usedEmployeeIds.has(emp.id)) return;
 
                         list.push({
-                            id: 'emp_' + emp.id,
+                            id: 'emp_' + emp.id, // Value with prefix to distinguish
                             name: emp.name,
                             photo: emp.photo,
                             name_en: emp.name_en,
@@ -336,13 +344,16 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             get editModalItems() {
+                // Show items that are available OR attached to this transaction
                 if (!this.activeGroupId) return [];
 
+                // IDs currently attached to editing transaction
                 const attachedItemIds = new Set();
                 if (this.editingTransaction.items && Array.isArray(this.editingTransaction.items)) {
                     this.editingTransaction.items.forEach(item => attachedItemIds.add(item.id));
                 }
 
+                // IDs used by OTHER transactions
                 const usedItemIds = new Set();
                 const usedEmployeeIds = new Set();
 
@@ -364,9 +375,16 @@ if (typeof window.financialManager === 'undefined') {
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
 
                     const isAttached = attachedItemIds.has(item.id);
-                    const isUsed = usedItemIds.has(item.id);
+                    const isUsed = usedItemIds.has(item.id); // Used elsewhere
 
                     if (isAttached || !isUsed) {
+                         // V2.6 Per Head Filter
+                         let hasPrice = true;
+                         if (this.pricingMode === 'per_head') {
+                            hasPrice = !!this.getTierForItem(item.id);
+                         }
+                         if (this.pricingMode === 'per_head' && !hasPrice && !isAttached) return;
+
                          list.push({
                             id: item.id,
                             name: item.name,
@@ -381,27 +399,30 @@ if (typeof window.financialManager === 'undefined') {
                 });
 
                 // 2. Candidates
-                this.employees.forEach(emp => {
-                    if (itemsByEmpId[emp.id]) return; // Already has item
-                    if (usedEmployeeIds.has(emp.id)) return; // Used elsewhere
+                if (this.pricingMode !== 'per_head') {
+                    this.employees.forEach(emp => {
+                        if (itemsByEmpId[emp.id]) return; // Already has item
+                        if (usedEmployeeIds.has(emp.id)) return; // Used elsewhere
 
-                    list.push({
-                        id: 'emp_' + emp.id,
-                        name: emp.name,
-                        photo: emp.photo,
-                        name_en: emp.name_en,
-                        title_en: emp.title_en,
-                        nationality: emp.nationality,
-                        type: 'employee',
-                        attached: false
+                        list.push({
+                            id: 'emp_' + emp.id,
+                            name: emp.name,
+                            photo: emp.photo,
+                            name_en: emp.name_en,
+                            title_en: emp.title_en,
+                            nationality: emp.nationality,
+                            type: 'employee',
+                            attached: false
+                        });
                     });
-                });
+                }
 
                 return list;
             },
 
             isItemAttached(itemId) {
                 if (!this.editingTransaction.items) return false;
+                // Only check numeric IDs for attachment status as candidates are never "attached" until saved
                 if (String(itemId).startsWith('emp_')) return false;
                 return this.editingTransaction.items.some(i => i.id == itemId);
             },
@@ -416,6 +437,16 @@ if (typeof window.financialManager === 'undefined') {
                 }
             },
 
+            recalcEditAmount() {
+                if (this.pricingMode === 'per_head') {
+                    let total = 0;
+                    this.selectedTransactionItems.forEach(val => {
+                         total += this.getItemPrice(val);
+                    });
+                    this.editingTransaction.amount = total;
+                }
+            },
+
             selectAllAvailable() {
                 this.selectedTransactionItems = this.availableItems.map(i => i.id);
                 this.recalcAmount();
@@ -424,19 +455,6 @@ if (typeof window.financialManager === 'undefined') {
             deselectAllTransactionItems() {
                 this.selectedTransactionItems = [];
                 this.recalcAmount();
-            },
-
-            recalcEditAmount() {
-                 if (this.pricingMode === 'per_head') {
-                    let total = 0;
-                    this.selectedTransactionItems.forEach(val => {
-                         total += this.getItemPrice(val);
-                    });
-                    // For edit mode, we generally don't auto-update paid amount, only total guidance?
-                    // Or maybe we update the transaction total?
-                    // Let's update editingTransaction.amount for display, but it's not bound to input
-                    this.editingTransaction.amount = total;
-                }
             },
 
             // --- Transaction Actions ---
@@ -449,7 +467,7 @@ if (typeof window.financialManager === 'undefined') {
                 }
             },
 
-            addTransaction(shouldClose = false) {
+            addTransaction() {
                 if (!this.activeGroupId) {
                     Swal.fire('Error', 'Please select a financial tab first.', 'error');
                     return;
@@ -484,14 +502,11 @@ if (typeof window.financialManager === 'undefined') {
                 .then(data => {
                     if(data.success) {
                         this.transactions.push(data.transaction);
-
-                        if (shouldClose) {
-                            bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
-                        }
-
+                        bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
                         this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
                         this.selectedTransactionItems = [];
 
+                        // Update local productionItems list with potentially newly created items
                         if (data.transaction.items) {
                             data.transaction.items.forEach(newItem => {
                                 const exists = this.productionItems.find(pi => pi.id === newItem.id);
@@ -505,16 +520,12 @@ if (typeof window.financialManager === 'undefined') {
                             });
                         }
 
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 3000,
-                            timerProgressBar: true
-                        });
-                        Toast.fire({
+                        Swal.fire({
                             icon: 'success',
-                            title: 'Transaction added successfully'
+                            title: 'Success',
+                            text: 'Transaction added successfully',
+                            timer: 1500,
+                            showConfirmButton: false
                         });
                     } else {
                          throw new Error(data.message || 'Unknown error');
@@ -538,7 +549,8 @@ if (typeof window.financialManager === 'undefined') {
             updateTransaction() {
                 const formData = new FormData();
                 formData.append('_method', 'PUT');
-                formData.append('paid_amount', this.editingTransaction.paid_amount);
+                formData.append('paid_amount', this.editingTransaction.paid_amount || 0);
+                formData.append('amount', this.editingTransaction.amount); // V2.6: Allow amount update from items
                 formData.append('status', this.editingTransaction.status);
                 formData.append('notes', this.editingTransaction.notes || '');
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
@@ -576,17 +588,12 @@ if (typeof window.financialManager === 'undefined') {
                         }
 
                         bootstrap.Modal.getInstance(this.$refs.payModal).hide();
-
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 3000,
-                            timerProgressBar: true
-                        });
-                        Toast.fire({
+                        Swal.fire({
                             icon: 'success',
-                            title: 'Updated successfully'
+                            title: 'Success',
+                            text: 'Updated successfully',
+                            timer: 1500,
+                            showConfirmButton: false
                         });
                     } else {
                         throw new Error(data.message || 'Unknown error');
@@ -682,26 +689,12 @@ if (typeof window.financialManager === 'undefined') {
                 this.pricingTiers.splice(index, 1);
                 this.updateTotal();
             },
-            get tierCountSum() {
-                // Use item_ids.length for accurate count (including global invisible ones)
-                return this.pricingTiers.reduce((sum, t) => sum + (t.item_ids ? t.item_ids.length : 0), 0);
-            },
 
             // Manage Employees Modal Actions
             openManageEmployeesModal(index) {
                 this.activeTierIndex = index;
                 this.modalSearch = '';
-
-                // Initialize selection with CURRENT TIER items
-                // But filtered by visibility (only select items that are in the modal)
-                const currentTierIds = this.pricingTiers[index].item_ids || [];
-                const visibleIds = this.allEmployeesForTier.map(e => e.id);
-
-                // Pre-select items that are currently in the tier AND visible in the modal
-                this.modalSelectedIds = currentTierIds.filter(id => {
-                    // Check if id exists in visibleIds (handle string/int conversion)
-                    return visibleIds.includes(id) || visibleIds.includes(parseInt(id));
-                });
+                this.modalSelectedIds = [...(this.pricingTiers[index].item_ids || [])];
 
                 const el = document.getElementById('manageEmployeesModal-' + this.productionId);
                 if (el && typeof bootstrap !== 'undefined') {
@@ -733,7 +726,7 @@ if (typeof window.financialManager === 'undefined') {
                 let gross = 0;
                 if (this.pricingMode === 'per_head') {
                     gross = this.pricingTiers.reduce((sum, t) => {
-                         const count = t.item_ids ? t.item_ids.length : (parseInt(t.count) || 0);
+                         const count = t.item_ids ? t.item_ids.length : (parseInt(t.count) || 0); // Fallback for legacy
                          return sum + (parseFloat(t.price || 0) * count);
                     }, 0);
                 } else {
@@ -791,6 +784,18 @@ if (typeof window.financialManager === 'undefined') {
             get scheduledAmount() {
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
             },
+            get totalPaidAmount() {
+                return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0);
+            },
+            get remainingBalance() {
+                return Math.max(0, this.grandTotalReceivable - this.totalPaidAmount);
+            },
+            get advancePaid() {
+                return this.advanceTransactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0);
+            },
+            get advanceRemaining() {
+                return Math.max(0, this.advanceTotal - this.advancePaid);
+            },
             get remainingSchedule() {
                 return Math.max(0, this.grandTotalReceivable - this.scheduledAmount);
             },
@@ -838,13 +843,16 @@ if (typeof window.financialManager === 'undefined') {
                 .then(data => {
                     if (data.success) {
                         if (data.group) {
+                            // Update local group data to match server (especially ID conversions)
                             const idx = this.financialGroups.findIndex(g => g.id === this.activeGroupId);
                             if (idx !== -1) {
                                 this.financialGroups[idx] = data.group;
+                                // Re-sync active state without full reset if possible, or just reload data
                                 this.switchGroup(this.activeGroupId);
                             }
                         }
 
+                        // Add new items (converted from candidates) to productionItems list
                         if (data.new_items && Array.isArray(data.new_items)) {
                             data.new_items.forEach(newItem => {
                                 const exists = this.productionItems.find(pi => pi.id === newItem.id);
@@ -862,17 +870,7 @@ if (typeof window.financialManager === 'undefined') {
                             });
                         }
 
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 3000,
-                            timerProgressBar: true
-                        });
-                        Toast.fire({
-                            icon: 'success',
-                            title: 'Settings updated'
-                        });
+                        Swal.fire({ icon: 'success', title: 'Saved', text: 'Settings updated.', timer: 1000, showConfirmButton: false });
                     }
                 })
                 .catch(err => Swal.fire('Error', 'Failed to save settings', 'error'))
@@ -961,71 +959,9 @@ if (typeof window.financialManager === 'undefined') {
             saveAsNewProfile() {
                  Swal.fire('Info', 'Feature coming soon.', 'info');
             },
-
-            get billedItemIds() {
-                const ids = new Set();
-                this.transactions.forEach(t => {
-                    // Only count active transactions
-                    if (t.status === 'cancelled') return;
-
-                    if (t.items && Array.isArray(t.items)) {
-                        t.items.forEach(i => ids.add(i.id));
-                    }
-                });
-                return ids;
-            },
-
-            getTierRemainingCount(index) {
-                const tier = this.pricingTiers[index];
-                if (!tier || !tier.item_ids) return 0;
-                // item_ids can be integers (ProductionItem) or strings (Candidate emp_X)
-                // billedItemIds are always integers (from transactions)
-                // So any 'emp_X' is automatically NOT billed (remains available)
-                // Any integer ID is checked against the set
-                const billed = this.billedItemIds;
-                return tier.item_ids.filter(id => {
-                    if (String(id).startsWith('emp_')) return true;
-                    return !billed.has(parseInt(id));
-                }).length;
-            },
-
-            get unassignedEmployeeCount() {
-                // Calculate Total Unique People Pool (Local View Only)
-                // We only care about employees visible in THIS screen for the count logic here,
-                // OR we want the global unassigned?
-                // The "Unassigned" warning should probably reflect the *active* screen context.
-                // If I am in Pre-Prod, I want to know how many Pre-Prod people have no price.
-
-                const linkedEmployeeIds = new Set();
-                this.productionItems.forEach(pi => {
-                    if (pi.employee_id) linkedEmployeeIds.add(pi.employee_id);
-                });
-
-                const uniqueCandidates = this.employees.filter(e => !linkedEmployeeIds.has(e.id)).length;
-                const totalLocalPool = this.productionItems.length + uniqueCandidates;
-
-                // Assigned Count Calculation (Local View)
-                // We need to count how many LOCAL items are assigned to tiers.
-                let localAssignedCount = 0;
-                const localItemIds = new Set(this.productionItems.map(i => i.id));
-
-                this.pricingTiers.forEach(t => {
-                    if (t.item_ids) {
-                        t.item_ids.forEach(id => {
-                            if (localItemIds.has(parseInt(id))) localAssignedCount++;
-                            else if (typeof id === 'string' && id.startsWith('emp_')) {
-                                // Candidates are local by definition
-                                localAssignedCount++;
-                            }
-                        });
-                    }
-                });
-
-                return Math.max(0, totalLocalPool - localAssignedCount);
-            },
-
             loadAgentData() {
                 if(!this.selectedAgentId) return;
+                // Basic stub if we don't have an endpoint for this yet
                 const select = document.querySelector(`select[x-model="selectedAgentId"]`);
                 if(select) {
                     const option = select.options[select.selectedIndex];
