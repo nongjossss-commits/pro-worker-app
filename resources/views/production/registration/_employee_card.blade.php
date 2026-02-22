@@ -167,6 +167,98 @@
                 </div>
                 </div>
 
+            {{-- Insurance Type (Only for Renewal or general edit) --}}
+            @can('edit-employees')
+            <div class="ms-md-2" x-data="{
+                isEditing: false,
+                type: '{{ $employee->insurance_type }}',
+                hospital: '{{ $employee->hospital_name ?? $employee->insurance_detail }}',
+                company: '{{ $employee->insurance_company ?? $employee->insurance_detail_private }}',
+                saveInsurance() {
+                    let body = {
+                        insurance_type: this.type,
+                        _token: '{{ csrf_token() }}'
+                    };
+                    if (this.type === 'ประกันสังคม' || this.type === 'ประกันโรงพยาบาล') {
+                        body.insurance_detail_social = this.hospital; // Maps to hospital_name
+                        body.insurance_detail_hospital = this.hospital;
+                    } else if (this.type === 'ประกันเอกชน') {
+                        body.insurance_detail_private = this.company;
+                    }
+
+                    fetch('/production/renewal/{{ $employee->id }}/update-insurance', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(body)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) {
+                            if(data.html) updateCardHTML({{ $employee->id }}, data.html);
+                            showToast('{{ __('Insurance updated') }}', 'success');
+                        } else {
+                            showToast(data.message || '{{ __('Error saving') }}', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('{{ __('Error saving') }}', 'danger');
+                    });
+                }
+            }">
+                <div style="min-width: 140px;">
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Insurance') }}</small>
+
+                    <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                         @click="isEditing = true">
+                         <div class="small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center w-100" style="min-height: 38px;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="fw-bold text-primary" x-text="type || '-'"></span>
+                                <i class="bi bi-pencil-fill text-muted" style="font-size: 0.7rem;"></i>
+                            </div>
+                            <div x-show="type === 'ประกันสังคม' && hospital" class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 130px;">
+                                <i class="bi bi-hospital me-1"></i><span x-text="hospital"></span>
+                            </div>
+                            <div x-show="type === 'ประกันโรงพยาบาล' && hospital" class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 130px;">
+                                <i class="bi bi-hospital me-1"></i><span x-text="hospital"></span>
+                            </div>
+                            <div x-show="type === 'ประกันเอกชน' && company" class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 130px;">
+                                <i class="bi bi-building me-1"></i><span x-text="company"></span>
+                            </div>
+                         </div>
+                    </div>
+
+                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-2 p-2 bg-white border rounded shadow-sm position-absolute" style="display: none; z-index: 1060; min-width: 220px;">
+                         <label class="small fw-bold">{{ __('Select Type') }}</label>
+                         <select class="form-select form-select-sm" x-model="type">
+                             <option value="">{{ __('None') }}</option>
+                             <option value="ประกันสังคม">{{ __('ประกันสังคม') }}</option>
+                             <option value="ประกันเอกชน">{{ __('ประกันเอกชน') }}</option>
+                             <option value="ประกันโรงพยาบาล">{{ __('ประกันโรงพยาบาล') }}</option>
+                         </select>
+
+                         <div x-show="type === 'ประกันสังคม' || type === 'ประกันโรงพยาบาล'">
+                             <label class="small fw-bold mt-1">{{ __('Hospital') }}</label>
+                             <input type="text" class="form-control form-control-sm" x-model="hospital" placeholder="Hospital Name">
+                         </div>
+
+                         <div x-show="type === 'ประกันเอกชน'">
+                             <label class="small fw-bold mt-1">{{ __('Company') }}</label>
+                             <input type="text" class="form-control form-control-sm" x-model="company" placeholder="Insurance Company">
+                         </div>
+
+                         <div class="d-flex gap-1 mt-2">
+                            <button @click="saveInsurance()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> {{ __('Save') }}</button>
+                            <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
+                         </div>
+                    </div>
+                </div>
+            </div>
+            @endcan
+
             {{-- Appointment Date & Location (Copied from Workflow) --}}
             @php
                 $appDate = $employee->appointment_date;

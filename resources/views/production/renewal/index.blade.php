@@ -240,6 +240,22 @@
                     </ul>
                 </div>
 
+                {{-- Insurance Filter --}}
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-shield-check me-1"></i>
+                        {{ request('insurance_filter') ? (request('insurance_filter') === 'none' ? __('No Insurance') : request('insurance_filter')) : __('Insurance') }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => null])) }}">{{ __('All Types') }}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันสังคม'])) }}">{{ __('ประกันสังคม') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันเอกชน'])) }}">{{ __('ประกันเอกชน') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันโรงพยาบาล'])) }}">{{ __('ประกันโรงพยาบาล') }}</a></li>
+                        <li><a class="dropdown-item text-muted" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'none'])) }}">{{ __('No Insurance') }}</a></li>
+                    </ul>
+                </div>
+
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
                     @can('edit-employees')
                     <a href="{{ route('production.renewal.create') }}" class="btn btn-warning text-white fw-bold">

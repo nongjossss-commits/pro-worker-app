@@ -316,6 +316,9 @@ Route::middleware(['auth'])->group(function () {
         // Operator
         Route::post('/{employee}/toggle-operator', [App\Http\Controllers\Production\RenewalController::class, 'toggleOperator'])->name('toggle_operator');
 
+        // Insurance
+        Route::post('/{employee}/update-insurance', [App\Http\Controllers\Production\RenewalController::class, 'updateInsurance'])->name('update_insurance');
+
         // Daily Check
         Route::post('/{employee}/check-daily', [App\Http\Controllers\Production\RenewalController::class, 'checkDaily'])->name('check_daily');
         Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RenewalController::class, 'toggleDailyCheck'])->name('toggle_daily_check');

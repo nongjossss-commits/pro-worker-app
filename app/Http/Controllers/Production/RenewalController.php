@@ -152,6 +152,21 @@ class RenewalController extends Controller
             });
         }
 
+        // Insurance Filter (Server-Side)
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            $insFilter = $request->insurance_filter;
+            $employerQuery->whereHas('employees', function($q) use ($insFilter) {
+                $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
+                if ($insFilter === 'none') {
+                    $q->where(function($sub) {
+                        $sub->whereNull('insurance_type')->orWhere('insurance_type', '');
+                    });
+                } else {
+                    $q->where('insurance_type', $insFilter);
+                }
+            });
+        }
+
         // Calculate Cancelled Count (Global for these filtered IDs)
         $cancelledEmployersCount = Employer::whereIn('id', $filteredEmployerIds)
             ->whereHas('productionOrders', function($q) {
@@ -321,6 +336,17 @@ class RenewalController extends Controller
         // Operator Filter
         if ($request->has('operator_filter') && $request->operator_filter) {
             $query->where('operator_id', $request->operator_filter);
+        }
+
+        // Insurance Filter
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            if ($request->insurance_filter === 'none') {
+                 $query->where(function($q) {
+                     $q->whereNull('insurance_type')->orWhere('insurance_type', '');
+                 });
+            } else {
+                 $query->where('insurance_type', $request->insurance_filter);
+            }
         }
 
         if ($request->has('filter') && $request->filter) {
@@ -1100,6 +1126,65 @@ class RenewalController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
+            'html' => $this->getEmployeeCardHtml($employee)
+        ]);
+    }
+
+    public function updateInsurance(Request $request, $employeeId)
+    {
+        $employee = Employee::findOrFail($employeeId);
+
+        if (!auth()->user()->can('edit-employees')) {
+            return response()->json(['success' => false, 'message' => 'Permission denied'], 403);
+        }
+
+        $validated = $request->validate([
+            'insurance_type' => 'nullable|string',
+            'insurance_detail_social' => 'nullable|string',
+            'insurance_detail_private' => 'nullable|string',
+            'insurance_detail_hospital' => 'nullable|string',
+        ]);
+
+        $updateData = ['insurance_type' => $validated['insurance_type']];
+
+        // Conditional Logic based on Type (Clear others)
+        if ($validated['insurance_type'] === 'ประกันสังคม') {
+            $updateData['insurance_detail'] = $validated['insurance_detail_social'] ?? null; // Map to main detail column if needed or keep separate
+            $updateData['insurance_detail_social'] = $validated['insurance_detail_social'] ?? null;
+            // Clear others
+            $updateData['insurance_detail_private'] = null;
+            $updateData['insurance_detail_hospital'] = null;
+            // Also sync to legacy fields if necessary (based on store method)
+            $updateData['hospital_name'] = $validated['insurance_detail_social'] ?? null;
+            $updateData['insurance_company'] = null;
+        } elseif ($validated['insurance_type'] === 'ประกันเอกชน') {
+             $updateData['insurance_detail_private'] = $validated['insurance_detail_private'] ?? null;
+             $updateData['insurance_company'] = $validated['insurance_detail_private'] ?? null;
+             // Clear others
+             $updateData['insurance_detail_social'] = null;
+             $updateData['insurance_detail_hospital'] = null;
+             $updateData['hospital_name'] = null;
+        } elseif ($validated['insurance_type'] === 'ประกันโรงพยาบาล') {
+             $updateData['insurance_detail_hospital'] = $validated['insurance_detail_hospital'] ?? null;
+             $updateData['hospital_name'] = $validated['insurance_detail_hospital'] ?? null;
+             // Clear others
+             $updateData['insurance_detail_social'] = null;
+             $updateData['insurance_detail_private'] = null;
+             $updateData['insurance_company'] = null;
+        } else {
+            // None or cleared
+            $updateData['insurance_detail_social'] = null;
+            $updateData['insurance_detail_private'] = null;
+            $updateData['insurance_detail_hospital'] = null;
+            $updateData['hospital_name'] = null;
+            $updateData['insurance_company'] = null;
+        }
+
+        $employee->update($updateData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Insurance updated.',
             'html' => $this->getEmployeeCardHtml($employee)
         ]);
     }
