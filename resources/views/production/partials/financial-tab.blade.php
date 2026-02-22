@@ -11,6 +11,7 @@
             'photo' => $item->employee ? $item->employee->photo_url : '',
             'nationality' => $item->employee ? $item->employee->employeeNationality : '',
             'insurance_type' => $item->employee ? $item->employee->insurance_type : '',
+            'passport' => $item->employee ? $item->employee->employeePassport : '',
             'employee_id' => $item->employee_id
         ];
     })) }},
@@ -23,6 +24,7 @@
             'photo' => $emp->photo_url,
             'nationality' => $emp->employeeNationality,
             'insurance_type' => $emp->insurance_type,
+            'passport' => $emp->employeePassport,
         ];
     })) }},
     productionId: {{ $production->id }},
