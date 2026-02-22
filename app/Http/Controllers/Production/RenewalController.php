@@ -620,10 +620,8 @@ class RenewalController extends Controller
         if ($validated['insuranceType'] === 'ประกันสังคม') {
             $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
             $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
-            $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
         } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
-            $validated['insuranceCompany'] = $validated['insurance_detail_private'] ?? null;
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
@@ -631,11 +629,9 @@ class RenewalController extends Controller
             $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
             $validated['socialSecurityNumber'] = null;
-            $validated['insuranceCompany'] = null;
         } else {
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
-            $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
         }
 
@@ -1156,10 +1152,8 @@ class RenewalController extends Controller
             $updateData['insurance_detail_hospital'] = null;
             // Also sync to legacy fields if necessary (based on store method)
             $updateData['hospital_name'] = $validated['insurance_detail_social'] ?? null;
-            $updateData['insurance_company'] = null;
         } elseif ($validated['insurance_type'] === 'ประกันเอกชน') {
              $updateData['insurance_detail_private'] = $validated['insurance_detail_private'] ?? null;
-             $updateData['insurance_company'] = $validated['insurance_detail_private'] ?? null;
              // Clear others
              $updateData['insurance_detail_social'] = null;
              $updateData['insurance_detail_hospital'] = null;
@@ -1170,14 +1164,12 @@ class RenewalController extends Controller
              // Clear others
              $updateData['insurance_detail_social'] = null;
              $updateData['insurance_detail_private'] = null;
-             $updateData['insurance_company'] = null;
         } else {
             // None or cleared
             $updateData['insurance_detail_social'] = null;
             $updateData['insurance_detail_private'] = null;
             $updateData['insurance_detail_hospital'] = null;
             $updateData['hospital_name'] = null;
-            $updateData['insurance_company'] = null;
         }
 
         $employee->update($updateData);
