@@ -199,6 +199,12 @@
                         if(data.success) {
                             if(data.html) updateCardHTML({{ $employee->id }}, data.html);
                             showToast('{{ __('Insurance updated') }}', 'success');
+                            window.dispatchEvent(new CustomEvent('insurance-updated', {
+                                detail: {
+                                    employeeId: {{ $employee->id }},
+                                    insuranceType: this.type
+                                }
+                            }));
                         } else {
                             showToast(data.message || '{{ __('Error saving') }}', 'danger');
                         }

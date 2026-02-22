@@ -118,6 +118,25 @@ if (typeof window.financialManager === 'undefined') {
                 this.updateTotal();
             },
 
+            updateEmployeeInsurance(employeeId, newType) {
+                // Update Production Items (if linked)
+                this.productionItems.forEach(item => {
+                    if (item.employee_id == employeeId) {
+                        item.insurance_type = newType;
+                    }
+                });
+
+                // Update Candidates (if not linked)
+                this.employees.forEach(emp => {
+                    if (emp.id == employeeId) {
+                        emp.insurance_type = newType;
+                    }
+                });
+
+                // Force Alpine reactivity if array mutation is deep (though simple prop update usually works)
+                // If items are used in filtered lists (like allEmployeesForTier), they are computed properties so they should react.
+            },
+
             // --- Helper Methods for Tier Management ---
             getTierForItem(itemId) {
                 // Returns the tier object if the item is assigned to one
