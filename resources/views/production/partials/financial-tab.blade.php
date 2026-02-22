@@ -30,7 +30,9 @@
     productionId: {{ $production->id }},
     employeeCount: {{ $employeeCount ?? $production->items->count() }},
     csrfToken: '{{ csrf_token() }}'
-})" class="row">
+})"
+@insurance-updated.window="updateEmployeeInsurance($event.detail.employeeId, $event.detail.insuranceType)"
+class="row">
 
     <!-- TAB NAVIGATION -->
     <div class="col-12 mb-3">
@@ -638,6 +640,13 @@
                                             </template>
                                             <template x-if="!item.insurance_type">
                                                 <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
+                                            </template>
+                                            <!-- Passport Badge -->
+                                            <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No'">
+                                                <span class="badge bg-info text-dark rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Passport') }}</span>
+                                            </template>
+                                            <template x-if="!item.passport || item.passport === '-' || item.passport === 'No'">
+                                                <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
                                             </template>
                                         </div>
                                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.75rem;">
