@@ -21,6 +21,7 @@
             'title_en' => $emp->employeeTitleEn,
             'photo' => $emp->photo_url,
             'nationality' => $emp->employeeNationality,
+            'insurance_type' => $emp->insurance_type,
         ];
     })) }},
     productionId: {{ $production->id }},
@@ -620,7 +621,19 @@
                                 <div class="d-flex align-items-center gap-2 overflow-hidden">
                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
                                     <div class="d-flex flex-column" style="line-height: 1.2; min-width: 0;">
-                                        <div class="fw-bold text-truncate" style="font-size: 0.85rem;" x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></div>
+                                        <div class="fw-bold text-truncate" style="font-size: 0.85rem;">
+                                            <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
+                                            <!-- Insurance Badge -->
+                                            <template x-if="item.insurance_type">
+                                                <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
+                                                      :class="{
+                                                          'bg-primary': item.insurance_type === 'ประกันสังคม',
+                                                          'bg-warning text-dark': item.insurance_type === 'ประกันเอกชน',
+                                                          'bg-success': item.insurance_type === 'ประกันโรงพยาบาล'
+                                                      }"
+                                                      x-text="item.insurance_type"></span>
+                                            </template>
+                                        </div>
                                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.75rem;">
                                              <span class="text-truncate" x-text="item.nationality"></span>
                                              <template x-if="item.nationality === 'Myanmar' || item.nationality === 'เมียนมา' || item.nationality === 'พม่า'"><span style="font-size: 1rem;">🇲🇲</span></template>
