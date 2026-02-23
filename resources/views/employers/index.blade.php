@@ -60,7 +60,7 @@
                                ondragstart="window.startDragGlobal(event, 'employer', {
                                    id: {{ $employer->id }},
                                    name: '{{ addslashes($employer->employerNameTh) }}',
-                                   code: '{{ $employer->employerId }}',
+                                   subtitle: '{{ addslashes($employer->employerNameEn) }}',
                                    url: '{{ route('employers.edit', $employer->id) }}'
                                })"
                                title="{{ __('Drag') }}">

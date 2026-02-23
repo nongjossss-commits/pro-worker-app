@@ -207,15 +207,22 @@
 
                                     <!-- Employee Card -->
                                     <template x-if="msg.context_data.type === 'employee'">
-                                        <div class="d-flex align-items-center p-2 rounded bg-white border">
+                                        <div class="d-flex align-items-center p-2 rounded bg-white border shadow-sm" style="min-width: 200px;">
                                             <div class="me-2">
-                                                <i class="bi bi-person-circle fs-3 text-secondary"></i>
+                                                <template x-if="msg.context_data.photo">
+                                                    <img :src="msg.context_data.photo" class="rounded-circle border object-fit-cover" width="40" height="40">
+                                                </template>
+                                                <template x-if="!msg.context_data.photo">
+                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="bi bi-person-fill"></i>
+                                                    </div>
+                                                </template>
                                             </div>
                                             <div class="flex-grow-1 lh-1">
                                                 <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.name"></a>
                                                 <small class="text-muted d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.subtitle || 'Employee'"></small>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-type="'employee'" :data-model-id="msg.context_data.id">
+                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2 rounded-circle" :data-model-type="'employee'" :data-model-id="msg.context_data.id" title="Preview">
                                                 <i class="bi bi-search"></i>
                                             </button>
                                         </div>
@@ -223,15 +230,17 @@
 
                                     <!-- Employer Card -->
                                     <template x-if="msg.context_data.type === 'employer'">
-                                        <div class="d-flex align-items-center p-2 rounded bg-white border">
+                                        <div class="d-flex align-items-center p-2 rounded bg-white border shadow-sm" style="min-width: 200px;">
                                             <div class="me-2">
-                                                <i class="bi bi-building fs-3 text-secondary"></i>
+                                                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    <i class="bi bi-building-fill text-primary fs-5"></i>
+                                                </div>
                                             </div>
                                             <div class="flex-grow-1 lh-1">
                                                 <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.name"></a>
                                                 <small class="text-muted d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.subtitle || 'Employer'"></small>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-type="'employer'" :data-model-id="msg.context_data.id">
+                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2 rounded-circle" :data-model-type="'employer'" :data-model-id="msg.context_data.id" title="Preview">
                                                 <i class="bi bi-search"></i>
                                             </button>
                                         </div>
@@ -579,7 +588,7 @@
         Alpine.data('chatManager', () => ({
             // --- State ---
             currentUserId: {{ auth()->id() }},
-            isAdminOrStaff: {{ auth()->user()->hasRole(['admin', 'staff']) ? 'true' : 'false' }},
+            isAdminOrStaff: {{ auth()->user()->hasRole(['admin', 'staff', 'super-admin']) ? 'true' : 'false' }},
             contacts: [], // Mixed array of users and groups
             searchQuery: '',
             openChats: [], // { uniqueKey: 'user-1' | 'group-5', id, type, name, messages, ... }
@@ -1418,10 +1427,10 @@
 
                      if (data.type === 'employee') {
                          contextType = 'employee';
-                         contextUrl = `/employees/${data.id}/locate`;
+                         contextUrl = data.url || `/employees/${data.id}/locate`;
                      } else if (data.type === 'employer') {
                          contextType = 'employer';
-                         contextUrl = `/employers/${data.id}/locate`;
+                         contextUrl = data.url || `/employers/${data.id}/locate`;
                      }
                      // ... other types ...
 
@@ -1431,7 +1440,8 @@
                          url: contextUrl,
                          text: `[${data.type.toUpperCase()}] ${data.title}`,
                          name: attachmentName,
-                         subtitle: subtitle
+                         subtitle: subtitle,
+                         photo: data.photo || null
                     };
                     this.bringToFront(chat.uniqueKey);
                 }
