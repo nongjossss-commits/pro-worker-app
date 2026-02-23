@@ -1972,6 +1972,30 @@
             });
     }
 
+    // Fix Trash Pagination
+    document.addEventListener('DOMContentLoaded', function() {
+        const trashBody = document.getElementById('trashModalBody');
+        if (trashBody) {
+            trashBody.addEventListener('click', function(e) {
+                const link = e.target.closest('.pagination a');
+                if (link) {
+                    e.preventDefault();
+                    const url = link.href;
+                    trashBody.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-danger" role="status"></div></div>';
+                    fetch(url)
+                        .then(res => res.text())
+                        .then(html => {
+                            trashBody.innerHTML = html;
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            trashBody.innerHTML = '<div class="text-danger text-center p-4">Failed to load page.</div>';
+                        });
+                }
+            });
+        }
+    });
+
     window.restoreTrashItem = function(id) {
         Swal.fire({
             title: '{{ __("Restore Item?") }}',
