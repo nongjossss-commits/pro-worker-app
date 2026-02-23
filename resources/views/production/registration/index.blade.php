@@ -358,7 +358,15 @@
                 {{-- Sequence Number (CSS Counter will handle number) --}}
                 <div class="employer-sequence-number me-3 pt-2"></div>
 
-                <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}" style="position: relative;">
+                <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}"
+                     style="position: relative;"
+                     draggable="true"
+                     ondragstart="startDragGlobal(event, 'employer', {
+                        id: {{ $employer->id }},
+                        name: '{{ addslashes($employer->employerNameTh) }}',
+                        subtitle: '{{ addslashes($employer->employerNameEn) }}',
+                        url: '{{ route('employers.show', $employer->id) }}'
+                     })">
                     {{-- Status/Note Tab/Drawer --}}
                     <div class="position-absolute d-flex align-items-center gap-1 shadow-sm border border-secondary border-bottom-0 rounded-top bg-white px-2 py-1"
                          style="top: -34px; right: 20px; z-index: 5; height: 34px;">

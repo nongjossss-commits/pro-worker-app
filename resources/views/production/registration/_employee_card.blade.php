@@ -41,7 +41,15 @@
      data-is-not-started="{{ $isNotStarted ? 'true' : 'false' }}"
      data-employer-id="{{ $employee->employer_id }}"
      data-biometrics-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
-     style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
+     style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}"
+     draggable="true"
+     ondragstart="startDragGlobal(event, 'employee', {
+        id: {{ $employee->id }},
+        name: '{{ addslashes($employee->employeeNameEn ?? $employee->employeeNameTh) }}',
+        photo: '{{ $employee->employeePhoto ? Storage::disk('public')->url($employee->employeePhoto) : '' }}',
+        subtitle: '{{ $employee->employer->employerNameTh ?? '' }}',
+        url: '{{ route('production.registration.index', ['highlight_employer_id' => $employee->employer_id, 'highlight_employee_id' => $employee->id]) }}'
+     })">
 
     {{-- Sequence Number (Outside Card) --}}
     <div class="employee-sequence-number me-2 fs-5 fw-bold text-muted opacity-50 text-end" style="min-width: 30px;"></div>
