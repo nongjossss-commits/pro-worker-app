@@ -2401,6 +2401,7 @@
         });
     }
 
+    document.addEventListener('DOMContentLoaded', function() {
         // --- Restore UI State on Load (After Reload) ---
         const urlParams = new URLSearchParams(window.location.search);
         const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id') || urlParams.get('highlight_employer_id');
