@@ -1977,7 +1977,7 @@
         const trashBody = document.getElementById('trashModalBody');
         if (trashBody) {
             trashBody.addEventListener('click', function(e) {
-                const link = e.target.closest('.pagination a');
+                const link = e.target.closest('.pagination a, .page-link, a[href*="page="]');
                 if (link) {
                     e.preventDefault();
                     const url = link.href;
