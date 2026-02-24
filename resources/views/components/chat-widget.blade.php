@@ -88,7 +88,7 @@
                             :class="{'bg-light': item.type === 'group'}">
                             <div class="position-relative">
                                 <img :src="item.avatar_url" class="rounded-circle object-fit-cover border" width="40" height="40"
-                                     onerror="this.src='https://ui-avatars.com/api/?name=' + item.name + '&color=7F9CF5&background=EBF4FF'">
+                                     @error="$el.src='https://ui-avatars.com/api/?name=' + (item.name || 'User') + '&color=7F9CF5&background=EBF4FF'">
                                 <span x-show="item.type === 'user' && item.is_online" class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
                             </div>
                             <div class="flex-grow-1 lh-sm overflow-hidden">
@@ -146,7 +146,7 @@
                     </button>
 
                     <img :src="chat.avatar_url" class="rounded-circle object-fit-cover" width="32" height="32"
-                         onerror="this.src='https://ui-avatars.com/api/?name=' + chat.name + '&color=7F9CF5&background=EBF4FF'">
+                         @error="$el.src='https://ui-avatars.com/api/?name=' + (chat.name || 'User') + '&color=7F9CF5&background=EBF4FF'">
                     <div class="lh-1">
                         <div class="fw-bold text-truncate" style="max-width: 150px;" x-text="chat.name"></div>
                         <small class="text-success" style="font-size: 0.7rem;" x-show="chat.type === 'user' && chat.is_online">{{ __('Online') }}</small>
@@ -348,7 +348,7 @@
                  @drop.prevent="handleDrop($event, 'chat_window', chat.uniqueKey)"
                  :title="chat.name">
                 <img :src="chat.avatar_url" class="w-100 h-100 object-fit-cover rounded-circle"
-                     onerror="this.src='https://ui-avatars.com/api/?name=' + chat.name + '&color=7F9CF5&background=EBF4FF'">
+                     @error="$el.src='https://ui-avatars.com/api/?name=' + (chat.name || 'User') + '&color=7F9CF5&background=EBF4FF'">
                 <span x-show="chat.unreadCount > 0"
                       class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger border border-white"
                       style="font-size: 0.7rem; padding: 0.25em 0.5em !important; transform: translate(25%, -25%) !important;"
@@ -412,7 +412,7 @@
                 <div class="mb-4 text-center">
                     <label class="cursor-pointer">
                          <img :src="editGroupPreviewUrl || editGroupForm.original_avatar_url" class="rounded-circle border" width="80" height="80"
-                              onerror="this.src='https://ui-avatars.com/api/?name=G&color=7F9CF5&background=EBF4FF'">
+                              @error="$el.src='https://ui-avatars.com/api/?name=G&color=7F9CF5&background=EBF4FF'">
                          <input type="file" @change="handleEditGroupAvatar" class="d-none" accept="image/*" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                          <div class="small text-muted mt-1">{{ __('Change Icon') }}</div>
                     </label>
@@ -456,7 +456,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
                                 <div class="d-flex align-items-center gap-2">
                                     <img :src="member.avatar_url" class="rounded-circle" width="30" height="30"
-                                         onerror="this.src='https://ui-avatars.com/api/?name=' + member.name">
+                                         @error="$el.src='https://ui-avatars.com/api/?name=' + (member.name || 'User')">
                                     <div class="lh-1">
                                         <div class="small fw-bold" x-text="member.name"></div>
                                         <div class="text-muted" style="font-size: 0.7rem;" x-text="member.role === 'admin' ? 'Admin' : 'Member'"></div>

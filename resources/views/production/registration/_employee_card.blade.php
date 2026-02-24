@@ -45,10 +45,10 @@
      draggable="true"
      ondragstart="startDragGlobal(event, 'employee', {
         id: {{ $employee->id }},
-        name: '{{ addslashes($employee->employeeNameEn ?? $employee->employeeNameTh) }}',
-        photo: '{{ $employee->employeePhoto ? Storage::disk('public')->url($employee->employeePhoto) : '' }}',
-        subtitle: '{{ addslashes($employee->employer->employerNameTh ?? '') }}',
-        url: '{{ route('production.registration.index', ['highlight_employer_id' => $employee->employer_id, 'highlight_employee_id' => $employee->id]) }}'
+        name: {{ json_encode($employee->employeeNameEn ?? $employee->employeeNameTh ?? '') }},
+        photo: {{ json_encode($employee->employeePhoto ? Storage::disk('public')->url($employee->employeePhoto) : '') }},
+        subtitle: {{ json_encode($employee->employer->employerNameTh ?? '') }},
+        url: {{ json_encode(route('production.registration.index', ['highlight_employer_id' => $employee->employer_id, 'highlight_employee_id' => $employee->id])) }}
      })">
 
     {{-- Sequence Number (Outside Card) --}}

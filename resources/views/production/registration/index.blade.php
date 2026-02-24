@@ -363,9 +363,9 @@
                      draggable="true"
                      ondragstart="startDragGlobal(event, 'employer', {
                         id: {{ $employer->id }},
-                        name: '{{ addslashes($employer->employerNameTh) }}',
-                        subtitle: '{{ addslashes($employer->employerNameEn) }}',
-                        url: '{{ route('employers.show', $employer->id) }}'
+                        name: {{ json_encode($employer->employerNameTh ?? '') }},
+                        subtitle: {{ json_encode($employer->employerNameEn ?? '') }},
+                        url: {{ json_encode(route('employers.show', $employer->id)) }}
                      })">
                     {{-- Status/Note Tab/Drawer --}}
                     <div class="position-absolute d-flex align-items-center gap-1 shadow-sm border border-secondary border-bottom-0 rounded-top bg-white px-2 py-1"
