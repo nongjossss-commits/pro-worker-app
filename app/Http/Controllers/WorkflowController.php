@@ -81,6 +81,7 @@ class WorkflowController extends Controller
                       $emp->where('employeeNameTh', 'like', "%{$search}%")
                           ->orWhere('employeeNameEn', 'like', "%{$search}%")
                           ->orWhere('employeePassport', 'like', "%{$search}%")
+                          ->orWhere('request_number', 'like', "%{$search}%")
                           ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                           ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                   })
@@ -238,6 +239,7 @@ class WorkflowController extends Controller
                           $emp->where('employeeNameTh', 'like', "%{$search}%")
                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
                               ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhere('request_number', 'like', "%{$search}%")
                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                       })
@@ -694,6 +696,7 @@ class WorkflowController extends Controller
                       $q->where('employeeNameTh', 'like', "%{$search}%")
                         ->orWhere('employeeNameEn', 'like', "%{$search}%")
                         ->orWhere('employeePassport', 'like', "%{$search}%")
+                        ->orWhere('request_number', 'like', "%{$search}%")
                         ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                         ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                  });
@@ -1651,7 +1654,8 @@ class WorkflowController extends Controller
                     $e->withTrashed()
                       ->where('employeeNameTh', 'like', "%{$search}%")
                       ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                      ->orWhere('employeePassport', 'like', "%{$search}%");
+                      ->orWhere('employeePassport', 'like', "%{$search}%")
+                      ->orWhere('request_number', 'like', "%{$search}%");
                 })
                 ->orWhereHas('order', function($o) use ($search) {
                     $o->withTrashed()
