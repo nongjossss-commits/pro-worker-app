@@ -1029,18 +1029,35 @@
         if (window.loadedEmployers[employerId]) return;
 
         const container = document.getElementById(`employee-list-${employerId}`);
-        // Base URL for the new AJAX route
-        const baseUrl = `{{ route('production.registration.index') }}/employer/${employerId}/employees`; // Using manual construction to avoid JS route issues
+        if (!container) {
+            console.error('Employee list container not found for employer:', employerId);
+            return;
+        }
+
+        // Use relative path to prevent Mixed Content issues if behind a proxy (http vs https)
+        const baseUrl = `/production/registration/employer/${employerId}/employees`;
 
         // Append current search/filter params
         const url = new URL(baseUrl, window.location.origin);
         const currentParams = new URLSearchParams(window.location.search);
         currentParams.forEach((value, key) => url.searchParams.append(key, value));
 
+        console.log(`Loading employees for employer ${employerId} from:`, url.toString());
+
         fetch(url)
-        .then(res => res.text())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! Status: ${res.status}`);
+            }
+            return res.text();
+        })
         .then(html => {
-            container.innerHTML = html;
+            if (!html || html.trim() === '') {
+                 console.warn('Empty response for employer:', employerId);
+                 container.innerHTML = '<div class="text-muted p-3">No employees found.</div>';
+            } else {
+                 container.innerHTML = html;
+            }
             window.loadedEmployers[employerId] = true;
             applyFilters(); // Re-apply client-side filters on newly loaded content
             if (window.refreshGlobalSelectionUI) {
@@ -1048,8 +1065,8 @@
             }
         })
         .catch(err => {
-            container.innerHTML = `<div class="text-danger p-3">Failed to load employees. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
-            console.error(err);
+            console.error('Failed to load employees:', err);
+            container.innerHTML = `<div class="text-danger p-3">Failed to load employees: ${err.message}. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
         });
     }
 
