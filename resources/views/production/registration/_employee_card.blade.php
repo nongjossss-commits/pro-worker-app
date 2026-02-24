@@ -47,7 +47,7 @@
         id: {{ $employee->id }},
         name: '{{ addslashes($employee->employeeNameEn ?? $employee->employeeNameTh) }}',
         photo: '{{ $employee->employeePhoto ? Storage::disk('public')->url($employee->employeePhoto) : '' }}',
-        subtitle: '{{ $employee->employer->employerNameTh ?? '' }}',
+        subtitle: '{{ addslashes($employee->employer->employerNameTh ?? '') }}',
         url: '{{ route('production.registration.index', ['highlight_employer_id' => $employee->employer_id, 'highlight_employee_id' => $employee->id]) }}'
      })">
 
@@ -179,9 +179,9 @@
             @can('edit-employees')
             <div class="ms-md-2" x-data="{
                 isEditing: false,
-                type: '{{ $employee->insurance_type }}',
-                hospital: '{{ $employee->hospital_name ?? $employee->insurance_detail }}',
-                company: '{{ $employee->insurance_company ?? $employee->insurance_detail_private }}',
+                type: {{ json_encode($employee->insurance_type) }},
+                hospital: {{ json_encode($employee->hospital_name ?? $employee->insurance_detail) }},
+                company: {{ json_encode($employee->insurance_company ?? $employee->insurance_detail_private) }},
                 saveInsurance() {
                     let body = {
                         insurance_type: this.type,
@@ -293,9 +293,9 @@
             <div class="ms-md-2" x-data="{
                 isEditing: false,
                 isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
-                dateValue: '{{ $appValue }}',
-                displayValue: '{{ $appDisplay }}',
-                locationValue: '{{ $appLocation }}',
+                dateValue: {{ json_encode($appValue) }},
+                displayValue: {{ json_encode($appDisplay) }},
+                locationValue: {{ json_encode($appLocation) }},
                 initFlatpickr() {
                     if (this.$refs.dateInput._flatpickr) return;
                     flatpickr(this.$refs.dateInput, {
@@ -396,9 +396,9 @@
             {{-- 3 Extra Fields (Editable) --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
-                nameList: '{{ $employee->name_list_number }}',
-                reqNo: '{{ $employee->request_number }}',
-                refId: '{{ $employee->employee_reference_id }}',
+                nameList: {{ json_encode($employee->name_list_number) }},
+                reqNo: {{ json_encode($employee->request_number) }},
+                refId: {{ json_encode($employee->employee_reference_id) }},
                 copy(el, text) {
                     if (!text) return;
                     navigator.clipboard.writeText(text).then(() => {
