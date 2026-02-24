@@ -88,7 +88,7 @@
                             :class="{'bg-light': item.type === 'group'}">
                             <div class="position-relative">
                                 <img :src="item.avatar_url" class="rounded-circle object-fit-cover border" width="40" height="40"
-                                     onerror="this.src='https://ui-avatars.com/api/?name=' + item.name + '&color=7F9CF5&background=EBF4FF'">
+                                     @error="$el.src='https://ui-avatars.com/api/?name=' + (item.name || 'User') + '&color=7F9CF5&background=EBF4FF'">
                                 <span x-show="item.type === 'user' && item.is_online" class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
                             </div>
                             <div class="flex-grow-1 lh-sm overflow-hidden">
@@ -146,7 +146,7 @@
                     </button>
 
                     <img :src="chat.avatar_url" class="rounded-circle object-fit-cover" width="32" height="32"
-                         onerror="this.src='https://ui-avatars.com/api/?name=' + chat.name + '&color=7F9CF5&background=EBF4FF'">
+                         @error="$el.src='https://ui-avatars.com/api/?name=' + (chat.name || 'User') + '&color=7F9CF5&background=EBF4FF'">
                     <div class="lh-1">
                         <div class="fw-bold text-truncate" style="max-width: 150px;" x-text="chat.name"></div>
                         <small class="text-success" style="font-size: 0.7rem;" x-show="chat.type === 'user' && chat.is_online">{{ __('Online') }}</small>
@@ -207,15 +207,22 @@
 
                                     <!-- Employee Card -->
                                     <template x-if="msg.context_data.type === 'employee'">
-                                        <div class="d-flex align-items-center p-2 rounded bg-white border">
+                                        <div class="d-flex align-items-center p-2 rounded bg-white border shadow-sm" style="min-width: 200px;">
                                             <div class="me-2">
-                                                <i class="bi bi-person-circle fs-3 text-secondary"></i>
+                                                <template x-if="msg.context_data.photo">
+                                                    <img :src="msg.context_data.photo" class="rounded-circle border object-fit-cover" width="40" height="40">
+                                                </template>
+                                                <template x-if="!msg.context_data.photo">
+                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="bi bi-person-fill"></i>
+                                                    </div>
+                                                </template>
                                             </div>
                                             <div class="flex-grow-1 lh-1">
                                                 <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.name"></a>
                                                 <small class="text-muted d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.subtitle || 'Employee'"></small>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-type="'employee'" :data-model-id="msg.context_data.id">
+                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2 rounded-circle" :data-model-type="'employee'" :data-model-id="msg.context_data.id" title="Preview">
                                                 <i class="bi bi-search"></i>
                                             </button>
                                         </div>
@@ -223,15 +230,17 @@
 
                                     <!-- Employer Card -->
                                     <template x-if="msg.context_data.type === 'employer'">
-                                        <div class="d-flex align-items-center p-2 rounded bg-white border">
+                                        <div class="d-flex align-items-center p-2 rounded bg-white border shadow-sm" style="min-width: 200px;">
                                             <div class="me-2">
-                                                <i class="bi bi-building fs-3 text-secondary"></i>
+                                                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    <i class="bi bi-building-fill text-primary fs-5"></i>
+                                                </div>
                                             </div>
                                             <div class="flex-grow-1 lh-1">
                                                 <a :href="msg.context_data.url" class="fw-bold text-decoration-none text-dark d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.name"></a>
                                                 <small class="text-muted d-block text-truncate" style="max-width: 150px;" x-text="msg.context_data.subtitle || 'Employer'"></small>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-type="'employer'" :data-model-id="msg.context_data.id">
+                                            <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2 rounded-circle" :data-model-type="'employer'" :data-model-id="msg.context_data.id" title="Preview">
                                                 <i class="bi bi-search"></i>
                                             </button>
                                         </div>
@@ -339,7 +348,7 @@
                  @drop.prevent="handleDrop($event, 'chat_window', chat.uniqueKey)"
                  :title="chat.name">
                 <img :src="chat.avatar_url" class="w-100 h-100 object-fit-cover rounded-circle"
-                     onerror="this.src='https://ui-avatars.com/api/?name=' + chat.name + '&color=7F9CF5&background=EBF4FF'">
+                     @error="$el.src='https://ui-avatars.com/api/?name=' + (chat.name || 'User') + '&color=7F9CF5&background=EBF4FF'">
                 <span x-show="chat.unreadCount > 0"
                       class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger border border-white"
                       style="font-size: 0.7rem; padding: 0.25em 0.5em !important; transform: translate(25%, -25%) !important;"
@@ -403,7 +412,7 @@
                 <div class="mb-4 text-center">
                     <label class="cursor-pointer">
                          <img :src="editGroupPreviewUrl || editGroupForm.original_avatar_url" class="rounded-circle border" width="80" height="80"
-                              onerror="this.src='https://ui-avatars.com/api/?name=G&color=7F9CF5&background=EBF4FF'">
+                              @error="$el.src='https://ui-avatars.com/api/?name=G&color=7F9CF5&background=EBF4FF'">
                          <input type="file" @change="handleEditGroupAvatar" class="d-none" accept="image/*" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                          <div class="small text-muted mt-1">{{ __('Change Icon') }}</div>
                     </label>
@@ -447,7 +456,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
                                 <div class="d-flex align-items-center gap-2">
                                     <img :src="member.avatar_url" class="rounded-circle" width="30" height="30"
-                                         onerror="this.src='https://ui-avatars.com/api/?name=' + member.name">
+                                         @error="$el.src='https://ui-avatars.com/api/?name=' + (member.name || 'User')">
                                     <div class="lh-1">
                                         <div class="small fw-bold" x-text="member.name"></div>
                                         <div class="text-muted" style="font-size: 0.7rem;" x-text="member.role === 'admin' ? 'Admin' : 'Member'"></div>
@@ -579,7 +588,7 @@
         Alpine.data('chatManager', () => ({
             // --- State ---
             currentUserId: {{ auth()->id() }},
-            isAdminOrStaff: {{ auth()->user()->hasRole(['admin', 'staff']) ? 'true' : 'false' }},
+            isAdminOrStaff: {{ auth()->user()->hasRole(['admin', 'staff', 'super-admin']) ? 'true' : 'false' }},
             contacts: [], // Mixed array of users and groups
             searchQuery: '',
             openChats: [], // { uniqueKey: 'user-1' | 'group-5', id, type, name, messages, ... }
@@ -1418,10 +1427,10 @@
 
                      if (data.type === 'employee') {
                          contextType = 'employee';
-                         contextUrl = `/employees/${data.id}/locate`;
+                         contextUrl = data.url || `/employees/${data.id}/locate`;
                      } else if (data.type === 'employer') {
                          contextType = 'employer';
-                         contextUrl = `/employers/${data.id}/locate`;
+                         contextUrl = data.url || `/employers/${data.id}/locate`;
                      }
                      // ... other types ...
 
@@ -1431,7 +1440,8 @@
                          url: contextUrl,
                          text: `[${data.type.toUpperCase()}] ${data.title}`,
                          name: attachmentName,
-                         subtitle: subtitle
+                         subtitle: subtitle,
+                         photo: data.photo || null
                     };
                     this.bringToFront(chat.uniqueKey);
                 }

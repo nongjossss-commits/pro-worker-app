@@ -57,41 +57,8 @@
                     if (onProgress) onProgress(true, 'Optimizing image size...');
                     const resizedFile = await this.resizeImage(file, 1200);
 
-                    if (onProgress) onProgress(true, 'Removing background (this may take a moment)...');
-
-                    // Configuration for better quality and progress tracking
-                    const config = {
-                        debug: true,
-                        device: 'gpu', // Hint to use GPU if available
-                        progress: (key, current, total) => {
-                            if (onProgress) {
-                                const percent = Math.round((current / total) * 100);
-                                onProgress(true, `Processing: ${percent}%`);
-                            }
-                        },
-                        // model: 'medium', // Default (isnet_fp16) is accurate. We rely on resizing for speed.
-                        output: {
-                            format: 'image/png',
-                            quality: 0.95
-                        }
-                    };
-
-                    // Execute removal with timeout and cancellation race
-                    // Use resizedFile instead of original file
-                    const processPromise = removeBackgroundFn(resizedFile, config);
-
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Processing timed out (60s). Please check your connection.')), 60000)
-                    );
-
-                    const cancellationPromise = new Promise((_, reject) => {
-                        if (cancellationToken) {
-                            cancellationToken.onCancel = () => reject(new Error('Cancelled by user'));
-                            if (cancellationToken.cancelled) reject(new Error('Cancelled by user'));
-                        }
-                    });
-
-                    transparentBlob = await Promise.race([processPromise, timeoutPromise, cancellationPromise]);
+                    // --- EXECUTION WITH FALLBACK ---
+                    transparentBlob = await this.processWithFallback(removeBackgroundFn, resizedFile, onProgress, cancellationToken);
 
                     this.cache.transparentBlob = transparentBlob;
                 } catch (error) {
@@ -125,6 +92,85 @@
             } finally {
                 if (onProgress) onProgress(false);
             }
+        },
+
+        async processWithFallback(removeBackgroundFn, file, onProgress, cancellationToken) {
+            // Helper to check cancellation
+            const checkCancelled = () => {
+                if (cancellationToken && cancellationToken.cancelled) throw new Error('Cancelled by user');
+            };
+
+            // Attempt 1: GPU
+            try {
+                checkCancelled();
+                if (onProgress) onProgress(true, 'Removing background (GPU Mode)...');
+                console.log('Attempting background removal with GPU...');
+
+                return await this.runRemoval(removeBackgroundFn, file, { device: 'gpu' }, onProgress, cancellationToken);
+            } catch (error) {
+                // Only swallow error if it's NOT a cancellation
+                if (error.message === 'Cancelled by user') throw error;
+
+                console.warn('GPU removal failed. Retrying with CPU...', error);
+
+                // Attempt 2: CPU
+                try {
+                    checkCancelled();
+                    if (onProgress) onProgress(true, 'GPU failed. Switching to CPU mode (this may be slower)...');
+                    console.log('Attempting background removal with CPU...');
+
+                    return await this.runRemoval(removeBackgroundFn, file, { device: 'cpu' }, onProgress, cancellationToken);
+                } catch (cpuError) {
+                    if (cpuError.message === 'Cancelled by user') throw cpuError;
+                    console.error('CPU removal failed.', cpuError);
+                    throw new Error('Background removal failed on both GPU and CPU. Please try a different image.');
+                }
+            }
+        },
+
+        async runRemoval(removeBackgroundFn, file, deviceConfig, onProgress, cancellationToken) {
+             const config = {
+                debug: true,
+                ...deviceConfig, // 'gpu' or 'cpu'
+                progress: (key, current, total) => {
+                    if (onProgress) {
+                        const percent = Math.round((current / total) * 100);
+                        // Add context to progress message
+                        const mode = deviceConfig.device.toUpperCase();
+                        onProgress(true, `Processing (${mode}): ${percent}%`);
+                    }
+                },
+                output: {
+                    format: 'image/png',
+                    quality: 0.95
+                }
+            };
+
+            const processPromise = removeBackgroundFn(file, config);
+
+            // CPU can be slow, increase timeout to 120s
+            const timeoutDuration = deviceConfig.device === 'cpu' ? 120000 : 60000;
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`Processing timed out (${timeoutDuration/1000}s).`)), timeoutDuration)
+            );
+
+            const cancellationPromise = new Promise((_, reject) => {
+                if (cancellationToken) {
+                    // Check immediately
+                    if (cancellationToken.cancelled) reject(new Error('Cancelled by user'));
+
+                    // Hook into future cancel
+                    // Note: We can't easily 'unsubscribe' this listener without more complex logic,
+                    // but since this object is transient per-request, it's acceptable.
+                    const originalOnCancel = cancellationToken.onCancel;
+                    cancellationToken.onCancel = () => {
+                        if (originalOnCancel) originalOnCancel();
+                        reject(new Error('Cancelled by user'));
+                    };
+                }
+            });
+
+            return await Promise.race([processPromise, timeoutPromise, cancellationPromise]);
         },
 
         // Helper to resize image

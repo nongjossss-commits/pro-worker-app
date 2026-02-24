@@ -42,7 +42,7 @@ class TrashController extends Controller
         }
 
         foreach ($models as $modelName => $modelClass) {
-            $query = $modelClass::onlyTrashed();
+            $query = $modelClass::onlyTrashed()->latest('deleted_at');
 
             // V2.5.5 Fix: Ensure Admin sees all trashed items by ignoring global scopes (tenancy)
             if ($modelName === 'employees' || $modelName === 'employers') {

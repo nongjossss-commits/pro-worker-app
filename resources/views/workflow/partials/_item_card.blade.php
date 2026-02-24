@@ -100,7 +100,15 @@
 <div class="d-flex align-items-center item-card-outer mb-3"
      id="item-card-{{ $item->id }}"
      data-status="{{ $status }}"
-     style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
+     style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}"
+     draggable="true"
+     ondragstart="startDragGlobal(event, 'employee', {
+        id: {{ $item->employee_id ?? 0 }},
+        name: '{{ addslashes($empNameEn) }}',
+        photo: '{{ $empPhoto }}',
+        subtitle: '{{ addslashes($order->project_name ?? '') }}',
+        url: '{{ route('workflow.index', ['order' => $order->id, 'item' => $item->id]) }}'
+     })">
 
     {{-- Sequence Number (CSS Counter can handle this if parent has counter-reset) --}}
     <div class="item-sequence-number me-2 fs-5 fw-bold text-muted opacity-50 text-end" style="min-width: 30px;"></div>

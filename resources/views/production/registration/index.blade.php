@@ -358,7 +358,15 @@
                 {{-- Sequence Number (CSS Counter will handle number) --}}
                 <div class="employer-sequence-number me-3 pt-2"></div>
 
-                <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}" style="position: relative;">
+                <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}"
+                     style="position: relative;"
+                     draggable="true"
+                     ondragstart="startDragGlobal(event, 'employer', {
+                        id: {{ $employer->id }},
+                        name: {{ json_encode($employer->employerNameTh ?? '') }},
+                        subtitle: {{ json_encode($employer->employerNameEn ?? '') }},
+                        url: {{ json_encode(route('employers.show', $employer->id)) }}
+                     })">
                     {{-- Status/Note Tab/Drawer --}}
                     <div class="position-absolute d-flex align-items-center gap-1 shadow-sm border border-secondary border-bottom-0 rounded-top bg-white px-2 py-1"
                          style="top: -34px; right: 20px; z-index: 5; height: 34px;">
@@ -1021,18 +1029,35 @@
         if (window.loadedEmployers[employerId]) return;
 
         const container = document.getElementById(`employee-list-${employerId}`);
-        // Base URL for the new AJAX route
-        const baseUrl = `{{ route('production.registration.index') }}/employer/${employerId}/employees`; // Using manual construction to avoid JS route issues
+        if (!container) {
+            console.error('Employee list container not found for employer:', employerId);
+            return;
+        }
+
+        // Use relative path to prevent Mixed Content issues if behind a proxy (http vs https)
+        const baseUrl = `/production/registration/employer/${employerId}/employees`;
 
         // Append current search/filter params
         const url = new URL(baseUrl, window.location.origin);
         const currentParams = new URLSearchParams(window.location.search);
         currentParams.forEach((value, key) => url.searchParams.append(key, value));
 
+        console.log(`Loading employees for employer ${employerId} from:`, url.toString());
+
         fetch(url)
-        .then(res => res.text())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! Status: ${res.status}`);
+            }
+            return res.text();
+        })
         .then(html => {
-            container.innerHTML = html;
+            if (!html || html.trim() === '') {
+                 console.warn('Empty response for employer:', employerId);
+                 container.innerHTML = '<div class="text-muted p-3">No employees found.</div>';
+            } else {
+                 container.innerHTML = html;
+            }
             window.loadedEmployers[employerId] = true;
             applyFilters(); // Re-apply client-side filters on newly loaded content
             if (window.refreshGlobalSelectionUI) {
@@ -1040,8 +1065,8 @@
             }
         })
         .catch(err => {
-            container.innerHTML = `<div class="text-danger p-3">Failed to load employees. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
-            console.error(err);
+            console.error('Failed to load employees:', err);
+            container.innerHTML = `<div class="text-danger p-3">Failed to load employees: ${err.message}. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
         });
     }
 
@@ -2331,6 +2356,30 @@
             });
     }
 
+    // Fix Trash Pagination
+    document.addEventListener('DOMContentLoaded', function() {
+        const trashBody = document.getElementById('trashModalBody');
+        if (trashBody) {
+            trashBody.addEventListener('click', function(e) {
+                const link = e.target.closest('.pagination a, .page-link, a[href*="page="]');
+                if (link) {
+                    e.preventDefault();
+                    const url = link.href;
+                    trashBody.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-danger" role="status"></div></div>';
+                    fetch(url)
+                        .then(res => res.text())
+                        .then(html => {
+                            trashBody.innerHTML = html;
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            trashBody.innerHTML = '<div class="text-danger text-center p-4">Failed to load page.</div>';
+                        });
+                }
+            });
+        }
+    });
+
     window.restoreTrashItem = function(id) {
         Swal.fire({
             title: '{{ __("Restore Item?") }}',
@@ -2369,6 +2418,7 @@
         });
     }
 
+    document.addEventListener('DOMContentLoaded', function() {
         // --- Restore UI State on Load (After Reload) ---
         const urlParams = new URLSearchParams(window.location.search);
         const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id') || urlParams.get('highlight_employer_id');
