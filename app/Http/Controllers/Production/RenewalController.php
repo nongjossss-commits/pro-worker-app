@@ -966,6 +966,7 @@ class RenewalController extends Controller
             $q->where('employeeNameTh', 'like', "%{$search}%")
               ->orWhere('employeeNameEn', 'like', "%{$search}%")
               ->orWhere('employeePassport', 'like', "%{$search}%")
+              ->orWhere('request_number', 'like', "%{$search}%")
               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereHas('employer', function($q2) use ($search, $cleanedSearch) {
@@ -1020,6 +1021,7 @@ class RenewalController extends Controller
                 $q->where('employeeNameTh', 'like', "%{$search}%")
                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
                   ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhere('request_number', 'like', "%{$search}%")
                   ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                   ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
             });
@@ -1043,6 +1045,7 @@ class RenewalController extends Controller
                  $q->where('employeeNameTh', 'like', "%{$search}%")
                    ->orWhere('employeeNameEn', 'like', "%{$search}%")
                    ->orWhere('employeePassport', 'like', "%{$search}%")
+                   ->orWhere('request_number', 'like', "%{$search}%")
                    ->orWhereHas('employer', function($q2) use ($search) {
                        $q2->withTrashed()
                           ->where('employerNameTh', 'like', "%{$search}%")
