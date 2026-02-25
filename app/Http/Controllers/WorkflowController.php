@@ -86,6 +86,7 @@ class WorkflowController extends Controller
                           ->orWhere('name_list_number', 'like', "%{$search}%")
                           ->orWhere('pinkCardNo', 'like', "%{$search}%")
                           ->orWhere('request_number', 'like', "%{$search}%")
+                          ->orWhere('employer_employee_id', 'like', "%{$search}%")
                           ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                           ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                   })
@@ -248,6 +249,7 @@ class WorkflowController extends Controller
                               ->orWhere('name_list_number', 'like', "%{$search}%")
                               ->orWhere('pinkCardNo', 'like', "%{$search}%")
                               ->orWhere('request_number', 'like', "%{$search}%")
+                              ->orWhere('employer_employee_id', 'like', "%{$search}%")
                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                       })
@@ -709,6 +711,7 @@ class WorkflowController extends Controller
                         ->orWhere('name_list_number', 'like', "%{$search}%")
                         ->orWhere('pinkCardNo', 'like', "%{$search}%")
                         ->orWhere('request_number', 'like', "%{$search}%")
+                        ->orWhere('employer_employee_id', 'like', "%{$search}%")
                         ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                         ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
                  });
@@ -977,6 +980,8 @@ class WorkflowController extends Controller
                   ->orWhere('employee_id_number', 'like', "%{$search}%")
                   ->orWhere('name_list_number', 'like', "%{$search}%")
                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                  ->orWhere('request_number', 'like', "%{$search}%")
+                  ->orWhere('employer_employee_id', 'like', "%{$search}%")
                   ->orWhereHas('employer', function($e) use ($search) {
                       $e->filterByAddress($search);
                   });
@@ -1007,6 +1012,8 @@ class WorkflowController extends Controller
                   ->orWhere('employee_id_number', 'like', "%{$search}%")
                   ->orWhere('name_list_number', 'like', "%{$search}%")
                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                  ->orWhere('request_number', 'like', "%{$search}%")
+                  ->orWhere('employer_employee_id', 'like', "%{$search}%")
                   ->orWhereHas('employer', function($e) use ($search) {
                       $e->filterByAddress($search);
                   });
@@ -1679,7 +1686,8 @@ class WorkflowController extends Controller
                       ->orWhere('employee_id_number', 'like', "%{$search}%")
                       ->orWhere('name_list_number', 'like', "%{$search}%")
                       ->orWhere('pinkCardNo', 'like', "%{$search}%")
-                      ->orWhere('request_number', 'like', "%{$search}%");
+                      ->orWhere('request_number', 'like', "%{$search}%")
+                      ->orWhere('employer_employee_id', 'like', "%{$search}%");
                 })
                 ->orWhereHas('order', function($o) use ($search) {
                     $o->withTrashed()

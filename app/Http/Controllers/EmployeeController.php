@@ -114,6 +114,8 @@ public function reinstate(Employee $employee)
               ->orWhere('employeeWorkPermit', 'like', $searchTerm)
               ->orWhere('employee_id_number', 'like', $searchTerm)
               ->orWhere('name_list_number', 'like', $searchTerm)
+              ->orWhere('request_number', 'like', $searchTerm)
+              ->orWhere('employer_employee_id', 'like', $searchTerm)
               ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                   $employerQuery->where('employerNameTh', 'like', $searchTerm)
                                 ->orWhere('employerNameEn', 'like', $searchTerm)
@@ -832,6 +834,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
                   ->orWhere('name_list_number', 'like', $searchTerm)
+              ->orWhere('request_number', 'like', $searchTerm)
+              ->orWhere('employer_employee_id', 'like', $searchTerm)
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
                                     ->orWhere('employerNameEn', 'like', $searchTerm)
@@ -972,6 +976,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
                   ->orWhere('name_list_number', 'like', $searchTerm)
+              ->orWhere('request_number', 'like', $searchTerm)
+              ->orWhere('employer_employee_id', 'like', $searchTerm)
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
                                     ->orWhere('employerNameEn', 'like', $searchTerm)

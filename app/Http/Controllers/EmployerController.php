@@ -174,6 +174,8 @@ class EmployerController extends Controller
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
                   ->orWhere('name_list_number', 'like', $searchTerm)
+                  ->orWhere('request_number', 'like', $searchTerm)
+                  ->orWhere('employer_employee_id', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm);
             });
         }
@@ -410,6 +412,8 @@ class EmployerController extends Controller
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
                   ->orWhere('name_list_number', 'like', $searchTerm)
+                  ->orWhere('request_number', 'like', $searchTerm)
+                  ->orWhere('employer_employee_id', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm);
             });
         }
@@ -459,6 +463,8 @@ class EmployerController extends Controller
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
                   ->orWhere('name_list_number', 'like', $searchTerm)
+                  ->orWhere('request_number', 'like', $searchTerm)
+                  ->orWhere('employer_employee_id', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm);
             });
         }

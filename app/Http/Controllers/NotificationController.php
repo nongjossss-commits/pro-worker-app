@@ -169,6 +169,7 @@ class NotificationController extends Controller
                                    ->orWhere('employee_id_number', 'like', "%{$search}%")
                                    ->orWhere('name_list_number', 'like', "%{$search}%")
                                    ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                                   ->orWhere('request_number', 'like', "%{$search}%")
                                    ->orWhere('employer_employee_id', 'like', "%{$search}%") // Replaced companyWorkerId
                                    ->orWhereHas('employer', function ($q_employer) use ($search) {
                                        $q_employer->where('employerNameTh', 'like', "%{$search}%")
@@ -512,6 +513,7 @@ class NotificationController extends Controller
                       ->orWhere('employee_id_number', 'like', "%{$searchTerm}%")
                       ->orWhere('name_list_number', 'like', "%{$searchTerm}%")
                       ->orWhere('pinkCardNo', 'like', "%{$searchTerm}%")
+                      ->orWhere('request_number', 'like', "%{$searchTerm}%")
                       ->orWhere('employer_employee_id', 'like', "%{$searchTerm}%");
                 });
             });
