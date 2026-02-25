@@ -1575,15 +1575,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- New Feature: View Selected Modal Logic ---
-    window.openViewSelectedModal = function() {
-        const data = window.getGlobalSelectedData();
+    window.openViewSelectedModal = function(customData = null, customTitle = null, customStorageKey = null) {
+        const data = customData || window.getGlobalSelectedData();
         const container = document.getElementById('selected-items-container');
         const countBadge = document.getElementById('modal-selected-count');
         const modalEl = document.getElementById('viewSelectedModal');
+        const titleEl = document.getElementById('viewSelectedModalLabel');
 
         if (!container || !modalEl) {
             console.error('Modal elements not found');
             return;
+        }
+
+        if (customTitle && titleEl) {
+            titleEl.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>${customTitle}`;
+        } else if (titleEl) {
+            titleEl.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>{{ __('Selected Employees') }}`;
         }
 
         if (countBadge) countBadge.textContent = data.length;
@@ -1615,7 +1622,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="col" id="modal-item-${item.id}">
                         <div class="card h-100 shadow-sm border position-relative hover-shadow transition-all">
                             <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 rounded-circle shadow-sm bg-white"
-                                    onclick="window.removeSelectedItemFromModal('${item.id}')"
+                                    onclick="window.removeSelectedItemFromModal('${item.id}', '${customStorageKey || ''}')"
                                     title="{{ __('Remove') }}" style="width: 28px; height: 28px; padding: 0; z-index: 5;">
                                 <i class="bi bi-x-lg"></i>
                             </button>
@@ -1645,19 +1652,40 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.show();
     };
 
-    window.removeSelectedItemFromModal = function(id) {
+    window.removeSelectedItemFromModal = function(id, customStorageKey = null) {
         // removeItemsByIds is defined inside DOMContentLoaded scope previously, so it's not global.
         // We need to access the logic. But wait, `removeItemsByIds` was defined inside the closure.
         // We need to expose it or reimplement it.
         // Let's reimplement a simple version here relying on `getGlobalSelectedData` and `setGlobalSelectedData` which ARE global.
 
-        const current = window.getGlobalSelectedData();
-        const filtered = current.filter(item => String(item.id) !== String(id));
-        window.setGlobalSelectedData(filtered);
+        let current = [];
+        let key = STORAGE_KEY;
 
-        // Sync main UI (Checkboxes)
-        if(window.refreshGlobalSelectionUI) {
-            window.refreshGlobalSelectionUI();
+        if (customStorageKey) {
+            key = customStorageKey;
+            try {
+                const stored = sessionStorage.getItem(key);
+                current = stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                console.error('Error parsing custom storage', e);
+                current = [];
+            }
+        } else {
+            current = window.getGlobalSelectedData();
+        }
+
+        const filtered = current.filter(item => String(item.id) !== String(id));
+
+        if (customStorageKey) {
+            sessionStorage.setItem(key, JSON.stringify(filtered));
+            // Trigger a custom event for local UI updates
+            window.dispatchEvent(new CustomEvent('custom-selection-changed', { detail: { key: key } }));
+        } else {
+            window.setGlobalSelectedData(filtered);
+            // Sync main UI (Checkboxes)
+            if(window.refreshGlobalSelectionUI) {
+                window.refreshGlobalSelectionUI();
+            }
         }
 
         // Remove from DOM immediately
