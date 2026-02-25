@@ -1448,6 +1448,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const filtered = current.filter(item => !idsToRemove.includes(String(item.id)));
         window.setGlobalSelectedData(filtered);
     }
+    window.removeItemsByIds = removeItemsByIds;
 
     // Clear all selections
     window.clearGlobalSelection = function() {
@@ -1505,7 +1506,12 @@ document.addEventListener('DOMContentLoaded', function () {
             name_th: cb.dataset.nameTh || '',
             name_en: cb.dataset.nameEn || '',
             photo: cb.dataset.photo || '',
-            employer_name: cb.dataset.employerName || ''
+            employer_name: cb.dataset.employerName || '',
+            title_th: cb.dataset.titleTh || '',
+            title_en: cb.dataset.titleEn || '',
+            nationality: cb.dataset.nationality || '',
+            country_code: cb.dataset.countryCode || '',
+            gender: cb.dataset.gender || ''
         };
     }
 

@@ -167,7 +167,19 @@
                 <tbody>
                     @forelse($employees as $employee)
                     <tr>
-                        <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}" data-name-th="{{ $employee->employeeNameTh }}" data-name-en="{{ $employee->employeeNameEn }}" data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}" data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}"></td>
+                        <td><input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}"
+                                   data-employee-id="{{ $employee->id }}"
+                                   data-employer-id="{{ $employee->employer_id }}"
+                                   data-name-th="{{ $employee->employeeNameTh }}"
+                                   data-name-en="{{ $employee->employeeNameEn }}"
+                                   data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
+                                   data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}"
+                                   data-title-th="{{ $employee->employeeTitleTh }}"
+                                   data-title-en="{{ $employee->employeeTitleEn }}"
+                                   data-nationality="{{ $employee->employeeNationality }}"
+                                   data-gender="{{ $employee->gender }}"
+                                   data-country-code="{{ \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality) }}"
+                            ></td>
                         <td>
                             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                                draggable="true"
@@ -284,6 +296,31 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             container.innerHTML = '';
+
+            // Calculate Stats
+            const total = data.length;
+            const male = data.filter(item => item.gender === 'ชาย' || item.gender === 'male' || (item.title_th === 'นาย') || (item.title_en === 'Mr.')).length;
+            const female = total - male;
+
+            // Stats Header
+            const statsHeader = document.createElement('div');
+            statsHeader.className = 'd-flex justify-content-around p-3 mb-2 bg-light rounded';
+            statsHeader.innerHTML = `
+                <div class="text-center">
+                    <h6 class="mb-0 text-muted">{{ __('Total') }}</h6>
+                    <span class="fs-4 fw-bold text-primary">${total}</span>
+                </div>
+                <div class="text-center">
+                    <h6 class="mb-0 text-muted">{{ __('Male') }}</h6>
+                    <span class="fs-4 fw-bold text-info">${male}</span>
+                </div>
+                <div class="text-center">
+                    <h6 class="mb-0 text-muted">{{ __('Female') }}</h6>
+                    <span class="fs-4 fw-bold text-danger">${female}</span>
+                </div>
+            `;
+            container.appendChild(statsHeader);
+
             data.forEach(item => {
                 const li = document.createElement('div');
                 li.className = 'list-group-item d-flex align-items-center justify-content-between';
@@ -293,6 +330,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nameTh = item.name_th || 'N/A';
                 const nameEn = item.name_en || 'N/A';
                 const employerName = item.employer_name || 'N/A';
+                const titleTh = item.title_th || '';
+                const nationality = item.nationality || '-';
+                const countryCode = item.country_code || '';
 
                 // --- Safe DOM Creation ---
                 const leftDiv = document.createElement('div');
@@ -316,11 +356,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const nameThDiv = document.createElement('div');
                 nameThDiv.className = 'text-muted small';
-                nameThDiv.textContent = nameTh;
+                nameThDiv.textContent = `${titleTh} ${nameTh}`.trim();
                 infoDiv.appendChild(nameThDiv);
 
+                // Nationality with Flag
+                const nationDiv = document.createElement('div');
+                nationDiv.className = 'd-flex align-items-center gap-1 small mt-1';
+                if (countryCode) {
+                    const flagImg = document.createElement('img');
+                    flagImg.src = `{{ asset('images/flags/') }}/${countryCode.toLowerCase()}.png`;
+                    flagImg.style.width = '20px';
+                    nationDiv.appendChild(flagImg);
+                }
+                const nationSpan = document.createElement('span');
+                nationSpan.textContent = nationality;
+                nationDiv.appendChild(nationSpan);
+                infoDiv.appendChild(nationDiv);
+
                 const employerDiv = document.createElement('div');
-                employerDiv.className = 'text-muted small';
+                employerDiv.className = 'text-muted small mt-1';
                 const buildingIcon = document.createElement('i');
                 buildingIcon.className = 'bi bi-building me-1';
                 employerDiv.appendChild(buildingIcon);
@@ -378,19 +432,54 @@ document.addEventListener('DOMContentLoaded', function() {
             const removeBtn = e.target.closest('.btn-remove-selected');
             if (removeBtn) {
                 const id = removeBtn.dataset.id;
-                // Remove from global storage
-                window.removeItemsByIds([id]);
-                // Remove from UI
-                const itemEl = document.getElementById(`selected-item-${id}`);
-                if (itemEl) itemEl.remove();
 
-                // Check if empty
-                if (container.children.length === 0) {
-                    modal.hide();
-                    // Also update the UI on the page is automatic via window.removeItemsByIds
-                    // but we might want to trigger a toast
-                    showToast('{{ __('Selection cleared') }}', 'info');
-                }
+                // CONFIRMATION DIALOG
+                Swal.fire({
+                    title: '{{ __('Remove Item?') }}',
+                    text: '{{ __('Are you sure you want to remove this item from selection?') }}',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '{{ __('Yes, remove') }}',
+                    cancelButtonText: '{{ __('Cancel') }}'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Remove from global storage
+                        if (window.removeItemsByIds) {
+                             window.removeItemsByIds([id]);
+                        } else {
+                             console.error('removeItemsByIds not found');
+                        }
+
+                        // Remove from UI
+                        const itemEl = document.getElementById(`selected-item-${id}`);
+                        if (itemEl) itemEl.remove();
+
+                        // Check if empty (ignoring header)
+                        // Actually, if we remove all items, data will be empty
+                        const data = window.getGlobalSelectedData();
+                        if (data.length === 0) {
+                            modal.hide();
+                            showToast('{{ __('Selection cleared') }}', 'info');
+                        } else {
+                            // Update Stats
+                            const header = container.querySelector('.bg-light');
+                            if (header) {
+                                 const total = data.length;
+                                 const male = data.filter(item => item.gender === 'ชาย' || item.gender === 'male' || (item.title_th === 'นาย') || (item.title_en === 'Mr.')).length;
+                                 const female = total - male;
+
+                                 const spans = header.querySelectorAll('span');
+                                 if(spans.length >= 3) {
+                                    spans[0].textContent = total;
+                                    spans[1].textContent = male;
+                                    spans[2].textContent = female;
+                                 }
+                            }
+                        }
+                    }
+                });
             }
         });
     }
