@@ -165,6 +165,10 @@ class NotificationController extends Controller
                         $q_employee->where('employeeNameTh', 'like', "%{$search}%")
                                    ->orWhere('employeeNameEn', 'like', "%{$search}%")
                                    ->orWhere('employeePassport', 'like', "%{$search}%")
+                                   ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                                   ->orWhere('employee_id_number', 'like', "%{$search}%")
+                                   ->orWhere('name_list_number', 'like', "%{$search}%")
+                                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
                                    ->orWhere('employer_employee_id', 'like', "%{$search}%") // Replaced companyWorkerId
                                    ->orWhereHas('employer', function ($q_employer) use ($search) {
                                        $q_employer->where('employerNameTh', 'like', "%{$search}%")
@@ -503,6 +507,11 @@ class NotificationController extends Controller
                 $q->where(function ($q) use ($searchTerm) {
                     $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
                       ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                      ->orWhere('employeePassport', 'like', "%{$searchTerm}%")
+                      ->orWhere('employeeWorkPermit', 'like', "%{$searchTerm}%")
+                      ->orWhere('employee_id_number', 'like', "%{$searchTerm}%")
+                      ->orWhere('name_list_number', 'like', "%{$searchTerm}%")
+                      ->orWhere('pinkCardNo', 'like', "%{$searchTerm}%")
                       ->orWhere('employer_employee_id', 'like', "%{$searchTerm}%");
                 });
             });
