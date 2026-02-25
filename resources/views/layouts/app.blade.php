@@ -952,6 +952,7 @@
 
     @include('components.download-modals')
     @include('partials.background-removal-scripts')
+    @include('partials.view_selected_modal')
     @stack('scripts')
 
 <!-- Universal Preview Modal -->
@@ -1475,6 +1476,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        // Update View Selected Button Count (Global Badge)
+        const viewSelectedBadge = document.getElementById('view-selected-count');
+        if (viewSelectedBadge) viewSelectedBadge.textContent = count;
+
         // Sync individual checkboxes
         if (employeeCheckboxes) {
             employeeCheckboxes.forEach(cb => {
@@ -1504,6 +1509,9 @@ document.addEventListener('DOMContentLoaded', function () {
             employer_id: cb.dataset.employerId || '',
             name_th: cb.dataset.nameTh || '',
             name_en: cb.dataset.nameEn || '',
+            title_th: cb.dataset.titleTh || '',
+            title_en: cb.dataset.titleEn || '',
+            nationality: cb.dataset.nationality || '',
             photo: cb.dataset.photo || '',
             employer_name: cb.dataset.employerName || ''
         };
@@ -1559,6 +1567,117 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // --- New Feature: View Selected Modal Logic ---
+    window.openViewSelectedModal = function() {
+        const data = window.getGlobalSelectedData();
+        const container = document.getElementById('selected-items-container');
+        const countBadge = document.getElementById('modal-selected-count');
+        const modalEl = document.getElementById('viewSelectedModal');
+
+        if (!container || !modalEl) {
+            console.error('Modal elements not found');
+            return;
+        }
+
+        if (countBadge) countBadge.textContent = data.length;
+
+        container.innerHTML = ''; // Clear
+
+        if (data.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5 text-muted w-100">
+                    <i class="bi bi-check2-circle display-1 opacity-25"></i>
+                    <p class="mt-3">{{ __('No employees selected') }}</p>
+                </div>
+            `;
+        } else {
+            data.forEach(item => {
+                const titleTh = item.title_th || '';
+                const nameTh = item.name_th || '-';
+                const fullNameTh = titleTh + ' ' + nameTh;
+
+                const titleEn = item.title_en || '';
+                const nameEn = item.name_en || '-';
+                const fullNameEn = titleEn + ' ' + nameEn;
+
+                const nationality = item.nationality || '-';
+                const employer = item.employer_name || '-';
+                const photo = item.photo || 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
+
+                const cardHtml = `
+                    <div class="col" id="modal-item-${item.id}">
+                        <div class="card h-100 shadow-sm border position-relative hover-shadow transition-all">
+                            <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 rounded-circle shadow-sm bg-white"
+                                    onclick="window.removeSelectedItemFromModal('${item.id}')"
+                                    title="{{ __('Remove') }}" style="width: 28px; height: 28px; padding: 0; z-index: 5;">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                            <div class="card-body d-flex align-items-center gap-3 p-3">
+                                <div class="flex-shrink-0">
+                                    <img src="${photo}" class="rounded-circle shadow-sm border" width="60" height="60" style="object-fit: cover;">
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="fw-bold text-dark text-truncate" title="${fullNameEn}">${fullNameEn}</div>
+                                    <div class="text-muted small text-truncate" title="${fullNameTh}">${fullNameTh}</div>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-flag me-1"></i>${nationality}</span>
+                                    </div>
+                                    <div class="small text-primary mt-1 text-truncate" title="${employer}">
+                                        <i class="bi bi-building me-1"></i>${employer}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    };
+
+    window.removeSelectedItemFromModal = function(id) {
+        // removeItemsByIds is defined inside DOMContentLoaded scope previously, so it's not global.
+        // We need to access the logic. But wait, `removeItemsByIds` was defined inside the closure.
+        // We need to expose it or reimplement it.
+        // Let's reimplement a simple version here relying on `getGlobalSelectedData` and `setGlobalSelectedData` which ARE global.
+
+        const current = window.getGlobalSelectedData();
+        const filtered = current.filter(item => String(item.id) !== String(id));
+        window.setGlobalSelectedData(filtered);
+
+        // Sync main UI (Checkboxes)
+        if(window.refreshGlobalSelectionUI) {
+            window.refreshGlobalSelectionUI();
+        }
+
+        // Remove from DOM immediately
+        const el = document.getElementById(`modal-item-${id}`);
+        if(el) {
+            el.remove();
+        }
+
+        // Update Modal Count
+        const countBadge = document.getElementById('modal-selected-count');
+        if (countBadge) countBadge.textContent = filtered.length;
+
+        // If empty, show empty state
+        if (filtered.length === 0) {
+            const container = document.getElementById('selected-items-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5 text-muted w-100">
+                        <i class="bi bi-check2-circle display-1 opacity-25"></i>
+                        <p class="mt-3">{{ __('No employees selected') }}</p>
+                    </div>
+                `;
+            }
+            // Optional: Close modal if empty? No, user might want to see it cleared.
+        }
+    };
 });
 </script>
 

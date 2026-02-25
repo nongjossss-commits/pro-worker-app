@@ -334,8 +334,9 @@
                 </div>
 
                 <button class="btn btn-sm btn-outline-danger ms-2" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
-                <button class="btn btn-sm btn-info text-white" id="btn-view-selected">
+                <button class="btn btn-sm btn-info text-white" id="btn-view-selected" onclick="window.openViewSelectedModal()">
                     <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+                    <span class="badge bg-white text-info ms-1" id="view-selected-count">0</span>
                 </button>
                 <div class="ms-auto text-muted small d-none d-md-block">
                     <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
@@ -645,26 +646,6 @@
 {{-- Include Advanced Export & Target Employer Modals (reused from Employees) --}}
 @include('employees.modals.advanced_export')
 @include('employees.modals.select_target_employer_modal')
-
-{{-- View Selected Items Modal --}}
-<div class="modal fade" id="viewSelectedModal" tabindex="-1" aria-labelledby="viewSelectedModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewSelectedModalLabel">{{ __('Selected Employees') }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div id="selected-list-container" class="list-group list-group-flush">
-                    <!-- Items will be populated here -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 {{-- Edit Employee Modal --}}
 <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -2077,59 +2058,6 @@
 
     // --- Bulk Action Handlers (Advanced Features) ---
     document.addEventListener('DOMContentLoaded', function() {
-        const viewSelectedBtn = document.getElementById('btn-view-selected');
-        const container = document.getElementById('selected-list-container');
-        const modalEl = document.getElementById('viewSelectedModal');
-        const modal = new bootstrap.Modal(modalEl);
-
-        if (viewSelectedBtn) {
-            viewSelectedBtn.addEventListener('click', function() {
-                const data = window.getGlobalSelectedData();
-                if (data.length === 0) {
-                    showToast('{{ __('No employees selected') }}', 'danger');
-                    return;
-                }
-
-                container.innerHTML = '';
-                data.forEach(item => {
-                    // Populate modal list (Copied logic from employees.index)
-                    const li = document.createElement('div');
-                    li.className = 'list-group-item d-flex align-items-center justify-content-between';
-                    li.id = `selected-item-${item.id}`;
-
-                    li.innerHTML = `
-                        <div class="d-flex align-items-center">
-                            <img src="${item.photo}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                            <div>
-                                <div class="fw-bold">${item.name_en || 'N/A'}</div>
-                                <div class="text-muted small">${item.name_th || 'N/A'}</div>
-                                <div class="text-muted small"><i class="bi bi-building me-1"></i>${item.employer_name || 'N/A'}</div>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-selected" data-id="${item.id}">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    `;
-                    container.appendChild(li);
-                });
-
-                // Re-attach remove listeners inside modal
-                container.querySelectorAll('.btn-remove-selected').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.dataset.id;
-                        window.removeItemsByIds ? window.removeItemsByIds([id]) : console.error('removeItemsByIds not found');
-                        // Update UI inside modal manually or let global listener handle page,
-                        // but modal needs manual removal from list
-                         const itemEl = document.getElementById(`selected-item-${id}`);
-                        if (itemEl) itemEl.remove();
-                        if (container.children.length === 0) modal.hide();
-                    });
-                });
-
-                modal.show();
-            });
-        }
-
         // Handle Bulk Generate PDF
         const bulkGeneratePdfBtn = document.getElementById('bulk-generate-pdf-btn');
         if (bulkGeneratePdfBtn) {

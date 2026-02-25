@@ -83,6 +83,9 @@
                            data-status="{{ $employee->status }}"
                            data-name-th="{{ $employee->employeeNameTh }}"
                            data-name-en="{{ $employee->employeeNameEn }}"
+                           data-title-th="{{ $employee->employeeTitleTh }}"
+                           data-title-en="{{ $employee->employeeTitleEn }}"
+                           data-nationality="{{ $employee->employeeNationality }}"
                            data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
                            data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
                 </div>
