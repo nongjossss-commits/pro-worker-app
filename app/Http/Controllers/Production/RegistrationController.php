@@ -61,7 +61,7 @@ class RegistrationController extends Controller
         $notStartedCount = 0;
         if ($stepOneId) {
             $notStartedCount = (clone $statsQuery)
-                ->whereIn('status', ['registration_pending', 'registration_completed'])
+                ->where('status', 'registration_pending')
                 ->whereDoesntHave('registrationSteps', function ($q) use ($stepOneId) {
                     $q->where('registration_steps.id', $stepOneId);
                 })->count();
@@ -296,7 +296,7 @@ class RegistrationController extends Controller
         // For other filters, we check if the employer has ANY employee matching the criteria
         $query->whereHas('employees', function($q) use ($filter, $stepOneId) {
             if ($filter === 'not_started') {
-                 $q->where('status', '!=', 'registration_cancelled')
+                 $q->where('status', 'registration_pending')
                    ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
                        $sq->where('registration_steps.id', $stepOneId);
                    });
@@ -447,7 +447,7 @@ class RegistrationController extends Controller
                     $empSavedCount++;
                 }
 
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                if ($stepOneId && $emp->status === 'registration_pending' && !$emp->registrationSteps->contains('id', $stepOneId)) {
                     $empNotStarted++;
                 }
 
@@ -581,7 +581,7 @@ class RegistrationController extends Controller
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
             if ($filter === 'not_started') {
-                 $query->where('status', '!=', 'registration_cancelled')
+                 $query->where('status', 'registration_pending')
                        ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
                            $q->where('registration_steps.id', $stepOneId);
                        });
@@ -1212,7 +1212,7 @@ class RegistrationController extends Controller
 
             foreach ($allEmployees as $emp) {
                 // Count Not Started
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                if ($stepOneId && $emp->status === 'registration_pending' && !$emp->registrationSteps->contains('id', $stepOneId)) {
                     $globalNotStarted++;
                 }
 
@@ -1255,7 +1255,7 @@ class RegistrationController extends Controller
 
             foreach ($employerEmployees as $emp) {
                  // Count Not Started
-                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                 if ($stepOneId && $emp->status === 'registration_pending' && !$emp->registrationSteps->contains('id', $stepOneId)) {
                      $employerNotStarted++;
                  }
 
@@ -1553,7 +1553,7 @@ class RegistrationController extends Controller
         $globalNotStarted = 0;
         if ($stepOneId) {
             $globalNotStarted = (clone $globalQuery)
-                ->whereIn('status', $activeStatuses)
+                ->where('status', 'registration_pending')
                 ->whereDoesntHave('registrationSteps', function ($q) use ($stepOneId) {
                     $q->where('registration_steps.id', $stepOneId);
                 })->count();
@@ -1616,7 +1616,7 @@ class RegistrationController extends Controller
             $empNotStarted = 0;
             if ($stepOneId) {
                 $empNotStarted = (clone $empQuery)
-                    ->whereIn('status', $activeStatuses)
+                    ->where('status', 'registration_pending')
                     ->whereDoesntHave('registrationSteps', function ($q) use ($stepOneId) {
                         $q->where('registration_steps.id', $stepOneId);
                     })->count();
