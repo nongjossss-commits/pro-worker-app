@@ -134,6 +134,9 @@
                        data-employer-id="{{ $order->employer_id ?? '' }}"
                        data-name-th="{{ $item->employee->employeeNameTh ?? '' }}"
                        data-name-en="{{ $item->employee->employeeNameEn ?? '' }}"
+                       data-title-th="{{ $item->employee->employeeTitleTh ?? '' }}"
+                       data-title-en="{{ $item->employee->employeeTitleEn ?? '' }}"
+                       data-nationality="{{ $empNationality }}"
                        data-photo="{{ $empPhoto }}"
                        data-employer-name="{{ $order->employer->employerNameTh ?? 'N/A' }}"
                        {{ (!$item->employee_id || $isReadOnly) ? 'disabled' : '' }}>
