@@ -36,10 +36,28 @@
 
     <x-address-filter :provinces="$addressOptions['provinces']" :districts="$addressOptions['districts']" :subDistricts="$addressOptions['subDistricts']" />
 
+    <div class="bulk-action-bar mb-3 align-items-center gap-2"
+         style="display: none;"
+         id="bulkActionBar">
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+            <label class="form-check-label" for="select-all-checkbox">
+                {{ __('Select All') }} (<span id="selected-count">0</span>)
+            </label>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-danger" onclick="window.clearEmployerSelection()">{{ __('Clear Selection') }}</button>
+            <button class="btn btn-sm btn-info text-white" onclick="window.openViewSelectedEmployers()">
+                <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+            </button>
+        </div>
+    </div>
+
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
+                    <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox" disabled></th>
                     <th>#</th>
                     <th style="width: 1%;"></th> {{-- Drag Handle Column --}}
                     <th>{{ __('Employer Name (Thai)') }}</th>
@@ -53,6 +71,12 @@
             <tbody id="employer-table-body">
                 @forelse ($employers as $employer)
                     <tr id="employer-row-{{ $employer->id }}">
+                        <td>
+                            <input class="form-check-input employer-checkbox" type="checkbox" value="{{ $employer->id }}"
+                                   data-name-th="{{ $employer->employerNameTh }}"
+                                   data-employer-id="{{ $employer->employerId }}"
+                                   data-business-type="{{ $employer->businessType }}">
+                        </td>
                         <td>{{ $loop->iteration }}</td>
                         <td>
                             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
@@ -105,7 +129,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted">{{ __('No employers found') }}</td>
+                        <td colspan="9" class="text-center text-muted">{{ __('No employers found') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -163,6 +187,136 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    // --- Employer Selection Logic ---
+    const STORAGE_KEY = 'selectedEmployerData';
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const tableSelectAllCheckbox = document.getElementById('table-select-all-checkbox');
+    const bulkActionBar = document.getElementById('bulkActionBar');
+    const selectedCountSpan = document.getElementById('selected-count');
+
+    // Helper functions
+    function getSelected() {
+        try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]'); }
+        catch { return []; }
+    }
+    function setSelected(data) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        updateUI();
+    }
+    function getRowData(checkbox) {
+        return {
+            id: checkbox.value,
+            name_th: checkbox.dataset.nameTh || '',
+            name_en: checkbox.dataset.employerId || '', // Use Employer ID as EN name/code
+            employer_name: checkbox.dataset.businessType || '', // Use Business Type as Subtitle
+            photo: 'https://placehold.co/50x50/e2e8f0/6c757d?text=EMP' // Placeholder
+        };
+    }
+
+    function updateUI() {
+        const selected = getSelected();
+        const selectedIds = selected.map(i => String(i.id));
+
+        // Update checkboxes
+        document.querySelectorAll('.employer-checkbox').forEach(cb => {
+            cb.checked = selectedIds.includes(String(cb.value));
+        });
+
+        // Update Bulk Action Bar
+        if (selected.length > 0) {
+            bulkActionBar.style.display = 'flex';
+            if(selectedCountSpan) selectedCountSpan.textContent = selected.length;
+        } else {
+            bulkActionBar.style.display = 'none';
+        }
+
+        // Update Select All Checkboxes
+        const visibleCheckboxes = document.querySelectorAll('.employer-checkbox');
+        const allVisibleSelected = visibleCheckboxes.length > 0 && Array.from(visibleCheckboxes).every(cb => cb.checked);
+
+        if (selectAllCheckbox) selectAllCheckbox.checked = allVisibleSelected;
+        if (tableSelectAllCheckbox) {
+            tableSelectAllCheckbox.checked = allVisibleSelected;
+            tableSelectAllCheckbox.disabled = visibleCheckboxes.length === 0;
+        }
+    }
+
+    // Event Listeners
+    document.body.addEventListener('change', function(e) {
+        if (e.target.matches('.employer-checkbox')) {
+            const current = getSelected();
+            const data = getRowData(e.target);
+            let next = [];
+            if (e.target.checked) {
+                // Add if not exists
+                if (!current.find(i => String(i.id) === String(data.id))) {
+                    next = [...current, data];
+                } else {
+                    next = current;
+                }
+            } else {
+                next = current.filter(i => String(i.id) !== String(data.id));
+            }
+            setSelected(next);
+        }
+    });
+
+    function handleSelectAll(isChecked) {
+        const current = getSelected();
+        const visible = document.querySelectorAll('.employer-checkbox');
+        let next = [...current];
+
+        if (isChecked) {
+            visible.forEach(cb => {
+                const data = getRowData(cb);
+                if (!next.find(i => String(i.id) === String(data.id))) {
+                    next.push(data);
+                }
+            });
+        } else {
+            const visibleIds = Array.from(visible).map(cb => String(cb.value));
+            next = next.filter(i => !visibleIds.includes(String(i.id)));
+        }
+        setSelected(next);
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            handleSelectAll(this.checked);
+        });
+    }
+
+    if (tableSelectAllCheckbox) {
+        tableSelectAllCheckbox.addEventListener('change', function() {
+            handleSelectAll(this.checked);
+        });
+    }
+
+    // Expose global functions for buttons
+    window.clearEmployerSelection = function() {
+        setSelected([]);
+    };
+
+    window.openViewSelectedEmployers = function() {
+        const data = getSelected();
+        // Use global modal with custom data, custom title, and custom storage key
+        if (window.openViewSelectedModal) {
+            window.openViewSelectedModal(data, '{{ __('Selected Employers') }}', STORAGE_KEY);
+        } else {
+            console.error('window.openViewSelectedModal is not defined');
+        }
+    };
+
+    // Listen for custom event from global modal removal
+    window.addEventListener('custom-selection-changed', function(e) {
+        if (e.detail && e.detail.key === STORAGE_KEY) {
+            updateUI();
+        }
+    });
+
+    // Initial Load
+    updateUI();
 });
 </script>
 @endpush

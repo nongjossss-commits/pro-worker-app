@@ -119,6 +119,12 @@
                 @endcan
             </ul>
         </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+            <button class="btn btn-sm btn-info text-white" onclick="window.openViewSelectedModal()">
+                <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+            </button>
+        </div>
     </div>
 
     <style>

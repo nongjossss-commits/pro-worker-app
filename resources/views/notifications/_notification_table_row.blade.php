@@ -28,7 +28,19 @@
     <td>
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)
-            <input class="form-check-input bulk-action-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_table_checkbox_{{ $notification->id }}">
+            <input class="form-check-input bulk-action-checkbox employee-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_table_checkbox_{{ $notification->id }}"
+                   data-employee-id="{{ $employee->id }}"
+                   data-employer-id="{{ $employee->employer_id }}"
+                   data-name-th="{{ $employee->employeeNameTh }}"
+                   data-name-en="{{ $employee->employeeNameEn }}"
+                   data-photo="{{ $employee->photo_url }}"
+                   data-employer-name="{{ $employer?->employerNameTh ?? 'N/A' }}"
+                   data-title-th="{{ $employee->employeeTitleTh }}"
+                   data-title-en="{{ $employee->employeeTitleEn }}"
+                   data-nationality="{{ $employee->employeeNationality }}"
+                   data-gender="{{ $employee->gender }}"
+                   data-country-code="{{ \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality) }}"
+            >
         @else
             <input class="form-check-input" type="checkbox" value="" disabled>
         @endif
