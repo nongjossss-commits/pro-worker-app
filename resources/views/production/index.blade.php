@@ -237,6 +237,10 @@
             </ul>
         </div>
         <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+        <button class="btn btn-sm btn-info text-white ms-2" id="btn-view-selected" onclick="window.openViewSelectedModal()">
+            <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+            <span class="badge bg-white text-info ms-1" id="view-selected-count">0</span>
+        </button>
     </div>
 
     {{-- Accordion List --}}
