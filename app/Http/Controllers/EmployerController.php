@@ -39,6 +39,8 @@ class EmployerController extends Controller
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
                   ->orWhere('businessType', 'like', $searchTerm)
+                  ->orWhere('employerId', 'like', $searchTerm)
+                  ->orWhere('employerTaxId', 'like', $searchTerm)
                   ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
                       $subQ->where('name', 'like', $searchTerm);
                   })
@@ -169,6 +171,9 @@ class EmployerController extends Controller
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
+                  ->orWhere('employee_id_number', 'like', $searchTerm)
+                  ->orWhere('name_list_number', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm);
             });
         }
@@ -401,7 +406,11 @@ class EmployerController extends Controller
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
-                  ->orWhere('employeePassport', 'like', $searchTerm);
+                  ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
+                  ->orWhere('employee_id_number', 'like', $searchTerm)
+                  ->orWhere('name_list_number', 'like', $searchTerm)
+                  ->orWhere('pinkCardNo', 'like', $searchTerm);
             });
         }
 
@@ -447,6 +456,9 @@ class EmployerController extends Controller
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
+                  ->orWhere('employee_id_number', 'like', $searchTerm)
+                  ->orWhere('name_list_number', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm);
             });
         }
@@ -566,6 +578,8 @@ class EmployerController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
+                  ->orWhere('employerId', 'like', $searchTerm)
+                  ->orWhere('employerTaxId', 'like', $searchTerm)
                   ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
                       $subQ->where('name', 'like', $searchTerm);
                   })
@@ -626,6 +640,7 @@ class EmployerController extends Controller
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
                   ->orWhere('employerId', 'like', $searchTerm)
+                  ->orWhere('employerTaxId', 'like', $searchTerm)
                   ->orWhere(function($subQ) use ($searchTerm) {
                       $subQ->filterByAddress($searchTerm);
                   });

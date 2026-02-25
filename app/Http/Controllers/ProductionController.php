@@ -109,6 +109,10 @@ class ProductionController extends Controller
                           $emp->where('employeeNameTh', 'like', "%{$search}%")
                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
                               ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                              ->orWhere('employee_id_number', 'like', "%{$search}%")
+                              ->orWhere('name_list_number', 'like', "%{$search}%")
+                              ->orWhere('pinkCardNo', 'like', "%{$search}%")
                               ->orWhere('request_number', 'like', "%{$search}%")
                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
@@ -211,6 +215,10 @@ class ProductionController extends Controller
                           $emp->where('employeeNameTh', 'like', "%{$search}%")
                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
                               ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                              ->orWhere('employee_id_number', 'like', "%{$search}%")
+                              ->orWhere('name_list_number', 'like', "%{$search}%")
+                              ->orWhere('pinkCardNo', 'like', "%{$search}%")
                               ->orWhere('request_number', 'like', "%{$search}%")
                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
