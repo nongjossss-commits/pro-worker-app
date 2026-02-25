@@ -199,7 +199,10 @@ class PdfTemplateController extends Controller
             'employer_id' => $request->type === 'employer' ? $request->employer_id : null,
             'created_by' => Auth::id(),
             'field_mapping' => [], // Initialize empty
-            'meta_data' => ['auto_prefix_titles' => false], // Default setting
+            'meta_data' => [
+                'auto_prefix_titles' => false,
+                'original_filename' => $file->getClientOriginalName(),
+            ],
         ]);
 
         return redirect()->route('admin.pdf-templates.builder', $template)
@@ -245,7 +248,7 @@ class PdfTemplateController extends Controller
             ->with('success', 'Template deleted successfully.');
     }
 
-    public function file(PdfTemplate $pdf_template)
+    public function file(Request $request, PdfTemplate $pdf_template)
     {
         $this->authorize('view-pdf-templates');
 
@@ -253,6 +256,14 @@ class PdfTemplateController extends Controller
 
         if (!Storage::disk('public')->exists($path)) {
             abort(404);
+        }
+
+        if ($request->query('download')) {
+            $filename = $pdf_template->meta_data['original_filename'] ?? ($pdf_template->name . '.pdf');
+            if (!str_ends_with($filename, '.pdf')) {
+                $filename .= '.pdf';
+            }
+            return response()->download(Storage::disk('public')->path($path), $filename);
         }
 
         return response()->file(Storage::disk('public')->path($path));
