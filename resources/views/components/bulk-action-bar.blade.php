@@ -1,6 +1,10 @@
 @props(['id' => 'bulk-action-bar', 'checkboxSelector' => '.employee-checkbox'])
 
 <div id="{{ $id }}" class="bulk-action-bar mb-3 align-items-center gap-2" style="display: none;">
+    <button class="btn btn-sm btn-info text-white me-2" onclick="window.openViewSelectedModal()">
+        <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+        <span class="badge bg-white text-info ms-1" id="view-selected-count">0</span>
+    </button>
     <div class="form-check mb-0">
         <input class="form-check-input" type="checkbox" id="{{ $id }}-select-all">
         <label class="form-check-label" for="{{ $id }}-select-all">
