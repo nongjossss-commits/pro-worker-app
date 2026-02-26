@@ -90,12 +90,11 @@ class DownloadController extends Controller
 
         if ($disposition === 'inline') {
             return response()->file($fullPath, [
-                'Content-Type' => mime_content_type($fullPath),
-                'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"'
-            ]);
+                'Content-Type' => mime_content_type($fullPath)
+            ])->setContentDisposition('inline', basename($fullPath), 'download_file');
         }
 
-        return response()->download($fullPath);
+        return response()->download($fullPath, basename($fullPath));
     }
 
     // Helper to clean up old files (optional, can be scheduled)

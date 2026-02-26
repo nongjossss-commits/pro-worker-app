@@ -27,19 +27,25 @@ class PdfHelper
              $filename .= '.pdf';
         }
         // Sanitize (allow Thai characters, remove system reserved chars)
+        // Note: Using a stricter regex or relying on Laravel's download method handling is safer.
+        // We do basic sanitization here but rely on response->download() for encoding headers.
         $filename = preg_replace('/[\\\\/:*?"<>|]/', '_', $filename);
 
         $mimeType = Storage::disk($disk)->mimeType($filePath);
 
         // If it's already a PDF
         if ($mimeType === 'application/pdf') {
+            $path = Storage::disk($disk)->path($filePath);
+
             if ($disposition === 'inline') {
-                return response()->file(Storage::disk($disk)->path($filePath), [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'inline; filename="' . $filename . '"'
-                ]);
+                return response()->file($path, [
+                    'Content-Type' => 'application/pdf'
+                ])->setContentDisposition('inline', $filename, 'document.pdf');
             }
-            return Storage::disk($disk)->download($filePath, $filename);
+
+            // Use response()->download() instead of Storage::download() to explicitly control header encoding if needed,
+            // but Storage::download() generally handles it. The issue is likely in custom headers or manual overrides.
+            return response()->download($path, $filename);
         }
 
         // If it's an image, convert to PDF
@@ -78,11 +84,11 @@ class PdfHelper
 
             return response($pdf->Output('S', $filename))
                 ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', $disposition . '; filename="' . $filename . '"');
+                ->setContentDisposition($disposition, $filename, 'document.pdf');
         }
 
         // Fallback
-        return Storage::disk($disk)->download($filePath, $filename);
+        return response()->download(Storage::disk($disk)->path($filePath), $filename);
     }
 
     /**
