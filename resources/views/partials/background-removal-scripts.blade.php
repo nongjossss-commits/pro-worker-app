@@ -59,10 +59,10 @@
 
                     if (onProgress) onProgress(true, 'Removing background (this may take a moment)...');
 
-                    // Configuration for better quality and progress tracking
-                    const config = {
+                    // Base Configuration
+                    const baseConfig = {
                         debug: true,
-                        device: 'gpu', // Hint to use GPU if available
+                        // device: 'gpu', // Set dynamically in fallback logic
                         progress: (key, current, total) => {
                             if (onProgress) {
                                 const percent = Math.round((current / total) * 100);
@@ -76,9 +76,34 @@
                         }
                     };
 
+                    // Function to execute with GPU -> CPU fallback
+                    const runRemovalWithFallback = async () => {
+                        try {
+                            console.log('Attempting Background Removal with GPU...');
+                            // Try GPU first
+                            return await removeBackgroundFn(resizedFile, { ...baseConfig, device: 'gpu' });
+                        } catch (gpuError) {
+                            console.warn('GPU removal failed. Retrying with CPU...', gpuError);
+
+                            if (onProgress) onProgress(true, 'GPU unavailable. Switching to CPU mode (slower)...');
+
+                            // Check cancellation before retry
+                            if (cancellationToken && cancellationToken.cancelled) {
+                                throw new Error('Cancelled by user');
+                            }
+
+                            // Fallback to CPU
+                            try {
+                                return await removeBackgroundFn(resizedFile, { ...baseConfig, device: 'cpu' });
+                            } catch (cpuError) {
+                                console.error('CPU removal also failed:', cpuError);
+                                throw new Error('Background removal failed on both GPU and CPU. Please try a different image.');
+                            }
+                        }
+                    };
+
                     // Execute removal with timeout and cancellation race
-                    // Use resizedFile instead of original file
-                    const processPromise = removeBackgroundFn(resizedFile, config);
+                    const processPromise = runRemovalWithFallback();
 
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error('Processing timed out (60s). Please check your connection.')), 60000)
