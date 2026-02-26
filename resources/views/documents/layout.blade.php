@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $title ?? ucfirst($type) }}</title>
+    <title>{{ $page_title ?? $title ?? ucfirst($type) }}</title>
     <!-- Google Fonts for Sarabun -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     <style>

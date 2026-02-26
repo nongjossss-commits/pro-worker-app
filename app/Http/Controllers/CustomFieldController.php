@@ -30,10 +30,35 @@ class CustomFieldController extends Controller
             abort(404, 'File not found or not a file field.');
         }
 
+        $fieldName = $field->field_name ?? 'Custom_Field';
+        $ownerName = 'Unknown';
+        $ownerId = '';
+
+        if ($type === 'employee') {
+            $owner = $field->employee;
+            $ownerName = $owner->employeeNameTh ?: ($owner->employeeNameEn ?: 'Unknown_Employee');
+            $ownerId = $owner->employer_employee_id ?: $owner->id;
+        } else {
+            // ProductionCustomField (Polymorphic)
+            $owner = $field->model;
+            if ($owner instanceof \App\Models\Employer) {
+                $ownerName = $owner->employerNameTh ?: ($owner->employerNameEn ?: 'Unknown_Employer');
+                $ownerId = $owner->employerId;
+            } elseif ($owner instanceof \App\Models\Employee) {
+                $ownerName = $owner->employeeNameTh ?: ($owner->employeeNameEn ?: 'Unknown_Employee');
+                $ownerId = $owner->employer_employee_id ?: $owner->id;
+            } else {
+                 $ownerName = $owner ? (class_basename($owner) . '_' . $owner->id) : 'Unknown_Owner';
+                 $ownerId = $owner ? $owner->id : '';
+            }
+        }
+
+        $filename = "{$fieldName}_{$ownerName}_{$ownerId}.pdf";
+
         $filePath = $field->file_path;
         $disk = 'public';
         $disposition = $request->input('disposition', 'inline');
 
-        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition);
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition, $filename);
     }
 }

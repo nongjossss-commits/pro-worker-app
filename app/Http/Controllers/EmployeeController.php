@@ -1096,7 +1096,39 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $disposition = $request->input('disposition', 'inline');
 
-        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition);
+        // Map field to readable name
+        $fieldMapping = [
+            'employee_doc_1' => 'Passport',
+            'employee_doc_2' => 'Visa',
+            'employee_doc_3' => 'Work_Permit',
+            'employee_doc_4' => 'Pink_Card',
+            'insurance_document_path' => 'Social_Security_Insurance',
+            'insurance_document_path_private' => 'Private_Insurance',
+            'medical_certificate_path' => 'Medical_Certificate',
+            // Legacy
+            'passport_file_path' => 'Passport',
+            'visa_file_path' => 'Visa',
+            'work_permit_file_path' => 'Work_Permit',
+            'pink_card_file_path' => 'Pink_Card',
+        ];
+
+        $docName = $fieldMapping[$field] ?? $field;
+
+        // Handle generic doc 5-18
+        if (str_starts_with($field, 'employee_doc_')) {
+            $num = (int)str_replace('employee_doc_', '', $field);
+            if ($num >= 5) {
+                 $docName = "Other_Document_{$num}";
+            }
+        }
+
+        $employeeName = $employee->employeeNameTh ?: ($employee->employeeNameEn ?: 'Unknown_Employee');
+        $empId = $employee->employer_employee_id ?: $employee->id;
+
+        // Construct filename: [DocName]_[EmployeeName]_[ID].pdf
+        $filename = "{$docName}_{$employeeName}_{$empId}.pdf";
+
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition, $filename);
     }
 
     /**
