@@ -698,7 +698,15 @@ class PdfGeneratorService
 
     public function generateFilename(PdfTemplate $template, Employee $employee)
     {
-        // Fixed: Append Employee ID to ensure uniqueness for duplicate names
-        return Str::slug($template->name . '-' . $employee->employeeNameEn . '-' . $employee->id) . '.pdf';
+        // Use Thai name if available
+        $employeeName = $employee->employeeNameTh ?: ($employee->employeeNameEn ?: 'Unknown');
+
+        // Construct descriptive filename: [TemplateName]_[EmployeeName]_[EmployeeID].pdf
+        $filename = "{$template->name}_{$employeeName}_{$employee->id}.pdf";
+
+        // Sanitize (allow Thai characters, remove system reserved chars)
+        $filename = preg_replace('/[\\\\/:*?"<>|]/', '_', $filename);
+
+        return $filename;
     }
 }

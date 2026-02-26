@@ -116,6 +116,11 @@ class ProductionDocumentController extends Controller
 
         $title = $titles[$type] ?? ucfirst($type);
 
+        // Construct descriptive filename for browser "Save as PDF"
+        // [Document Type]_[Employer Name]_[Production ID]
+        $employerName = $production->employer->employerNameTh ?: ($production->employer->employerNameEn ?: 'Unknown_Employer');
+        $pageTitle = "{$title}_{$employerName}_PROD-{$production->id}";
+
         // Prepare data for the view
         $data = [
             'production' => $production,
@@ -124,6 +129,7 @@ class ProductionDocumentController extends Controller
             'billTo' => $billTo,
             'type' => $type,
             'title' => $title, // Explicitly pass the title
+            'page_title' => $pageTitle, // For <title> tag
             'date' => now(),
             'transactions' => $transactions,
             'financial' => $financialData,

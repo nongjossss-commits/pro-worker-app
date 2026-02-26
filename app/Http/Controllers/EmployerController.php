@@ -680,8 +680,23 @@ class EmployerController extends Controller
             abort(404, 'File not found.');
         }
 
+        // Map field to readable name
+        $fieldMapping = [
+            'employer_doc_company' => 'Company_Registration',
+            'employer_doc_lease' => 'Lease_Agreement',
+            'employer_doc_construction' => 'Construction_Contract',
+            'employer_doc_other_1' => 'Other_1',
+            'employer_doc_other_2' => 'Other_2',
+            'employer_doc_other_3' => 'Other_3',
+        ];
+
+        $docName = $fieldMapping[$field] ?? $field;
+        $employerName = $employer->employerNameTh ?: ($employer->employerNameEn ?: 'Unknown_Employer');
+        // Construct filename: [DocType]_[EmployerName]_[EmployerID].pdf
+        $filename = "{$docName}_{$employerName}_{$employer->employerId}.pdf";
+
         $disposition = $request->input('disposition', 'inline');
 
-        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition);
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition, $filename);
     }
 }

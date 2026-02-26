@@ -15,11 +15,19 @@ class PdfHelper
      * @param string $disposition 'attachment' or 'inline'
      * @return \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\BinaryFileResponse
      */
-    public static function streamFile($disk, $filePath, $disposition = 'attachment')
+    public static function streamFile($disk, $filePath, $disposition = 'attachment', $customFilename = null)
     {
         if (!Storage::disk($disk)->exists($filePath)) {
             abort(404, 'File not found.');
         }
+
+        $filename = $customFilename ?: basename($filePath);
+        // Ensure extension
+        if (!str_ends_with(strtolower($filename), '.pdf')) {
+             $filename .= '.pdf';
+        }
+        // Sanitize (allow Thai characters, remove system reserved chars)
+        $filename = preg_replace('/[\\\\/:*?"<>|]/', '_', $filename);
 
         $mimeType = Storage::disk($disk)->mimeType($filePath);
 
@@ -28,10 +36,10 @@ class PdfHelper
             if ($disposition === 'inline') {
                 return response()->file(Storage::disk($disk)->path($filePath), [
                     'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
+                    'Content-Disposition' => 'inline; filename="' . $filename . '"'
                 ]);
             }
-            return Storage::disk($disk)->download($filePath);
+            return Storage::disk($disk)->download($filePath, $filename);
         }
 
         // If it's an image, convert to PDF
@@ -68,13 +76,13 @@ class PdfHelper
 
             $pdf->Image($fullPath, $margin, $margin, $finalW, $finalH);
 
-            return response($pdf->Output('S', basename($filePath) . '.pdf'))
+            return response($pdf->Output('S', $filename))
                 ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', $disposition . '; filename="' . basename($filePath) . '.pdf"');
+                ->header('Content-Disposition', $disposition . '; filename="' . $filename . '"');
         }
 
         // Fallback
-        return Storage::disk($disk)->download($filePath);
+        return Storage::disk($disk)->download($filePath, $filename);
     }
 
     /**
