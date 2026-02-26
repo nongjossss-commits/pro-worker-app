@@ -26,10 +26,15 @@ class PdfHelper
         if (!str_ends_with(strtolower($filename), '.pdf')) {
              $filename .= '.pdf';
         }
-        // Sanitize (allow Thai characters, remove system reserved chars)
-        // Note: Using a stricter regex or relying on Laravel's download method handling is safer.
-        // We do basic sanitization here but rely on response->download() for encoding headers.
-        $filename = preg_replace('/[\\\\/:*?"<>|]/', '_', $filename);
+        // Sanitize filename to ensure ASCII compatibility as requested by user.
+        // This prevents header encoding issues in some browsers/servers.
+        // Also fix regex delimiter issue.
+        $filename = preg_replace('/[^\x20-\x7E]/', '', $filename); // Remove non-ASCII
+        $filename = preg_replace('/[\\\\\/:\*\?"<>\|]/', '_', $filename); // Remove reserved chars
+        $filename = trim($filename);
+        if (empty($filename) || $filename === '.pdf') {
+            $filename = 'document_' . time() . '.pdf';
+        }
 
         $mimeType = Storage::disk($disk)->mimeType($filePath);
 
@@ -82,9 +87,13 @@ class PdfHelper
 
             $pdf->Image($fullPath, $margin, $margin, $finalW, $finalH);
 
-            return response($pdf->Output('S', $filename))
-                ->header('Content-Type', 'application/pdf')
-                ->setContentDisposition($disposition, $filename, 'document.pdf');
+            $response = response($pdf->Output('S', $filename))
+                ->header('Content-Type', 'application/pdf');
+
+            // Manually set Content-Disposition for standard Response object (Image converted to PDF)
+            // Use safe ASCII filename
+            $headerValue = $disposition . '; filename="' . $filename . '"';
+            return $response->header('Content-Disposition', $headerValue);
         }
 
         // Fallback

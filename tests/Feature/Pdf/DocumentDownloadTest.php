@@ -51,10 +51,10 @@ class DocumentDownloadTest extends TestCase
         $response->assertStatus(200);
 
         // Expected Content-Disposition header
-        $filename = basename($path);
-
+        // It uses constructed filename, not stored filename.
         $this->assertStringContainsString('inline', $response->headers->get('Content-Disposition'));
-        $this->assertStringContainsString($filename, $response->headers->get('Content-Disposition'));
+        // Check for constructed name part (Passport)
+        $this->assertStringContainsString('Passport', $response->headers->get('Content-Disposition'));
     }
 
     public function test_employer_document_download_disposition_inline()
@@ -83,8 +83,9 @@ class DocumentDownloadTest extends TestCase
 
         $response->assertStatus(200);
 
-        $filename = basename($path);
+        // It uses constructed filename, not stored filename.
         $this->assertStringContainsString('inline', $response->headers->get('Content-Disposition'));
-        $this->assertStringContainsString($filename, $response->headers->get('Content-Disposition'));
+        // Check for constructed name part (Company_Registration)
+        $this->assertStringContainsString('Company_Registration', $response->headers->get('Content-Disposition'));
     }
 }

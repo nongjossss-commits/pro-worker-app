@@ -697,9 +697,15 @@ class EmployerController extends Controller
         ];
 
         $docName = $fieldMapping[$field] ?? $field;
-        $employerName = $employer->employerNameTh ?: ($employer->employerNameEn ?: 'Unknown_Employer');
+        // Use English name for filename compatibility
+        $employerName = $employer->employerNameEn ?: 'Employer_' . $employer->employerId;
+        // Sanitize name to be safe
+        $employerName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $employerName);
+
+        $employerId = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string)$employer->employerId);
+
         // Construct filename: [DocType]_[EmployerName]_[EmployerID].pdf
-        $filename = "{$docName}_{$employerName}_{$employer->employerId}.pdf";
+        $filename = "{$docName}_{$employerName}_{$employerId}.pdf";
 
         $disposition = $request->input('disposition', 'inline');
 
