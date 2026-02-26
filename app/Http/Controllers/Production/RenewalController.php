@@ -971,6 +971,7 @@ class RenewalController extends Controller
               ->orWhere('name_list_number', 'like', "%{$search}%")
               ->orWhere('pinkCardNo', 'like', "%{$search}%")
               ->orWhere('request_number', 'like', "%{$search}%")
+              ->orWhere('employer_employee_id', 'like', "%{$search}%")
               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereHas('employer', function($q2) use ($search, $cleanedSearch) {
@@ -1030,6 +1031,7 @@ class RenewalController extends Controller
                   ->orWhere('name_list_number', 'like', "%{$search}%")
                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
                   ->orWhere('request_number', 'like', "%{$search}%")
+                  ->orWhere('employer_employee_id', 'like', "%{$search}%")
                   ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                   ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
             });
@@ -1058,6 +1060,7 @@ class RenewalController extends Controller
                    ->orWhere('name_list_number', 'like', "%{$search}%")
                    ->orWhere('pinkCardNo', 'like', "%{$search}%")
                    ->orWhere('request_number', 'like', "%{$search}%")
+                   ->orWhere('employer_employee_id', 'like', "%{$search}%")
                    ->orWhereHas('employer', function($q2) use ($search) {
                        $q2->withTrashed()
                           ->where('employerNameTh', 'like', "%{$search}%")
