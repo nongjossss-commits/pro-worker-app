@@ -1,0 +1,713 @@
+[
+  {
+    "province_th": "กรุงเทพมหานคร",
+    "district_th": "เขตพระนคร",
+    "subdistrict_th": "พระบรมมหาราชวัง",
+    "zip_code": 10200,
+    "province_en": "Bangkok",
+    "district_en": "Phra Nakhon",
+    "subdistrict_en": "Phra Borom Maha Ratchawang"
+  },
+  {
+    "province_th": "กรุงเทพมหานคร",
+    "district_th": "เขตดุสิต",
+    "subdistrict_th": "ดุสิต",
+    "zip_code": 10300,
+    "province_en": "Bangkok",
+    "district_en": "Dusit",
+    "subdistrict_en": "Dusit"
+  },
+  {
+    "province_th": "กรุงเทพมหานคร",
+    "district_th": "เขตบางรัก",
+    "subdistrict_th": "สีลม",
+    "zip_code": 10500,
+    "province_en": "Bangkok",
+    "district_en": "Bang Rak",
+    "subdistrict_en": "Silom"
+  },
+  {
+    "province_th": "กระบี่",
+    "district_th": "อำเภอเมืองกระบี่",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Krabi",
+    "district_en": "Mueang Krabi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "กาญจนบุรี",
+    "district_th": "อำเภอเมืองกาญจนบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Kanchanaburi",
+    "district_en": "Mueang Kanchanaburi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "กาฬสินธุ์",
+    "district_th": "อำเภอเมืองกาฬสินธุ์",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Kalasin",
+    "district_en": "Mueang Kalasin",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "กำแพงเพชร",
+    "district_th": "อำเภอเมืองกำแพงเพชร",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Kamphaeng Phet",
+    "district_en": "Mueang Kamphaeng Phet",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ขอนแก่น",
+    "district_th": "อำเภอเมืองขอนแก่น",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Khon Kaen",
+    "district_en": "Mueang Khon Kaen",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "จันทบุรี",
+    "district_th": "อำเภอเมืองจันทบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chanthaburi",
+    "district_en": "Mueang Chanthaburi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ฉะเชิงเทรา",
+    "district_th": "อำเภอเมืองฉะเชิงเทรา",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chachoengsao",
+    "district_en": "Mueang Chachoengsao",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ชลบุรี",
+    "district_th": "อำเภอเมืองชลบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chon Buri",
+    "district_en": "Mueang Chon Buri",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ชัยนาท",
+    "district_th": "อำเภอเมืองชัยนาท",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chai Nat",
+    "district_en": "Mueang Chai Nat",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ชัยภูมิ",
+    "district_th": "อำเภอเมืองชัยภูมิ",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chaiyaphum",
+    "district_en": "Mueang Chaiyaphum",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ชุมพร",
+    "district_th": "อำเภอเมืองชุมพร",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chumphon",
+    "district_en": "Mueang Chumphon",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "เชียงราย",
+    "district_th": "อำเภอเมืองเชียงราย",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chiang Rai",
+    "district_en": "Mueang Chiang Rai",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "เชียงใหม่",
+    "district_th": "อำเภอเมืองเชียงใหม่",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Chiang Mai",
+    "district_en": "Mueang Chiang Mai",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ตรัง",
+    "district_th": "อำเภอเมืองตรัง",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Trang",
+    "district_en": "Mueang Trang",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ตราด",
+    "district_th": "อำเภอเมืองตราด",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Trat",
+    "district_en": "Mueang Trat",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ตาก",
+    "district_th": "อำเภอเมืองตาก",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Tak",
+    "district_en": "Mueang Tak",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นครนายก",
+    "district_th": "อำเภอเมืองนครนายก",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nakhon Nayok",
+    "district_en": "Mueang Nakhon Nayok",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นครปฐม",
+    "district_th": "อำเภอเมืองนครปฐม",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nakhon Pathom",
+    "district_en": "Mueang Nakhon Pathom",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นครพนม",
+    "district_th": "อำเภอเมืองนครพนม",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nakhon Phanom",
+    "district_en": "Mueang Nakhon Phanom",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นครราชสีมา",
+    "district_th": "อำเภอเมืองนครราชสีมา",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nakhon Ratchasima",
+    "district_en": "Mueang Nakhon Ratchasima",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นครศรีธรรมราช",
+    "district_th": "อำเภอเมืองนครศรีธรรมราช",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nakhon Si Thammarat",
+    "district_en": "Mueang Nakhon Si Thammarat",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นครสวรรค์",
+    "district_th": "อำเภอเมืองนครสวรรค์",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nakhon Sawan",
+    "district_en": "Mueang Nakhon Sawan",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นนทบุรี",
+    "district_th": "อำเภอเมืองนนทบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nonthaburi",
+    "district_en": "Mueang Nonthaburi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "นราธิวาส",
+    "district_th": "อำเภอเมืองนราธิวาส",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Narathiwat",
+    "district_en": "Mueang Narathiwat",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "น่าน",
+    "district_th": "อำเภอเมืองน่าน",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nan",
+    "district_en": "Mueang Nan",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "บึงกาฬ",
+    "district_th": "อำเภอเมืองบึงกาฬ",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Bueng Kan",
+    "district_en": "Mueang Bueng Kan",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "บุรีรัมย์",
+    "district_th": "อำเภอเมืองบุรีรัมย์",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Buriram",
+    "district_en": "Mueang Buriram",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ปทุมธานี",
+    "district_th": "อำเภอเมืองปทุมธานี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Pathum Thani",
+    "district_en": "Mueang Pathum Thani",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ประจวบคีรีขันธ์",
+    "district_th": "อำเภอเมืองประจวบคีรีขันธ์",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Prachuap Khiri Khan",
+    "district_en": "Mueang Prachuap Khiri Khan",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ปราจีนบุรี",
+    "district_th": "อำเภอเมืองปราจีนบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Prachin Buri",
+    "district_en": "Mueang Prachin Buri",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ปัตตานี",
+    "district_th": "อำเภอเมืองปัตตานี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Pattani",
+    "district_en": "Mueang Pattani",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "พระนครศรีอยุธยา",
+    "district_th": "อำเภอเมืองพระนครศรีอยุธยา",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phra Nakhon Si Ayutthaya",
+    "district_en": "Mueang Phra Nakhon Si Ayutthaya",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "พะเยา",
+    "district_th": "อำเภอเมืองพะเยา",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phayao",
+    "district_en": "Mueang Phayao",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "พังงา",
+    "district_th": "อำเภอเมืองพังงา",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phangnga",
+    "district_en": "Mueang Phangnga",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "พัทลุง",
+    "district_th": "อำเภอเมืองพัทลุง",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phatthalung",
+    "district_en": "Mueang Phatthalung",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "พิจิตร",
+    "district_th": "อำเภอเมืองพิจิตร",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phichit",
+    "district_en": "Mueang Phichit",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "พิษณุโลก",
+    "district_th": "อำเภอเมืองพิษณุโลก",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phitsanulok",
+    "district_en": "Mueang Phitsanulok",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "เพชรบุรี",
+    "district_th": "อำเภอเมืองเพชรบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phetchaburi",
+    "district_en": "Mueang Phetchaburi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "เพชรบูรณ์",
+    "district_th": "อำเภอเมืองเพชรบูรณ์",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phetchabun",
+    "district_en": "Mueang Phetchabun",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "แพร่",
+    "district_th": "อำเภอเมืองแพร่",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phrae",
+    "district_en": "Mueang Phrae",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ภูเก็ต",
+    "district_th": "อำเภอเมืองภูเก็ต",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Phuket",
+    "district_en": "Mueang Phuket",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "มหาสารคาม",
+    "district_th": "อำเภอเมืองมหาสารคาม",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Maha Sarakham",
+    "district_en": "Mueang Maha Sarakham",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "มุกดาหาร",
+    "district_th": "อำเภอเมืองมุกดาหาร",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Mukdahan",
+    "district_en": "Mueang Mukdahan",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "แม่ฮ่องสอน",
+    "district_th": "อำเภอเมืองแม่ฮ่องสอน",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Mae Hong Son",
+    "district_en": "Mueang Mae Hong Son",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ยโสธร",
+    "district_th": "อำเภอเมืองยโสธร",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Yasothon",
+    "district_en": "Mueang Yasothon",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ยะลา",
+    "district_th": "อำเภอเมืองยะลา",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Yala",
+    "district_en": "Mueang Yala",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ร้อยเอ็ด",
+    "district_th": "อำเภอเมืองร้อยเอ็ด",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Roi Et",
+    "district_en": "Mueang Roi Et",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ระนอง",
+    "district_th": "อำเภอเมืองระนอง",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Ranong",
+    "district_en": "Mueang Ranong",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ระยอง",
+    "district_th": "อำเภอเมืองระยอง",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Rayong",
+    "district_en": "Mueang Rayong",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ราชบุรี",
+    "district_th": "อำเภอเมืองราชบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Ratchaburi",
+    "district_en": "Mueang Ratchaburi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ลพบุรี",
+    "district_th": "อำเภอเมืองลพบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Lopburi",
+    "district_en": "Mueang Lopburi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ลำปาง",
+    "district_th": "อำเภอเมืองลำปาง",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Lampang",
+    "district_en": "Mueang Lampang",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ลำพูน",
+    "district_th": "อำเภอเมืองลำพูน",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Lamphun",
+    "district_en": "Mueang Lamphun",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "เลย",
+    "district_th": "อำเภอเมืองเลย",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Loei",
+    "district_en": "Mueang Loei",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "ศรีสะเกษ",
+    "district_th": "อำเภอเมืองศรีสะเกษ",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Si Sa Ket",
+    "district_en": "Mueang Si Sa Ket",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สกลนคร",
+    "district_th": "อำเภอเมืองสกลนคร",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Sakon Nakhon",
+    "district_en": "Mueang Sakon Nakhon",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สงขลา",
+    "district_th": "อำเภอเมืองสงขลา",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Songkhla",
+    "district_en": "Mueang Songkhla",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สตูล",
+    "district_th": "อำเภอเมืองสตูล",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Satun",
+    "district_en": "Mueang Satun",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สมุทรปราการ",
+    "district_th": "อำเภอเมืองสมุทรปราการ",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Samut Prakan",
+    "district_en": "Mueang Samut Prakan",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สมุทรสงคราม",
+    "district_th": "อำเภอเมืองสมุทรสงคราม",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Samut Songkhram",
+    "district_en": "Mueang Samut Songkhram",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สมุทรสาคร",
+    "district_th": "อำเภอเมืองสมุทรสาคร",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Samut Sakhon",
+    "district_en": "Mueang Samut Sakhon",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สระแก้ว",
+    "district_th": "อำเภอเมืองสระแก้ว",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Sa Kaeo",
+    "district_en": "Mueang Sa Kaeo",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สระบุรี",
+    "district_th": "อำเภอเมืองสระบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Saraburi",
+    "district_en": "Mueang Saraburi",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สิงห์บุรี",
+    "district_th": "อำเภอเมืองสิงห์บุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Sing Buri",
+    "district_en": "Mueang Sing Buri",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สุโขทัย",
+    "district_th": "อำเภอเมืองสุโขทัย",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Sukhothai",
+    "district_en": "Mueang Sukhothai",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สุพรรณบุรี",
+    "district_th": "อำเภอเมืองสุพรรณบุรี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Suphan Buri",
+    "district_en": "Mueang Suphan Buri",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สุราษฎร์ธานี",
+    "district_th": "อำเภอเมืองสุราษฎร์ธานี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Surat Thani",
+    "district_en": "Mueang Surat Thani",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "สุรินทร์",
+    "district_th": "อำเภอเมืองสุรินทร์",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Surin",
+    "district_en": "Mueang Surin",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "หนองคาย",
+    "district_th": "อำเภอเมืองหนองคาย",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nong Khai",
+    "district_en": "Mueang Nong Khai",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "หนองบัวลำภู",
+    "district_th": "อำเภอเมืองหนองบัวลำภู",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Nong Bua Lam Phu",
+    "district_en": "Mueang Nong Bua Lam Phu",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "อ่างทอง",
+    "district_th": "อำเภอเมืองอ่างทอง",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Ang Thong",
+    "district_en": "Mueang Ang Thong",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "อำนาจเจริญ",
+    "district_th": "อำเภอเมืองอำนาจเจริญ",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Amnat Charoen",
+    "district_en": "Mueang Amnat Charoen",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "อุดรธานี",
+    "district_th": "อำเภอเมืองอุดรธานี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Udon Thani",
+    "district_en": "Mueang Udon Thani",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "อุตรดิตถ์",
+    "district_th": "อำเภอเมืองอุตรดิตถ์",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Uttaradit",
+    "district_en": "Mueang Uttaradit",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "อุทัยธานี",
+    "district_th": "อำเภอเมืองอุทัยธานี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Uthai Thani",
+    "district_en": "Mueang Uthai Thani",
+    "subdistrict_en": "Nai Mueang"
+  },
+  {
+    "province_th": "อุบลราชธานี",
+    "district_th": "อำเภอเมืองอุบลราชธานี",
+    "subdistrict_th": "ตำบลในเมือง",
+    "zip_code": 0,
+    "province_en": "Ubon Ratchathani",
+    "district_en": "Mueang Ubon Ratchathani",
+    "subdistrict_en": "Nai Mueang"
+  }
+]
