@@ -1215,10 +1215,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Dropdown Population ---
     function populateProvinces() {
         fields.addrProvince.innerHTML = '<option value="">{{ __('Select Province') }}</option>';
-        const uniqueProvinces = [...new Map(thaiAddressData.map(item => [item['province_th'], item])).values()];
-        uniqueProvinces.sort((a, b) => a.province_th.localeCompare(b.province_th, 'th'));
+        const uniqueProvinces = [...new Map(thaiAddressData.map(item => [item['province_th'].trim(), item])).values()];
+        uniqueProvinces.sort((a, b) => a.province_th.trim().localeCompare(b.province_th.trim(), 'th'));
         uniqueProvinces.forEach(item => {
-            const option = new Option(item.province_th, item.province_th);
+            const option = new Option(item.province_th.trim(), item.province_th.trim());
             fields.addrProvince.add(option);
         });
     }
@@ -1231,7 +1231,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!province) return;
 
-        const districts = [...new Set(thaiAddressData.filter(d => d.province_th === province).map(d => d.district_th))];
+        const districts = [...new Set(thaiAddressData.filter(d => d.province_th.trim() === province.trim()).map(d => d.district_th.trim()))];
         districts.sort((a, b) => a.localeCompare(b, 'th'));
         districts.forEach(district => {
             const option = new Option(district, district);
@@ -1249,14 +1249,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!province || !district) return;
 
-        const subDistricts = thaiAddressData.filter(d => d.province_th === province && d.district_th === district);
-        subDistricts.sort((a, b) => a.subdistrict_th.localeCompare(b.subdistrict_th, 'th'));
-        subDistricts.forEach(sub => {
-            const option = new Option(sub.subdistrict_th, sub.subdistrict_th);
+        const subDistricts = thaiAddressData.filter(d => d.province_th.trim() === province.trim() && d.district_th.trim() === district.trim());
+        const uniqueSubDistricts = [...new Map(subDistricts.map(item => [item['subdistrict_th'].trim(), item])).values()];
+        uniqueSubDistricts.sort((a, b) => a.subdistrict_th.trim().localeCompare(b.subdistrict_th.trim(), 'th'));
+        uniqueSubDistricts.forEach(sub => {
+            const option = new Option(sub.subdistrict_th.trim(), sub.subdistrict_th.trim());
             fields.addrSubDistrict.add(option);
         });
 
-        if (subDistricts.length > 0) {
+        if (uniqueSubDistricts.length > 0) {
             fields.addrSubDistrict.disabled = false;
         }
     }
@@ -1264,8 +1265,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Event Listeners for Dropdowns ---
     fields.addrProvince.addEventListener('change', function() {
         populateDistricts(this.value);
-        const selectedData = thaiAddressData.find(d => d.province_th === this.value);
-        fields.addrProvinceEn.value = selectedData ? selectedData.province_en : '';
+        const selectedData = thaiAddressData.find(d => d.province_th.trim() === this.value.trim());
+        fields.addrProvinceEn.value = selectedData ? selectedData.province_en.trim() : '';
         fields.addrDistrictEn.value = '';
         fields.addrSubDistrictEn.value = '';
         fields.addrZipCode.value = '';
@@ -1273,21 +1274,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     fields.addrDistrict.addEventListener('change', function() {
         populateSubDistricts(fields.addrProvince.value, this.value);
-        const selectedData = thaiAddressData.find(d => d.province_th === fields.addrProvince.value && d.district_th === this.value);
-        fields.addrDistrictEn.value = selectedData ? selectedData.district_en : '';
+        const selectedData = thaiAddressData.find(d => d.province_th.trim() === fields.addrProvince.value.trim() && d.district_th.trim() === this.value.trim());
+        fields.addrDistrictEn.value = selectedData ? selectedData.district_en.trim() : '';
         fields.addrSubDistrictEn.value = '';
         fields.addrZipCode.value = '';
     });
 
     fields.addrSubDistrict.addEventListener('change', function() {
         const selectedData = thaiAddressData.find(d =>
-            d.province_th === fields.addrProvince.value &&
-            d.district_th === fields.addrDistrict.value &&
-            d.subdistrict_th === this.value
+            d.province_th.trim() === fields.addrProvince.value.trim() &&
+            d.district_th.trim() === fields.addrDistrict.value.trim() &&
+            d.subdistrict_th.trim() === this.value.trim()
         );
         if (selectedData) {
-            fields.addrSubDistrictEn.value = selectedData.subdistrict_en;
-            fields.addrZipCode.value = selectedData.zip_code;
+            fields.addrSubDistrictEn.value = selectedData.subdistrict_en.trim();
+            fields.addrZipCode.value = selectedData.zip_code ? String(selectedData.zip_code).trim() : '';
         }
     });
 
