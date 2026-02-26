@@ -1122,8 +1122,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        $employeeName = $employee->employeeNameTh ?: ($employee->employeeNameEn ?: 'Unknown_Employee');
+        // Use English name for filename compatibility
+        $employeeName = $employee->employeeNameEn ?: 'Employee_' . $employee->id;
+        // Sanitize name to be safe (remove non-alphanumeric except hyphen and underscore)
+        $employeeName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $employeeName);
+
         $empId = $employee->employer_employee_id ?: $employee->id;
+        $empId = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string)$empId);
 
         // Construct filename: [DocName]_[EmployeeName]_[ID].pdf
         $filename = "{$docName}_{$employeeName}_{$empId}.pdf";
