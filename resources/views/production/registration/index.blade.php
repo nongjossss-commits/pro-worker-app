@@ -2241,11 +2241,15 @@
         // function updateSequenceNumbers() { ... }
 
     // --- Trash Feature ---
-    window.loadTrashContent = function(url) {
+    window.openTrashModal = function() {
+        const el = document.getElementById('trashModal');
+        const modal = new bootstrap.Modal(el);
+        modal.show();
+
         const body = document.getElementById('trashModalBody');
         body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-danger" role="status"></div></div>';
 
-        fetch(url || '{{ route("production.registration.trash") }}')
+        fetch('{{ route("production.registration.trash") }}')
             .then(res => res.text())
             .then(html => {
                 body.innerHTML = html;
@@ -2253,13 +2257,6 @@
             .catch(err => {
                 body.innerHTML = '<div class="text-danger text-center p-4">Failed to load trash.</div>';
             });
-    }
-
-    window.openTrashModal = function() {
-        const el = document.getElementById('trashModal');
-        const modal = new bootstrap.Modal(el);
-        modal.show();
-        loadTrashContent();
     }
 
     window.restoreTrashItem = function(id) {
@@ -2279,7 +2276,11 @@
                 .then(data => {
                     if(data.success) {
                         // Refresh modal content
-                        loadTrashContent();
+                        fetch('{{ route("production.registration.trash") }}')
+                            .then(res => res.text())
+                            .then(html => {
+                                document.getElementById('trashModalBody').innerHTML = html;
+                            });
 
                         Swal.fire({
                             icon: 'success',
@@ -2295,21 +2296,6 @@
             }
         });
     }
-
-    // Intercept Pagination Clicks inside Trash Modal
-    document.addEventListener('DOMContentLoaded', function() {
-        const trashBody = document.getElementById('trashModalBody');
-        if (trashBody) {
-            trashBody.addEventListener('click', function(e) {
-                // Check if clicked element is pagination link or inside one
-                const link = e.target.closest('.pagination a, .page-link');
-                if (link && link.href) {
-                    e.preventDefault();
-                    loadTrashContent(link.href);
-                }
-            });
-        }
-    });
 
         // --- Restore UI State on Load (After Reload) ---
         const urlParams = new URLSearchParams(window.location.search);
