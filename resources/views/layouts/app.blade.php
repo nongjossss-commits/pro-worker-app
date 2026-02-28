@@ -1560,7 +1560,9 @@ document.addEventListener('DOMContentLoaded', function () {
             title_en: cb.dataset.titleEn || '',
             nationality: cb.dataset.nationality || '',
             country_code: cb.dataset.countryCode || '',
-            gender: cb.dataset.gender || ''
+            gender: cb.dataset.gender || '',
+            insurance_type: cb.dataset.insuranceType || '',
+            passport: cb.dataset.passport || ''
         };
     }
 

@@ -74,6 +74,13 @@ if (typeof window.financialManager === 'undefined') {
                 if (this.financialGroups.length > 0) {
                     this.switchGroup(this.financialGroups[0].id);
                 }
+
+                // Listen for insurance-updated event from _employee_card.blade.php
+                window.addEventListener('insurance-updated', (e) => {
+                    if (e.detail && e.detail.employeeId) {
+                        this.updateEmployeeInsurance(e.detail.employeeId, e.detail.insuranceType);
+                    }
+                });
             },
 
             switchGroup(groupId) {
@@ -279,6 +286,8 @@ if (typeof window.financialManager === 'undefined') {
                         title_en: emp.title_en,
                         photo: emp.photo,
                         nationality: emp.nationality,
+                        insurance_type: emp.insurance_type,
+                        passport: emp.passport,
                         employee_id: emp.id,
                         type: 'employee'
                     });
@@ -330,6 +339,8 @@ if (typeof window.financialManager === 'undefined') {
                         name_en: item.name_en,
                         title_en: item.title_en,
                         nationality: item.nationality,
+                        insurance_type: item.insurance_type,
+                        passport: item.passport,
                         type: 'item'
                     });
                 });
@@ -347,6 +358,8 @@ if (typeof window.financialManager === 'undefined') {
                             name_en: emp.name_en,
                             title_en: emp.title_en,
                             nationality: emp.nationality,
+                            insurance_type: emp.insurance_type,
+                            passport: emp.passport,
                             type: 'employee'
                         });
                     });
@@ -394,6 +407,8 @@ if (typeof window.financialManager === 'undefined') {
                             name_en: item.name_en,
                             title_en: item.title_en,
                             nationality: item.nationality,
+                            insurance_type: item.insurance_type,
+                            passport: item.passport,
                             type: 'item',
                             attached: isAttached
                         });
@@ -412,6 +427,8 @@ if (typeof window.financialManager === 'undefined') {
                         name_en: emp.name_en,
                         title_en: emp.title_en,
                         nationality: emp.nationality,
+                        insurance_type: emp.insurance_type,
+                        passport: emp.passport,
                         type: 'employee',
                         attached: false
                     });

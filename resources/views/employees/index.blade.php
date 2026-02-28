@@ -179,6 +179,8 @@
                                    data-nationality="{{ $employee->employeeNationality }}"
                                    data-gender="{{ $employee->gender }}"
                                    data-country-code="{{ \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality) }}"
+                                   data-insurance-type="{{ $employee->insurance_type }}"
+                                   data-passport="{{ $employee->employeePassport }}"
                             ></td>
                         <td>
                             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
