@@ -52,7 +52,7 @@ class RegistrationResolutionTest extends TestCase
                          ->get(route('production.registration.index'));
 
         $response->assertStatus(200);
-        $response->assertSee('Workflow Progress (Global)');
+        $response->assertSee('Registration Resolution');
     }
 
     public function test_search_functionality()

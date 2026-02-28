@@ -2035,6 +2035,25 @@ class RegistrationController extends Controller
         ])->render();
     }
 
+    public function updateRemarks(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'remarks' => 'nullable|string'
+        ]);
+
+        $employee->update(['registration_remarks' => $validated['remarks']]);
+
+        return response()->json([
+            'success' => true,
+            'remarks' => $employee->registration_remarks,
+            'message' => 'Remarks updated successfully.'
+        ]);
+    }
+
     public function toggleOperator(Request $request, $employeeId)
     {
         $employee = Employee::findOrFail($employeeId);

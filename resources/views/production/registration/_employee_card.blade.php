@@ -390,6 +390,82 @@
                 </div>
             </div>
 
+            {{-- REMARKS SECTION --}}
+            @php
+                $isRenewal = request()->is('production/renewal*');
+                $remarkText = $isRenewal ? $employee->renewal_remarks : $employee->registration_remarks;
+                // Need absolute or generated URL because we are in shared partial, but we will use route named params if possible
+                // It's safer to generate based on request
+                $remarkUrl = $isRenewal
+                    ? route('production.renewal.remarks', $employee->id)
+                    : route('production.registration.remarks', $employee->id);
+            @endphp
+            <div class="ms-md-2" x-data="{
+                remarkText: {{ json_encode($remarkText ?? '') }},
+                openRemarkPopup() {
+                    Swal.fire({
+                        title: '{{ __("แก้ไขหมายเหตุ") }}',
+                        input: 'textarea',
+                        inputValue: this.remarkText,
+                        inputPlaceholder: 'กรอกข้อความหมายเหตุ...',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: '{{ __("บันทึก") }}',
+                        cancelButtonText: '{{ __("ยกเลิก") }}',
+                        showLoaderOnConfirm: true,
+                        preConfirm: (text) => {
+                            return fetch('{{ $remarkUrl }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ remarks: text })
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(response.statusText)
+                                }
+                                return response.json().then(data => ({ data, text }));
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage(`เกิดข้อผิดพลาด: ${error}`);
+                            });
+                        },
+                        allowOutsideClick: () => !Swal.isLoading()
+                    }).then((result) => {
+                        if (result.isConfirmed && result.value.data.success) {
+                            this.remarkText = result.value.data.remarks ?? result.value.text;
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'บันทึกหมายเหตุสำเร็จ',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        } else if (result.isConfirmed && !result.value.data.success) {
+                            Swal.fire('Error', 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+                        }
+                    });
+                }
+            }">
+                <div style="min-width: 140px; max-width: 250px;">
+                    <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
+
+                    <div class="d-flex align-items-start gap-1">
+                        <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                            <span x-text="remarkText || '-'"></span>
+                        </div>
+                        <button @click="openRemarkPopup()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
+                            <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {{-- 3 Extra Fields (Editable) --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
