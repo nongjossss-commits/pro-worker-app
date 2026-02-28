@@ -347,6 +347,9 @@ document.addEventListener('alpine:init', () => {
         getAssetStyle(type) {
             const pos = this.formData[`${type}_position`];
             if (!pos) return '';
+            // Instead of using :style directly, we use x-bind:style which is safer.
+            // But Alpine's x-show overrides display natively. By returning object-like styles
+            // or a clean string without interfering with 'display', it works correctly.
             return `width: ${pos.width}px; height: ${pos.height}px; transform: translate(${pos.x}px, ${pos.y}px) rotate(${pos.rotate || 0}deg);`;
         },
 
