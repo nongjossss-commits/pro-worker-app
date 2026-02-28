@@ -1229,7 +1229,12 @@ document.addEventListener('DOMContentLoaded', function () {
         fields.addrDistrict.disabled = true;
         fields.addrSubDistrict.disabled = true;
 
-        if (!province) return;
+        if (!province) {
+            // Trigger Alpine.js observer explicitly if returning early
+            fields.addrDistrict.dispatchEvent(new Event('change'));
+            fields.addrSubDistrict.dispatchEvent(new Event('change'));
+            return;
+        }
 
         const districts = [...new Set(thaiAddressData.filter(d => d.province_th.trim() === province.trim()).map(d => d.district_th.trim()))];
         districts.sort((a, b) => a.localeCompare(b, 'th'));
@@ -1241,13 +1246,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (districts.length > 0) {
             fields.addrDistrict.disabled = false;
         }
+
+        // Notify Alpine.js about the new options and state change
+        fields.addrDistrict.dispatchEvent(new Event('change'));
+        fields.addrSubDistrict.dispatchEvent(new Event('change'));
     }
 
     function populateSubDistricts(province, district) {
         fields.addrSubDistrict.innerHTML = '<option value="">{{ __('Select Sub-district') }}</option>';
         fields.addrSubDistrict.disabled = true;
 
-        if (!province || !district) return;
+        if (!province || !district) {
+            fields.addrSubDistrict.dispatchEvent(new Event('change'));
+            return;
+        }
 
         const subDistricts = thaiAddressData.filter(d => d.province_th.trim() === province.trim() && d.district_th.trim() === district.trim());
         const uniqueSubDistricts = [...new Map(subDistricts.map(item => [item['subdistrict_th'].trim(), item])).values()];
@@ -1260,6 +1272,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (uniqueSubDistricts.length > 0) {
             fields.addrSubDistrict.disabled = false;
         }
+
+        // Notify Alpine.js
+        fields.addrSubDistrict.dispatchEvent(new Event('change'));
     }
 
     // --- Event Listeners for Dropdowns ---
@@ -1293,47 +1308,72 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // --- Modal Opening Logic ---
-    addressModalEl.addEventListener('show.bs.modal', async function(e) {
-        // await fetchThaiAddressData();
+    addressModalEl.addEventListener('show.bs.modal', function(e) {
         const button = e.relatedTarget;
         if (!button) return;
 
-        const isAddButton = button.matches('.add-address-btn');
-        const isEditButton = button.matches('.edit-address-btn');
+        const isAddButton = button.matches('.add-address-btn') || button.matches('.temp-edit-address-btn') === false && button.closest('.add-address-btn');
+        const isEditButton = button.matches('.edit-address-btn') || button.closest('.edit-address-btn');
 
-        if (isAddButton) {
+        // Identify the actual button element in case a child element (like an icon) was clicked
+        const targetBtn = isAddButton ? (button.matches('.add-address-btn') ? button : button.closest('.add-address-btn')) :
+                          isEditButton ? (button.matches('.edit-address-btn') ? button : button.closest('.edit-address-btn')) : null;
+
+        if (isAddButton && targetBtn) {
             addressForm.reset();
             fields.id.value = '';
-            fields.addressable_id.value = button.dataset.addressableId;
+            fields.addressable_id.value = targetBtn.dataset.addressableId;
             fields.addressable_type.value = 'App\\Models\\Employer';
-            fields.type.value = button.dataset.type;
+            fields.type.value = targetBtn.dataset.type;
+
+            // Re-trigger Alpine's reactivity by firing a change event
+            fields.addrProvince.dispatchEvent(new Event('change'));
+            fields.addrDistrict.dispatchEvent(new Event('change'));
+            fields.addrSubDistrict.dispatchEvent(new Event('change'));
+
             document.getElementById('addressModalLabel').textContent = '{{ __('Add New Address') }}';
-        } else if (isEditButton) {
-            const addressId = button.dataset.addressId;
+        } else if (isEditButton && targetBtn) {
+            const addressId = targetBtn.dataset.addressId;
             document.getElementById('addressModalLabel').textContent = '{{ __('Loading...') }}';
-            try {
-                const response = await fetch(`/addresses/${addressId}`);
-                if (!response.ok) throw new Error('Failed to fetch address data.');
-                const data = await response.json();
 
-                addressForm.reset();
-                for (const key in data) {
-                    if (fields[key]) {
-                       fields[key].value = data[key];
+            // Disable save button while loading
+            saveBtn.disabled = true;
+
+            // Perform fetch without blocking the modal rendering (no await in the event listener)
+            fetch(`/addresses/${addressId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to fetch address data.');
+                    return response.json();
+                })
+                .then(data => {
+                    addressForm.reset();
+                    for (const key in data) {
+                        if (fields[key]) {
+                           fields[key].value = data[key];
+                        }
                     }
-                }
 
-                populateDistricts(data.addrProvince);
-                fields.addrDistrict.value = data.addrDistrict;
-                populateSubDistricts(data.addrProvince, data.addrDistrict);
-                fields.addrSubDistrict.value = data.addrSubDistrict;
+                    populateDistricts(data.addrProvince);
+                    fields.addrDistrict.value = data.addrDistrict;
 
-                document.getElementById('addressModalLabel').textContent = '{{ __('Edit Address') }}';
-            } catch (error) {
-                console.error('Error fetching address for edit:', error);
-                showToast('{{ __('Failed to fetch address data') }}', 'danger');
-                addressModal.hide();
-            }
+                    populateSubDistricts(data.addrProvince, data.addrDistrict);
+                    fields.addrSubDistrict.value = data.addrSubDistrict;
+
+                    // Trigger Alpine.js to re-read values
+                    fields.addrProvince.dispatchEvent(new Event('change'));
+                    fields.addrDistrict.dispatchEvent(new Event('change'));
+                    fields.addrSubDistrict.dispatchEvent(new Event('change'));
+
+                    document.getElementById('addressModalLabel').textContent = '{{ __('Edit Address') }}';
+                })
+                .catch(error => {
+                    console.error('Error fetching address for edit:', error);
+                    showToast('{{ __('Failed to fetch address data') }}', 'danger');
+                    addressModal.hide();
+                })
+                .finally(() => {
+                    saveBtn.disabled = false;
+                });
         }
     });
 
