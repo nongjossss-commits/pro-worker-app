@@ -65,10 +65,30 @@
 
                         @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
                             @foreach($employee->active_workflows as $wf)
+                                @php
+                                    if (isset($wf->is_registration) && $wf->is_registration) {
+                                        $style = 'background-color: #8B5CF6; color: white;';
+                                        $icon = 'bi-person-badge';
+                                        $badgeClass = '';
+                                    } elseif (isset($wf->is_renewal) && $wf->is_renewal) {
+                                        $style = 'background-color: #EC4899; color: white;';
+                                        $icon = 'bi-arrow-repeat';
+                                        $badgeClass = '';
+                                    } elseif (isset($wf->is_pre_production) && $wf->is_pre_production) {
+                                        $style = '';
+                                        $icon = 'bi-hourglass-split';
+                                        $badgeClass = 'bg-info text-dark';
+                                    } else {
+                                        $style = '';
+                                        $icon = 'bi-gear-fill';
+                                        $badgeClass = 'bg-warning text-dark';
+                                    }
+                                @endphp
                                 <a href="{{ $wf->url }}"
-                                   class="badge bg-warning text-dark text-decoration-none ms-1"
+                                   class="badge {{ $badgeClass }} text-decoration-none ms-1 border border-dark shadow-sm"
+                                   style="{{ $style }}"
                                    title="{{ $wf->status_label }}: {{ $wf->name }}">
-                                   <i class="bi bi-gear-fill me-1"></i>{{ $wf->status_label }}
+                                   <i class="bi {{ $icon }} me-1"></i>{{ $wf->status_label }}
                                 </a>
                             @endforeach
                         @endif
