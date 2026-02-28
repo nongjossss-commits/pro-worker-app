@@ -289,6 +289,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RegistrationController::class, 'toggleDailyCheck'])->name('toggle_daily_check');
 
         Route::post('/settings/notification', [App\Http\Controllers\Production\RegistrationController::class, 'updateNotificationSettings'])->name('settings.notification');
+        Route::post('/settings/resolution', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionSettings'])->name('settings.resolution');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RegistrationController::class, 'getCalendarData'])->name('api.calendar');
         Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RegistrationController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');
 
@@ -334,6 +335,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancel'])->name('cancel');
         Route::post('/{employee}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restore'])->name('restore');
         Route::delete('/{employee}/destroy', [App\Http\Controllers\Production\RenewalController::class, 'destroy'])->name('destroy');
+
+        // Settings
+        Route::post('/settings/resolution', [App\Http\Controllers\Production\RenewalController::class, 'updateResolutionSettings'])->name('settings.resolution');
 
         // Employer Actions
         Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancelEmployer'])->name('cancel_employer');

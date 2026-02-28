@@ -9,6 +9,7 @@ use App\Models\ProductionOrder;
 use App\Models\SystemConfig;
 use App\Models\RegistrationStep;
 use App\Models\User;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -278,6 +279,10 @@ class RenewalController extends Controller
         // Get Current Expiry Setting
         $currentExpiryConfig = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
 
+        // Resolution Auto-Settings
+        $resolutionSettingsRaw = SystemSetting::where('group', 'renewal')->get();
+        $resolutionSettings = $resolutionSettingsRaw->pluck('value', 'key')->toArray();
+
         return view('production.renewal.index', compact(
             'totalEmployees',
             'totalCancelled',
@@ -288,6 +293,7 @@ class RenewalController extends Controller
             'totalDailyCheckPending',
             'employers',
             'currentExpiryConfig',
+            'resolutionSettings',
             'steps',
             'stepStats',
             'lastStepId',
@@ -735,6 +741,41 @@ class RenewalController extends Controller
 
         return redirect()->route('production.renewal.index')
             ->with('success', "Configuration saved. {$updated} employees imported to Renewal list.");
+    }
+
+    /**
+     * API: Update Resolution Auto-Settings
+     */
+    public function updateResolutionSettings(Request $request)
+    {
+        if (!auth()->user()->can('manage-settings')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'auto_work_permit_expiry' => 'nullable|date',
+            'auto_visa_expiry' => 'nullable|date',
+            'auto_mou_group' => 'nullable|string|max:255',
+        ]);
+
+        $group = 'renewal';
+
+        SystemSetting::updateOrCreate(
+            ['key' => "{$group}_auto_work_permit_expiry"],
+            ['value' => $request->auto_work_permit_expiry, 'group' => $group]
+        );
+
+        SystemSetting::updateOrCreate(
+            ['key' => "{$group}_auto_visa_expiry"],
+            ['value' => $request->auto_visa_expiry, 'group' => $group]
+        );
+
+        SystemSetting::updateOrCreate(
+            ['key' => "{$group}_auto_mou_group"],
+            ['value' => $request->auto_mou_group, 'group' => $group]
+        );
+
+        return response()->json(['success' => true]);
     }
 
     // --- Actions (Finalize, Cancel, etc.) ---
