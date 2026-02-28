@@ -331,7 +331,7 @@
                          if (loadingText) loadingText.textContent = 'กำลังโหลด AI Models...';
                          try {
                              // Use native dynamic import
-                             const mediapipe = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js");
+                             const mediapipe = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs");
                              window.ImageSegmenter = mediapipe.ImageSegmenter;
                              window.FilesetResolver = mediapipe.FilesetResolver;
                          } catch (error) {
@@ -348,7 +348,7 @@
 
                     // 2. Initialize Segmenter
                     const vision = await window.FilesetResolver.forVisionTasks(
-                        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+                        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm"
                     );
 
                     const segmenter = await window.ImageSegmenter.createFromOptions(vision, {
