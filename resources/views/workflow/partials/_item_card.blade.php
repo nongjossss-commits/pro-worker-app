@@ -139,6 +139,8 @@
                        data-nationality="{{ $empNationality }}"
                        data-photo="{{ $empPhoto }}"
                        data-employer-name="{{ $order->employer->employerNameTh ?? 'N/A' }}"
+                       data-insurance-type="{{ $item->employee->insurance_type ?? '' }}"
+                       data-passport="{{ $empPassport }}"
                        {{ (!$item->employee_id || $isReadOnly) ? 'disabled' : '' }}>
                 </div>
 

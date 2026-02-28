@@ -826,6 +826,13 @@ class="row">
                                                             <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
                                                                 <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
                                                             </template>
+                                                            <!-- Passport Badge -->
+                                                            <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'">
+                                                                <span class="badge bg-info text-dark rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Passport') }}</span>
+                                                            </template>
+                                                            <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
+                                                                <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
+                                                            </template>
                                                         </div>
                                                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.7rem;">
                                                              <span class="text-truncate" x-text="item.nationality"></span>
@@ -954,6 +961,13 @@ class="row">
                                                             </template>
                                                             <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
                                                                 <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
+                                                            </template>
+                                                            <!-- Passport Badge -->
+                                                            <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'">
+                                                                <span class="badge bg-info text-dark rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Passport') }}</span>
+                                                            </template>
+                                                            <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
+                                                                <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
                                                             </template>
                                                         </div>
                                                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.7rem;">

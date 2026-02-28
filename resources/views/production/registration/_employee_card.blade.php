@@ -87,7 +87,9 @@
                            data-title-en="{{ $employee->employeeTitleEn }}"
                            data-nationality="{{ $employee->employeeNationality }}"
                            data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
-                           data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
+                           data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}"
+                           data-insurance-type="{{ $employee->insurance_type }}"
+                           data-passport="{{ $employee->employeePassport }}">
                 </div>
                 @endcan
 
