@@ -153,9 +153,14 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="card-title fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }}</h5>
                 @can('edit-employees')
-                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
-                    <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#resolutionSettingsModal">
+                        <i class="bi bi-robot me-1"></i> {{ __('Auto Settings') }}
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
+                        <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
+                    </button>
+                </div>
                 @endcan
             </div>
 
@@ -669,6 +674,45 @@
 
 {{-- Cropper Modal (Required for Employee Edit) --}}
 <x-cropper-modal />
+
+{{-- Resolution Auto-Settings Modal --}}
+<div class="modal fade" id="resolutionSettingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-dark">
+                <h5 class="modal-title fw-bold"><i class="bi bi-robot me-2"></i>{{ __('Auto Settings (Resolution)') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">{{ __('These settings will automatically update employees 24 hours after they are marked as completed.') }}</p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ __('Auto Work Permit Expiry Date') }}</label>
+                    <input type="date" class="form-control" id="autoWorkPermitInput" value="{{ $resolutionSettings['renewal_auto_work_permit_expiry'] ?? '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ __('Auto Visa Expiry Date') }}</label>
+                    <input type="date" class="form-control" id="autoVisaInput" value="{{ $resolutionSettings['renewal_auto_visa_expiry'] ?? '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ __('Auto MOU Group (Work Type)') }}</label>
+                    <select class="form-select" id="autoMouInput">
+                        <option value="">-- {{ __('No Auto Update') }} --</option>
+                        <option value="MOU" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'MOU' ? 'selected' : '' }}>MOU</option>
+                        <option value="มติต่ออายุในประเทศ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
+                        <option value="มติขึ้นทะเบียน" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
+                        <option value="อื่นๆ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-info px-4" onclick="saveResolutionSettings()">
+                    <i class="bi bi-save-fill me-1"></i> {{ __('Save Settings') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {{-- Manage Steps Modal --}}
 <div class="modal fade" id="manageStepsModal" tabindex="-1">
@@ -1415,6 +1459,30 @@
                     timer: 1500,
                     showConfirmButton: false
                 }).then(() => location.reload());
+            }
+        });
+    }
+
+    // --- Resolution Auto-Settings ---
+    window.saveResolutionSettings = function() {
+        const autoWorkPermit = document.getElementById('autoWorkPermitInput').value;
+        const autoVisa = document.getElementById('autoVisaInput').value;
+        const autoMou = document.getElementById('autoMouInput').value;
+
+        fetch('{{ route("production.renewal.settings.resolution") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({
+                auto_work_permit_expiry: autoWorkPermit,
+                auto_visa_expiry: autoVisa,
+                auto_mou_group: autoMou
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('resolutionSettingsModal')).hide();
+                Swal.fire('{{ __('Saved') }}', '{{ __('Auto Settings updated.') }}', 'success');
             }
         });
     }
