@@ -46,7 +46,7 @@ class EmployeeWorkflowTest extends TestCase
         // Assert
         $this->assertCount(1, $activeWorkflows);
         $this->assertEquals('Test Work Type', $activeWorkflows->first()->name);
-        $this->assertEquals('กำลังดำเนินการ', $activeWorkflows->first()->status_label);
+        $this->assertEquals('Processing', $activeWorkflows->first()->status_label);
         $this->assertEquals($item->id, $activeWorkflows->first()->item_id);
     }
 

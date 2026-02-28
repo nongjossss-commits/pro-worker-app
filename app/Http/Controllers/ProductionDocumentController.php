@@ -143,7 +143,10 @@ class ProductionDocumentController extends Controller
                         // The item_ids from frontend may be strings or integers, and in_array does strict check unless specified or we cast
                         $tier = $pricingTiers->first(function ($t) use ($item) {
                             $itemIds = array_map('strval', $t['item_ids'] ?? []);
-                            // Check item->id AND employee_id just in case frontend stored 'emp_{id}'
+                            // In manual bills, frontend stores item->id directly without a prefix,
+                            // or stores integers. Ensure we match against string representations of IDs.
+                            // FinancialHubController@storeManual creates tiers like [ 'item_ids' => [1, 2, 3] ]
+                            // where these integers correspond to production_items.id
                             return in_array(strval($item->id), $itemIds, true) ||
                                    in_array('emp_' . $item->employee_id, $itemIds, true) ||
                                    in_array(strval($item->employee_id), $itemIds, true);
@@ -152,9 +155,10 @@ class ProductionDocumentController extends Controller
                         if ($tier) {
                             $price = $tier['price'] ?? 0;
                         } else {
-                            // If no explicit tier is matched, maybe it's in a default tier
+                            // Default tier might be named 'Default Tier' by FinancialHubController
+                            // or might just have an empty item_ids array
                             $defaultTier = $pricingTiers->first(function ($t) {
-                                return empty($t['item_ids']);
+                                return empty($t['item_ids']) || ($t['name'] ?? '') === 'Default Tier';
                             });
                             if ($defaultTier) {
                                 $price = $defaultTier['price'] ?? 0;

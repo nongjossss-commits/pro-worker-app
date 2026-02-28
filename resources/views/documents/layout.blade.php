@@ -300,9 +300,13 @@
             $whtEnabled = $financial['wht_enabled'] ?? false;
             $whtRate = isset($financial['wht_rate']) ? (float)$financial['wht_rate'] : 3;
 
-            if ($vatIncluded) {
+            if ($vatRate <= 0) {
+                $serviceBase = $serviceTotal;
+                $serviceVat = 0;
+                $totalServiceIncVat = $serviceBase;
+            } elseif ($vatIncluded) {
                 $totalServiceIncVat = $serviceTotal;
-                $serviceBase = ($vatRate > 0) ? $totalServiceIncVat / (1 + ($vatRate/100)) : $totalServiceIncVat;
+                $serviceBase = $totalServiceIncVat / (1 + ($vatRate/100));
                 $serviceVat = $totalServiceIncVat - $serviceBase;
             } else {
                 $serviceBase = $serviceTotal;
