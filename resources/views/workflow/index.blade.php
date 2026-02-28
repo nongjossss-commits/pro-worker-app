@@ -1503,15 +1503,11 @@
     }
 
     // --- Trash Feature ---
-    window.openTrashModal = function() {
-        const el = document.getElementById('trashModal');
-        const modal = new bootstrap.Modal(el);
-        modal.show();
-
+    window.loadTrashContent = function(url) {
         const body = document.getElementById('trashModalBody');
         body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-danger" role="status"></div></div>';
 
-        fetch('{{ route("workflow.trash") }}')
+        fetch(url || '{{ route("workflow.trash") }}')
             .then(res => res.text())
             .then(html => {
                 body.innerHTML = html;
@@ -1519,6 +1515,13 @@
             .catch(err => {
                 body.innerHTML = '<div class="text-danger text-center p-4">Failed to load trash.</div>';
             });
+    }
+
+    window.openTrashModal = function() {
+        const el = document.getElementById('trashModal');
+        const modal = new bootstrap.Modal(el);
+        modal.show();
+        loadTrashContent();
     }
 
     window.restoreTrashItem = function(id) {
@@ -1538,11 +1541,7 @@
                 .then(data => {
                     if(data.success) {
                         // Refresh modal content
-                        fetch('{{ route("workflow.trash") }}')
-                            .then(res => res.text())
-                            .then(html => {
-                                document.getElementById('trashModalBody').innerHTML = html;
-                            });
+                        loadTrashContent();
 
                         Swal.fire({
                             icon: 'success',
@@ -1558,6 +1557,21 @@
             }
         });
     }
+
+    // Intercept Pagination Clicks inside Trash Modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const trashBody = document.getElementById('trashModalBody');
+        if (trashBody) {
+            trashBody.addEventListener('click', function(e) {
+                // Check if clicked element is pagination link or inside one
+                const link = e.target.closest('.pagination a, .page-link');
+                if (link && link.href) {
+                    e.preventDefault();
+                    loadTrashContent(link.href);
+                }
+            });
+        }
+    });
 
     // --- GPS / Deep Linking ---
     document.addEventListener('DOMContentLoaded', function() {
