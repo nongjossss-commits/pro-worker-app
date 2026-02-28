@@ -296,9 +296,9 @@
             };
 
             $vatIncluded = $financial['vat_included'] ?? false;
-            $vatRate = $financial['vat_rate'] ?? 7;
+            $vatRate = isset($financial['vat_rate']) ? (float)$financial['vat_rate'] : 7;
             $whtEnabled = $financial['wht_enabled'] ?? false;
-            $whtRate = $financial['wht_rate'] ?? 3;
+            $whtRate = isset($financial['wht_rate']) ? (float)$financial['wht_rate'] : 3;
 
             if ($vatIncluded) {
                 $totalServiceIncVat = $serviceTotal;

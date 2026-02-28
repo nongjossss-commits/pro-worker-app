@@ -18,10 +18,10 @@
             $grandTotal = 0;
 
             // Tax Config
-            $vatRate = $financial['vat_rate'] ?? 7;
+            $vatRate = isset($financial['vat_rate']) ? (float)$financial['vat_rate'] : 7;
             $vatIncluded = $financial['vat_included'] ?? false;
             $whtEnabled = $financial['wht_enabled'] ?? false;
-            $whtRate = $financial['wht_rate'] ?? 3;
+            $whtRate = isset($financial['wht_rate']) ? (float)$financial['wht_rate'] : 3;
             $discount = $financial['discount'] ?? 0;
         @endphp
 

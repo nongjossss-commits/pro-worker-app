@@ -143,7 +143,10 @@ class ProductionDocumentController extends Controller
                         // The item_ids from frontend may be strings or integers, and in_array does strict check unless specified or we cast
                         $tier = $pricingTiers->first(function ($t) use ($item) {
                             $itemIds = array_map('strval', $t['item_ids'] ?? []);
-                            return in_array(strval($item->id), $itemIds, true);
+                            // Check item->id AND employee_id just in case frontend stored 'emp_{id}'
+                            return in_array(strval($item->id), $itemIds, true) ||
+                                   in_array('emp_' . $item->employee_id, $itemIds, true) ||
+                                   in_array(strval($item->employee_id), $itemIds, true);
                         });
 
                         if ($tier) {
