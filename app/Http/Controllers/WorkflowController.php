@@ -307,6 +307,19 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Update Remarks for a ProductionItem via AJAX.
+     */
+    public function updateRemarks(Request $request, $itemId)
+    {
+        $request->validate(['remarks' => 'nullable|string']);
+
+        $item = ProductionItem::findOrFail($itemId);
+        $item->update(['remarks' => $request->remarks]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Dashboard Landing Page Logic
      */
     private function dashboard($tabs)

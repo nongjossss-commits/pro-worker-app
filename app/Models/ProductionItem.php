@@ -23,6 +23,7 @@ class ProductionItem extends Model
         'completed_at', // NEW: Workflow finished
         'new_employee_data', // JSON for temp employees
         'operator_id', // NEW: Assigned Operator
+        'remarks', // Added remarks
     ];
 
     protected $casts = [

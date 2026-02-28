@@ -387,6 +387,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/appointment-complete', [\App\Http\Controllers\WorkflowController::class, 'toggleAppointmentComplete'])->name('workflow.item.appointment_complete');
     Route::post('workflow/appointments/export', [\App\Http\Controllers\WorkflowController::class, 'exportAppointments'])->name('workflow.appointments.export');
     Route::post('workflow/item/{item}/check-daily', [\App\Http\Controllers\WorkflowController::class, 'checkDaily'])->name('workflow.item.check_daily');
+    Route::post('workflow/item/{item}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateRemarks'])->name('workflow.item.remarks');
     Route::post('workflow/item/{item}/group', [\App\Http\Controllers\WorkflowController::class, 'updateGroup'])->name('workflow.item.group');
     Route::post('workflow/item/{item}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeItem'])->name('workflow.item.finalize');
     Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');
