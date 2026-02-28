@@ -64,6 +64,7 @@ if (typeof window.financialManager === 'undefined') {
 
             selectedTransactionIds: [],
             documentTypeToGenerate: '',
+            includeEmployeeList: false,
 
             // Context
             productionId: initialData.productionId,
@@ -947,6 +948,7 @@ if (typeof window.financialManager === 'undefined') {
             openSelectionModal(type) {
                 this.documentTypeToGenerate = type;
                 this.selectedTransactionIds = [];
+                this.includeEmployeeList = false;
                 bootstrap.Modal.getOrCreateInstance(this.$refs.docSelectionModal).show();
             },
             generateSelectedDocument() {
@@ -956,10 +958,10 @@ if (typeof window.financialManager === 'undefined') {
                 if (this.documentTypeToGenerate === 'advance_receipt') {
                     mode = 'advance_only';
                 }
-                this.openDocument(this.documentTypeToGenerate, ids, mode);
+                this.openDocument(this.documentTypeToGenerate, ids, mode, this.includeEmployeeList);
                 bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
             },
-            openDocument(type, transactionIds = null, mode = null) {
+            openDocument(type, transactionIds = null, mode = null, includeEmployeeList = false) {
                 let url = `/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
@@ -969,6 +971,9 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 if (mode) {
                     url += `&mode=${mode}`;
+                }
+                if (includeEmployeeList) {
+                    url += `&include_employee_list=1`;
                 }
                 window.open(url, '_blank');
             },

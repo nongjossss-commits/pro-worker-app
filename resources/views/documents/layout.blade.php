@@ -542,5 +542,41 @@
             Please check the correctness of this document.
         </div>
     </div>
+
+    @if(!empty($includeEmployeeList) && $includeEmployeeList)
+    <div class="page" style="page-break-before: always; margin-top: 20px;">
+        <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px;">ตารางรายชื่อพนักงาน / Employee List</h2>
+        <table class="items-table" style="font-size: 12px;">
+            <thead>
+                <tr>
+                    <th style="width: 5%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
+                    <th style="width: 15%; text-align: center;">รูปถ่าย<br><span class="en-label">Photo</span></th>
+                    <th style="width: 15%;">รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
+                    <th style="width: 35%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
+                    <th style="width: 15%; text-align: center;">สัญชาติ<br><span class="en-label">Nationality</span></th>
+                    <th style="width: 15%; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($employeeList as $emp)
+                <tr>
+                    <td style="text-align: center; vertical-align: middle;">{{ $emp['index'] }}</td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        @if(!empty($emp['image']))
+                            <img src="{{ asset('storage/' . $emp['image']) }}" alt="Photo" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                        @else
+                            <div style="width: 50px; height: 50px; background-color: #f3f4f6; border-radius: 4px; display: inline-block; line-height: 50px; color: #9ca3af; font-size: 10px;">No Image</div>
+                        @endif
+                    </td>
+                    <td style="vertical-align: middle;">{{ $emp['employee_id'] ?: '-' }}</td>
+                    <td style="vertical-align: middle;">{{ $emp['prefix'] }} {{ $emp['name'] }}</td>
+                    <td style="text-align: center; vertical-align: middle;">{{ $emp['nationality'] ?: '-' }}</td>
+                    <td style="text-align: right; vertical-align: middle;">{{ number_format($emp['price'], 2) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
 </body>
 </html>

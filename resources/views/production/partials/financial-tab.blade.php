@@ -999,6 +999,14 @@ class="row">
                             No transactions available for this type.
                         </div>
                     </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" :id="'includeEmployeeList-' + productionId" x-model="includeEmployeeList">
+                        <label class="form-check-label small fw-bold" :for="'includeEmployeeList-' + productionId">
+                            แนบตารางรายชื่อพนักงาน / Include Employee List
+                        </label>
+                    </div>
+
                     <button class="btn btn-primary btn-sm w-100" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
                         Generate
                     </button>
