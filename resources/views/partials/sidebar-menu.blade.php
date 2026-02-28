@@ -96,9 +96,11 @@
 <a href="{{ route('finance.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.index') || request()->routeIs('finance.create') ? 'active' : '' }}">
     <i class="bi bi-cash-coin me-2"></i>{{ __('Finance') }}
 </a>
+@if(\App\Facades\SuperAdmin::isVisible('financial_profiles'))
 <a href="{{ route('finance.profiles.builder') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.profiles.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
     <i class="bi bi-file-earmark-person me-2"></i>{{ __('Financial Profiles') }}
 </a>
+@endif
 @endhasanyrole
 @endif
 

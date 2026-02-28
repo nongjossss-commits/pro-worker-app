@@ -372,13 +372,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [App\Http\Controllers\FinancialHubController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
         Route::post('/store', [App\Http\Controllers\FinancialHubController::class, 'storeManual'])->name('store');
+    });
 
-        // Profiles Builder & API
+    // Profiles Builder & API (Shares the same finance menu password, but can be controlled via its own visibility setting in Super Admin)
+    Route::middleware('menu:finance')->prefix('finance')->name('finance.')->group(function () {
         Route::get('/profiles', [App\Http\Controllers\FinancialProfileController::class, 'builder'])->name('profiles.builder');
         Route::get('/api/profiles', [App\Http\Controllers\FinancialProfileController::class, 'index']);
         Route::get('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'show']);
         Route::post('/api/profiles', [App\Http\Controllers\FinancialProfileController::class, 'store']);
-        Route::post('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'update']); // Use POST with _method=PUT for forms
+        Route::match(['put', 'post'], '/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'update']); // Allow both to support FormData with spoofed _method=PUT
         Route::delete('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'destroy']);
     });
 

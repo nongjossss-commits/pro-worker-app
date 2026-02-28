@@ -20,6 +20,7 @@ class SettingsController extends Controller
         $menus = [
             'dashboard' => 'Dashboard',
             'finance' => 'Finance (การเงิน)',
+            'financial_profiles' => 'Financial Profiles (ข้อมูลผู้ตั้งบิล)',
             'activity_logs' => 'Activity Logs',
             'notifications' => 'Notifications',
             'incomplete_data' => 'Incomplete Data',

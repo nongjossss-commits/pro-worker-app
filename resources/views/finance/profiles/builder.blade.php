@@ -165,7 +165,7 @@
                                 </tbody>
                             </table>
 
-                            <div class="row" style="margin-top: 100px;">
+                            <div class="row" style="position: absolute; bottom: 80px; left: 0; right: 0;">
                                 <div class="col-6 text-center">
                                     _______________________<br>
                                     Customer Signature
@@ -236,8 +236,8 @@ document.addEventListener('alpine:init', () => {
             logo_url: null,
             signature_url: null,
             stamp_url: null,
-            signature_position: { x: 400, y: 800, width: 150, height: 75, rotate: 0 },
-            stamp_position: { x: 500, y: 780, width: 100, height: 100, rotate: 0 },
+            signature_position: { x: 400, y: 950, width: 150, height: 75, rotate: 0 },
+            stamp_position: { x: 500, y: 930, width: 100, height: 100, rotate: 0 },
         },
 
         // Tracking items to remove on backend
@@ -269,8 +269,8 @@ document.addEventListener('alpine:init', () => {
                 type: this.currentType,
                 name: '', tax_id: '', branch: '', address: '', phone: '', email: '',
                 logo_url: null, signature_url: null, stamp_url: null,
-                signature_position: { x: 400, y: 800, width: 150, height: 75, rotate: 0 },
-                stamp_position: { x: 500, y: 780, width: 100, height: 100, rotate: 0 },
+                signature_position: { x: 400, y: 950, width: 150, height: 75, rotate: 0 },
+                stamp_position: { x: 500, y: 930, width: 100, height: 100, rotate: 0 },
             };
             this.removals = { logo: false, signature: false, stamp: false };
             this.currentMode = 'form';
@@ -290,8 +290,8 @@ document.addEventListener('alpine:init', () => {
                 logo_url: profile.logo_path ? `/storage/${profile.logo_path}` : null,
                 signature_url: profile.signature_path ? `/storage/${profile.signature_path}` : null,
                 stamp_url: profile.stamp_path ? `/storage/${profile.stamp_path}` : null,
-                signature_position: profile.signature_position || { x: 400, y: 800, width: 150, height: 75, rotate: 0 },
-                stamp_position: profile.stamp_position || { x: 500, y: 780, width: 100, height: 100, rotate: 0 },
+                signature_position: profile.signature_position || { x: 400, y: 950, width: 150, height: 75, rotate: 0 },
+                stamp_position: profile.stamp_position || { x: 500, y: 930, width: 100, height: 100, rotate: 0 },
             };
             this.removals = { logo: false, signature: false, stamp: false };
             this.currentMode = 'form';
