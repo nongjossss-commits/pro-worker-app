@@ -147,6 +147,27 @@ class FinancialHubController extends Controller
 
                 if (!empty($itemsToInsert)) {
                     \App\Models\ProductionItem::insert($itemsToInsert);
+
+                    // Fetch the newly created items to get their IDs
+                    $insertedItems = \App\Models\ProductionItem::where('production_order_id', $order->id)->pluck('id')->toArray();
+
+                    // Update the group and order's financial_data to include these items in the default pricing tier
+                    if (!empty($insertedItems)) {
+                        $financialData = [
+                            'pricing_mode' => 'per_head', // Default to per head if there are employees
+                            'pricing_tiers' => [
+                                [
+                                    'id' => 'tier_' . time(),
+                                    'name' => 'Default Tier',
+                                    'price' => 0,
+                                    'item_ids' => $insertedItems
+                                ]
+                            ]
+                        ];
+
+                        $group->update(['financial_data' => $financialData]);
+                        $order->update(['financial_data' => $financialData]);
+                    }
                 }
             }
 
