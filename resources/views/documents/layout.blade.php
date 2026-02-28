@@ -159,9 +159,6 @@
     <div class="page">
         <!-- Absolute Placed Assets (Biller Profile) -->
         @if(isset($billerProfile))
-            @if($billerProfile->logo_path)
-                <img src="{{ asset('storage/' . $billerProfile->logo_path) }}" style="position: absolute; max-width: 150px; max-height: 80px; top: 40px; left: 40px;" alt="Logo">
-            @endif
             @if($billerProfile->signature_path && $billerProfile->signature_position)
                 <img src="{{ asset('storage/' . $billerProfile->signature_path) }}"
                      style="position: absolute;
@@ -188,10 +185,12 @@
         <table class="header-table">
             <tr>
                 <td style="width: 55%;">
-                    @if(!isset($billerProfile) && $profile->logo_path)
+                    @if(isset($billerProfile) && $billerProfile->logo_path)
+                        <img src="{{ asset('storage/' . $billerProfile->logo_path) }}" class="company-logo" alt="Logo">
+                    @elseif(!isset($billerProfile) && $profile->logo_path)
                         <img src="{{ asset('storage/' . $profile->logo_path) }}" class="company-logo" alt="Logo">
                     @endif
-                    <div class="company-name" style="{{ isset($billerProfile) && $billerProfile->logo_path ? 'margin-top: 60px;' : '' }}">{{ isset($billerProfile) ? $billerProfile->name : $profile->name }}</div>
+                    <div class="company-name">{{ isset($billerProfile) ? $billerProfile->name : $profile->name }}</div>
                     <div class="company-address">{!! nl2br(e(isset($billerProfile) ? $billerProfile->address : $profile->address)) !!}</div>
                     @if(isset($billerProfile) ? $billerProfile->tax_id : $profile->tax_id)<div class="tax-id">Tax ID: {{ isset($billerProfile) ? $billerProfile->tax_id : $profile->tax_id }}</div>@endif
                     @if(isset($billerProfile) ? $billerProfile->phone : $profile->phone)<div class="tax-id">Tel: {{ isset($billerProfile) ? $billerProfile->phone : $profile->phone }}</div>@endif

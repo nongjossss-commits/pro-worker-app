@@ -384,6 +384,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'destroy']);
     });
 
+
     // Financial Routes
     Route::middleware('menu:finance')->group(function() {
         Route::post('production/{id}/transactions', [FinancialController::class, 'storeTransaction']);
