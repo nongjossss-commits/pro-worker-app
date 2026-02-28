@@ -1578,6 +1578,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const targetOrderId = urlParams.get('order');
         const targetItemId = urlParams.get('item');
+        const highlightEmployeeId = urlParams.get('highlight_employee_id');
 
         if (targetOrderId && targetItemId) {
             const orderHeading = document.getElementById('heading-' + targetOrderId);
@@ -1594,22 +1595,35 @@
                     if(btn) btn.click();
                 }
 
+                const highlightTarget = (card) => {
+                    setTimeout(() => {
+                         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                         const innerCard = card.querySelector('.card') || card;
+                         innerCard.classList.add('border-warning', 'border-3', 'shadow-lg');
+                         // For Employee cards specifically
+                         if (highlightEmployeeId) {
+                             innerCard.classList.add('filter-active');
+                         }
+                         setTimeout(() => {
+                             innerCard.classList.remove('border-warning', 'border-3', 'shadow-lg', 'filter-active');
+                             innerCard.classList.add('shadow-sm');
+                         }, 5000);
+                    }, 500);
+                };
+
                 // Wait for Item to Load
                 const observer = new MutationObserver(function(mutations, obs) {
-                    const itemCard = document.getElementById('item-card-' + targetItemId);
-                    if (itemCard) {
-                        // Found it!
-                        setTimeout(() => {
-                             itemCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                             // Add highlight class
-                             const innerCard = itemCard.querySelector('.card') || itemCard;
-                             innerCard.classList.add('border-warning', 'border-3', 'shadow-lg');
-                             // Optional: Blink effect removal
-                             setTimeout(() => {
-                                 innerCard.classList.remove('border-warning', 'border-3', 'shadow-lg');
-                                 innerCard.classList.add('shadow-sm');
-                             }, 5000);
-                        }, 500); // Small delay for rendering
+                    let targetCard = document.getElementById('item-card-' + targetItemId);
+                    // If highlighting an employee, look for the employee card inside the item card or on its own depending on the view
+                    if (highlightEmployeeId) {
+                        const empCard = document.getElementById('employee-card-' + highlightEmployeeId) ||
+                                        document.querySelector(`[data-employee-id="${highlightEmployeeId}"]`)?.closest('.employee-card-wrapper') ||
+                                        document.querySelector(`[data-employee-id="${highlightEmployeeId}"]`)?.closest('.list-group-item');
+                        if (empCard) targetCard = empCard;
+                    }
+
+                    if (targetCard) {
+                        highlightTarget(targetCard);
                         obs.disconnect();
                     }
                 });
@@ -1621,11 +1635,16 @@
 
                     // Fallback check
                     setTimeout(() => {
-                         const itemCard = document.getElementById('item-card-' + targetItemId);
-                         if(itemCard) {
-                             const innerCard = itemCard.querySelector('.card') || itemCard;
-                             itemCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                             innerCard.classList.add('border-warning', 'border-3', 'shadow-lg');
+                         let targetCard = document.getElementById('item-card-' + targetItemId);
+                         if (highlightEmployeeId) {
+                            const empCard = document.getElementById('employee-card-' + highlightEmployeeId) ||
+                                            document.querySelector(`[data-employee-id="${highlightEmployeeId}"]`)?.closest('.employee-card-wrapper') ||
+                                            document.querySelector(`[data-employee-id="${highlightEmployeeId}"]`)?.closest('.list-group-item');
+                            if (empCard) targetCard = empCard;
+                         }
+
+                         if(targetCard) {
+                             highlightTarget(targetCard);
                              observer.disconnect();
                          }
                     }, 1500);

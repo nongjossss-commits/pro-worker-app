@@ -57,14 +57,50 @@
 
 <div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item position-relative" data-drag-payload="{{ json_encode($payload) }}">
     @if($employee && isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
+        @php
+            $isRegistration = $employee->active_workflows->contains('is_registration', true);
+            $isRenewal = $employee->active_workflows->contains('is_renewal', true);
+            $hasStandardWorkflow = $employee->active_workflows->contains(function ($value, $key) {
+                return ($value->is_pre_production === false) && (!isset($value->is_registration) || !$value->is_registration) && (!isset($value->is_renewal) || !$value->is_renewal);
+            });
+
+            if ($isRegistration) {
+                $overlayStyle = 'background-color: rgba(139, 92, 246, 0.15); border: 2px solid #8B5CF6;';
+            } elseif ($isRenewal) {
+                $overlayStyle = 'background-color: rgba(236, 72, 153, 0.15); border: 2px solid #EC4899;';
+            } elseif ($hasStandardWorkflow) {
+                $overlayStyle = 'background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107;';
+            } else {
+                $overlayStyle = 'background-color: rgba(13, 202, 240, 0.15); border: 2px solid #0dcaf0;';
+            }
+        @endphp
         <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded"
-             style="background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107; z-index: 10; pointer-events: none;">
+             style="{{ $overlayStyle }} z-index: 10; pointer-events: none;">
              <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
                 @foreach($employee->active_workflows as $wf)
-                <a href="{{ $wf->url }}"
-                       class="badge bg-warning text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
-                       style="max-width: 90%;">
-                       <i class="bi bi-gear-fill me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
+                    @php
+                        if (isset($wf->is_registration) && $wf->is_registration) {
+                            $style = 'background-color: #8B5CF6; color: white;';
+                            $icon = 'bi-person-badge';
+                            $badgeClass = '';
+                        } elseif (isset($wf->is_renewal) && $wf->is_renewal) {
+                            $style = 'background-color: #EC4899; color: white;';
+                            $icon = 'bi-arrow-repeat';
+                            $badgeClass = '';
+                        } elseif (isset($wf->is_pre_production) && $wf->is_pre_production) {
+                            $style = '';
+                            $icon = 'bi-hourglass-split';
+                            $badgeClass = 'bg-info text-dark';
+                        } else {
+                            $style = '';
+                            $icon = 'bi-gear-fill';
+                            $badgeClass = 'bg-warning text-dark';
+                        }
+                    @endphp
+                    <a href="{{ $wf->url }}"
+                       class="badge {{ $badgeClass }} text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
+                       style="max-width: 90%; {{ $style }}">
+                       <i class="bi {{ $icon }} me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
                     </a>
                 @endforeach
              </div>

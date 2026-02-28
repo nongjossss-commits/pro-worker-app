@@ -30,6 +30,57 @@
      ]) }}"
      ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
 
+    @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
+        @php
+            $isRegistration = $employee->active_workflows->contains('is_registration', true);
+            $isRenewal = $employee->active_workflows->contains('is_renewal', true);
+            $hasStandardWorkflow = $employee->active_workflows->contains(function ($value, $key) {
+                return ($value->is_pre_production === false) && (!isset($value->is_registration) || !$value->is_registration) && (!isset($value->is_renewal) || !$value->is_renewal);
+            });
+
+            if ($isRegistration) {
+                $overlayStyle = 'background-color: rgba(139, 92, 246, 0.15); border: 2px solid #8B5CF6;';
+            } elseif ($isRenewal) {
+                $overlayStyle = 'background-color: rgba(236, 72, 153, 0.15); border: 2px solid #EC4899;';
+            } elseif ($hasStandardWorkflow) {
+                $overlayStyle = 'background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107;';
+            } else {
+                $overlayStyle = 'background-color: rgba(13, 202, 240, 0.15); border: 2px solid #0dcaf0;';
+            }
+        @endphp
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded"
+             style="{{ $overlayStyle }} z-index: 10; pointer-events: none;">
+             <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
+                @foreach($employee->active_workflows as $wf)
+                    @php
+                        if (isset($wf->is_registration) && $wf->is_registration) {
+                            $style = 'background-color: #8B5CF6; color: white;';
+                            $icon = 'bi-person-badge';
+                            $badgeClass = '';
+                        } elseif (isset($wf->is_renewal) && $wf->is_renewal) {
+                            $style = 'background-color: #EC4899; color: white;';
+                            $icon = 'bi-arrow-repeat';
+                            $badgeClass = '';
+                        } elseif (isset($wf->is_pre_production) && $wf->is_pre_production) {
+                            $style = '';
+                            $icon = 'bi-hourglass-split';
+                            $badgeClass = 'bg-info text-dark';
+                        } else {
+                            $style = '';
+                            $icon = 'bi-gear-fill';
+                            $badgeClass = 'bg-warning text-dark';
+                        }
+                    @endphp
+                    <a href="{{ $wf->url }}"
+                       class="badge {{ $badgeClass }} text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
+                       style="max-width: 90%; {{ $style }}">
+                       <i class="bi {{ $icon }} me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
+                    </a>
+                @endforeach
+             </div>
+        </div>
+    @endif
+
     @if($missingCount > 0)
         <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-warning text-dark border border-light shadow-sm" style="z-index: 10; margin-left: 15px; margin-top: 15px; font-size: 0.8rem;">
             {{ $missingCount }}
@@ -86,22 +137,6 @@
             </div>
             <p class="mb-1">
                 {{ trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})
-
-                {{-- Active Workflow / Pre-Production Status Badges --}}
-                @foreach($employee->active_workflows as $workflow)
-                    @php
-                        $badgeClass = $workflow->is_pre_production ? 'bg-info text-dark' : 'bg-warning text-dark';
-                        $route = $workflow->is_pre_production ? 'production.index' : 'workflow.index';
-                        $icon = $workflow->is_pre_production ? 'bi-hourglass-split' : 'bi-gear-wide-connected';
-                    @endphp
-                <a href="{{ $workflow->url }}"
-                       class="badge rounded-pill {{ $badgeClass }} text-decoration-none ms-1 border border-dark shadow-sm"
-                       title="{{ $workflow->status_label }}"
-                       target="_blank">
-                        <i class="bi {{ $icon }} me-1"></i> {{ $workflow->name }}
-                        @if($workflow->is_pre_production) <small>({{ __('Prep') }})</small> @endif
-                    </a>
-                @endforeach
             </p>
             <small class="text-muted d-block">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ optional($employee->passportExpiryDate)->format('d/m/Y') ?? '-' }})</small>
             <small class="text-muted d-block">Work Permit: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> (หมดอายุ: {{ optional($employee->workPermitExpiryDate)->format('d/m/Y') ?? '-' }})</small>

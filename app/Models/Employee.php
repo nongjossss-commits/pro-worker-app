@@ -281,7 +281,9 @@ class Employee extends Model
                 $url = route($routeName, [
                     'tab' => $item->order->workType->slug ?? '',
                     'order' => $item->production_order_id,
-                    'item' => $item->id
+                    'item' => $item->id,
+                    'highlight_employer_id' => $this->employer_id,
+                    'highlight_employee_id' => $this->id
                 ]);
 
                 return (object) [
