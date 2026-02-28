@@ -513,6 +513,64 @@
                     <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
                 </div>
             </div>
+
+            {{-- Remarks Field (Separate Row, Independent Edit) --}}
+            <div class="d-flex align-items-end gap-2 mt-2" x-data="{
+                isEditingRemark: false,
+                remarkText: {{ json_encode($item->remarks ?? '') }},
+                saving: false,
+                saveRemark() {
+                    if(this.saving) return;
+                    this.saving = true;
+                    fetch('/workflow/item/{{ $item->id }}/remarks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ remarks: this.remarkText })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.saving = false;
+                        if(data.success) {
+                            this.isEditingRemark = false;
+                            showToast('บันทึกหมายเหตุสำเร็จ', 'success');
+                        } else {
+                            showToast('เกิดข้อผิดพลาดในการบันทึก', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        this.saving = false;
+                        console.error(err);
+                        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                    });
+                }
+            }">
+                <div class="flex-grow-1" style="max-width: 440px;">
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">หมายเหตุ</small>
+                    <div x-show="!isEditingRemark" class="small text-dark border rounded px-2 py-1 bg-light text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                        <span x-text="remarkText || '-'"></span>
+                    </div>
+                    <textarea x-show="isEditingRemark" class="form-control form-control-sm" x-model="remarkText" placeholder="กรอกข้อความหมายเหตุ" rows="2" style="resize: none;"></textarea>
+                </div>
+
+                {{-- Remark Action Buttons --}}
+                <div class="d-flex gap-1 mb-1">
+                    <button x-show="!isEditingRemark" @click="isEditingRemark = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="แก้ไขหมายเหตุ">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button x-show="isEditingRemark" @click="saveRemark()" class="btn btn-sm btn-success rounded-circle" title="บันทึกหมายเหตุ" :disabled="saving">
+                        <i class="bi bi-check-lg" x-show="!saving"></i>
+                        <span class="spinner-border spinner-border-sm" x-show="saving" role="status" aria-hidden="true"></span>
+                    </button>
+                    <button x-show="isEditingRemark" @click="isEditingRemark = false" class="btn btn-sm btn-outline-danger rounded-circle" title="ยกเลิก" :disabled="saving">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
             </div>
 
             {{-- Actions --}}
