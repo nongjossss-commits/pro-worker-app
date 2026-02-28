@@ -277,6 +277,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/biometrics', [App\Http\Controllers\Production\RegistrationController::class, 'updateBiometrics'])->name('biometrics.update');
         Route::post('/{employee}/biometrics-toggle', [App\Http\Controllers\Production\RegistrationController::class, 'toggleBiometrics'])->name('biometrics.toggle');
 
+        // Remarks
+        Route::post('/{employee}/remarks', [App\Http\Controllers\Production\RegistrationController::class, 'updateRemarks'])->name('remarks');
+
         // Appointments (NEW)
         Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RegistrationController::class, 'updateAppointment'])->name('appointment');
         Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RegistrationController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
@@ -315,6 +318,9 @@ Route::middleware(['auth'])->group(function () {
 
         // Operator
         Route::post('/{employee}/toggle-operator', [App\Http\Controllers\Production\RenewalController::class, 'toggleOperator'])->name('toggle_operator');
+
+        // Remarks
+        Route::post('/{employee}/remarks', [App\Http\Controllers\Production\RenewalController::class, 'updateRemarks'])->name('remarks');
 
         // Insurance
         Route::post('/{employee}/update-insurance', [App\Http\Controllers\Production\RenewalController::class, 'updateInsurance'])->name('update_insurance');

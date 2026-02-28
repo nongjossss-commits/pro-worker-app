@@ -144,6 +144,8 @@ class Employee extends Model
         'appointment_completed_at',
         'resolution_completed_at',
         'daily_check_enabled',
+        'registration_remarks',
+        'renewal_remarks',
         'last_daily_checked_at',
         'operator_id',
     ];
