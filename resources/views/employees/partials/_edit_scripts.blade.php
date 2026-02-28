@@ -315,37 +315,173 @@
                 try {
                     // Show Loading
                     if (loadingOverlay) loadingOverlay.classList.remove('d-none');
-                    if (loadingText) loadingText.textContent = 'Enhancing Face with AI...';
+                    if (loadingText) loadingText.textContent = 'Enhancing Face (Person Focused)...';
 
-                    // Convert src to Blob
-                    const res = await fetch(reviewImage.src);
-                    const blob = await res.blob();
-
-                    const formData = new FormData();
-                    formData.append('image', blob, 'to_enhance.jpg');
-                    // Add CSRF
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-                    const response = await fetch('/employees/photo/enhance', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': token
-                        },
-                        body: formData
+                    // Convert src to Image object to draw on canvas
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = reviewImage.src;
                     });
 
-                    const data = await response.json();
-
-                    if(!response.ok) {
-                         throw new Error(data.error || 'Enhancement failed');
+                    // 1. Ensure MediaPipe Body Segmentation is loaded dynamically
+                    if (!window.ImageSegmenter) {
+                         if (loadingText) loadingText.textContent = 'Downloading AI Models...';
+                         await new Promise((resolve, reject) => {
+                             const script = document.createElement('script');
+                             script.type = 'module';
+                             // Use dynamic import to get Vision Tasks
+                             script.text = `
+                                 import { ImageSegmenter, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js";
+                                 window.ImageSegmenter = ImageSegmenter;
+                                 window.FilesetResolver = FilesetResolver;
+                             `;
+                             document.head.appendChild(script);
+                             // Wait for module to evaluate
+                             setTimeout(resolve, 1000); // Simple delay to allow module execution
+                         });
                     }
 
-                    // Update Review Image
-                    reviewImage.src = data.url;
+                    if (!window.ImageSegmenter) {
+                         throw new Error("Failed to load AI Segmentation Model from CDN.");
+                    }
+
+                    if (loadingText) loadingText.textContent = 'Segmenting Person...';
+
+                    // 2. Initialize Segmenter
+                    const vision = await window.FilesetResolver.forVisionTasks(
+                        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+                    );
+
+                    const segmenter = await window.ImageSegmenter.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
+                            delegate: "GPU"
+                        },
+                        runningMode: "IMAGE",
+                        outputCategoryMask: true,
+                        outputConfidenceMasks: false
+                    });
+
+                    // 3. Run Segmentation
+                    const segmentationResult = segmenter.segment(img);
+                    let mask = segmentationResult.categoryMask.getAsUint8Array();
+                    const maskWidth = segmentationResult.categoryMask.width;
+                    const maskHeight = segmentationResult.categoryMask.height;
+
+                    if (loadingText) loadingText.textContent = 'Enhancing...';
+
+                    // 4. Upscale (2x) using Canvas
+                    const upscaleFactor = 2;
+                    const c = document.createElement('canvas');
+                    c.width = img.width * upscaleFactor;
+                    c.height = img.height * upscaleFactor;
+                    const ctx = c.getContext('2d');
+
+                    // Use High Quality Smoothing for upscaling original
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, c.width, c.height);
+
+                    // Create mask canvas to upscale the mask smoothly
+                    const maskCanvas = document.createElement('canvas');
+                    maskCanvas.width = maskWidth;
+                    maskCanvas.height = maskHeight;
+                    const maskCtx = maskCanvas.getContext('2d');
+                    const maskImgData = maskCtx.createImageData(maskWidth, maskHeight);
+                    // selfie_segmenter: 255 is background, 0 is person (sometimes varies, but usually 0 is background if only 1 class).
+                    // Actually, category mask for selfie returns 0 for background, 1-255 for person classes.
+                    for(let i=0; i<mask.length; i++) {
+                        const isPerson = mask[i] > 0;
+                        const val = isPerson ? 255 : 0;
+
+                        maskImgData.data[i*4] = val; // R
+                        maskImgData.data[i*4+1] = val; // G
+                        maskImgData.data[i*4+2] = val; // B
+                        maskImgData.data[i*4+3] = 255; // Alpha
+                    }
+                    maskCtx.putImageData(maskImgData, 0, 0);
+
+                    // Upscale mask to match working canvas
+                    const upscaledMaskCanvas = document.createElement('canvas');
+                    upscaledMaskCanvas.width = c.width;
+                    upscaledMaskCanvas.height = c.height;
+                    const upscaledMaskCtx = upscaledMaskCanvas.getContext('2d');
+                    upscaledMaskCtx.imageSmoothingEnabled = true;
+                    upscaledMaskCtx.drawImage(maskCanvas, 0, 0, c.width, c.height);
+
+                    const upscaledMaskData = upscaledMaskCtx.getImageData(0, 0, c.width, c.height).data;
+
+                    // 5. Apply Sharpening Filter ONLY to the Person
+                    const imageData = ctx.getImageData(0, 0, c.width, c.height);
+                    const data = imageData.data;
+                    const width = c.width;
+                    const height = c.height;
+
+                    // Sharpen matrix (Unsharp Mask style)
+                    const weights = [
+                         0, -1,  0,
+                        -1,  5, -1,
+                         0, -1,  0
+                    ];
+
+                    const side = Math.round(Math.sqrt(weights.length));
+                    const halfSide = Math.floor(side/2);
+                    const srcData = new Uint8ClampedArray(data); // Copy original data
+                    const w = width;
+                    const h = height;
+
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < w; x++) {
+                            const dstOff = (y * w + x) * 4;
+
+                            // Check mask: is this pixel part of the person? (Check Red channel of upscaled mask)
+                            // If mask value is > 128, it's person.
+                            const isPerson = upscaledMaskData[dstOff] > 128;
+
+                            if (isPerson) {
+                                let r = 0, g = 0, b = 0;
+
+                                for (let cy = 0; cy < side; cy++) {
+                                    for (let cx = 0; cx < side; cx++) {
+                                        const scy = y + cy - halfSide;
+                                        const scx = x + cx - halfSide;
+
+                                        if (scy >= 0 && scy < h && scx >= 0 && scx < w) {
+                                            const srcOff = (scy * w + scx) * 4;
+                                            const wt = weights[cy * side + cx];
+                                            r += srcData[srcOff] * wt;
+                                            g += srcData[srcOff + 1] * wt;
+                                            b += srcData[srcOff + 2] * wt;
+                                        } else {
+                                            const wt = weights[cy * side + cx];
+                                            r += srcData[dstOff] * wt;
+                                            g += srcData[dstOff + 1] * wt;
+                                            b += srcData[dstOff + 2] * wt;
+                                        }
+                                    }
+                                }
+
+                                // Update RGB with clamping
+                                data[dstOff] = Math.max(0, Math.min(255, r));
+                                data[dstOff + 1] = Math.max(0, Math.min(255, g));
+                                data[dstOff + 2] = Math.max(0, Math.min(255, b));
+                            }
+                            // If it's background (!isPerson), we leave the pixel as the original smoothed upscale.
+                        }
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // Output back to reviewImage
+                    const newUrl = c.toDataURL('image/jpeg', 0.95);
+                    reviewImage.src = newUrl;
 
                 } catch (err) {
-                    console.error(err);
-                    alert('AI Enhancement Failed: ' + err.message);
+                    console.error("Enhancement Error:", err);
+                    alert("Subject-focused Enhancement failed. Error: " + err.message);
                 } finally {
                     if (loadingOverlay) loadingOverlay.classList.add('d-none');
                 }
@@ -433,7 +569,7 @@
         lastPos: { x: 0, y: 0 },
 
         // Smart Erase State
-        smartPoints: [],
+        tolerance: 30, // Default tolerance for Magic Wand
 
         init: function() {
             if (this.initialized) return;
@@ -464,7 +600,15 @@
             if(this.toolRestore) this.toolRestore.addEventListener('click', () => this.setTool('restore'));
             if(this.toolSmart) this.toolSmart.addEventListener('click', () => this.setTool('smart_erase'));
 
-            if(this.rangeSize) this.rangeSize.addEventListener('input', (e) => this.brushSize = parseInt(e.target.value));
+            if(this.rangeSize) {
+                this.rangeSize.addEventListener('input', (e) => {
+                    if (this.currentTool === 'smart_erase') {
+                        this.tolerance = parseInt(e.target.value); // Use brush size as tolerance (1-100)
+                    } else {
+                        this.brushSize = parseInt(e.target.value);
+                    }
+                });
+            }
 
             // Canvas Interaction
             this.displayCanvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
@@ -674,6 +818,13 @@
         setTool(tool) {
             this.currentTool = tool;
 
+            if (tool === 'smart_erase') {
+                 // If switching to smart erase, adjust range input to represent tolerance
+                 if (this.rangeSize) this.rangeSize.value = this.tolerance;
+            } else {
+                 if (this.rangeSize) this.rangeSize.value = this.brushSize;
+            }
+
             // UI Update
             [this.toolEraser, this.toolRestore, this.toolSmart].forEach(btn => {
                 if(btn) btn.classList.remove('active');
@@ -704,14 +855,8 @@
             this.lastPos = this.getMousePos(e);
 
             if (this.currentTool === 'smart_erase') {
-                this.smartPoints = []; // Start new stroke
-                this.smartPoints.push(this.lastPos);
-
-                // Visual Feedback for click
-                this.ctx.beginPath();
-                this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-                this.ctx.arc(this.lastPos.x, this.lastPos.y, this.brushSize / 2, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.pushHistory(); // Save before applying magic wand
+                this.applyMagicWand(this.lastPos);
             } else {
                 this.pushHistory(); // Save state before stroke
                 this.draw(this.lastPos);
@@ -723,26 +868,7 @@
             const pos = this.getMousePos(e);
 
             if (this.currentTool === 'smart_erase') {
-                // Collect points and draw visual trail
-                this.smartPoints.push(pos);
-                // Draw only the new segment on the Display Canvas (Temporary Visual)
-                // We do NOT render() here to avoid full redraws.
-                this.ctx.beginPath();
-                this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-                this.ctx.lineWidth = this.brushSize;
-                this.ctx.lineCap = 'round';
-
-                // Draw from last point to current point
-                if (this.smartPoints.length > 1) {
-                    const prev = this.smartPoints[this.smartPoints.length - 2];
-                    this.ctx.moveTo(prev.x, prev.y);
-                    this.ctx.lineTo(pos.x, pos.y);
-                } else {
-                    // First point
-                    this.ctx.moveTo(pos.x, pos.y);
-                    this.ctx.lineTo(pos.x, pos.y);
-                }
-                this.ctx.stroke();
+                // Do nothing on mouse move for magic wand
             } else {
                 // Interpolate for smooth stroke
                 this.drawLine(this.lastPos, pos);
@@ -755,8 +881,7 @@
             this.isDrawing = false;
 
             if (this.currentTool === 'smart_erase') {
-                this.pushHistory(); // Save before applying smart erase
-                this.applySmartErase();
+                // Action already performed on mousedown
             }
         },
 
@@ -884,193 +1009,129 @@
             this.ctx.drawImage(this.workCanvas, 0, 0);
         },
 
-        // --- Smart Erase Logic (OpenCV) ---
-        applySmartErase() {
-            if (typeof cv === 'undefined' || !cv.Mat || !cv.grabCut) {
-                alert('Smart Erase requires OpenCV. Please wait for it to load or check connection.');
-                return;
-            }
-
+        // --- Magic Wand Logic (Flood Fill) ---
+        applyMagicWand(pos) {
             this.toggleLoading(true, 'Analyzing image...');
 
-            // Use setTimeout to allow UI to render the loading state
             setTimeout(() => {
-                let srcMat = null, mask = null, bgdModel = null, fgdModel = null;
-                let binMask = null, one = null, alphaScale = null, finalMask = null;
-                let alphaMat = null, finalAlphaMat = null, tempMask = null;
-                let rgbaPlanes = null, finalRGBA = null; // New Mats for Alpha Merge
-                let srcCanvas = null, maskCanvas = null;
-                let rect = null;
-
                 try {
-                    // 1. Setup Data
                     const width = this.workCanvas.width;
                     const height = this.workCanvas.height;
-
-                    // Downscale for performance
-                    const maxDim = 600;
-                    const scale = Math.min(1, maxDim / Math.max(width, height));
-
-                    // ENSURE INTEGERS using Math.floor to prevent OpenCV WASM errors (table index out of bounds)
-                    const sW = Math.floor(width * scale);
-                    const sH = Math.floor(height * scale);
-
-                    // Additional Safety Check
-                    if (sW < 1 || sH < 1) throw new Error('Image too small for processing');
-                    if (isNaN(sW) || isNaN(sH)) throw new Error('Invalid dimensions calculated');
-
-                    // Create Source Mat (Original Image) - Downscaled
-                    srcCanvas = document.createElement('canvas');
-                    srcCanvas.width = sW;
-                    srcCanvas.height = sH;
-                    const srcCtx = srcCanvas.getContext('2d');
-                    if (!this.originalImage) throw new Error('Original image source missing');
-                    srcCtx.drawImage(this.originalImage, 0, 0, sW, sH);
-
-                    // Use matFromImageData instead of imread to avoid potential internal canvas context issues
-                    const srcData = srcCtx.getImageData(0, 0, sW, sH);
-                    srcMat = cv.matFromImageData(srcData); // RGBA
-                    if (srcMat.empty()) throw new Error('Failed to load source image into OpenCV');
-                    cv.cvtColor(srcMat, srcMat, cv.COLOR_RGBA2RGB); // GrabCut needs RGB (CV_8UC3)
-
-                    // Create Mask Mat (From WorkCanvas Alpha) - Downscaled
-                    maskCanvas = document.createElement('canvas');
-                    maskCanvas.width = sW;
-                    maskCanvas.height = sH;
-                    const maskCtx = maskCanvas.getContext('2d');
-                    maskCtx.drawImage(this.workCanvas, 0, 0, sW, sH);
-
-                    const maskData = maskCtx.getImageData(0, 0, sW, sH);
-                    alphaMat = cv.matFromImageData(maskData); // RGBA
-                    if (alphaMat.empty()) throw new Error('Failed to load mask into OpenCV');
-
-                    mask = new cv.Mat();
-                    cv.cvtColor(alphaMat, mask, cv.COLOR_RGBA2GRAY); // 1 channel (CV_8UC1)
-
-                    // Initialize GrabCut Mask
-                    // mask = 0 (BGD) where alpha < 100
-                    // mask = 3 (PR_FGD) where alpha >= 100
-                    cv.threshold(mask, mask, 100, 3, cv.THRESH_BINARY); // 0 or 3
-
-                    // Apply User Strokes as GC_BGD (0)
-                    maskCtx.globalCompositeOperation = 'destination-out';
-                    maskCtx.beginPath();
-
-                    if (this.smartPoints.length === 1) {
-                         const p = this.smartPoints[0];
-                         maskCtx.arc(p.x * scale, p.y * scale, (this.brushSize * scale) / 2, 0, Math.PI * 2);
-                         maskCtx.fill();
-                    } else {
-                        maskCtx.lineCap = 'round';
-                        maskCtx.lineWidth = this.brushSize * scale;
-                        for(let i=0; i<this.smartPoints.length-1; i++) {
-                            const p1 = this.smartPoints[i];
-                            const p2 = this.smartPoints[i+1];
-                            maskCtx.moveTo(p1.x * scale, p1.y * scale);
-                            maskCtx.lineTo(p2.x * scale, p2.y * scale);
-                        }
-                        maskCtx.stroke();
-                    }
-                    maskCtx.globalCompositeOperation = 'source-over';
-
-                    // Read updated mask (with user strokes removed)
-                    const finalMaskData = maskCtx.getImageData(0, 0, sW, sH);
-                    finalAlphaMat = cv.matFromImageData(finalMaskData);
-                    if (finalAlphaMat.empty()) throw new Error('Failed to read updated mask');
-
-                    // Update mask based on strokes: Transparent areas become 0 (BGD), Visible become 3 (PR_FGD)
-                    // We need to re-read into 'mask'
-                    // Note: 'mask' currently holds initial state. We overwrite it.
-                    tempMask = new cv.Mat();
-                    cv.cvtColor(finalAlphaMat, tempMask, cv.COLOR_RGBA2GRAY);
-                    cv.threshold(tempMask, mask, 50, 3, cv.THRESH_BINARY);
-                    if (tempMask && !tempMask.isDeleted()) tempMask.delete();
-                    tempMask = null;
-
-                    // Run GrabCut
-                    // Explicitly allocate models with correct type/size (1, 65, CV_64FC1)
-                    bgdModel = new cv.Mat(1, 65, cv.CV_64FC1);
-                    fgdModel = new cv.Mat(1, 65, cv.CV_64FC1);
-
-                    // Create valid rect within bounds (though ignored by GC_INIT_WITH_MASK, it must be valid)
-                    // Warning: rect must be deleted explicitly to avoid leaks
-                    rect = new cv.Rect(0, 0, sW, sH);
-
-                    // GC_INIT_WITH_MASK (1)
-                    try {
-                        cv.grabCut(srcMat, mask, rect, bgdModel, fgdModel, 3, cv.GC_INIT_WITH_MASK);
-                    } catch (gcErr) {
-                         console.error("OpenCV GrabCut Error:", gcErr);
-                         throw new Error("Failed to segment object. Try using the simple Eraser tool.");
-                    }
-
-                    // Extract Result (Keep FG=1 and PR_FGD=3)
-                    binMask = new cv.Mat();
-                    one = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(1));
-                    cv.bitwise_and(mask, one, binMask); // result is 1 for (1,3), 0 for (0,2)
-
-                    // Scale binMask to 255
-                    alphaScale = new cv.Mat(mask.rows, mask.cols, mask.type(), new cv.Scalar(255));
-                    cv.multiply(binMask, alphaScale, binMask);
-
-                    // Resize Mask back to Original Size
-                    finalMask = new cv.Mat();
-                    cv.resize(binMask, finalMask, new cv.Size(width, height), 0, 0, cv.INTER_LINEAR);
-
-                    // Create RGBA Mat where Alpha = finalMask to ensure destination-in works correctly
-                    // (destination-in uses the Source Alpha to mask the Destination)
-                    rgbaPlanes = new cv.MatVector();
-                    finalRGBA = new cv.Mat();
-
-                    // Push finalMask into all channels (R, G, B, A)
-                    // We only strictly need it in Alpha, but filling all is safe.
-                    rgbaPlanes.push_back(finalMask);
-                    rgbaPlanes.push_back(finalMask);
-                    rgbaPlanes.push_back(finalMask);
-                    rgbaPlanes.push_back(finalMask);
-
-                    cv.merge(rgbaPlanes, finalRGBA);
-
-                    // Apply to Work Canvas
-                    cv.imshow(this.tempCanvas, finalRGBA);
-
                     const ctx = this.workCanvas.getContext('2d');
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.drawImage(this.originalImage, 0, 0); // Restore full original
-                    ctx.globalCompositeOperation = 'destination-in';
-                    ctx.drawImage(this.tempCanvas, 0, 0); // Cut out using new mask
-                    ctx.globalCompositeOperation = 'source-over';
 
-                    // Final render to sync display
+                    // Scale coordinates if canvas display size differs from resolution
+                    const x = Math.floor(pos.x);
+                    const y = Math.floor(pos.y);
+
+                    if (x < 0 || x >= width || y < 0 || y >= height) {
+                        this.toggleLoading(false);
+                        return;
+                    }
+
+                    const imageData = ctx.getImageData(0, 0, width, height);
+                    const data = imageData.data;
+
+                    const targetPos = (y * width + x) * 4;
+                    const targetR = data[targetPos];
+                    const targetG = data[targetPos + 1];
+                    const targetB = data[targetPos + 2];
+                    const targetA = data[targetPos + 3];
+
+                    // Don't fill if clicking on transparent area
+                    if (targetA === 0) {
+                        this.toggleLoading(false);
+                        return;
+                    }
+
+                    // Use tolerance (1-100 mapped to RGB distance squared)
+                    // Max distance is 255^2 * 3 = 195075.
+                    // A tolerance of 100 maps to a reasonable max distance, e.g. 150^2 * 3 = 67500
+                    const maxDist = Math.pow((this.tolerance / 100) * 150, 2) * 3;
+
+                    const matchColor = (pos) => {
+                        const a = data[pos + 3];
+                        if (a === 0) return false; // Already transparent
+
+                        const r = data[pos];
+                        const g = data[pos + 1];
+                        const b = data[pos + 2];
+
+                        const distSq = Math.pow(r - targetR, 2) + Math.pow(g - targetG, 2) + Math.pow(b - targetB, 2);
+                        return distSq <= maxDist;
+                    };
+
+                    // Implement Scanline Flood Fill for better performance than naive stack
+                    let stack = [[x, y]];
+                    const visited = new Uint8Array(width * height);
+
+                    while(stack.length > 0) {
+                        let [cx, cy] = stack.pop();
+                        let currentX = cx;
+
+                        // Move left to find the start of the span
+                        while(currentX > 0 && matchColor((cy * width + (currentX - 1)) * 4) && !visited[cy * width + (currentX - 1)]) {
+                            currentX--;
+                        }
+
+                        let spanUp = false;
+                        let spanDown = false;
+
+                        // Move right and fill
+                        while(currentX < width) {
+                            const p = (cy * width + currentX) * 4;
+                            // Check if current pixel matches AND is not visited, OR it's the exact starting pixel we popped from stack
+                            const isMatch = matchColor(p);
+                            const isStartPixel = (currentX === cx && cy === stack[stack.length] /* not actually accessing stack here but we know cx cy was valid */);
+                            // To fix redundancy correctly without infinite loop or breaking fill:
+                            if (!isMatch && currentX !== cx) {
+                                break; // end of span
+                            }
+                            if (visited[cy * width + currentX] && currentX !== cx) {
+                                break;
+                            }
+
+                            data[p + 3] = 0; // Erase (set alpha to 0)
+                            visited[cy * width + currentX] = 1;
+
+                            // Check up
+                            if (cy > 0) {
+                                const upPos = ((cy - 1) * width + currentX) * 4;
+                                const upMatch = matchColor(upPos) && !visited[(cy - 1) * width + currentX];
+                                if (!spanUp && upMatch) {
+                                    stack.push([currentX, cy - 1]);
+                                    spanUp = true;
+                                } else if (spanUp && !upMatch) {
+                                    spanUp = false;
+                                }
+                            }
+
+                            // Check down
+                            if (cy < height - 1) {
+                                const downPos = ((cy + 1) * width + currentX) * 4;
+                                const downMatch = matchColor(downPos) && !visited[(cy + 1) * width + currentX];
+                                if (!spanDown && downMatch) {
+                                    stack.push([currentX, cy + 1]);
+                                    spanDown = true;
+                                } else if (spanDown && !downMatch) {
+                                    spanDown = false;
+                                }
+                            }
+
+                            currentX++;
+                        }
+                    }
+
+                    // Put modified data back
+                    ctx.putImageData(imageData, 0, 0);
                     this.render();
 
                 } catch (err) {
-                    console.error("Smart Erase Error:", err);
-                    alert("Smart Erase failed: " + err.message + "\nCheck console for details.");
+                    console.error("Magic Wand Error:", err);
+                    alert("Magic Wand failed: " + err.message + "\nCheck console for details.");
                 } finally {
-                    // Safe cleanup
-                    if(srcMat && !srcMat.isDeleted()) srcMat.delete();
-                    if(mask && !mask.isDeleted()) mask.delete();
-                    if(bgdModel && !bgdModel.isDeleted()) bgdModel.delete();
-                    if(fgdModel && !fgdModel.isDeleted()) fgdModel.delete();
-                    if(binMask && !binMask.isDeleted()) binMask.delete();
-                    if(one && !one.isDeleted()) one.delete();
-                    if(alphaScale && !alphaScale.isDeleted()) alphaScale.delete();
-                    if(finalMask && !finalMask.isDeleted()) finalMask.delete();
-                    if(alphaMat && !alphaMat.isDeleted()) alphaMat.delete();
-                    if(finalAlphaMat && !finalAlphaMat.isDeleted()) finalAlphaMat.delete();
-                    if(tempMask && !tempMask.isDeleted()) tempMask.delete();
-                    if(finalRGBA && !finalRGBA.isDeleted()) finalRGBA.delete();
-                    if(rgbaPlanes && !rgbaPlanes.isDeleted()) rgbaPlanes.delete();
-                    if(rect) rect.delete(); // Delete rect (it's a C++ object, not a Mat, so no isDeleted check usually needed but safe to check if it exists)
-
-                    if(srcCanvas) srcCanvas.remove();
-                    if(maskCanvas) maskCanvas.remove();
-
                     this.toggleLoading(false);
                 }
-            }, 50);
+            }, 10);
         },
 
         loadImage(src) {
