@@ -588,6 +588,10 @@
         <li><a class="dropdown-item" href="#" id="employer-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
         <li><a class="dropdown-item" href="#" id="employer-bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
         <li><a class="dropdown-item" href="#" id="employer-bulk-send-production-btn"><i class="bi bi-diagram-3 me-2"></i>{{ __('Send to P Production') }}</a></li>
+        <li><hr class="dropdown-divider"></li>
+        @can('view-finance')
+        <li><a class="dropdown-item text-primary" href="#" id="employer-bulk-finance-btn"><i class="bi bi-cash-stack me-2"></i>{{ __('การเงิน (Finance)') }}</a></li>
+        @endcan
     </x-bulk-action-bar>
 
     <div id="employeeList">
@@ -1333,6 +1337,47 @@
                 const modalEl = document.getElementById('selectTargetEmployerModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
+            });
+        }
+
+        const bulkFinanceBtn = document.getElementById('employer-bulk-finance-btn');
+        if (bulkFinanceBtn) {
+            bulkFinanceBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                if (typeof window.FinancialSecurity !== 'undefined') {
+                    window.FinancialSecurity.checkAndRun(function() {
+                        const form = document.createElement('form');
+                        form.method = 'GET';
+                        form.action = '{{ route("finance.create") }}';
+
+                        // Pass employer_id if we have one
+                        const empInput = document.createElement('input');
+                        empInput.type = 'hidden';
+                        empInput.name = 'employer_id';
+                        empInput.value = '{{ $employer->id }}';
+                        form.appendChild(empInput);
+
+                        selected.forEach(id => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'employee_ids[]';
+                            input.value = id;
+                            form.appendChild(input);
+                        });
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    });
+                } else {
+                    console.error('FinancialSecurity module not loaded');
+                }
             });
         }
 

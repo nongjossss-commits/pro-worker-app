@@ -69,7 +69,7 @@ class FinancialHubController extends Controller
     /**
      * Show the form for creating a manual bill.
      */
-    public function createManual()
+    public function createManual(Request $request)
     {
         // For the employer dropdown. In a real scenario with thousands of employers,
         // we should use an AJAX search (like select2).
@@ -81,7 +81,15 @@ class FinancialHubController extends Controller
             ->limit(500) // Safety limit
             ->get();
 
-        return view('financial.create_manual', compact('employers'));
+        $selectedEmployees = collect();
+        $employeeIds = $request->input('employee_ids', old('employee_ids'));
+        if ($employeeIds && is_array($employeeIds)) {
+            $selectedEmployees = \App\Models\Employee::whereIn('id', $employeeIds)
+                ->select('id', 'employeeNameTh', 'employeeNameEn', 'employer_employee_id')
+                ->get();
+        }
+
+        return view('financial.create_manual', compact('employers', 'selectedEmployees'));
     }
 
     /**
@@ -94,6 +102,8 @@ class FinancialHubController extends Controller
             'description' => 'nullable|string|max:255',
             'amount' => 'nullable|numeric|min:0',
             'bill_date' => 'nullable|date',
+            'employee_ids' => 'nullable|array',
+            'employee_ids.*' => 'exists:employees,id',
         ]);
 
         DB::beginTransaction();
@@ -121,7 +131,26 @@ class FinancialHubController extends Controller
                 'production_order_id' => $order->id,
             ]);
 
-            // 3. (Optional) Create Initial Transaction
+            // 3. Attach Employees to the Order
+            if ($request->has('employee_ids') && is_array($request->employee_ids)) {
+                $employeeIds = $request->employee_ids;
+                $itemsToInsert = [];
+                foreach ($employeeIds as $empId) {
+                    $itemsToInsert[] = [
+                        'production_order_id' => $order->id,
+                        'employee_id' => $empId,
+                        'status' => 'pending',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+
+                if (!empty($itemsToInsert)) {
+                    \App\Models\ProductionItem::insert($itemsToInsert);
+                }
+            }
+
+            // 4. (Optional) Create Initial Transaction
             if ($request->filled('amount') && $request->amount > 0) {
                 FinancialTransaction::create([
                     'production_order_id' => $order->id,

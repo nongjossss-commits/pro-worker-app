@@ -125,6 +125,10 @@
             @can('manage-tickets')
             <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
             @endcan
+            <li><hr class="dropdown-divider"></li>
+            @can('view-finance')
+            <li><a class="dropdown-item text-primary" href="#" id="bulk-finance-btn"><i class="bi bi-cash-stack me-2"></i>{{ __('การเงิน (Finance)') }}</a></li>
+            @endcan
         </ul>
     </div>
     <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
@@ -413,6 +417,41 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Handle Bulk Send to Production
+    const bulkFinanceBtn = document.getElementById('bulk-finance-btn');
+    if (bulkFinanceBtn) {
+        bulkFinanceBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selectedData = window.getGlobalSelectedData();
+            const selectedIds = selectedData.map(item => item.id);
+
+            if (selectedIds.length === 0) {
+                showToast('{{ __('Please select employees first.') }}', 'danger');
+                return;
+            }
+
+            if (typeof window.FinancialSecurity !== 'undefined') {
+                window.FinancialSecurity.checkAndRun(function() {
+                    const form = document.createElement('form');
+                    form.method = 'GET';
+                    form.action = '{{ route("finance.create") }}';
+
+                    selectedIds.forEach(id => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'employee_ids[]';
+                        input.value = id;
+                        form.appendChild(input);
+                    });
+
+                    document.body.appendChild(form);
+                    form.submit();
+                });
+            } else {
+                console.error('FinancialSecurity module not loaded');
+            }
+        });
+    }
+
     const bulkSendProductionBtn = document.getElementById('bulk-send-production-btn');
     if (bulkSendProductionBtn) {
         bulkSendProductionBtn.addEventListener('click', function(e) {

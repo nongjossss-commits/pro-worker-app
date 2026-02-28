@@ -17,7 +17,7 @@
                             <select name="employer_id" id="employer_id" class="form-select" required>
                                 <option value="">-- {{ __('Select Employer') }} --</option>
                                 @foreach($employers as $emp)
-                                    <option value="{{ $emp->id }}" {{ old('employer_id') == $emp->id ? 'selected' : '' }}>
+                                    <option value="{{ $emp->id }}" {{ old('employer_id', request('employer_id')) == $emp->id ? 'selected' : '' }}>
                                         {{ $emp->employerNameTh }} {{ $emp->employerNameEn ? '('.$emp->employerNameEn.')' : '' }}
                                     </option>
                                 @endforeach
@@ -45,6 +45,27 @@
                                 <div class="form-text">{{ __('If entered, a pending transaction will be created immediately.') }}</div>
                             </div>
                         </div>
+
+                        @if(isset($selectedEmployees) && $selectedEmployees->count() > 0)
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Selected Employees') }} <span class="badge bg-info text-white">{{ $selectedEmployees->count() }}</span></label>
+                            <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                <ul class="list-unstyled mb-0">
+                                    @foreach($selectedEmployees as $emp)
+                                        <li class="mb-1">
+                                            <i class="bi bi-person me-2 text-secondary"></i>
+                                            {{ $emp->employeeNameTh ?? $emp->employeeNameEn }}
+                                            @if($emp->employer_employee_id)
+                                                <span class="text-muted small">({{ $emp->employer_employee_id }})</span>
+                                            @endif
+                                            <input type="hidden" name="employee_ids[]" value="{{ $emp->id }}">
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            <div class="form-text text-success"><i class="bi bi-info-circle me-1"></i>{{ __('These employees will be automatically added to the bill.') }}</div>
+                        </div>
+                        @endif
 
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ route('finance.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>

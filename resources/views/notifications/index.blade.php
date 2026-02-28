@@ -117,6 +117,10 @@
                 @can('manage-tickets')
                 <li><a class="dropdown-item" href="#" id="notification-bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
                 @endcan
+                <li><hr class="dropdown-divider"></li>
+                @can('view-finance')
+                <li><a class="dropdown-item text-primary" href="#" id="notification-bulk-finance-btn"><i class="bi bi-cash-stack me-2"></i>{{ __('การเงิน (Finance)') }}</a></li>
+                @endcan
             </ul>
         </div>
         <div class="d-flex gap-2">
@@ -402,6 +406,44 @@
                 const modalEl = document.getElementById('selectTargetEmployerModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
+            });
+        }
+
+        const bulkFinanceBtn = document.getElementById('notification-bulk-finance-btn');
+        if (bulkFinanceBtn) {
+            bulkFinanceBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
+                if (!activePane) return;
+
+                const checkboxes = activePane.querySelectorAll('.bulk-action-checkbox:checked');
+                const selected = Array.from(checkboxes).map(cb => cb.value);
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                if (typeof window.FinancialSecurity !== 'undefined') {
+                    window.FinancialSecurity.checkAndRun(function() {
+                        const form = document.createElement('form');
+                        form.method = 'GET';
+                        form.action = '{{ route("finance.create") }}';
+
+                        selected.forEach(id => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'employee_ids[]';
+                            input.value = id;
+                            form.appendChild(input);
+                        });
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    });
+                } else {
+                    console.error('FinancialSecurity module not loaded');
+                }
             });
         }
 
