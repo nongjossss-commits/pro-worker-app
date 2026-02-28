@@ -534,25 +534,42 @@ class="row">
                     <button type="button" class="btn-close" @click="showCustomHeaderModal = false"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" :id="'useCustomHeaderToggle-' + productionId" x-model="useCustomHeader">
-                        <label class="form-check-label fw-bold" :for="'useCustomHeaderToggle-' + productionId">Use Custom Header (Manual Override)</label>
+                    <div class="alert alert-info py-2 px-3 small border-0 bg-opacity-10 d-flex align-items-center mb-4 rounded-3">
+                        <i class="bi bi-info-circle-fill me-2 fs-6"></i>
+                        <div>
+                            Select a saved profile to automatically apply logos, signatures, and stamps.
+                            <a href="{{ route('finance.profiles.builder') }}" target="_blank" class="alert-link fw-bold ms-1">Manage Profiles</a>
+                        </div>
                     </div>
 
-                    <div x-show="!useCustomHeader">
-                        <div class="alert alert-info small">
-                            Using Default Company Profile. <br>
-                            You can configure global profiles in Settings.
-                        </div>
-                        <select class="form-select form-select-sm" x-model="selectedProfileId">
-                            <option value="">Default Profile</option>
-                            @foreach(\App\Models\CompanyProfile::all() as $p)
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Select Biller Profile (Issuer)</label>
+                        <select class="form-select form-select-sm" x-model="customHeader.biller_profile_id">
+                            <option value="">-- Use Default System Profile --</option>
+                            @foreach(\App\Models\FinancialProfile::where('type', 'biller')->latest()->get() as $p)
                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div x-show="useCustomHeader">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Select Customer Profile (Client)</label>
+                        <select class="form-select form-select-sm" x-model="customHeader.customer_profile_id">
+                            <option value="">-- Use Default Client Data --</option>
+                            @foreach(\App\Models\FinancialProfile::where('type', 'customer')->latest()->get() as $p)
+                                <option value="{{ $p->id }}">{{ $p->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <hr>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" :id="'useCustomHeaderToggle-' + productionId" x-model="useCustomHeader">
+                        <label class="form-check-label fw-bold text-danger" :for="'useCustomHeaderToggle-' + productionId">Manual Override Data (Without Profile)</label>
+                    </div>
+
+                    <div x-show="useCustomHeader" class="bg-light p-3 border rounded">
                         <div class="mb-2">
                             <label class="form-label small">Company Name</label>
                             <input type="text" class="form-control form-control-sm" x-model="customHeader.name">
@@ -571,21 +588,6 @@ class="row">
                                 <input type="text" class="form-control form-control-sm" x-model="customHeader.phone">
                             </div>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Logo</label>
-                            <div class="d-flex align-items-center gap-2">
-                                <input type="file" class="form-control form-control-sm" x-ref="logoInput" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
-                                <button class="btn btn-sm btn-outline-primary" @click="uploadLogo()">Upload</button>
-                            </div>
-                            <div x-show="customHeader.logo" class="mt-2">
-                                <img :src="'/storage/' + customHeader.logo" style="height: 40px; border: 1px solid #ddd; border-radius: 4px;">
-                                <div class="small text-success">Logo Set</div>
-                            </div>
-                        </div>
-                        <!-- Save as New Profile Button -->
-                         <button class="btn btn-outline-success btn-sm w-100 mt-2" @click="saveAsNewProfile()">
-                            <i class="bi bi-hdd-fill me-1"></i> Save as New System Profile
-                        </button>
                     </div>
                 </div>
                 <div class="modal-footer">

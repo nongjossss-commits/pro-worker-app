@@ -372,6 +372,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [App\Http\Controllers\FinancialHubController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
         Route::post('/store', [App\Http\Controllers\FinancialHubController::class, 'storeManual'])->name('store');
+
+        // Profiles Builder & API
+        Route::get('/profiles', [App\Http\Controllers\FinancialProfileController::class, 'builder'])->name('profiles.builder');
+        Route::get('/api/profiles', [App\Http\Controllers\FinancialProfileController::class, 'index']);
+        Route::get('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'show']);
+        Route::post('/api/profiles', [App\Http\Controllers\FinancialProfileController::class, 'store']);
+        Route::post('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'update']); // Use POST with _method=PUT for forms
+        Route::delete('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'destroy']);
     });
 
     // Financial Routes
