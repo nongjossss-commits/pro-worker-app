@@ -140,8 +140,10 @@ class ProductionDocumentController extends Controller
                     $price = 0;
                     if ($pricingMode === 'per_head') {
                         // Find the tier this item belongs to
+                        // The item_ids from frontend may be strings or integers, and in_array does strict check unless specified or we cast
                         $tier = $pricingTiers->first(function ($t) use ($item) {
-                            return in_array($item->id, $t['item_ids'] ?? []);
+                            $itemIds = array_map('strval', $t['item_ids'] ?? []);
+                            return in_array(strval($item->id), $itemIds, true);
                         });
 
                         if ($tier) {
@@ -171,12 +173,24 @@ class ProductionDocumentController extends Controller
         }
 
         // Prepare data for the view
+        // Load Selected Profiles if they exist in financial_data
+        $billerProfile = null;
+        $customerProfile = null;
+        if (!empty($financialData['custom_header']['biller_profile_id'])) {
+            $billerProfile = \App\Models\FinancialProfile::find($financialData['custom_header']['biller_profile_id']);
+        }
+        if (!empty($financialData['custom_header']['customer_profile_id'])) {
+            $customerProfile = \App\Models\FinancialProfile::find($financialData['custom_header']['customer_profile_id']);
+        }
+
         $data = [
             'production' => $production,
             'includeEmployeeList' => $includeEmployeeList,
             'employeeList' => $employeeList,
             'profile' => $companyProfile, // Fix: layout expects 'profile'
             'company' => $companyProfile, // Keep for backward compat if any
+            'billerProfile' => $billerProfile,
+            'customerProfile' => $customerProfile,
             'billTo' => $billTo,
             'type' => $type,
             'title' => $title, // Explicitly pass the title

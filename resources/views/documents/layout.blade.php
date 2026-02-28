@@ -157,17 +157,44 @@
     </div>
 
     <div class="page">
+        <!-- Absolute Placed Assets (Biller Profile) -->
+        @if(isset($billerProfile))
+            @if($billerProfile->logo_path)
+                <img src="{{ asset('storage/' . $billerProfile->logo_path) }}" style="position: absolute; max-width: 150px; max-height: 80px; top: 40px; left: 40px;" alt="Logo">
+            @endif
+            @if($billerProfile->signature_path && $billerProfile->signature_position)
+                <img src="{{ asset('storage/' . $billerProfile->signature_path) }}"
+                     style="position: absolute;
+                            left: {{ $billerProfile->signature_position['x'] ?? 0 }}px;
+                            top: {{ $billerProfile->signature_position['y'] ?? 0 }}px;
+                            width: {{ $billerProfile->signature_position['width'] ?? 150 }}px;
+                            height: {{ $billerProfile->signature_position['height'] ?? 75 }}px;
+                            transform: rotate({{ $billerProfile->signature_position['rotate'] ?? 0 }}deg);
+                            z-index: -1;" alt="Signature">
+            @endif
+            @if($billerProfile->stamp_path && $billerProfile->stamp_position)
+                <img src="{{ asset('storage/' . $billerProfile->stamp_path) }}"
+                     style="position: absolute;
+                            left: {{ $billerProfile->stamp_position['x'] ?? 0 }}px;
+                            top: {{ $billerProfile->stamp_position['y'] ?? 0 }}px;
+                            width: {{ $billerProfile->stamp_position['width'] ?? 100 }}px;
+                            height: {{ $billerProfile->stamp_position['height'] ?? 100 }}px;
+                            transform: rotate({{ $billerProfile->stamp_position['rotate'] ?? 0 }}deg);
+                            z-index: -1;" alt="Stamp">
+            @endif
+        @endif
+
         <!-- Header -->
         <table class="header-table">
             <tr>
                 <td style="width: 55%;">
-                    @if($profile->logo_path)
+                    @if(!isset($billerProfile) && $profile->logo_path)
                         <img src="{{ asset('storage/' . $profile->logo_path) }}" class="company-logo" alt="Logo">
                     @endif
-                    <div class="company-name">{{ $profile->name }}</div>
-                    <div class="company-address">{!! nl2br(e($profile->address)) !!}</div>
-                    @if($profile->tax_id)<div class="tax-id">Tax ID: {{ $profile->tax_id }}</div>@endif
-                    @if($profile->phone)<div class="tax-id">Tel: {{ $profile->phone }}</div>@endif
+                    <div class="company-name" style="{{ isset($billerProfile) && $billerProfile->logo_path ? 'margin-top: 60px;' : '' }}">{{ isset($billerProfile) ? $billerProfile->name : $profile->name }}</div>
+                    <div class="company-address">{!! nl2br(e(isset($billerProfile) ? $billerProfile->address : $profile->address)) !!}</div>
+                    @if(isset($billerProfile) ? $billerProfile->tax_id : $profile->tax_id)<div class="tax-id">Tax ID: {{ isset($billerProfile) ? $billerProfile->tax_id : $profile->tax_id }}</div>@endif
+                    @if(isset($billerProfile) ? $billerProfile->phone : $profile->phone)<div class="tax-id">Tel: {{ isset($billerProfile) ? $billerProfile->phone : $profile->phone }}</div>@endif
                 </td>
                 <td style="width: 45%;" class="doc-title">
                     <h1>{{ $title ?? ucfirst($type) }}</h1>
@@ -192,7 +219,12 @@
         <!-- Client Info -->
         <div class="client-box">
             <div class="client-label">Bill To <span class="en-label">/ ลูกค้า</span></div>
-            @if(isset($financial['customer_override']) && $financial['customer_override']['name'])
+            @if(isset($customerProfile))
+                 <div class="client-name">{{ $customerProfile->name }}</div>
+                 <div>{!! nl2br(e($customerProfile->address)) !!}</div>
+                 <div>Tax ID: {{ $customerProfile->tax_id ?? '-' }}</div>
+                 <div>Tel: {{ $customerProfile->phone ?? '-' }}</div>
+            @elseif(isset($financial['customer_override']) && $financial['customer_override']['name'])
                  <div class="client-name">{{ $financial['customer_override']['name'] }}</div>
                  <div>{!! nl2br(e($financial['customer_override']['address'] ?? '-')) !!}</div>
                  <div>Tax ID: {{ $financial['customer_override']['tax_id'] ?? '-' }}</div>
@@ -509,7 +541,7 @@
             <div class="sig-block">
                 <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
                 <div class="sig-line"></div>
-                <div class="sig-text">{{ $profile->name }}</div>
+                <div class="sig-text">{{ isset($billerProfile) ? $billerProfile->name : $profile->name }}</div>
             </div>
         </div>
 
