@@ -121,9 +121,60 @@ class ProductionDocumentController extends Controller
         $employerName = $production->employer->employerNameTh ?: ($production->employer->employerNameEn ?: 'Unknown_Employer');
         $pageTitle = "{$title}_{$employerName}_PROD-{$production->id}";
 
+        // --- Employee List Data Logic ---
+        $includeEmployeeList = $request->query('include_employee_list') == 1;
+        $employeeList = [];
+
+        if ($includeEmployeeList) {
+            // Get all items/employees for this production order
+            $items = $production->items;
+            $pricingMode = $financialData['pricing_mode'] ?? 'per_head';
+            $pricingTiers = collect($financialData['pricing_tiers'] ?? []);
+
+            $index = 1;
+            foreach ($items as $item) {
+                if ($item->employee) {
+                    $emp = $item->employee;
+
+                    // Determine Price
+                    $price = 0;
+                    if ($pricingMode === 'per_head') {
+                        // Find the tier this item belongs to
+                        $tier = $pricingTiers->first(function ($t) use ($item) {
+                            return in_array($item->id, $t['item_ids'] ?? []);
+                        });
+
+                        if ($tier) {
+                            $price = $tier['price'] ?? 0;
+                        } else {
+                            // If no explicit tier is matched, maybe it's in a default tier
+                            $defaultTier = $pricingTiers->first(function ($t) {
+                                return empty($t['item_ids']);
+                            });
+                            if ($defaultTier) {
+                                $price = $defaultTier['price'] ?? 0;
+                            }
+                        }
+                    }
+
+                    $employeeList[] = [
+                        'index' => $index++,
+                        'image' => $emp->image,
+                        'prefix' => $emp->titleTh,
+                        'name' => trim($emp->employeeNameTh ?: $emp->employeeNameEn),
+                        'nationality' => $emp->nationality,
+                        'price' => $price,
+                        'employee_id' => $emp->employee_id_number,
+                    ];
+                }
+            }
+        }
+
         // Prepare data for the view
         $data = [
             'production' => $production,
+            'includeEmployeeList' => $includeEmployeeList,
+            'employeeList' => $employeeList,
             'profile' => $companyProfile, // Fix: layout expects 'profile'
             'company' => $companyProfile, // Keep for backward compat if any
             'billTo' => $billTo,
