@@ -315,7 +315,7 @@
                 try {
                     // Show Loading
                     if (loadingOverlay) loadingOverlay.classList.remove('d-none');
-                    if (loadingText) loadingText.textContent = 'Enhancing Face (Person Focused)...';
+                    if (loadingText) loadingText.textContent = 'กำลังปรับใบหน้าให้ชัด...';
 
                     // Convert src to Image object to draw on canvas
                     const img = new Image();
@@ -328,27 +328,23 @@
 
                     // 1. Ensure MediaPipe Body Segmentation is loaded dynamically
                     if (!window.ImageSegmenter) {
-                         if (loadingText) loadingText.textContent = 'Downloading AI Models...';
-                         await new Promise((resolve, reject) => {
-                             const script = document.createElement('script');
-                             script.type = 'module';
-                             // Use dynamic import to get Vision Tasks
-                             script.text = `
-                                 import { ImageSegmenter, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js";
-                                 window.ImageSegmenter = ImageSegmenter;
-                                 window.FilesetResolver = FilesetResolver;
-                             `;
-                             document.head.appendChild(script);
-                             // Wait for module to evaluate
-                             setTimeout(resolve, 1000); // Simple delay to allow module execution
-                         });
+                         if (loadingText) loadingText.textContent = 'กำลังโหลด AI Models...';
+                         try {
+                             // Use native dynamic import
+                             const mediapipe = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js");
+                             window.ImageSegmenter = mediapipe.ImageSegmenter;
+                             window.FilesetResolver = mediapipe.FilesetResolver;
+                         } catch (error) {
+                             console.error("Failed to load Mediapipe via dynamic import:", error);
+                             throw new Error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อโหลด AI Model (CDN Error)");
+                         }
                     }
 
                     if (!window.ImageSegmenter) {
-                         throw new Error("Failed to load AI Segmentation Model from CDN.");
+                         throw new Error("ไม่พบโมเดล AI กรุณาลองใหม่อีกครั้ง");
                     }
 
-                    if (loadingText) loadingText.textContent = 'Segmenting Person...';
+                    if (loadingText) loadingText.textContent = 'กำลังแยกส่วนบุคคล...';
 
                     // 2. Initialize Segmenter
                     const vision = await window.FilesetResolver.forVisionTasks(
@@ -371,7 +367,7 @@
                     const maskWidth = segmentationResult.categoryMask.width;
                     const maskHeight = segmentationResult.categoryMask.height;
 
-                    if (loadingText) loadingText.textContent = 'Enhancing...';
+                    if (loadingText) loadingText.textContent = 'กำลังประมวลผล...';
 
                     // 4. Upscale (2x) using Canvas
                     const upscaleFactor = 2;
@@ -481,7 +477,7 @@
 
                 } catch (err) {
                     console.error("Enhancement Error:", err);
-                    alert("Subject-focused Enhancement failed. Error: " + err.message);
+                    alert("การปรับความชัดล้มเหลว: " + err.message);
                 } finally {
                     if (loadingOverlay) loadingOverlay.classList.add('d-none');
                 }
