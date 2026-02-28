@@ -159,10 +159,10 @@ class ProductionDocumentController extends Controller
 
                     $employeeList[] = [
                         'index' => $index++,
-                        'image' => $emp->image,
+                        'image' => $emp->employeePhoto,
                         'prefix' => $emp->employeeTitleEn ?: $emp->titleTh,
                         'name' => trim($emp->employeeNameEn ?: $emp->employeeNameTh),
-                        'nationality' => $emp->nationality,
+                        'nationality' => $emp->employeeNationality,
                         'price' => $price,
                         'employee_id' => 'EMP' . str_pad($emp->id, 5, '0', STR_PAD_LEFT),
                     ];
