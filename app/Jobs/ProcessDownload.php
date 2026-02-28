@@ -34,6 +34,7 @@ class ProcessDownload implements ShouldQueue
         'work_permit' => ['work_permit_file_path', 'employee_doc_3'],
         'pink_card' => ['pink_card_file_path', 'employee_doc_4'],
         'tor_ror_38' => 'employee_doc_5',
+        'medical_certificate' => 'medical_certificate_path',
         'report_90_day' => 'employee_doc_6',
         'residence_notification' => 'employee_doc_7',
         'hometown_doc' => 'employee_doc_8',

@@ -68,6 +68,10 @@
                                     <input class="form-check-input" type="checkbox" name="files[]" value="tor_ror_38" id="chkTorRor38">
                                     <label class="form-check-label" for="chkTorRor38">5. ทร. 38</label>
                                 </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="medical_certificate" id="chkMedicalCertificate" checked>
+                                    <label class="form-check-label" for="chkMedicalCertificate">ใบรับรองแพทย์ (Medical Certificate)</label>
+                                </div>
                             </div>
                             <!-- Column 2 -->
                             <div class="col-6">
