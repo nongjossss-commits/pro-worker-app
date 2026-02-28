@@ -373,14 +373,29 @@ class RenewalController extends Controller
 
         $employees = $query->get();
 
-        // Refine Filter in PHP if needed (for Exact Highest Step)
+        // If filtering by step in PHP, we must get all first, filter, then manually paginate
         if ($request->has('filter') && is_numeric($request->filter)) {
             $filterStepId = $request->filter;
-            $employees = $employees->filter(function($emp) use ($filterStepId) {
+            $allEmployees = $query->get();
+            $filtered = $allEmployees->filter(function($emp) use ($filterStepId) {
                 if ($emp->status === 'renewal_cancelled') return false;
                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
                 return $highest && $highest->id == $filterStepId;
             });
+
+            $perPage = $request->input('per_page', 100);
+            $page = $request->input('page', 1);
+            $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                $filtered->forPage($page, $perPage)->values(),
+                $filtered->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+            $employees = $paginator;
+        } else {
+            $perPage = $request->input('per_page', 100);
+            $employees = $query->paginate($perPage)->withQueryString();
         }
 
         return view('production.renewal._employee_list_content', [

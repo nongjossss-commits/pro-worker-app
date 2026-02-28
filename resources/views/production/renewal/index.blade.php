@@ -819,17 +819,33 @@
     // --- Lazy Loading Logic ---
     window.loadedEmployers = {};
 
-    window.loadEmployees = function(employerId) {
-        if (window.loadedEmployers[employerId]) return;
+    window.loadEmployees = function(employerId, pageUrl = null) {
+        // Only skip if already loaded AND not a pagination request
+        if (window.loadedEmployers[employerId] && !pageUrl) return;
 
         const container = document.getElementById(`employee-list-${employerId}`);
+        if(pageUrl) {
+            container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div><span class="ms-2 small text-muted">Loading employees...</span></div>';
+        }
+
         // Base URL for the new AJAX route
-        const baseUrl = `{{ route('production.renewal.index') }}/employer/${employerId}/employees`; // Using manual construction to avoid JS route issues
+        let baseUrl = pageUrl || `{{ route('production.renewal.index') }}/employer/${employerId}/employees`;
 
         // Append current search/filter params
         const url = new URL(baseUrl, window.location.origin);
         const currentParams = new URLSearchParams(window.location.search);
-        currentParams.forEach((value, key) => url.searchParams.append(key, value));
+        currentParams.forEach((value, key) => {
+             // Don't overwrite 'page' if we have it in the pageUrl
+             if(key !== 'page' || !url.searchParams.has('page')) {
+                 url.searchParams.append(key, value);
+             }
+        });
+
+        // Ensure per_page is handled if selected
+        const perPageSelect = document.getElementById(`perPage-${employerId}`);
+        if(perPageSelect && !url.searchParams.has('per_page')) {
+            url.searchParams.append('per_page', perPageSelect.value);
+        }
 
         fetch(url)
         .then(res => res.text())
@@ -847,12 +863,46 @@
         });
     }
 
+    // Handle internal pagination clicks for employees
+    document.addEventListener('click', function(e) {
+        // Intercept pagination inside employee-list
+        if(e.target.closest('.employee-list .pagination a')) {
+            e.preventDefault();
+            const url = e.target.closest('a').href;
+            const employerId = e.target.closest('.employee-list').id.replace('employee-list-', '');
+            window.loadEmployees(employerId, url);
+        }
+    });
+
+    // Handle internal per page change
+    document.addEventListener('change', function(e) {
+        if(e.target.classList.contains('per-page-selector')) {
+            const employerId = e.target.dataset.employerId;
+            const perPage = e.target.value;
+            const baseUrl = `{{ route('production.renewal.index') }}/employer/${employerId}/employees`;
+            const url = new URL(baseUrl, window.location.origin);
+            url.searchParams.append('per_page', perPage);
+            url.searchParams.append('page', 1); // Reset to page 1 on resize
+            window.loadEmployees(employerId, url.toString());
+        }
+    });
+
     // Listen for Accordion Expand
     document.addEventListener('DOMContentLoaded', function() {
         const accordion = document.getElementById('employersAccordion');
         if (accordion) {
             accordion.addEventListener('show.bs.collapse', function (e) {
                 if (e.target.classList.contains('accordion-collapse')) {
+                    // Close other opened accordions (Single Employer Drawer behavior)
+                    document.querySelectorAll('.accordion-collapse.show').forEach(openCollapse => {
+                         if (openCollapse.id !== e.target.id) {
+                             const bsCollapse = bootstrap.Collapse.getInstance(openCollapse);
+                             if (bsCollapse) {
+                                 bsCollapse.hide();
+                             }
+                         }
+                    });
+
                     // ID is collapse{employerId}
                     const employerId = e.target.id.replace('collapse', '');
                     loadEmployees(employerId);

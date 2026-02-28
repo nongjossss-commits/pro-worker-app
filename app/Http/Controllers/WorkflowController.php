@@ -1656,9 +1656,9 @@ class WorkflowController extends Controller
         $order = $item->order;
 
         if ($order->status === 'pre_production') {
-            $steps = $order->workType->preparationSteps;
+            $steps = $order->workType->preparationSteps ?? collect();
         } else {
-            $steps = $order->workType->workflowSteps;
+            $steps = $order->workType->workflowSteps ?? collect();
         }
 
         // Render just the card partial
