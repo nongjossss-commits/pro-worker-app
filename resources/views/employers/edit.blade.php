@@ -423,7 +423,16 @@
                         @endif
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary edit-address-btn"
+                                data-address-id="{{ $address->id }}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addressModal"
+                                title="{{ __('Edit') }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-address" data-address-id="{{ $address->id }}" title="{{ __('Delete') }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
                 </div>
             @empty
@@ -465,7 +474,16 @@
                         @endif
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-sm btn-danger btn-delete-address" data-address-id="{{ $address->id }}">{{ __('Delete') }}</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary edit-address-btn"
+                                data-address-id="{{ $address->id }}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addressModal"
+                                title="{{ __('Edit') }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-address" data-address-id="{{ $address->id }}" title="{{ __('Delete') }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
                 </div>
             @empty
