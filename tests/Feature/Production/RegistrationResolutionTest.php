@@ -71,9 +71,10 @@ class RegistrationResolutionTest extends TestCase
             'status' => 'registration_pending'
         ]);
 
-        // Search for 'Somchai'
+        // Since employee lists are loaded via AJAX with pagination,
+        // we must test the AJAX endpoint directly to see the filtered employees.
         $response = $this->actingAs($this->adminUser)
-                         ->get(route('production.registration.index', ['search' => 'Somchai']));
+                         ->get(route('production.registration.index') . "/employer/{$this->employer->id}/employees?search=Somchai");
 
         $response->assertStatus(200);
         $response->assertSee('Somchai Test');
