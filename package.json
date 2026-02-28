@@ -20,6 +20,7 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
+        "@mediapipe/tasks-vision": "^0.10.21",
         "bootstrap": "^5.3.8",
         "pdf-lib": "^1.17.1"
     }
