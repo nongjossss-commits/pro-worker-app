@@ -311,7 +311,7 @@
                 <x-file-input-group
                     id="employer_doc_company"
                     name="employer_doc_company"
-                    label="1. {{ __('Company Certificate / ID Card') }}"
+                    label="1. {{ __('Company Certificate / ID Card') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
                     :value="$employer->employer_doc_company"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company'])"
                 />
@@ -329,7 +329,7 @@
                 <x-file-input-group
                     id="employer_doc_lease"
                     name="employer_doc_lease"
-                    label="2. {{ __('Lease Agreement / House Registration') }}"
+                    label="2. {{ __('Lease Agreement / House Registration') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
                     :value="$employer->employer_doc_lease"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease'])"
                 />
@@ -338,7 +338,7 @@
                 <x-file-input-group
                     id="employer_doc_construction"
                     name="employer_doc_construction"
-                    label="3. {{ __('Construction Contract / Map') }}"
+                    label="3. {{ __('Construction Contract / Map') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
                     :value="$employer->employer_doc_construction"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction'])"
                 />
@@ -349,7 +349,7 @@
                 <x-file-input-group
                     id="employer_doc_other_1"
                     name="employer_doc_other_1"
-                    label="4. {{ __('Other Document') }} 1"
+                    label="4. {{ __('Other Document') }} 1 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
                     :value="$employer->employer_doc_other_1"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1'])"
                     description="employer_doc_other_1_desc"
@@ -360,7 +360,7 @@
                 <x-file-input-group
                     id="employer_doc_other_2"
                     name="employer_doc_other_2"
-                    label="5. {{ __('Other Document') }} 2"
+                    label="5. {{ __('Other Document') }} 2 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
                     :value="$employer->employer_doc_other_2"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2'])"
                     description="employer_doc_other_2_desc"
@@ -371,7 +371,7 @@
                 <x-file-input-group
                     id="employer_doc_other_3"
                     name="employer_doc_other_3"
-                    label="6. {{ __('Other Document') }} 3"
+                    label="6. {{ __('Other Document') }} 3 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
                     :value="$employer->employer_doc_other_3"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3'])"
                     description="employer_doc_other_3_desc"
