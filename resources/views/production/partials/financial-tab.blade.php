@@ -629,23 +629,24 @@ class="row">
                                         <div class="fw-bold text-truncate" style="font-size: 0.85rem;">
                                             <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
                                             <!-- Insurance Badge -->
-                                            <template x-if="item.insurance_type">
+                                            <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
                                                       :class="{
                                                           'bg-primary': item.insurance_type === 'ประกันสังคม',
                                                           'bg-warning text-dark': item.insurance_type === 'ประกันเอกชน',
-                                                          'bg-success': item.insurance_type === 'ประกันโรงพยาบาล'
+                                                          'bg-success': item.insurance_type === 'ประกันโรงพยาบาล',
+                                                          'bg-secondary': item.insurance_type !== 'ประกันสังคม' && item.insurance_type !== 'ประกันเอกชน' && item.insurance_type !== 'ประกันโรงพยาบาล'
                                                       }"
                                                       x-text="item.insurance_type"></span>
                                             </template>
-                                            <template x-if="!item.insurance_type">
+                                            <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
                                                 <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
                                             </template>
                                             <!-- Passport Badge -->
-                                            <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No'">
+                                            <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'">
                                                 <span class="badge bg-info text-dark rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Passport') }}</span>
                                             </template>
-                                            <template x-if="!item.passport || item.passport === '-' || item.passport === 'No'">
+                                            <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
                                                 <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
                                             </template>
                                         </div>
@@ -812,16 +813,17 @@ class="row">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
                                                         <div class="fw-bold text-truncate">
                                                             <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
-                                                            <template x-if="item.insurance_type">
+                                                            <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
                                                                     :class="{
                                                                         'bg-primary': item.insurance_type === 'ประกันสังคม',
                                                                         'bg-warning text-dark': item.insurance_type === 'ประกันเอกชน',
-                                                                        'bg-success': item.insurance_type === 'ประกันโรงพยาบาล'
+                                                                        'bg-success': item.insurance_type === 'ประกันโรงพยาบาล',
+                                                                        'bg-secondary': item.insurance_type !== 'ประกันสังคม' && item.insurance_type !== 'ประกันเอกชน' && item.insurance_type !== 'ประกันโรงพยาบาล'
                                                                     }"
                                                                     x-text="item.insurance_type"></span>
                                                             </template>
-                                                            <template x-if="!item.insurance_type">
+                                                            <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
                                                                 <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
                                                             </template>
                                                         </div>
@@ -940,16 +942,17 @@ class="row">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
                                                         <div class="fw-bold text-truncate">
                                                             <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
-                                                            <template x-if="item.insurance_type">
+                                                            <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
                                                                     :class="{
                                                                         'bg-primary': item.insurance_type === 'ประกันสังคม',
                                                                         'bg-warning text-dark': item.insurance_type === 'ประกันเอกชน',
-                                                                        'bg-success': item.insurance_type === 'ประกันโรงพยาบาล'
+                                                                        'bg-success': item.insurance_type === 'ประกันโรงพยาบาล',
+                                                                        'bg-secondary': item.insurance_type !== 'ประกันสังคม' && item.insurance_type !== 'ประกันเอกชน' && item.insurance_type !== 'ประกันโรงพยาบาล'
                                                                     }"
                                                                     x-text="item.insurance_type"></span>
                                                             </template>
-                                                            <template x-if="!item.insurance_type">
+                                                            <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
                                                                 <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
                                                             </template>
                                                         </div>
