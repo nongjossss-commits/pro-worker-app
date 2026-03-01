@@ -147,9 +147,21 @@ class ProductionDocumentController extends Controller
                             // or stores integers. Ensure we match against string representations of IDs.
                             // FinancialHubController@storeManual creates tiers like [ 'item_ids' => [1, 2, 3] ]
                             // where these integers correspond to production_items.id
-                            return in_array(strval($item->id), $itemIds, true) ||
-                                   in_array('emp_' . $item->employee_id, $itemIds, true) ||
-                                   in_array(strval($item->employee_id), $itemIds, true);
+
+                            // Also handle array of objects if frontend saved it incorrectly
+                            $flatIds = [];
+                            foreach ($t['item_ids'] ?? [] as $idVal) {
+                                if (is_array($idVal) && isset($idVal['id'])) {
+                                    $flatIds[] = strval($idVal['id']);
+                                } else {
+                                    $flatIds[] = strval($idVal);
+                                }
+                            }
+
+                            return in_array(strval($item->id), $flatIds, true) ||
+                                   in_array('emp_' . $item->employee_id, $flatIds, true) ||
+                                   in_array(strval($item->employee_id), $flatIds, true) ||
+                                   in_array('item_' . $item->id, $flatIds, true);
                         });
 
                         if ($tier) {
