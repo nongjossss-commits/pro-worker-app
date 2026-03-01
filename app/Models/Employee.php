@@ -266,7 +266,8 @@ class Employee extends Model
         $workflows = $this->productionItems()
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->whereHas('order', function ($query) {
-                $query->whereNotIn('status', ['completed', 'cancelled']);
+                $query->whereNotIn('status', ['completed', 'cancelled'])
+                      ->whereNotNull('work_type_id'); // Exclude manual bills which have no work_type
             })
             ->with(['order.workType'])
             ->get()
