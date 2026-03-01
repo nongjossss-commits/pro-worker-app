@@ -280,10 +280,18 @@
             $getTierForItem = function($item, $tiers) {
                 // Returns the entire tier object or null
                 foreach ($tiers as $tier) {
-                    $itemIds = array_map('strval', $tier['item_ids'] ?? []);
-                    if (in_array(strval($item->id), $itemIds, true) ||
-                        in_array('emp_' . $item->employee_id, $itemIds, true) ||
-                        in_array(strval($item->employee_id), $itemIds, true)) {
+                    $flatIds = [];
+                    foreach ($tier['item_ids'] ?? [] as $idVal) {
+                        if (is_array($idVal) && isset($idVal['id'])) {
+                            $flatIds[] = strval($idVal['id']);
+                        } else {
+                            $flatIds[] = strval($idVal);
+                        }
+                    }
+                    if (in_array(strval($item->id), $flatIds, true) ||
+                        in_array('emp_' . $item->employee_id, $flatIds, true) ||
+                        in_array(strval($item->employee_id), $flatIds, true) ||
+                        in_array('item_' . $item->id, $flatIds, true)) {
                         return $tier;
                     }
                 }
@@ -295,10 +303,18 @@
             // Since tiers don't have IDs, we use the tier object itself (or its properties)
             $getTierKey = function($item, $tiers) {
                 foreach ($tiers as $idx => $tier) {
-                    $itemIds = array_map('strval', $tier['item_ids'] ?? []);
-                    if (in_array(strval($item->id), $itemIds, true) ||
-                        in_array('emp_' . $item->employee_id, $itemIds, true) ||
-                        in_array(strval($item->employee_id), $itemIds, true)) {
+                    $flatIds = [];
+                    foreach ($tier['item_ids'] ?? [] as $idVal) {
+                        if (is_array($idVal) && isset($idVal['id'])) {
+                            $flatIds[] = strval($idVal['id']);
+                        } else {
+                            $flatIds[] = strval($idVal);
+                        }
+                    }
+                    if (in_array(strval($item->id), $flatIds, true) ||
+                        in_array('emp_' . $item->employee_id, $flatIds, true) ||
+                        in_array(strval($item->employee_id), $flatIds, true) ||
+                        in_array('item_' . $item->id, $flatIds, true)) {
                         return $idx; // Use Index as Key
                     }
                 }
