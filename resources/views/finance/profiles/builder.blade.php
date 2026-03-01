@@ -183,11 +183,11 @@
 
                         <!-- Signature Draggable -->
                         <img x-show="formData.signature_url" :src="formData.signature_url" id="drag-signature" class="draggable-asset" data-type="signature"
-                             :style="getAssetStyle('signature')">
+                             :style="getAssetStyle('signature') + ' z-index: 10;'">
 
                         <!-- Stamp Draggable -->
                         <img x-show="formData.stamp_url" :src="formData.stamp_url" id="drag-stamp" class="draggable-asset" data-type="stamp"
-                             :style="getAssetStyle('stamp')">
+                             :style="getAssetStyle('stamp') + ' z-index: 10;'">
                     </div>
 
                 </div>

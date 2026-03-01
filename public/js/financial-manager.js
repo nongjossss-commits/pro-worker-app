@@ -102,9 +102,9 @@ if (typeof window.financialManager === 'undefined') {
                 this.advanceItems = group.advance_items || [];
 
                 this.vatIncluded = !!data.vat_included;
-                this.vatRate = data.vat_rate || 7;
+                this.vatRate = data.vat_rate !== undefined && data.vat_rate !== null ? data.vat_rate : 7;
                 this.whtEnabled = !!data.wht_enabled;
-                this.whtRate = data.wht_rate || 3;
+                this.whtRate = data.wht_rate !== undefined && data.wht_rate !== null ? data.wht_rate : 3;
 
                 this.useCustomHeader = !!data.custom_header;
                 this.customHeader = data.custom_header || { name:'', address:'', tax_id:'', phone:'', logo:'' };
