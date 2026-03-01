@@ -18,7 +18,7 @@
             $grandTotal = 0;
 
             // Tax Config
-            $vatRate = isset($financial['vat_rate']) && $financial['vat_rate'] !== '' ? (float)$financial['vat_rate'] : 7;
+            $vatRate = isset($financial['vat_rate']) ? (float)$financial['vat_rate'] : 7;
             $vatIncluded = $financial['vat_included'] ?? false;
             $whtEnabled = $financial['wht_enabled'] ?? false;
             $whtRate = isset($financial['wht_rate']) ? (float)$financial['wht_rate'] : 3;

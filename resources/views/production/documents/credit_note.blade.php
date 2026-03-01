@@ -24,7 +24,7 @@
             $refundAmount = request('refund_amount', 0);
 
             // VAT Logic
-            $vatRate = isset($production->financial_data['vat_rate']) && $production->financial_data['vat_rate'] !== '' ? (float)$production->financial_data['vat_rate'] : 7;
+            $vatRate = isset($production->financial_data['vat_rate']) ? (float)$production->financial_data['vat_rate'] : 7;
             $vatIncluded = $production->financial_data['vat_included'] ?? false;
 
             // Calculate Paid Heads (reverse engineer)
