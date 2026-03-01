@@ -277,10 +277,15 @@
             }
 
             // Helper to get Tier Object for an Item
-            $getTierForItem = function($itemId, $tiers) {
+            $getTierForItem = function($item, $tiers) {
                 // Returns the entire tier object or null
                 foreach ($tiers as $tier) {
-                    if (in_array($itemId, $tier['item_ids'] ?? [])) return $tier;
+                    $itemIds = array_map('strval', $tier['item_ids'] ?? []);
+                    if (in_array(strval($item->id), $itemIds, true) ||
+                        in_array('emp_' . $item->employee_id, $itemIds, true) ||
+                        in_array(strval($item->employee_id), $itemIds, true)) {
+                        return $tier;
+                    }
                 }
                 return null;
             };
@@ -288,17 +293,22 @@
             // Helper to generate a unique key for grouping (Price + Note)
             // Actually, we should group by Tier Index or Unique Content
             // Since tiers don't have IDs, we use the tier object itself (or its properties)
-            $getTierKey = function($itemId, $tiers) {
+            $getTierKey = function($item, $tiers) {
                 foreach ($tiers as $idx => $tier) {
-                    if (in_array($itemId, $tier['item_ids'] ?? [])) return $idx; // Use Index as Key
+                    $itemIds = array_map('strval', $tier['item_ids'] ?? []);
+                    if (in_array(strval($item->id), $itemIds, true) ||
+                        in_array('emp_' . $item->employee_id, $itemIds, true) ||
+                        in_array(strval($item->employee_id), $itemIds, true)) {
+                        return $idx; // Use Index as Key
+                    }
                 }
                 return -1; // Not in tier
             };
 
             $vatIncluded = $financial['vat_included'] ?? false;
-            $vatRate = isset($financial['vat_rate']) ? (float)$financial['vat_rate'] : 7;
+            $vatRate = isset($financial['vat_rate']) && $financial['vat_rate'] !== '' ? (float)$financial['vat_rate'] : 7;
             $whtEnabled = $financial['wht_enabled'] ?? false;
-            $whtRate = isset($financial['wht_rate']) ? (float)$financial['wht_rate'] : 3;
+            $whtRate = isset($financial['wht_rate']) && $financial['wht_rate'] !== '' ? (float)$financial['wht_rate'] : 3;
 
             if ($vatRate <= 0) {
                 $serviceBase = $serviceTotal;
@@ -349,7 +359,7 @@
                                 {{-- Group items by Tier Index to preserve Note grouping --}}
                                 @php
                                     $tierGroups = $items->groupBy(function($item) use ($getTierKey, $pricingTiers) {
-                                        return $getTierKey($item->id, $pricingTiers);
+                                        return $getTierKey($item, $pricingTiers);
                                     });
                                 @endphp
 
