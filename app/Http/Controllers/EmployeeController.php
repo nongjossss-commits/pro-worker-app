@@ -902,16 +902,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $employees = $query->with('employer')->get();
 
         $exportType = $isHistoryExport ? 'history' : 'active';
-        $fileName = "employees_{$exportType}_export_" . date('Y-m-d') . '.csv';
-
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Encoding"    => "UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
+        $fileName = "employees_{$exportType}_export_" . date('Y-m-d') . '.xlsx';
 
         $columns = [
             'Employer Name', 'Employee Name (TH)', 'Employee Name (EN)',
@@ -925,39 +916,88 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $columns[] = 'Termination Reason';
         }
 
-        $callback = function() use($employees, $columns, $isHistoryExport) {
-            $file = fopen('php://output', 'w');
-            // Add BOM to support UTF-8 in Excel
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($file, $columns);
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-            foreach ($employees as $employee) {
-                $row = [
-                    'Employer Name'      => $employee->employer->employerNameTh ?? 'N/A',
-                    'Employee Name (TH)' => $employee->employeeNameTh,
-                    'Employee Name (EN)' => $employee->employeeNameEn,
-                    'Nationality'        => $employee->employeeNationality,
-                    'Passport No'        => $employee->employeePassport,
-                    'Passport Expiry'    => $employee->passportExpiryDate,
-                    'Work Permit No'     => $employee->employeeWorkPermit,
-                    'Work Permit Expiry' => $employee->workPermitExpiryDate,
-                    'Visa Expiry'        => $employee->visaExpiryDate,
-                    '90 Day Report'      => $employee->ninetyDayReportDate,
-                    'Pink Card No'       => $employee->pinkCardNo,
-                ];
+        // Write Header
+        $columnIndex = 1;
+        foreach ($columns as $col) {
+            $cell = $sheet->getCell([$columnIndex, 1]);
+            $cell->setValue($col);
+            $sheet->getStyle([$columnIndex, 1])->applyFromArray([
+                'font' => ['bold' => true],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FFF2F2F2'], // Light gray
+                ],
+            ]);
+            $sheet->getColumnDimensionByColumn($columnIndex)->setAutoSize(true);
+            $columnIndex++;
+        }
 
-                if ($isHistoryExport) {
-                    $row['Terminated At'] = $employee->terminated_at;
-                    $row['Termination Reason'] = $employee->termination_reason;
-                }
+        // Write Data Rows
+        $currentRow = 2;
+        $textColumns = ['Passport No', 'Work Permit No', 'Pink Card No'];
 
-                fputcsv($file, $row);
+        foreach ($employees as $employee) {
+            $row = [
+                'Employer Name'      => $employee->employer->employerNameTh ?? 'N/A',
+                'Employee Name (TH)' => $employee->employeeNameTh,
+                'Employee Name (EN)' => $employee->employeeNameEn,
+                'Nationality'        => $employee->employeeNationality,
+                'Passport No'        => $employee->employeePassport,
+                'Passport Expiry'    => $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
+                'Work Permit No'     => $employee->employeeWorkPermit,
+                'Work Permit Expiry' => $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
+                'Visa Expiry'        => $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
+                '90 Day Report'      => $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
+                'Pink Card No'       => $employee->pinkCardNo,
+            ];
+
+            if ($isHistoryExport) {
+                $row['Terminated At'] = $employee->terminated_at ? \Carbon\Carbon::parse($employee->terminated_at)->format('d/m/Y H:i:s') : '-';
+                $row['Termination Reason'] = $employee->termination_reason;
             }
 
-            fclose($file);
-        };
+            $columnIndex = 1;
+            foreach ($columns as $col) {
+                $val = $row[$col] ?? '-';
+                $cell = $sheet->getCell([$columnIndex, $currentRow]);
 
-        return response()->stream($callback, 200, $headers);
+                if (in_array($col, $textColumns) && $val !== '' && $val !== '-') {
+                    $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                } else {
+                    $cell->setValue($val);
+                }
+
+                $sheet->getStyle([$columnIndex, $currentRow])->applyFromArray([
+                    'alignment' => [
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                    ]
+                ]);
+                $columnIndex++;
+            }
+            $currentRow++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function historyIndex(Request $request)
@@ -1790,7 +1830,20 @@ public function create(Request $request) // เพิ่ม Request $request เ
                     }
                     $cell->setValue($fullAddress);
                 } else {
-                    $cell->setValue($employee->$col ?? '-');
+                    $val = $employee->$col ?? '-';
+                    // List of columns that might contain long numbers (e.g. 13 digits) and should be explicitly set as text
+                    $textColumns = [
+                        'employeePassport', 'employeeWorkPermit', 'pinkCardNo', 'tax_id_number',
+                        'social_security_number', 'employer_employee_id', 'employee_id_number',
+                        'request_number', 'name_list_number', 'bank_account_number', 'employeePhone',
+                        'outsource_code', 'employee_reference_id'
+                    ];
+
+                    if (in_array($col, $textColumns) && $val !== '-') {
+                        $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    } else {
+                        $cell->setValue($val);
+                    }
                 }
 
                 $columnIndex++;
