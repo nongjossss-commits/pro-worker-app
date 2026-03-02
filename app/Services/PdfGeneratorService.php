@@ -705,7 +705,7 @@ class PdfGeneratorService
         $filename = "{$template->name}_{$employeeName}_{$employee->id}.pdf";
 
         // Sanitize (allow Thai characters, remove system reserved chars)
-        $filename = preg_replace('/[\\\\/:*?"<>|]/', '_', $filename);
+        $filename = preg_replace('~[\\\\/:*?"<>|]~', '_', $filename);
 
         return $filename;
     }
