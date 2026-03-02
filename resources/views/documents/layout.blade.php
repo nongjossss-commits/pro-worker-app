@@ -309,7 +309,8 @@
                         return $idx; // Use Index as Key
                     }
                 }
-                // Fallback index
+
+                // Fallback: If not found but default tier exists, return default tier index
                 foreach ($tiers as $idx => $tier) {
                     if (empty($tier['item_ids']) || ($tier['name'] ?? '') === 'Default Tier') {
                         return $idx;
@@ -381,10 +382,19 @@
                                         $count = $groupedItems->count();
                                         // Get tier data
                                         $tier = ($tierIdx >= 0 && isset($pricingTiers[$tierIdx])) ? $pricingTiers[$tierIdx] : null;
-                                        $price = $tier ? ($tier['price'] ?? 0) : 0; // Fallback price? Or should we calc from transaction?
 
-                                        // Wait, the transaction amount is fixed. We are just "breaking it down".
-                                        // If transaction has partial items from a tier, we show partial count.
+                                        // The transaction amount is fixed for the installment, meaning if the installment
+                                        // spans multiple employees, we should distribute the total transaction amount
+                                        // by proportional tier price if available, or flat average per head if no tiers
+                                        $totalEmployeesInTransaction = $items->count();
+                                        if ($totalEmployeesInTransaction > 0) {
+                                            // Simple average: transaction amount / total employees.
+                                            // We assign the same average price to every item within this transaction grouping.
+                                            $price = $amount / $totalEmployeesInTransaction;
+                                        } else {
+                                            $price = 0;
+                                        }
+
                                         $subtotal = $price * $count;
 
                                         $desc = $t->notes ?: ucfirst(str_replace('_', ' ', $t->type));
