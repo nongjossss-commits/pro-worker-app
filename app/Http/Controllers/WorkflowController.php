@@ -77,18 +77,20 @@ class WorkflowController extends Controller
                             $addrQ->filterByAddress($search);
                         });
                   })
-                  ->orWhereHas('items.employee', function($emp) use ($search, $cleanedSearch) {
-                      $emp->where('employeeNameTh', 'like', "%{$search}%")
-                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                          ->orWhere('employeePassport', 'like', "%{$search}%")
-                          ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
-                          ->orWhere('employee_id_number', 'like', "%{$search}%")
-                          ->orWhere('name_list_number', 'like', "%{$search}%")
-                          ->orWhere('pinkCardNo', 'like', "%{$search}%")
-                          ->orWhere('request_number', 'like', "%{$search}%")
-                              ->orWhere('employer_employee_id', 'like', "%{$search}%")
-                          ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                          ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                  ->orWhereHas('items', function($itemQuery) use ($search, $cleanedSearch) {
+                      $itemQuery->where('request_number', 'like', "%{$search}%")
+                          ->orWhereHas('employee', function($emp) use ($search, $cleanedSearch) {
+                              $emp->where('employeeNameTh', 'like', "%{$search}%")
+                                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                                  ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                                  ->orWhere('employee_id_number', 'like', "%{$search}%")
+                                  ->orWhere('name_list_number', 'like', "%{$search}%")
+                                  ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                                  ->orWhere('employer_employee_id', 'like', "%{$search}%")
+                                  ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                                  ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                          });
                   })
                   ->orWhereHas('creator', function($creator) use ($search) {
                       $creator->where('name', 'like', "%{$search}%");
