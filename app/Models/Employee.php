@@ -71,6 +71,8 @@ class Employee extends Model
         'termination_reason',
         'name_list_number',
         'request_number',
+        'registration_request_number',
+        'renewal_request_number',
         'employee_id_number',
         'tax_id_number',
         'employer_employee_id',

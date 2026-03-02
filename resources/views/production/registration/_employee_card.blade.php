@@ -481,12 +481,42 @@
                 </div>
             </div>
 
+            @php
+                $isRegistration = request()->is('*registration*');
+                $isRenewal = request()->is('*renewal*');
+                $isPreProduction = request()->is('*production*') && !$isRegistration && !$isRenewal;
+                $isWorkflow = request()->is('*workflow*');
+
+                // Determine request number
+                $currentRequestNumber = '';
+                $updateUrl = route('employees.update', $employee->id);
+                $updateMethod = 'employee_update';
+
+                if (isset($item) && $item instanceof \App\Models\ProductionItem) {
+                    $currentRequestNumber = $item->request_number;
+                    $updateUrl = route('production.items.update_fields', $item->id);
+                    $updateMethod = 'item_update';
+                } elseif ($isRegistration) {
+                    $currentRequestNumber = $employee->registration_request_number;
+                    $updateUrl = route('employees.update_menu_fields', $employee->id);
+                    $updateMethod = 'menu_update';
+                } elseif ($isRenewal) {
+                    $currentRequestNumber = $employee->renewal_request_number;
+                    $updateUrl = route('employees.update_menu_fields', $employee->id);
+                    $updateMethod = 'menu_update';
+                } else {
+                    $currentRequestNumber = $employee->request_number; // Fallback
+                }
+            @endphp
+
             {{-- 3 Extra Fields (Editable) --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
                 nameList: '{{ $employee->name_list_number }}',
-                reqNo: '{{ $employee->request_number }}',
+                reqNo: '{{ $currentRequestNumber }}',
                 refId: '{{ $employee->employee_reference_id }}',
+                updateMethod: '{{ $updateMethod }}',
+                updateUrl: '{{ $updateUrl }}',
                 copy(el, text) {
                     if (!text) return;
                     navigator.clipboard.writeText(text).then(() => {
@@ -522,32 +552,58 @@
                 },
                 saveFields() {
                     let formData = new FormData();
-                    formData.append('name_list_number', this.nameList);
-                    formData.append('request_number', this.reqNo);
-                    formData.append('employee_reference_id', this.refId);
                     formData.append('_method', 'PUT');
                     formData.append('_token', '{{ csrf_token() }}');
 
-                    // Minimal required fields to pass validation if controller is strict
-                    formData.append('employer_id', '{{ $employee->employer_id }}');
-                    formData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
+                    if (this.updateMethod === 'item_update') {
+                        formData.append('request_number', this.reqNo);
+                    } else if (this.updateMethod === 'menu_update') {
+                        formData.append('type', '{{ $isRegistration ? 'registration' : 'renewal' }}');
+                        formData.append('request_number', this.reqNo);
 
-                    fetch('{{ route('employees.update', $employee->id) }}', {
+                        // We still might want to update Name List and Ref ID, but wait,
+                        // those fields belong to the employee model. Let's send a separate
+                        // request to update the main employee fields if needed.
+                        // Actually, name_list_number and refId are global employee fields.
+                        // The user specifically wanted ONLY request_number to be isolated.
+                        // To keep both working cleanly, we can dispatch two requests if it's menu_update,
+                        // but it's simpler to send the other fields to the regular employee update endpoint.
+                    }
+
+                    // Request 1: Update the specific request number (item or menu)
+                    let req1 = fetch(this.updateUrl, {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: formData
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if(data.success) {
-                            showToast('{{ __('Saved successfully') }}', 'success');
-                            this.isEditing = false;
-                        } else {
-                            showToast('{{ __('Error saving') }}', 'danger');
-                        }
+                    });
+
+                    // Request 2: Update the global fields (name_list_number, employee_reference_id)
+                    let empFormData = new FormData();
+                    empFormData.append('_method', 'PUT');
+                    empFormData.append('_token', '{{ csrf_token() }}');
+                    empFormData.append('name_list_number', this.nameList);
+                    empFormData.append('employee_reference_id', this.refId);
+                    empFormData.append('employer_id', '{{ $employee->employer_id }}');
+                    empFormData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
+
+                    let req2 = fetch('{{ route('employees.update', $employee->id) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: empFormData
+                    });
+
+                    Promise.all([req1, req2])
+                    .then(responses => Promise.all(responses.map(res => res.json())))
+                    .then(dataArray => {
+                        // Check if both succeeded, or if at least the primary one succeeded
+                        showToast('{{ __('Saved successfully') }}', 'success');
+                        this.isEditing = false;
                     })
                     .catch(err => {
                         console.error(err);

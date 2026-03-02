@@ -523,6 +523,22 @@ public function create(Request $request) // เพิ่ม Request $request เ
         return view('employees.edit', compact('employee', 'employers', 'missingFields', 'returnUrl'));
     }
 
+    public function updateMenuFields(Request $request, Employee $employee)
+    {
+        $request->validate([
+            'type' => 'required|in:registration,renewal',
+            'request_number' => 'nullable|string|max:255',
+        ]);
+
+        if ($request->type === 'registration') {
+            $employee->update(['registration_request_number' => $request->request_number]);
+        } elseif ($request->type === 'renewal') {
+            $employee->update(['renewal_request_number' => $request->request_number]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function update(Request $request, Employee $employee)
     {
         // --- V6: Step 1: Validate ALL text/date data (new and old) ---

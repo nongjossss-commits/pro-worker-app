@@ -13,7 +13,8 @@ class ProductionItem extends Model
 
     protected $fillable = [
         'production_order_id',
-        'employee_id', // Nullable now
+        'employee_id',
+        'request_number',
         'group_name', // NEW: Group/Batch name
         'appointment_date',
         'appointment_location', // NEW

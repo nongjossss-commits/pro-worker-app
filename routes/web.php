@@ -110,6 +110,7 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/bulk-edit/select-fields', [EmployeeController::class, 'bulkEditSelectFields'])->name('employees.bulk_edit.select_fields');
     Route::post('employees/bulk-edit/form', [EmployeeController::class, 'bulkEditForm'])->name('employees.bulk_edit.form');
     Route::put('employees/bulk-update', [EmployeeController::class, 'bulkUpdate'])->name('employees.bulk_update');
+    Route::put('employees/{employee}/update-menu-fields', [EmployeeController::class, 'updateMenuFields'])->name('employees.update_menu_fields');
     // Also allow POST for AJAX bulk update if needed, though PUT is standard resource
     Route::post('employees/bulk-update', [EmployeeController::class, 'bulkUpdate']);
 
@@ -359,6 +360,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('production/steps', [\App\Http\Controllers\ProductionController::class, 'storeStep'])->name('production.steps.store');
 
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
+    Route::put('production/items/{item}/update-fields', [\App\Http\Controllers\ProductionController::class, 'updateItemFields'])->name('production.items.update_fields');
     Route::post('production/{id}/upload-logo', [\App\Http\Controllers\ProductionController::class, 'uploadLogo'])->name('production.upload_logo');
 
     Route::middleware('menu:finance')->group(function() {
