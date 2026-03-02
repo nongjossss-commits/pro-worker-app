@@ -345,11 +345,20 @@
                     if (masterInput.type !== 'file') {
                         const value = masterInput.value;
                         individualInputs.forEach(input => {
-                            input.value = value;
-                            input.dispatchEvent(new Event('change'));
+                            if (input._flatpickr) {
+                                // If input is managed by Flatpickr, use its setDate method
+                                input._flatpickr.setDate(value, true);
+                            } else {
+                                // Standard input
+                                input.value = value;
+                                input.dispatchEvent(new Event('change'));
+                            }
+
                             // Visual highlight
-                            input.classList.add('bg-success-subtle');
-                            setTimeout(() => input.classList.remove('bg-success-subtle'), 1000);
+                            // Check if Flatpickr created an alt input for styling
+                            const inputToHighlight = input._flatpickr && input._flatpickr.altInput ? input._flatpickr.altInput : input;
+                            inputToHighlight.classList.add('bg-success-subtle');
+                            setTimeout(() => inputToHighlight.classList.remove('bg-success-subtle'), 1000);
                         });
                     }
 
