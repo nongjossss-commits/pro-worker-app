@@ -12,6 +12,11 @@ use App\Models\Employee;
 use App\Services\SignatureGeneratorService; // Import Service
 use Illuminate\Support\Facades\Hash;
 use App\Traits\AddressFilterTrait;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class EmployerController extends Controller
 {
@@ -519,16 +524,7 @@ class EmployerController extends Controller
 
         $safeEmployerName = preg_replace('/[^A-Za-z0-9\-]/', '_', $employer->employerNameTh);
         $exportType = $isHistoryExport ? 'history' : 'active';
-        $fileName = "{$safeEmployerName}_{$exportType}_employees_" . date('Y-m-d') . '.csv';
-
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Encoding"    => "UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
+        $fileName = "{$safeEmployerName}_{$exportType}_employees_" . date('Y-m-d') . '.xlsx';
 
         $columns = [
             'Employee Name (TH)', 'Employee Name (EN)', 'Nationality',
@@ -541,37 +537,87 @@ class EmployerController extends Controller
             $columns[] = 'Termination Reason';
         }
 
-        $callback = function() use($employees, $columns, $isHistoryExport) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // Add BOM for UTF-8
-            fputcsv($file, $columns);
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-            foreach ($employees as $employee) {
-                $row = [
-                    'Employee Name (TH)'   => $employee->employeeNameTh,
-                    'Employee Name (EN)'   => $employee->employeeNameEn,
-                    'Nationality'          => $employee->employeeNationality,
-                    'Passport No'          => $employee->employeePassport,
-                    'Passport Expiry'      => $employee->passportExpiryDate,
-                    'Work Permit No'       => $employee->employeeWorkPermit,
-                    'Work Permit Expiry'   => $employee->workPermitExpiryDate,
-                    'Visa Expiry'          => $employee->visaExpiryDate,
-                    '90 Day Report'        => $employee->ninetyDayReportDate,
-                    'Pink Card No'         => $employee->pinkCardNo,
-                ];
+        // Write Header
+        $columnIndex = 1;
+        foreach ($columns as $col) {
+            $cell = $sheet->getCell([$columnIndex, 1]);
+            $cell->setValue($col);
+            $sheet->getStyle([$columnIndex, 1])->applyFromArray([
+                'font' => ['bold' => true],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FFF2F2F2'], // Light gray
+                ],
+            ]);
+            $sheet->getColumnDimensionByColumn($columnIndex)->setAutoSize(true);
+            $columnIndex++;
+        }
 
-                if ($isHistoryExport) {
-                    $row['Terminated At'] = $employee->terminated_at;
-                    $row['Termination Reason'] = $employee->termination_reason;
-                }
+        // Write Data Rows
+        $currentRow = 2;
+        $textColumns = ['Passport No', 'Work Permit No', 'Pink Card No'];
 
-                fputcsv($file, $row);
+        foreach ($employees as $employee) {
+            $row = [
+                'Employee Name (TH)'   => $employee->employeeNameTh,
+                'Employee Name (EN)'   => $employee->employeeNameEn,
+                'Nationality'          => $employee->employeeNationality,
+                'Passport No'          => $employee->employeePassport,
+                'Passport Expiry'      => $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
+                'Work Permit No'       => $employee->employeeWorkPermit,
+                'Work Permit Expiry'   => $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
+                'Visa Expiry'          => $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
+                '90 Day Report'        => $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
+                'Pink Card No'         => $employee->pinkCardNo,
+            ];
+
+            if ($isHistoryExport) {
+                $row['Terminated At'] = $employee->terminated_at ? \Carbon\Carbon::parse($employee->terminated_at)->format('d/m/Y H:i:s') : '-';
+                $row['Termination Reason'] = $employee->termination_reason;
             }
 
-            fclose($file);
-        };
+            $columnIndex = 1;
+            foreach ($columns as $col) {
+                $val = $row[$col] ?? '-';
+                $cell = $sheet->getCell([$columnIndex, $currentRow]);
 
-        return response()->stream($callback, 200, $headers);
+                if (in_array($col, $textColumns) && $val !== '' && $val !== '-') {
+                    $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                } else {
+                    $cell->setValue($val);
+                }
+
+                $sheet->getStyle([$columnIndex, $currentRow])->applyFromArray([
+                    'alignment' => [
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                    ]
+                ]);
+                $columnIndex++;
+            }
+            $currentRow++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function export(Request $request)
@@ -596,43 +642,87 @@ class EmployerController extends Controller
         }
 
         $employers = $query->get();
-        $fileName = 'employers_export_' . date('Y-m-d') . '.csv';
-
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Encoding"    => "UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
+        $fileName = 'employers_export_' . date('Y-m-d') . '.xlsx';
 
         $columns = [
             'Employer ID', 'Employer Name (TH)', 'Employer Name (EN)',
             'Job Owner', 'Business Type', 'Tax ID', 'Email', 'Phone'
         ];
 
-        $callback = function() use($employers, $columns) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($file, $columns);
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-            foreach ($employers as $employer) {
-                $row['Employer ID']        = $employer->employerId;
-                $row['Employer Name (TH)'] = $employer->employerNameTh;
-                $row['Employer Name (EN)'] = $employer->employerNameEn;
-                $row['Job Owner']          = $employer->jobOwner->name ?? 'N/A';
-                $row['Business Type']      = $employer->businessType;
-                $row['Tax ID']             = $employer->employerTaxId;
-                $row['Email']              = $employer->employerEmail;
-                $row['Phone']              = $employer->employerPhone;
+        // Write Header
+        $columnIndex = 1;
+        foreach ($columns as $col) {
+            $cell = $sheet->getCell([$columnIndex, 1]);
+            $cell->setValue($col);
+            $sheet->getStyle([$columnIndex, 1])->applyFromArray([
+                'font' => ['bold' => true],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FFF2F2F2'], // Light gray
+                ],
+            ]);
+            $sheet->getColumnDimensionByColumn($columnIndex)->setAutoSize(true);
+            $columnIndex++;
+        }
 
-                fputcsv($file, array_values($row));
+        // Write Data Rows
+        $currentRow = 2;
+        $textColumns = ['Employer ID', 'Tax ID', 'Phone'];
+
+        foreach ($employers as $employer) {
+            $row = [
+                'Employer ID'        => $employer->employerId,
+                'Employer Name (TH)' => $employer->employerNameTh,
+                'Employer Name (EN)' => $employer->employerNameEn,
+                'Job Owner'          => $employer->jobOwner->name ?? 'N/A',
+                'Business Type'      => $employer->businessType,
+                'Tax ID'             => $employer->employerTaxId,
+                'Email'              => $employer->employerEmail,
+                'Phone'              => $employer->employerPhone,
+            ];
+
+            $columnIndex = 1;
+            foreach ($columns as $col) {
+                $val = $row[$col] ?? '-';
+                $cell = $sheet->getCell([$columnIndex, $currentRow]);
+
+                if (in_array($col, $textColumns) && $val !== '' && $val !== '-') {
+                    $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                } else {
+                    $cell->setValue($val);
+                }
+
+                $sheet->getStyle([$columnIndex, $currentRow])->applyFromArray([
+                    'alignment' => [
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                    ]
+                ]);
+                $columnIndex++;
             }
-            fclose($file);
-        };
+            $currentRow++;
+        }
 
-        return response()->stream($callback, 200, $headers);
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function listApi(Request $request)
