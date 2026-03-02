@@ -94,7 +94,7 @@ if (typeof window.financialManager === 'undefined') {
                 this.advanceItems = group.advance_items || [];
 
                 this.vatIncluded = !!data.vat_included;
-                this.vatRate = data.vat_rate || 7;
+                this.vatRate = data.vat_rate !== undefined && data.vat_rate !== null && data.vat_rate !== '' ? parseFloat(data.vat_rate) : 7;
                 this.whtEnabled = !!data.wht_enabled;
                 this.whtRate = data.wht_rate || 3;
 
@@ -825,7 +825,7 @@ if (typeof window.financialManager === 'undefined') {
                     pricing_tiers: this.pricingTiers,
                     discount: this.discount,
                     vat_included: this.vatIncluded,
-                    vat_rate: this.vatRate,
+                    vat_rate: parseFloat(this.vatRate),
                     wht_enabled: this.whtEnabled,
                     wht_rate: this.whtRate,
                     advance_items: this.advanceItems,
