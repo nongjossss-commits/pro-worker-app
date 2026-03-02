@@ -19,7 +19,7 @@ class FinancialController extends Controller
     public function storeTransaction(Request $request, $productionId)
     {
         // Permission check
-        if (!auth()->user()->can('manage-finance') && !auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->can('manage-finance') && !auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -92,7 +92,7 @@ class FinancialController extends Controller
      */
     public function updateTransaction(Request $request, $id)
     {
-         if (!auth()->user()->can('manage-finance') && !auth()->user()->hasRole('admin')) {
+         if (!auth()->user()->can('manage-finance') && !auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -248,7 +248,7 @@ class FinancialController extends Controller
      */
     public function destroyTransaction($id)
     {
-        if (!auth()->user()->can('manage-finance') && !auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->can('manage-finance') && !auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

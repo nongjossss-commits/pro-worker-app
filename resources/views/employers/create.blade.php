@@ -105,7 +105,7 @@
                     <select class="form-select" id="business_type_select">
                         <option value="">{{ __('Select...') }}</option>
                     </select>
-                    @if(auth()->user()->hasRole('admin'))
+                    @if(auth()->user()->hasAnyRole(['admin', 'super-admin']))
                     <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#manageBusinessTypeModal">
                         <i class="bi bi-gear"></i> {{ __('Manage') }}
                     </button>

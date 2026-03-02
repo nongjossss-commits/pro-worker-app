@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
 
                     // Logic update: "adminTicketUnreadCount" should respect visibility scope.
                     $currentUser = auth()->user();
-                    $canViewAllTickets = $currentUser->hasRole(['admin', 'staff']);
+                    $canViewAllTickets = $currentUser->hasRole(['super-admin', 'admin', 'staff']);
 
                     $unreadQuery = JobTicket::query();
 

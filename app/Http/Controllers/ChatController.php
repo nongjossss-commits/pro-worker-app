@@ -23,12 +23,12 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // 1. STRICT BLOCK: Employers cannot access chat at all
-        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['super-admin', 'admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json([], 403);
         }
 
         // Permission Check
-        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+        if (!$currentUser->can('use-chat') && !$currentUser->hasRole(['super-admin', 'admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json([], 403);
         }
 
@@ -37,7 +37,7 @@ class ChatController extends Controller
                      ->where('status', 'active');
 
         // --- User Access Control Logic ---
-        if ($currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+        if ($currentUser->hasRole(['super-admin', 'admin', 'staff', 'caretaker', 'delegate'])) {
             $userQuery->where(function($q) {
                 // Admin, Staff, Caretaker, Delegate see each other
                 $q->whereHas('roles', function($r) {
@@ -102,7 +102,7 @@ class ChatController extends Controller
                     'is_online' => true,
                     'unread_count' => $group->unread_count, // Now accurate
                     'last_message_time' => null,
-                    'is_admin' => $currentUser->hasRole('admin') || $group->members()->where('user_id', $currentUser->id)->where('role', 'admin')->exists()
+                    'is_admin' => $currentUser->hasAnyRole(['admin', 'super-admin']) || $group->members()->where('user_id', $currentUser->id)->where('role', 'admin')->exists()
                 ];
             });
 
@@ -123,7 +123,7 @@ class ChatController extends Controller
         $type = $request->query('type', 'user'); // Default to user for backward compatibility
 
         // Access Checks
-        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['super-admin', 'admin', 'staff', 'caretaker', 'delegate'])) {
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -133,7 +133,7 @@ class ChatController extends Controller
 
             // Authorization
             if ($group->type !== 'community') {
-                if (!$group->members()->where('user_id', $currentUserId)->exists() && !$currentUser->hasRole(['admin'])) {
+                if (!$group->members()->where('user_id', $currentUserId)->exists() && !$currentUser->hasRole(['super-admin', 'admin'])) {
                      return response()->json(['error' => 'Not a member of this group'], 403);
                 }
             }
@@ -209,7 +209,7 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // Strict Access Check
-        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['admin', 'staff', 'caretaker', 'delegate'])) {
+        if ($currentUser->hasRole('employer') && !$currentUser->hasRole(['super-admin', 'admin', 'staff', 'caretaker', 'delegate'])) {
              return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -226,7 +226,7 @@ class ChatController extends Controller
             if (!$group) return response()->json(['error' => 'Group not found'], 404);
 
             // Check membership for private groups
-            if ($group->type !== 'community' && !$group->members()->where('user_id', Auth::id())->exists() && !$currentUser->hasRole('admin')) {
+            if ($group->type !== 'community' && !$group->members()->where('user_id', Auth::id())->exists() && !$currentUser->hasAnyRole(['admin', 'super-admin'])) {
                 return response()->json(['error' => 'Not a member'], 403);
             }
 
@@ -492,7 +492,7 @@ class ChatController extends Controller
         $currentUser = Auth::user();
 
         // Access: Only Admin and Staff
-        if (!$currentUser->hasRole(['admin', 'staff'])) {
+        if (!$currentUser->hasRole(['super-admin', 'admin', 'staff'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -539,7 +539,7 @@ class ChatController extends Controller
 
         // Check permission (Admin role or Group Admin)
         $isGroupAdmin = $group->members()->where('user_id', $currentUser->id)->wherePivot('role', 'admin')->exists();
-        if (!$currentUser->hasRole('admin') && !$isGroupAdmin) {
+        if (!$currentUser->hasAnyRole(['admin', 'super-admin']) && !$isGroupAdmin) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -599,7 +599,7 @@ class ChatController extends Controller
             $currentUser = Auth::user();
             if ($group && $group->type !== 'community') {
                 $isMember = $group->members()->where('user_id', $currentUser->id)->exists();
-                if (!$isMember && !$currentUser->hasRole('admin')) {
+                if (!$isMember && !$currentUser->hasAnyRole(['admin', 'super-admin'])) {
                     return response()->json([], 403);
                 }
 
@@ -650,7 +650,7 @@ class ChatController extends Controller
         // Group Owner check: Assuming 'created_by' or admin role in pivot
         $isGroupOwner = $group->created_by == $currentUser->id;
 
-        if (!$currentUser->hasRole(['admin', 'staff']) && !$isGroupOwner) {
+        if (!$currentUser->hasRole(['super-admin', 'admin', 'staff']) && !$isGroupOwner) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -671,7 +671,7 @@ class ChatController extends Controller
             $q->select('users.id', 'users.name', 'users.avatar_path', 'chat_group_members.role as group_role');
         }])->findOrFail($id);
 
-        if ($group->type !== 'community' && !$group->members()->where('user_id', $currentUser->id)->exists() && !$currentUser->hasRole('admin')) {
+        if ($group->type !== 'community' && !$group->members()->where('user_id', $currentUser->id)->exists() && !$currentUser->hasAnyRole(['admin', 'super-admin'])) {
              return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -702,7 +702,7 @@ class ChatController extends Controller
 
         // Check permissions
         $isGroupAdmin = $group->members()->where('user_id', $currentUser->id)->wherePivot('role', 'admin')->exists();
-        if (!$currentUser->hasRole(['admin', 'staff']) && !$isGroupAdmin) {
+        if (!$currentUser->hasRole(['super-admin', 'admin', 'staff']) && !$isGroupAdmin) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -727,7 +727,7 @@ class ChatController extends Controller
         // Allow user to leave (remove themselves)
         $isSelf = $currentUser->id == $userId;
 
-        if (!$currentUser->hasRole(['admin', 'staff']) && !$isGroupAdmin && !$isSelf) {
+        if (!$currentUser->hasRole(['super-admin', 'admin', 'staff']) && !$isGroupAdmin && !$isSelf) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

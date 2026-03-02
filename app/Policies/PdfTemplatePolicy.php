@@ -15,7 +15,7 @@ class PdfTemplatePolicy
 
     public function view(User $user, PdfTemplate $pdfTemplate): bool
     {
-        if ($user->hasRole('admin') || $user->hasRole('staff')) {
+        if ($user->hasAnyRole(['admin', 'super-admin']) || $user->hasRole('staff')) {
             return true;
         }
 
@@ -38,7 +38,7 @@ class PdfTemplatePolicy
     public function update(User $user, PdfTemplate $pdfTemplate): bool
     {
         if ($user->hasPermissionTo('edit-pdf-templates')) {
-             if ($user->hasRole('admin') || $user->hasRole('staff')) {
+             if ($user->hasAnyRole(['admin', 'super-admin']) || $user->hasRole('staff')) {
                  return true;
              }
              if ($user->hasRole('employer') && $pdfTemplate->employer_id === $user->employer->id) {
@@ -51,7 +51,7 @@ class PdfTemplatePolicy
     public function delete(User $user, PdfTemplate $pdfTemplate): bool
     {
         if ($user->hasPermissionTo('delete-pdf-templates')) {
-             if ($user->hasRole('admin') || $user->hasRole('staff')) {
+             if ($user->hasAnyRole(['admin', 'super-admin']) || $user->hasRole('staff')) {
                  return true;
              }
              if ($user->hasRole('employer') && $pdfTemplate->employer_id === $user->employer->id) {
