@@ -367,7 +367,7 @@
                         </div>
                     </div>
 
-                    <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                    <div x-show="!isEditing" class="cursor-pointer position-relative"
                          @click="isEditing = true; $nextTick(() => initFlatpickr())"
                          :class="{ 'opacity-50': isAppCompleted }">
 
@@ -383,7 +383,7 @@
                          </div>
 
                          <!-- Appt Updated By -->
-                         <div x-show="updatedByName" class="mt-1 text-end" style="font-size: 0.65rem;" x-cloak>
+                         <div x-show="updatedByName" class="mt-1 text-start" style="font-size: 0.65rem;" x-cloak>
                             <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
                          </div>
                     </div>
