@@ -281,9 +281,16 @@
                 // Returns the entire tier object or null
                 foreach ($tiers as $tier) {
                     $itemIds = array_map('strval', $tier['item_ids'] ?? []);
+                    // Manual bills use $item->id without prefix. Standard bills use emp_{employee_id} or just employee_id
                     if (in_array(strval($item->id), $itemIds, true) ||
-                        in_array('emp_' . $item->employee_id, $itemIds, true) ||
-                        in_array(strval($item->employee_id), $itemIds, true)) {
+                        ($item->employee_id && in_array('emp_' . $item->employee_id, $itemIds, true)) ||
+                        ($item->employee_id && in_array(strval($item->employee_id), $itemIds, true))) {
+                        return $tier;
+                    }
+                }
+                // Fallback to default tier if empty or unnamed
+                foreach ($tiers as $tier) {
+                    if (empty($tier['item_ids']) || ($tier['name'] ?? '') === 'Default Tier') {
                         return $tier;
                     }
                 }
@@ -297,9 +304,15 @@
                 foreach ($tiers as $idx => $tier) {
                     $itemIds = array_map('strval', $tier['item_ids'] ?? []);
                     if (in_array(strval($item->id), $itemIds, true) ||
-                        in_array('emp_' . $item->employee_id, $itemIds, true) ||
-                        in_array(strval($item->employee_id), $itemIds, true)) {
+                        ($item->employee_id && in_array('emp_' . $item->employee_id, $itemIds, true)) ||
+                        ($item->employee_id && in_array(strval($item->employee_id), $itemIds, true))) {
                         return $idx; // Use Index as Key
+                    }
+                }
+                // Fallback index
+                foreach ($tiers as $idx => $tier) {
+                    if (empty($tier['item_ids']) || ($tier['name'] ?? '') === 'Default Tier') {
+                        return $idx;
                     }
                 }
                 return -1; // Not in tier
