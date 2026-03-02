@@ -357,9 +357,18 @@ class="row">
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button @click="openDocument('quotation')" class="btn btn-outline-secondary btn-sm text-start">
-                        <i class="bi bi-file-earmark-text me-2"></i>{{ __('Quotation (ใบเสนอราคา)') }}
-                    </button>
+                     <!-- Quotation Dropdown (Updated) -->
+                     <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-file-earmark-text me-2"></i>{{ __('Quotation (ใบเสนอราคา)') }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('quotation', null, 'combined'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Combined (Service + Advance)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('quotation', null, 'service_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Service Fee Only') }}</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openSelectionModal('quotation'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Select Installment(s)...') }}</a></li>
+                        </ul>
+                    </div>
 
                      <!-- Invoice Dropdown (New) -->
                      <div class="btn-group">

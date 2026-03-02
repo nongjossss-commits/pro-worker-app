@@ -265,7 +265,24 @@
                     return $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
                 });
             } elseif ($showService) {
-                $serviceTotal = $financial['total_amount'] ?? 0;
+                // If it's a full document (like Quotation without transactions), we must calculate
+                // the total service fee correctly if in per_head mode.
+                $pricingMode = $financial['pricing_mode'] ?? 'per_head';
+                $pricingTiers = $financial['pricing_tiers'] ?? [];
+
+                if ($pricingMode === 'per_head') {
+                    $calculatedTotal = 0;
+                    foreach ($pricingTiers as $tier) {
+                        $count = count($tier['item_ids'] ?? []);
+                        $price = $tier['price'] ?? 0;
+                        $calculatedTotal += ($count * $price);
+                    }
+                    // Apply discount if any exists in financial data
+                    $discount = $financial['discount'] ?? 0;
+                    $serviceTotal = max(0, $calculatedTotal - $discount);
+                } else {
+                    $serviceTotal = $financial['total_amount'] ?? 0;
+                }
             }
 
             if ($advanceTransactions->isNotEmpty()) {
