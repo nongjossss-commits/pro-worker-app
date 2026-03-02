@@ -69,6 +69,8 @@
 
     $appLocation = $item->appointment_location ?? '';
     $isAppCompleted = $item->appointment_completed_at ? true : false;
+    $appUpdatedByName = $item->appointmentUpdatedBy->name ?? '';
+    $appUpdatedAtHuman = $item->appointment_updated_at ? $item->appointment_updated_at->diffForHumans() : '';
 
     // Permissions
     $user = auth()->user();
@@ -206,6 +208,8 @@
                     dateValue: '{{ $appValue }}',
                     displayValue: '{{ $appDisplay }}',
                     locationValue: '{{ $appLocation }}',
+                    updatedByName: '{{ $appUpdatedByName }}',
+                    updatedAtHuman: '{{ $appUpdatedAtHuman }}',
                     initFlatpickr() {
                         if (this.$refs.dateInput._flatpickr) return;
                         flatpickr(this.$refs.dateInput, {
@@ -251,6 +255,12 @@
                                 }).then(res => res.json()).then(data => {
                                     if(data.success) {
                                         this.isEditing = false;
+
+                                        if (data.appointment_updated_by_name) {
+                                            this.updatedByName = data.appointment_updated_by_name;
+                                            this.updatedAtHuman = data.appointment_updated_at_human;
+                                        }
+
                                         Swal.fire({
                                             toast: true,
                                             position: 'top-end',
@@ -307,6 +317,11 @@
                                     <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
                                 </div>
                              </div>
+                        </div>
+
+                        <!-- Appt Updated By -->
+                        <div x-show="updatedByName" class="mt-1 text-end" style="font-size: 0.65rem;" x-cloak>
+                            <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
                         </div>
 
                         <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">

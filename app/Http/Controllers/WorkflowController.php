@@ -403,16 +403,33 @@ class WorkflowController extends Controller
         $item = ProductionItem::findOrFail($itemId);
 
         $data = [];
+        $isUpdated = false;
+
         if ($request->has('appointment_date')) {
             $data['appointment_date'] = $request->appointment_date;
+            if ($item->appointment_date != $request->appointment_date) {
+                $isUpdated = true;
+            }
         }
         if ($request->has('appointment_location')) {
             $data['appointment_location'] = $request->appointment_location;
+            if ($item->appointment_location != $request->appointment_location) {
+                $isUpdated = true;
+            }
+        }
+
+        if ($isUpdated) {
+            $data['appointment_updated_by'] = auth()->id();
+            $data['appointment_updated_at'] = now();
         }
 
         $item->update($data);
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'appointment_updated_by_name' => auth()->user()->name,
+            'appointment_updated_at_human' => now()->diffForHumans()
+        ]);
     }
 
     /**
