@@ -148,8 +148,8 @@ class ProductionDocumentController extends Controller
                             // FinancialHubController@storeManual creates tiers like [ 'item_ids' => [1, 2, 3] ]
                             // where these integers correspond to production_items.id
                             return in_array(strval($item->id), $itemIds, true) ||
-                                   in_array('emp_' . $item->employee_id, $itemIds, true) ||
-                                   in_array(strval($item->employee_id), $itemIds, true);
+                                   ($item->employee_id && in_array('emp_' . $item->employee_id, $itemIds, true)) ||
+                                   ($item->employee_id && in_array(strval($item->employee_id), $itemIds, true));
                         });
 
                         if ($tier) {
