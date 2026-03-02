@@ -19,6 +19,8 @@ class ProductionItem extends Model
         'appointment_location', // NEW
         'last_checked_at', // NEW
         'appointment_completed_at', // NEW: Appointment finished
+        'appointment_updated_by',
+        'appointment_updated_at',
         'status',
         'completed_at', // NEW: Workflow finished
         'new_employee_data', // JSON for temp employees
@@ -31,6 +33,7 @@ class ProductionItem extends Model
         'appointment_date' => 'datetime',
         'last_checked_at' => 'datetime',
         'appointment_completed_at' => 'datetime',
+        'appointment_updated_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
 

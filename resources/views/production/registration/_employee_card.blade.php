@@ -285,6 +285,8 @@
                 }
                 $appLocation = $employee->appointment_location ?? '';
                 $isAppCompleted = $employee->appointment_completed_at ? true : false;
+                $appUpdatedByName = $employee->appointmentUpdatedBy->name ?? '';
+                $appUpdatedAtHuman = $employee->appointment_updated_at ? $employee->appointment_updated_at->diffForHumans() : '';
             @endphp
 
             <div class="ms-md-2" x-data="{
@@ -293,6 +295,8 @@
                 dateValue: '{{ $appValue }}',
                 displayValue: '{{ $appDisplay }}',
                 locationValue: '{{ $appLocation }}',
+                updatedByName: '{{ $appUpdatedByName }}',
+                updatedAtHuman: '{{ $appUpdatedAtHuman }}',
                 initFlatpickr() {
                     if (this.$refs.dateInput._flatpickr) return;
                     flatpickr(this.$refs.dateInput, {
@@ -327,6 +331,12 @@
                     }).then(res => res.json()).then(data => {
                         if(data.success) {
                             this.isEditing = false;
+
+                            if (data.appointment_updated_by_name) {
+                                this.updatedByName = data.appointment_updated_by_name;
+                                this.updatedAtHuman = data.appointment_updated_at_human;
+                            }
+
                             // Update display logic
                             if (!this.dateValue) {
                                 this.displayValue = '-';
@@ -370,6 +380,11 @@
                             <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
                                 <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
                             </div>
+                         </div>
+
+                         <!-- Appt Updated By -->
+                         <div x-show="updatedByName" class="mt-1 text-end" style="font-size: 0.65rem;" x-cloak>
+                            <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
                          </div>
                     </div>
 
