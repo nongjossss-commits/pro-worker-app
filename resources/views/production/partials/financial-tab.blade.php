@@ -3,6 +3,15 @@
     financialGroups: {{ json_encode($production->financialGroups) }},
     transactions: {{ json_encode($production->financialGroups->pluck('transactions')->flatten()) }},
     productionItems: {{ json_encode($production->items->map(function($item) {
+        $lastStepName = null;
+        if (request()->is('production/registration*') && $item->employee) {
+            $lastStepName = $item->employee->registrationSteps->sortByDesc('order')->first()?->name;
+        } elseif (request()->is('production/renewal*') && $item->employee) {
+            $lastStepName = $item->employee->registrationSteps->sortByDesc('order')->first()?->name; // Renewal uses registrationSteps relation logic
+        } else {
+            $lastStepName = $item->completedWorkTypeSteps->sortByDesc('order')->first()?->name;
+        }
+
         return [
             'id' => $item->id,
             'name' => $item->employee ? ($item->employee->name_th ?? $item->employee->name_en) : 'New Employee',
@@ -12,10 +21,16 @@
             'nationality' => $item->employee ? $item->employee->employeeNationality : '',
             'insurance_type' => $item->employee ? $item->employee->insurance_type : '',
             'passport' => $item->employee ? $item->employee->employeePassport : '',
-            'employee_id' => $item->employee_id
+            'employee_id' => $item->employee_id,
+            'last_step_name' => $lastStepName
         ];
     })) }},
     employees: {{ json_encode(($employees ?? collect())->map(function($emp) {
+        $lastStepName = null;
+        if (request()->is('production/registration*') || request()->is('production/renewal*')) {
+            $lastStepName = $emp->registrationSteps->sortByDesc('order')->first()?->name;
+        }
+
         return [
             'id' => $emp->id,
             'name' => $emp->employeeNameTh ?? $emp->employeeNameEn,
@@ -25,6 +40,7 @@
             'nationality' => $emp->employeeNationality,
             'insurance_type' => $emp->insurance_type,
             'passport' => $emp->employeePassport,
+            'last_step_name' => $lastStepName
         ];
     })) }},
     productionId: {{ $production->id }},
@@ -651,6 +667,10 @@ class="row">
                                             <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
                                                 <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
                                             </template>
+                                            <!-- Last Step Badge -->
+                                            <template x-if="item.last_step_name">
+                                                <span class="badge border border-primary text-primary rounded-pill ms-1" style="font-size: 0.6rem;" x-text="item.last_step_name"></span>
+                                            </template>
                                         </div>
                                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.75rem;">
                                              <span class="text-truncate" x-text="item.nationality"></span>
@@ -835,6 +855,10 @@ class="row">
                                                             <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
                                                                 <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
                                                             </template>
+                                                            <!-- Last Step Badge -->
+                                                            <template x-if="item.last_step_name">
+                                                                <span class="badge border border-primary text-primary rounded-pill ms-1" style="font-size: 0.6rem;" x-text="item.last_step_name"></span>
+                                                            </template>
                                                         </div>
                                                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.7rem;">
                                                              <span class="text-truncate" x-text="item.nationality"></span>
@@ -970,6 +994,10 @@ class="row">
                                                             </template>
                                                             <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
                                                                 <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
+                                                            </template>
+                                                            <!-- Last Step Badge -->
+                                                            <template x-if="item.last_step_name">
+                                                                <span class="badge border border-primary text-primary rounded-pill ms-1" style="font-size: 0.6rem;" x-text="item.last_step_name"></span>
                                                             </template>
                                                         </div>
                                                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.7rem;">
