@@ -271,7 +271,7 @@ if (typeof window.financialManager === 'undefined') {
                     if (usedItemIds.has(item.id)) return; // Locked by installment
 
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
-                    list.push({ ...item, type: 'item' });
+                    list.push({ ...item, type: 'item', last_step_name: item.last_step_name });
                 });
 
                 // 2. Candidates
@@ -289,6 +289,7 @@ if (typeof window.financialManager === 'undefined') {
                         insurance_type: emp.insurance_type,
                         passport: emp.passport,
                         employee_id: emp.id,
+                        last_step_name: emp.last_step_name,
                         type: 'employee'
                     });
                 });
@@ -341,6 +342,7 @@ if (typeof window.financialManager === 'undefined') {
                         nationality: item.nationality,
                         insurance_type: item.insurance_type,
                         passport: item.passport,
+                        last_step_name: item.last_step_name,
                         type: 'item'
                     });
                 });
@@ -360,6 +362,7 @@ if (typeof window.financialManager === 'undefined') {
                             nationality: emp.nationality,
                             insurance_type: emp.insurance_type,
                             passport: emp.passport,
+                            last_step_name: emp.last_step_name,
                             type: 'employee'
                         });
                     });
@@ -409,6 +412,7 @@ if (typeof window.financialManager === 'undefined') {
                             nationality: item.nationality,
                             insurance_type: item.insurance_type,
                             passport: item.passport,
+                            last_step_name: item.last_step_name,
                             type: 'item',
                             attached: isAttached
                         });
@@ -429,6 +433,7 @@ if (typeof window.financialManager === 'undefined') {
                         nationality: emp.nationality,
                         insurance_type: emp.insurance_type,
                         passport: emp.passport,
+                        last_step_name: emp.last_step_name,
                         type: 'employee',
                         attached: false
                     });
@@ -650,8 +655,10 @@ if (typeof window.financialManager === 'undefined') {
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
-                                this.financialGroups.push(data.group);
-                                this.switchGroup(data.group.id);
+                                // Ensure reactivity and defaults for empty arrays
+                                const newGroup = { ...data.group, transactions: [] };
+                                this.financialGroups = [...this.financialGroups, newGroup];
+                                this.switchGroup(newGroup.id);
                             }
                         });
                     }
@@ -704,7 +711,11 @@ if (typeof window.financialManager === 'undefined') {
                         .then(data => {
                             if (data.success) {
                                  const group = this.financialGroups.find(g => g.id === groupId);
-                                 if(group) group.name = result.value;
+                                 if(group) {
+                                     group.name = result.value;
+                                     // Trigger reactivity
+                                     this.financialGroups = [...this.financialGroups];
+                                 }
                             }
                         });
                     }
