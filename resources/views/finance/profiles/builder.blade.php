@@ -194,7 +194,8 @@
             </div>
 
             <div class="alert alert-info mt-3" x-show="currentMode === 'form'">
-                <i class="bi bi-info-circle"></i> <strong>Tip:</strong> You can Drag, Resize, and Rotate the Signature and Stamp images directly on the document preview above. They will be printed in exactly these positions.
+                <i class="bi bi-info-circle"></i> <strong>Tip:</strong> You can Drag, Resize, and Rotate the Signature and Stamp images directly on the document preview above. They will be printed in exactly these positions. <br>
+                <small><strong>Note:</strong> To rotate, scroll your mouse wheel while hovering over the image.</small>
             </div>
         </div>
     </div>
@@ -326,14 +327,32 @@ document.addEventListener('alpine:init', () => {
                 this.formData[`${type}_url`] = URL.createObjectURL(file);
                 this.removals[type] = false; // Cancel removal if new one selected
 
-                // Initialize default positions for newly added items
+                // Initialize default positions for newly added items if null
+                if (type !== 'logo' && !this.formData[`${type}_position`]) {
+                    this.formData[`${type}_position`] = { x: 300, y: 300, width: 150, height: 75, rotate: 0 };
+                }
+
                 this.$nextTick(() => {
                     const el = document.getElementById(`drag-${type}`);
                     if(el && this.formData[`${type}_position`]) {
                          el.setAttribute('data-x', this.formData[`${type}_position`].x);
                          el.setAttribute('data-y', this.formData[`${type}_position`].y);
                          el.setAttribute('data-angle', this.formData[`${type}_position`].rotate || 0);
+
+                         el.style.transform = `translate(${this.formData[`${type}_position`].x}px, ${this.formData[`${type}_position`].y}px) rotate(${this.formData[`${type}_position`].rotate || 0}deg)`;
+                         el.style.width = this.formData[`${type}_position`].width + 'px';
+                         el.style.height = this.formData[`${type}_position`].height + 'px';
                     }
+
+                    Swal.fire({
+                        title: 'Success',
+                        text: `${type} image loaded. You can now drag, resize, and rotate it on the document.`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
                 });
             }
         },
@@ -518,6 +537,34 @@ document.addEventListener('alpine:init', () => {
                     _this.formData[`${type}_position`].rotate = angle;
                 });
             });
+
+            // Add MutationObserver to attach wheel events dynamically to new elements
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1 && node.classList.contains('draggable-asset')) {
+                            node.addEventListener('wheel', (e) => {
+                                e.preventDefault();
+                                const type = node.getAttribute('data-type');
+                                let angle = parseFloat(node.getAttribute('data-angle')) || _this.formData[`${type}_position`].rotate || 0;
+                                angle += e.deltaY > 0 ? 5 : -5;
+                                if(angle >= 360) angle = 0;
+                                if(angle < 0) angle = 355;
+                                node.setAttribute('data-angle', angle);
+                                const x = parseFloat(node.getAttribute('data-x')) || _this.formData[`${type}_position`].x;
+                                const y = parseFloat(node.getAttribute('data-y')) || _this.formData[`${type}_position`].y;
+                                node.style.transform = `translate(${x}px, ${y}px) rotate(${angle}deg)`;
+                                _this.formData[`${type}_position`].rotate = angle;
+                            });
+                        }
+                    });
+                });
+            });
+
+            const canvas = document.getElementById('pdf-canvas');
+            if(canvas) {
+                observer.observe(canvas, { childList: true, subtree: true });
+            }
         }
     }));
 });
