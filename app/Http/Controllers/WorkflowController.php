@@ -999,8 +999,21 @@ class WorkflowController extends Controller
     public function searchResignedEmployees(Request $request)
     {
         $search = $request->query('q');
+        $employerId = $request->query('employer_id');
+
         $query = Employee::query()
-             ->whereNotNull('terminated_at')
+             ->where(function ($q) use ($employerId) {
+                 // Condition 1: Employees who have been terminated (resigned) from any employer
+                 $q->whereNotNull('terminated_at');
+
+                 // Condition 2: Active employees belonging to the target employer
+                 if ($employerId) {
+                     $q->orWhere(function ($subQ) use ($employerId) {
+                         $subQ->whereNull('terminated_at')
+                              ->where('employer_id', $employerId);
+                     });
+                 }
+             })
              ->with('employer');
 
         if ($search) {
@@ -1398,7 +1411,9 @@ class WorkflowController extends Controller
         $slug = $item->order->workType->slug ?? '';
 
         DB::transaction(function () use ($item, $slug) {
-            if (in_array($slug, ['notify_in', 'mou_import', 'mou_renewal'])) {
+            // For 'notify_in' (Change Employer), we DELAY the update by 24 hours.
+            // So we DO NOT update the employee record here. The Scheduled Job will handle it.
+            if (in_array($slug, ['mou_import', 'mou_renewal'])) {
                 if ($item->employee) {
                     $item->employee->update([
                         'employer_id' => $item->order->employer_id,
