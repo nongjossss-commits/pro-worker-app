@@ -320,6 +320,19 @@ class ProductionController extends Controller
     /**
      * Send an item to the Workflow (Active Status).
      */
+    public function updateItemFields(Request $request, ProductionItem $item)
+    {
+        $request->validate([
+            'request_number' => 'nullable|string|max:255',
+        ]);
+
+        $item->update([
+            'request_number' => $request->request_number,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function sendToWorkflow(Request $request, $itemId)
     {
         $item = ProductionItem::with(['order', 'employee'])->findOrFail($itemId);
