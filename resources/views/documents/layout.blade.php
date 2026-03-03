@@ -320,9 +320,9 @@
             };
 
             $vatIncluded = $financial['vat_included'] ?? false;
-            $vatRate = isset($financial['vat_rate']) && $financial['vat_rate'] !== '' ? (float)$financial['vat_rate'] : 7;
+            $vatRate = isset($financial['vat_rate']) && $financial['vat_rate'] !== '' && $financial['vat_rate'] !== null ? (float)$financial['vat_rate'] : 7;
             $whtEnabled = $financial['wht_enabled'] ?? false;
-            $whtRate = isset($financial['wht_rate']) && $financial['wht_rate'] !== '' ? (float)$financial['wht_rate'] : 3;
+            $whtRate = isset($financial['wht_rate']) && $financial['wht_rate'] !== '' && $financial['wht_rate'] !== null ? (float)$financial['wht_rate'] : 3;
 
             if ($vatRate <= 0) {
                 $serviceBase = $serviceTotal;
@@ -383,16 +383,18 @@
                                         // Get tier data
                                         $tier = ($tierIdx >= 0 && isset($pricingTiers[$tierIdx])) ? $pricingTiers[$tierIdx] : null;
 
-                                        // The transaction amount is fixed for the installment, meaning if the installment
-                                        // spans multiple employees, we should distribute the total transaction amount
-                                        // by proportional tier price if available, or flat average per head if no tiers
-                                        $totalEmployeesInTransaction = $items->count();
-                                        if ($totalEmployeesInTransaction > 0) {
-                                            // Simple average: transaction amount / total employees.
-                                            // We assign the same average price to every item within this transaction grouping.
-                                            $price = $amount / $totalEmployeesInTransaction;
+                                        // Use the exact tier price for this group instead of averaging the total transaction amount.
+                                        // This ensures that employees with different tier prices are billed correctly.
+                                        if ($tier && isset($tier['price'])) {
+                                            $price = (float)$tier['price'];
                                         } else {
-                                            $price = 0;
+                                            // Fallback to average if tier price is missing for some reason
+                                            $totalEmployeesInTransaction = $items->count();
+                                            if ($totalEmployeesInTransaction > 0) {
+                                                $price = $amount / $totalEmployeesInTransaction;
+                                            } else {
+                                                $price = 0;
+                                            }
                                         }
 
                                         $subtotal = $price * $count;

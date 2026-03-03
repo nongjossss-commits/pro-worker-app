@@ -618,7 +618,7 @@ class="row">
 
     <!-- Manage Employees Modal (Tier Assignment) -->
     <div class="modal fade" :id="'manageEmployeesModal-' + productionId" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h5 class="modal-title fs-6 fw-bold">Assign Employees to Price Tier</h5>
@@ -778,7 +778,7 @@ class="row">
 
     <!-- Add Transaction Modal -->
     <div class="modal fade" :id="'addTransactionModal-' + productionId" tabindex="-1" x-ref="addModal">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">Add Installment</h6>
@@ -889,7 +889,7 @@ class="row">
 
     <!-- Update Payment Modal -->
     <div class="modal fade" :id="'updatePaymentModal-' + productionId" tabindex="-1" x-ref="payModal">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">Update Payment & Items</h6>
