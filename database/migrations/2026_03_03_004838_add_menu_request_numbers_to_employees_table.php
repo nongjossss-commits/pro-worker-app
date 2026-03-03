@@ -13,8 +13,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->string('registration_request_number')->nullable()->after('request_number');
-            $table->string('renewal_request_number')->nullable()->after('registration_request_number');
+            $table->text('registration_request_number')->nullable()->after('request_number');
+            $table->text('renewal_request_number')->nullable()->after('registration_request_number');
         });
 
         // Backfill data from main request_number
