@@ -288,6 +288,7 @@ class RegistrationController extends Controller
                                ->orWhere('name_list_number', 'like', "%{$search}%")
                                ->orWhere('pinkCardNo', 'like', "%{$search}%")
                                ->orWhere('request_number', 'like', "%{$search}%")
+                               ->orWhere('registration_request_number', 'like', "%{$search}%")
                                ->orWhere('employer_employee_id', 'like', "%{$search}%")
                                ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                                ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
@@ -435,6 +436,7 @@ class RegistrationController extends Controller
                                ->orWhere('name_list_number', 'like', "%{$trimmedSearch}%")
                                ->orWhere('pinkCardNo', 'like', "%{$trimmedSearch}%")
                                ->orWhere('request_number', 'like', "%{$trimmedSearch}%")
+                               ->orWhere('registration_request_number', 'like', "%{$trimmedSearch}%")
                                ->orWhere('employer_employee_id', 'like', "%{$trimmedSearch}%")
                                ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                                ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
@@ -1769,6 +1771,7 @@ class RegistrationController extends Controller
               ->orWhere('name_list_number', 'like', "%{$search}%")
               ->orWhere('pinkCardNo', 'like', "%{$search}%")
               ->orWhere('request_number', 'like', "%{$search}%")
+              ->orWhere('registration_request_number', 'like', "%{$search}%")
               ->orWhere('employer_employee_id', 'like', "%{$search}%")
               // Robust Name Search (Ignore Spaces)
               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
@@ -1842,6 +1845,7 @@ class RegistrationController extends Controller
                   ->orWhere('name_list_number', 'like', "%{$search}%")
                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
                   ->orWhere('request_number', 'like', "%{$search}%")
+                  ->orWhere('registration_request_number', 'like', "%{$search}%")
                   ->orWhere('employer_employee_id', 'like', "%{$search}%")
                   // Robust Name Search
                   ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
@@ -2045,6 +2049,7 @@ class RegistrationController extends Controller
                    ->orWhere('name_list_number', 'like', "%{$search}%")
                    ->orWhere('pinkCardNo', 'like', "%{$search}%")
                    ->orWhere('request_number', 'like', "%{$search}%")
+                   ->orWhere('registration_request_number', 'like', "%{$search}%")
                    ->orWhere('employer_employee_id', 'like', "%{$search}%")
                    ->orWhereHas('employer', function($q2) use ($search) {
                        $q2->withTrashed()
