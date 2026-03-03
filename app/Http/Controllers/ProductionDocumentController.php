@@ -126,10 +126,24 @@ class ProductionDocumentController extends Controller
         $employeeList = [];
 
         if ($includeEmployeeList) {
-            // Get all items/employees for this production order
-            $items = $production->items;
             $pricingMode = $financialData['pricing_mode'] ?? 'per_head';
             $pricingTiers = collect($financialData['pricing_tiers'] ?? []);
+
+            // Start with all items
+            $items = $production->items;
+
+            // If specific transactions were requested, filter items to only include
+            // those attached to the selected transactions.
+            if ($request->has('transaction_ids')) {
+                // $transactions is already filtered by transaction_ids above
+                $transactionItemIds = $transactions->flatMap(function($t) {
+                    return $t->items->pluck('id');
+                })->unique();
+
+                $items = $items->filter(function($item) use ($transactionItemIds) {
+                    return $transactionItemIds->contains($item->id);
+                });
+            }
 
             $index = 1;
             foreach ($items as $item) {
@@ -138,15 +152,12 @@ class ProductionDocumentController extends Controller
 
                     // Determine Price
                     $price = 0;
+                    $isAssignedToTier = false;
+
                     if ($pricingMode === 'per_head') {
                         // Find the tier this item belongs to
-                        // The item_ids from frontend may be strings or integers, and in_array does strict check unless specified or we cast
                         $tier = $pricingTiers->first(function ($t) use ($item) {
                             $itemIds = array_map('strval', $t['item_ids'] ?? []);
-                            // In manual bills, frontend stores item->id directly without a prefix,
-                            // or stores integers. Ensure we match against string representations of IDs.
-                            // FinancialHubController@storeManual creates tiers like [ 'item_ids' => [1, 2, 3] ]
-                            // where these integers correspond to production_items.id
                             return in_array(strval($item->id), $itemIds, true) ||
                                    ($item->employee_id && in_array('emp_' . $item->employee_id, $itemIds, true)) ||
                                    ($item->employee_id && in_array(strval($item->employee_id), $itemIds, true));
@@ -154,16 +165,27 @@ class ProductionDocumentController extends Controller
 
                         if ($tier) {
                             $price = $tier['price'] ?? 0;
+                            $isAssignedToTier = true;
                         } else {
-                            // Default tier might be named 'Default Tier' by FinancialHubController
-                            // or might just have an empty item_ids array
+                            // Default tier fallback
                             $defaultTier = $pricingTiers->first(function ($t) {
                                 return empty($t['item_ids']) || ($t['name'] ?? '') === 'Default Tier';
                             });
                             if ($defaultTier) {
                                 $price = $defaultTier['price'] ?? 0;
+                                // We don't mark as explicitly assigned to a tier if they are just catching the default,
+                                // but we might want them to show up if the project relies on default tiers.
+                                // Typically, employees without explicit tier mapping in 'per_head' mode shouldn't show
+                                // up with 0 price unless it's genuinely free.
                             }
                         }
+                    }
+
+                    // For documents NOT filtered by transaction_ids, we only want to show employees
+                    // who actually have a price set (or are assigned to a tier).
+                    // This prevents printing all employees in the project when only a few have prices.
+                    if (!$request->has('transaction_ids') && $pricingMode === 'per_head' && $price <= 0) {
+                        continue; // Skip employees with 0 price in per-head full document lists
                     }
 
                     $employeeList[] = [
