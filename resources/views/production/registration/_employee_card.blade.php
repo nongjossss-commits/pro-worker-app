@@ -510,10 +510,11 @@
                 }
             @endphp
 
-            {{-- 3 Extra Fields (Editable) --}}
+            @if($isPreProduction || $isWorkflow)
+            {{-- 3 Extra Fields (Editable) - Only in Pre Production & Workflow --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
-                nameList: '{{ $employee->name_list_number }}',
+                outsourceCode: '{{ $employee->outsource_code }}',
                 reqNo: '{{ $currentRequestNumber }}',
                 refId: '{{ $employee->employee_reference_id }}',
                 updateMethod: '{{ $updateMethod }}',
@@ -581,11 +582,11 @@
                         body: formData
                     });
 
-                    // Request 2: Update the global fields (name_list_number, employee_reference_id)
+                    // Request 2: Update the global fields (outsource_code, employee_reference_id)
                     let empFormData = new FormData();
                     empFormData.append('_method', 'PUT');
                     empFormData.append('_token', '{{ csrf_token() }}');
-                    empFormData.append('name_list_number', this.nameList);
+                    empFormData.append('outsource_code', this.outsourceCode);
                     empFormData.append('employee_reference_id', this.refId);
                     empFormData.append('employer_id', '{{ $employee->employer_id }}');
                     empFormData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
@@ -613,16 +614,16 @@
                 }
             }">
                 <div class="d-flex align-items-end gap-2">
-                    {{-- Field 1: Name List (Renamed to RA) --}}
+                    {{-- Field 1: RA from Outsource --}}
                     <div style="width: 140px;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
                         <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                            <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
-                            <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
+                            <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="outsourceCode || '-'"></div>
+                            <button x-show="outsourceCode" @click="copy($event.currentTarget, outsourceCode)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                 <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                             </button>
                         </div>
-                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
+                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="outsourceCode" placeholder="RA No.">
                     </div>
 
                     {{-- Action Buttons --}}
@@ -663,6 +664,7 @@
                     <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
                 </div>
             </div>
+            @endif
 
             </div>
 
