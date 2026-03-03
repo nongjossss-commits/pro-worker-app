@@ -31,7 +31,7 @@ class TicketController extends Controller
         // Admin and Staff can see ALL tickets.
         // Other roles (like 'caretaker') are restricted to assigned employers.
         $currentUser = Auth::user();
-        $canViewAllTickets = $currentUser->hasRole(['admin', 'staff']);
+        $canViewAllTickets = $currentUser->hasRole(['super-admin', 'admin', 'staff']);
 
         if ($employerId) {
             // Show tickets list for a specific employer
@@ -128,7 +128,7 @@ class TicketController extends Controller
         // Authorization Check for Caretakers
         // Admin/Staff can view all. Caretakers can only view if assigned to the employer.
         $currentUser = Auth::user();
-        $canViewAllTickets = $currentUser->hasRole(['admin', 'staff']);
+        $canViewAllTickets = $currentUser->hasRole(['super-admin', 'admin', 'staff']);
 
         if (!$canViewAllTickets) {
             // Check assignment

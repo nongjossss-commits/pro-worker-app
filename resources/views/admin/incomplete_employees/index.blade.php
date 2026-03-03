@@ -8,11 +8,11 @@
             <p class="text-muted">{{ __('Employees with missing mandatory information.') }}</p>
         </div>
         <div>
-            @role('admin')
+            @hasanyrole('admin|super-admin')
             <a href="{{ route('admin.settings.completeness.index') }}" class="btn btn-outline-primary">
                 <i class="bi bi-gear-fill me-1"></i> {{ __('Configure Settings') }}
             </a>
-            @endrole
+            @endhasanyrole
         </div>
     </div>
 

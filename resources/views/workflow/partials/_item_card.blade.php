@@ -77,7 +77,7 @@
     $isEmployer = $user->hasRole('employer');
     $canManage = $user->can('manage-own-workflow');
     $isReadOnly = $isEmployer && !$canManage;
-    $canDelete = $user->hasRole('admin');
+    $canDelete = $user->hasAnyRole(['admin', 'super-admin']);
 
     // Restore Logic
     $canRestore = false;
