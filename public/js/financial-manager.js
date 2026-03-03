@@ -33,7 +33,7 @@ if (typeof window.financialManager === 'undefined') {
             // Custom Header Data
             showCustomHeaderModal: false,
             useCustomHeader: false,
-            customHeader: { name:'', address:'', tax_id:'', phone:'', logo:'' },
+            customHeader: { name:'', address:'', tax_id:'', phone:'', logo:'', biller_profile_id: '', customer_profile_id: '' },
             selectedProfileId: '',
 
             // Custom Customer (Bill To) Data
@@ -106,8 +106,8 @@ if (typeof window.financialManager === 'undefined') {
                 this.whtEnabled = !!data.wht_enabled;
                 this.whtRate = data.wht_rate !== undefined && data.wht_rate !== null && data.wht_rate !== '' ? parseFloat(data.wht_rate) : 3;
 
-                this.useCustomHeader = !!data.custom_header;
-                this.customHeader = data.custom_header || { name:'', address:'', tax_id:'', phone:'', logo:'' };
+                this.useCustomHeader = !!(data.custom_header && (data.custom_header.name || data.custom_header.address || data.custom_header.tax_id || data.custom_header.phone || data.custom_header.logo));
+                this.customHeader = data.custom_header || { name:'', address:'', tax_id:'', phone:'', logo:'', biller_profile_id: '', customer_profile_id: '' };
                 this.selectedProfileId = data.profile_id || '';
 
                 this.useCustomCustomer = !!data.customer_override;
@@ -847,6 +847,7 @@ if (typeof window.financialManager === 'undefined') {
             },
             get headerNameDisplay() {
                 if (this.useCustomHeader) return this.customHeader.name || 'Custom Header';
+                if (this.customHeader.biller_profile_id) return 'Selected Profile';
                 return this.selectedProfileId ? 'Selected System Profile' : 'Default Profile';
             },
             get customerNameDisplay() {
@@ -872,7 +873,7 @@ if (typeof window.financialManager === 'undefined') {
                     wht_enabled: this.whtEnabled,
                     wht_rate: this.whtRate,
                     advance_items: this.advanceItems,
-                    custom_header: this.useCustomHeader ? this.customHeader : null,
+                    custom_header: this.useCustomHeader ? this.customHeader : (this.customHeader.biller_profile_id || this.customHeader.customer_profile_id ? { biller_profile_id: this.customHeader.biller_profile_id, customer_profile_id: this.customHeader.customer_profile_id } : null),
                     profile_id: this.selectedProfileId,
                     customer_override: this.useCustomCustomer ? this.customCustomerData : null
                 };

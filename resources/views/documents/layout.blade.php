@@ -167,7 +167,7 @@
                             width: {{ $billerProfile->signature_position['width'] ?? 150 }}px;
                             height: {{ $billerProfile->signature_position['height'] ?? 75 }}px;
                             transform: rotate({{ $billerProfile->signature_position['rotate'] ?? 0 }}deg);
-                            z-index: -1;" alt="Signature">
+                            z-index: 10;" alt="Signature">
             @endif
             @if($billerProfile->stamp_path && $billerProfile->stamp_position)
                 <img src="{{ asset('storage/' . $billerProfile->stamp_path) }}"
@@ -177,7 +177,7 @@
                             width: {{ $billerProfile->stamp_position['width'] ?? 100 }}px;
                             height: {{ $billerProfile->stamp_position['height'] ?? 100 }}px;
                             transform: rotate({{ $billerProfile->stamp_position['rotate'] ?? 0 }}deg);
-                            z-index: -1;" alt="Stamp">
+                            z-index: 5; opacity: 0.8;" alt="Stamp">
             @endif
         @endif
 
@@ -601,7 +601,7 @@
         </div>
 
         <!-- Absolute Positioned Elements (Direct children of .page) -->
-        @if($profile->use_signature && $profile->signature_path)
+        @if(!isset($billerProfile) && $profile->use_signature && $profile->signature_path)
             @php
                 $sigPos = is_array($profile->signature_pos) ? $profile->signature_pos : (is_string($profile->signature_pos) ? json_decode($profile->signature_pos, true) : null);
                 $sigLeft = $sigPos['x'] ?? 50;
@@ -612,7 +612,7 @@
                     style="position: absolute; left: {{ $sigLeft }}%; top: {{ $sigTop }}%; width: {{ $sigWidth }}%; z-index: 10;">
         @endif
 
-        @if($profile->use_stamp && $profile->stamp_path)
+        @if(!isset($billerProfile) && $profile->use_stamp && $profile->stamp_path)
             @php
                 $stampPos = is_array($profile->stamp_pos) ? $profile->stamp_pos : (is_string($profile->stamp_pos) ? json_decode($profile->stamp_pos, true) : null);
                 $stampLeft = $stampPos['x'] ?? 55;
