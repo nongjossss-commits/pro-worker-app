@@ -405,6 +405,7 @@
                 </div>
             </div>
 
+            <div class="d-flex flex-column gap-2 ms-md-2">
             {{-- REMARKS SECTION --}}
             @php
                 $isRenewal = request()->is('production/renewal*');
@@ -415,7 +416,7 @@
                     ? route('production.renewal.remarks', $employee->id)
                     : route('production.registration.remarks', $employee->id);
             @endphp
-            <div class="ms-md-2" x-data="{
+            <div x-data="{
                 remarkText: {{ json_encode($remarkText ?? '') }},
                 openRemarkPopup() {
                     Swal.fire({
@@ -661,6 +662,8 @@
                     </div>
                     <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
                 </div>
+            </div>
+
             </div>
 
             </div>
