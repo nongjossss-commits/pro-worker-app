@@ -407,7 +407,14 @@
             if(query.length < 2) return;
 
             searchTimeout = setTimeout(() => {
-                fetch(`{{ route('workflow.api.resigned') }}?q=${query}`)
+                    const employerId = document.getElementById('modal_employer_id').value;
+                    const url = new URL(`{{ route('workflow.api.resigned') }}`);
+                    url.searchParams.append('q', query);
+                    if (employerId) {
+                        url.searchParams.append('employer_id', employerId);
+                    }
+
+                    fetch(url)
                     .then(res => res.json())
                     .then(data => {
                         const container = document.getElementById('resigned-results');
@@ -419,11 +426,16 @@
                         data.forEach(emp => {
                             const item = document.createElement('label');
                             item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer';
+
+                                const statusBadge = emp.terminated_at ?
+                                    '<span class="badge bg-danger ms-2">Terminated</span>' :
+                                    '<span class="badge bg-success ms-2">Active</span>';
+
                             item.innerHTML = `
                                 <input class="form-check-input flex-shrink-0" type="checkbox" name="employee_ids[]" value="${emp.id}">
                                 <div>
-                                    <div class="fw-bold">${emp.employeeNameEn || emp.employeeNameTh || '-'}</div>
-                                    <div class="small text-muted">Old Employer: ${emp.employer ? (emp.employer.employerNameTh || emp.employer.employerNameEn) : 'N/A'}</div>
+                                        <div class="fw-bold">${emp.employeeNameEn || emp.employeeNameTh || '-'} ${statusBadge}</div>
+                                        <div class="small text-muted">Employer: ${emp.employer ? (emp.employer.employerNameTh || emp.employer.employerNameEn) : 'N/A'}</div>
                                     <div class="small text-muted" style="font-size: 0.75rem;">Passport: ${emp.employeePassport || '-'}</div>
                                 </div>
                             `;

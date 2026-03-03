@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\CheckExpiries::class,
         \App\Console\Commands\PruneSoftDeletes::class,
+        \App\Console\Commands\ProcessEmployeeTransfers::class,
     ];
 
     /**
@@ -27,6 +28,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('app:check-expiries')->daily()->timezone('Asia/Bangkok');
         $schedule->command('app:prune-soft-deletes')->daily();
+        $schedule->command('app:process-employee-transfers')->hourly();
     }
 
     /**

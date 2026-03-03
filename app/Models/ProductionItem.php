@@ -24,6 +24,7 @@ class ProductionItem extends Model
         'appointment_updated_at',
         'status',
         'completed_at', // NEW: Workflow finished
+        'is_transfer_processed', // NEW: Flag to prevent duplicate delayed transfers
         'new_employee_data', // JSON for temp employees
         'operator_id', // NEW: Assigned Operator
         'remarks', // Added remarks
