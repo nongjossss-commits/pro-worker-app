@@ -664,33 +664,6 @@ class RegistrationController extends Controller
             ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
             ->first();
 
-        $employeeFinancialStatus = [];
-        if ($financeOrder) {
-            foreach ($financeOrder->financialGroups as $group) {
-                foreach ($group->transactions as $transaction) {
-                    foreach ($transaction->items as $item) {
-                        if (!$item->employee_id) continue;
-
-                        $empId = $item->employee_id;
-                        $currentStatus = $employeeFinancialStatus[$empId] ?? 'none';
-                        $txStatus = $transaction->status;
-
-                        if ($txStatus === 'paid') {
-                            if ($currentStatus === 'none') {
-                                $employeeFinancialStatus[$empId] = 'paid';
-                            }
-                        } else {
-                            $employeeFinancialStatus[$empId] = 'partial';
-                        }
-                    }
-                }
-            }
-        }
-
-        foreach ($employees as $emp) {
-            $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
-        }
-
         return view('production.registration._employee_list_content', [
             'employees' => $employees,
             'steps' => $steps,

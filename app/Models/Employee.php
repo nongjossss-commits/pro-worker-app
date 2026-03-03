@@ -386,4 +386,77 @@ class Employee extends Model
             }
         );
     }
+
+    /**
+     * Get the global overall financial status for the employee across all their active production items.
+     * Returns: 'priced' (grey), 'installment_created' (yellow), 'partial' (blue), 'paid' (green), or 'none'.
+     */
+    public function getOverallFinancialStatusAttribute()
+    {
+        $items = $this->productionItems()
+            ->with(['productionOrder', 'transactions'])
+            ->get();
+
+        if ($items->isEmpty()) {
+            return 'none';
+        }
+
+        $hasPaid = false;
+        $hasUnpaidTx = false;
+        $hasPricedOnly = false;
+        $hasUnpriced = false;
+
+        $validItemsCount = 0;
+
+        foreach ($items as $item) {
+            if (!$item->productionOrder || is_null($item->productionOrder->work_type_id)) {
+                continue;
+            }
+            $validItemsCount++;
+
+            $price = $item->price;
+            $transactions = $item->transactions;
+
+            if ($transactions->isEmpty()) {
+                if ($price > 0) {
+                    $hasPricedOnly = true;
+                } else {
+                    $hasUnpriced = true;
+                }
+            } else {
+                $itemFullyPaid = true;
+                $itemAnyPaid = false;
+                foreach ($transactions as $tx) {
+                    if ($tx->status === 'paid') {
+                        $itemAnyPaid = true;
+                    } else {
+                        $itemFullyPaid = false;
+                    }
+                }
+
+                if ($itemFullyPaid) {
+                    $hasPaid = true;
+                } elseif ($itemAnyPaid) {
+                    $hasPaid = true;
+                    $hasUnpaidTx = true;
+                } else {
+                    $hasUnpaidTx = true;
+                }
+            }
+        }
+
+        if ($validItemsCount === 0) return 'none';
+
+        if ($hasPaid && !$hasUnpaidTx && !$hasPricedOnly && !$hasUnpriced) {
+            return 'paid'; // Green
+        } elseif ($hasPaid) {
+            return 'partial'; // Blue
+        } elseif ($hasUnpaidTx) {
+            return 'installment_created'; // Yellow
+        } elseif ($hasPricedOnly) {
+            return 'priced'; // Grey
+        }
+
+        return 'none';
+    }
 }
