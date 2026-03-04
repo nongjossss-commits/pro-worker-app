@@ -44,6 +44,7 @@ class FinancialProfileController extends Controller
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:100',
+            'authorized_signatory_name' => 'nullable|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'signature' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'stamp' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
@@ -51,7 +52,7 @@ class FinancialProfileController extends Controller
             'stamp_position' => 'nullable|array',
         ]);
 
-        $data = $request->only(['type', 'name', 'tax_id', 'branch', 'address', 'phone', 'email', 'signature_position', 'stamp_position']);
+        $data = $request->only(['type', 'name', 'tax_id', 'branch', 'address', 'phone', 'email', 'authorized_signatory_name', 'signature_position', 'stamp_position']);
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->store('financial_profiles/logos', 'public');
@@ -96,6 +97,7 @@ class FinancialProfileController extends Controller
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:100',
+            'authorized_signatory_name' => 'nullable|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'signature' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'stamp' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
@@ -106,7 +108,7 @@ class FinancialProfileController extends Controller
             'remove_stamp' => 'nullable|boolean',
         ]);
 
-        $data = $request->only(['name', 'tax_id', 'branch', 'address', 'phone', 'email', 'signature_position', 'stamp_position']);
+        $data = $request->only(['name', 'tax_id', 'branch', 'address', 'phone', 'email', 'authorized_signatory_name', 'signature_position', 'stamp_position']);
 
         // Handle File Removals
         if ($request->input('remove_logo') && $profile->logo_path) {

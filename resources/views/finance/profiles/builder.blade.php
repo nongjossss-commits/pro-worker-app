@@ -77,6 +77,10 @@
                                 <input type="email" class="form-control" x-model="formData.email">
                             </div>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Authorized Signatory Name</label>
+                            <input type="text" class="form-control" x-model="formData.authorized_signatory_name" placeholder="Name of person signing (replaces company name)">
+                        </div>
 
                         <hr>
                         <h6>Assets (1:1 Drag & Drop placement)</h6>
@@ -165,14 +169,16 @@
                                 </tbody>
                             </table>
 
-                            <div class="row" style="position: absolute; bottom: 80px; left: 0; right: 0;">
-                                <div class="col-6 text-center">
-                                    _______________________<br>
-                                    Customer Signature
+                            <div class="row" style="position: absolute; bottom: 80px; left: 40px; right: 40px;">
+                                <div class="col-6 text-center" style="position: relative;">
+                                    <div style="font-weight: bold; margin-bottom: 40px;">Received By <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ ผู้รับเงิน</span></div>
+                                    <div style="border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%;"></div>
+                                    <div style="font-size: 14px; color: #555;">Date <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ วันที่</span>: ____/____/______</div>
                                 </div>
-                                <div class="col-6 text-center">
-                                    _______________________<br>
-                                    Authorized Signature
+                                <div class="col-6 text-center" style="position: relative;">
+                                    <div style="font-weight: bold; margin-bottom: 40px;">Authorized Signature <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ ผู้มีอำนาจลงนาม</span></div>
+                                    <div style="border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%;"></div>
+                                    <div style="font-size: 14px; color: #555;" x-text="formData.authorized_signatory_name || formData.name || 'Company Name'"></div>
                                 </div>
                             </div>
                         </div>
@@ -238,6 +244,7 @@ document.addEventListener('alpine:init', () => {
             address: '',
             phone: '',
             email: '',
+            authorized_signatory_name: '',
             logo_url: null,
             signature_url: null,
             stamp_url: null,
@@ -272,7 +279,7 @@ document.addEventListener('alpine:init', () => {
             this.editingProfileId = null;
             this.formData = {
                 type: this.currentType,
-                name: '', tax_id: '', branch: '', address: '', phone: '', email: '',
+                name: '', tax_id: '', branch: '', address: '', phone: '', email: '', authorized_signatory_name: '',
                 logo_url: null, signature_url: null, stamp_url: null,
                 signature_position: { x: 400, y: 400, width: 150, height: 75, rotate: 0 },
                 stamp_position: { x: 500, y: 400, width: 100, height: 100, rotate: 0 },
@@ -292,6 +299,7 @@ document.addEventListener('alpine:init', () => {
                 address: profile.address,
                 phone: profile.phone,
                 email: profile.email,
+                authorized_signatory_name: profile.authorized_signatory_name,
                 logo_url: profile.logo_path ? `/storage/${profile.logo_path}` : null,
                 signature_url: profile.signature_path ? `/storage/${profile.signature_path}` : null,
                 stamp_url: profile.stamp_path ? `/storage/${profile.stamp_path}` : null,
@@ -386,7 +394,7 @@ document.addEventListener('alpine:init', () => {
             const data = new FormData();
 
             // Text fields
-            ['type', 'name', 'tax_id', 'branch', 'address', 'phone', 'email'].forEach(f => {
+            ['type', 'name', 'tax_id', 'branch', 'address', 'phone', 'email', 'authorized_signatory_name'].forEach(f => {
                 if(this.formData[f] !== null && this.formData[f] !== undefined) {
                     data.append(f, this.formData[f]);
                 }
