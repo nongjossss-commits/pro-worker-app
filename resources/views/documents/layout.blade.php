@@ -229,9 +229,22 @@
                  <div>Tax ID: {{ $financial['customer_override']['tax_id'] ?? '-' }}</div>
                  <div>Tel: {{ $financial['customer_override']['phone'] ?? '-' }}</div>
             @else
-                 <div class="client-name">{{ $production->employer->employerNameTh ?? $production->employer->employerNameEn ?? 'N/A' }}</div>
-                 <div>{{ $production->employer->address ?? '' }}</div>
-                 <div>Tel: {{ $production->employer->employerPhone ?? '-' }}</div>
+                 @php
+                     $emp = $production->employer;
+                     $empName = array_filter([$emp->employerNameTh, $emp->employerNameEn]);
+                     $empNameStr = !empty($empName) ? implode(' / ', $empName) : 'N/A';
+
+                     $empAddress = '';
+                     if ($emp->addresses && $emp->addresses->isNotEmpty()) {
+                         $addr = $emp->addresses->firstWhere('type', 'registered') ?? $emp->addresses->first();
+                         $addrParts = array_filter([$addr->full_address_th, $addr->full_address_en]);
+                         $empAddress = implode("\n", $addrParts);
+                     }
+                 @endphp
+                 <div class="client-name">{{ $empNameStr }}</div>
+                 <div>{!! nl2br(e($empAddress)) !!}</div>
+                 <div>Tax ID: {{ $emp->employerTaxId ?? '-' }}</div>
+                 <div>Tel: {{ $emp->employerPhone ?? '-' }}</div>
             @endif
         </div>
 

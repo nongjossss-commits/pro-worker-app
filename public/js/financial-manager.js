@@ -41,6 +41,7 @@ if (typeof window.financialManager === 'undefined') {
             useCustomCustomer: false,
             customCustomerData: { name:'', address:'', tax_id:'', phone:'' },
             selectedAgentId: '',
+            selectedEmployerAddressId: '',
 
             // Calculated values
             totalAmount: 0, // Service Fee Inc VAT
@@ -1075,6 +1076,27 @@ if (typeof window.financialManager === 'undefined') {
                 });
 
                 return Math.max(0, totalLocalPool - localAssignedCount);
+            },
+
+            loadEmployerData() {
+                if(!this.selectedEmployerAddressId) return;
+                const select = document.querySelector(`select[x-model="selectedEmployerAddressId"]`);
+                if(select) {
+                    const option = select.options[select.selectedIndex];
+                    const nameTh = option.dataset.nameTh || '';
+                    const nameEn = option.dataset.nameEn || '';
+                    const nameParts = [nameTh, nameEn].filter(n => n);
+
+                    const addressTh = option.dataset.addressTh || '';
+                    const addressEn = option.dataset.addressEn || '';
+                    const addressParts = [addressTh, addressEn].filter(a => a);
+
+                    this.customCustomerData.name = nameParts.length > 0 ? nameParts.join(' / ') : 'N/A';
+                    this.customCustomerData.address = addressParts.join('\n');
+                    this.customCustomerData.tax_id = option.dataset.taxId || '';
+                    this.customCustomerData.phone = option.dataset.phone || '';
+                    this.useCustomCustomer = true; // Automatically check the override box
+                }
             },
 
             loadAgentData() {
