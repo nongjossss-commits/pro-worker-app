@@ -182,11 +182,11 @@
                         <img x-show="formData.logo_url" :src="formData.logo_url" class="position-absolute" style="max-width: 150px; max-height: 80px; top: 40px; left: 40px;">
 
                         <!-- Signature Draggable -->
-                        <img x-show="formData.signature_url" :src="formData.signature_url" id="drag-signature" class="draggable-asset" data-type="signature"
+                        <img :src="formData.signature_url" id="drag-signature" class="draggable-asset" data-type="signature"
                              x-bind:style="getAssetStyle('signature')">
 
                         <!-- Stamp Draggable -->
-                        <img x-show="formData.stamp_url" :src="formData.stamp_url" id="drag-stamp" class="draggable-asset" data-type="stamp"
+                        <img :src="formData.stamp_url" id="drag-stamp" class="draggable-asset" data-type="stamp"
                              x-bind:style="getAssetStyle('stamp')">
                     </div>
 
@@ -241,8 +241,8 @@ document.addEventListener('alpine:init', () => {
             logo_url: null,
             signature_url: null,
             stamp_url: null,
-            signature_position: { x: 400, y: 950, width: 150, height: 75, rotate: 0 },
-            stamp_position: { x: 500, y: 930, width: 100, height: 100, rotate: 0 },
+            signature_position: { x: 400, y: 400, width: 150, height: 75, rotate: 0 },
+            stamp_position: { x: 500, y: 400, width: 100, height: 100, rotate: 0 },
         },
 
         // Tracking items to remove on backend
@@ -274,8 +274,8 @@ document.addEventListener('alpine:init', () => {
                 type: this.currentType,
                 name: '', tax_id: '', branch: '', address: '', phone: '', email: '',
                 logo_url: null, signature_url: null, stamp_url: null,
-                signature_position: { x: 400, y: 950, width: 150, height: 75, rotate: 0 },
-                stamp_position: { x: 500, y: 930, width: 100, height: 100, rotate: 0 },
+                signature_position: { x: 400, y: 400, width: 150, height: 75, rotate: 0 },
+                stamp_position: { x: 500, y: 400, width: 100, height: 100, rotate: 0 },
             };
             this.removals = { logo: false, signature: false, stamp: false };
             this.currentMode = 'form';
@@ -295,8 +295,8 @@ document.addEventListener('alpine:init', () => {
                 logo_url: profile.logo_path ? `/storage/${profile.logo_path}` : null,
                 signature_url: profile.signature_path ? `/storage/${profile.signature_path}` : null,
                 stamp_url: profile.stamp_path ? `/storage/${profile.stamp_path}` : null,
-                signature_position: profile.signature_position || { x: 400, y: 950, width: 150, height: 75, rotate: 0 },
-                stamp_position: profile.stamp_position || { x: 500, y: 930, width: 100, height: 100, rotate: 0 },
+                signature_position: profile.signature_position || { x: 400, y: 400, width: 150, height: 75, rotate: 0 },
+                stamp_position: profile.stamp_position || { x: 500, y: 400, width: 100, height: 100, rotate: 0 },
             };
             this.removals = { logo: false, signature: false, stamp: false };
             this.currentMode = 'form';
@@ -369,9 +369,12 @@ document.addEventListener('alpine:init', () => {
 
         getAssetStyle(type) {
             const pos = this.formData[`${type}_position`];
-            if (!pos) return {};
+            const url = this.formData[`${type}_url`];
+            if (!pos) return { display: 'none' };
             // Returning an object allows Alpine to safely merge the x-show internal styles (display: none).
+            // We manage display explicitly here to avoid x-show conflicts with dynamic styles
             return {
+                display: url ? 'block' : 'none',
                 width: `${pos.width}px`,
                 height: `${pos.height}px`,
                 transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.rotate || 0}deg)`
