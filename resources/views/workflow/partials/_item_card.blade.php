@@ -431,221 +431,223 @@
                     </div>
                 </div>
 
-                {{-- REMARKS SECTION --}}
-                <div class="ms-md-4" x-data="{
-                    remarkText: {{ json_encode($item->remarks ?? '') }},
-                    openRemarkPopup() {
-                        Swal.fire({
-                            title: '{{ __("แก้ไขหมายเหตุ") }}',
-                            input: 'textarea',
-                            inputValue: this.remarkText,
-                            inputPlaceholder: 'กรอกข้อความหมายเหตุ...',
-                            showCancelButton: true,
-                            confirmButtonColor: '#3085d6',
-                            cancelButtonColor: '#d33',
-                            confirmButtonText: '{{ __("บันทึก") }}',
-                            cancelButtonText: '{{ __("ยกเลิก") }}',
-                            showLoaderOnConfirm: true,
-                            preConfirm: (text) => {
-                                return fetch('/workflow/item/{{ $item->id }}/remarks', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                        'Accept': 'application/json'
-                                    },
-                                    body: JSON.stringify({ remarks: text })
-                                })
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error(response.statusText)
-                                    }
-                                    return response.json().then(data => ({ data, text }));
-                                })
-                                .catch(error => {
-                                    Swal.showValidationMessage(`เกิดข้อผิดพลาด: ${error}`);
-                                });
-                            },
-                            allowOutsideClick: () => !Swal.isLoading()
-                        }).then((result) => {
-                            if (result.isConfirmed && result.value.data.success) {
-                                this.remarkText = result.value.data.remarks ?? result.value.text; // Update local text from response or input
-                                Swal.fire({
-                                    toast: true,
-                                    position: 'top-end',
-                                    icon: 'success',
-                                    title: 'บันทึกหมายเหตุสำเร็จ',
-                                    showConfirmButton: false,
-                                    timer: 1500
-                                });
-                            } else if (result.isConfirmed && !result.value.data.success) {
-                                Swal.fire('Error', 'เกิดข้อผิดพลาดในการบันทึก', 'error');
-                            }
-                        });
-                    }
-                }">
-                    <div style="min-width: 140px; max-width: 250px;">
-                        <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
-
-                        <div class="d-flex align-items-start gap-1">
-                            <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
-                                <span x-text="remarkText || '-'"></span>
-                            </div>
-                            <button @click="openRemarkPopup()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
-                                <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            {{-- 3 Extra Fields (Editable) --}}
-            <div class="d-flex flex-column gap-2 mt-2" x-data="{
-                isEditing: false,
-                nameList: '{{ $item->employee->outsource_code ?? '' }}',
-                reqNo: '{{ $item->request_number ?? '' }}',
-                refId: '{{ $item->employee->employee_reference_id ?? '' }}',
-                updateMethod: 'item_update',
-                updateUrl: '{{ route('production.items.update_fields', $item->id) }}',
-                copy(el, text) {
-                    if (!text) return;
-                    navigator.clipboard.writeText(text).then(() => {
-                        const originalHtml = el.innerHTML;
-                        el.innerHTML = '<i class=\'bi bi-check text-success\'></i>';
-                        setTimeout(() => el.innerHTML = originalHtml, 1000);
-                    });
-                },
-                fitText(el) {
-                    if (!el) return;
-                    el.style.fontSize = '';
-                    this.$nextTick(() => {
-                        if (el.offsetParent === null) return;
-                        if (el.scrollWidth > el.clientWidth) {
-                             let size = 87.5;
-                             while (el.scrollWidth > el.clientWidth && size > 50) {
-                                 size -= 5;
-                                 el.style.fontSize = size + '%';
-                             }
-                        }
-                    });
-                },
-                init() {
-                    this.$watch('isEditing', value => {
-                        if (!value) {
-                            this.$nextTick(() => {
-                                this.fitText(this.$refs.raDisplay);
-                                this.fitText(this.$refs.reqDisplay);
-                                this.fitText(this.$refs.refDisplay);
+                {{-- REMARKS & 3 Extra Fields SECTION --}}
+                <div class="ms-md-4 d-flex flex-column gap-2" style="min-width: 140px; max-width: 250px;">
+                    <div x-data="{
+                        remarkText: {{ json_encode($item->remarks ?? '') }},
+                        openRemarkPopup() {
+                            Swal.fire({
+                                title: '{{ __("แก้ไขหมายเหตุ") }}',
+                                input: 'textarea',
+                                inputValue: this.remarkText,
+                                inputPlaceholder: 'กรอกข้อความหมายเหตุ...',
+                                showCancelButton: true,
+                                confirmButtonColor: '#3085d6',
+                                cancelButtonColor: '#d33',
+                                confirmButtonText: '{{ __("บันทึก") }}',
+                                cancelButtonText: '{{ __("ยกเลิก") }}',
+                                showLoaderOnConfirm: true,
+                                preConfirm: (text) => {
+                                    return fetch('/workflow/item/{{ $item->id }}/remarks', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({ remarks: text })
+                                    })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error(response.statusText)
+                                        }
+                                        return response.json().then(data => ({ data, text }));
+                                    })
+                                    .catch(error => {
+                                        Swal.showValidationMessage(`เกิดข้อผิดพลาด: ${error}`);
+                                    });
+                                },
+                                allowOutsideClick: () => !Swal.isLoading()
+                            }).then((result) => {
+                                if (result.isConfirmed && result.value.data.success) {
+                                    this.remarkText = result.value.data.remarks ?? result.value.text; // Update local text from response or input
+                                    Swal.fire({
+                                        toast: true,
+                                        position: 'top-end',
+                                        icon: 'success',
+                                        title: 'บันทึกหมายเหตุสำเร็จ',
+                                        showConfirmButton: false,
+                                        timer: 1500
+                                    });
+                                } else if (result.isConfirmed && !result.value.data.success) {
+                                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+                                }
                             });
                         }
-                    });
-                },
-                saveFields() {
-                    let formData = new FormData();
-                    formData.append('_method', 'PUT');
-                    formData.append('_token', '{{ csrf_token() }}');
-                    formData.append('request_number', this.reqNo);
+                    }">
+                        <div>
+                            <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
 
-                    // Request 1: Update the specific request number (item)
-                    let req1 = fetch(this.updateUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: formData
-                    });
-
-                    // Request 2: Update the global fields (outsource_code, employee_reference_id)
-                    let empFormData = new FormData();
-                    empFormData.append('_method', 'PUT');
-                    empFormData.append('_token', '{{ csrf_token() }}');
-                    empFormData.append('outsource_code', this.nameList);
-                    empFormData.append('employee_reference_id', this.refId);
-                    empFormData.append('employer_id', '{{ $item->employee->employer_id ?? '' }}');
-                    empFormData.append('employeeNameEn', '{{ $item->employee->employeeNameEn ?? '' }}');
-
-                    let req2 = fetch('{{ route('employees.update', $item->employee->id ?? 0) }}', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: empFormData
-                    });
-
-                    Promise.all([req1, req2])
-                    .then(responses => Promise.all(responses.map(res => res.json())))
-                    .then(dataArray => {
-                        // Check if both succeeded, or if at least the primary one succeeded
-                        if (typeof showToast === 'function') {
-                            showToast('{{ __('Saved successfully') }}', 'success');
-                        } else {
-                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '{{ __('Saved successfully') }}', showConfirmButton: false, timer: 1500 });
-                        }
-                        this.isEditing = false;
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        if (typeof showToast === 'function') {
-                            showToast('{{ __('Error saving') }}', 'danger');
-                        } else {
-                            Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: '{{ __('Error saving') }}', showConfirmButton: false, timer: 1500 });
-                        }
-                    });
-                }
-            }">
-                <div class="d-flex align-items-end gap-2">
-                    {{-- Field 1: Name List (Renamed to RA) --}}
-                    <div style="width: 140px;">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
-                        <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                            <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
-                            <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
-                                <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
-                            </button>
+                            <div class="d-flex align-items-start gap-1">
+                                <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                                    <span x-text="remarkText || '-'"></span>
+                                </div>
+                                <button @click="openRemarkPopup()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
+                                    <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                                </button>
+                            </div>
                         </div>
-                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
                     </div>
 
-                    {{-- Action Buttons --}}
-                    <div class="d-flex gap-1 mb-1">
-                        <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Fields">
-                            <i class="bi bi-pencil-fill"></i>
-                        </button>
-                        <button x-show="isEditing" @click="saveFields()" class="btn btn-sm btn-success rounded-circle" title="Save Fields">
-                            <i class="bi bi-check-lg"></i>
-                        </button>
-                        <button x-show="isEditing" @click="isEditing = false" class="btn btn-sm btn-outline-danger rounded-circle" title="Cancel">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
+                    {{-- 3 Extra Fields (Editable) --}}
+                    <div class="d-flex flex-column gap-2" x-data="{
+                        isEditing: false,
+                        nameList: '{{ $item->employee->name_list_number ?? '' }}',
+                        reqNo: '{{ $item->request_number ?? '' }}',
+                        refId: '{{ $item->employee->employee_reference_id ?? '' }}',
+                        updateMethod: 'item_update',
+                        updateUrl: '{{ route('production.items.update_fields', $item->id) }}',
+                        copy(el, text) {
+                            if (!text) return;
+                            navigator.clipboard.writeText(text).then(() => {
+                                const originalHtml = el.innerHTML;
+                                el.innerHTML = '<i class=\'bi bi-check text-success\'></i>';
+                                setTimeout(() => el.innerHTML = originalHtml, 1000);
+                            });
+                        },
+                        fitText(el) {
+                            if (!el) return;
+                            el.style.fontSize = '';
+                            this.$nextTick(() => {
+                                if (el.offsetParent === null) return;
+                                if (el.scrollWidth > el.clientWidth) {
+                                     let size = 87.5;
+                                     while (el.scrollWidth > el.clientWidth && size > 50) {
+                                         size -= 5;
+                                         el.style.fontSize = size + '%';
+                                     }
+                                }
+                            });
+                        },
+                        init() {
+                            this.$watch('isEditing', value => {
+                                if (!value) {
+                                    this.$nextTick(() => {
+                                        this.fitText(this.$refs.raDisplay);
+                                        this.fitText(this.$refs.reqDisplay);
+                                        this.fitText(this.$refs.refDisplay);
+                                    });
+                                }
+                            });
+                        },
+                        saveFields() {
+                            let formData = new FormData();
+                            formData.append('_method', 'PUT');
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('request_number', this.reqNo);
+
+                            // Request 1: Update the specific request number (item)
+                            let req1 = fetch(this.updateUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: formData
+                            });
+
+                            // Request 2: Update the global fields (name_list_number, employee_reference_id)
+                            let empFormData = new FormData();
+                            empFormData.append('_method', 'PUT');
+                            empFormData.append('_token', '{{ csrf_token() }}');
+                            empFormData.append('name_list_number', this.nameList);
+                            empFormData.append('employee_reference_id', this.refId);
+                            empFormData.append('employer_id', '{{ $item->employee->employer_id ?? '' }}');
+                            empFormData.append('employeeNameEn', '{{ $item->employee->employeeNameEn ?? '' }}');
+
+                            let req2 = fetch('{{ route('employees.update', $item->employee->id ?? 0) }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: empFormData
+                            });
+
+                            Promise.all([req1, req2])
+                            .then(responses => Promise.all(responses.map(res => res.json())))
+                            .then(dataArray => {
+                                // Check if both succeeded, or if at least the primary one succeeded
+                                if (typeof showToast === 'function') {
+                                    showToast('{{ __('Saved successfully') }}', 'success');
+                                } else {
+                                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '{{ __('Saved successfully') }}', showConfirmButton: false, timer: 1500 });
+                                }
+                                this.isEditing = false;
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                if (typeof showToast === 'function') {
+                                    showToast('{{ __('Error saving') }}', 'danger');
+                                } else {
+                                    Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: '{{ __('Error saving') }}', showConfirmButton: false, timer: 1500 });
+                                }
+                            });
+                        }
+                    }">
+                        <div class="d-flex align-items-end gap-2">
+                            {{-- Field 1: Name List (Renamed to RA) --}}
+                            <div style="flex-grow: 1;">
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
+                                <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
+                                    <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
+                                    <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
+                                        <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
+                                    </button>
+                                </div>
+                                <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
+                            </div>
+
+                            {{-- Action Buttons --}}
+                            <div class="d-flex gap-1 mb-1">
+                                <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Fields">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                                <button x-show="isEditing" @click="saveFields()" class="btn btn-sm btn-success rounded-circle" title="Save Fields">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button x-show="isEditing" @click="isEditing = false" class="btn btn-sm btn-outline-danger rounded-circle" title="Cancel">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Field 2: Request No --}}
+                        <div style="width: 100%;">
+                            <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
+                            <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
+                                <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
+                                <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
+                                    <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
+                                </button>
+                            </div>
+                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
+                        </div>
+
+                        {{-- Field 3: Ref ID --}}
+                        <div style="width: 100%;">
+                            <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
+                            <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
+                                <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
+                                <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
+                                    <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
+                                </button>
+                            </div>
+                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
+                        </div>
                     </div>
                 </div>
 
-                {{-- Field 2: Request No --}}
-                <div style="width: 140px;">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
-                    <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                        <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
-                        <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
-                            <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
-                        </button>
-                    </div>
-                    <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
-                </div>
-
-                {{-- Field 3: Ref ID --}}
-                <div style="width: 140px;">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
-                    <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                        <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
-                        <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
-                            <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
-                        </button>
-                    </div>
-                    <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
-                </div>
             </div>
 
             {{-- Actions --}}

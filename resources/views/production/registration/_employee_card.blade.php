@@ -471,7 +471,7 @@
                 <div style="min-width: 140px; max-width: 250px;">
                     <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
 
-                    <div class="d-flex align-items-start gap-1">
+                    <div class="d-flex align-items-start gap-1 mb-2">
                         <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
                             <span x-text="remarkText || '-'"></span>
                         </div>
@@ -511,7 +511,7 @@
             @endphp
 
             {{-- 3 Extra Fields (Editable) --}}
-            <div class="d-flex flex-column gap-2 mt-2" x-data="{
+            <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
                 nameList: '{{ $employee->name_list_number }}',
                 reqNo: '{{ $currentRequestNumber }}',
