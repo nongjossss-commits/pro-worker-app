@@ -85,7 +85,7 @@
                         <div class="mb-3">
                             <label class="form-label">Logo (Top Corner)</label>
                             <div class="d-flex gap-2 align-items-center">
-                                <input type="file" class="form-control form-control-sm" x-ref="logoInput" @change="previewAsset($event, 'logo')">
+                                <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="logoInput" @change="previewAsset($event, 'logo')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.logo_url" @click="removeAsset('logo')"><i class="bi bi-x"></i></button>
                             </div>
                         </div>
@@ -94,7 +94,7 @@
                         <div class="mb-3">
                             <label class="form-label">Signature Image</label>
                             <div class="d-flex gap-2 align-items-center">
-                                <input type="file" class="form-control form-control-sm" x-ref="signatureInput" @change="previewAsset($event, 'signature')">
+                                <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="signatureInput" @change="previewAsset($event, 'signature')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.signature_url" @click="removeAsset('signature')"><i class="bi bi-x"></i></button>
                             </div>
                             <div class="small text-muted mt-1">Upload and drag on the document to the right.</div>
@@ -104,7 +104,7 @@
                         <div class="mb-3">
                             <label class="form-label">Company Stamp Image</label>
                             <div class="d-flex gap-2 align-items-center">
-                                <input type="file" class="form-control form-control-sm" x-ref="stampInput" @change="previewAsset($event, 'stamp')">
+                                <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="stampInput" @change="previewAsset($event, 'stamp')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.stamp_url" @click="removeAsset('stamp')"><i class="bi bi-x"></i></button>
                             </div>
                         </div>
@@ -183,11 +183,11 @@
 
                         <!-- Signature Draggable -->
                         <img x-show="formData.signature_url" :src="formData.signature_url" id="drag-signature" class="draggable-asset" data-type="signature"
-                             :style="getAssetStyle('signature')">
+                             x-bind:style="getAssetStyle('signature')">
 
                         <!-- Stamp Draggable -->
                         <img x-show="formData.stamp_url" :src="formData.stamp_url" id="drag-stamp" class="draggable-asset" data-type="stamp"
-                             :style="getAssetStyle('stamp')">
+                             x-bind:style="getAssetStyle('stamp')">
                     </div>
 
                 </div>
@@ -215,6 +215,9 @@
     }
     .draggable-asset:hover {
         border-color: #0d6efd;
+    }
+    img.position-absolute {
+        z-index: 10 !important;
     }
 </style>
 
@@ -366,11 +369,13 @@ document.addEventListener('alpine:init', () => {
 
         getAssetStyle(type) {
             const pos = this.formData[`${type}_position`];
-            if (!pos) return '';
-            // Instead of using :style directly, we use x-bind:style which is safer.
-            // But Alpine's x-show overrides display natively. By returning object-like styles
-            // or a clean string without interfering with 'display', it works correctly.
-            return `width: ${pos.width}px; height: ${pos.height}px; transform: translate(${pos.x}px, ${pos.y}px) rotate(${pos.rotate || 0}deg);`;
+            if (!pos) return {};
+            // Returning an object allows Alpine to safely merge the x-show internal styles (display: none).
+            return {
+                width: `${pos.width}px`,
+                height: `${pos.height}px`,
+                transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.rotate || 0}deg)`
+            };
         },
 
         async saveProfile() {
@@ -418,9 +423,15 @@ document.addEventListener('alpine:init', () => {
                     this.loadProfiles(this.currentType);
                 } else {
                     const err = await res.json();
-                    Swal.fire('Error', err.message || 'Validation failed', 'error');
+                    let errMsg = err.message || 'Validation failed';
+                    // Extract detailed validation errors if present
+                    if (err.errors) {
+                        errMsg = Object.values(err.errors).map(val => val.join(' ')).join('\n');
+                    }
+                    Swal.fire('Error', errMsg, 'error');
                 }
             } catch (e) {
+                console.error(e);
                 Swal.fire('Error', 'Server error occurred.', 'error');
             } finally {
                 this.isSaving = false;
