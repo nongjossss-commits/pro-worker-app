@@ -871,9 +871,11 @@
             modalInstance: null,
 
             init() {
-                this.modalInstance = new bootstrap.Modal(document.getElementById('signatureSettingsModal'));
-
                 window.addEventListener('open-signature-modal', (event) => {
+                    if (!this.modalInstance) {
+                        this.modalInstance = new bootstrap.Modal(document.getElementById('signatureSettingsModal'));
+                    }
+
                     this.targetField = event.detail.field;
                     const currentAction = event.detail.currentAction;
 
