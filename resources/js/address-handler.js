@@ -25,8 +25,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const populateProvinces = () => {
         resetSelect(provinceSelect, '-- เลือกจังหวัด --');
-        thaiAddressData.forEach(province => {
-            const option = new Option(province.name_th, province.name_th);
+        // Extract unique provinces
+        const uniqueProvinces = [...new Map(thaiAddressData.map(item => [item.province_th.trim(), item])).values()];
+        // Sort alphabetically
+        uniqueProvinces.sort((a, b) => a.province_th.trim().localeCompare(b.province_th.trim(), 'th'));
+
+        uniqueProvinces.forEach(province => {
+            const option = new Option(province.province_th.trim(), province.province_th.trim());
             provinceSelect.add(option);
         });
         provinceSelect.disabled = false;
@@ -139,24 +144,29 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
         resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
         resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
         clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
-        // districtSelect.disabled = false;
+
         const selectedProvinceName = this.value;
         if (!selectedProvinceName) {
-            return; // A province is not selected, so leave dropdowns disabled as they are.
+            return;
         }
 
-        const selectedProvince = thaiAddressData.find(p => p.name_th === selectedProvinceName);
-        // console.log('Selected Province:', selectedProvince);
-        if (selectedProvince) {
-            provinceEnInput.value = selectedProvince.name_en;
+        // Set English name
+        const selectedData = thaiAddressData.find(d => d.province_th.trim() === selectedProvinceName.trim());
+        if (selectedData) {
+            provinceEnInput.value = selectedData.province_en.trim();
+        }
 
-            // Populate districts
-            districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>'; // Add placeholder
-            selectedProvince.districts.forEach(district => {
-                districtSelect.add(new Option(district.name_th, district.name_th));
-            });
+        // Populate districts
+        districtSelect.innerHTML = '<option value="">-- เลือกอำเภอ/เขต --</option>';
+        const districtsForProvince = thaiAddressData.filter(d => d.province_th.trim() === selectedProvinceName.trim());
+        const uniqueDistricts = [...new Set(districtsForProvince.map(d => d.district_th.trim()))];
+        uniqueDistricts.sort((a, b) => a.localeCompare(b, 'th'));
 
-            // As the final step, enable the dropdown now that it's populated.
+        uniqueDistricts.forEach(district => {
+            districtSelect.add(new Option(district, district));
+        });
+
+        if (uniqueDistricts.length > 0) {
             districtSelect.disabled = false;
         }
     });
@@ -167,26 +177,34 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
         clearInputs(districtEnInput, subDistrictEnInput, zipCodeInput);
 
         const selectedDistrictName = this.value;
-        if (!selectedDistrictName) {
-            return; // A district is not selected, leave sub-district disabled.
+        const selectedProvinceName = provinceSelect.value;
+        if (!selectedDistrictName || !selectedProvinceName) {
+            return;
         }
 
-        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
-        if (!selectedProvince) {
-            return; // Should not happen if UI is working correctly
+        // Set English name
+        const selectedData = thaiAddressData.find(d =>
+            d.province_th.trim() === selectedProvinceName.trim() &&
+            d.district_th.trim() === selectedDistrictName.trim()
+        );
+        if (selectedData) {
+            districtEnInput.value = selectedData.district_en.trim();
         }
 
-        const selectedDistrict = selectedProvince.districts.find(d => d.name_th === selectedDistrictName);
-        if (selectedDistrict) {
-            districtEnInput.value = selectedDistrict.name_en;
+        // Populate sub-districts
+        subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>';
+        const subDistrictsForDistrict = thaiAddressData.filter(d =>
+            d.province_th.trim() === selectedProvinceName.trim() &&
+            d.district_th.trim() === selectedDistrictName.trim()
+        );
+        const uniqueSubDistricts = [...new Map(subDistrictsForDistrict.map(item => [item.subdistrict_th.trim(), item])).values()];
+        uniqueSubDistricts.sort((a, b) => a.subdistrict_th.trim().localeCompare(b.subdistrict_th.trim(), 'th'));
 
-            // Populate sub-districts
-            subDistrictSelect.innerHTML = '<option value="">-- เลือกตำบล/แขวง --</option>'; // Add placeholder
-            selectedDistrict.sub_districts.forEach(sub => {
-                subDistrictSelect.add(new Option(sub.name_th, sub.name_th));
-            });
+        uniqueSubDistricts.forEach(sub => {
+            subDistrictSelect.add(new Option(sub.subdistrict_th.trim(), sub.subdistrict_th.trim()));
+        });
 
-            // As the final step, enable the dropdown.
+        if (uniqueSubDistricts.length > 0) {
             subDistrictSelect.disabled = false;
         }
     });
@@ -194,17 +212,21 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
     subDistrictSelect.addEventListener('change', function () {
         clearInputs(subDistrictEnInput, zipCodeInput);
 
-        const selectedProvince = thaiAddressData.find(p => p.name_th === provinceSelect.value);
-        if (!selectedProvince) return;
-        const selectedDistrict = selectedProvince.districts.find(d => d.name_th === districtSelect.value);
-        if (!selectedDistrict) return;
         const selectedSubDistrictName = this.value;
-        if (!selectedSubDistrictName) return;
+        const selectedDistrictName = districtSelect.value;
+        const selectedProvinceName = provinceSelect.value;
 
-        const selectedSubDistrict = selectedDistrict.sub_districts.find(s => s.name_th === selectedSubDistrictName);
-        if (selectedSubDistrict) {
-            subDistrictEnInput.value = selectedSubDistrict.name_en;
-            zipCodeInput.value = selectedSubDistrict.zip_code;
+        if (!selectedSubDistrictName || !selectedDistrictName || !selectedProvinceName) return;
+
+        const selectedData = thaiAddressData.find(d =>
+            d.province_th.trim() === selectedProvinceName.trim() &&
+            d.district_th.trim() === selectedDistrictName.trim() &&
+            d.subdistrict_th.trim() === selectedSubDistrictName.trim()
+        );
+
+        if (selectedData) {
+            subDistrictEnInput.value = selectedData.subdistrict_en.trim();
+            zipCodeInput.value = selectedData.zip_code ? String(selectedData.zip_code).trim() : '';
         }
     });
 
