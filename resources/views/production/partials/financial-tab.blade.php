@@ -730,6 +730,31 @@ class="row">
                     <button type="button" class="btn-close" @click="showCustomCustomerModal = false"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- Load from Employer -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Quick Load: From Employer Addresses</label>
+                        <div class="input-group input-group-sm">
+                            <select class="form-select" x-model="selectedEmployerAddressId" @change="loadEmployerData()">
+                                <option value="">-- Select Address --</option>
+                                @foreach($production->employer->addresses ?? [] as $address)
+                                    <option value="{{ $address->id }}"
+                                            data-name-th="{{ $production->employer->employerNameTh }}"
+                                            data-name-en="{{ $production->employer->employerNameEn }}"
+                                            data-tax-id="{{ $production->employer->employerTaxId }}"
+                                            data-phone="{{ $production->employer->employerPhone }}"
+                                            data-address-th="{{ $address->full_address_th }}"
+                                            data-address-en="{{ $address->full_address_en }}"
+                                            >
+                                        {{ $address->type === 'registered' ? '(Registered) ' : '' }} {{ Str::limit($address->full_address_th, 40) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" @click="loadEmployerData()">Load</button>
+                        </div>
+                    </div>
+
+                    <hr>
+
                     <!-- Load from Agent -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Quick Load: From Agent</label>
