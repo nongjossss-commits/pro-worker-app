@@ -248,6 +248,27 @@ class PdfTemplateController extends Controller
             ->with('success', 'Template deleted successfully.');
     }
 
+    public function preview(Request $request, PdfTemplate $pdf_template, PdfGeneratorService $pdfService)
+    {
+        $this->authorize('view-pdf-templates');
+
+        try {
+            $content = $pdfService->generatePreviewPdf($pdf_template);
+
+            $filename = 'preview_' . ($pdf_template->meta_data['original_filename'] ?? ($pdf_template->name . '.pdf'));
+            if (!str_ends_with($filename, '.pdf')) {
+                $filename .= '.pdf';
+            }
+
+            return response()->streamDownload(function () use ($content) {
+                echo $content;
+            }, $filename, ['Content-Type' => 'application/pdf']);
+        } catch (\Exception $e) {
+            \Log::error("PDF Preview Error: " . $e->getMessage());
+            return back()->with('danger', 'Failed to generate preview: ' . $e->getMessage());
+        }
+    }
+
     public function file(Request $request, PdfTemplate $pdf_template)
     {
         $this->authorize('view-pdf-templates');

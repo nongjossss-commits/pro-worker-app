@@ -91,6 +91,148 @@ class PdfGeneratorService
         return $results;
     }
 
+    public function generatePreviewPdf(PdfTemplate $template)
+    {
+        $pdf = new Fpdi();
+
+        $reflection = new \ReflectionClass($pdf);
+        if ($reflection->hasProperty('fontpath')) {
+            $property = $reflection->getProperty('fontpath');
+            $property->setAccessible(true);
+            $property->setValue($pdf, public_path('fonts') . DIRECTORY_SEPARATOR);
+        }
+
+        $templatePath = Storage::disk('public')->path($template->file_path);
+
+        $fontLoaded = false;
+        if (file_exists($this->fontPath)) {
+             $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
+             $pdf->SetFont('THSarabunNew', '', 14);
+             $fontLoaded = true;
+        } else {
+             $pdf->SetFont('Arial', '', 12);
+        }
+
+        try {
+            $pageCount = $pdf->setSourceFile($templatePath);
+        } catch (\Exception $e) {
+             try {
+                $normalizedPath = $this->tryNormalizePdf($templatePath);
+                if ($normalizedPath) {
+                    $pageCount = $pdf->setSourceFile($normalizedPath);
+                    $this->tempFiles[] = $normalizedPath;
+                } else {
+                    throw $e;
+                }
+             } catch (\Exception $ex) {
+                 throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
+             }
+        }
+
+        try {
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
+
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($templateId);
+
+                $items = collect($template->field_mapping)->where('page', $pageNo);
+
+                foreach ($items as $item) {
+                    $x = ($item['x'] / 100) * $size['width'];
+                    $y = ($item['y'] / 100) * $size['height'];
+
+                    if (isset($item['type']) && $item['type'] === 'signature') {
+                        $w = ($item['w'] / 100) * $size['width'];
+                        $h = ($item['h'] / 100) * $size['height'];
+
+                        // Draw a placeholder box for signatures
+                        $pdf->SetDrawColor(200, 200, 200);
+                        $pdf->SetFillColor(240, 240, 240);
+                        $pdf->Rect($x, $y, $w, $h, 'DF');
+
+                        $pdf->SetTextColor(150, 150, 150);
+                        $groupName = $item['signatureGroup'] ?? 'signature';
+
+                        $pdf->SetFontSize(10);
+                        // Center text in signature box
+                        $textX = $x + 2;
+                        $textY = $y + ($h / 2) + 2;
+                        $pdf->Text($textX, $textY, "[$groupName]");
+                        $pdf->SetTextColor(0, 0, 0); // Reset
+                        continue;
+                    }
+
+                    $text = '';
+                    if ($item['type'] === 'static') {
+                        $text = $item['text'] ?? '';
+                    } elseif ($item['type'] === 'db') {
+                        $key = $item['key'] ?? 'data';
+                        $text = "[$key]";
+                    }
+
+                    if ($text) {
+                        $boxW = ($item['w'] / 100) * $size['width'];
+                        $boxH = ($item['h'] / 100) * $size['height'];
+
+                        if ($fontLoaded) {
+                            $encodedText = @iconv('UTF-8', 'cp874', $text);
+                            if ($encodedText === false) $encodedText = $text;
+                        } else {
+                            $encodedText = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
+                        }
+
+                        $fontSize = $item['fontSize'] ?? 12;
+
+                        if (!empty($item['autoFit'])) {
+                            $maxFontSizeH = ($boxH * 0.7) * 2.83;
+                            $pdf->SetFontSize($maxFontSizeH);
+                            $textWidth = $pdf->GetStringWidth($encodedText);
+
+                            if ($textWidth > ($boxW * 0.95)) {
+                                $ratio = ($boxW * 0.95) / $textWidth;
+                                $fontSize = $maxFontSizeH * $ratio;
+                            } else {
+                                $fontSize = $maxFontSizeH;
+                            }
+                        }
+
+                        $pdf->SetFontSize($fontSize);
+
+                        $align = $item['align'] ?? 'center';
+                        $textWidth = $pdf->GetStringWidth($encodedText);
+                        $textX = $x;
+
+                        if ($align === 'center') {
+                            $textX = $x + ($boxW - $textWidth) / 2;
+                        } elseif ($align === 'right') {
+                             $textX = $x + $boxW - $textWidth - 1;
+                        } else {
+                             $textX = $x + 1;
+                        }
+
+                        $textY = $y + $boxH;
+
+                        // Optionally draw a light border around text field for visibility in preview
+                        $pdf->SetDrawColor(200, 200, 200);
+                        $pdf->Rect($x, $y, $boxW, $boxH);
+
+                        $pdf->Text($textX, $textY, $encodedText);
+                    }
+                }
+            }
+            $content = $pdf->Output('S');
+        } finally {
+            foreach ($this->tempFiles as $tempFile) {
+                if (file_exists($tempFile)) @unlink($tempFile);
+            }
+            $this->tempFiles = [];
+        }
+
+        return $content;
+    }
+
     public function generateSinglePdf(PdfTemplate $template, Employee $employee, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false)
     {
         $pdf = new Fpdi();
@@ -182,23 +324,30 @@ class PdfGeneratorService
             if ($effectiveEmployer->signature_1_path && Storage::disk('public')->exists($effectiveEmployer->signature_1_path)) {
                 $emprSig1Path = Storage::disk('public')->path($effectiveEmployer->signature_1_path);
             } else {
-                // Generate temporary unique
-                $content = $this->signatureService->generate('EMPR-' . $effectiveEmployer->id . '-1-' . uniqid());
-                $temp = tempnam(sys_get_temp_dir(), 'sig_empr1_');
-                file_put_contents($temp, $content);
-                $emprSig1Path = $temp;
-                $tempSigPaths[] = $temp;
+                // Generate persistent unique signature
+                $seed = 'EMPR-' . $effectiveEmployer->id . '-1-' . uniqid(more_entropy: true);
+                $content = $this->signatureService->generate($seed);
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_1_' . time() . '.png';
+                Storage::disk('public')->put($filename, $content);
+
+                // Update employer model
+                $effectiveEmployer->update(['signature_1_path' => $filename]);
+                $emprSig1Path = Storage::disk('public')->path($filename);
             }
 
             // Signer 2
             if ($effectiveEmployer->signature_2_path && Storage::disk('public')->exists($effectiveEmployer->signature_2_path)) {
                 $emprSig2Path = Storage::disk('public')->path($effectiveEmployer->signature_2_path);
             } else {
-                $content = $this->signatureService->generate('EMPR-' . $effectiveEmployer->id . '-2-' . uniqid());
-                $temp = tempnam(sys_get_temp_dir(), 'sig_empr2_');
-                file_put_contents($temp, $content);
-                $emprSig2Path = $temp;
-                $tempSigPaths[] = $temp;
+                // Generate persistent unique signature
+                $seed = 'EMPR-' . $effectiveEmployer->id . '-2-' . uniqid(more_entropy: true);
+                $content = $this->signatureService->generate($seed);
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_2_' . time() . '.png';
+                Storage::disk('public')->put($filename, $content);
+
+                // Update employer model
+                $effectiveEmployer->update(['signature_2_path' => $filename]);
+                $emprSig2Path = Storage::disk('public')->path($filename);
             }
         }
 
