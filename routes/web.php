@@ -200,6 +200,7 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->p
     // PDF Templates
     Route::get('pdf-templates/list-templates', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'listTemplates'])->name('pdf-templates.list'); // AJAX API
     Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
+    Route::get('pdf-templates/{pdf_template}/preview', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'preview'])->name('pdf-templates.preview');
     Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->middleware('menu:pdf_templates')->except(['show']);
     Route::get('pdf-templates/{pdf_template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
 

@@ -176,8 +176,12 @@
                                     <i class="bi bi-pencil-square"></i> Builder
                                 </a>
 
+                                <a href="{{ route('admin.pdf-templates.preview', $template->id) }}" class="btn btn-sm btn-outline-info me-2" title="Download Preview">
+                                    <i class="bi bi-eye"></i> Preview
+                                </a>
+
                                 <a href="{{ route('admin.pdf-templates.file', ['pdf_template' => $template->id, 'download' => 1]) }}" class="btn btn-sm btn-outline-secondary me-2" title="Download Original">
-                                    <i class="bi bi-download"></i>
+                                    <i class="bi bi-download"></i> Original
                                 </a>
 
                                 @can('delete-pdf-templates', $template)
