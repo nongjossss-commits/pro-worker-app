@@ -100,16 +100,16 @@
         }
 
         /* Signatures */
-        .signatures { margin-top: 60px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+        .signatures { position: absolute; bottom: 80px; left: 40px; right: 40px; display: flex; justify-content: space-between; page-break-inside: avoid; }
         .sig-block { width: 40%; text-align: center; position: relative; } /* Added relative for positioning context if needed locally */
-        .sig-line { border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; }
+        .sig-line { border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%; }
         .sig-text { font-size: 14px; color: #555; }
         .sig-title { font-weight: bold; margin-bottom: 40px; }
 
         /* Footer */
         .footer {
             position: absolute;
-            bottom: 40px;
+            bottom: 20px;
             left: 40px;
             right: 40px;
             border-top: 1px solid #eee;
@@ -599,7 +599,8 @@
             <div class="sig-block">
                 <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
                 <div class="sig-line"></div>
-                <div class="sig-text">{{ isset($billerProfile) ? $billerProfile->name : $profile->name }}</div>
+                @php $biller = $billerProfile ?? $profile; @endphp
+                <div class="sig-text">{{ $biller->authorized_signatory_name ?: $biller->name }}</div>
             </div>
         </div>
 

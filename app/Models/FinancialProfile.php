@@ -17,6 +17,7 @@ class FinancialProfile extends Model
         'address',
         'phone',
         'email',
+        'authorized_signatory_name',
         'logo_path',
         'signature_path',
         'signature_position',
