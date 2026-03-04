@@ -1221,6 +1221,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const option = new Option(item.province_th.trim(), item.province_th.trim());
             fields.addrProvince.add(option);
         });
+
+        // Notify Alpine.js about options update
+        fields.addrProvince.dispatchEvent(new Event('options-updated'));
     }
 
     function populateDistricts(province) {
@@ -1231,6 +1234,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!province) {
             // Trigger Alpine.js observer explicitly if returning early
+            fields.addrDistrict.dispatchEvent(new Event('options-updated'));
+            fields.addrSubDistrict.dispatchEvent(new Event('options-updated'));
             fields.addrDistrict.dispatchEvent(new Event('change'));
             fields.addrSubDistrict.dispatchEvent(new Event('change'));
             return;
@@ -1248,7 +1253,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Notify Alpine.js about the new options and state change
+        fields.addrDistrict.dispatchEvent(new Event('options-updated'));
         fields.addrDistrict.dispatchEvent(new Event('change'));
+        fields.addrSubDistrict.dispatchEvent(new Event('options-updated'));
         fields.addrSubDistrict.dispatchEvent(new Event('change'));
     }
 
@@ -1257,6 +1264,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fields.addrSubDistrict.disabled = true;
 
         if (!province || !district) {
+            fields.addrSubDistrict.dispatchEvent(new Event('options-updated'));
             fields.addrSubDistrict.dispatchEvent(new Event('change'));
             return;
         }
@@ -1274,6 +1282,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Notify Alpine.js
+        fields.addrSubDistrict.dispatchEvent(new Event('options-updated'));
         fields.addrSubDistrict.dispatchEvent(new Event('change'));
     }
 
@@ -1340,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', function () {
             saveBtn.disabled = true;
 
             // Perform fetch without blocking the modal rendering (no await in the event listener)
-            fetch(`/addresses/${addressId}`)
+            fetch(`/addresses/${addressId}/edit`)
                 .then(response => {
                     if (!response.ok) throw new Error('Failed to fetch address data.');
                     return response.json();

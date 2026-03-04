@@ -245,19 +245,28 @@
 
                 // 1. Observe changes to options (childList) and attributes (disabled, class)
                 this.observer = new MutationObserver((mutations) => {
-                    this.updateFromSelect();
-                    // Check specifically for class changes to sync validation error
+                    let needsUpdate = false;
                     mutations.forEach(m => {
                          if (m.type === 'attributes' && m.attributeName === 'class') {
                              this.hasError = this.el.classList.contains('is-invalid');
                          }
+                         if (m.type === 'childList') {
+                             needsUpdate = true;
+                         }
                     });
+                    if (needsUpdate) {
+                        this.updateFromSelect();
+                    }
                 });
                 this.observer.observe(this.el, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'class', 'style'] });
 
                 // 2. Listen for 'change' events dispatched by other scripts
                 this.el.addEventListener('change', () => {
                     this.updateValue();
+                });
+
+                this.el.addEventListener('options-updated', () => {
+                    this.updateFromSelect();
                 });
 
                 // 3. Listen for specific modal events if necessary.
