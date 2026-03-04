@@ -305,34 +305,41 @@ class Employee extends Model
                 ];
             });
 
+        // Check if resolution was completed more than 24 hours ago
+        $resolutionCompletedOlderThan24h = $this->resolution_completed_at && $this->resolution_completed_at->diffInHours(now()) >= 24;
+
         // Add Registration Resolution (Purple)
         if (in_array($this->status, ['registration_pending', 'registration_completed'])) {
-            $workflows->push((object)[
-                'name' => 'Registration Resolution',
-                'status_label' => 'Resolution',
-                'is_pre_production' => false,
-                'is_registration' => true,
-                'is_renewal' => false,
-                'url' => route('production.registration.index', [
-                    'highlight_employer_id' => $this->employer_id,
-                    'highlight_employee_id' => $this->id
-                ]),
-            ]);
+            if (!($this->status === 'registration_completed' && $resolutionCompletedOlderThan24h)) {
+                $workflows->push((object)[
+                    'name' => 'Registration Resolution',
+                    'status_label' => 'Resolution',
+                    'is_pre_production' => false,
+                    'is_registration' => true,
+                    'is_renewal' => false,
+                    'url' => route('production.registration.index', [
+                        'highlight_employer_id' => $this->employer_id,
+                        'highlight_employee_id' => $this->id
+                    ]),
+                ]);
+            }
         }
 
         // Add Renewal Resolution (Pink)
         if (in_array($this->status, ['renewal_pending', 'renewal_completed'])) {
-            $workflows->push((object)[
-                'name' => 'Renewal Resolution',
-                'status_label' => 'Resolution',
-                'is_pre_production' => false,
-                'is_registration' => false,
-                'is_renewal' => true,
-                'url' => route('production.renewal.index', [
-                    'highlight_employer_id' => $this->employer_id,
-                    'highlight_employee_id' => $this->id
-                ]),
-            ]);
+            if (!($this->status === 'renewal_completed' && $resolutionCompletedOlderThan24h)) {
+                $workflows->push((object)[
+                    'name' => 'Renewal Resolution',
+                    'status_label' => 'Resolution',
+                    'is_pre_production' => false,
+                    'is_registration' => false,
+                    'is_renewal' => true,
+                    'url' => route('production.renewal.index', [
+                        'highlight_employer_id' => $this->employer_id,
+                        'highlight_employee_id' => $this->id
+                    ]),
+                ]);
+            }
         }
 
         return $workflows;
