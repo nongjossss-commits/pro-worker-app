@@ -2061,7 +2061,7 @@
         if (trashBody) {
             trashBody.addEventListener('click', function(e) {
                 // Check if clicked element is pagination link or inside one
-                const link = e.target.closest('.pagination a, .page-link');
+                const link = e.target.closest('.pagination a, .page-link, a[href]');
                 if (link && link.href) {
                     e.preventDefault();
                     loadTrashContent(link.href);
