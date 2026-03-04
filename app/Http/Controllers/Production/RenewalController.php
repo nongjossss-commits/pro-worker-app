@@ -502,6 +502,55 @@ class RenewalController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function loadFinancialTab(Request $request, Employer $employer)
+    {
+        // Permission Check
+        if (!auth()->user()->can('view-finance') && !auth()->user()->can('edit-employees')) {
+             abort(403);
+        }
+
+        // Finance Order Logic
+        $financeOrder = $employer->productionOrders()->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])->first();
+
+        if (!$financeOrder) {
+            $financeOrder = ProductionOrder::create([
+                'employer_id' => $employer->id,
+                'status'      => 'renewal_resolution',
+                'type'         => 'employer',
+                'project_name' => 'Renewal Resolution - ' . $employer->employerNameTh,
+                'financial_data' => []
+            ]);
+        }
+
+        if ($financeOrder->financialGroups->isEmpty()) {
+            $financeOrder->financialGroups()->create([
+                'name' => 'General',
+                'financial_data' => $financeOrder->financial_data ?? []
+            ]);
+        }
+
+        // Load relationships needed for the view
+        $financeOrder->load(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee']);
+
+        // Fetch ALL Active Employees for this employer (ignoring search)
+        $query = $employer->employees();
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $employees = $query->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereDoesntHave('productionItems', function($q) use ($financeOrder) {
+                $q->where('production_order_id', $financeOrder->id);
+            })
+            ->get();
+
+        return view('production.partials.financial-tab', [
+            'production' => $financeOrder,
+            'employeeCount' => $employees->count(),
+            'employees' => $employees
+        ]);
+    }
+
     /**
      * Reorder steps.
      */

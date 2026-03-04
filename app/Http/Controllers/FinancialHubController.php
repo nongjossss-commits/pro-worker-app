@@ -17,53 +17,199 @@ class FinancialHubController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Calculate Stats (Efficiently)
-        $today = Carbon::today();
-        $startOfMonth = Carbon::now()->startOfMonth();
+        $tab = $request->input('tab', 'overview');
 
-        $stats = [
-            'income_today' => FinancialTransaction::whereDate('paid_at', $today)->sum('paid_amount'),
-            'income_month' => FinancialTransaction::whereDate('paid_at', '>=', $startOfMonth)->sum('paid_amount'),
-            'pending_amount' => FinancialTransaction::whereIn('status', ['pending', 'partial'])->sum(DB::raw('amount - paid_amount')),
-            'overdue_amount' => FinancialTransaction::where('status', 'overdue')->sum(DB::raw('amount - paid_amount')),
-        ];
+        // Prepare variables that might be used across views
+        $stats = [];
+        $transactions = null;
+        $orders = null;
 
-        // 2. Query Transactions
-        $query = FinancialTransaction::with(['productionOrder.employer', 'financialGroup'])
-            ->latest('created_at');
+        if ($tab === 'overview') {
+            // 1. Calculate Stats (Efficiently)
+            $today = Carbon::today();
+            $startOfMonth = Carbon::now()->startOfMonth();
 
-        // Search
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                // Search by ID or Description/Notes
-                $q->where('id', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%")
-                  ->orWhereHas('productionOrder', function($po) use ($search) {
-                      $po->where('project_name', 'like', "%{$search}%")
-                         ->orWhereHas('employer', function($e) use ($search) {
-                             $e->where('employerNameTh', 'like', "%{$search}%")
-                               ->orWhere('employerNameEn', 'like', "%{$search}%");
-                         });
-                  });
-            });
+            $stats = [
+                'income_today' => FinancialTransaction::whereDate('paid_at', $today)->sum('paid_amount'),
+                'income_month' => FinancialTransaction::whereDate('paid_at', '>=', $startOfMonth)->sum('paid_amount'),
+                'pending_amount' => FinancialTransaction::whereIn('status', ['pending', 'partial'])->sum(DB::raw('amount - paid_amount')),
+                'overdue_amount' => FinancialTransaction::where('status', 'overdue')->sum(DB::raw('amount - paid_amount')),
+            ];
+
+            // 2. Query Transactions
+            $query = FinancialTransaction::with(['productionOrder.employer', 'financialGroup'])
+                ->latest('created_at');
+
+            // Search
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('id', 'like', "%{$search}%")
+                      ->orWhere('notes', 'like', "%{$search}%")
+                      ->orWhereHas('productionOrder', function($po) use ($search) {
+                          $po->where('project_name', 'like', "%{$search}%")
+                             ->orWhereHas('employer', function($e) use ($search) {
+                                 $e->where('employerNameTh', 'like', "%{$search}%")
+                                   ->orWhere('employerNameEn', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            // Filters
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            $transactions = $query->paginate(20)->withQueryString();
+        }
+        elseif ($tab === 'workflow') {
+            $query = ProductionOrder::with(['employer', 'financialGroups.transactions'])
+                ->whereNotIn('status', ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'])
+                ->whereNotNull('work_type_id')
+                ->latest('created_at')
+                ->withCount('items');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('project_name', 'like', "%{$search}%")
+                      ->orWhereHas('employer', function($e) use ($search) {
+                          $e->where('employerNameTh', 'like', "%{$search}%")
+                            ->orWhere('employerNameEn', 'like', "%{$search}%");
+                      });
+                });
+            }
+            $orders = $query->paginate(20)->withQueryString();
+        }
+        elseif ($tab === 'registration') {
+            $query = ProductionOrder::with(['employer'])
+                ->where('status', 'registration_resolution')
+                ->latest('created_at');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->whereHas('employer', function($e) use ($search) {
+                    $e->where('employerNameTh', 'like', "%{$search}%")
+                      ->orWhere('employerNameEn', 'like', "%{$search}%");
+                });
+            }
+            $orders = $query->paginate(20)->withQueryString();
+
+            // Add custom calculations
+            foreach ($orders as $order) {
+                $this->calculateOrderFinancials($order);
+            }
+        }
+        elseif ($tab === 'renewal') {
+            $query = ProductionOrder::with(['employer'])
+                ->where('status', 'renewal_resolution')
+                ->latest('created_at');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->whereHas('employer', function($e) use ($search) {
+                    $e->where('employerNameTh', 'like', "%{$search}%")
+                      ->orWhere('employerNameEn', 'like', "%{$search}%");
+                });
+            }
+            $orders = $query->paginate(20)->withQueryString();
+
+            // Add custom calculations
+            foreach ($orders as $order) {
+                $this->calculateOrderFinancials($order);
+            }
+        }
+        elseif ($tab === 'manual') {
+            $query = ProductionOrder::with(['employer', 'financialGroups.transactions'])
+                ->whereNull('work_type_id')
+                ->latest('created_at')
+                ->withCount('items');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('project_name', 'like', "%{$search}%")
+                      ->orWhereHas('employer', function($e) use ($search) {
+                          $e->where('employerNameTh', 'like', "%{$search}%")
+                            ->orWhere('employerNameEn', 'like', "%{$search}%");
+                      });
+                });
+            }
+            $orders = $query->paginate(20)->withQueryString();
         }
 
-        // Filters
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        return view('financial.index', compact('tab', 'stats', 'transactions', 'orders'));
+    }
+
+    /**
+     * Helper method to calculate financial stats for a given order
+     */
+    protected function calculateOrderFinancials($order)
+    {
+        $order->total_employees = \App\Models\Employee::where('employer_id', $order->employer_id)
+            ->when($order->status === 'registration_resolution', function ($q) {
+                $q->whereIn('status', ['registration_pending', 'registration_completed']);
+            })
+            ->when($order->status === 'renewal_resolution', function ($q) {
+                $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
+            })
+            ->count();
+
+        $pricedItemIds = [];
+        $totalAmount = 0;
+
+        $order->loadMissing(['financialGroups.transactions']);
+
+        foreach ($order->financialGroups as $group) {
+            $financialData = $group->financial_data ?? [];
+            if (isset($financialData['pricing_tiers']) && is_array($financialData['pricing_tiers'])) {
+                foreach ($financialData['pricing_tiers'] as $tier) {
+                    if (isset($tier['item_ids']) && is_array($tier['item_ids'])) {
+                        $pricedItemIds = array_merge($pricedItemIds, $tier['item_ids']);
+                        $totalAmount += (count($tier['item_ids']) * ($tier['price'] ?? 0));
+                    }
+                }
+            }
+            if (isset($financialData['advance_payments']) && is_array($financialData['advance_payments'])) {
+                foreach ($financialData['advance_payments'] as $adv) {
+                    $totalAmount += ($adv['amount'] ?? 0);
+                }
+            }
+            // Add overall advance items
+            foreach ($group->advanceItems ?? [] as $advItem) {
+                $totalAmount += ($advItem->amount ?? 0);
+            }
         }
 
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
-        }
+        // Remove duplicates if any
+        $pricedItemIds = array_unique($pricedItemIds);
 
-        $transactions = $query->paginate(20)->withQueryString();
+        $order->priced_employees_count = count($pricedItemIds);
+        $order->unpriced_employees_count = max(0, $order->total_employees - $order->priced_employees_count);
+        $order->total_amount = $totalAmount;
 
-        return view('financial.index', compact('stats', 'transactions'));
+        $billedAmount = 0;
+        $paidAmount = 0;
+        foreach ($order->financialGroups as $group) {
+            foreach ($group->transactions as $txn) {
+                $billedAmount += $txn->amount;
+                $paidAmount += $txn->paid_amount;
+            }
+        }
+        $order->billed_amount = $billedAmount;
+        $order->paid_amount = $paidAmount;
+        $order->pending_amount = max(0, $billedAmount - $paidAmount);
+
+        // Custom total logic to handle cases where there are fixed amounts instead of per head
+        // In reality, actual transaction amounts generated rule over expected calculations.
     }
 
     /**

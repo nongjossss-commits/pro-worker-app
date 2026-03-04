@@ -309,6 +309,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/import', [App\Http\Controllers\Production\RenewalController::class, 'importView'])->name('import');
         Route::post('/configure-expiry', [App\Http\Controllers\Production\RenewalController::class, 'configureExpiry'])->name('configure_expiry');
         Route::post('/steps/reorder', [App\Http\Controllers\Production\RenewalController::class, 'reorderSteps'])->name('steps.reorder');
+        Route::get('/employer/{employer}/finance-tab', [App\Http\Controllers\Production\RenewalController::class, 'loadFinancialTab'])->name('finance.tab');
 
         // Step Management (Missing in original file for Renewal, adding now for consistency)
         Route::post('/steps', [App\Http\Controllers\Production\RenewalController::class, 'storeStep'])->name('steps.store');
