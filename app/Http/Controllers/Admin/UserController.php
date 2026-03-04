@@ -225,4 +225,20 @@ class UserController extends Controller
     {
         //
     }
+
+    /**
+     * Get a list of active operators (Super Admin, Admin, Staff).
+     */
+    public function listOperators()
+    {
+        $operators = User::role(['super-admin', 'admin', 'staff'])
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $operators
+        ]);
+    }
 }

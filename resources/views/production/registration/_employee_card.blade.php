@@ -57,8 +57,14 @@
         @endphp
         <button class="btn btn-sm {{ $operatorId ? ($isMe ? 'btn-primary' : 'btn-secondary') : 'btn-outline-secondary' }} rounded-pill shadow-sm py-0 px-2"
                 style="font-size: 0.75rem; border-width: 1px;"
+                @hasanyrole('super-admin|admin|staff')
                 onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this, '{{ $operatorId ?? '' }}', '{{ $toggleUrl }}') : console.error('toggleOperator not defined')"
-                title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Assign' }}">
+                title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Assign' }}"
+                @else
+                disabled
+                title="{{ $operatorName ? 'Operator: '.$operatorName : 'Not Assigned' }}"
+                @endhasanyrole
+                >
             <i class="bi bi-person-badge-fill"></i>
             @if($operatorName)
                 <span class="ms-1 fw-bold">{{ $operatorName }}</span>

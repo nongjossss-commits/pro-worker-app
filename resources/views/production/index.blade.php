@@ -1115,39 +1115,85 @@
 
     // --- Operator Toggle ---
     window.toggleOperator = function(itemId, btn, hasOperator) {
-        const performToggle = () => {
-            btn.disabled = true;
-            fetch(`/workflow/item/${itemId}/toggle-operator`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrfToken }
-            })
+        // Fetch operators first
+        Swal.fire({
+            title: '{{ __("Loading...") }}',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        fetch('{{ route("api-web.operators.list") }}')
             .then(res => res.json())
             .then(data => {
-                if(data.success) {
-                    refreshItemCard(itemId);
-                } else {
-                    btn.disabled = false;
-                }
-            });
-        };
+                if (!data.success) throw new Error('Failed to load operators');
 
-        if (hasOperator) {
-            Swal.fire({
-                title: '{{ __("Change Operator?") }}',
-                text: '{{ __("Are you sure you want to change or remove the operator?") }}',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '{{ __("Yes, Change") }}',
-                confirmButtonColor: '#0d6efd',
-                cancelButtonText: '{{ __("Cancel") }}'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    performToggle();
-                }
+                let operators = data.data;
+                let optionsHtml = `<option value="">-- {{ __("None / Clear Operator") }} --</option>`;
+
+                // For Pre-production we need the current operator id from the button if possible,
+                // but if not, we rely on the backend. Since the button doesn't currently pass the operator ID,
+                // we'll just not pre-select, or users will just see the list.
+                operators.forEach(op => {
+                    optionsHtml += `<option value="${op.id}">${op.name}</option>`;
+                });
+
+                const htmlContent = `
+                    <div class="form-group text-start">
+                        <label class="form-label mb-2">{{ __("Select Operator") }}</label>
+                        <select id="operator-select-${itemId}" class="form-select form-select-lg">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                `;
+
+                Swal.fire({
+                    title: '{{ __("Assign Operator") }}',
+                    html: htmlContent,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '{{ __("Save") }}',
+                    confirmButtonColor: '#0d6efd',
+                    cancelButtonText: '{{ __("Cancel") }}',
+                    showLoaderOnConfirm: true,
+                    didOpen: () => {},
+                    preConfirm: () => {
+                        const selectedId = document.getElementById(`operator-select-${itemId}`).value;
+
+                        return fetch(`/workflow/item/${itemId}/toggle-operator`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({ operator_id: selectedId })
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error(response.statusText);
+                            return response.json();
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error}`);
+                        });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const resData = result.value;
+                        if(resData && resData.success) {
+                            refreshItemCard(itemId);
+                            if(typeof showToast === 'function') {
+                                showToast(resData.message, 'success');
+                            }
+                        } else {
+                            Swal.fire('{{ __("Error") }}', resData ? resData.message : 'Unknown error', 'error');
+                        }
+                    }
+                });
+            })
+            .catch(err => {
+                Swal.fire('Error', '{{ __("Could not load operators list.") }}', 'error');
+                console.error(err);
             });
-        } else {
-            performToggle();
-        }
     }
 
     // --- Reuse Toggle Step from Workflow (Global Function) ---
