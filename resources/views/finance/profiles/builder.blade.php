@@ -217,6 +217,8 @@
         border: 1px dashed transparent;
         cursor: move;
         transform-origin: center center;
+        top: 0;
+        left: 0;
         z-index: 10 !important;
     }
     .draggable-asset:hover {
