@@ -157,6 +157,9 @@ Route::middleware('auth')->group(function () {
         Route::get('employer/employees', [EmployerEmployeeController::class, 'index'])->name('employer.employees.index');
         Route::get('employers/list', [EmployerController::class, 'listApi'])->name('employers.list');
         Route::post('temp-upload', [TemporaryUploadController::class, 'store'])->name('temp_upload.store');
+
+        // Operators API for toggle assignment popup
+        Route::get('operators', [App\Http\Controllers\Admin\UserController::class, 'listOperators'])->name('operators.list');
     });
 
     Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');

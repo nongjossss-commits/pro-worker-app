@@ -982,56 +982,86 @@
 
     // --- Operator Toggle ---
     window.toggleOperator = function(employeeId, btn, currentOperatorId, url) {
-        const hasOperator = !!currentOperatorId;
-        const confirmTitle = hasOperator ? '{{ __("Change Operator?") }}' : '{{ __("Assign Operator") }}';
-        const confirmText = hasOperator
-            ? '{{ __("Someone is already assigned. Do you want to take over or unassign?") }}'
-            : '{{ __("Confirm to set Operator?") }}';
-
+        // Fetch operators first
         Swal.fire({
-            title: confirmTitle,
-            text: confirmText,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: '{{ __("Yes, Confirm") }}',
-            confirmButtonColor: '#0d6efd',
-            cancelButtonText: '{{ __("Cancel") }}',
-            showLoaderOnConfirm: true,
-            preConfirm: () => {
-                const fetchUrl = url || `/production/renewal/${employeeId}/toggle-operator`;
-                return fetch(fetchUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(response.statusText)
-                    }
-                    return response.json()
-                })
-                .catch(error => {
-                    Swal.showValidationMessage(
-                        `Request failed: ${error}`
-                    )
-                })
-            },
-            allowOutsideClick: () => !Swal.isLoading()
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const data = result.value;
-                if(data && data.success) {
-                    if(data.html) updateCardHTML(employeeId, data.html);
-                    if(typeof showToast === 'function') {
-                        showToast(data.message, 'success');
-                    }
-                } else {
-                     Swal.fire('{{ __("Error") }}', data ? data.message : 'Unknown error', 'error');
-                }
-            }
+            title: '{{ __("Loading...") }}',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
         });
+
+        fetch('{{ route("api-web.operators.list") }}')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error('Failed to load operators');
+
+                let operators = data.data;
+                let optionsHtml = `<option value="">-- {{ __("None / Clear Operator") }} --</option>`;
+
+                operators.forEach(op => {
+                    let selected = (op.id == currentOperatorId) ? 'selected' : '';
+                    optionsHtml += `<option value="${op.id}" ${selected}>${op.name}</option>`;
+                });
+
+                const htmlContent = `
+                    <div class="form-group text-start">
+                        <label class="form-label mb-2">{{ __("Select Operator") }}</label>
+                        <select id="operator-select-${employeeId}" class="form-select form-select-lg">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                `;
+
+                Swal.fire({
+                    title: '{{ __("Assign Operator") }}',
+                    html: htmlContent,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '{{ __("Save") }}',
+                    confirmButtonColor: '#0d6efd',
+                    cancelButtonText: '{{ __("Cancel") }}',
+                    showLoaderOnConfirm: true,
+                    didOpen: () => {
+                        // Optional: Initialize Select2 or Choices.js here if needed
+                    },
+                    preConfirm: () => {
+                        const selectedId = document.getElementById(`operator-select-${employeeId}`).value;
+                        const fetchUrl = url || `/production/renewal/${employeeId}/toggle-operator`;
+
+                        return fetch(fetchUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({ operator_id: selectedId })
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error(response.statusText);
+                            return response.json();
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error}`);
+                        });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const resData = result.value;
+                        if(resData && resData.success) {
+                            if(resData.html) updateCardHTML(employeeId, resData.html);
+                            if(typeof showToast === 'function') {
+                                showToast(resData.message, 'success');
+                            }
+                        } else {
+                            Swal.fire('{{ __("Error") }}', resData ? resData.message : 'Unknown error', 'error');
+                        }
+                    }
+                });
+            })
+            .catch(err => {
+                Swal.fire('Error', '{{ __("Could not load operators list.") }}', 'error');
+                console.error(err);
+            });
     }
 
     // --- Resolution Status & Note Functions ---

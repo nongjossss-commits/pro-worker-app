@@ -1823,14 +1823,32 @@ class WorkflowController extends Controller
     public function toggleOperator(Request $request, $itemId)
     {
         $item = ProductionItem::findOrFail($itemId);
-        $userId = auth()->id();
 
-        if ($item->operator_id === $userId) {
-            $item->update(['operator_id' => null]);
-            $message = 'Operator unassigned.';
+        // Handle explicit operator assignment via dropdown
+        if ($request->has('operator_id')) {
+            $userId = $request->input('operator_id');
+            if (empty($userId)) {
+                $item->update(['operator_id' => null]);
+                $message = 'Operator unassigned.';
+            } else {
+                $user = User::find($userId);
+                if ($user) {
+                    $item->update(['operator_id' => $user->id]);
+                    $message = 'Operator assigned to ' . $user->name;
+                } else {
+                     return response()->json(['success' => false, 'message' => 'User not found'], 404);
+                }
+            }
         } else {
-            $item->update(['operator_id' => $userId]);
-            $message = 'Operator assigned to ' . auth()->user()->name;
+            // Legacy Toggle Behavior
+            $userId = auth()->id();
+            if ($item->operator_id === $userId) {
+                $item->update(['operator_id' => null]);
+                $message = 'Operator unassigned.';
+            } else {
+                $item->update(['operator_id' => $userId]);
+                $message = 'Operator assigned to ' . auth()->user()->name;
+            }
         }
 
         return response()->json(['success' => true, 'message' => $message]);
