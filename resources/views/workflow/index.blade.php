@@ -1602,19 +1602,17 @@
     }
 
     // Intercept Pagination Clicks inside Trash Modal
-    document.addEventListener('DOMContentLoaded', function() {
-        const trashBody = document.getElementById('trashModalBody');
-        if (trashBody) {
-            trashBody.addEventListener('click', function(e) {
-                // Check if clicked element is pagination link or inside one
-                const link = e.target.closest('.pagination a, .page-link');
-                if (link && link.href) {
-                    e.preventDefault();
-                    loadTrashContent(link.href);
-                }
-            });
-        }
-    });
+    const trashBody = document.getElementById('trashModalBody');
+    if (trashBody) {
+        trashBody.addEventListener('click', function(e) {
+            // Check if clicked element is pagination link or inside one
+            const link = e.target.closest('.pagination a, .page-link');
+            if (link && link.href) {
+                e.preventDefault();
+                loadTrashContent(link.href);
+            }
+        });
+    }
 
     // --- GPS / Deep Linking ---
     document.addEventListener('DOMContentLoaded', function() {

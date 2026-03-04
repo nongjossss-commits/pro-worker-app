@@ -1345,26 +1345,24 @@
     }
 
     // Intercept Pagination Clicks inside Trash Modal
-    document.addEventListener('DOMContentLoaded', function() {
-        const trashBody = document.getElementById('trashModalBody');
-        if (trashBody) {
-            trashBody.addEventListener('click', function(e) {
-                // Check if clicked element is pagination link or inside one
-                const link = e.target.closest('.pagination a, .page-link');
-                if (link && link.href) {
-                    e.preventDefault();
-                    // Append is_pre_production flag if not present in pagination link
-                    let fetchUrl = link.href;
-                    if (!fetchUrl.includes('is_pre_production')) {
-                        const urlObj = new URL(fetchUrl);
-                        urlObj.searchParams.set('is_pre_production', '1');
-                        fetchUrl = urlObj.toString();
-                    }
-                    loadTrashContent(fetchUrl);
+    const trashBody = document.getElementById('trashModalBody');
+    if (trashBody) {
+        trashBody.addEventListener('click', function(e) {
+            // Check if clicked element is pagination link or inside one
+            const link = e.target.closest('.pagination a, .page-link');
+            if (link && link.href) {
+                e.preventDefault();
+                // Append is_pre_production flag if not present in pagination link
+                let fetchUrl = link.href;
+                if (!fetchUrl.includes('is_pre_production')) {
+                    const urlObj = new URL(fetchUrl);
+                    urlObj.searchParams.set('is_pre_production', '1');
+                    fetchUrl = urlObj.toString();
                 }
-            });
-        }
-    });
+                loadTrashContent(fetchUrl);
+            }
+        });
+    }
 
     // --- GPS / Deep Linking ---
     document.addEventListener('DOMContentLoaded', function() {
