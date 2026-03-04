@@ -183,11 +183,11 @@
 
                         <!-- Signature Draggable -->
                         <img x-show="formData.signature_url" :src="formData.signature_url" id="drag-signature" class="draggable-asset" data-type="signature"
-                             :style="getAssetStyle('signature') + ' z-index: 10;'">
+                             :style="getAssetStyle('signature')">
 
                         <!-- Stamp Draggable -->
                         <img x-show="formData.stamp_url" :src="formData.stamp_url" id="drag-stamp" class="draggable-asset" data-type="stamp"
-                             :style="getAssetStyle('stamp') + ' z-index: 10;'">
+                             :style="getAssetStyle('stamp')">
                     </div>
 
                 </div>
@@ -211,6 +211,7 @@
         border: 1px dashed transparent;
         cursor: move;
         transform-origin: center center;
+        z-index: 10 !important;
     }
     .draggable-asset:hover {
         border-color: #0d6efd;
