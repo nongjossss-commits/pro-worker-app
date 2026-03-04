@@ -159,6 +159,7 @@ class ProductionDocumentController extends Controller
                         $tier = $pricingTiers->first(function ($t) use ($item) {
                             $itemIds = array_map('strval', $t['item_ids'] ?? []);
                             return in_array(strval($item->id), $itemIds, true) ||
+                                   in_array('emp_' . $item->id, $itemIds, true) || // Added check for emp_ + item id
                                    ($item->employee_id && in_array('emp_' . $item->employee_id, $itemIds, true)) ||
                                    ($item->employee_id && in_array(strval($item->employee_id), $itemIds, true));
                         });
