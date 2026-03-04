@@ -19,14 +19,27 @@
             position: relative;
             min-height: 297mm;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Print Specifics */
         @media print {
             body { background: white; padding: 0; }
-            .page { border: none; box-shadow: none; padding: 0; margin: 0; width: 100%; height: auto; min-height: auto; }
-            @page { margin: 0; size: A4 portrait; } /* Removed margin to let our padding control it */
+            .page {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                height: auto;
+                min-height: auto;
+                display: block;
+            }
+            @page { margin: 10mm; size: A4 portrait; }
             .no-print { display: none !important; }
+            table.items-table, .totals-container, .signatures-container { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
         }
 
         /* Header Table */
@@ -99,24 +112,28 @@
             color: #000;
         }
 
+        /* Signatures Container */
+        .signatures-container {
+            margin-top: auto; /* Pushes to bottom in flex container on screen */
+            padding-top: 50px;
+            page-break-inside: avoid;
+        }
+
         /* Signatures */
-        .signatures { position: absolute; bottom: 80px; left: 40px; right: 40px; display: flex; justify-content: space-between; page-break-inside: avoid; }
-        .sig-block { width: 40%; text-align: center; position: relative; } /* Added relative for positioning context if needed locally */
+        .signatures { display: flex; justify-content: space-between; page-break-inside: avoid; margin-bottom: 40px; }
+        .sig-block { width: 40%; text-align: center; position: relative; }
         .sig-line { border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%; }
         .sig-text { font-size: 14px; color: #555; }
         .sig-title { font-weight: bold; margin-bottom: 40px; }
 
         /* Footer */
         .footer {
-            position: absolute;
-            bottom: 20px;
-            left: 40px;
-            right: 40px;
             border-top: 1px solid #eee;
             padding-top: 15px;
             font-size: 12px;
             color: #888;
             text-align: center;
+            page-break-inside: avoid;
         }
 
         /* Action Bar */
@@ -601,49 +618,62 @@
             ( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )
         </div>
 
-        <!-- Signatures Section -->
-        <div class="signatures">
-            <div class="sig-block">
-                <div class="sig-title">Received By <span class="en-label">/ ผู้รับเงิน</span></div>
-                <div class="sig-line"></div>
-                <div class="sig-text">Date <span class="en-label">/ วันที่</span>: ____/____/______</div>
+        <div class="signatures-container">
+            <!-- Signatures Section -->
+            <div class="signatures">
+                <div class="sig-block">
+                    <div class="sig-title">Received By <span class="en-label">/ ผู้รับเงิน</span></div>
+                    <div class="sig-line"></div>
+                    <div class="sig-text">Date <span class="en-label">/ วันที่</span>: ____/____/______</div>
+                </div>
+
+                <div class="sig-block">
+                    <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
+
+                    <div style="position: relative; display: flex; justify-content: center; align-items: end; height: 50px; margin-bottom: 10px;">
+                        @if(isset($billerProfile))
+                            @if($billerProfile->signature_path)
+                                <img src="{{ asset('storage/' . $billerProfile->signature_path) }}"
+                                     style="position: absolute;
+                                            bottom: 0px;
+                                            width: {{ $billerProfile->signature_position['width'] ?? 150 }}px;
+                                            height: {{ $billerProfile->signature_position['height'] ?? 75 }}px;
+                                            transform: rotate({{ $billerProfile->signature_position['rotate'] ?? 0 }}deg);
+                                            z-index: 10;" alt="Signature">
+                            @endif
+                            @if($billerProfile->stamp_path)
+                                <img src="{{ asset('storage/' . $billerProfile->stamp_path) }}"
+                                     style="position: absolute;
+                                            bottom: -10px; left: -20px;
+                                            width: {{ $billerProfile->stamp_position['width'] ?? 100 }}px;
+                                            height: {{ $billerProfile->stamp_position['height'] ?? 100 }}px;
+                                            transform: rotate({{ $billerProfile->stamp_position['rotate'] ?? 0 }}deg);
+                                            z-index: 5; opacity: 0.8;" alt="Stamp">
+                            @endif
+                        @else
+                            @if($profile->use_signature && $profile->signature_path)
+                                <img src="{{ asset('storage/' . $profile->signature_path) }}"
+                                     style="position: absolute; bottom: 0px; width: 150px; z-index: 10;">
+                            @endif
+                            @if($profile->use_stamp && $profile->stamp_path)
+                                <img src="{{ asset('storage/' . $profile->stamp_path) }}"
+                                     style="position: absolute; bottom: -10px; left: -20px; width: 100px; z-index: 5; opacity: 0.8;">
+                            @endif
+                        @endif
+
+                        <div class="sig-line" style="margin-bottom: 0; position: relative; z-index: 1;"></div>
+                    </div>
+
+                    @php $biller = $billerProfile ?? $profile; @endphp
+                    <div class="sig-text">{{ $biller->authorized_signatory_name ?: $biller->name }}</div>
+                </div>
             </div>
 
-            <div class="sig-block">
-                <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
-                <div class="sig-line"></div>
-                @php $biller = $billerProfile ?? $profile; @endphp
-                <div class="sig-text">{{ $biller->authorized_signatory_name ?: $biller->name }}</div>
+            <!-- Footer -->
+            <div class="footer">
+                Thank you for your business. <br>
+                Please check the correctness of this document.
             </div>
-        </div>
-
-        <!-- Absolute Positioned Elements (Direct children of .page) -->
-        @if(!isset($billerProfile) && $profile->use_signature && $profile->signature_path)
-            @php
-                $sigPos = is_array($profile->signature_pos) ? $profile->signature_pos : (is_string($profile->signature_pos) ? json_decode($profile->signature_pos, true) : null);
-                $sigLeft = $sigPos['x'] ?? 50;
-                $sigTop = $sigPos['y'] ?? 75;
-                $sigWidth = $sigPos['w'] ?? 20;
-            @endphp
-                <img src="{{ asset('storage/' . $profile->signature_path) }}"
-                    style="position: absolute; left: {{ $sigLeft }}%; top: {{ $sigTop }}%; width: {{ $sigWidth }}%; z-index: 10;">
-        @endif
-
-        @if(!isset($billerProfile) && $profile->use_stamp && $profile->stamp_path)
-            @php
-                $stampPos = is_array($profile->stamp_pos) ? $profile->stamp_pos : (is_string($profile->stamp_pos) ? json_decode($profile->stamp_pos, true) : null);
-                $stampLeft = $stampPos['x'] ?? 55;
-                $stampTop = $stampPos['y'] ?? 70;
-                $stampWidth = $stampPos['w'] ?? 20;
-            @endphp
-                <img src="{{ asset('storage/' . $profile->stamp_path) }}"
-                    style="position: absolute; left: {{ $stampLeft }}%; top: {{ $stampTop }}%; width: {{ $stampWidth }}%; z-index: 5; opacity: 0.8;">
-        @endif
-
-        <!-- Footer -->
-        <div class="footer">
-            Thank you for your business. <br>
-            Please check the correctness of this document.
         </div>
     </div>
 
