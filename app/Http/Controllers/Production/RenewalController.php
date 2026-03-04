@@ -404,6 +404,17 @@ class RenewalController extends Controller
             $employees = $query->paginate($perPage)->withQueryString();
         }
 
+        $financeOrder = ProductionOrder::with('financialGroups.transactions.items')
+            ->where('employer_id', $employerId)
+            ->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])
+            ->first();
+
+        $employeeFinancialStatus = \App\Services\FinancialStatusService::calculateStatusForEmployees($financeOrder, $employees->pluck('id'));
+
+        foreach ($employees as $emp) {
+            $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
+        }
+
         return view('production.renewal._employee_list_content', [
             'employees' => $employees,
             'employer' => $employer,

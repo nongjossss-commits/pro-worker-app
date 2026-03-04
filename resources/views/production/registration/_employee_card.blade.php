@@ -119,14 +119,24 @@
                         </span>
 
                         {{-- Financial Status Badge --}}
-                        @if(isset($employee->financialStatus) && $employee->financialStatus === 'paid')
-                            <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-success border border-white" title="{{ __('Fully Paid') }}">
-                                <i class="bi bi-currency-dollar"></i>
-                            </span>
-                        @elseif(isset($employee->financialStatus) && $employee->financialStatus === 'partial')
-                            <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-white" title="{{ __('Partial/Pending Payment') }}">
-                                <i class="bi bi-currency-dollar"></i>
-                            </span>
+                        @if(isset($employee->financialStatus))
+                            @if($employee->financialStatus === 'paid')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-success border border-white" title="{{ __('Fully Paid') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @elseif($employee->financialStatus === 'partial')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-primary border border-white" title="{{ __('Partial/Pending Payment') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @elseif($employee->financialStatus === 'installment_created')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-white" title="{{ __('Installment Created') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @elseif($employee->financialStatus === 'priced')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-secondary border border-white" title="{{ __('Priced') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @endif
                         @endif
                     </div>
 

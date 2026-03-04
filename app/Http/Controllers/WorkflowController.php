@@ -162,6 +162,30 @@ class WorkflowController extends Controller
         // Calculate Stats PER ORDER for the view (Accordion Header)
         $orders->load(['items.completedWorkTypeSteps', 'items.employee', 'employer.addresses', 'financialGroups.transactions.items', 'financialGroups.advanceItems']);
 
+        foreach ($orders as $order) {
+            // Determine shared groups for proper financial status calculation if work_type_id is set
+            $sharedGroups = $order->financialGroups;
+            if ($order->work_type_id !== null) {
+                $sharedGroups = \App\Models\ProductionFinancialGroup::where('employer_id', $order->employer_id)
+                    ->where('work_type_id', $order->work_type_id)
+                    ->with(['transactions.items', 'advanceItems'])
+                    ->get();
+                if ($sharedGroups->isEmpty()) {
+                    $sharedGroups = $order->financialGroups;
+                }
+            }
+            $order->setRelation('financialGroups', $sharedGroups);
+
+            $empIds = $order->items->pluck('employee_id')->filter()->unique();
+            $employeeFinancialStatus = \App\Services\FinancialStatusService::calculateStatusForEmployees($order, $empIds);
+
+            foreach ($order->items as $item) {
+                if ($item->employee) {
+                    $item->employee->financialStatus = $employeeFinancialStatus[$item->employee->id] ?? null;
+                }
+            }
+        }
+
         // Employers for Dropdown
         $employers = Employer::orderBy('employerNameTh')->get();
 

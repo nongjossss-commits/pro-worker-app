@@ -94,8 +94,29 @@
         </div>
 
         {{-- Employee Photo --}}
-        <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
-             alt="Photo" class="employee-photo-thumb">
+        <div class="position-relative" style="margin-right: 1rem;">
+            <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
+                 alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%;">
+            @if(isset($employee->financialStatus))
+                @if($employee->financialStatus === 'paid')
+                    <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-success border border-white" title="{{ __('Fully Paid') }}" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                        <i class="bi bi-currency-dollar"></i>
+                    </span>
+                @elseif($employee->financialStatus === 'partial')
+                    <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-primary border border-white" title="{{ __('Partial/Pending Payment') }}" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                        <i class="bi bi-currency-dollar"></i>
+                    </span>
+                @elseif($employee->financialStatus === 'installment_created')
+                    <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-white" title="{{ __('Installment Created') }}" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                        <i class="bi bi-currency-dollar"></i>
+                    </span>
+                @elseif($employee->financialStatus === 'priced')
+                    <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-secondary border border-white" title="{{ __('Priced') }}" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                        <i class="bi bi-currency-dollar"></i>
+                    </span>
+                @endif
+            @endif
+        </div>
 
         {{-- Employee Details --}}
         <div class="flex-grow-1">
