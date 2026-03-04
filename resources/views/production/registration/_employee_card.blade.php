@@ -511,9 +511,9 @@
             @endphp
 
             {{-- 3 Extra Fields (Editable) --}}
-            <div class="d-flex flex-column gap-2" x-data="{
+            <div class="d-flex flex-column gap-2 mt-2" x-data="{
                 isEditing: false,
-                nameList: '{{ $employee->outsource_code }}',
+                nameList: '{{ $employee->name_list_number }}',
                 reqNo: '{{ $currentRequestNumber }}',
                 refId: '{{ $employee->employee_reference_id }}',
                 updateMethod: '{{ $updateMethod }}',
@@ -561,14 +561,6 @@
                     } else if (this.updateMethod === 'menu_update') {
                         formData.append('type', '{{ $isRegistration ? 'registration' : 'renewal' }}');
                         formData.append('request_number', this.reqNo);
-
-                        // We still might want to update Name List and Ref ID, but wait,
-                        // those fields belong to the employee model. Let's send a separate
-                        // request to update the main employee fields if needed.
-                        // Actually, name_list_number and refId are global employee fields.
-                        // The user specifically wanted ONLY request_number to be isolated.
-                        // To keep both working cleanly, we can dispatch two requests if it's menu_update,
-                        // but it's simpler to send the other fields to the regular employee update endpoint.
                     }
 
                     // Request 1: Update the specific request number (item or menu)
@@ -581,11 +573,11 @@
                         body: formData
                     });
 
-                    // Request 2: Update the global fields (outsource_code, employee_reference_id)
+                    // Request 2: Update the global fields (name_list_number, employee_reference_id)
                     let empFormData = new FormData();
                     empFormData.append('_method', 'PUT');
                     empFormData.append('_token', '{{ csrf_token() }}');
-                    empFormData.append('outsource_code', this.nameList);
+                    empFormData.append('name_list_number', this.nameList);
                     empFormData.append('employee_reference_id', this.refId);
                     empFormData.append('employer_id', '{{ $employee->employer_id }}');
                     empFormData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
@@ -602,7 +594,6 @@
                     Promise.all([req1, req2])
                     .then(responses => Promise.all(responses.map(res => res.json())))
                     .then(dataArray => {
-                        // Check if both succeeded, or if at least the primary one succeeded
                         showToast('{{ __('Saved successfully') }}', 'success');
                         this.isEditing = false;
                     })
@@ -612,9 +603,9 @@
                     });
                 }
             }">
-                <div class="d-flex align-items-end gap-2">
+                <div class="d-flex align-items-center gap-2">
                     {{-- Field 1: Name List (Renamed to RA) --}}
-                    <div style="width: 140px;">
+                    <div style="min-width: 140px; max-width: 250px; flex-grow: 1;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
                         <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                             <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
@@ -626,21 +617,21 @@
                     </div>
 
                     {{-- Action Buttons --}}
-                    <div class="d-flex gap-1 mb-1">
-                        <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Fields">
+                    <div class="d-flex gap-1">
+                        <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle mt-3" title="Edit Fields">
                             <i class="bi bi-pencil-fill"></i>
                         </button>
-                        <button x-show="isEditing" @click="saveFields()" class="btn btn-sm btn-success rounded-circle" title="Save Fields">
+                        <button x-show="isEditing" @click="saveFields()" class="btn btn-sm btn-success rounded-circle mt-3" title="Save Fields">
                             <i class="bi bi-check-lg"></i>
                         </button>
-                        <button x-show="isEditing" @click="isEditing = false" class="btn btn-sm btn-outline-danger rounded-circle" title="Cancel">
+                        <button x-show="isEditing" @click="isEditing = false" class="btn btn-sm btn-outline-danger rounded-circle mt-3" title="Cancel">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
                 </div>
 
                 {{-- Field 2: Request No --}}
-                <div style="width: 140px;">
+                <div style="min-width: 140px; max-width: 250px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
@@ -652,7 +643,7 @@
                 </div>
 
                 {{-- Field 3: Ref ID --}}
-                <div style="width: 140px;">
+                <div style="min-width: 140px; max-width: 250px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
@@ -663,6 +654,7 @@
                     <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
                 </div>
             </div>
+
 
             </div>
 
