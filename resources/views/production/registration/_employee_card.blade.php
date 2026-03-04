@@ -513,7 +513,7 @@
             {{-- 3 Extra Fields (Editable) --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
-                nameList: '{{ $employee->name_list_number }}',
+                nameList: '{{ $employee->outsource_code }}',
                 reqNo: '{{ $currentRequestNumber }}',
                 refId: '{{ $employee->employee_reference_id }}',
                 updateMethod: '{{ $updateMethod }}',
@@ -581,11 +581,11 @@
                         body: formData
                     });
 
-                    // Request 2: Update the global fields (name_list_number, employee_reference_id)
+                    // Request 2: Update the global fields (outsource_code, employee_reference_id)
                     let empFormData = new FormData();
                     empFormData.append('_method', 'PUT');
                     empFormData.append('_token', '{{ csrf_token() }}');
-                    empFormData.append('name_list_number', this.nameList);
+                    empFormData.append('outsource_code', this.nameList);
                     empFormData.append('employee_reference_id', this.refId);
                     empFormData.append('employer_id', '{{ $employee->employer_id }}');
                     empFormData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
