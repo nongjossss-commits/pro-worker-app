@@ -38,12 +38,40 @@
     <div class="flex flex-1 overflow-hidden h-[calc(100vh-64px)]">
         <!-- Sidebar -->
         <div class="w-80 bg-gray-50 border-r flex flex-col overflow-y-auto z-20 shadow-lg">
-            <div class="p-4 border-b bg-white">
-                <h3 class="font-bold text-gray-700 mb-2">Data Fields</h3>
-                <input type="text" x-model="searchQuery" placeholder="Search fields..." class="form-control form-control-sm">
+            <div class="p-4 border-b bg-white flex flex-col gap-3 shadow-sm z-10 relative">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-gray-700 m-0">Data Fields</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-500" title="Employees per page">Slots:</span>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" @click="if(metaData.employees_per_page > 1) metaData.employees_per_page--" class="btn btn-outline-secondary px-2 py-0">-</button>
+                                <span class="btn btn-outline-secondary px-3 py-0 disabled bg-light text-dark font-bold" x-text="metaData.employees_per_page || 1"></span>
+                                <button type="button" @click="metaData.employees_per_page = (metaData.employees_per_page || 1) + 1" class="btn btn-outline-secondary px-2 py-0">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="text" x-model="searchQuery" placeholder="Search fields..." class="form-control form-control-sm">
+                </div>
+
+                <!-- Employee Slots Tabs -->
+                <div x-show="(metaData.employees_per_page || 1) > 1" class="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-md border">
+                    <template x-for="i in (metaData.employees_per_page || 1)" :key="i">
+                        <button type="button"
+                                @click="currentEmployeeSlot = i"
+                                :class="{'bg-white shadow-sm font-bold text-blue-600 border-gray-300': currentEmployeeSlot === i, 'text-gray-500 hover:bg-gray-200 border-transparent': currentEmployeeSlot !== i}"
+                                class="flex-1 min-w-[3rem] text-xs py-1 px-2 rounded border transition-colors flex items-center justify-center gap-1">
+                            <i class="bi bi-person-fill" x-show="currentEmployeeSlot === i"></i>
+                            <span x-text="'Emp ' + i"></span>
+                        </button>
+                    </template>
+                </div>
+                <div x-show="(metaData.employees_per_page || 1) > 1" class="text-[10px] text-orange-600 bg-orange-50 p-1.5 rounded border border-orange-100 mt-1 leading-tight text-center">
+                    <i class="bi bi-info-circle me-1"></i> Dragging fields will assign them to <strong>Emp <span x-text="currentEmployeeSlot"></span></strong>.
+                </div>
             </div>
 
-            <div class="p-3 space-y-4 flex-1">
+            <div class="p-3 space-y-4 flex-1 bg-gray-50">
                 <!-- Tools Section -->
                 <div>
                     <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 border-b pb-1">Tools</h4>
@@ -126,15 +154,22 @@
                                                  class="max-w-full max-h-full opacity-60" style="object-fit: contain;">
 
                                             <!-- Label Overlay -->
-                                            <div class="absolute bottom-0 right-0 bg-white/80 text-[10px] px-1 rounded border border-purple-200 text-purple-800 font-bold"
-                                                 x-text="getSignatureLabel(item.signatureGroup)"></div>
+                                            <div class="absolute bottom-0 right-0 bg-white/80 text-[10px] px-1 rounded border border-purple-200 text-purple-800 font-bold flex gap-1">
+                                                <span x-show="item.employeeIndex && (metaData.employees_per_page || 1) > 1" class="bg-orange-100 text-orange-800 px-1 rounded">E<span x-text="item.employeeIndex"></span></span>
+                                                <span x-text="getSignatureLabel(item.signatureGroup)"></span>
+                                            </div>
                                         </div>
                                     </template>
 
                                     <!-- Text Content (DB & Static) -->
                                     <template x-if="item.type !== 'signature'">
-                                        <div class="w-full h-full flex flex-col justify-end overflow-hidden pointer-events-none select-none"
+                                        <div class="w-full h-full flex flex-col justify-end overflow-hidden pointer-events-none select-none relative"
                                              :style="`font-family: 'THSarabunNew', sans-serif; font-size: ${getFontSize(item, pageNum)}; text-align: ${item.align || 'left'}; color: #000;`">
+
+                                            <div class="absolute top-0 right-0 bg-white/80 text-[10px] px-1 rounded-bl border-b border-l border-blue-200 text-blue-800 font-bold" x-show="item.employeeIndex && (metaData.employees_per_page || 1) > 1">
+                                                E<span x-text="item.employeeIndex"></span>
+                                            </div>
+
                                             <span class="block w-full whitespace-nowrap" x-text="getPreviewText(item)" style="line-height: 1;"></span>
                                         </div>
                                     </template>
@@ -201,6 +236,14 @@
                     <!-- Signature Settings -->
                     <template x-if="items[editingIndex]?.type === 'signature'">
                         <div>
+                            <div class="mb-3" x-show="(metaData.employees_per_page || 1) > 1 && items[editingIndex].signatureGroup === 'employee'">
+                                <label class="form-label text-orange-600 font-bold">Employee Slot Assignment</label>
+                                <select x-model="items[editingIndex].employeeIndex" class="form-select border-orange-300 bg-orange-50">
+                                    <template x-for="i in (metaData.employees_per_page || 1)" :key="i">
+                                        <option :value="i" x-text="'Employee ' + i"></option>
+                                    </template>
+                                </select>
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Signature Group</label>
                                 <select x-model="items[editingIndex].signatureGroup" class="form-select">
@@ -219,6 +262,15 @@
                     <!-- Text Field Settings (DB & Static) -->
                     <template x-if="items[editingIndex]?.type === 'db' || items[editingIndex]?.type === 'static'">
                         <div>
+                             <div class="mb-3" x-show="(metaData.employees_per_page || 1) > 1 && items[editingIndex]?.type === 'db'">
+                                <label class="form-label text-orange-600 font-bold">Employee Slot Assignment</label>
+                                <select x-model="items[editingIndex].employeeIndex" class="form-select border-orange-300 bg-orange-50">
+                                    <template x-for="i in (metaData.employees_per_page || 1)" :key="i">
+                                        <option :value="i" x-text="'Employee ' + i"></option>
+                                    </template>
+                                </select>
+                            </div>
+
                              <div class="mb-3">
                                 <label class="form-label">Alignment</label>
                                 <select x-model="items[editingIndex].align" class="form-select">
@@ -304,8 +356,9 @@
                 scale: 1.5,
                 pageDimensions: {},
                 items: @json($template->field_mapping ?? []),
-                metaData: @json($template->meta_data ?? ['auto_prefix_titles' => false]),
+                metaData: @json($template->meta_data ?? ['auto_prefix_titles' => false, 'employees_per_page' => 1]),
 
+                currentEmployeeSlot: 1,
                 searchQuery: '',
                 isSaving: false,
                 editingIndex: null,
@@ -542,7 +595,10 @@
 
                 // Initial Meta Data check
                 if (!this.metaData) {
-                    this.metaData = { auto_prefix_titles: false };
+                    this.metaData = { auto_prefix_titles: false, employees_per_page: 1 };
+                }
+                if (!this.metaData.employees_per_page) {
+                    this.metaData.employees_per_page = 1;
                 }
 
                 // Ensure page numbers are integers for correct comparison
@@ -640,7 +696,8 @@
                         fontSize: 12,
                         autoFit: true, // Default to true
                         align: 'left', // Default align
-                        signatureGroup: data.type === 'signature' ? 'employee' : null
+                        signatureGroup: data.type === 'signature' ? 'employee' : null,
+                        employeeIndex: data.type !== 'static' ? this.currentEmployeeSlot : null
                     });
 
                     // Auto-open settings for new static text

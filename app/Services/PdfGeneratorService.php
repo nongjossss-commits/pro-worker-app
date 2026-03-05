@@ -46,44 +46,89 @@ class PdfGeneratorService
 
         $useEmptyEmployer = $options['use_empty_employer'] ?? false;
 
-        foreach ($employees as $employee) {
-            try {
-                $pdfContent = $this->generateSinglePdf($template, $employee, $targetEmployer, $useEmptyEmployer);
-                $filename = $this->generateFilename($template, $employee);
+        // Determine Chunk Size (Employees per page) from Template metadata
+        $chunkSize = $template->meta_data['employees_per_page'] ?? 1;
+        $chunkSize = max(1, (int)$chunkSize);
 
-                if ($outputType === 'save_to_slot') {
-                    $this->saveToSlot($employee, $pdfContent, $options['slot_name'], $template);
-                    $results[] = ['employee' => $employee->id, 'status' => 'saved'];
-                } elseif ($outputType === 'raw_content') {
-                    $results[] = [
-                        'employee_id' => $employee->id,
-                        'filename' => $filename,
-                        'content' => $pdfContent
-                    ];
-                } else {
-                    $results[] = ['filename' => $filename, 'content' => $pdfContent];
-                }
-            } catch (\Exception $e) {
-                // If this is a batch process (save_to_slot or raw_content might be batch),
-                // we want to catch individual errors so the whole batch doesn't fail.
-                // However, if it's a synchronous single download, we might want to rethrow?
-                // For now, consistent behavior: log and maybe return error status.
-                // But the Controller expects simple array.
-                Log::error("PDF Generation Error (Emp ID: {$employee->id}): " . $e->getMessage());
+        if ($chunkSize > 1) {
+            // Processing in chunks (Multiple employees per page)
+            $chunks = $employees->chunk($chunkSize);
 
-                if ($outputType === 'save_to_slot') {
-                    $results[] = ['employee' => $employee->id, 'status' => 'error', 'message' => $e->getMessage()];
-                } elseif ($outputType === 'raw_content') {
-                    $results[] = [
-                        'employee_id' => $employee->id,
-                        'status' => 'error',
-                        'message' => $e->getMessage()
-                    ];
+            foreach ($chunks as $chunkIndex => $chunkEmployees) {
+                try {
+                    $pdfContent = $this->generateChunkedPdf($template, $chunkEmployees, $targetEmployer, $useEmptyEmployer);
+
+                    if ($outputType === 'save_to_slot') {
+                        // For slots, we still want to save a copy to each employee's profile
+                        foreach ($chunkEmployees as $employee) {
+                            $this->saveToSlot($employee, $pdfContent, $options['slot_name'], $template);
+                            $results[] = ['employee' => $employee->id, 'status' => 'saved'];
+                        }
+                    } elseif ($outputType === 'raw_content') {
+                        // Raw content might be weird for chunks, so associate with the first employee
+                        $firstEmp = $chunkEmployees->first();
+                        $filename = "chunk_" . ($chunkIndex + 1) . "_" . $this->generateFilename($template, $firstEmp);
+                        foreach ($chunkEmployees as $employee) {
+                            $results[] = [
+                                'employee_id' => $employee->id,
+                                'filename' => $filename,
+                                'content' => $pdfContent
+                            ];
+                        }
+                    } else {
+                        $firstEmp = $chunkEmployees->first();
+                        $filename = "chunk_" . ($chunkIndex + 1) . "_" . $this->generateFilename($template, $firstEmp);
+                        $results[] = ['filename' => $filename, 'content' => $pdfContent];
+                    }
+                } catch (\Exception $e) {
+                    Log::error("PDF Generation Chunk Error: " . $e->getMessage());
+                    if ($outputType === 'save_to_slot' || $outputType === 'raw_content') {
+                        foreach ($chunkEmployees as $employee) {
+                            $results[] = [
+                                'employee' => $employee->id,
+                                'employee_id' => $employee->id,
+                                'status' => 'error',
+                                'message' => $e->getMessage()
+                            ];
+                        }
+                    }
+                    if ($outputType === 'download') throw $e;
                 }
-                // If simple download, maybe throwing is better to alert user?
-                // For now, rethrow to ensure synchronous errors are seen.
-                if ($outputType === 'download') {
-                    throw $e;
+            }
+        } else {
+            // Standard single employee processing
+            foreach ($employees as $employee) {
+                try {
+                    $pdfContent = $this->generateSinglePdf($template, $employee, $targetEmployer, $useEmptyEmployer);
+                    $filename = $this->generateFilename($template, $employee);
+
+                    if ($outputType === 'save_to_slot') {
+                        $this->saveToSlot($employee, $pdfContent, $options['slot_name'], $template);
+                        $results[] = ['employee' => $employee->id, 'status' => 'saved'];
+                    } elseif ($outputType === 'raw_content') {
+                        $results[] = [
+                            'employee_id' => $employee->id,
+                            'filename' => $filename,
+                            'content' => $pdfContent
+                        ];
+                    } else {
+                        $results[] = ['filename' => $filename, 'content' => $pdfContent];
+                    }
+                } catch (\Exception $e) {
+                    Log::error("PDF Generation Error (Emp ID: {$employee->id}): " . $e->getMessage());
+
+                    if ($outputType === 'save_to_slot') {
+                        $results[] = ['employee' => $employee->id, 'status' => 'error', 'message' => $e->getMessage()];
+                    } elseif ($outputType === 'raw_content') {
+                        $results[] = [
+                            'employee_id' => $employee->id,
+                            'status' => 'error',
+                            'message' => $e->getMessage()
+                        ];
+                    }
+                    if ($outputType === 'download') {
+                        throw $e;
+                    }
                 }
             }
         }
@@ -483,6 +528,223 @@ class PdfGeneratorService
 
         } finally {
             // Cleanup temp files
+            foreach ($tempSigPaths as $path) {
+                if (file_exists($path)) @unlink($path);
+            }
+            foreach ($this->tempFiles as $tempFile) {
+                if (file_exists($tempFile)) @unlink($tempFile);
+            }
+            $this->tempFiles = [];
+        }
+
+        return $content;
+    }
+
+    public function generateChunkedPdf(PdfTemplate $template, Collection $employees, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false)
+    {
+        $pdf = new Fpdi();
+
+        $reflection = new \ReflectionClass($pdf);
+        if ($reflection->hasProperty('fontpath')) {
+            $property = $reflection->getProperty('fontpath');
+            $property->setAccessible(true);
+            $property->setValue($pdf, public_path('fonts') . DIRECTORY_SEPARATOR);
+        }
+
+        $templatePath = Storage::disk('public')->path($template->file_path);
+
+        $fontLoaded = false;
+        if (file_exists($this->fontPath)) {
+             $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
+             $pdf->SetFont('THSarabunNew', '', 14);
+             $fontLoaded = true;
+        } else {
+             $pdf->SetFont('Arial', '', 12);
+        }
+
+        try {
+            $pageCount = $pdf->setSourceFile($templatePath);
+        } catch (\Exception $e) {
+             try {
+                $normalizedPath = $this->tryNormalizePdf($templatePath);
+                if ($normalizedPath) {
+                    $pageCount = $pdf->setSourceFile($normalizedPath);
+                    $this->tempFiles[] = $normalizedPath;
+                } else {
+                    throw $e;
+                }
+             } catch (\Exception $ex) {
+                 throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
+             }
+        }
+
+        // Shared Context (Employer and Witnesses from first employee in chunk)
+        $firstEmployee = $employees->first();
+        $effectiveEmployer = null;
+        if (!$useEmptyEmployer) {
+            $effectiveEmployer = $targetEmployer ?: $firstEmployee->employer;
+        }
+
+        // --- Prepare Signatures for entire Chunk ---
+        $tempSigPaths = [];
+        $employeeSigPaths = [];
+
+        foreach ($employees as $emp) {
+            if ($emp->signature_path && Storage::disk('public')->exists($emp->signature_path)) {
+                $employeeSigPaths[$emp->id] = Storage::disk('public')->path($emp->signature_path);
+            } else {
+                $seed = 'EMP-' . $emp->id . '-' . uniqid(more_entropy: true);
+                $content = $this->signatureService->generate($seed);
+                $filename = 'signatures/employees/emp_' . $emp->id . '_' . time() . '.png';
+                Storage::disk('public')->put($filename, $content);
+                $emp->update(['signature_path' => $filename]);
+                $employeeSigPaths[$emp->id] = Storage::disk('public')->path($filename);
+            }
+        }
+
+        $emprSig1Path = null;
+        $emprSig2Path = null;
+
+        if ($effectiveEmployer) {
+            if ($effectiveEmployer->signature_1_path && Storage::disk('public')->exists($effectiveEmployer->signature_1_path)) {
+                $emprSig1Path = Storage::disk('public')->path($effectiveEmployer->signature_1_path);
+            } else {
+                $seed = 'EMPR-' . $effectiveEmployer->id . '-1-' . uniqid(more_entropy: true);
+                $content = $this->signatureService->generate($seed);
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_1_' . time() . '.png';
+                Storage::disk('public')->put($filename, $content);
+                $effectiveEmployer->update(['signature_1_path' => $filename]);
+                $emprSig1Path = Storage::disk('public')->path($filename);
+            }
+
+            if ($effectiveEmployer->signature_2_path && Storage::disk('public')->exists($effectiveEmployer->signature_2_path)) {
+                $emprSig2Path = Storage::disk('public')->path($effectiveEmployer->signature_2_path);
+            } else {
+                $seed = 'EMPR-' . $effectiveEmployer->id . '-2-' . uniqid(more_entropy: true);
+                $content = $this->signatureService->generate($seed);
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_2_' . time() . '.png';
+                Storage::disk('public')->put($filename, $content);
+                $effectiveEmployer->update(['signature_2_path' => $filename]);
+                $emprSig2Path = Storage::disk('public')->path($filename);
+            }
+        }
+
+        $witnessSigPaths = [];
+        $witnessFields = collect($template->field_mapping)->filter(function($item) {
+            return ($item['type'] ?? '') === 'signature' && str_starts_with($item['signatureGroup'] ?? '', 'witness_');
+        });
+
+        if ($witnessFields->isNotEmpty()) {
+            foreach (['witness_1', 'witness_2', 'witness_3', 'witness_4'] as $alias) {
+                $seed = 'WITNESS-' . $alias . '-' . ($effectiveEmployer ? $effectiveEmployer->id : 'global') . '-' . uniqid();
+                $temp = tempnam(sys_get_temp_dir(), 'sig_') . '.png';
+                file_put_contents($temp, $this->signatureService->generate($seed));
+                $witnessSigPaths[$alias] = $temp;
+                $tempSigPaths[] = $temp;
+            }
+        }
+
+        try {
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
+
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($templateId);
+
+                $items = collect($template->field_mapping)->where('page', $pageNo);
+
+                foreach ($items as $item) {
+                    $x = ($item['x'] / 100) * $size['width'];
+                    $y = ($item['y'] / 100) * $size['height'];
+
+                    // Determine which employee to use based on index
+                    $employeeIndex = isset($item['employeeIndex']) ? (int)$item['employeeIndex'] : 1;
+                    $employee = $employees->values()->get($employeeIndex - 1); // 0-based index
+
+                    if (!$employee && $item['type'] !== 'static' && (!isset($item['signatureGroup']) || $item['signatureGroup'] === 'employee')) {
+                        // Skip if employee doesn't exist (e.g., slot 3 but only 2 employees in chunk)
+                        // And skip only if it's an employee-specific field
+                        continue;
+                    }
+
+                    // --- Handle Signatures ---
+                    if (isset($item['type']) && $item['type'] === 'signature') {
+                        $w = ($item['w'] / 100) * $size['width'];
+                        $h = ($item['h'] / 100) * $size['height'];
+
+                        $group = $item['signatureGroup'] ?? 'employee';
+                        $targetPath = null;
+
+                        if ($group === 'employee' && $employee) $targetPath = $employeeSigPaths[$employee->id] ?? null;
+                        elseif ($group === 'employer') $targetPath = $emprSig1Path;
+                        elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                        elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
+
+                        if ($targetPath && file_exists($targetPath)) {
+                            $pdf->Image($targetPath, $x, $y, $w, $h, 'PNG');
+                        }
+                        continue;
+                    }
+
+                    // --- Handle Text ---
+                    $text = '';
+                    if ($item['type'] === 'static') {
+                        $text = $item['text'] ?? '';
+                    } elseif ($item['type'] === 'db') {
+                        // Fallback to first employee for non-employee specific fields to prevent errors
+                        $contextEmployee = $employee ?: $firstEmployee;
+                        $text = $this->resolveValue($contextEmployee, $item['key'], $template, $effectiveEmployer);
+                    }
+
+                    if ($text) {
+                        $boxW = ($item['w'] / 100) * $size['width'];
+                        $boxH = ($item['h'] / 100) * $size['height'];
+
+                        if ($fontLoaded) {
+                            $encodedText = @iconv('UTF-8', 'cp874', $text);
+                            if ($encodedText === false) $encodedText = $text;
+                        } else {
+                            $encodedText = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
+                        }
+
+                        $fontSize = $item['fontSize'] ?? 12;
+
+                        if (!empty($item['autoFit'])) {
+                            $maxFontSizeH = ($boxH * 0.7) * 2.83;
+                            $pdf->SetFontSize($maxFontSizeH);
+                            $textWidth = $pdf->GetStringWidth($encodedText);
+
+                            if ($textWidth > ($boxW * 0.95)) {
+                                $ratio = ($boxW * 0.95) / $textWidth;
+                                $fontSize = $maxFontSizeH * $ratio;
+                            } else {
+                                $fontSize = $maxFontSizeH;
+                            }
+                        }
+
+                        $pdf->SetFontSize($fontSize);
+
+                        $align = $item['align'] ?? 'center';
+                        $textWidth = $pdf->GetStringWidth($encodedText);
+                        $textX = $x;
+
+                        if ($align === 'center') {
+                            $textX = $x + ($boxW - $textWidth) / 2;
+                        } elseif ($align === 'right') {
+                             $textX = $x + $boxW - $textWidth - 1;
+                        } else {
+                             $textX = $x + 1;
+                        }
+
+                        $textY = $y + $boxH;
+                        $pdf->Text($textX, $textY, $encodedText);
+                    }
+                }
+            }
+            $content = $pdf->Output('S');
+
+        } finally {
             foreach ($tempSigPaths as $path) {
                 if (file_exists($path)) @unlink($path);
             }
