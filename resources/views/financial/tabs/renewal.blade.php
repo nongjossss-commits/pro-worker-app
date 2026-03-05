@@ -1,3 +1,12 @@
+@include('financial.partials._stats_cards')
+
+@if(request('unpriced') == 1)
+    <div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+        <span><i class="bi bi-info-circle me-2"></i> {{ __('Showing only employers with unpriced employees.') }}</span>
+        <a href="{{ route('finance.index', ['tab' => 'renewal']) }}" class="btn btn-sm btn-outline-info">{{ __('Clear Filter') }}</a>
+    </div>
+@endif
+
 <div class="card mb-4">
     <div class="card-body">
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">

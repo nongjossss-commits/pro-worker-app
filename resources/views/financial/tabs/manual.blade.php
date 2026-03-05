@@ -1,3 +1,5 @@
+@include('financial.partials._stats_cards')
+
 <div class="card mb-4">
     <div class="card-body">
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">

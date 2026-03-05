@@ -20,7 +20,12 @@ class FinancialHubController extends Controller
         $tab = $request->input('tab', 'overview');
 
         // Prepare variables that might be used across views
-        $stats = [];
+        $stats = [
+            'income_today' => 0,
+            'income_month' => 0,
+            'pending_amount' => 0,
+            'overdue_amount' => 0,
+        ];
         $transactions = null;
         $orders = null;
 
@@ -71,9 +76,12 @@ class FinancialHubController extends Controller
             $transactions = $query->paginate(20)->withQueryString();
         }
         elseif ($tab === 'workflow') {
-            $query = ProductionOrder::with(['employer', 'financialGroups.transactions'])
-                ->whereNotIn('status', ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'])
-                ->whereNotNull('work_type_id')
+            $baseQuery = ProductionOrder::whereNotIn('status', ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'])
+                ->whereNotNull('work_type_id');
+
+            $stats = $this->getStatsForOrders($baseQuery);
+
+            $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions'])
                 ->latest('created_at')
                 ->withCount('items');
 
@@ -90,8 +98,11 @@ class FinancialHubController extends Controller
             $orders = $query->paginate(20)->withQueryString();
         }
         elseif ($tab === 'registration') {
-            $query = ProductionOrder::with(['employer'])
-                ->where('status', 'registration_resolution')
+            $baseQuery = ProductionOrder::where('status', 'registration_resolution');
+
+            $stats = $this->getStatsForOrders($baseQuery);
+
+            $query = (clone $baseQuery)->with(['employer'])
                 ->latest('created_at');
 
             if ($request->filled('search')) {
@@ -101,16 +112,63 @@ class FinancialHubController extends Controller
                       ->orWhere('employerNameEn', 'like', "%{$search}%");
                 });
             }
-            $orders = $query->paginate(20)->withQueryString();
 
-            // Add custom calculations
-            foreach ($orders as $order) {
-                $this->calculateOrderFinancials($order);
+            // Batch fetch employee counts to avoid N+1
+            $employerIds = (clone $baseQuery)->pluck('employer_id')->unique();
+            $employeeCounts = \App\Models\Employee::whereIn('employer_id', $employerIds)
+                ->whereIn('status', ['registration_pending', 'registration_completed'])
+                ->select('employer_id', DB::raw('count(*) as count'))
+                ->groupBy('employer_id')
+                ->pluck('count', 'employer_id');
+
+            // Optimize loading for stats
+            $ordersForStats = (clone $baseQuery)->select('id', 'employer_id', 'status')
+                ->with(['financialGroups' => function($q) {
+                    $q->select('id', 'production_order_id', 'financial_data');
+                }])
+                ->get();
+
+            $totalUnpriced = 0;
+            foreach ($ordersForStats as $order) {
+                $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
+                $totalUnpriced += $order->unpriced_employees_count;
+            }
+            $stats['total_unpriced'] = $totalUnpriced;
+
+            // Apply unpriced filter if requested
+            if ($request->input('unpriced') == 1) {
+                $allMatching = $query->with(['financialGroups' => function($q) {
+                        $q->select('id', 'production_order_id', 'financial_data');
+                    }])->get();
+
+                foreach($allMatching as $order) {
+                    $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
+                }
+                $filtered = $allMatching->filter(fn($o) => $o->unpriced_employees_count > 0);
+
+                $page = $request->input('page', 1);
+                $perPage = 20;
+                $orders = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $filtered->forPage($page, $perPage),
+                    $filtered->count(),
+                    $perPage,
+                    $page,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            } else {
+                $orders = $query->paginate(20)->withQueryString();
+                $orders->load(['financialGroups.transactions', 'financialGroups.advanceItems']);
+                foreach ($orders as $order) {
+                    $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
+                }
             }
         }
         elseif ($tab === 'renewal') {
-            $query = ProductionOrder::with(['employer'])
-                ->where('status', 'renewal_resolution')
+            $baseQuery = ProductionOrder::where('status', 'renewal_resolution');
+
+            $stats = $this->getStatsForOrders($baseQuery);
+
+            $query = (clone $baseQuery)->with(['employer'])
                 ->latest('created_at');
 
             if ($request->filled('search')) {
@@ -120,16 +178,63 @@ class FinancialHubController extends Controller
                       ->orWhere('employerNameEn', 'like', "%{$search}%");
                 });
             }
-            $orders = $query->paginate(20)->withQueryString();
 
-            // Add custom calculations
-            foreach ($orders as $order) {
-                $this->calculateOrderFinancials($order);
+            // Batch fetch employee counts
+            $employerIds = (clone $baseQuery)->pluck('employer_id')->unique();
+            $employeeCounts = \App\Models\Employee::whereIn('employer_id', $employerIds)
+                ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                ->select('employer_id', DB::raw('count(*) as count'))
+                ->groupBy('employer_id')
+                ->pluck('count', 'employer_id');
+
+            // Optimize loading for stats
+            $ordersForStats = (clone $baseQuery)->select('id', 'employer_id', 'status')
+                ->with(['financialGroups' => function($q) {
+                    $q->select('id', 'production_order_id', 'financial_data');
+                }])
+                ->get();
+
+            $totalUnpriced = 0;
+            foreach ($ordersForStats as $order) {
+                $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
+                $totalUnpriced += $order->unpriced_employees_count;
+            }
+            $stats['total_unpriced'] = $totalUnpriced;
+
+            // Apply unpriced filter
+            if ($request->input('unpriced') == 1) {
+                $allMatching = $query->with(['financialGroups' => function($q) {
+                        $q->select('id', 'production_order_id', 'financial_data');
+                    }])->get();
+
+                foreach($allMatching as $order) {
+                    $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
+                }
+                $filtered = $allMatching->filter(fn($o) => $o->unpriced_employees_count > 0);
+
+                $page = $request->input('page', 1);
+                $perPage = 20;
+                $orders = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $filtered->forPage($page, $perPage),
+                    $filtered->count(),
+                    $perPage,
+                    $page,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            } else {
+                $orders = $query->paginate(20)->withQueryString();
+                $orders->load(['financialGroups.transactions', 'financialGroups.advanceItems']);
+                foreach ($orders as $order) {
+                    $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
+                }
             }
         }
         elseif ($tab === 'manual') {
-            $query = ProductionOrder::with(['employer', 'financialGroups.transactions'])
-                ->whereNull('work_type_id')
+            $baseQuery = ProductionOrder::whereNull('work_type_id');
+
+            $stats = $this->getStatsForOrders($baseQuery);
+
+            $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions'])
                 ->latest('created_at')
                 ->withCount('items');
 
@@ -150,18 +255,50 @@ class FinancialHubController extends Controller
     }
 
     /**
+     * Helper method to calculate stats for a given order query scope.
+     */
+    protected function getStatsForOrders($orderQuery)
+    {
+        $today = Carbon::today();
+        $startOfMonth = Carbon::now()->startOfMonth();
+
+        // Use a clone of the query to not affect the original listing query
+        $orderIdsSubQuery = (clone $orderQuery)->select('id');
+
+        $stats = FinancialTransaction::whereIn('production_order_id', $orderIdsSubQuery)
+            ->select([
+                DB::raw("SUM(CASE WHEN DATE(paid_at) = '" . $today->toDateString() . "' THEN paid_amount ELSE 0 END) as income_today"),
+                DB::raw("SUM(CASE WHEN paid_at >= '" . $startOfMonth->toDateTimeString() . "' THEN paid_amount ELSE 0 END) as income_month"),
+                DB::raw("SUM(CASE WHEN status IN ('pending', 'partial') THEN amount - paid_amount ELSE 0 END) as pending_amount"),
+                DB::raw("SUM(CASE WHEN status = 'overdue' THEN amount - paid_amount ELSE 0 END) as overdue_amount"),
+            ])
+            ->first();
+
+        return [
+            'income_today' => $stats->income_today ?? 0,
+            'income_month' => $stats->income_month ?? 0,
+            'pending_amount' => $stats->pending_amount ?? 0,
+            'overdue_amount' => $stats->overdue_amount ?? 0,
+        ];
+    }
+
+    /**
      * Helper method to calculate financial stats for a given order
      */
-    protected function calculateOrderFinancials($order)
+    protected function calculateOrderFinancials($order, $preCalculatedCount = null)
     {
-        $order->total_employees = \App\Models\Employee::where('employer_id', $order->employer_id)
-            ->when($order->status === 'registration_resolution', function ($q) {
-                $q->whereIn('status', ['registration_pending', 'registration_completed']);
-            })
-            ->when($order->status === 'renewal_resolution', function ($q) {
-                $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
-            })
-            ->count();
+        if ($preCalculatedCount !== null) {
+            $order->total_employees = $preCalculatedCount;
+        } else {
+            $order->total_employees = \App\Models\Employee::where('employer_id', $order->employer_id)
+                ->when($order->status === 'registration_resolution', function ($q) {
+                    $q->whereIn('status', ['registration_pending', 'registration_completed']);
+                })
+                ->when($order->status === 'renewal_resolution', function ($q) {
+                    $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
+                })
+                ->count();
+        }
 
         $pricedItemIds = [];
         $totalAmount = 0;
