@@ -174,30 +174,6 @@
     </div>
 
     <div class="page">
-        <!-- Absolute Placed Assets (Biller Profile) -->
-        @if(isset($billerProfile))
-            @if($billerProfile->signature_path && $billerProfile->signature_position)
-                <img src="{{ asset('storage/' . $billerProfile->signature_path) }}"
-                     style="position: absolute;
-                            left: {{ $billerProfile->signature_position['x'] ?? 0 }}px;
-                            top: {{ $billerProfile->signature_position['y'] ?? 0 }}px;
-                            width: {{ $billerProfile->signature_position['width'] ?? 150 }}px;
-                            height: {{ $billerProfile->signature_position['height'] ?? 75 }}px;
-                            transform: rotate({{ $billerProfile->signature_position['rotate'] ?? 0 }}deg);
-                            z-index: 10;" alt="Signature">
-            @endif
-            @if($billerProfile->stamp_path && $billerProfile->stamp_position)
-                <img src="{{ asset('storage/' . $billerProfile->stamp_path) }}"
-                     style="position: absolute;
-                            left: {{ $billerProfile->stamp_position['x'] ?? 0 }}px;
-                            top: {{ $billerProfile->stamp_position['y'] ?? 0 }}px;
-                            width: {{ $billerProfile->stamp_position['width'] ?? 100 }}px;
-                            height: {{ $billerProfile->stamp_position['height'] ?? 100 }}px;
-                            transform: rotate({{ $billerProfile->stamp_position['rotate'] ?? 0 }}deg);
-                            z-index: 5; opacity: 0.8;" alt="Stamp">
-            @endif
-        @endif
-
         <!-- Header -->
         <table class="header-table">
             <tr>
