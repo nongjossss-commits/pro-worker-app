@@ -578,16 +578,70 @@
         });
     };
 
+        window.loadBatchStats = function() {
+        const containers = document.querySelectorAll('.production-order-card-container');
+        const orderIds = Array.from(containers).map(el => {
+            const collapse = el.querySelector('.accordion-collapse');
+            return collapse ? collapse.id.replace('collapse-', '') : null;
+        }).filter(id => id);
+
+        if (orderIds.length === 0) return;
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+        fetch('{{ route("production.stats.batch") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                order_ids: orderIds,
+                search: urlParams.get('search'),
+                filter: urlParams.get('filter'),
+                operator_filter: urlParams.get('operator_filter')
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            for (const [orderId, stats] of Object.entries(data)) {
+                const totalEl = document.getElementById(`order-${orderId}-total`);
+                if(totalEl) totalEl.innerText = stats.activeCount;
+
+                // Update Step badges
+                if (stats.stepStats) {
+                    for (const [stepId, count] of Object.entries(stats.stepStats)) {
+                        const badge = document.getElementById(`order-${orderId}-step-${stepId}`);
+                        if (badge) {
+                            badge.innerText = count;
+                            if (count > 0) {
+                                badge.classList.replace('bg-secondary', 'bg-info');
+                                badge.classList.replace('bg-opacity-10', 'text-dark');
+                                badge.classList.replace('text-muted', 'text-dark');
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .catch(err => console.error('Stats loading failed', err));
+    }
+
+    // Call batch stats on load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadBatchStats();
+    });
+
     // --- Lazy Load ---
     const loadedOrders = {};
-    document.getElementById('productionAccordion').addEventListener('show.bs.collapse', function (e) {
+    document.getElementById('productionAccordion')?.addEventListener('show.bs.collapse', function (e) {
         if (e.target.classList.contains('accordion-collapse')) {
             const orderId = e.target.id.replace('collapse-', '');
             if (!loadedOrders[orderId]) {
                 const container = document.getElementById(`order-content-${orderId}`);
 
                 // Construct URL with current params (filter, search)
-                const baseUrl = `{{ route('workflow.index') }}/${orderId}/items`;
+                const baseUrl = `{{ url('production/order') }}/${orderId}/employees`;
                 const url = new URL(baseUrl, window.location.origin);
                 const currentParams = new URLSearchParams(window.location.search);
                 currentParams.forEach((value, key) => url.searchParams.append(key, value));

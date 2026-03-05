@@ -179,13 +179,9 @@ class ProductionController extends Controller
                             ->paginate($perPage)
                             ->withQueryString();
 
-            // Load Relations
+            // Load Relations - Do not eager load ALL items to save memory, they will be lazy loaded!
             $orders->load([
-                'items.completedWorkTypeSteps',
-                'items.employee',
-                'employer.addresses',
-                'financialGroups.transactions.items',
-                'financialGroups.advanceItems'
+                'employer.addresses'
             ]);
 
             foreach ($orders as $order) {
@@ -264,67 +260,55 @@ class ProductionController extends Controller
                 $statsQuery->whereHas('items', fn($q) => $q->where('operator_id', $opFilter));
             }
 
-            $allMatchingOrders = $statsQuery->with(['items.completedWorkTypeSteps'])->get();
-            $stats['total_projects'] = $allMatchingOrders->count();
+            // Efficient Stats Calculation via SQL rather than PHP loops
+            $stats['total_projects'] = $statsQuery->count();
 
-            foreach ($allMatchingOrders as $order) {
-                foreach ($order->items as $item) {
-                     $stats['total_employees']++;
-                     if ($item->status === 'cancelled') {
-                         $stats['cancelled']++;
-                         continue;
-                     }
-                     if ($item->status === 'completed') {
-                         $stats['completed']++;
-                     }
-                     if ($item->status === 'pending' && $item->completedWorkTypeSteps->isEmpty()) {
-                         $stats['not_started']++;
-                     }
-                     if (!$item->is_checked_today && $item->status !== 'completed' && $item->status !== 'cancelled') {
-                         $stats['pending_daily_check']++;
-                     }
-                     $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
-                     if ($highestStep && isset($stats['step_stats'][$highestStep->id])) {
-                         $stats['step_stats'][$highestStep->id]++;
-                     }
+            // Get all order IDs that match the query
+            $matchingOrderIds = $statsQuery->pluck('id');
+
+            if ($matchingOrderIds->isNotEmpty()) {
+                $baseItemQuery = ProductionItem::whereIn('production_order_id', $matchingOrderIds);
+
+                $stats['total_employees'] = (clone $baseItemQuery)->count();
+                $stats['cancelled'] = (clone $baseItemQuery)->where('status', 'cancelled')->count();
+                $stats['completed'] = (clone $baseItemQuery)->where('status', 'completed')->count();
+                $stats['not_started'] = (clone $baseItemQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
+                $stats['pending_daily_check'] = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
+                    ->where(function($q) {
+                        $q->whereNull('last_checked_at')
+                          ->orWhereDate('last_checked_at', '<', now()->today());
+                    })->count();
+
+                // Step Stats (Highest Step) - Global
+                $itemsWithSteps = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
+                    ->with(['completedWorkTypeSteps' => function($q) {
+                        $q->orderByDesc('order');
+                    }])
+                    ->get();
+
+                foreach ($itemsWithSteps as $item) {
+                    $highestStep = $item->completedWorkTypeSteps->first();
+                    if ($highestStep && isset($stats['step_stats'][$highestStep->id])) {
+                        $stats['step_stats'][$highestStep->id]++;
+                    }
                 }
             }
 
-            // Per Order Stats
-            foreach ($orders as $order) {
-                $items = $order->items;
-                $total = 0;
-                $notStarted = 0;
-                $cancelled = 0;
-                $completed = 0;
-                $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+            // Remove eager loading of items for ALL orders to save memory.
+            // Items for specific orders will be lazy loaded in the view or batchStats.
 
-                foreach ($items as $item) {
-                    if ($item->status === 'cancelled') {
-                        $cancelled++;
-                        continue;
-                    }
-                    $total++;
-                    if ($item->status === 'completed') {
-                        $completed++;
-                    }
-                    $completedSteps = $item->completedWorkTypeSteps->pluck('id')->toArray();
-                    if (empty($completedSteps)) {
-                        $notStarted++;
-                    }
-                    $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
-                    if ($highestStep && isset($stepStats[$highestStep->id])) {
-                        $stepStats[$highestStep->id]++;
-                    }
-                }
+            // Per Order Stats will now be empty and populated via AJAX in batchStats
+            foreach ($orders as $order) {
+                // Determine active items count (already passed from withCount above)
+                $activeCount = $order->active_items_count ?? 0;
 
                 $order->computedStats = [
-                    'total' => $total,
-                    'not_started' => $notStarted,
-                    'cancelled' => $cancelled,
-                    'completed' => $completed,
-                    'step_stats' => $stepStats,
-                    'active_items_count' => $order->active_items_count
+                    'total' => $activeCount, // Temporary placeholder until AJAX
+                    'not_started' => 0,
+                    'cancelled' => $order->cancelled_items_count ?? 0,
+                    'completed' => 0,
+                    'step_stats' => $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray(),
+                    'active_items_count' => $activeCount
                 ];
             }
         }
@@ -713,5 +697,202 @@ class ProductionController extends Controller
             'completed' => $completed,
             'step_stats' => $stepStats
         ];
+    }
+
+    /**
+     * Fetch Employees for a specific Order (Lazy Load)
+     */
+    public function fetchEmployees(Request $request, $orderId)
+    {
+        $order = ProductionOrder::with('workType')->findOrFail($orderId);
+        $activeTab = $order->workType;
+
+        $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
+            ->where('production_order_id', $orderId);
+
+        // Status/Step Filter
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'not_started') {
+                $query->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+            } elseif ($filter === 'cancelled') {
+                $query->where('status', 'cancelled');
+            } elseif ($filter === 'completed') {
+                $query->where('status', 'completed');
+            } elseif ($filter === 'pending_daily_check') {
+                $query->where(function($sub) {
+                    $sub->whereNull('last_checked_at')
+                        ->orWhereDate('last_checked_at', '<', now()->today());
+                })->whereNotIn('status', ['cancelled', 'completed']);
+            } elseif (is_numeric($filter)) {
+                $query->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
+                    $s->where('work_type_steps.id', $filter);
+                });
+            }
+        }
+
+        // Search Filter
+        if ($request->has('search') && $request->search) {
+            $search = trim($request->search);
+            $cleanedSearch = str_replace(' ', '', $search);
+
+            $query->where(function($q) use ($search, $cleanedSearch) {
+                $q->where('request_number', 'like', "%{$search}%")
+                  ->orWhereHas('employee', function($emp) use ($search, $cleanedSearch) {
+                      $emp->where('employeeNameTh', 'like', "%{$search}%")
+                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                          ->orWhere('employeePassport', 'like', "%{$search}%")
+                          ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                          ->orWhere('employee_id_number', 'like', "%{$search}%")
+                          ->orWhere('name_list_number', 'like', "%{$search}%")
+                          ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                          ->orWhere('employer_employee_id', 'like', "%{$search}%")
+                          ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                          ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                  });
+            });
+        }
+
+        // Operator Filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $query->where('operator_id', $request->operator_filter);
+        }
+
+        $items = $query->get();
+
+        // Setup financial status locally
+        $empIds = $items->pluck('employee_id')->filter()->unique();
+
+        // Determine shared groups
+        $sharedGroups = $order->financialGroups;
+        if ($order->work_type_id !== null) {
+            $sharedGroups = \App\Models\ProductionFinancialGroup::where('employer_id', $order->employer_id)
+                ->where('work_type_id', $order->work_type_id)
+                ->with(['transactions.items', 'advanceItems'])
+                ->get();
+            if ($sharedGroups->isEmpty()) {
+                $sharedGroups = $order->financialGroups;
+            }
+        }
+        $order->setRelation('financialGroups', $sharedGroups);
+
+        $employeeFinancialStatus = \App\Services\FinancialStatusService::calculateStatusForEmployees($order, $empIds);
+
+        foreach ($items as $item) {
+            if ($item->employee) {
+                $item->employee->financialStatus = $employeeFinancialStatus[$item->employee->id] ?? null;
+            }
+        }
+
+        $steps = WorkTypeStep::where('work_type_id', $order->work_type_id)
+            ->where('stage', 'preparation')
+            ->orderBy('order')
+            ->get();
+
+        $users = User::orderBy('name')->get(['id', 'name']);
+
+        return view('production._employees_list', compact('items', 'order', 'steps', 'activeTab', 'users'));
+    }
+
+    /**
+     * Calculate Stats per Order via AJAX
+     */
+    public function batchStats(Request $request)
+    {
+        $request->validate([
+            'order_ids' => 'required|array',
+            'order_ids.*' => 'exists:production_orders,id',
+            'search' => 'nullable|string',
+            'filter' => 'nullable|string',
+            'operator_filter' => 'nullable|integer'
+        ]);
+
+        $orderIds = $request->input('order_ids');
+        $search = $request->input('search');
+        $filter = $request->input('filter');
+        $operatorFilter = $request->input('operator_filter');
+
+        $orders = ProductionOrder::whereIn('id', $orderIds)->get();
+        $results = [];
+
+        foreach ($orders as $order) {
+            $query = ProductionItem::with(['completedWorkTypeSteps' => function($q) {
+                $q->orderByDesc('order');
+            }])->where('production_order_id', $order->id);
+
+            // Apply Search Filter Logic for items
+            if ($search) {
+                $cleanedSearch = str_replace(' ', '', $search);
+                $query->where(function($q) use ($search, $cleanedSearch) {
+                    $q->where('request_number', 'like', "%{$search}%")
+                      ->orWhereHas('employee', function($emp) use ($search, $cleanedSearch) {
+                          $emp->where('employeeNameTh', 'like', "%{$search}%")
+                              ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('employeePassport', 'like', "%{$search}%")
+                              ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                              ->orWhere('employee_id_number', 'like', "%{$search}%")
+                              ->orWhere('name_list_number', 'like', "%{$search}%")
+                              ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                              ->orWhere('employer_employee_id', 'like', "%{$search}%")
+                              ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                              ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                      });
+                });
+            }
+
+            if ($operatorFilter) {
+                $query->where('operator_id', $operatorFilter);
+            }
+
+            $items = $query->get();
+
+            $total = 0;
+            $notStarted = 0;
+            $cancelled = 0;
+            $completed = 0;
+            $stepStats = [];
+
+            // Initialize step stats based on work type steps
+            $steps = WorkTypeStep::where('work_type_id', $order->work_type_id)
+                ->where('stage', 'preparation')
+                ->get();
+
+            foreach ($steps as $step) {
+                $stepStats[$step->id] = 0;
+            }
+
+            foreach ($items as $item) {
+                if ($item->status === 'cancelled') {
+                    $cancelled++;
+                    continue; // Cancelled items don't count towards active/completed/step stats usually, but they are in the items list
+                }
+
+                $total++;
+
+                if ($item->status === 'completed') {
+                    $completed++;
+                }
+
+                $completedSteps = $item->completedWorkTypeSteps;
+                if ($completedSteps->isEmpty()) {
+                    $notStarted++;
+                }
+
+                $highestStep = $completedSteps->first(); // Since we ordered by desc above
+                if ($highestStep && isset($stepStats[$highestStep->id])) {
+                    $stepStats[$highestStep->id]++;
+                }
+            }
+
+            $results[$order->id] = [
+                'activeCount' => $total,
+                'notStartedCount' => $notStarted,
+                'cancelledCount' => $cancelled,
+                'completedCount' => $completed,
+                'stepStats' => $stepStats
+            ];
+        }
+
+        return response()->json($results);
     }
 }

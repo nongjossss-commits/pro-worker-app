@@ -359,6 +359,8 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::resource('production', \App\Http\Controllers\ProductionController::class)->middleware('menu:production');
+    Route::post('production/stats-batch', [\App\Http\Controllers\ProductionController::class, 'batchStats'])->name('production.stats.batch');
+    Route::get('production/order/{order}/employees', [\App\Http\Controllers\ProductionController::class, 'fetchEmployees'])->name('production.order.employees');
 
     // Additional Production Routes
     Route::post('production/{id}/add-employee', [\App\Http\Controllers\ProductionController::class, 'addEmployee'])->name('production.add_employee');
@@ -409,6 +411,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Workflow Routes
     Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->middleware('menu:workflow')->name('workflow.index');
+    Route::post('workflow/stats-batch', [\App\Http\Controllers\WorkflowController::class, 'batchStats'])->name('workflow.stats.batch');
+    Route::get('workflow/order/{order}/employees', [\App\Http\Controllers\WorkflowController::class, 'fetchEmployees'])->name('workflow.order.employees');
     Route::post('workflow/store', [\App\Http\Controllers\WorkflowController::class, 'store'])->name('workflow.store');
     Route::get('workflow/{order}/items', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderItems'])->name('workflow.items');
     Route::get('workflow/{order}/history', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderHistory'])->name('workflow.history');
