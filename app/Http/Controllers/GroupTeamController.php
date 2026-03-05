@@ -305,6 +305,14 @@ class GroupTeamController extends Controller
                 $q->where('employeeNameTh', 'like', "%{$term}%")
                   ->orWhere('employeeNameEn', 'like', "%{$term}%")
                   ->orWhere('employeePassport', 'like', "%{$term}%")
+                  ->orWhere('employeeWorkPermit', 'like', "%{$term}%")
+                  ->orWhere('employee_reference_id', 'like', "%{$term}%")
+                  ->orWhere('outsource_code', 'like', "%{$term}%")
+                  ->orWhere('employer_employee_id', 'like', "%{$term}%")
+                  ->orWhere('pinkCardNo', 'like', "%{$term}%")
+                  ->orWhere('request_number', 'like', "%{$term}%")
+                  ->orWhere('registration_request_number', 'like', "%{$term}%")
+                  ->orWhere('renewal_request_number', 'like', "%{$term}%")
                   ->orWhereHas('employer', function($q2) use ($term) {
                       $q2->where('employerNameTh', 'like', "%{$term}%")
                          ->orWhere('employerNameEn', 'like', "%{$term}%");

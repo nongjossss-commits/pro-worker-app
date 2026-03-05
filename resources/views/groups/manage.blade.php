@@ -138,6 +138,10 @@
         @can('manage-tickets')
         <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
         @endcan
+        @can('view-finance')
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-primary" href="#" id="bulk-finance-btn"><i class="bi bi-cash-stack me-2"></i>{{ __('การเงิน (Finance)') }}</a></li>
+        @endcan
     </x-bulk-action-bar>
 
     <!-- Groups Tabs (Server Side) -->
@@ -467,7 +471,7 @@
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text"
                                class="form-control"
-                               placeholder="{{ __('Search employee by name, passport, or employer...') }}"
+                               placeholder="{{ __('Search employee by name, passport, work permit, IDs, request number, or employer...') }}"
                                x-model="searchTerm"
                                @input.debounce.500ms="searchEmployees()">
                     </div>
@@ -784,6 +788,42 @@
 
                 document.body.appendChild(form);
                 form.submit();
+            });
+        }
+
+        // Handle Bulk Finance
+        const bulkFinanceBtn = document.getElementById('bulk-finance-btn');
+        if (bulkFinanceBtn) {
+            bulkFinanceBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selectedData = window.getGlobalSelectedData();
+                const selectedIds = selectedData.map(item => item.id);
+
+                if (selectedIds.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                if (typeof window.FinancialSecurity !== 'undefined') {
+                    window.FinancialSecurity.checkAndRun(function() {
+                        const form = document.createElement('form');
+                        form.method = 'GET';
+                        form.action = '{{ route("finance.create") }}';
+
+                        selectedIds.forEach(id => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'employee_ids[]';
+                            input.value = id;
+                            form.appendChild(input);
+                        });
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    });
+                } else {
+                    console.error('FinancialSecurity module not loaded');
+                }
             });
         }
     });
