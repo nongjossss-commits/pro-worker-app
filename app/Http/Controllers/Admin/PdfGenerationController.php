@@ -173,21 +173,41 @@ class PdfGenerationController extends Controller
                     $errorLog = "";
                     $generatedCount = 0;
 
-                    foreach ($employees as $employee) {
-                        try {
-                            // Generate Single PDF
-                            $content = $this->pdfService->generateSinglePdf($template, $employee, $targetEmployerModel, $useEmptyEmployer);
-                            $filename = $this->pdfService->generateFilename($template, $employee);
+                    $chunkSize = $template->meta_data['employees_per_page'] ?? 1;
+                    $chunkSize = max(1, (int)$chunkSize);
 
-                            // Add to Zip
-                            $zip->addFromString($filename, $content);
-                            $generatedCount++;
+                    if ($chunkSize > 1) {
+                        $chunks = $employees->chunk($chunkSize);
+                        foreach ($chunks as $chunkIndex => $chunkEmployees) {
+                            try {
+                                $content = $this->pdfService->generateChunkedPdf($template, $chunkEmployees, $targetEmployerModel, $useEmptyEmployer);
+                                $firstEmp = $chunkEmployees->first();
+                                $filename = "chunk_" . ($chunkIndex + 1) . "_" . $this->pdfService->generateFilename($template, $firstEmp);
 
-                            // Explicitly free memory if possible (though PHP 8 is usually smart)
-                            unset($content);
+                                $zip->addFromString($filename, $content);
+                                $generatedCount += $chunkEmployees->count();
+                                unset($content);
+                            } catch (\Throwable $e) {
+                                $errorLog .= "Error for Chunk " . ($chunkIndex + 1) . ": " . $e->getMessage() . "\n";
+                            }
+                        }
+                    } else {
+                        foreach ($employees as $employee) {
+                            try {
+                                // Generate Single PDF
+                                $content = $this->pdfService->generateSinglePdf($template, $employee, $targetEmployerModel, $useEmptyEmployer);
+                                $filename = $this->pdfService->generateFilename($template, $employee);
 
-                        } catch (\Throwable $e) {
-                            $errorLog .= "Error for Employee ID {$employee->id} ({$employee->employeeNameEn}): " . $e->getMessage() . "\n";
+                                // Add to Zip
+                                $zip->addFromString($filename, $content);
+                                $generatedCount++;
+
+                                // Explicitly free memory if possible (though PHP 8 is usually smart)
+                                unset($content);
+
+                            } catch (\Throwable $e) {
+                                $errorLog .= "Error for Employee ID {$employee->id} ({$employee->employeeNameEn}): " . $e->getMessage() . "\n";
+                            }
                         }
                     }
 
