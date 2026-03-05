@@ -310,6 +310,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/store', [App\Http\Controllers\Production\RenewalController::class, 'store'])->name('store');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
         Route::get('/employer/{employer}/history', [App\Http\Controllers\Production\RenewalController::class, 'fetchHistory'])->name('employer.history');
+
+        // Stats & Lazy Loading Routes
+        Route::post('/stats-batch', [App\Http\Controllers\Production\RenewalController::class, 'batchStats'])->name('stats.batch');
+        Route::get('/employer/{employer}/finance-tab', [App\Http\Controllers\Production\RenewalController::class, 'loadFinancialTab'])->name('finance.tab');
         Route::get('/import', [App\Http\Controllers\Production\RenewalController::class, 'importView'])->name('import');
         Route::post('/configure-expiry', [App\Http\Controllers\Production\RenewalController::class, 'configureExpiry'])->name('configure_expiry');
         Route::post('/steps/reorder', [App\Http\Controllers\Production\RenewalController::class, 'reorderSteps'])->name('steps.reorder');
