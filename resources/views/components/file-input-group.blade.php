@@ -10,21 +10,26 @@
 ])
 
 <div class="mb-3">
+    @php
+        // Clean label for javascript string to avoid syntax errors if it contains HTML or quotes
+        $cleanLabel = htmlspecialchars(strip_tags($label ?? ''), ENT_QUOTES);
+    @endphp
+
     @if($label)
         <label for="{{ $id }}" class="form-label">
-            {{ $label }}
+            {!! $label !!}
             @if($required) <span class="text-danger">*</span> @endif
         </label>
     @endif
 
     @if($value)
         <div class="mb-2 d-flex gap-1 flex-wrap">
-            <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $value) }}', '{{ $label }}')" class="btn btn-success btn-sm text-white">
+            <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $value) }}', '{!! $cleanLabel !!}')" class="btn btn-success btn-sm text-white">
                 <i class="bi bi-eye-fill"></i> <span class="d-none d-sm-inline">{{ __('View') }}</span>
             </a>
 
             @if($pdfRoute)
-                <a href="#" onclick="event.preventDefault(); viewPDF('{{ $pdfRoute }}', '{{ $label }}')" class="btn btn-danger btn-sm text-white">
+                <a href="{{ $pdfRoute }}" download class="btn btn-danger btn-sm text-white">
                     <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                 </a>
             @endif
