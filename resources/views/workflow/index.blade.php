@@ -802,7 +802,58 @@
         }
         // Initial Calculation
         setTimeout(recalculateSequenceNumbers, 100);
-    });
+
+    // Initial Batch Stats Load
+    setTimeout(loadBatchStats, 500);
+});
+
+window.loadBatchStats = function() {
+    const orderIds = Array.from(document.querySelectorAll('.production-order-card-container'))
+        .map(container => {
+            const btn = container.querySelector('[data-bs-target^="#collapse-"]');
+            if (btn) {
+                const target = btn.getAttribute('data-bs-target');
+                if (target) {
+                    return target.replace('#collapse-', '');
+                }
+            }
+            return null;
+        })
+        .filter(id => id !== null);
+
+    if (orderIds.length === 0) return;
+
+    fetch('{{ route("workflow.stats.batch") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            order_ids: orderIds,
+            tab: '{{ $activeTab->slug ?? "" }}'
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.stats) {
+            for (const [orderId, stats] of Object.entries(data.stats)) {
+                updateOrderHeaderStats(orderId, stats);
+                // Also update the active state (grayscale or not)
+                const card = document.getElementById(`heading-${orderId}`).closest('.production-order-card');
+                if (card) {
+                    if (stats.active_items_count > 0) {
+                        card.classList.remove('grayscale-mode');
+                    } else {
+                        card.classList.add('grayscale-mode');
+                    }
+                }
+            }
+        }
+    })
+    .catch(err => console.error('Failed to load batch stats:', err));
+};
 
     window.toggleFilter = function(filterKey) {
         const url = new URL(window.location.href);
