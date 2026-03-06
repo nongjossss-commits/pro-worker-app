@@ -783,7 +783,7 @@
                     <div class="tab-pane fade" :class="{ 'show active': activeTab === 'upload' }">
                         <div class="mb-3">
                             <label class="form-label">{{ __('Upload Signature Image') }}</label>
-                            <input type="file" class="form-control" accept="image/png, image/jpeg" @change="handleFileSelect" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
+                            <input type="file" class="form-control" accept="image/png, image/jpeg, image/jpg" @change="handleFileSelect">
                             <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
                         </div>
                     </div>
@@ -838,17 +838,21 @@
                              reader.onload = (e) => { this.previewUrl = e.target.result; };
                              reader.readAsDataURL(event.detail.file);
 
-                             // Move the file input to this component's container so it gets submitted with the form
+                             // Instead of moving the DOM element which can be problematic,
+                             // create a new input with DataTransfer to hold the file
                              const container = this.$refs.fileInputContainer;
                              container.innerHTML = ''; // clear previous
-                             // We need to clone the file input from the modal, but we can't easily clone file inputs with value.
-                             // Instead, we will grab the actual element from the modal and move it here.
-                             if (event.detail.fileInputEl) {
-                                 // Rename it to match the controller expectation
-                                 event.detail.fileInputEl.name = fieldName + '_file';
-                                 event.detail.fileInputEl.classList.add('d-none'); // hide it
-                                 container.appendChild(event.detail.fileInputEl);
-                             }
+
+                             const dt = new DataTransfer();
+                             dt.items.add(event.detail.file);
+
+                             const newFileInput = document.createElement('input');
+                             newFileInput.type = 'file';
+                             newFileInput.name = fieldName + '_file';
+                             newFileInput.classList.add('d-none');
+                             newFileInput.files = dt.files;
+
+                             container.appendChild(newFileInput);
                         } else if (this.action === 'generate') {
                             // We can't easily show a preview of server-generated signature before saving
                             // Show a placeholder
@@ -976,7 +980,7 @@
             handleFileSelect(e) {
                 if (e.target.files.length > 0) {
                     this.uploadedFile = e.target.files[0];
-                    this.uploadedFileInput = e.target; // Keep reference to move it later
+                    this.uploadedFileInput = e.target;
                 }
             },
 
@@ -986,23 +990,20 @@
                     action: this.activeTab,
                 };
 
-                let replacementInput = null;
-                let originalParent = null;
-
                 if (this.activeTab === 'draw') {
                     eventData.base64 = this.canvas.toDataURL('image/png');
                 } else if (this.activeTab === 'upload') {
-                    if (this.uploadedFile && this.uploadedFileInput) {
+                    if (this.uploadedFile) {
                         eventData.file = this.uploadedFile;
-                        eventData.fileInputEl = this.uploadedFileInput; // Send the element itself
 
-                        // Prepare replacement BEFORE dispatching event (which moves the original)
-                        originalParent = this.uploadedFileInput.parentElement;
-                        if (originalParent) {
-                             replacementInput = this.uploadedFileInput.cloneNode(true);
-                             replacementInput.value = ''; // clear value
-                             replacementInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                        // Clear the modal's input so it can be reused without issue
+                        if (this.uploadedFileInput) {
+                            this.uploadedFileInput.value = '';
                         }
+                    } else {
+                        // Validate if an upload was required but missing
+                        alert('{{ __("Please select a file to upload.") }}');
+                        return;
                     }
                 }
 
@@ -1012,11 +1013,6 @@
                 // Clear state
                 this.clearCanvas();
                 this.uploadedFile = null;
-
-                // If we moved the input, put the replacement back
-                if (replacementInput && originalParent) {
-                     originalParent.appendChild(replacementInput);
-                }
                 this.uploadedFileInput = null;
             }
         }));
