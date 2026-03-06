@@ -791,7 +791,38 @@ class ProductionController extends Controller
 
         $users = User::orderBy('name')->get(['id', 'name']);
 
-        return view('production._employees_list', compact('items', 'order', 'steps', 'activeTab', 'users'));
+        // Since items are `ProductionItem` models but the expected blade uses `$employees`, we map them.
+        // We also pass the order's employer since the `_employee_list_content` expects `$employer`.
+        $employees = $items->map(function ($item) {
+            $employee = $item->employee;
+            if ($employee) {
+                $employee->production_item = $item;
+            }
+            return $employee;
+        })->filter();
+
+        // If the view for general production/prepare employees list exists, use it.
+        // Otherwise, fallback to the generic registration employee list content view.
+        if (view()->exists('production._employee_list_content')) {
+            return view('production._employee_list_content', [
+                'employees' => $employees,
+                'employer' => $order->employer,
+                'steps' => $steps,
+                'order' => $order,
+                'users' => $users,
+                'activeTab' => $activeTab
+            ]);
+        }
+
+        // This relies on the _employee_list_content that expects an employer and steps
+        return view('production.registration._employee_list_content', [
+            'employees' => $employees,
+            'employer' => $order->employer,
+            'steps' => $steps,
+            'order' => $order,
+            'users' => $users,
+            'activeTab' => $activeTab
+        ]);
     }
 
     /**
