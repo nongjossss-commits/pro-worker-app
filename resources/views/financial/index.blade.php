@@ -85,10 +85,19 @@
                         <input type="month" class="form-control" id="report_month" name="month" required value="{{ date('Y-m') }}">
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">{{ __('Biller Profile') }}</label>
+                        <select class="form-select" name="biller_id">
+                            <option value="all">{{ __('All Profiles') }}</option>
+                            @foreach(\App\Models\FinancialProfile::where('type', 'biller')->get() as $profile)
+                                <option value="{{ $profile->id }}">{{ $profile->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">{{ __('Export Type') }}</label>
                         <select class="form-select" name="export_type">
-                            <option value="excel">{{ __('Excel Summary') }}</option>
-                            <option value="pdf_receipts">{{ __('PDF with Attachments') }}</option>
+                            <option value="all">{{ __('All Income & Expenses (น้ำทั้งเนื้อ)') }}</option>
+                            <option value="tax_only">{{ __('Tax Deductible Only (เฉพาะเนื้อๆ เพื่อยื่นภาษี)') }}</option>
                         </select>
                     </div>
                 </div>

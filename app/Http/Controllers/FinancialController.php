@@ -102,15 +102,34 @@ class FinancialController extends Controller
             'paid_amount' => 'nullable|numeric',
             'status' => 'nullable|in:pending,partial,paid,overdue',
             'notes' => 'nullable|string',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'wht_status' => 'nullable|in:not_required,pending,received',
+            'withholding_tax_amount' => 'nullable|numeric',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
+            'wht_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
             'item_ids' => 'nullable', // Can be array or string "1,2,3" if FormData
             'employee_ids' => 'nullable' // Can be array or string
         ];
 
         $request->validate($rules);
 
+        $oldPaidAmount = $transaction->paid_amount;
+        $oldBankAccountId = $transaction->bank_account_id;
+
         if ($request->has('notes')) {
             $transaction->notes = $request->notes;
+        }
+
+        if ($request->has('bank_account_id')) {
+            $transaction->bank_account_id = $request->bank_account_id;
+        }
+
+        if ($request->has('wht_status')) {
+            $transaction->wht_status = $request->wht_status;
+        }
+
+        if ($request->has('withholding_tax_amount')) {
+            $transaction->withholding_tax_amount = $request->withholding_tax_amount;
         }
 
         if ($request->hasFile('slip_file')) {
@@ -120,6 +139,13 @@ class FinancialController extends Controller
             }
             $path = $request->file('slip_file')->store('financial_slips', 'public');
             $transaction->slip_path = $path;
+        }
+
+        if ($request->hasFile('wht_document')) {
+            if ($transaction->wht_document_path) {
+                Storage::disk('public')->delete($transaction->wht_document_path);
+            }
+            $transaction->wht_document_path = $request->file('wht_document')->store('financial_slips/wht', 'public');
         }
 
         if ($request->has('amount')) {
@@ -144,6 +170,18 @@ class FinancialController extends Controller
         }
 
         $transaction->save();
+
+        // Handle Bank Account Balance Logic
+        if ($transaction->paid_amount != $oldPaidAmount || $transaction->bank_account_id != $oldBankAccountId) {
+            // Revert old balance
+            if ($oldBankAccountId && $oldPaidAmount > 0) {
+                \App\Models\BankAccount::where('id', $oldBankAccountId)->decrement('current_balance', $oldPaidAmount);
+            }
+            // Add new balance
+            if ($transaction->bank_account_id && $transaction->paid_amount > 0) {
+                \App\Models\BankAccount::where('id', $transaction->bank_account_id)->increment('current_balance', $transaction->paid_amount);
+            }
+        }
 
         // Sync Items
         // We need to merge item_ids and employee_ids logic
@@ -252,7 +290,15 @@ class FinancialController extends Controller
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        FinancialTransaction::destroy($id);
+        $transaction = FinancialTransaction::findOrFail($id);
+
+        // Revert bank balance
+        if ($transaction->bank_account_id && $transaction->paid_amount > 0) {
+            \App\Models\BankAccount::where('id', $transaction->bank_account_id)->decrement('current_balance', $transaction->paid_amount);
+        }
+
+        $transaction->delete();
+
         return response()->json(['success' => true]);
     }
 

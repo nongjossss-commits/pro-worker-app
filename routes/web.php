@@ -382,6 +382,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Financial Hub Routes (Central Menu)
     Route::middleware('menu:finance')->prefix('finance')->name('finance.')->group(function () {
+        // Finance Additions
+        Route::resource('bank-accounts', App\Http\Controllers\Finance\BankAccountController::class)->except(['create', 'edit', 'show']);
+        Route::resource('expense-categories', App\Http\Controllers\Finance\ExpenseCategoryController::class)->except(['create', 'edit', 'show']);
+        Route::resource('expenses', App\Http\Controllers\Finance\ExpenseController::class)->only(['index', 'store', 'destroy']);
+
         Route::get('/', [App\Http\Controllers\FinancialHubController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
         Route::post('/store', [App\Http\Controllers\FinancialHubController::class, 'storeManual'])->name('store');

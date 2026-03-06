@@ -952,6 +952,38 @@ class="row">
                                     </select>
                                 </div>
                                 <div class="mb-2">
+                                    <label class="form-label small">Receive to Account</label>
+                                    <select class="form-select form-select-sm" x-model="editingTransaction.bank_account_id">
+                                        <option value="">-- Select Account --</option>
+                                        @foreach(\App\Models\BankAccount::where('is_active', true)->get() as $bank)
+                                            <option value="{{ $bank->id }}">{{ $bank->bank_name }} {{ $bank->account_number ? '('.$bank->account_number.')' : '' }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="mb-2" x-show="editingTransaction.type !== 'advance_payment' && editingTransaction.type !== 'advance_receipt'">
+                                    <label class="form-label small">WHT (หัก ณ ที่จ่าย 3%)</label>
+                                    <select class="form-select form-select-sm mb-1" x-model="editingTransaction.wht_status">
+                                        <option value="not_required">Not Required</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="received">Received</option>
+                                    </select>
+                                    <input type="number" step="0.01" class="form-control form-control-sm mt-1" x-model="editingTransaction.withholding_tax_amount" placeholder="WHT Amount" x-show="editingTransaction.wht_status !== 'not_required'">
+
+                                    <!-- WHT Upload Area -->
+                                    <div class="mt-2" x-show="editingTransaction.wht_status !== 'not_required'">
+                                        <label class="form-label small text-muted">WHT Document (50 ทวิ)</label>
+                                        <input type="file" class="d-none" :id="'whtInput-' + editingTransaction.id" @change="handleWhtFileSelect" accept=".pdf,image/*">
+                                        <div class="btn-group w-100">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" @click="document.getElementById('whtInput-' + editingTransaction.id).click()">
+                                                <i class="bi bi-file-earmark-text me-1"></i> <span x-text="editingTransaction.wht_file ? 'Change WHT File' : 'Upload WHT'"></span>
+                                            </button>
+                                            <a x-show="editingTransaction.wht_document_path && !editingTransaction.wht_file" :href="'/storage/' + editingTransaction.wht_document_path" target="_blank" class="btn btn-outline-info btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
                                     <label class="form-label small">Notes</label>
                                     <textarea class="form-control form-control-sm" x-model="editingTransaction.notes" rows="2"></textarea>
                                 </div>

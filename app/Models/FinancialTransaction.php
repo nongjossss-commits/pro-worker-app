@@ -20,6 +20,11 @@ class FinancialTransaction extends Model
         'slip_path',
         'status', // pending, partial, paid, overdue
         'notes',
+        'bank_account_id',
+        'withholding_tax_amount',
+        'wht_document_path',
+        'wht_status',
+        'financial_profile_id',
     ];
 
     protected $casts = [
@@ -42,5 +47,15 @@ class FinancialTransaction extends Model
     public function items()
     {
         return $this->belongsToMany(ProductionItem::class, 'financial_transaction_items');
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class);
+    }
+
+    public function financialProfile()
+    {
+        return $this->belongsTo(FinancialProfile::class);
     }
 }
