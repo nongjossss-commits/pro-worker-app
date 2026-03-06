@@ -1346,8 +1346,7 @@
         if (bulkSendDataBtn) {
             bulkSendDataBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
-                const selected = Array.from(checkboxes).map(cb => cb.value);
+                const selected = window.getGlobalSelectedIds();
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
