@@ -1905,7 +1905,35 @@ class WorkflowController extends Controller
         $steps = $activeTab ? $activeTab->workflowSteps : collect();
         $users = User::orderBy('name')->get(['id', 'name']);
 
-        return view('workflow._employees_list', compact('items', 'order', 'steps', 'activeTab', 'users'));
+        // Since items are `ProductionItem` models but the expected blade uses `$employees`, we map them.
+        $employees = $items->map(function ($item) {
+            $employee = $item->employee;
+            if ($employee) {
+                $employee->production_item = $item;
+            }
+            return $employee;
+        })->filter();
+
+        if (view()->exists('workflow._employee_list_content')) {
+            return view('workflow._employee_list_content', [
+                'employees' => $employees,
+                'employer' => $order->employer,
+                'steps' => $steps,
+                'order' => $order,
+                'users' => $users,
+                'activeTab' => $activeTab
+            ]);
+        }
+
+        // Fallback to the production registration view since they share the same base employee card partial
+        return view('production.registration._employee_list_content', [
+            'employees' => $employees,
+            'employer' => $order->employer,
+            'steps' => $steps,
+            'order' => $order,
+            'users' => $users,
+            'activeTab' => $activeTab
+        ]);
     }
 
     /**
