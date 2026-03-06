@@ -569,6 +569,10 @@ if (typeof window.financialManager === 'undefined') {
 
             openPayModal(t) {
                 this.editingTransaction = { ...t };
+                this.editingTransaction.wht_status = t.wht_status || 'not_required';
+                this.editingTransaction.withholding_tax_amount = t.withholding_tax_amount || '';
+                this.editingTransaction.bank_account_id = t.bank_account_id || '';
+                this.editingTransaction.wht_file = null;
                 if (t.items) {
                     this.selectedTransactionItems = t.items.map(i => i.id);
                 } else {
@@ -578,13 +582,22 @@ if (typeof window.financialManager === 'undefined') {
                 bootstrap.Modal.getOrCreateInstance(this.$refs.payModal).show();
             },
 
+            handleWhtFileSelect(e) {
+                this.editingTransaction.wht_file = e.target.files[0];
+            },
+
             updateTransaction() {
                 const formData = new FormData();
                 formData.append('_method', 'PUT');
                 formData.append('paid_amount', this.editingTransaction.paid_amount);
                 formData.append('status', this.editingTransaction.status);
                 formData.append('notes', this.editingTransaction.notes || '');
+                formData.append('bank_account_id', this.editingTransaction.bank_account_id || '');
+                formData.append('wht_status', this.editingTransaction.wht_status || 'not_required');
+                formData.append('withholding_tax_amount', this.editingTransaction.withholding_tax_amount || '');
+
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
+                if (this.editingTransaction.wht_file) formData.append('wht_document', this.editingTransaction.wht_file);
 
                 this.selectedTransactionItems.forEach(val => {
                     if (String(val).startsWith('emp_')) {

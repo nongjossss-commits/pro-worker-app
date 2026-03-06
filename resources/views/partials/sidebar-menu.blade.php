@@ -96,6 +96,15 @@
 <a href="{{ route('finance.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.index') || request()->routeIs('finance.create') ? 'active' : '' }}">
     <i class="bi bi-cash-coin me-2"></i>{{ __('Finance') }}
 </a>
+<a href="{{ route('finance.bank-accounts.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.bank-accounts.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+    <i class="bi bi-bank me-2"></i>{{ __('Bank Accounts') }}
+</a>
+<a href="{{ route('finance.expense-categories.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expense-categories.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+    <i class="bi bi-tags me-2"></i>{{ __('Expense Categories') }}
+</a>
+<a href="{{ route('finance.expenses.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+    <i class="bi bi-receipt-cutoff me-2"></i>{{ __('Expenses (รายจ่าย)') }}
+</a>
 @if(\App\Facades\SuperAdmin::isVisible('financial_profiles'))
 <a href="{{ route('finance.profiles.builder') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.profiles.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
     <i class="bi bi-file-earmark-person me-2"></i>{{ __('Financial Profiles') }}

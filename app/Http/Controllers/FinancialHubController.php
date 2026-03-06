@@ -350,14 +350,137 @@ class FinancialHubController extends Controller
     }
 
     /**
-     * Export the monthly report to Excel/PDF.
-     * (Placeholder method for UI testing as requested by the user)
+     * Export the monthly report to a Zip file containing an Excel/CSV and attachments.
      */
     public function exportMonthly(Request $request)
     {
-        // Simply redirect back with a success message for now so the button works.
-        // Full logic will be added if the user confirms the UI is correct.
-        return back()->with('success', 'The Monthly Report export feature has been triggered successfully. (Placeholder logic)');
+        $month = $request->input('month', now()->format('Y-m'));
+        $billerId = $request->input('biller_id', 'all');
+        $exportType = $request->input('export_type', 'all'); // 'all' or 'tax_only'
+
+        $startDate = \Carbon\Carbon::parse($month . '-01')->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
+
+        // Query Incomes (Transactions that are paid)
+        $incomesQuery = \App\Models\FinancialTransaction::with(['bankAccount', 'productionOrder'])
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$startDate, $endDate]);
+
+        if ($billerId !== 'all') {
+            $incomesQuery->where('financial_profile_id', $billerId);
+        }
+
+        if ($exportType === 'tax_only') {
+            // Include only if there's WHT or if you define tax rules for income
+            // For now, let's include all paid incomes if tax_only, or filter if requested.
+            // A simple assumption: 'tax_only' might primarily affect expenses. We'll include all income.
+        }
+
+        $incomes = $incomesQuery->get();
+
+        // Query Expenses
+        $expensesQuery = \App\Models\Expense::with(['category', 'bankAccount'])
+            ->whereBetween('expense_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+
+        if ($billerId !== 'all') {
+            $expensesQuery->where('financial_profile_id', $billerId);
+        }
+
+        if ($exportType === 'tax_only') {
+            $expensesQuery->where('is_tax_deductible', true);
+        }
+
+        $expenses = $expensesQuery->get();
+
+        // Generate CSV data manually since phpspreadsheet may have conflicts
+        $csvData = [];
+        $csvData[] = ['Type', 'Date', 'Description/Order', 'Category', 'Bank Account', 'WHT Status', 'WHT Amount', 'Amount'];
+
+        foreach ($incomes as $inc) {
+            $csvData[] = [
+                'Income',
+                $inc->paid_at->format('Y-m-d H:i:s'),
+                $inc->productionOrder ? $inc->productionOrder->project_name : 'Income',
+                'Income',
+                $inc->bankAccount ? $inc->bankAccount->bank_name : '',
+                $inc->wht_status,
+                $inc->withholding_tax_amount,
+                $inc->paid_amount,
+            ];
+        }
+
+        foreach ($expenses as $exp) {
+            $csvData[] = [
+                'Expense',
+                $exp->expense_date->format('Y-m-d'),
+                $exp->description ?? 'Expense',
+                $exp->category ? $exp->category->name : '',
+                $exp->bankAccount ? $exp->bankAccount->bank_name : '',
+                'N/A', // wht for expense not tracked same way yet
+                '0.00',
+                -$exp->amount,
+            ];
+        }
+
+        // Create temporary directory for Zip
+        $tempDir = storage_path('app/temp_export_' . uniqid());
+        \Illuminate\Support\Facades\File::makeDirectory($tempDir);
+
+        // Save CSV
+        $csvFilePath = $tempDir . '/financial_report_' . $month . '.csv';
+        $fp = fopen($csvFilePath, 'w');
+        // Add BOM for Excel UTF-8
+        fputs($fp, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        foreach ($csvData as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+
+        // Copy attachments
+        $attachmentsDir = $tempDir . '/attachments';
+        \Illuminate\Support\Facades\File::makeDirectory($attachmentsDir);
+
+        foreach ($incomes as $inc) {
+            if ($inc->slip_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($inc->slip_path)) {
+                $ext = pathinfo($inc->slip_path, PATHINFO_EXTENSION);
+                \Illuminate\Support\Facades\File::copy(storage_path('app/public/' . $inc->slip_path), $attachmentsDir . '/income_slip_' . $inc->id . '.' . $ext);
+            }
+            if ($inc->wht_document_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($inc->wht_document_path)) {
+                $ext = pathinfo($inc->wht_document_path, PATHINFO_EXTENSION);
+                \Illuminate\Support\Facades\File::copy(storage_path('app/public/' . $inc->wht_document_path), $attachmentsDir . '/income_wht_' . $inc->id . '.' . $ext);
+            }
+        }
+
+        foreach ($expenses as $exp) {
+            if ($exp->receipt_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($exp->receipt_path)) {
+                $ext = pathinfo($exp->receipt_path, PATHINFO_EXTENSION);
+                \Illuminate\Support\Facades\File::copy(storage_path('app/public/' . $exp->receipt_path), $attachmentsDir . '/expense_receipt_' . $exp->id . '.' . $ext);
+            }
+            if ($exp->wht_document_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($exp->wht_document_path)) {
+                $ext = pathinfo($exp->wht_document_path, PATHINFO_EXTENSION);
+                \Illuminate\Support\Facades\File::copy(storage_path('app/public/' . $exp->wht_document_path), $attachmentsDir . '/expense_wht_' . $exp->id . '.' . $ext);
+            }
+        }
+
+        // Create Zip
+        $zipFileName = 'financial_export_' . $month . '_' . ($exportType === 'tax_only' ? 'tax' : 'full') . '.zip';
+        $zipFilePath = storage_path('app/' . $zipFileName);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
+            $zip->addFile($csvFilePath, basename($csvFilePath));
+
+            $files = \Illuminate\Support\Facades\File::allFiles($attachmentsDir);
+            foreach ($files as $file) {
+                $zip->addFile($file->getRealPath(), 'attachments/' . $file->getFilename());
+            }
+            $zip->close();
+        }
+
+        // Cleanup Temp Dir
+        \Illuminate\Support\Facades\File::deleteDirectory($tempDir);
+
+        return response()->download($zipFilePath)->deleteFileAfterSend(true);
     }
 
     /**
