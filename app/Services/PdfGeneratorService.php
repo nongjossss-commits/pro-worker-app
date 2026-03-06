@@ -432,23 +432,30 @@ class PdfGeneratorService
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
 
-                    // --- Handle Signatures ---
-                    if (isset($item['type']) && $item['type'] === 'signature') {
+                    // --- Handle Signatures & Stamps ---
+                    if (isset($item['type']) && ($item['type'] === 'signature' || $item['type'] === 'stamp')) {
                         $w = ($item['w'] / 100) * $size['width'];
                         $h = ($item['h'] / 100) * $size['height'];
 
-                        $group = $item['signatureGroup'] ?? 'employee';
                         $targetPath = null;
 
-                        if ($group === 'employee') $targetPath = $empSigPath;
-                        elseif ($group === 'employer') $targetPath = $emprSig1Path;
-                        elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
-                        elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
+                        if ($item['type'] === 'signature') {
+                            $group = $item['signatureGroup'] ?? 'employee';
+
+                            if ($group === 'employee') $targetPath = $empSigPath;
+                            elseif ($group === 'employer') $targetPath = $emprSig1Path;
+                            elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                            elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
+                        } elseif ($item['type'] === 'stamp') {
+                            $targetPath = $emprStampPath;
+                        }
 
                         if ($targetPath && file_exists($targetPath)) {
-                            // FPDF Image supports PNG/JPG. If path is real, it works.
-                            // If temp, it works.
-                            $pdf->Image($targetPath, $x, $y, $w, $h, 'PNG');
+                            $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+                            $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+                            if ($imgType === 'JPG') $imgType = 'JPEG';
+
+                            $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
                         }
                         continue;
                     }
@@ -604,6 +611,7 @@ class PdfGeneratorService
 
         $emprSig1Path = null;
         $emprSig2Path = null;
+        $emprStampPath = null;
 
         if ($effectiveEmployer) {
             if ($effectiveEmployer->signature_1_path && Storage::disk('public')->exists($effectiveEmployer->signature_1_path)) {
@@ -626,6 +634,10 @@ class PdfGeneratorService
                 Storage::disk('public')->put($filename, $content);
                 $effectiveEmployer->update(['signature_2_path' => $filename]);
                 $emprSig2Path = Storage::disk('public')->path($filename);
+            }
+
+            if ($effectiveEmployer->employer_stamp_path && Storage::disk('public')->exists($effectiveEmployer->employer_stamp_path)) {
+                $emprStampPath = Storage::disk('public')->path($effectiveEmployer->employer_stamp_path);
             }
         }
 
@@ -668,21 +680,30 @@ class PdfGeneratorService
                         continue;
                     }
 
-                    // --- Handle Signatures ---
-                    if (isset($item['type']) && $item['type'] === 'signature') {
+                    // --- Handle Signatures & Stamps ---
+                    if (isset($item['type']) && ($item['type'] === 'signature' || $item['type'] === 'stamp')) {
                         $w = ($item['w'] / 100) * $size['width'];
                         $h = ($item['h'] / 100) * $size['height'];
 
-                        $group = $item['signatureGroup'] ?? 'employee';
                         $targetPath = null;
 
-                        if ($group === 'employee' && $employee) $targetPath = $employeeSigPaths[$employee->id] ?? null;
-                        elseif ($group === 'employer') $targetPath = $emprSig1Path;
-                        elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
-                        elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
+                        if ($item['type'] === 'signature') {
+                            $group = $item['signatureGroup'] ?? 'employee';
+
+                            if ($group === 'employee' && $employee) $targetPath = $employeeSigPaths[$employee->id] ?? null;
+                            elseif ($group === 'employer') $targetPath = $emprSig1Path;
+                            elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                            elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
+                        } elseif ($item['type'] === 'stamp') {
+                            $targetPath = $emprStampPath;
+                        }
 
                         if ($targetPath && file_exists($targetPath)) {
-                            $pdf->Image($targetPath, $x, $y, $w, $h, 'PNG');
+                            $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+                            $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+                            if ($imgType === 'JPG') $imgType = 'JPEG';
+
+                            $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
                         }
                         continue;
                     }

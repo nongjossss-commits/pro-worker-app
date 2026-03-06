@@ -113,9 +113,10 @@ class EmployerController extends Controller
             'job_owner_id' => 'required|exists:job_owners,id',
             'assigned_staff_ids' => 'nullable|array',
             'assigned_staff_ids.*' => 'exists:users,id',
-            // Signatures
+            // Signatures & Stamp
             'signature_1_file' => 'nullable|image|max:2048',
             'signature_2_file' => 'nullable|image|max:2048',
+            'employer_stamp_file' => 'nullable|image|max:2048',
         ]);
 
         // Generate ID
@@ -140,10 +141,14 @@ class EmployerController extends Controller
         if ($request->hasFile('signature_2_file')) {
             $validated['signature_2_path'] = $request->file('signature_2_file')->store('signatures/employers', 'public');
         }
+        if ($request->hasFile('employer_stamp_file')) {
+            $validated['employer_stamp_path'] = $request->file('employer_stamp_file')->store('signatures/employers', 'public');
+        }
 
         // Remove file inputs from array before create
         unset($validated['signature_1_file']);
         unset($validated['signature_2_file']);
+        unset($validated['employer_stamp_file']);
 
         $staffIds = $validated['assigned_staff_ids'] ?? [];
         unset($validated['assigned_staff_ids']);
@@ -293,14 +298,24 @@ class EmployerController extends Controller
             'job_owner_id' => 'required|exists:job_owners,id',
             'assigned_staff_ids' => 'nullable|array',
             'assigned_staff_ids.*' => 'exists:users,id',
-            // Signatures
+            // Signatures & Stamp
             'signature_1_action' => 'nullable|in:keep,generate,upload,draw',
             'signature_1_file' => 'nullable|required_if:signature_1_action,upload|image|max:2048',
             'signature_1_base64' => 'nullable|string',
             'signature_2_action' => 'nullable|in:keep,generate,upload,draw',
             'signature_2_file' => 'nullable|required_if:signature_2_action,upload|image|max:2048',
             'signature_2_base64' => 'nullable|string',
+            'employer_stamp_action' => 'nullable|in:keep,upload,draw',
+            'employer_stamp_file' => 'nullable|required_if:employer_stamp_action,upload|image|max:2048',
+            'employer_stamp_base64' => 'nullable|string',
         ]);
+
+        // Employers shouldn't be updating signatures or stamps. Clear them if present just in case.
+        if (auth()->user()->hasRole('employer')) {
+            unset($validated['signature_1_action'], $validated['signature_1_file'], $validated['signature_1_base64']);
+            unset($validated['signature_2_action'], $validated['signature_2_file'], $validated['signature_2_base64']);
+            unset($validated['employer_stamp_action'], $validated['employer_stamp_file'], $validated['employer_stamp_base64']);
+        }
 
         // Handle docs
         $docFields = ['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'];
@@ -364,6 +379,25 @@ class EmployerController extends Controller
              }
         }
 
+        // Employer Stamp
+        if (!auth()->user()->hasRole('employer')) {
+            $stampAction = $request->input('employer_stamp_action', 'keep');
+            if ($stampAction === 'upload' && $request->hasFile('employer_stamp_file')) {
+                if ($employer->employer_stamp_path) Storage::disk('public')->delete($employer->employer_stamp_path);
+                $validated['employer_stamp_path'] = $request->file('employer_stamp_file')->store('signatures/employers', 'public');
+            } elseif ($stampAction === 'draw' && $request->filled('employer_stamp_base64')) {
+                $base64Image = $request->input('employer_stamp_base64');
+                if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
+                    if ($employer->employer_stamp_path) Storage::disk('public')->delete($employer->employer_stamp_path);
+                    $data = substr($base64Image, strpos($base64Image, ',') + 1);
+                    $data = base64_decode($data);
+                    $path = 'signatures/employers/emp_' . $employer->id . '_stamp_' . time() . '.' . strtolower($type[1]);
+                    Storage::disk('public')->put($path, $data);
+                    $validated['employer_stamp_path'] = $path;
+                }
+            }
+        }
+
         // Cleanup fields not in DB
         unset($validated['signature_1_action']);
         unset($validated['signature_1_file']);
@@ -371,6 +405,9 @@ class EmployerController extends Controller
         unset($validated['signature_2_action']);
         unset($validated['signature_2_file']);
         unset($validated['signature_2_base64']);
+        unset($validated['employer_stamp_action']);
+        unset($validated['employer_stamp_file']);
+        unset($validated['employer_stamp_base64']);
 
         $staffIds = $validated['assigned_staff_ids'] ?? [];
         unset($validated['assigned_staff_ids']);

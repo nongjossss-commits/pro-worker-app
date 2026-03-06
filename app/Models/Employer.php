@@ -53,6 +53,7 @@ class Employer extends Model
         'signer_2_name_en',
         'signature_1_path',
         'signature_2_path',
+        'employer_stamp_path',
         'businessTypeEn',
         'regCapital',
         'regDate',
