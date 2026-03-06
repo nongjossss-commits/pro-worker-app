@@ -194,7 +194,7 @@
  </div>
  </div>
 
-        <h5 class="mb-3 text-primary mt-4">{{ __('Authorized Signatories') }}</h5>
+        <h5 class="mb-3 text-primary mt-4">{{ __('Authorized Signatories & Stamp') }}</h5>
         <!-- Signer 1 -->
         <div class="card bg-light mb-3" x-data="signatureField('signature_1', '{{ $employer->signature_1_path ? Storage::url($employer->signature_1_path) : '' }}')">
             <div class="card-body">
@@ -211,6 +211,7 @@
                 </div>
 
                 <!-- Hidden Inputs for State Persistence -->
+                @unless(auth()->user()->hasRole('employer'))
                 <input type="hidden" name="signature_1_action" x-model="action">
                 <input type="hidden" name="signature_1_base64" x-model="base64">
                 <div x-ref="fileInputContainer" class="d-none"></div>
@@ -238,6 +239,7 @@
                         <div class="form-text mt-1">{{ __('Click to edit, upload, or draw signature.') }}</div>
                      </div>
                 </div>
+                @endunless
             </div>
         </div>
 
@@ -257,6 +259,7 @@
                 </div>
 
                  <!-- Hidden Inputs for State Persistence -->
+                 @unless(auth()->user()->hasRole('employer'))
                  <input type="hidden" name="signature_2_action" x-model="action">
                  <input type="hidden" name="signature_2_base64" x-model="base64">
                  <div x-ref="fileInputContainer" class="d-none"></div>
@@ -284,8 +287,47 @@
                          <div class="form-text mt-1">{{ __('Click to edit, upload, or draw signature.') }}</div>
                       </div>
                  </div>
+                 @endunless
             </div>
         </div>
+
+        <!-- Employer Stamp -->
+        @unless(auth()->user()->hasRole('employer'))
+        <div class="card bg-light mb-3" x-data="signatureField('employer_stamp', '{{ $employer->employer_stamp_path ? Storage::url($employer->employer_stamp_path) : '' }}')">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">{{ __('Employer Stamp') }} (Optional)</h6>
+
+                 <!-- Hidden Inputs for State Persistence -->
+                 <input type="hidden" name="employer_stamp_action" x-model="action">
+                 <input type="hidden" name="employer_stamp_base64" x-model="base64">
+                 <div x-ref="fileInputContainer" class="d-none"></div>
+
+                 <!-- Preview and Trigger -->
+                 <div class="d-flex flex-column flex-md-row align-items-start gap-3 mt-2">
+                      <div class="d-flex flex-column">
+                         <label class="form-label small text-muted mb-1">{{ __('Stamp Preview') }}</label>
+                         <div class="border rounded bg-white d-flex justify-content-center align-items-center overflow-hidden position-relative" style="width: 180px; height: 100px;">
+                              <template x-if="previewUrl">
+                                  <img :src="previewUrl" class="img-fluid" style="max-height: 100%;">
+                              </template>
+                              <template x-if="!previewUrl">
+                                  <span class="text-muted small italic">{{ __('No Stamp') }}</span>
+                              </template>
+                              <template x-if="action !== 'keep' && action !== ''">
+                                <span class="position-absolute top-0 end-0 badge bg-warning text-dark m-1" style="font-size: 0.6rem;">{{ __('Pending Save') }}</span>
+                            </template>
+                         </div>
+                      </div>
+                      <div class="mt-md-4">
+                         <button type="button" class="btn btn-outline-primary" @click="$dispatch('open-signature-modal', { field: 'employer_stamp', currentAction: action, currentUrl: previewUrl, currentBase64: base64 })">
+                             <i class="bi bi-pen me-2"></i> {{ __('Stamp Settings') }}
+                         </button>
+                         <div class="form-text mt-1">{{ __('Click to upload or draw stamp.') }}</div>
+                      </div>
+                 </div>
+            </div>
+        </div>
+        @endunless
 
         <div class="row mb-3">
             <div class="col-md-6">

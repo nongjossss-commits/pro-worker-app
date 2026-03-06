@@ -90,6 +90,14 @@
                             <i class="bi bi-pen text-xl text-gray-600"></i>
                             <span class="text-xs font-medium">Signature</span>
                         </div>
+
+                        <!-- Stamp -->
+                        <div class="border rounded p-2 bg-white cursor-move hover:border-red-500 hover:bg-red-50 flex flex-col items-center justify-center gap-1 text-center"
+                             draggable="true"
+                             @dragstart="dragStart($event, {type: 'stamp', label: 'Employer Stamp'})">
+                            <i class="bi bi-vinyl text-xl text-gray-600"></i>
+                            <span class="text-xs font-medium">Stamp</span>
+                        </div>
                     </div>
                 </div>
 
@@ -141,10 +149,26 @@
                                      :class="{
                                         'border-blue-500 bg-blue-50/30 hover:bg-blue-100/50': item.type === 'db',
                                         'border-gray-500 bg-gray-50/30 hover:bg-gray-100/50': item.type === 'static',
-                                        'border-purple-500 bg-purple-50/30 hover:bg-purple-100/50': item.type === 'signature'
+                                        'border-purple-500 bg-purple-50/30 hover:bg-purple-100/50': item.type === 'signature',
+                                        'border-red-500 bg-red-50/30 hover:bg-red-100/50': item.type === 'stamp'
                                      }"
                                      :style="`left: ${item.x}%; top: ${item.y}%; width: ${item.w}%; height: ${item.h}%;`"
                                      @mousedown.self="startMove($event, index, pageNum)">
+
+                                    <!-- Stamp Content -->
+                                    <template x-if="item.type === 'stamp'">
+                                        <div class="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none relative">
+                                            <!-- SVG Stamp Placeholder -->
+                                            <div class="w-16 h-16 rounded-full border-4 border-red-500/50 flex items-center justify-center text-red-500/50 font-bold rotate-12 bg-white/30">
+                                                STAMP
+                                            </div>
+
+                                            <!-- Label Overlay -->
+                                            <div class="absolute bottom-0 right-0 bg-white/80 text-[10px] px-1 rounded border border-red-200 text-red-800 font-bold flex gap-1">
+                                                <span>(Employer Stamp)</span>
+                                            </div>
+                                        </div>
+                                    </template>
 
                                     <!-- Signature Content -->
                                     <template x-if="item.type === 'signature'">
@@ -162,7 +186,7 @@
                                     </template>
 
                                     <!-- Text Content (DB & Static) -->
-                                    <template x-if="item.type !== 'signature'">
+                                    <template x-if="item.type !== 'signature' && item.type !== 'stamp'">
                                         <div class="w-full h-full flex flex-col justify-end overflow-hidden pointer-events-none select-none relative"
                                              :style="`font-family: 'THSarabunNew', sans-serif; font-size: ${getFontSize(item, pageNum)}; text-align: ${item.align || 'left'}; color: #000;`">
 
@@ -681,6 +705,9 @@
                     if (data.type === 'signature') {
                         wPct = 10;
                         hPct = 6; // Signatures are taller
+                    } else if (data.type === 'stamp') {
+                        wPct = 8;
+                        hPct = 8; // Stamps are usually square
                     }
 
                     this.items.push({
@@ -697,7 +724,7 @@
                         autoFit: true, // Default to true
                         align: 'left', // Default align
                         signatureGroup: data.type === 'signature' ? 'employee' : null,
-                        employeeIndex: data.type !== 'static' ? this.currentEmployeeSlot : null
+                        employeeIndex: (data.type !== 'static' && data.type !== 'stamp') ? this.currentEmployeeSlot : null
                     });
 
                     // Auto-open settings for new static text
@@ -853,7 +880,7 @@
             },
 
             getFontSize(item, pageNum) {
-                if (item.type === 'signature') return '12px';
+                if (item.type === 'signature' || item.type === 'stamp') return '12px';
 
                 if (item.autoFit) {
                     const dims = this.pageDimensions[pageNum];

@@ -214,6 +214,19 @@
                 @enderror
             </div>
         </div>
+        @unless(auth()->user()->hasRole('employer'))
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="employer_stamp_file" class="form-label">{{ __('Employer Stamp') }}</label>
+                <input type="file" class="form-control @error('employer_stamp_file') is-invalid @enderror" id="employer_stamp_file" name="employer_stamp_file" accept="image/png, image/jpeg, image/jpg">
+                @error('employer_stamp_file')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+            </div>
+        </div>
+        @endunless
+
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="regCapital" class="form-label">{{ __('Registered Capital') }}</label>
