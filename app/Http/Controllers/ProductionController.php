@@ -643,8 +643,24 @@ class ProductionController extends Controller
 
     public function create(Request $request)
     {
+        $employeeIdsJson = $request->query('employee_ids_json');
+        $preSelectedEmployees = collect();
+        $employerId = $request->query('employer_id');
+        $isIndependent = false;
+
+        if ($employeeIdsJson) {
+            $employeeIds = json_decode($employeeIdsJson, true);
+            if (is_array($employeeIds)) {
+                $preSelectedEmployees = \App\Models\Employee::whereIn('id', $employeeIds)->get();
+                $employerIds = $preSelectedEmployees->pluck('employer_id')->unique();
+                if ($employerIds->count() > 1 || ($employerIds->count() == 1 && $employerIds->first() == null)) {
+                    $isIndependent = true;
+                }
+            }
+        }
+
         $workTypes = WorkType::orderBy('order')->get();
-        return view('production.create', compact('workTypes'));
+        return view('production.create', compact('workTypes', 'preSelectedEmployees', 'employerId', 'isIndependent'));
     }
 
     public function store(Request $request)
