@@ -350,6 +350,17 @@ class FinancialHubController extends Controller
     }
 
     /**
+     * Export the monthly report to Excel/PDF.
+     * (Placeholder method for UI testing as requested by the user)
+     */
+    public function exportMonthly(Request $request)
+    {
+        // Simply redirect back with a success message for now so the button works.
+        // Full logic will be added if the user confirms the UI is correct.
+        return back()->with('success', 'The Monthly Report export feature has been triggered successfully. (Placeholder logic)');
+    }
+
+    /**
      * Show the form for creating a manual bill.
      */
     public function createManual(Request $request)

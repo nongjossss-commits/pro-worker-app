@@ -38,6 +38,8 @@ class EmployerManagementTest extends TestCase
         $staffRole = Role::create(['name' => 'staff']);
         $staffRole->givePermissionTo(['view-employers', 'view-employees', 'edit-employees']);
 
+        Role::create(['name' => 'caretaker']);
+
         // Create users and assign roles
         $this->adminUser = User::factory()->create();
         $this->adminUser->assignRole($adminRole);
@@ -94,9 +96,11 @@ class EmployerManagementTest extends TestCase
     public function test_admin_can_store_a_new_employer()
     {
         $employerData = Employer::factory()->make()->toArray();
+        $employerData['businessType'] = 'Company';
+        $employerData['job_owner_id'] = $this->adminUser->id;
         $response = $this->actingAs($this->adminUser)->post(route('employers.store'), $employerData);
         $response->assertRedirect(route('employers.index'));
-        $this->assertDatabaseHas('employers', ['employerId' => $employerData['employerId']]);
+        $this->assertDatabaseHas('employers', ['employerNameTh' => $employerData['employerNameTh']]);
     }
 
     public function test_unauthorized_users_cannot_store_a_new_employer()
@@ -122,7 +126,12 @@ class EmployerManagementTest extends TestCase
 
     public function test_admin_can_update_employer()
     {
-        $updatedData = ['employerNameTh' => 'Updated Name'];
+        $updatedData = [
+            'employerNameTh' => 'Updated Name',
+            'employerId' => 'EMP999',
+            'businessType' => 'Company',
+            'job_owner_id' => $this->adminUser->id
+        ];
         $response = $this->actingAs($this->adminUser)->put(route('employers.update', $this->employer), $updatedData);
         $response->assertRedirect(route('employers.index'));
         $this->assertDatabaseHas('employers', ['id' => $this->employer->id, 'employerNameTh' => 'Updated Name']);
@@ -130,7 +139,12 @@ class EmployerManagementTest extends TestCase
 
     public function test_unauthorized_users_cannot_update_employer()
     {
-        $updatedData = ['employerNameTh' => 'Updated Name'];
+        $updatedData = [
+            'employerNameTh' => 'Updated Name',
+            'employerId' => 'EMP999',
+            'businessType' => 'Company',
+            'job_owner_id' => $this->adminUser->id
+        ];
         $this->actingAs($this->staffUser)->put(route('employers.update', $this->employer), $updatedData)->assertStatus(403);
         $this->actingAs($this->regularUser)->put(route('employers.update', $this->employer), $updatedData)->assertStatus(403);
     }
@@ -140,7 +154,7 @@ class EmployerManagementTest extends TestCase
     {
         $response = $this->actingAs($this->adminUser)->delete(route('employers.destroy', $this->employer));
         $response->assertRedirect(route('employers.index'));
-        $this->assertDatabaseMissing('employers', ['id' => $this->employer->id]);
+        $this->assertSoftDeleted('employers', ['id' => $this->employer->id]);
     }
 
     public function test_unauthorized_users_cannot_delete_employer()

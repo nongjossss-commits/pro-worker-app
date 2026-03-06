@@ -383,6 +383,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [App\Http\Controllers\FinancialHubController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
         Route::post('/store', [App\Http\Controllers\FinancialHubController::class, 'storeManual'])->name('store');
+        Route::get('/export-monthly', [App\Http\Controllers\FinancialHubController::class, 'exportMonthly'])->name('export_monthly');
     });
 
     // Profiles Builder & API (Shares the same finance menu password, but can be controlled via its own visibility setting in Super Admin)

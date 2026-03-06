@@ -4,9 +4,14 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 text-gray-800">{{ __('Financial Hub') }}</h1>
-        <a href="{{ route('finance.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> {{ __('Create Manual Bill') }}
-        </a>
+        <div>
+            <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#monthlyReportModal">
+                <i class="bi bi-file-earmark-excel me-1"></i> {{ __('Monthly Report') }}
+            </button>
+            <a href="{{ route('finance.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> {{ __('Create Manual Bill') }}
+            </a>
+        </div>
     </div>
 
     <!-- Nav tabs -->
@@ -14,6 +19,16 @@
         <li class="nav-item">
             <a class="nav-link {{ $tab == 'overview' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'overview']) }}">
                 <i class="bi bi-pie-chart me-1"></i> {{ __('Overview') }}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ $tab == 'wht' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'wht']) }}">
+                <i class="bi bi-receipt me-1"></i> {{ __('WHT Tracking') }}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ $tab == 'expenses' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'expenses']) }}">
+                <i class="bi bi-cash-stack me-1"></i> {{ __('General Expenses') }}
             </a>
         </li>
         <li class="nav-item">
@@ -48,6 +63,43 @@
     @include('financial.tabs.renewal')
     @elseif($tab === 'manual')
     @include('financial.tabs.manual')
+    @elseif($tab === 'wht')
+    @include('financial.tabs.wht')
+    @elseif($tab === 'expenses')
+    @include('financial.tabs.expenses')
     @endif
+</div>
+
+<!-- Monthly Report Modal -->
+<div class="modal fade" id="monthlyReportModal" tabindex="-1" aria-labelledby="monthlyReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('finance.export_monthly') }}" method="GET">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="monthlyReportModalLabel">{{ __('Export Monthly Report') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="report_month" class="form-label">{{ __('Select Month') }}</label>
+                        <input type="month" class="form-control" id="report_month" name="month" required value="{{ date('Y-m') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Export Type') }}</label>
+                        <select class="form-select" name="export_type">
+                            <option value="excel">{{ __('Excel Summary') }}</option>
+                            <option value="pdf_receipts">{{ __('PDF with Attachments') }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-download"></i> {{ __('Download Report') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection
