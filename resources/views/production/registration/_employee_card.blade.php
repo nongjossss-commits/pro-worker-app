@@ -486,7 +486,7 @@
                     <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
 
                     <div class="d-flex align-items-start gap-1 mb-2">
-                        <div x-show="!isEditing" class="d-flex align-items-start gap-1 w-100">
+                        <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
                             <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
                                 <span x-text="remarkText || '-'"></span>
                             </div>
@@ -495,7 +495,7 @@
                             </button>
                         </div>
 
-                        <div x-show="isEditing" x-cloak style="display: none;" :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
+                        <div x-cloak :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
                             <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="กรอกข้อความหมายเหตุ..."></textarea>
                             <div class="d-flex gap-1">
                                 <button @click="saveRemark()" :disabled="isSaving" class="btn btn-sm btn-success flex-grow-1">
