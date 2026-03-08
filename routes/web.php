@@ -277,6 +277,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RegistrationController::class, 'cancelEmployer'])->name('cancel_employer');
         Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restoreEmployer'])->name('restore_employer');
         Route::post('/employer/{employer}/resolution-status', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionStatus'])->name('employer_resolution.update');
+        Route::post('/employer/{employer}/resolution-note', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionNote'])->name('employer_resolution.update_note');
 
         // Biometrics
         Route::post('/{employee}/biometrics', [App\Http\Controllers\Production\RegistrationController::class, 'updateBiometrics'])->name('biometrics.update');
@@ -352,6 +353,7 @@ Route::middleware(['auth'])->group(function () {
         // Employer Actions
         Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancelEmployer'])->name('cancel_employer');
         Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreEmployer'])->name('restore_employer');
+        Route::post('/employer/{employer}/resolution-note', [App\Http\Controllers\Production\RenewalController::class, 'updateResolutionNote'])->name('employer_resolution.update_note');
 
         // Trash Routes
         Route::get('/trash', [App\Http\Controllers\Production\RenewalController::class, 'fetchTrash'])->name('trash');
@@ -373,6 +375,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
     Route::put('production/items/{item}/update-fields', [\App\Http\Controllers\ProductionController::class, 'updateItemFields'])->name('production.items.update_fields');
     Route::post('production/{id}/upload-logo', [\App\Http\Controllers\ProductionController::class, 'uploadLogo'])->name('production.upload_logo');
+    Route::post('production/{order}/remarks', [\App\Http\Controllers\ProductionController::class, 'updateRemarks'])->name('production.order.remarks');
 
     Route::middleware('menu:finance')->group(function() {
         Route::post('production/{id}/financial-groups', [\App\Http\Controllers\ProductionController::class, 'storeFinancialGroup'])->name('production.financial_groups.store');
@@ -430,6 +433,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/appointments/export', [\App\Http\Controllers\WorkflowController::class, 'exportAppointments'])->name('workflow.appointments.export');
     Route::post('workflow/item/{item}/check-daily', [\App\Http\Controllers\WorkflowController::class, 'checkDaily'])->name('workflow.item.check_daily');
     Route::post('workflow/item/{item}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateRemarks'])->name('workflow.item.remarks');
+    Route::post('workflow/order/{order}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateOrderRemarks'])->name('workflow.order.remarks');
     Route::post('workflow/item/{item}/group', [\App\Http\Controllers\WorkflowController::class, 'updateGroup'])->name('workflow.item.group');
     Route::post('workflow/item/{item}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeItem'])->name('workflow.item.finalize');
     Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');

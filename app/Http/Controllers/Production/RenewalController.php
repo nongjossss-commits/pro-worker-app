@@ -30,6 +30,24 @@ class RenewalController extends Controller
     /**
      * Display the main dashboard for Renewal Resolution.
      */
+    /**
+     * Update employer renewal resolution note (inline).
+     */
+    public function updateResolutionNote(Request $request, Employer $employer)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'note' => 'nullable|string',
+        ]);
+
+        $employer->update(['renewal_resolution_note' => $validated['note']]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function index(Request $request)
     {
         $steps = RegistrationStep::renewal()->orderBy('order')->get();

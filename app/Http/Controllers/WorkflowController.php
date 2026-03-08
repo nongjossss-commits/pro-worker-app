@@ -274,6 +274,21 @@ class WorkflowController extends Controller
     /**
      * Update Remarks for a ProductionItem via AJAX.
      */
+    public function updateOrderRemarks(Request $request, ProductionOrder $order)
+    {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'remarks' => 'nullable|string',
+        ]);
+
+        $order->update(['remarks' => $validated['remarks']]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function updateRemarks(Request $request, $itemId)
     {
         $request->validate(['remarks' => 'nullable|string']);
