@@ -440,43 +440,34 @@
                 {{-- REMARKS & 3 Extra Fields SECTION --}}
                 <div class="ms-md-4 d-flex flex-column gap-2" style="min-width: 140px; max-width: 250px;">
                     <div x-data="{
+                        isEditing: false,
                         remarkText: {{ json_encode($item->remarks ?? '') }},
-                        openRemarkPopup() {
-                            Swal.fire({
-                                title: '{{ __("แก้ไขหมายเหตุ") }}',
-                                input: 'textarea',
-                                inputValue: this.remarkText,
-                                inputPlaceholder: 'กรอกข้อความหมายเหตุ...',
-                                showCancelButton: true,
-                                confirmButtonColor: '#3085d6',
-                                cancelButtonColor: '#d33',
-                                confirmButtonText: '{{ __("บันทึก") }}',
-                                cancelButtonText: '{{ __("ยกเลิก") }}',
-                                showLoaderOnConfirm: true,
-                                preConfirm: (text) => {
-                                    return fetch('/workflow/item/{{ $item->id }}/remarks', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                            'Accept': 'application/json'
-                                        },
-                                        body: JSON.stringify({ remarks: text })
-                                    })
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error(response.statusText)
-                                        }
-                                        return response.json().then(data => ({ data, text }));
-                                    })
-                                    .catch(error => {
-                                        Swal.showValidationMessage(`เกิดข้อผิดพลาด: ${error}`);
-                                    });
+                        tempRemarkText: '',
+                        isSaving: false,
+                        startEditing() {
+                            this.tempRemarkText = this.remarkText;
+                            this.isEditing = true;
+                            this.$nextTick(() => { this.$refs.remarkInput.focus(); });
+                        },
+                        saveRemark() {
+                            this.isSaving = true;
+                            fetch('/workflow/item/{{ $item->id }}/remarks', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                    'Accept': 'application/json'
                                 },
-                                allowOutsideClick: () => !Swal.isLoading()
-                            }).then((result) => {
-                                if (result.isConfirmed && result.value.data.success) {
-                                    this.remarkText = result.value.data.remarks ?? result.value.text; // Update local text from response or input
+                                body: JSON.stringify({ remarks: this.tempRemarkText })
+                            })
+                            .then(response => {
+                                if (!response.ok) throw new Error(response.statusText);
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.success) {
+                                    this.remarkText = data.remarks ?? this.tempRemarkText; // Update local text from response or input
+                                    this.isEditing = false;
                                     Swal.fire({
                                         toast: true,
                                         position: 'top-end',
@@ -485,9 +476,15 @@
                                         showConfirmButton: false,
                                         timer: 1500
                                     });
-                                } else if (result.isConfirmed && !result.value.data.success) {
+                                } else {
                                     Swal.fire('Error', 'เกิดข้อผิดพลาดในการบันทึก', 'error');
                                 }
+                            })
+                            .catch(error => {
+                                Swal.fire('Error', `เกิดข้อผิดพลาด: ${error}`, 'error');
+                            })
+                            .finally(() => {
+                                this.isSaving = false;
                             });
                         }
                     }">
@@ -495,12 +492,27 @@
                             <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
 
                             <div class="d-flex align-items-start gap-1">
-                                <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
-                                    <span x-text="remarkText || '-'"></span>
+                                <div x-show="!isEditing" class="d-flex align-items-start gap-1 w-100">
+                                    <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                                        <span x-text="remarkText || '-'"></span>
+                                    </div>
+                                    <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
+                                        <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                                    </button>
                                 </div>
-                                <button @click="openRemarkPopup()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
-                                    <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
-                                </button>
+
+                                <div x-show="isEditing" x-cloak style="display: none;" :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
+                                    <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="กรอกข้อความหมายเหตุ..."></textarea>
+                                    <div class="d-flex gap-1">
+                                        <button @click="saveRemark()" :disabled="isSaving" class="btn btn-sm btn-success flex-grow-1">
+                                            <i class="bi bi-check-lg" x-show="!isSaving"></i>
+                                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" x-show="isSaving" style="display: none;"></span>
+                                        </button>
+                                        <button @click="isEditing = false" :disabled="isSaving" class="btn btn-sm btn-outline-secondary flex-shrink-0">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
