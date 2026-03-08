@@ -844,6 +844,21 @@ class ProductionController extends Controller
     /**
      * Calculate Stats per Order via AJAX
      */
+    public function updateRemarks(Request $request, ProductionOrder $order)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'remarks' => 'nullable|string',
+        ]);
+
+        $order->update(['remarks' => $validated['remarks']]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function batchStats(Request $request)
     {
         $request->validate([

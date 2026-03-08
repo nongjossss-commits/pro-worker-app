@@ -17,6 +17,7 @@ class ProductionOrder extends Model
         'project_name',
         'description',
         'status',
+        'remarks',
         'financial_data',
         'created_by',
         'updated_by', // NEW

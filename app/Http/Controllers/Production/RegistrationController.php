@@ -33,6 +33,24 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Update employer registration resolution note (inline).
+     */
+    public function updateResolutionNote(Request $request, Employer $employer)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'note' => 'nullable|string',
+        ]);
+
+        $employer->update(['registration_resolution_note' => $validated['note']]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Display the main dashboard for Registration Resolution.
      */
     public function index(Request $request)

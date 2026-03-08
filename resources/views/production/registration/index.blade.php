@@ -397,16 +397,57 @@
                             <span class="badge bg-{{ $statusColor }}">{{ $statusLabel }}</span>
                         @endcan
 
-                        {{-- Job Order / Note Button --}}
-                        <button class="btn btn-sm btn-outline-secondary border-0"
-                                data-note="{{ $employer->registration_resolution_note ?? '' }}"
-                                onclick="openResolutionNoteModal({{ $employer->id }}, this.getAttribute('data-note'))"
-                                title="{{ __('Job Order / Notes') }}">
-                            <i class="bi bi-file-text-fill"></i>
-                        </button>
                     </div>
 
                     <div class="card-header py-3 px-4 border-bottom {{ $employerHeaderClass }}" id="heading{{ $employer->id }}">
+
+                    {{-- Inline Note Editor (Top Center) --}}
+                    <div class="d-flex justify-content-center mb-2">
+                        <div class="position-relative w-50 text-center" x-data="{
+                            editing: false,
+                            note: {{ json_encode($employer->registration_resolution_note ?? '') }},
+                            saving: false,
+                            saveNote() {
+                                this.saving = true;
+                                fetch(`{{ url('production/registration/employer') }}/{{ $employer->id }}/resolution-note`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    body: JSON.stringify({ note: this.note })
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.saving = false;
+                                    if(data.success) {
+                                        this.editing = false;
+                                    } else {
+                                        Swal.fire('Error', 'Failed to save note', 'error');
+                                    }
+                                })
+                                .catch(err => {
+                                    this.saving = false;
+                                    Swal.fire('Error', 'Network error', 'error');
+                                });
+                            }
+                        }">
+                            <div x-show="!editing" class="p-2 border rounded bg-white shadow-sm d-flex align-items-center justify-content-center cursor-pointer" @click="editing = true" style="min-height: 40px;">
+                                <span class="text-muted fw-bold me-2" x-show="!note"><i class="bi bi-pencil-square me-1"></i>{{ __('Add Note') }}</span>
+                                <span class="text-dark fw-bold text-truncate" style="max-width: 80%;" x-text="note" x-show="note"></span>
+                                <i class="bi bi-pencil-square text-secondary ms-2" x-show="note"></i>
+                            </div>
+                            <div x-show="editing" class="d-flex align-items-center gap-1" style="display: none;">
+                                <input type="text" class="form-control form-control-sm" x-model="note" @keydown.enter="saveNote()" placeholder="{{ __('Note...') }}">
+                                <button class="btn btn-sm btn-success" @click="saveNote()" :disabled="saving">
+                                    <i class="bi bi-check-lg" x-show="!saving"></i>
+                                    <span class="spinner-border spinner-border-sm" x-show="saving"></span>
+                                </button>
+                                <button class="btn btn-sm btn-secondary" @click="editing = false" :disabled="saving"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- Top Row: Identity + Stats + Actions (Using Grid for Alignment) --}}
                     <div class="row align-items-xl-center g-3 mb-3">
