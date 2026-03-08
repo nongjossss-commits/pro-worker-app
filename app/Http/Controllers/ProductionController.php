@@ -341,6 +341,101 @@ class ProductionController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function bulkSendToWorkflow(Request $request)
+    {
+        $request->validate([
+            'item_ids' => 'required|array',
+            'item_ids.*' => 'exists:production_items,id'
+        ]);
+
+        $successCount = 0;
+        $failedCount = 0;
+        $errors = [];
+
+        foreach ($request->item_ids as $itemId) {
+            $item = ProductionItem::with(['order', 'employee'])->find($itemId);
+            if (!$item) continue;
+
+            $currentOrder = $item->order;
+
+            if ($currentOrder->status !== 'pre_production') {
+                $failedCount++;
+                $errors[] = "Item ID {$itemId} is not in Pre-Production.";
+                continue;
+            }
+
+            // Strict Validation: Check if employee already exists in any Active Workflow for this WorkType
+            $hasDuplicate = ProductionItem::where('employee_id', $item->employee_id)
+                ->whereHas('order', function($q) use ($currentOrder) {
+                    $q->where('work_type_id', $currentOrder->work_type_id)
+                      ->where('status', '!=', 'pre_production') // Active Workflow Order
+                      ->where('status', '!=', 'cancelled');
+                })
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->exists();
+
+            if ($hasDuplicate) {
+                 $failedCount++;
+                 $errors[] = "Employee {$item->employee->employeeNameTh} is already active in the Workflow.";
+                 continue;
+            }
+
+            DB::beginTransaction();
+            try {
+                // Find an Active Order for this Employer + WorkType
+                $activeOrder = ProductionOrder::where('employer_id', $currentOrder->employer_id)
+                                    ->where('work_type_id', $currentOrder->work_type_id)
+                                    ->where('status', '!=', 'pre_production') // Active
+                                    ->where('status', '!=', 'cancelled')
+                                    ->latest()
+                                    ->first();
+
+                if (!$activeOrder) {
+                    // Create new Active Order
+                    $workTypeName = $currentOrder->workType->name ?? 'Job';
+                    $employerName = $currentOrder->employer->employerNameTh ?? 'Unknown';
+
+                    $activeOrder = ProductionOrder::create([
+                        'employer_id' => $currentOrder->employer_id,
+                        'work_type_id' => $currentOrder->work_type_id,
+                        'type' => $currentOrder->type,
+                        'project_name' => "$workTypeName - $employerName",
+                        'description' => $currentOrder->description,
+                        'status' => 'active',
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+
+                // Move Item: Update the production_order_id to the new active order
+                $item->update([
+                    'production_order_id' => $activeOrder->id,
+                    'status' => 'pending', // Reset status to pending in workflow
+                    'last_checked_at' => null, // Reset checks
+                    'appointment_date' => null, // Reset appointment date as it is stage-specific
+                    'appointment_location' => null,
+                    'appointment_completed_at' => null,
+                    'operator_id' => null, // Reset operator as requested
+                ]);
+
+                // Clear Completed Steps (Preparation steps do not map to Workflow steps 1:1)
+                $item->completedWorkTypeSteps()->detach();
+
+                DB::commit();
+                $successCount++;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $failedCount++;
+                $errors[] = "Error processing employee {$item->employee->employeeNameTh}: " . $e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully sent $successCount items to Workflow. Failed: $failedCount.",
+            'errors' => $errors
+        ]);
+    }
+
     public function sendToWorkflow(Request $request, $itemId)
     {
         $item = ProductionItem::with(['order', 'employee'])->findOrFail($itemId);

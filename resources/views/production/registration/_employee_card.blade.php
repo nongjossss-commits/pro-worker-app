@@ -95,7 +95,8 @@
                            data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/40x40/e2e8f0/6c757d?text=PIC' }}"
                            data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}"
                            data-insurance-type="{{ $employee->insurance_type }}"
-                           data-passport="{{ $employee->employeePassport }}">
+                           data-passport="{{ $employee->employeePassport }}"
+                           data-production-item-id="{{ isset($employee->production_item) ? $employee->production_item->id : '' }}">
                 </div>
                 @endcan
 
@@ -791,13 +792,27 @@
                     <i class="bi bi-pencil-fill"></i>
                 </button>
 
-                {{-- SAVE TO DB --}}
-                <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
-                    id="btn-save-{{ $employee->id }}"
-                    title="Save to Database"
-                    onclick="finalizeEmployee({{ $employee->id }})">
-                    <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Save to DB') }}</span>
-                </button>
+                @php
+                    $isPreProductionContext = isset($activeTab) && $activeTab instanceof \App\Models\WorkType;
+                @endphp
+
+                @if($isPreProductionContext && isset($employee->production_item))
+                    {{-- SEND TO WORKFLOW (P Production Context) --}}
+                    <button class="btn btn-sm btn-primary rounded-pill px-3"
+                        id="btn-send-to-workflow-{{ $employee->id }}"
+                        title="{{ __('Send to Workflow') }}"
+                        onclick="sendToWorkflow({{ $employee->production_item->id }})">
+                        <i class="bi bi-send-check"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
+                    </button>
+                @else
+                    {{-- SAVE TO DB (Registration Context) --}}
+                    <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
+                        id="btn-save-{{ $employee->id }}"
+                        title="Save to Database"
+                        onclick="finalizeEmployee({{ $employee->id }})">
+                        <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Save to DB') }}</span>
+                    </button>
+                @endif
 
                 {{-- CANCEL --}}
                 <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
@@ -875,9 +890,16 @@
             <div class="d-flex gap-2 flex-wrap">
                 @foreach($steps as $step)
                     @php
-                        $isStepCompleted = $employee->registrationSteps->contains($step->id);
+                        $isPreProductionContext = isset($activeTab) && $activeTab instanceof \App\Models\WorkType;
+
+                        if ($isPreProductionContext) {
+                            $isStepCompleted = isset($employee->production_item) && $employee->production_item->completedWorkTypeSteps->contains('id', $step->id);
+                        } else {
+                            $isStepCompleted = $employee->registrationSteps->contains($step->id);
+                        }
+
                         // Determine styles based on hex or class
-                        $hexColor = str_starts_with($step->color, '#') ? $step->color : null;
+                        $hexColor = isset($step->color) && str_starts_with($step->color, '#') ? $step->color : null;
 
                         // Default State: Incomplete -> Solid Gray (visible "To Do" state)
                         $btnClass = 'btn-light border text-secondary';
@@ -891,7 +913,7 @@
                             } else {
                                 // For standard bootstrap classes like 'primary', 'success', etc.
                                 // We check if it is one of the standard contextual classes
-                                if (in_array($step->color, ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'])) {
+                                if (isset($step->color) && in_array($step->color, ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'])) {
                                      $btnClass = "btn-{$step->color} text-white";
                                      if($step->color == 'warning' || $step->color == 'light') {
                                          $btnClass = "btn-{$step->color} text-dark"; // Better contrast
@@ -907,14 +929,26 @@
                             $canManage = auth()->user()->can('edit-employees');
                             $disabled = ($isCompleted || $isCancelled || !$canManage) ? 'disabled' : '';
                             $pointerEvents = !$canManage ? 'pointer-events: none;' : '';
-                            $onclick = $canManage ? "onclick=\"toggleStep({$employee->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
+
+                            // Check context to determine which toggle function to use
+                            // Pre-Production reuses this card but its steps are WorkTypeStep, not RegistrationStep
+                            $isPreProductionContext = isset($activeTab) && $activeTab instanceof \App\Models\WorkType;
+
+                            if ($isPreProductionContext) {
+                                // In Pre-Production, the 'employee' variable is mapped from the ProductionItem,
+                                // but we need the production item ID for the toggleWorkStep function
+                                $itemId = isset($employee->production_item) ? $employee->production_item->id : $employee->id;
+                                $onclick = $canManage ? "onclick=\"toggleWorkStep({$itemId}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
+                            } else {
+                                $onclick = $canManage ? "onclick=\"toggleStep({$employee->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
+                            }
                         @endphp
                     <button
-                        class="btn btn-sm {{ $btnClass }} rounded-pill px-3"
+                        class="btn btn-sm {{ $btnClass }} rounded-pill px-3 step-btn-{{ isset($employee->production_item) ? $employee->production_item->id : $employee->id }}-{{ $step->id }}"
                             style="font-size: 0.8rem; {{ $btnStyle }} {{ $pointerEvents }}"
                             {!! $onclick !!}
                         data-step-id="{{ $step->id }}"
-                        data-color="{{ $step->color }}"
+                        data-color="{{ $step->color ?? '' }}"
                         data-hex-color="{{ $hexColor }}"
                             {{ $disabled }}
                     >

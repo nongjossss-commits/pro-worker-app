@@ -231,6 +231,7 @@
                 <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="bulk-send-to-workflow-btn"><i class="bi bi-send-check me-2"></i>{{ __('Send to Workflow') }}</a></li>
                 @can('manage-tickets')
                 <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
                 @endcan
@@ -893,11 +894,6 @@
                         Swal.fire('{{ __("Sent!") }}', '{{ __("Employee moved to Workflow.") }}', 'success');
 
                         if(data.order_stats) {
-                             const card = document.getElementById(`item-card-${itemId}`);
-                             // The card is removed above, but we can get orderId from wrapper if we saved reference,
-                             // OR we assume we can find the order header by ID if we pass orderId.
-                             // But wait, the card is removed!
-                             // "const wrapper = card.closest('.order-content-wrapper');" was called BEFORE removal.
                              if(wrapper) {
                                  const orderId = wrapper.id.replace('order-content-', '');
                                  updateOrderHeaderStats(orderId, data.order_stats);
@@ -910,6 +906,55 @@
             }
         });
     }
+
+    // --- Bulk Send to Workflow ---
+    document.getElementById('bulk-send-to-workflow-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const selectedData = window.getGlobalSelectedData();
+        const selectedIds = selectedData.map(item => item.production_item_id || item.id); // For Pre-Prod, the item has the prod_item_id
+
+        if (selectedIds.length === 0) {
+            Swal.fire('{{ __("Warning") }}', '{{ __("Please select employees first.") }}', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: '{{ __("Send to Workflow?") }}',
+            text: `{{ __("Move") }} ${selectedIds.length} {{ __("employees to the Active Job list?") }}`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Yes, Send All") }}',
+            confirmButtonColor: '#0d6efd'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: '{{ __("Processing...") }}',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                fetch('{{ route("production.bulk_send_to_workflow") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ item_ids: selectedIds })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('{{ __("Success") }}', data.message, 'success').then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('{{ __("Error") }}', data.message || 'Unknown error', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('{{ __("Error") }}', 'An error occurred during bulk operation.', 'error');
+                });
+            }
+        });
+    });
 
     // --- Helper to Refresh Order Content (List) ---
     window.refreshOrderContent = function(orderId) {
@@ -1309,13 +1354,33 @@
         if(btn) {
             if(completed) {
                 btn.classList.remove('btn-light', 'text-secondary');
-                btn.classList.add('btn-success', 'text-white');
-                 if(!btn.innerHTML.includes('bi-check')) btn.innerHTML += ' <i class="bi bi-check-circle-fill ms-1"></i>';
+                // Use original color logic if it has hex-color data attribute
+                const hexColor = btn.getAttribute('data-hex-color');
+                const bsColor = btn.getAttribute('data-color');
+
+                if (hexColor) {
+                    btn.classList.add('text-white', 'border-0');
+                    btn.style.setProperty('background-color', hexColor, 'important');
+                    btn.style.setProperty('border-color', hexColor, 'important');
+                } else if (bsColor && ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'].includes(bsColor)) {
+                    btn.classList.add(`btn-${bsColor}`);
+                    if(bsColor === 'warning' || bsColor === 'light') {
+                        btn.classList.add('text-dark');
+                    } else {
+                        btn.classList.add('text-white');
+                    }
+                } else {
+                    btn.classList.add('btn-success', 'text-white');
+                }
+
+                if(!btn.innerHTML.includes('bi-check')) btn.innerHTML += ' <i class="bi bi-check-circle-fill ms-1"></i>';
                 btn.setAttribute('onclick', `toggleWorkStep(${itemId}, ${stepId}, false)`);
             } else {
-                btn.classList.add('btn-light', 'text-secondary');
-                btn.classList.remove('btn-success', 'text-white');
-                 const icon = btn.querySelector('i');
+                // Remove custom colors and classes
+                btn.className = `btn btn-sm btn-light border text-secondary rounded-pill px-3 step-btn-${itemId}-${stepId}`;
+                btn.style.backgroundColor = '';
+                btn.style.borderColor = '';
+                const icon = btn.querySelector('i');
                 if(icon) icon.remove();
                 btn.setAttribute('onclick', `toggleWorkStep(${itemId}, ${stepId}, true)`);
             }

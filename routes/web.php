@@ -370,6 +370,7 @@ Route::middleware(['auth'])->group(function () {
 
     // NEW: Pre-Production Routes
     Route::post('production/{item}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendToWorkflow'])->name('production.item.send_to_workflow');
+    Route::post('production/bulk-send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'bulkSendToWorkflow'])->name('production.bulk_send_to_workflow');
     Route::post('production/steps', [\App\Http\Controllers\ProductionController::class, 'storeStep'])->name('production.steps.store');
 
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');

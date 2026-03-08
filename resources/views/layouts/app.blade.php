@@ -1571,7 +1571,8 @@ document.addEventListener('DOMContentLoaded', function () {
             country_code: cb.dataset.countryCode || '',
             gender: cb.dataset.gender || '',
             insurance_type: cb.dataset.insuranceType || '',
-            passport: cb.dataset.passport || ''
+            passport: cb.dataset.passport || '',
+            production_item_id: cb.dataset.productionItemId || ''
         };
     }
 
