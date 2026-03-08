@@ -878,16 +878,27 @@
                 .then(data => {
                     if(data.success) {
                         // Remove card from UI
-                        const card = document.getElementById(`item-card-${itemId}`);
-                        const wrapper = card.closest('.order-content-wrapper');
-                        card.remove();
-                        recalculateSequenceNumbers();
+                        let card = document.getElementById(`item-card-${itemId}`);
+                        let wrapper = null;
 
-                        // Check if wrapper is empty
-                        if(wrapper && wrapper.querySelectorAll('.item-card-wrapper').length === 0) {
-                            const orderCard = wrapper.closest('.production-order-card');
-                            if(orderCard) {
-                                orderCard.classList.add('grayscale-mode');
+                        if (!card) {
+                            const checkbox = document.querySelector(`.employee-checkbox[data-production-item-id="${itemId}"]`);
+                            if (checkbox) {
+                                card = checkbox.closest('.employee-card-wrapper');
+                            }
+                        }
+
+                        if (card) {
+                            wrapper = card.closest('.order-content-wrapper');
+                            card.remove();
+                            recalculateSequenceNumbers();
+
+                            // Check if wrapper is empty
+                            if(wrapper && wrapper.querySelectorAll('.item-card-wrapper').length === 0 && wrapper.querySelectorAll('.employee-card-wrapper').length === 0) {
+                                const orderCard = wrapper.closest('.production-order-card');
+                                if(orderCard) {
+                                    orderCard.classList.add('grayscale-mode');
+                                }
                             }
                         }
 
