@@ -300,18 +300,22 @@
                                 });
                             }
                         }">
-                            <div x-show="!editing" class="p-2 border rounded bg-light shadow-sm d-flex align-items-center justify-content-center cursor-pointer" @click="editing = true" style="min-height: 40px;">
-                                <span class="text-muted fw-bold me-2" x-show="!note"><i class="bi bi-pencil-square me-1"></i>{{ __('Add Note') }}</span>
-                                <span class="text-dark fw-bold text-truncate" style="max-width: 80%;" x-text="note" x-show="note"></span>
-                                <i class="bi bi-pencil-square text-secondary ms-2" x-show="note"></i>
+                            <div x-show="!editing" style="display: none;">
+                                <div class="p-2 border rounded bg-light shadow-sm d-flex align-items-center justify-content-center cursor-pointer" @click="editing = true" style="min-height: 40px;">
+                                    <span class="text-muted fw-bold me-2" x-show="!note"><i class="bi bi-pencil-square me-1"></i>{{ __('Add Note') }}</span>
+                                    <span class="text-dark fw-bold text-truncate" style="max-width: 80%;" x-text="note" x-show="note"></span>
+                                    <i class="bi bi-pencil-square text-secondary ms-2" x-show="note"></i>
+                                </div>
                             </div>
-                            <div x-show="editing" class="d-flex align-items-center gap-1" style="display: none;">
-                                <input type="text" class="form-control form-control-sm" x-model="note" @keydown.enter="saveNote()" placeholder="{{ __('Note...') }}">
-                                <button class="btn btn-sm btn-success" @click="saveNote()" :disabled="saving">
-                                    <i class="bi bi-check-lg" x-show="!saving"></i>
-                                    <span class="spinner-border spinner-border-sm" x-show="saving"></span>
-                                </button>
-                                <button class="btn btn-sm btn-secondary" @click="editing = false" :disabled="saving"><i class="bi bi-x-lg"></i></button>
+                            <div x-show="editing" style="display: none;">
+                                <div class="d-flex align-items-center gap-1">
+                                    <input type="text" class="form-control form-control-sm" x-model="note" @keydown.enter="saveNote()" placeholder="{{ __('Note...') }}">
+                                    <button class="btn btn-sm btn-success" @click="saveNote()" :disabled="saving">
+                                        <i class="bi bi-check-lg" x-show="!saving"></i>
+                                        <span class="spinner-border spinner-border-sm" x-show="saving"></span>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" @click="editing = false" :disabled="saving"><i class="bi bi-x-lg"></i></button>
+                                </div>
                             </div>
                         </div>
                     </div>
