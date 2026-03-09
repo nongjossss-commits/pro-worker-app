@@ -270,10 +270,16 @@
 
                     {{-- Inline Note Editor (Top Center) --}}
                     <div class="d-flex justify-content-center mb-2">
-                        <div class="position-relative w-50 text-center" x-data="{
+                        <div class="position-relative w-50" x-data="{
                             editing: false,
                             note: {{ json_encode($order->remarks ?? '') }},
+                            tempNote: '',
                             saving: false,
+                            startEditing() {
+                                this.tempNote = this.note;
+                                this.editing = true;
+                                this.$nextTick(() => { this.$refs.noteInput.focus(); });
+                            },
                             saveNote() {
                                 this.saving = true;
                                 fetch(`{{ url('workflow/order') }}/{{ $order->id }}/remarks`, {
@@ -283,12 +289,13 @@
                                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                         'X-Requested-With': 'XMLHttpRequest'
                                     },
-                                    body: JSON.stringify({ remarks: this.note })
+                                    body: JSON.stringify({ remarks: this.tempNote })
                                 })
                                 .then(res => res.json())
                                 .then(data => {
                                     this.saving = false;
                                     if(data.success) {
+                                        this.note = data.remarks ?? this.tempNote;
                                         this.editing = false;
                                     } else {
                                         Swal.fire('Error', 'Failed to save note', 'error');
@@ -300,18 +307,26 @@
                                 });
                             }
                         }">
-                            <div x-show="!editing" class="p-2 border rounded bg-light shadow-sm d-flex align-items-center justify-content-center cursor-pointer" @click="editing = true" style="min-height: 40px;">
-                                <span class="text-muted fw-bold me-2" x-show="!note"><i class="bi bi-pencil-square me-1"></i>{{ __('Add Note') }}</span>
-                                <span class="text-dark fw-bold text-truncate" style="max-width: 80%;" x-text="note" x-show="note"></span>
-                                <i class="bi bi-pencil-square text-secondary ms-2" x-show="note"></i>
-                            </div>
-                            <div x-show="editing" class="d-flex align-items-center gap-1" style="display: none;">
-                                <input type="text" class="form-control form-control-sm" x-model="note" @keydown.enter="saveNote()" placeholder="{{ __('Note...') }}">
-                                <button class="btn btn-sm btn-success" @click="saveNote()" :disabled="saving">
-                                    <i class="bi bi-check-lg" x-show="!saving"></i>
-                                    <span class="spinner-border spinner-border-sm" x-show="saving"></span>
+                            <div x-cloak :style="{ display: !editing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
+                                <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                                    <span x-text="note || '-'"></span>
+                                </div>
+                                <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="{{ __('Edit Note') }}">
+                                    <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
                                 </button>
-                                <button class="btn btn-sm btn-secondary" @click="editing = false" :disabled="saving"><i class="bi bi-x-lg"></i></button>
+                            </div>
+
+                            <div x-cloak :style="{ display: editing ? 'block' : 'none' }" class="w-100">
+                                <textarea x-ref="noteInput" x-model="tempNote" class="form-control form-control-sm mb-1" rows="3" placeholder="{{ __('Note...') }}"></textarea>
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <button @click="saveNote()" :disabled="saving" class="btn btn-sm btn-success flex-grow-1" style="max-width: 80px;">
+                                        <i class="bi bi-check-lg" x-show="!saving"></i>
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" x-show="saving" style="display: none;"></span>
+                                    </button>
+                                    <button @click="editing = false" :disabled="saving" class="btn btn-sm btn-outline-secondary flex-shrink-0">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
