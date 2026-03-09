@@ -39,6 +39,14 @@
         z-index: 10;
         transition: all 0.2s ease-in-out;
     }
+
+    /* Visibility Toggle */
+    .hide-cancelled .employee-card-wrapper[data-status="cancelled"],
+    .hide-cancelled .employee-card-wrapper[data-status="registration_cancelled"],
+    .hide-cancelled .employee-card-wrapper[data-status="renewal_cancelled"],
+    .hide-cancelled .status-cancelled {
+        display: none !important;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -406,6 +414,14 @@
                                 </button>
                                 @endcan
 
+                                 {{-- Toggle Cancelled --}}
+                                 <button class="btn btn-outline-secondary btn-sm rounded-circle me-1"
+                                    onclick="toggleCancelled({{ $order->id }}, this)"
+                                    title="{{ __('Toggle Cancelled Items') }}"
+                                    data-hidden="true">
+                                     <i class="bi bi-eye"></i>
+                                 </button>
+
                                  {{-- Add Employee Button --}}
                                  <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'production')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
@@ -441,7 +457,7 @@
                     <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#productionAccordion">
                         <div class="card-body bg-light p-4">
                              {{-- Lazy Load Content Container --}}
-                            <div id="order-content-{{ $order->id }}" class="order-content-wrapper">
+                            <div id="order-content-{{ $order->id }}" class="order-content-wrapper hide-cancelled">
                                  <div class="d-flex justify-content-center py-5">
                                     <div class="spinner-border text-primary" role="status"></div>
                                 </div>
@@ -1059,11 +1075,35 @@
         }
     }
 
+    // --- Toggle Cancelled ---
+    window.toggleCancelled = function(orderId, btn) {
+        const container = document.getElementById(`order-content-${orderId}`);
+        const icon = btn.querySelector('i');
+        const isHidden = btn.dataset.hidden === "true";
+
+        if (isHidden) {
+            // Show them
+            container.classList.remove('hide-cancelled');
+            btn.dataset.hidden = "false";
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            // Hide them
+            container.classList.add('hide-cancelled');
+            btn.dataset.hidden = "true";
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+        // Wait for CSS transition/repaint
+        setTimeout(recalculateSequenceNumbers, 50);
+    }
+
     // --- Actions for Pre-Production ---
-    window.deleteItem = function(itemId) {
+    window.deleteEmployee = function(employeeId, itemId) {
+        if (!itemId) return;
         Swal.fire({
             title: '{{ __("Delete Item?") }}',
-            text: '{{ __("This cannot be undone.") }}',
+            text: '{{ __("This will move the employee to the trash.") }}',
             icon: 'error',
             showCancelButton: true,
             confirmButtonText: '{{ __("Delete") }}',
@@ -1077,7 +1117,16 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        removeItemCard(itemId);
+                        const card = document.getElementById(`employee-card-${employeeId}`);
+                        if(card) {
+                            card.style.transition = 'all 0.5s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.9)';
+                            setTimeout(() => {
+                                card.remove();
+                                recalculateSequenceNumbers();
+                            }, 500);
+                        }
                     }
                 });
             }
@@ -1126,13 +1175,15 @@
         });
     }
 
-    window.cancelItem = function(itemId) {
+    window.cancelEmployee = function(employeeId, itemId) {
+        if (!itemId) return;
         Swal.fire({
-            title: '{{ __("Cancel Item?") }}',
-            text: '{{ __("Mark as cancelled?") }}',
+            title: '{{ __("Cancel Registration?") }}',
+            text: '{{ __("The employee card will be grayed out.") }}',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: '{{ __("Yes") }}'
+            confirmButtonColor: '#6c757d',
+            confirmButtonText: '{{ __("Yes, Cancel") }}'
         }).then((result) => {
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/cancel`, {
@@ -1142,17 +1193,60 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        refreshItemCard(itemId);
+                        const card = document.getElementById(`employee-card-${employeeId}`);
+                        if (card) {
+                            // Update attributes and styles
+                            card.dataset.status = 'registration_cancelled';
+                            card.style.filter = 'grayscale(100%)';
+
+                            const innerCard = card.querySelector('.card');
+                            if (innerCard) {
+                                innerCard.classList.remove('bg-white', 'border', 'shadow-sm', 'bg-success', 'bg-opacity-10');
+                                innerCard.classList.add('bg-light', 'border-0', 'text-secondary', 'grayscale-mode');
+                            }
+
+                            // Adjust opacity and pointer events
+                            const infoContainer = document.getElementById(`info-container-${employeeId}`);
+                            if (infoContainer) infoContainer.classList.add('opacity-50', 'pointer-events-none');
+
+                            const stepsContainer = document.getElementById(`steps-container-${employeeId}`);
+                            if (stepsContainer) {
+                                stepsContainer.classList.add('opacity-50', 'pointer-events-none');
+                                stepsContainer.querySelectorAll('button').forEach(btn => {
+                                    btn.setAttribute('disabled', 'disabled');
+                                });
+                            }
+
+                            // Hide checkbox
+                            const checkboxContainer = document.getElementById(`checkbox-container-${employeeId}`);
+                            if (checkboxContainer) checkboxContainer.classList.add('d-none');
+
+                            // Badges
+                            const badgeCompleted = document.getElementById(`badge-completed-${employeeId}`);
+                            if (badgeCompleted) badgeCompleted.classList.add('d-none');
+                            const badgeCancelled = document.getElementById(`badge-cancelled-${employeeId}`);
+                            if (badgeCancelled) badgeCancelled.classList.remove('d-none');
+
+                            // Buttons toggle
+                            const btnSave = document.getElementById(`btn-save-${employeeId}`);
+                            if (btnSave) btnSave.classList.add('d-none');
+                            const btnCancel = document.getElementById(`btn-cancel-${employeeId}`);
+                            if (btnCancel) btnCancel.classList.add('d-none');
+                            const btnRestore = document.getElementById(`btn-restore-${employeeId}`);
+                            if (btnRestore) btnRestore.classList.remove('d-none');
+                            const btnUndo = document.getElementById(`btn-undo-${employeeId}`);
+                            if (btnUndo) btnUndo.classList.add('d-none');
+                        }
+
                         Swal.fire({
                             icon: 'success',
                             title: '{{ __("Cancelled") }}',
-                            text: '{{ __("Item cancelled.") }}',
+                            text: '{{ __("Registration cancelled.") }}',
                             timer: 1500,
                             showConfirmButton: false
                         });
 
                         if(data.order_stats) {
-                             const card = document.getElementById(`item-card-${itemId}`);
                              if(card) {
                                  const wrapper = card.closest('.order-content-wrapper');
                                  if(wrapper) {
@@ -1167,13 +1261,14 @@
         });
     }
 
-    window.restoreItem = function(itemId) {
+    window.restoreEmployeeState = function(employeeId, itemId) {
+        if (!itemId) return;
         Swal.fire({
-            title: '{{ __("Restore Item?") }}',
-            text: '{{ __("Restore to pending state?") }}',
-            icon: 'question',
+            title: '{{ __("Restore to Pending?") }}',
+            text: '{{ __("This will move the employee back to the active list.") }}',
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: '{{ __("Yes") }}'
+            confirmButtonText: '{{ __("Yes, Restore") }}'
         }).then((result) => {
             if (result.isConfirmed) {
                 fetch(`/workflow/item/${itemId}/restore`, {
@@ -1183,17 +1278,60 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                         refreshItemCard(itemId);
+                        const card = document.getElementById(`employee-card-${employeeId}`);
+                        if (card) {
+                            // Revert attributes and styles
+                            card.dataset.status = 'registration_pending';
+                            card.style.filter = '';
+
+                            const innerCard = card.querySelector('.card');
+                            if (innerCard) {
+                                innerCard.classList.remove('bg-light', 'border-0', 'text-secondary', 'grayscale-mode', 'bg-success', 'bg-opacity-10');
+                                innerCard.classList.add('bg-white', 'border', 'shadow-sm');
+                            }
+
+                            // Revert opacity and pointer events
+                            const infoContainer = document.getElementById(`info-container-${employeeId}`);
+                            if (infoContainer) infoContainer.classList.remove('opacity-50', 'pointer-events-none');
+
+                            const stepsContainer = document.getElementById(`steps-container-${employeeId}`);
+                            if (stepsContainer) {
+                                stepsContainer.classList.remove('opacity-50', 'pointer-events-none');
+                                stepsContainer.querySelectorAll('button').forEach(btn => {
+                                    btn.removeAttribute('disabled');
+                                });
+                            }
+
+                            // Show checkbox
+                            const checkboxContainer = document.getElementById(`checkbox-container-${employeeId}`);
+                            if (checkboxContainer) checkboxContainer.classList.remove('d-none');
+
+                            // Badges
+                            const badgeCompleted = document.getElementById(`badge-completed-${employeeId}`);
+                            if (badgeCompleted) badgeCompleted.classList.add('d-none');
+                            const badgeCancelled = document.getElementById(`badge-cancelled-${employeeId}`);
+                            if (badgeCancelled) badgeCancelled.classList.add('d-none');
+
+                            // Buttons toggle
+                            const btnSave = document.getElementById(`btn-save-${employeeId}`);
+                            if (btnSave) btnSave.classList.remove('d-none');
+                            const btnCancel = document.getElementById(`btn-cancel-${employeeId}`);
+                            if (btnCancel) btnCancel.classList.remove('d-none');
+                            const btnRestore = document.getElementById(`btn-restore-${employeeId}`);
+                            if (btnRestore) btnRestore.classList.add('d-none');
+                            const btnUndo = document.getElementById(`btn-undo-${employeeId}`);
+                            if (btnUndo) btnUndo.classList.add('d-none');
+                        }
+
                          Swal.fire({
                             icon: 'success',
                             title: '{{ __("Restored") }}',
-                            text: '{{ __("Item restored.") }}',
+                            text: '{{ __("Employee is back to pending.") }}',
                             timer: 1500,
                             showConfirmButton: false
                         });
 
                         if(data.order_stats) {
-                             const card = document.getElementById(`item-card-${itemId}`);
                              if(card) {
                                  const wrapper = card.closest('.order-content-wrapper');
                                  if(wrapper) {
