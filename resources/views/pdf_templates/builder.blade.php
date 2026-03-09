@@ -8,7 +8,7 @@
             <a href="{{ route('admin.pdf-templates.index') }}" class="text-gray-500 hover:text-gray-700">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
-            <h1 class="text-lg font-bold text-gray-800">{{ $template->name }} <span class="text-sm font-normal text-gray-500">(Builder Mode)</span></h1>
+            <h1 class="text-lg font-bold text-gray-800"><span x-text="templateName"></span> <span class="text-sm font-normal text-gray-500">(Builder Mode)</span></h1>
         </div>
         <div class="flex items-center gap-3">
             <!-- Page Navigation -->
@@ -346,6 +346,11 @@
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Template Name</label>
+                        <input type="text" x-model="templateName" class="form-control" placeholder="Enter template name">
+                    </div>
+
                     <div class="form-check form-switch p-3 border rounded bg-light mb-3">
                         <input class="form-check-input" type="checkbox" id="autoPrefixToggle" x-model="metaData.auto_prefix_titles">
                         <label class="form-check-label fw-bold" for="autoPrefixToggle">
@@ -375,6 +380,7 @@
             let _pdfDoc = null; // Store PDF doc outside Alpine reactive scope to avoid Proxy issues
 
             return {
+                templateName: @json($template->name ?? ''),
                 currentPage: 1,
                 totalPages: 1,
                 scale: 1.5,
@@ -907,6 +913,7 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
                         body: JSON.stringify({
+                            name: this.templateName,
                             field_mapping: itemsToSave,
                             meta_data: metaDataToSave
                         })

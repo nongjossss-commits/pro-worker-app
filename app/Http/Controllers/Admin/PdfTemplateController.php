@@ -221,11 +221,13 @@ class PdfTemplateController extends Controller
         $this->authorize('edit-pdf-templates', $pdf_template);
 
         $request->validate([
+            'name' => 'required|string|max:255',
             'field_mapping' => 'nullable|array',
             'meta_data' => 'nullable|array',
         ]);
 
         $pdf_template->update([
+            'name' => $request->name,
             'field_mapping' => $request->field_mapping ?? [],
             'meta_data' => $request->meta_data ?? [],
         ]);
