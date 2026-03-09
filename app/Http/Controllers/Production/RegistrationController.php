@@ -92,12 +92,21 @@ class RegistrationController extends Controller
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments
-        $totalAppointments = Employee::query();
+        $appointmentsQuery = Employee::query();
         if (auth()->user()->can('manage-tickets')) {
-            $totalAppointments->withoutGlobalScope('employerTenancy');
+            $appointmentsQuery->withoutGlobalScope('employerTenancy');
         }
-        $totalAppointments = $totalAppointments->whereIn('status', ['registration_pending', 'registration_completed'])
+
+        $totalAppointmentsPending = (clone $appointmentsQuery)
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
             ->whereNotNull('appointment_date')
+            ->whereNull('appointment_completed_at')
+            ->count();
+
+        $totalAppointmentsCompleted = (clone $appointmentsQuery)
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereNotNull('appointment_date')
+            ->whereNotNull('appointment_completed_at')
             ->count();
 
         // Total Daily Check Pending (Global)
@@ -237,7 +246,8 @@ class RegistrationController extends Controller
             'cancelledEmployersCount',
             'notStartedCount',
             'totalBiometricsCollected',
-            'totalAppointments',
+            'totalAppointmentsPending',
+            'totalAppointmentsCompleted',
             'totalDailyCheckPending',
             'steps',
             'stepStats',
@@ -1256,6 +1266,37 @@ class RegistrationController extends Controller
                 }
             }
 
+            // Also get daily check and appointments logic for toggle step
+            $globalQuery = Employee::query();
+            if (auth()->user()->can('manage-tickets')) {
+                $globalQuery->withoutGlobalScope('employerTenancy');
+            }
+            $globalQuery->whereNull('deleted_at');
+            if ($request->has('search') && $request->search) {
+                $this->applySearchToQuery($globalQuery, $request->search);
+            }
+            $activeStatuses = ['registration_pending', 'registration_completed'];
+
+            $globalDailyCheckPending = (clone $globalQuery)
+                ->whereIn('status', $activeStatuses)
+                ->where('daily_check_enabled', true)
+                ->where(function ($q) {
+                    $q->whereNull('last_daily_checked_at')
+                      ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                })->count();
+
+            $globalAppointmentsPending = (clone $globalQuery)
+                ->whereIn('status', $activeStatuses)
+                ->whereNotNull('appointment_date')
+                ->whereNull('appointment_completed_at')
+                ->count();
+
+            $globalAppointmentsCompleted = (clone $globalQuery)
+                ->whereIn('status', $activeStatuses)
+                ->whereNotNull('appointment_date')
+                ->whereNotNull('appointment_completed_at')
+                ->count();
+
             // Employer Stats
             $empQuery = Employee::query();
             if (auth()->user()->can('manage-tickets')) {
@@ -1307,6 +1348,9 @@ class RegistrationController extends Controller
                 'html' => $this->getEmployeeCardHtml($employee),
                 'globalStats' => $globalStats,
                 'globalNotStarted' => $globalNotStarted,
+                'globalDailyCheckPending' => $globalDailyCheckPending,
+                'globalAppointmentsPending' => $globalAppointmentsPending,
+                'globalAppointmentsCompleted' => $globalAppointmentsCompleted,
                 'employerStats' => $employerStats,
                 'employerNotStarted' => $employerNotStarted,
                 'employerId' => $employee->employer_id
@@ -1614,6 +1658,20 @@ class RegistrationController extends Controller
                   ->orWhereDate('last_daily_checked_at', '<', now()->today());
             })->count();
 
+        // 8. Appointments Pending
+        $globalAppointmentsPending = (clone $globalQuery)
+            ->whereIn('status', $activeStatuses)
+            ->whereNotNull('appointment_date')
+            ->whereNull('appointment_completed_at')
+            ->count();
+
+        // 9. Appointments Completed
+        $globalAppointmentsCompleted = (clone $globalQuery)
+            ->whereIn('status', $activeStatuses)
+            ->whereNotNull('appointment_date')
+            ->whereNotNull('appointment_completed_at')
+            ->count();
+
         $stats = [
             'global' => [
                 'total' => $globalTotal,
@@ -1622,7 +1680,9 @@ class RegistrationController extends Controller
                 'saved' => $globalSaved,
                 'employers_count' => $globalEmployers,
                 'biometrics_collected' => $globalBiometrics,
-                'daily_check_pending' => $globalDailyCheckPending
+                'daily_check_pending' => $globalDailyCheckPending,
+                'appointments_pending' => $globalAppointmentsPending,
+                'appointments_completed' => $globalAppointmentsCompleted
             ]
         ];
 
