@@ -804,6 +804,27 @@
                         onclick="sendToWorkflow({{ $employee->production_item->id }})">
                         <i class="bi bi-send-check"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
                     </button>
+
+                    {{-- CANCEL --}}
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
+                        id="btn-cancel-{{ $employee->id }}"
+                        title="Cancel Registration"
+                        onclick="cancelEmployee({{ $employee->id }}, {{ $employee->production_item->id }})">
+                        <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
+                    </button>
+
+                    {{-- RESTORE (For Cancelled) --}}
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCancelled || $isHistory) ? 'd-none' : '' }}"
+                        id="btn-restore-{{ $employee->id }}"
+                        title="Restore"
+                        onclick="restoreEmployeeState({{ $employee->id }}, {{ $employee->production_item->id }})">
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
+                    </button>
+
+                    {{-- Delete (Soft) --}}
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }}, {{ $employee->production_item->id }})">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
                 @else
                     {{-- SAVE TO DB (Registration Context) --}}
                     <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
@@ -812,36 +833,36 @@
                         onclick="finalizeEmployee({{ $employee->id }})">
                         <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Save to DB') }}</span>
                     </button>
+
+                    {{-- CANCEL --}}
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
+                        id="btn-cancel-{{ $employee->id }}"
+                        title="Cancel Registration"
+                        onclick="cancelEmployee({{ $employee->id }})">
+                        <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
+                    </button>
+
+                    {{-- RESTORE (For Cancelled) --}}
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCancelled || $isHistory) ? 'd-none' : '' }}"
+                        id="btn-restore-{{ $employee->id }}"
+                        title="Restore"
+                        onclick="restoreEmployeeState({{ $employee->id }})">
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
+                    </button>
+
+                    {{-- UNDO (For Completed) --}}
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCompleted || $isHistory) ? 'd-none' : '' }}"
+                        id="btn-undo-{{ $employee->id }}"
+                        title="Undo / Restore"
+                        onclick="restoreEmployeeState({{ $employee->id }})">
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
+                    </button>
+
+                    {{-- Delete (Soft) --}}
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }})">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
                 @endif
-
-                {{-- CANCEL --}}
-                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
-                    id="btn-cancel-{{ $employee->id }}"
-                    title="Cancel Registration"
-                    onclick="cancelEmployee({{ $employee->id }})">
-                    <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
-                </button>
-
-                {{-- RESTORE (For Cancelled) --}}
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCancelled || $isHistory) ? 'd-none' : '' }}"
-                    id="btn-restore-{{ $employee->id }}"
-                    title="Restore"
-                    onclick="restoreEmployeeState({{ $employee->id }})">
-                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
-                </button>
-
-                {{-- UNDO (For Completed) --}}
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCompleted || $isHistory) ? 'd-none' : '' }}"
-                    id="btn-undo-{{ $employee->id }}"
-                    title="Undo / Restore"
-                    onclick="restoreEmployeeState({{ $employee->id }})">
-                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
-                </button>
-
-                {{-- Delete (Soft) --}}
-                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }})">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
                 @endcan
             </div>
         </div>
