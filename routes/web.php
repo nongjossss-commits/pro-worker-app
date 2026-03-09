@@ -374,6 +374,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('production/steps', [\App\Http\Controllers\ProductionController::class, 'storeStep'])->name('production.steps.store');
 
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
+    Route::post('production/{employee}/update-outsource-login', [\App\Http\Controllers\ProductionController::class, 'updateOutsourceLogin'])->name('production.update_outsource_login');
     Route::put('production/items/{item}/update-fields', [\App\Http\Controllers\ProductionController::class, 'updateItemFields'])->name('production.items.update_fields');
     Route::post('production/{id}/upload-logo', [\App\Http\Controllers\ProductionController::class, 'uploadLogo'])->name('production.upload_logo');
     Route::post('production/{order}/remarks', [\App\Http\Controllers\ProductionController::class, 'updateRemarks'])->name('production.order.remarks');

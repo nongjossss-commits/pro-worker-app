@@ -189,26 +189,25 @@
                 </div>
                 </div>
 
-            {{-- Insurance Type (Only for Renewal or general edit) --}}
+            {{-- Outsource Login Information --}}
             @can('edit-employees')
             <div class="ms-md-2" x-data="{
                 isEditing: false,
-                type: '{{ $employee->insurance_type }}',
-                hospital: '{{ $employee->hospital_name ?? $employee->insurance_detail }}',
-                company: '{{ $employee->insurance_company ?? $employee->insurance_detail_private }}',
-                saveInsurance() {
+                email: '{{ $employee->email ?? '' }}',
+                originalEmail: '{{ $employee->email ?? '' }}',
+                password: '{{ $employee->password ?? '' }}',
+                originalPassword: '{{ $employee->password ?? '' }}',
+                outsource_code: '{{ $employee->outsource_code ?? '' }}',
+                originalOutsourceCode: '{{ $employee->outsource_code ?? '' }}',
+                saveOutsourceLogin() {
                     let body = {
-                        insurance_type: this.type,
+                        email: this.email,
+                        password: this.password,
+                        outsource_code: this.outsource_code,
                         _token: '{{ csrf_token() }}'
                     };
-                    if (this.type === 'ประกันสังคม' || this.type === 'ประกันโรงพยาบาล') {
-                        body.insurance_detail_social = this.hospital; // Maps to hospital_name
-                        body.insurance_detail_hospital = this.hospital;
-                    } else if (this.type === 'ประกันเอกชน') {
-                        body.insurance_detail_private = this.company;
-                    }
 
-                    fetch('/production/renewal/{{ $employee->id }}/update-insurance', {
+                    fetch('/production/{{ $employee->id }}/update-outsource-login', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -219,14 +218,11 @@
                     .then(res => res.json())
                     .then(data => {
                         if(data.success) {
-                            if(data.html) updateCardHTML({{ $employee->id }}, data.html);
-                            showToast('{{ __('Insurance updated') }}', 'success');
-                            window.dispatchEvent(new CustomEvent('insurance-updated', {
-                                detail: {
-                                    employeeId: {{ $employee->id }},
-                                    insuranceType: this.type
-                                }
-                            }));
+                            showToast('{{ __('Login Info updated') }}', 'success');
+                            this.originalEmail = this.email;
+                            this.originalPassword = this.password;
+                            this.originalOutsourceCode = this.outsource_code;
+                            this.isEditing = false;
                         } else {
                             showToast(data.message || '{{ __('Error saving') }}', 'danger');
                         }
@@ -235,193 +231,68 @@
                         console.error(err);
                         showToast('{{ __('Error saving') }}', 'danger');
                     });
+                },
+                copyToClipboard(text, fieldName) {
+                    if (!text) return;
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast('คัดลอก ' + fieldName + ' สำเร็จ', 'success');
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
                 }
             }">
-                <div style="min-width: 140px;">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Insurance') }}</small>
+                <div style="min-width: 250px;">
+                    <small class="text-muted d-block" style="font-size: 0.7rem;"><i class="bi bi-lock-fill"></i> {{ __('ข้อมูลการเข้าสู่ระบบ Outsource') }}</small>
 
-                    <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
-                         @click="isEditing = true">
+                    <div x-show="!isEditing" class="d-flex align-items-center gap-2 position-relative">
                          <div class="small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center w-100" style="min-height: 38px;">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <span class="fw-bold text-primary" x-text="type || '-'"></span>
-                                <i class="bi bi-pencil-fill text-muted" style="font-size: 0.7rem;"></i>
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-bold text-primary">Login Info</span>
+                                <i class="bi bi-pencil-fill text-muted cursor-pointer" style="font-size: 0.7rem;" @click="isEditing = true"></i>
                             </div>
-                            <div x-show="type === 'ประกันสังคม' && hospital" class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 130px;">
-                                <i class="bi bi-hospital me-1"></i><span x-text="hospital"></span>
+
+                            <div class="d-flex align-items-center justify-content-between mt-1" style="font-size: 0.75rem;">
+                                <span class="text-muted text-truncate" style="max-width: 150px;">
+                                    <i class="bi bi-envelope me-1"></i><span x-text="email || '-'"></span>
+                                </span>
+                                <button x-show="email" @click="copyToClipboard(email, 'อีเมล')" class="btn btn-sm btn-link p-0 text-secondary" title="คัดลอกอีเมล"><i class="bi bi-clipboard"></i></button>
                             </div>
-                            <div x-show="type === 'ประกันโรงพยาบาล' && hospital" class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 130px;">
-                                <i class="bi bi-hospital me-1"></i><span x-text="hospital"></span>
+
+                            <div class="d-flex align-items-center justify-content-between mt-1" style="font-size: 0.75rem;">
+                                <span class="text-muted text-truncate" style="max-width: 150px;">
+                                    <i class="bi bi-key me-1"></i><span x-text="password || '-'"></span>
+                                </span>
+                                <button x-show="password" @click="copyToClipboard(password, 'รหัสสำหรับอีเมล')" class="btn btn-sm btn-link p-0 text-secondary" title="คัดลอกรหัสผ่าน"><i class="bi bi-clipboard"></i></button>
                             </div>
-                            <div x-show="type === 'ประกันเอกชน' && company" class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 130px;">
-                                <i class="bi bi-building me-1"></i><span x-text="company"></span>
+
+                            <div class="d-flex align-items-center justify-content-between mt-1" style="font-size: 0.75rem;">
+                                <span class="text-muted text-truncate" style="max-width: 150px;">
+                                    <i class="bi bi-shield-lock me-1"></i><span x-text="outsource_code || '-'"></span>
+                                </span>
+                                <button x-show="outsource_code" @click="copyToClipboard(outsource_code, 'รหัส Outsource')" class="btn btn-sm btn-link p-0 text-secondary" title="คัดลอกรหัส Outsource"><i class="bi bi-clipboard"></i></button>
                             </div>
                          </div>
                     </div>
 
-                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-2 p-2 bg-white border rounded shadow-sm position-absolute" style="display: none; z-index: 1060; min-width: 220px;">
-                         <label class="small fw-bold">{{ __('Select Type') }}</label>
-                         <select class="form-select form-select-sm" x-model="type">
-                             <option value="">{{ __('None') }}</option>
-                             <option value="ประกันสังคม">{{ __('ประกันสังคม') }}</option>
-                             <option value="ประกันเอกชน">{{ __('ประกันเอกชน') }}</option>
-                             <option value="ประกันโรงพยาบาล">{{ __('ประกันโรงพยาบาล') }}</option>
-                         </select>
+                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-2 p-2 bg-white border rounded shadow-sm position-absolute" style="display: none; z-index: 1060; min-width: 250px;">
 
-                         <div x-show="type === 'ประกันสังคม' || type === 'ประกันโรงพยาบาล'">
-                             <label class="small fw-bold mt-1">{{ __('Hospital') }}</label>
-                             <input type="text" class="form-control form-control-sm" x-model="hospital" placeholder="Hospital Name">
-                         </div>
+                         <label class="small fw-bold mt-1">อีเมล</label>
+                         <input type="text" class="form-control form-control-sm" x-model="email" placeholder="Email">
 
-                         <div x-show="type === 'ประกันเอกชน'">
-                             <label class="small fw-bold mt-1">{{ __('Company') }}</label>
-                             <input type="text" class="form-control form-control-sm" x-model="company" placeholder="Insurance Company">
-                         </div>
+                         <label class="small fw-bold mt-1">รหัสสำหรับอีเมล</label>
+                         <input type="text" class="form-control form-control-sm" x-model="password" placeholder="Password">
+
+                         <label class="small fw-bold mt-1">รหัสสำหรับระบบ Outsource</label>
+                         <input type="text" class="form-control form-control-sm" x-model="outsource_code" placeholder="Outsource Code">
 
                          <div class="d-flex gap-1 mt-2">
-                            <button @click="saveInsurance()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> {{ __('Save') }}</button>
-                            <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
+                            <button @click="saveOutsourceLogin()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> {{ __('Save') }}</button>
+                            <button @click="isEditing = false; email = originalEmail; password = originalPassword; outsource_code = originalOutsourceCode;" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
                          </div>
                     </div>
                 </div>
             </div>
             @endcan
-
-            {{-- Appointment Date & Location (Copied from Workflow) --}}
-            @php
-                $appDate = $employee->appointment_date;
-                $appDisplay = '-';
-                $appValue = '';
-                if ($appDate) {
-                    $appValue = $appDate->format('Y-m-d H:i');
-                    if ($appDate->format('H:i:s') === '00:00:00') {
-                        $appDisplay = $appDate->format('d/m/Y');
-                    } else {
-                        $appDisplay = $appDate->format('d/m/Y H:i');
-                    }
-                }
-                $appLocation = $employee->appointment_location ?? '';
-                $isAppCompleted = $employee->appointment_completed_at ? true : false;
-                $appUpdatedByName = $employee->appointmentUpdatedBy->name ?? '';
-                $appUpdatedAtHuman = $employee->appointment_updated_at ? $employee->appointment_updated_at->diffForHumans() : '';
-            @endphp
-
-            <div class="ms-md-2" x-data="{
-                isEditing: false,
-                isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
-                dateValue: '{{ $appValue }}',
-                displayValue: '{{ $appDisplay }}',
-                locationValue: '{{ $appLocation }}',
-                updatedByName: '{{ $appUpdatedByName }}',
-                updatedAtHuman: '{{ $appUpdatedAtHuman }}',
-                initFlatpickr() {
-                    if (this.$refs.dateInput._flatpickr) return;
-                    flatpickr(this.$refs.dateInput, {
-                        enableTime: true,
-                        dateFormat: 'Y-m-d H:i',
-                        altInput: true,
-                        altFormat: 'd/m/Y H:i',
-                        time_24hr: true,
-                        defaultDate: this.dateValue,
-                        onChange: (selectedDates, dateStr) => {
-                            this.dateValue = dateStr;
-                        }
-                    });
-                },
-                toggleAppComplete() {
-                    fetch('/production/registration/{{ $employee->id }}/appointment-complete', {
-                        method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
-                    }).then(res => res.json()).then(data => {
-                        if(data.success) {
-                            // Logic handled by x-model
-                        } else {
-                            this.isAppCompleted = !this.isAppCompleted; // revert
-                        }
-                    });
-                },
-                saveDate() {
-                    fetch('/production/registration/{{ $employee->id }}/appointment', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                        body: JSON.stringify({ appointment_date: this.dateValue, appointment_location: this.locationValue })
-                    }).then(res => res.json()).then(data => {
-                        if(data.success) {
-                            this.isEditing = false;
-
-                            if (data.appointment_updated_by_name) {
-                                this.updatedByName = data.appointment_updated_by_name;
-                                this.updatedAtHuman = data.appointment_updated_at_human;
-                            }
-
-                            // Update display logic
-                            if (!this.dateValue) {
-                                this.displayValue = '-';
-                            } else {
-                                try {
-                                    let parts = this.dateValue.split(' ');
-                                    let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
-                                    let timePart = parts[1];
-                                    let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-                                    if (timePart === '00:00') {
-                                        this.displayValue = displayDate;
-                                    } else {
-                                        this.displayValue = `${displayDate} ${timePart}`;
-                                    }
-                                } catch (e) {
-                                    this.displayValue = this.dateValue;
-                                }
-                            }
-                        }
-                    });
-                }
-            }">
-                <div style="min-width: 170px;">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
-                        <div class="form-check form-switch" title="{{ __('Mark Appointment Completed') }}">
-                            <input class="form-check-input cursor-pointer" type="checkbox" x-model="isAppCompleted" @change="toggleAppComplete()">
-                        </div>
-                    </div>
-
-                    <div x-show="!isEditing" class="cursor-pointer position-relative"
-                         @click="isEditing = true; $nextTick(() => initFlatpickr())"
-                         :class="{ 'opacity-50': isAppCompleted }">
-
-                         <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px;">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-calendar-event text-warning me-1"></i>
-                                <span x-text="displayValue"></span>
-                                <i x-show="isAppCompleted" class="bi bi-check-circle-fill text-success ms-auto"></i>
-                            </div>
-                            <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
-                                <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
-                            </div>
-                         </div>
-
-                         <!-- Appt Updated By -->
-                         <div x-show="updatedByName" class="mt-1 text-start" style="font-size: 0.65rem;" x-cloak>
-                            <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
-                         </div>
-                    </div>
-
-                    <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
-                         <label class="small fw-bold">Date & Time</label>
-                         <div>
-                            <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
-                         </div>
-
-                         <label class="small fw-bold mt-1">Location</label>
-                         <input x-model="locationValue" type="text" class="form-control form-control-sm" placeholder="e.g. Office">
-
-                         <div class="d-flex gap-1 mt-2">
-                            <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> Save</button>
-                            <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
-                         </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="d-flex flex-column gap-2 ms-md-2">
             {{-- REMARKS SECTION --}}
             @php
