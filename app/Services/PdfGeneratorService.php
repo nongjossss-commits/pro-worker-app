@@ -363,6 +363,7 @@ class PdfGeneratorService
         // 2. Employer Signatures (Check file -> Generate Fallback)
         $emprSig1Path = null;
         $emprSig2Path = null;
+        $emprStampPath = null;
 
         if ($effectiveEmployer) {
             // Signer 1
@@ -393,6 +394,10 @@ class PdfGeneratorService
                 // Update employer model
                 $effectiveEmployer->update(['signature_2_path' => $filename]);
                 $emprSig2Path = Storage::disk('public')->path($filename);
+            }
+
+            if ($effectiveEmployer->employer_stamp_path && Storage::disk('public')->exists($effectiveEmployer->employer_stamp_path)) {
+                $emprStampPath = Storage::disk('public')->path($effectiveEmployer->employer_stamp_path);
             }
         }
 
