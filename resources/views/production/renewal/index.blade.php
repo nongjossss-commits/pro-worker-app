@@ -894,46 +894,88 @@
     </div>
 </div>
 
-{{-- Calendar Modal --}}
+{{-- Large Calendar Modal (Workflow Style) --}}
 <div class="modal fade" id="calendarModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-calendar-event me-2"></i>{{ __('Appointment Calendar') }}</h5>
+    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+        <div class="modal-content bg-light">
+            <div class="modal-header bg-primary text-white border-0 shadow-sm z-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-calendar-event me-2"></i>{{ __('Appointment Calendar') }}
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-0">
-                <div class="d-flex flex-column h-100">
-                    {{-- Calendar Header --}}
-                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
-                        <h4 class="mb-0 fw-bold text-primary" id="calendar-month-year"></h4>
-                        <div class="btn-group">
-                            <button class="btn btn-outline-secondary" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
-                            <button class="btn btn-outline-secondary" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+            <div class="modal-body p-4" x-data="calendarApp()">
+                <div class="row g-4 h-100">
+                    {{-- Left Column: Monthly Calendar --}}
+                    <div class="col-lg-5 col-xl-4 h-100 d-flex flex-column">
+                        <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
+                            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
+                                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-month me-2"></i>{{ __('Monthly Overview') }}</h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn btn-sm btn-light border" @click="prevMonth()"><i class="bi bi-chevron-left"></i></button>
+                                    <span class="fw-bold text-uppercase" style="min-width: 120px; text-align: center;" x-text="monthNames[month] + ' ' + year"></span>
+                                    <button class="btn btn-sm btn-light border" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-body p-3 flex-grow-1 d-flex flex-column">
+                                {{-- Calendar Grid --}}
+                                <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
+                                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                                </div>
+                                <div class="d-grid flex-grow-1" style="grid-template-columns: repeat(7, 1fr); gap: 5px; min-height: 0;">
+                                    <template x-for="day in days" :key="day.dateStr">
+                                        <div
+                                            class="border rounded p-2 d-flex flex-column align-items-center justify-content-between position-relative cursor-pointer transition-all h-100"
+                                            :class="{
+                                                'bg-light text-muted': !day.isCurrentMonth,
+                                                'bg-white': day.isCurrentMonth,
+                                                'border-primary bg-primary bg-opacity-10 shadow-sm': day.dateStr === selectedDate,
+                                                'border-info bg-info bg-opacity-10': day.isToday && day.dateStr !== selectedDate
+                                            }"
+                                            @click="openDay(day.dateStr)"
+                                        >
+                                            <span class="fw-bold" style="font-size: 1.1rem;" x-text="day.dayNum"></span>
+
+                                            <template x-if="counts[day.dateStr]">
+                                                <span class="badge bg-danger rounded-pill mt-1" style="font-size: 0.75rem;" x-text="counts[day.dateStr]"></span>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {{-- Calendar Grid --}}
-                    <div class="row g-0 flex-grow-1" id="calendar-grid">
-                        {{-- Days will be injected here --}}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+                    {{-- Right Column: Appointments List --}}
+                    <div class="col-lg-7 col-xl-8 h-100 d-flex flex-column">
+                        <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
+                            <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                                <h5 class="fw-bold text-primary mb-0">
+                                    <i class="bi bi-list-check me-2"></i>{{ __('Appointments for') }}: <span class="text-dark" x-text="selectedDateFormatted"></span>
+                                </h5>
 
-{{-- Day Appointments Modal --}}
-<div class="modal fade" id="dayAppointmentsModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title fw-bold" id="dayAppointmentsTitle"></h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bg-light" id="dayAppointmentsContent">
-                <div class="d-flex justify-content-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
+                                <div class="input-group" style="max-width: 300px;">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0 bg-light" placeholder="{{ __('Search names, employer...') }}" x-model="searchQuery">
+                                </div>
+                            </div>
+                            <div class="card-body p-0 overflow-auto bg-light position-relative custom-scrollbar" style="min-height: 300px;">
+
+                                <div x-show="isLoading" class="position-absolute w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 10;">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+
+                                <div id="dayAppointmentsContent" class="p-3">
+                                    {{-- Content loaded via AJAX will go here --}}
+                                    <div x-show="!isLoading && (!appointmentsLoaded || Object.keys(counts).length === 0)" class="text-center py-5 text-muted">
+                                        <i class="bi bi-calendar-x fs-1 opacity-25"></i>
+                                        <p class="mt-2">{{ __('Select a date to view appointments.') }}</p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -989,24 +1031,153 @@
     window.allUsers = @json($allUsers);
 
     // --- Calendar Logic ---
-    if (typeof Alpine !== 'undefined') {
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('appointmentSearch', () => ({
-                searchQuery: '',
-                matchesSearch(el) {
-                    if (this.searchQuery.trim() === '') return true;
-                    const query = this.searchQuery.toLowerCase();
-                    const nameTh = el.dataset.employeeNameTh || '';
-                    const nameEn = el.dataset.employeeNameEn || '';
-                    const employer = el.dataset.employerName || '';
-                    const ref = el.dataset.reference || '';
-
-                    return nameTh.includes(query) || nameEn.includes(query) || employer.includes(query) || ref.includes(query);
-                }
-            }));
-        });
+    window.openCalendarModal = function() {
+        const modal = new bootstrap.Modal(document.getElementById('calendarModal'));
+        modal.show();
     }
 
+    function calendarApp() {
+        return {
+            month: new Date().getMonth(),
+            year: new Date().getFullYear(),
+            monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            days: [],
+            counts: {},
+            selectedDate: null,
+            selectedDateFormatted: '',
+            isLoading: false,
+            appointmentsLoaded: false,
+            searchQuery: '',
+
+            init() {
+                this.generateCalendar();
+                this.fetchCounts();
+                window.currentAppointmentContext = { module: 'production/renewal' };
+
+                this.$watch('searchQuery', (value) => {
+                    const cards = document.querySelectorAll('.appointment-card');
+                    const query = value.toLowerCase();
+                    cards.forEach(card => {
+                        const nameTh = card.dataset.employeeNameTh || '';
+                        const nameEn = card.dataset.employeeNameEn || '';
+                        const employer = card.dataset.employerName || '';
+                        const ref = card.dataset.reference || '';
+
+                        if (nameTh.includes(query) || nameEn.includes(query) || employer.includes(query) || ref.includes(query)) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            },
+
+            prevMonth() {
+                if (this.month === 0) {
+                    this.month = 11;
+                    this.year--;
+                } else {
+                    this.month--;
+                }
+                this.generateCalendar();
+                this.fetchCounts();
+            },
+
+            nextMonth() {
+                if (this.month === 11) {
+                    this.month = 0;
+                    this.year++;
+                } else {
+                    this.month++;
+                }
+                this.generateCalendar();
+                this.fetchCounts();
+            },
+
+            generateCalendar() {
+                const firstDay = new Date(this.year, this.month, 1);
+                const lastDay = new Date(this.year, this.month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDay = firstDay.getDay(); // 0 = Sunday
+
+                let calendarDays = [];
+
+                // Previous month padding
+                const prevMonthLastDay = new Date(this.year, this.month, 0).getDate();
+                for (let i = startingDay - 1; i >= 0; i--) {
+                    let d = prevMonthLastDay - i;
+                    let pm = this.month - 1;
+                    let py = this.year;
+                    if(pm < 0) { pm = 11; py--; }
+
+                    calendarDays.push({
+                        dayNum: d,
+                        isCurrentMonth: false,
+                        isToday: false,
+                        dateStr: `${py}-${String(pm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+                    });
+                }
+
+                // Current Month
+                const today = new Date();
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const isToday = (i === today.getDate() && this.month === today.getMonth() && this.year === today.getFullYear());
+                    calendarDays.push({
+                        dayNum: i,
+                        isCurrentMonth: true,
+                        isToday: isToday,
+                        dateStr: `${this.year}-${String(this.month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`
+                    });
+                }
+
+                // Next Month padding
+                const remaining = 42 - calendarDays.length;
+                for (let i = 1; i <= remaining; i++) {
+                    let nm = this.month + 1;
+                    let ny = this.year;
+                    if(nm > 11) { nm = 0; ny++; }
+
+                    calendarDays.push({
+                        dayNum: i,
+                        isCurrentMonth: false,
+                        isToday: false,
+                        dateStr: `${ny}-${String(nm+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`
+                    });
+                }
+
+                this.days = calendarDays;
+            },
+
+            fetchCounts() {
+                fetch(`{{ route('production.renewal.api.calendar') }}?month=${this.month + 1}&year=${this.year}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.counts = data;
+                    });
+            },
+
+            openDay(dateStr) {
+                this.selectedDate = dateStr;
+                const d = new Date(dateStr);
+                this.selectedDateFormatted = d.toLocaleDateString('{{ app()->getLocale() }}', { day: 'numeric', month: 'short', year: 'numeric' });
+                this.isLoading = true;
+                this.appointmentsLoaded = true;
+
+                fetch(`{{ route('production.renewal.api.appointments_by_date') }}?date=${dateStr}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('dayAppointmentsContent').innerHTML = data.html;
+                        this.isLoading = false;
+                        this.searchQuery = ''; // Reset search query when changing dates
+                    })
+                    .catch(() => {
+                        this.isLoading = false;
+                    });
+            }
+        }
+    }
+
+    // Needed for the appointment edit modal called from the day appointments list html
     window.editAppointment = function(employeeId, currentDate, currentLocation, isCompleted) {
         Swal.fire({
             title: '{{ __("Update Appointment") }}',
@@ -1074,14 +1245,18 @@
                         timer: 2000
                     });
 
-                    // Refresh the modal content
-                    const currentOpenDate = document.getElementById('dayAppointmentsTitle').textContent.split(': ')[1];
-                    if (currentOpenDate) {
-                        window.openDayAppointments(currentOpenDate);
+                    // Trigger Alpine.js to refresh the selected day
+                    const calendarScope = Alpine.$data(document.querySelector('[x-data="calendarApp()"]'));
+                    if (calendarScope && calendarScope.selectedDate) {
+                        calendarScope.fetchCounts();
+                        calendarScope.openDay(calendarScope.selectedDate);
                     }
 
-                    if (typeof window.refreshCalendarCounts === 'function') {
-                        window.refreshCalendarCounts();
+                    if (typeof window.fetchBatchStats === 'function') {
+                        const visibleEmployers = Array.from(document.querySelectorAll('.employer-card-container')).map(el => el.id.replace('employer-card-', ''));
+                        if (visibleEmployers.length > 0) {
+                            fetchBatchStats(visibleEmployers);
+                        }
                     }
                 }).catch(err => {
                     Swal.fire('Error', 'Could not update appointment.', 'error');
@@ -1090,102 +1265,20 @@
         });
     }
 
-    let currentYear = new Date().getFullYear();
-    let currentMonth = new Date().getMonth() + 1; // 1-12
-
-    window.openCalendarModal = function() {
-        new bootstrap.Modal(document.getElementById('calendarModal')).show();
-        loadCalendar();
-    }
-
-    window.changeMonth = function(delta) {
-        currentMonth += delta;
-        if (currentMonth > 12) {
-            currentMonth = 1;
-            currentYear++;
-        } else if (currentMonth < 1) {
-            currentMonth = 12;
-            currentYear--;
-        }
-        loadCalendar();
-    }
-
-    function loadCalendar() {
-        // Update Header
-        const date = new Date(currentYear, currentMonth - 1);
-        document.getElementById('calendar-month-year').textContent = date.toLocaleDateString('{{ app()->getLocale() }}', { month: 'long', year: 'numeric' });
-
-        const grid = document.getElementById('calendar-grid');
-        grid.innerHTML = '<div class="d-flex justify-content-center align-items-center w-100 py-5"><div class="spinner-border text-primary"></div></div>';
-
-        fetch(`{{ route('production.renewal.api.calendar') }}?month=${currentMonth}&year=${currentYear}`)
-        .then(res => res.json())
-        .then(data => {
-            renderCalendar(data);
-        });
-    }
-
-    function renderCalendar(counts) {
-        const grid = document.getElementById('calendar-grid');
-        grid.innerHTML = '';
-
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay(); // 0 = Sun
-
-        // Empty slots for start
-        for (let i = 0; i < firstDay; i++) {
-            grid.innerHTML += '<div class="col border bg-light" style="min-height: 100px; width: 14.28%;"></div>';
+    // Helper: Refresh Calendar Data manually
+    window.refreshCalendarCounts = function() {
+        const calendarScope = Alpine.$data(document.querySelector('[x-data="calendarApp()"]'));
+        if (calendarScope) {
+            calendarScope.fetchCounts();
         }
 
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const count = counts[dateStr] || 0;
-            const hasCount = count > 0;
-            const bgClass = hasCount ? 'bg-white' : 'bg-light';
-            const badgeClass = hasCount ? 'bg-primary' : 'd-none';
-            const cursorClass = hasCount ? 'cursor-pointer' : '';
-            const onClick = hasCount ? `onclick="openDayAppointments('${dateStr}')"` : '';
-
-            const dateObj = new Date(currentYear, currentMonth - 1, day);
-            const dayName = dateObj.toLocaleDateString('{{ app()->getLocale() }}', { weekday: 'long' });
-
-            grid.innerHTML += `
-                <div class="col border ${bgClass} ${cursorClass} p-2 position-relative" style="min-height: 100px; width: 14.28%;" ${onClick}>
-                    <div class="fw-bold mb-2 d-flex flex-column">
-                        <span>${day}</span>
-                        <small class="text-muted fw-normal" style="font-size: 0.75rem;">${dayName}</small>
-                    </div>
-                    <div class="position-absolute top-50 start-50 translate-middle">
-                        <span class="badge rounded-pill ${badgeClass} fs-5 shadow-sm">${count}</span>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    window.openDayAppointments = function(dateStr) {
-        let modalEl = document.getElementById('dayAppointmentsModal');
-        let modal = bootstrap.Modal.getInstance(modalEl);
-        if(!modal) modal = new bootstrap.Modal(modalEl);
-
-        document.getElementById('dayAppointmentsTitle').textContent = `Appointments: ${dateStr}`;
-        const content = document.getElementById('dayAppointmentsContent');
-        content.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>';
-        modal.show();
-
-        fetch(`{{ route('production.renewal.api.appointments_by_date') }}?date=${dateStr}`)
-        .then(res => res.json())
-        .then(data => {
-            content.innerHTML = data.html;
-
-            // Set context for the module
-            window.currentAppointmentContext = { module: 'production/renewal' };
-
-            // Re-initialize Alpine.js for the newly injected HTML so search works
-            if (typeof Alpine !== 'undefined') {
-                Alpine.initTree(content);
+        // Trigger global batch stats update
+        if (typeof fetchBatchStats === 'function') {
+            const visibleEmployers = Array.from(document.querySelectorAll('.employer-card-container')).map(el => el.id.replace('employer-card-', ''));
+            if (visibleEmployers.length > 0) {
+                fetchBatchStats(visibleEmployers);
             }
-        });
+        }
     }
 
     // --- Lazy Loading Logic ---
