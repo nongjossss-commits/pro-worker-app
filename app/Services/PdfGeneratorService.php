@@ -953,6 +953,11 @@ class PdfGeneratorService
             return data_get($effectiveEmployer, $subKey) ?? '';
         }
 
+        // 4.5 Backwards Compatibility for 'nature_of_work' mapped to 'job_description'
+        if ($key === 'nature_of_work') {
+            $key = 'job_description';
+        }
+
         // 5. Handle Standard Employee Fields
         $value = data_get($employee, $key);
 
