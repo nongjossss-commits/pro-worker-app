@@ -362,7 +362,7 @@
                 <div class="mb-3 text-center">
                     <label class="cursor-pointer">
                          <img :src="newGroupPreviewUrl || '/images/group-icon.png'" class="rounded-circle border" width="80" height="80">
-                         <input type="file" @change="handleNewGroupAvatar" class="d-none" accept="image/png, image/jpeg, image/jpg" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
+                         <input type="file" id="newGroupAvatarInput" @change="handleNewGroupAvatar" class="d-none" accept="image/png, image/jpeg, image/jpg" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                          <div class="small text-muted mt-1">{{ __('Click to set icon') }}</div>
                     </label>
                 </div>
@@ -404,7 +404,7 @@
                     <label class="cursor-pointer">
                          <img :src="editGroupPreviewUrl || editGroupForm.original_avatar_url" class="rounded-circle border" width="80" height="80"
                               onerror="this.src='https://ui-avatars.com/api/?name=G&color=7F9CF5&background=EBF4FF'">
-                         <input type="file" @change="handleEditGroupAvatar" class="d-none" accept="image/png, image/jpeg, image/jpg" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
+                         <input type="file" id="editGroupAvatarInput" @change="handleEditGroupAvatar" class="d-none" accept="image/png, image/jpeg, image/jpg" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                          <div class="small text-muted mt-1">{{ __('Change Icon') }}</div>
                     </label>
                     <div class="mt-2">
@@ -495,7 +495,7 @@
                         <img :src="profilePreviewUrl || profileForm.original_avatar_url" class="rounded-circle object-fit-cover border" width="80" height="80">
                         <label class="position-absolute bottom-0 end-0 bg-light rounded-circle border p-1 cursor-pointer shadow-sm">
                             <i class="bi bi-camera-fill text-primary"></i>
-                            <input type="file" @change="handleAvatarUpload" class="d-none" accept="image/png, image/jpeg, image/jpg" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
+                            <input type="file" id="profileAvatarInput" @change="handleAvatarUpload" class="d-none" accept="image/png, image/jpeg, image/jpg" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                         </label>
                      </div>
                 </div>
