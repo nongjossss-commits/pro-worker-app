@@ -328,6 +328,26 @@ class ProductionController extends Controller
     /**
      * Send an item to the Workflow (Active Status).
      */
+    public function updateOutsourceLogin(Request $request, Employee $employee)
+    {
+        $request->validate([
+            'email' => 'nullable|string|max:255',
+            'password' => 'nullable|string|max:255',
+            'outsource_code' => 'nullable|string|max:255',
+        ]);
+
+        $employee->update([
+            'email' => $request->email,
+            'password' => $request->password,
+            'outsource_code' => $request->outsource_code,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login info updated successfully.'
+        ]);
+    }
+
     public function updateItemFields(Request $request, ProductionItem $item)
     {
         $request->validate([
