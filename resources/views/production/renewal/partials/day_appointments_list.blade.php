@@ -62,7 +62,21 @@
                                 {{-- Actions --}}
                                 <div class="col-md-3 text-md-end">
                                     <div class="d-flex flex-column gap-2 align-items-md-end">
-                                        <div class="btn-group shadow-sm">
+                                        {{-- Checkbox for bulk actions --}}
+                                        <div class="form-check form-check-inline mb-2 me-0 text-start text-md-end w-100">
+                                            <input class="form-check-input employee-checkbox float-md-end shadow-sm" type="checkbox"
+                                                   style="width: 20px; height: 20px; cursor: pointer; border-color: #6c757d;"
+                                                   data-employee-id="{{ $employee->id }}"
+                                                   data-employer-id="{{ $employee->employer_id }}"
+                                                   onchange="window.toggleGlobalSelection(this, '{{ htmlspecialchars(json_encode([
+                                                      'id' => $employee->id,
+                                                      'employer_id' => $employee->employer_id,
+                                                      'name' => $employee->employeeNameEn ?? $employee->employeeNameTh ?? 'N/A'
+                                                   ])) }}');">
+                                            <label class="form-check-label ms-2 d-md-none fw-bold text-muted">{{ __('Select Employee') }}</label>
+                                        </div>
+
+                                        <div class="btn-group shadow-sm w-100">
                                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="previewEmployee({{ $employee->id }})" title="{{ __('Preview Employee') }}">
                                                 <i class="bi bi-person-vcard"></i>
                                             </button>

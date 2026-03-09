@@ -291,6 +291,124 @@
                          </div>
                     </div>
                 </div>
+
+                {{-- Appointment Date & Location --}}
+                @php
+                    $appDate = $employee->appointment_date ? \Carbon\Carbon::parse($employee->appointment_date) : null;
+                    $appDisplay = '-';
+                    $appValue = '';
+                    if ($appDate) {
+                        $appValue = $appDate->format('Y-m-d H:i');
+                        if ($appDate->format('H:i:s') === '00:00:00') {
+                            $appDisplay = $appDate->format('d/m/Y');
+                        } else {
+                            $appDisplay = $appDate->format('d/m/Y H:i');
+                        }
+                    }
+                    $appLocation = $employee->appointment_location ?? '';
+                    $isAppCompleted = $employee->appointment_completed_at ? true : false;
+                    $isRenewalContext = request()->is('production/renewal*');
+                    $modulePath = $isRenewalContext ? 'production/renewal' : 'production/registration';
+                @endphp
+                <div class="mt-2" style="min-width: 250px;" x-data="{
+                    isEditing: false,
+                    isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
+                    dateValue: '{{ $appValue }}',
+                    displayValue: '{{ $appDisplay }}',
+                    locationValue: '{{ $appLocation }}',
+                    initFlatpickr() {
+                        if (this.$refs.dateInput._flatpickr) return;
+                        flatpickr(this.$refs.dateInput, {
+                            enableTime: true,
+                            dateFormat: 'Y-m-d H:i',
+                            altInput: true,
+                            altFormat: 'd/m/Y H:i',
+                            time_24hr: true,
+                            defaultDate: this.dateValue,
+                            onChange: (selectedDates, dateStr) => {
+                                this.dateValue = dateStr;
+                            }
+                        });
+                    },
+                    toggleAppComplete() {
+                        fetch('/{{ $modulePath }}/{{ $employee->id }}/appointment-complete', {
+                            method: 'POST',
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) {
+                                // toggled
+                            } else {
+                                this.isAppCompleted = !this.isAppCompleted; // revert
+                            }
+                        });
+                    },
+                    saveDate() {
+                        fetch('/{{ $modulePath }}/{{ $employee->id }}/appointment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                            body: JSON.stringify({ appointment_date: this.dateValue, appointment_location: this.locationValue })
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) {
+                                this.isEditing = false;
+                                showToast('{{ __('Saved') }}', 'success');
+                                if (!this.dateValue) {
+                                    this.displayValue = '-';
+                                } else {
+                                    try {
+                                        let parts = this.dateValue.split(' ');
+                                        let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
+                                        let timePart = parts[1];
+                                        let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                                        if (timePart === '00:00') {
+                                            this.displayValue = displayDate;
+                                        } else {
+                                            this.displayValue = `${displayDate} ${timePart}`;
+                                        }
+                                    } catch (e) {
+                                        this.displayValue = this.dateValue;
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
+                        <div class="form-check form-switch" title="{{ __('Mark Appointment Completed') }}">
+                            <input class="form-check-input cursor-pointer" type="checkbox" x-model="isAppCompleted" @change="toggleAppComplete()" style="transform: scale(0.8);">
+                        </div>
+                    </div>
+
+                    <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                         @click="isEditing = true; $nextTick(() => initFlatpickr())"
+                         :class="{ 'opacity-50': isAppCompleted }">
+
+                         <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-calendar-event text-warning me-1"></i>
+                                <span x-text="displayValue"></span>
+                                <i x-show="isAppCompleted" class="bi bi-check-circle-fill text-success ms-auto"></i>
+                            </div>
+                            <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
+                                <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
+                            </div>
+                         </div>
+                    </div>
+
+                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-2 p-2 bg-white border rounded shadow-sm position-absolute" style="display: none; z-index: 1060; min-width: 250px;">
+                        <label class="small fw-bold mb-1">{{ __('Date & Time') }}</label>
+                        <input type="text" x-ref="dateInput" class="form-control form-control-sm bg-white" placeholder="{{ __('Select Date...') }}">
+
+                        <label class="small fw-bold mt-2 mb-1">{{ __('Location') }}</label>
+                        <input type="text" x-model="locationValue" class="form-control form-control-sm" placeholder="{{ __('e.g., Office A') }}">
+
+                        <div class="d-flex gap-1 mt-2">
+                            <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> {{ __('Save') }}</button>
+                            <button @click="isEditing = false; dateValue = '{{ $appValue }}'; locationValue = '{{ $appLocation }}';" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             @endcan
             <div class="d-flex flex-column gap-2 ms-md-2">
