@@ -41,7 +41,7 @@ class ChatController extends Controller
             $userQuery->where(function($q) {
                 // Admin, Staff, Caretaker, Delegate see each other
                 $q->whereHas('roles', function($r) {
-                    $r->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
+                    $r->whereIn('name', ['super-admin', 'admin', 'staff', 'caretaker', 'delegate']);
                 });
             });
         } else {
@@ -262,7 +262,7 @@ class ChatController extends Controller
             if ($group->type === 'community') {
                 // Community is implicitly everyone with roles admin/staff/caretaker/delegate
                  $recipientIds = User::whereHas('roles', function($q) {
-                        $q->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
+                        $q->whereIn('name', ['super-admin', 'admin', 'staff', 'caretaker', 'delegate']);
                  })->where('id', '!=', Auth::id())->pluck('id')->toArray();
             } else {
                  $recipientIds = $group->members()->where('user_id', '!=', Auth::id())->pluck('user_id')->toArray();
@@ -603,20 +603,20 @@ class ChatController extends Controller
                     return response()->json([], 403);
                 }
 
-                $usersQuery->whereHas('chatGroups', function($q) use ($groupId) {
-                    $q->where('chat_groups.id', $groupId);
-                });
+                // Get member IDs of the group to filter users directly
+                $memberIds = $group->members()->pluck('users.id')->toArray();
+                $usersQuery->whereIn('id', $memberIds);
             } else {
                  // For Community or if group not specified, we search all staff/admin/etc.
                  // This matches the general contact list logic.
                  $usersQuery->whereHas('roles', function($r) {
-                    $r->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
+                    $r->whereIn('name', ['super-admin', 'admin', 'staff', 'caretaker', 'delegate']);
                 });
             }
         } else {
              // Fallback default search (Global Admin/Staff)
              $usersQuery->whereHas('roles', function($r) {
-                $r->whereIn('name', ['admin', 'staff', 'caretaker', 'delegate']);
+                $r->whereIn('name', ['super-admin', 'admin', 'staff', 'caretaker', 'delegate']);
             });
         }
 
