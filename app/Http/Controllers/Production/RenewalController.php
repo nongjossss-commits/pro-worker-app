@@ -83,6 +83,24 @@ class RenewalController extends Controller
         $stepStatsQuery = (clone $statsQuery)->whereIn('status', ['renewal_pending', 'renewal_completed']);
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
+        // Total Appointments
+        $appointmentsQuery = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $appointmentsQuery->withoutGlobalScope('employerTenancy');
+        }
+
+        $totalAppointmentsPending = (clone $appointmentsQuery)
+            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereNotNull('appointment_date')
+            ->whereNull('appointment_completed_at')
+            ->count();
+
+        $totalAppointmentsCompleted = (clone $appointmentsQuery)
+            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereNotNull('appointment_date')
+            ->whereNotNull('appointment_completed_at')
+            ->count();
+
         // Total Daily Check Pending (Global)
         $totalDailyCheckPending = (clone $statsQuery)
             ->whereIn('status', ['renewal_pending', 'renewal_completed'])
@@ -986,6 +1004,144 @@ class RenewalController extends Controller
     }
 
     /**
+     * API: Update Appointment Date & Location
+     */
+    public function updateAppointment(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'appointment_date' => 'nullable|date',
+            'appointment_location' => 'nullable|string|max:255',
+        ]);
+
+        $data = [];
+        $isUpdated = false;
+
+        if ($request->has('appointment_date')) {
+            $data['appointment_date'] = $request->appointment_date;
+            if ($employee->appointment_date != $request->appointment_date) {
+                $isUpdated = true;
+            }
+        }
+        if ($request->has('appointment_location')) {
+            $data['appointment_location'] = $request->appointment_location;
+            if ($employee->appointment_location != $request->appointment_location) {
+                $isUpdated = true;
+            }
+        }
+
+        if ($isUpdated) {
+            $data['appointment_updated_by'] = auth()->id();
+            $data['appointment_updated_at'] = now();
+        }
+
+        $employee->update($data);
+
+        return response()->json([
+            'success' => true,
+            'appointment_updated_by_name' => auth()->user()->name,
+            'appointment_updated_at_human' => now()->diffForHumans()
+        ]);
+    }
+
+    /**
+     * API: Toggle Appointment Complete
+     */
+    public function toggleAppointmentComplete(Request $request, Employee $employee)
+    {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        if ($employee->appointment_completed_at) {
+            $employee->update(['appointment_completed_at' => null]);
+        } else {
+            $employee->update(['appointment_completed_at' => now()]);
+        }
+
+        return response()->json(['success' => true, 'completed_at' => $employee->appointment_completed_at]);
+    }
+
+    /**
+     * API: Update Notification Settings
+     */
+    public function updateNotificationSettings(Request $request)
+    {
+        if (!auth()->user()->can('manage-settings')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'notify_days_advance' => 'required|integer|min:0|max:365'
+        ]);
+
+        NotificationSetting::updateOrCreate(
+            ['notification_type' => 'renewal_appointment'],
+            ['days_before_expiry' => $request->notify_days_advance, 'is_enabled' => true]
+        );
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Get Calendar Data (Counts per day)
+     */
+    public function getCalendarData(Request $request)
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $query = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $counts = $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
+            ->whereBetween('appointment_date', [$start, $end])
+            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereNull('appointment_completed_at') // Exclude completed appointments
+            ->groupBy('date')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->date => $item->count];
+            });
+
+        return response()->json($counts);
+    }
+
+    /**
+     * API: Get Appointments for a specific Date (Modal list -> Rendered HTML)
+     */
+    public function getAppointmentsByDate(Request $request)
+    {
+        $request->validate(['date' => 'required|date']);
+        $date = Carbon::parse($request->date);
+
+        $query = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $employees = $query->whereDate('appointment_date', $date)
+            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereNull('appointment_completed_at') // Exclude completed
+            ->with(['employer', 'renewalSteps'])
+            ->get();
+
+        $steps = RenewalStep::renewal()->orderBy('order')->get();
+
+        $html = view('production.renewal.partials.day_appointments_list', compact('employees', 'steps'))->render();
+
+        return response()->json(['html' => $html]);
+    }
+
+    /**
      * API: Update Resolution Auto-Settings
      */
     public function updateResolutionSettings(Request $request)
@@ -1086,6 +1242,37 @@ class RenewalController extends Controller
                 }
             }
 
+            // Also get daily check and appointments logic for toggle step
+            $globalQuery = Employee::query();
+            if (auth()->user()->can('manage-tickets')) {
+                $globalQuery->withoutGlobalScope('employerTenancy');
+            }
+            $globalQuery->whereNull('deleted_at');
+            if ($request->has('search') && $request->search) {
+                $this->applySearchToQuery($globalQuery, $request->search);
+            }
+            $activeStatuses = ['renewal_pending', 'renewal_completed'];
+
+            $globalDailyCheckPending = (clone $globalQuery)
+                ->whereIn('status', $activeStatuses)
+                ->where('daily_check_enabled', true)
+                ->where(function ($q) {
+                    $q->whereNull('last_daily_checked_at')
+                      ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                })->count();
+
+            $globalAppointmentsPending = (clone $globalQuery)
+                ->whereIn('status', $activeStatuses)
+                ->whereNotNull('appointment_date')
+                ->whereNull('appointment_completed_at')
+                ->count();
+
+            $globalAppointmentsCompleted = (clone $globalQuery)
+                ->whereIn('status', $activeStatuses)
+                ->whereNotNull('appointment_date')
+                ->whereNotNull('appointment_completed_at')
+                ->count();
+
             $empQuery = Employee::query();
             if (auth()->user()->can('manage-tickets')) {
                 $empQuery->withoutGlobalScope('employerTenancy');
@@ -1130,6 +1317,9 @@ class RenewalController extends Controller
                 'html' => $this->getEmployeeCardHtml($employee),
                 'globalStats' => $globalStats,
                 'globalNotStarted' => $globalNotStarted,
+                'globalDailyCheckPending' => $globalDailyCheckPending,
+                'globalAppointmentsPending' => $globalAppointmentsPending,
+                'globalAppointmentsCompleted' => $globalAppointmentsCompleted,
                 'employerStats' => $employerStats,
                 'employerNotStarted' => $employerNotStarted,
                 'employerId' => $employee->employer_id

@@ -84,15 +84,25 @@
             </div>
         </div>
 
-        {{-- Appointments (NEW) --}}
+        {{-- Appointments (Pending / Completed) --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
                  id="filter-total_appointments"
                  onclick="toggleFilter('total_appointments')"
                  style="background-color: #8B5CF6; border: none; transition: transform 0.2s;"> {{-- Purple --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-appointments-count">{{ $totalAppointments ?? 0 }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Appointments') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
+                    <div class="d-flex justify-content-around w-100">
+                        <div class="text-center">
+                            <h2 class="display-5 fw-bold mb-0" id="global-appointments-pending-count">{{ $totalAppointmentsPending ?? 0 }}</h2>
+                            <small class="fw-light">{{ __('Pending') }}</small>
+                        </div>
+                        <div class="border-end border-white opacity-50 mx-2"></div>
+                        <div class="text-center">
+                            <h2 class="display-5 fw-bold mb-0" id="global-appointments-completed-count">{{ $totalAppointmentsCompleted ?? 0 }}</h2>
+                            <small class="fw-light">{{ __('Completed') }}</small>
+                        </div>
+                    </div>
+                    <p class="fs-6 fw-bold mb-0 mt-2 text-uppercase" style="letter-spacing: 1px;">{{ __('Appointments') }}</p>
                 </div>
             </div>
         </div>
@@ -180,6 +190,9 @@
                 <h5 class="card-title fw-bold text-secondary mb-0"><i class="bi bi-bar-chart-fill me-2"></i>{{ __('Workflow Progress (Global)') }}</h5>
                 @can('edit-employees')
                 <div class="d-flex gap-2">
+                    <button class="btn btn-primary btn-sm px-3 fw-bold shadow-sm" onclick="openCalendarModal()">
+                        <i class="bi bi-calendar-event me-1"></i> {{ __('Calendar') }}
+                    </button>
                     <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#resolutionSettingsModal">
                         <i class="bi bi-robot me-1"></i> {{ __('Auto Settings') }}
                     </button>
@@ -1028,6 +1041,107 @@
     }
 
     // --- Calendar Logic ---
+    if (typeof Alpine !== 'undefined') {
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('appointmentSearch', () => ({
+                searchQuery: '',
+                matchesSearch(el) {
+                    if (this.searchQuery.trim() === '') return true;
+                    const query = this.searchQuery.toLowerCase();
+                    const nameTh = el.dataset.employeeNameTh || '';
+                    const nameEn = el.dataset.employeeNameEn || '';
+                    const employer = el.dataset.employerName || '';
+                    const ref = el.dataset.reference || '';
+
+                    return nameTh.includes(query) || nameEn.includes(query) || employer.includes(query) || ref.includes(query);
+                }
+            }));
+        });
+    }
+
+    window.editAppointment = function(employeeId, currentDate, currentLocation, isCompleted) {
+        Swal.fire({
+            title: '{{ __("Update Appointment") }}',
+            html: `
+                <div class="mb-3 text-start">
+                    <label class="form-label fw-bold">{{ __("Appointment Date & Time") }}</label>
+                    <input type="datetime-local" id="swal-appointment-date" class="form-control" value="${currentDate}">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label fw-bold">{{ __("Location / Note") }}</label>
+                    <input type="text" id="swal-appointment-location" class="form-control" value="${currentLocation}" placeholder="{{ __('e.g., Main Office') }}">
+                </div>
+                <div class="form-check form-switch text-start mt-4">
+                    <input class="form-check-input" type="checkbox" id="swal-appointment-complete" ${isCompleted ? 'checked' : ''}>
+                    <label class="form-check-label fw-bold" for="swal-appointment-complete">{{ __("Mark as Completed") }}</label>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Save Changes") }}',
+            cancelButtonText: '{{ __("Cancel") }}',
+            focusConfirm: false,
+            preConfirm: () => {
+                return {
+                    date: document.getElementById('swal-appointment-date').value,
+                    location: document.getElementById('swal-appointment-location').value,
+                    isComplete: document.getElementById('swal-appointment-complete').checked
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const data = result.value;
+                const moduleUrl = window.currentAppointmentContext ? window.currentAppointmentContext.module : 'production/registration';
+
+                // First update the details
+                fetch(`/${moduleUrl}/${employeeId}/update-appointment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({
+                        appointment_date: data.date,
+                        appointment_location: data.location
+                    })
+                }).then(res => res.json()).then(response => {
+                    // Then handle the complete toggle if it changed
+                    if (data.isComplete !== isCompleted) {
+                        return fetch(`/${moduleUrl}/${employeeId}/toggle-appointment-complete`, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                            }
+                        });
+                    }
+                    return Promise.resolve();
+                }).then(() => {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '{{ __("Appointment Updated") }}',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+
+                    // Refresh the modal content
+                    const currentOpenDate = document.getElementById('dayAppointmentsTitle').textContent.split(': ')[1];
+                    if (currentOpenDate) {
+                        window.openDayAppointments(currentOpenDate);
+                    }
+
+                    if (typeof window.refreshCalendarCounts === 'function') {
+                        window.refreshCalendarCounts();
+                    }
+                }).catch(err => {
+                    Swal.fire('Error', 'Could not update appointment.', 'error');
+                });
+            }
+        });
+    }
+
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth() + 1; // 1-12
 
@@ -1102,7 +1216,10 @@
     }
 
     window.openDayAppointments = function(dateStr) {
-        const modal = new bootstrap.Modal(document.getElementById('dayAppointmentsModal'));
+        let modalEl = document.getElementById('dayAppointmentsModal');
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        if(!modal) modal = new bootstrap.Modal(modalEl);
+
         document.getElementById('dayAppointmentsTitle').textContent = `Appointments: ${dateStr}`;
         const content = document.getElementById('dayAppointmentsContent');
         content.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>';
@@ -1112,8 +1229,14 @@
         .then(res => res.json())
         .then(data => {
             content.innerHTML = data.html;
-            // Initialize components (e.g. Alpine) if needed, but innerHTML might handle x-data if structure is simple
-            // Or trigger a custom event
+
+            // Set context for the module
+            window.currentAppointmentContext = { module: 'production/registration' };
+
+            // Re-initialize Alpine.js for the newly injected HTML so search works
+            if (typeof Alpine !== 'undefined') {
+                Alpine.initTree(content);
+            }
         });
     }
 
@@ -1673,6 +1796,20 @@
         }
     });
 
+        // Helper: Refresh Calendar Data manually
+        window.refreshCalendarCounts = function() {
+            if (typeof loadCalendar === 'function') {
+                loadCalendar();
+            }
+            // Trigger global batch stats update
+            if (typeof fetchBatchStats === 'function') {
+                const visibleEmployers = Array.from(document.querySelectorAll('.employer-card-container')).map(el => el.id.replace('employer-card-', ''));
+                if (visibleEmployers.length > 0) {
+                    fetchBatchStats(visibleEmployers);
+                }
+            }
+        }
+
     // Helper: Update UI Stats
     window.updateDailyCheckScoreboard = function(enabled, isPending) {
         const globalEl = document.getElementById('global-daily-check-pending-count');
@@ -1736,6 +1873,12 @@
             }
             if(typeof stats.global.daily_check_pending !== 'undefined') {
                 updateText('global-daily-check-pending-count', stats.global.daily_check_pending);
+            }
+            if(typeof stats.global.appointments_pending !== 'undefined') {
+                updateText('global-appointments-pending-count', stats.global.appointments_pending);
+            }
+            if(typeof stats.global.appointments_completed !== 'undefined') {
+                updateText('global-appointments-completed-count', stats.global.appointments_completed);
             }
         }
         if (stats.employer && typeof stats.employer.total !== 'undefined') {
