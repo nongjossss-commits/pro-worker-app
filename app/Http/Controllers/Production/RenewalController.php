@@ -1131,7 +1131,7 @@ class RenewalController extends Controller
         $employees = $query->whereDate('appointment_date', $date)
             ->whereIn('status', ['renewal_pending', 'renewal_completed'])
             ->whereNull('appointment_completed_at') // Exclude completed
-            ->with(['employer', 'renewalSteps'])
+            ->with(['employer'])
             ->get();
 
         $steps = RenewalStep::renewal()->orderBy('order')->get();
