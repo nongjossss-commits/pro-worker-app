@@ -1034,6 +1034,26 @@
 @push('scripts')
 <script src="{{ asset('js/financial-manager.js') }}"></script>
 <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('appointmentSearch', () => ({
+            searchQuery: '',
+            matchesSearch(el) {
+                if (!this.searchQuery) return true;
+
+                const query = this.searchQuery.toLowerCase();
+                const nameTh = el.dataset.employeeNameTh || '';
+                const nameEn = el.dataset.employeeNameEn || '';
+                const employerName = el.dataset.employerName || '';
+                const reference = el.dataset.reference || '';
+
+                return nameTh.includes(query) ||
+                       nameEn.includes(query) ||
+                       employerName.includes(query) ||
+                       reference.includes(query);
+            }
+        }));
+    });
+
     // State for Global Server-Side Filter
     const currentStepFilter = @json(request('filter'));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1264,7 +1284,7 @@
                 const moduleUrl = window.currentAppointmentContext ? window.currentAppointmentContext.module : 'production/registration';
 
                 // First update the details
-                fetch(`/${moduleUrl}/${employeeId}/update-appointment`, {
+                fetch(`/${moduleUrl}/${employeeId}/appointment`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

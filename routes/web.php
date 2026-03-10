@@ -342,8 +342,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RenewalController::class, 'toggleDailyCheck'])->name('toggle_daily_check');
 
         // Appointments & Calendar
-        Route::post('/{employee}/update-appointment', [App\Http\Controllers\Production\RenewalController::class, 'updateAppointment'])->name('update_appointment');
-        Route::post('/{employee}/toggle-appointment-complete', [App\Http\Controllers\Production\RenewalController::class, 'toggleAppointmentComplete'])->name('toggle_appointment_complete');
+        Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RenewalController::class, 'updateAppointment'])->name('appointment');
+        Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RenewalController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
         Route::post('/settings/notification', [App\Http\Controllers\Production\RenewalController::class, 'updateNotificationSettings'])->name('settings.notification');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RenewalController::class, 'getCalendarData'])->name('api.calendar');
         Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RenewalController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');
