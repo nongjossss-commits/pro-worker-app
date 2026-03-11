@@ -55,7 +55,8 @@ class RenewalController extends Controller
         $lastStepId = $steps->sortByDesc('order')->first()?->id;
 
         // --- 1. Global Stats Query (No Fetching All Models) ---
-        $statsQuery = Employee::query();
+        $statsQuery = Employee::query()
+            ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
 
         if (auth()->user()->can('manage-tickets')) {
             $statsQuery->withoutGlobalScope('employerTenancy');
@@ -84,7 +85,8 @@ class RenewalController extends Controller
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments
-        $appointmentsQuery = Employee::query();
+        $appointmentsQuery = Employee::query()
+            ->whereIn('status', ['renewal_pending', 'renewal_completed']);
         if (auth()->user()->can('manage-tickets')) {
             $appointmentsQuery->withoutGlobalScope('employerTenancy');
         }
@@ -1097,7 +1099,8 @@ class RenewalController extends Controller
         $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $query = Employee::query();
+        $query = Employee::query()
+            ->whereIn('status', ['renewal_pending', 'renewal_completed']);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
@@ -1123,7 +1126,8 @@ class RenewalController extends Controller
         $request->validate(['date' => 'required|date']);
         $date = Carbon::parse($request->date);
 
-        $query = Employee::query();
+        $query = Employee::query()
+            ->whereIn('status', ['renewal_pending', 'renewal_completed']);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
