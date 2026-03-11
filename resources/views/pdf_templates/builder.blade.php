@@ -144,15 +144,14 @@
 
                             <!-- Placed Items -->
                             <template x-for="(item, index) in items" :key="index">
-                                <div x-show="parseInt(item.page) === pageNum"
-                                     class="absolute border cursor-move group flex px-1"
+                                <div class="absolute border cursor-move group flex px-1"
                                      :class="{
                                         'border-blue-500 bg-blue-50/30 hover:bg-blue-100/50': item.type === 'db',
                                         'border-gray-500 bg-gray-50/30 hover:bg-gray-100/50': item.type === 'static',
                                         'border-purple-500 bg-purple-50/30 hover:bg-purple-100/50': item.type === 'signature',
                                         'border-red-500 bg-red-50/30 hover:bg-red-100/50': item.type === 'stamp'
                                      }"
-                                     :style="`left: ${item.x}%; top: ${item.y}%; width: ${item.w}%; height: ${item.h}%;`"
+                                     :style="`display: ${parseInt(item.page) === pageNum ? 'flex' : 'none'}; left: ${item.x}%; top: ${item.y}%; width: ${item.w}%; height: ${item.h}%;`"
                                      @mousedown.self="startMove($event, index, pageNum)">
 
                                     <!-- Stamp Content -->
