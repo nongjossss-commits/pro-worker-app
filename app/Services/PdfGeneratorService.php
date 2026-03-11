@@ -958,6 +958,36 @@ class PdfGeneratorService
             $key = 'job_description';
         }
 
+        // Custom Date Formatting: Employee DOB
+        if (str_starts_with($key, 'employeeDob_')) {
+            if ($employee->employeeDob instanceof Carbon) {
+                if ($key === 'employeeDob_day') return $employee->employeeDob->format('d');
+                if ($key === 'employeeDob_month_en') return strtoupper($employee->employeeDob->format('M'));
+                if ($key === 'employeeDob_year_ce') return $employee->employeeDob->format('Y');
+            }
+            return '';
+        }
+
+        // Custom Date Formatting: Passport Issue Date
+        if (str_starts_with($key, 'passportIssueDate_')) {
+            if ($employee->passport_issue_date instanceof Carbon) {
+                if ($key === 'passportIssueDate_day') return $employee->passport_issue_date->format('d');
+                if ($key === 'passportIssueDate_month_en') return strtoupper($employee->passport_issue_date->format('M'));
+                if ($key === 'passportIssueDate_year_ce') return $employee->passport_issue_date->format('Y');
+            }
+            return '';
+        }
+
+        // Custom Date Formatting: Passport Expiry Date
+        if (str_starts_with($key, 'passportExpiryDate_')) {
+            if ($employee->passportExpiryDate instanceof Carbon) {
+                if ($key === 'passportExpiryDate_day') return $employee->passportExpiryDate->format('d');
+                if ($key === 'passportExpiryDate_month_en') return strtoupper($employee->passportExpiryDate->format('M'));
+                if ($key === 'passportExpiryDate_year_ce') return $employee->passportExpiryDate->format('Y');
+            }
+            return '';
+        }
+
         // 5. Handle Standard Employee Fields
         $value = data_get($employee, $key);
 
