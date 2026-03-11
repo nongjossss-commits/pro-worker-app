@@ -66,13 +66,12 @@
                                         <div class="form-check form-check-inline mb-2 me-0 text-start text-md-end w-100">
                                             <input class="form-check-input employee-checkbox float-md-end shadow-sm" type="checkbox"
                                                    style="width: 20px; height: 20px; cursor: pointer; border-color: #6c757d;"
+                                                   value="{{ $employee->id }}"
+                                                   data-id="{{ $employee->id }}"
                                                    data-employee-id="{{ $employee->id }}"
                                                    data-employer-id="{{ $employee->employer_id }}"
-                                                   onchange="window.toggleGlobalSelection(this, '{{ htmlspecialchars(json_encode([
-                                                      'id' => $employee->id,
-                                                      'employer_id' => $employee->employer_id,
-                                                      'name' => $employee->employeeNameEn ?? $employee->employeeNameTh ?? 'N/A'
-                                                   ])) }}');">
+                                                   data-name-en="{{ $employee->employeeNameEn ?? '' }}"
+                                                   data-name-th="{{ $employee->employeeNameTh ?? '' }}">
                                             <label class="form-check-label ms-2 d-md-none fw-bold text-muted">{{ __('Select Employee') }}</label>
                                         </div>
 
@@ -85,14 +84,22 @@
                                             </button>
                                         </div>
 
-                                        <button class="btn btn-sm w-100 fw-bold {{ $employee->appointment_completed_at ? 'btn-success' : 'btn-warning text-dark' }}"
-                                                onclick="editAppointment({{ $employee->id }}, '{{ $employee->appointment_date ? \Carbon\Carbon::parse($employee->appointment_date)->format('Y-m-d\TH:i') : '' }}', '{{ $employee->appointment_location ?? '' }}', {{ $employee->appointment_completed_at ? 'true' : 'false' }})">
-                                            @if($employee->appointment_completed_at)
-                                                <i class="bi bi-check-circle-fill me-1"></i> {{ __('Completed') }}
-                                            @else
-                                                <i class="bi bi-clock-fill me-1"></i> {{ __('Update Appointment') }}
+                                        <div class="d-flex gap-2 w-100">
+                                            <button class="btn btn-sm w-100 fw-bold {{ $employee->appointment_completed_at ? 'btn-success' : 'btn-warning text-dark' }}"
+                                                    onclick="editAppointment({{ $employee->id }}, '{{ $employee->appointment_date ? \Carbon\Carbon::parse($employee->appointment_date)->format('Y-m-d\TH:i') : '' }}', '{{ $employee->appointment_location ?? '' }}', {{ $employee->appointment_completed_at ? 'true' : 'false' }})">
+                                                @if($employee->appointment_completed_at)
+                                                    <i class="bi bi-check-circle-fill me-1"></i> {{ __('Completed') }}
+                                                @else
+                                                    <i class="bi bi-clock-fill me-1"></i> {{ __('Update') }}
+                                                @endif
+                                            </button>
+
+                                            @if(!$employee->appointment_completed_at)
+                                            <button class="btn btn-sm btn-success w-100 fw-bold" onclick="markAppointmentCompleted({{ $employee->id }}, 'production/registration', this)" title="{{ __('Mark Appointment Completed') }}">
+                                                <i class="bi bi-check-lg me-1"></i> {{ __('Complete') }}
+                                            </button>
                                             @endif
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

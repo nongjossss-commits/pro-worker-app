@@ -318,8 +318,8 @@
 
             @can('edit-employees')
             {{-- Bulk Action Bar --}}
-            <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded"
-                 style="display: none;"
+            <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+                 style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;"
                  id="bulkActionBar"
                  draggable="true"
                  ondragstart="window.startDragBulk(event)">
@@ -2832,3 +2832,80 @@
     });
 </script>
 @endpush
+
+<script>
+    window.markAppointmentCompleted = function(employeeId, module, btnElement) {
+        Swal.fire({
+            title: '{{ __("Complete Appointment?") }}',
+            text: '{{ __("Are you sure you want to mark this appointment as completed?") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#10B981',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '{{ __("Yes, Complete it!") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Determine module path based on current view or explicit pass
+                let modulePath = module || window.currentAppointmentContext?.module || 'production/registration';
+
+                // Show loading state on button
+                const originalHtml = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="spinner-border spinner-border-sm"></i>';
+                btnElement.disabled = true;
+
+                fetch(`/${modulePath}/${employeeId}/appointment-complete`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: '{{ __("Appointment Completed") }}',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+
+                        // Hide the card instantly to give immediate feedback
+                        const cardElement = btnElement.closest('.appointment-card');
+                        if (cardElement) {
+                            cardElement.style.display = 'none';
+                        }
+
+                        // Also find the main employee card and update it to reflect the completed state
+                        const mainEmployeeCard = document.getElementById(`item-card-${employeeId}`);
+                        if (mainEmployeeCard) {
+                            // Find the Alpine component within the main card and trigger its toggle
+                            // or manually update the UI elements if Alpine is hard to reach externally
+                            const switchInput = mainEmployeeCard.querySelector('input[type="checkbox"][x-model="isAppCompleted"]');
+                            if (switchInput && !switchInput.checked) {
+                                switchInput.checked = true;
+                                switchInput.dispatchEvent(new Event('change'));
+                            }
+                        }
+
+                        // Also trigger global calendar refresh
+                        if (typeof window.refreshCalendarCounts === 'function') {
+                            window.refreshCalendarCounts();
+                        }
+                    } else {
+                        btnElement.innerHTML = originalHtml;
+                        btnElement.disabled = false;
+                        Swal.fire('Error', 'Could not complete appointment.', 'error');
+                    }
+                })
+                .catch(err => {
+                    btnElement.innerHTML = originalHtml;
+                    btnElement.disabled = false;
+                    Swal.fire('Error', 'Network error occurred.', 'error');
+                });
+            }
+        });
+    }
+</script>

@@ -71,10 +71,10 @@ class RegistrationController extends Controller
         }
 
         // Clone for different counts
-        $totalEmployees = (clone $statsQuery)->whereIn('status', ['registration_pending', 'registration_completed'])->count();
+        $totalEmployees = (clone $statsQuery)->count();
         $totalCancelled = (clone $statsQuery)->where('status', 'registration_cancelled')->count();
         $totalSaved = (clone $statsQuery)->where('status', 'registration_completed')->count();
-        $totalBiometricsCollected = (clone $statsQuery)->whereIn('status', ['registration_pending', 'registration_completed'])
+        $totalBiometricsCollected = (clone $statsQuery)
                                         ->whereNotNull('biometrics_collected_at')->count();
 
         $notStartedCount = 0;
@@ -88,7 +88,7 @@ class RegistrationController extends Controller
 
         // Step Stats (Optimized via SQL)
         // We filter statsQuery to active employees for step stats usually
-        $stepStatsQuery = (clone $statsQuery)->whereIn('status', ['registration_pending', 'registration_completed']);
+        $stepStatsQuery = (clone $statsQuery);
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments
@@ -98,20 +98,20 @@ class RegistrationController extends Controller
         }
 
         $totalAppointmentsPending = (clone $appointmentsQuery)
-            ->whereIn('status', ['registration_pending', 'registration_completed'])
+
             ->whereNotNull('appointment_date')
             ->whereNull('appointment_completed_at')
             ->count();
 
         $totalAppointmentsCompleted = (clone $appointmentsQuery)
-            ->whereIn('status', ['registration_pending', 'registration_completed'])
+
             ->whereNotNull('appointment_date')
             ->whereNotNull('appointment_completed_at')
             ->count();
 
         // Total Daily Check Pending (Global)
         $totalDailyCheckPending = (clone $statsQuery)
-            ->whereIn('status', ['registration_pending', 'registration_completed'])
+
             ->where('daily_check_enabled', true)
             ->where(function ($q) {
                 $q->whereNull('last_daily_checked_at')
@@ -164,7 +164,7 @@ class RegistrationController extends Controller
             $opFilter = $request->operator_filter;
             $employerQuery->whereHas('employees', function($q) use ($opFilter) {
                 // Should only check relevant status?
-                $q->whereIn('status', ['registration_pending', 'registration_completed'])
+                $q
                   ->where('operator_id', $opFilter);
             });
         }
@@ -207,7 +207,7 @@ class RegistrationController extends Controller
 
         // Active Operators for Filter
         $operatorIds = (clone $statsQuery)
-            ->whereIn('status', ['registration_pending', 'registration_completed'])
+
             ->whereNotNull('operator_id')
             ->distinct()
             ->pluck('operator_id');
@@ -355,10 +355,10 @@ class RegistrationController extends Controller
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
-                 $q->whereIn('status', ['registration_pending', 'registration_completed'])
+                 $q
                    ->whereNotNull('appointment_date');
             } elseif ($filter === 'pending_daily_check') {
-                 $q->whereIn('status', ['registration_pending', 'registration_completed'])
+                 $q
                    ->where('daily_check_enabled', true)
                    ->where(function ($sub) {
                        $sub->whereNull('last_daily_checked_at')
@@ -571,7 +571,7 @@ class RegistrationController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $employees = $query->whereIn('status', ['registration_pending', 'registration_completed'])
+        $employees = $query
             ->whereDoesntHave('productionItems', function($q) use ($financeOrder) {
                 $q->where('production_order_id', $financeOrder->id);
             })
@@ -646,10 +646,10 @@ class RegistrationController extends Controller
                  $query->where('status', '!=', 'registration_cancelled')
                        ->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
-                 $query->whereIn('status', ['registration_pending', 'registration_completed'])
+                 $query
                        ->whereNotNull('appointment_date');
             } elseif ($filter === 'pending_daily_check') {
-                 $query->whereIn('status', ['registration_pending', 'registration_completed'])
+                 $query
                        ->where('daily_check_enabled', true)
                        ->where(function ($sub) {
                            $sub->whereNull('last_daily_checked_at')
@@ -1242,7 +1242,7 @@ class RegistrationController extends Controller
                 $this->applySearchToQuery($allQuery, $request->search);
             }
 
-            $allEmployees = $allQuery->whereIn('status', ['registration_pending', 'registration_completed'])
+            $allEmployees = $allQuery
                                     ->with('registrationSteps')
                                     ->get();
 
@@ -1305,7 +1305,7 @@ class RegistrationController extends Controller
             $empQuery->whereNull('deleted_at');
 
             $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
-                                        ->whereIn('status', ['registration_pending', 'registration_completed'])
+
                                         ->with('registrationSteps');
 
             if ($request->has('search') && $request->search) {
@@ -2047,7 +2047,7 @@ class RegistrationController extends Controller
 
         $counts = $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
             ->whereBetween('appointment_date', [$start, $end])
-            ->whereIn('status', ['registration_pending', 'registration_completed'])
+
             ->whereNull('appointment_completed_at') // Exclude completed appointments
             ->groupBy('date')
             ->get()
@@ -2072,7 +2072,7 @@ class RegistrationController extends Controller
         }
 
         $employees = $query->whereDate('appointment_date', $date)
-            ->whereIn('status', ['registration_pending', 'registration_completed'])
+
             ->whereNull('appointment_completed_at') // Exclude completed
             ->with(['employer', 'registrationSteps'])
             ->get();
