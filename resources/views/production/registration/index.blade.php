@@ -971,8 +971,10 @@
                             </div>
                             <div class="card-body p-0 overflow-auto bg-light position-relative custom-scrollbar" style="min-height: 300px;">
 
-                                <div x-show="isLoading" class="position-absolute w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 10;">
-                                    <div class="spinner-border text-primary" role="status"></div>
+                                <div x-show="isLoading" class="position-absolute w-100 h-100 bg-white bg-opacity-75" style="z-index: 10;">
+                                    <div class="w-100 h-100 d-flex justify-content-center align-items-center">
+                                        <div class="spinner-border text-primary" role="status"></div>
+                                    </div>
                                 </div>
 
                                 <div id="dayAppointmentsContent" class="p-3">
