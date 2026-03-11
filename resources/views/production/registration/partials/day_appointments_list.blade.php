@@ -75,11 +75,14 @@
                                             <label class="form-check-label ms-2 d-md-none fw-bold text-muted">{{ __('Select Employee') }}</label>
                                         </div>
 
-                                        <div class="btn-group shadow-sm w-100">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="previewEmployee({{ $employee->id }})" title="{{ __('Preview Employee') }}">
+                                        <div class="btn-group shadow-sm w-100 mb-2">
+                                            <a href="{{ route('employees.edit', $employee->id) }}" target="_blank" class="btn btn-outline-secondary btn-sm" title="{{ __('Edit Employee') }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-primary btn-sm btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('Preview Employee') }}">
                                                 <i class="bi bi-person-vcard"></i>
                                             </button>
-                                            <button type="button" class="btn btn-outline-info btn-sm" onclick="previewEmployer({{ $employee->employer_id }})" title="{{ __('Preview Employer') }}">
+                                            <button type="button" class="btn btn-outline-info btn-sm btn-preview" data-model-type="employer" data-model-id="{{ $employee->employer_id }}" title="{{ __('Preview Employer') }}">
                                                 <i class="bi bi-building"></i>
                                             </button>
                                         </div>

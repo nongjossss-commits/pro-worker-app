@@ -566,7 +566,8 @@ class RegistrationController extends Controller
         $financeOrder->load(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee']);
 
         // Fetch ALL Active Employees for this employer (ignoring search)
-        $query = $employer->employees();
+        $query = $employer->employees()
+            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
