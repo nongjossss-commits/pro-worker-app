@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -1138,7 +1139,7 @@ class RenewalController extends Controller
             ->with(['employer'])
             ->get();
 
-        $steps = RenewalStep::renewal()->orderBy('order')->get();
+        $steps = RegistrationStep::renewal()->orderBy('order')->get();
 
         $html = view('production.renewal.partials.day_appointments_list', compact('employees', 'steps'))->render();
 
