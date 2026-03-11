@@ -5,10 +5,19 @@
     </div>
 @else
     <div class="container-fluid p-3" x-data="appointmentSearch()">
-        <div class="mb-4">
-            <div class="input-group shadow-sm">
+        <div class="mb-4 d-flex justify-content-between align-items-center gap-3">
+            <div class="input-group shadow-sm w-100">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" class="form-control border-start-0" placeholder="{{ __('Search by employee name, employer name, or reference...') }}" x-model="searchQuery">
+            </div>
+
+            <div class="form-check text-nowrap mt-1">
+                <input class="form-check-input border-secondary shadow-sm" type="checkbox" id="selectAllCalendar"
+                       style="width: 22px; height: 22px; cursor: pointer;"
+                       @click="toggleAllCalendarCheckboxes($event)">
+                <label class="form-check-label ms-2 fw-bold text-dark pt-1" for="selectAllCalendar" style="cursor: pointer;">
+                    {{ __('Select All') }}
+                </label>
             </div>
         </div>
 
@@ -76,6 +85,9 @@
                                         </div>
 
                                         <div class="btn-group shadow-sm w-100">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="editEmployeeInTab({{ $employee->id }})" title="{{ __('Edit Employee') }}">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
                                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="previewEmployee({{ $employee->id }})" title="{{ __('Preview Employee') }}">
                                                 <i class="bi bi-person-vcard"></i>
                                             </button>

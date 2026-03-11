@@ -1052,6 +1052,55 @@
                        nameEn.includes(query) ||
                        employerName.includes(query) ||
                        reference.includes(query);
+            },
+            toggleAllCalendarCheckboxes(event) {
+                const isChecked = event.target.checked;
+                // Find all checkboxes within this specific Alpine component scope
+                const checkboxes = document.querySelectorAll('.employee-checkbox');
+                let toggledCount = 0;
+
+                checkboxes.forEach(cb => {
+                    // Only toggle if the card is visible (matches search)
+                    const card = cb.closest('.appointment-card');
+                    if (card && card.style.display !== 'none') {
+                        if (cb.checked !== isChecked) {
+                            cb.checked = isChecked;
+                            toggledCount++;
+                        }
+                    }
+                });
+
+                // Re-sync with the global storage array manually to avoid reliance on unexposed methods
+                if (typeof window.getGlobalSelectedData === 'function' && typeof window.setGlobalSelectedData === 'function') {
+                    const currentData = window.getGlobalSelectedData();
+                    let newData = [...currentData];
+
+                    checkboxes.forEach(cb => {
+                        const card = cb.closest('.appointment-card');
+                        if (card && card.style.display !== 'none') {
+                            const empId = String(cb.value);
+                            const empData = {
+                                id: empId,
+                                employer_id: cb.dataset.employerId,
+                                name_th: cb.dataset.nameTh || '',
+                                name_en: cb.dataset.nameEn || ''
+                            };
+
+                            if (isChecked) {
+                                if (!newData.find(i => String(i.id) === empId)) {
+                                    newData.push(empData);
+                                }
+                            } else {
+                                newData = newData.filter(i => String(i.id) !== empId);
+                            }
+                        }
+                    });
+
+                    window.setGlobalSelectedData(newData);
+                    if (typeof window.refreshGlobalSelectionUI === 'function') {
+                        window.refreshGlobalSelectionUI();
+                    }
+                }
             }
         }));
     });
@@ -2908,4 +2957,19 @@
             }
         });
     }
+
+    window.editEmployeeInTab = function(employeeId) {
+        const url = `{{ url('employees') }}/${employeeId}/edit`;
+        window.open(url, '_blank');
+    };
+
+    window.previewEmployee = function(employeeId) {
+        const url = `{{ url('employees') }}/${employeeId}`;
+        window.open(url, '_blank');
+    };
+
+    window.previewEmployer = function(employerId) {
+        const url = `{{ url('employers') }}/${employerId}`;
+        window.open(url, '_blank');
+    };
 </script>
