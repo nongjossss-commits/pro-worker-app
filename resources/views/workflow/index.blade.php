@@ -18,6 +18,16 @@
     .custom-scrollbar::-webkit-scrollbar { height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
 
+    /* CSS Counters for persistent slot numbering */
+    #workflowAccordion {
+        counter-reset: employer-counter;
+    }
+    .production-order-card-container:not(.d-none) {
+        counter-increment: employer-counter;
+    }
+    .employer-sequence-number::before {
+        content: counter(employer-counter);
+    }
     .employer-sequence-number {
         min-width: 50px;
         text-align: center;
@@ -27,7 +37,22 @@
         opacity: 0.5;
     }
 
-    .item-sequence-number {
+    /* CSS Counters for Employees (Per Employer) */
+    .order-content-wrapper {
+        counter-reset: employee-counter;
+    }
+    .item-card-wrapper:not(.d-none):not(.hide-cancelled) {
+        counter-increment: employee-counter;
+    }
+    .employee-card-wrapper:not(.d-none):not(.hide-cancelled) {
+        counter-increment: employee-counter;
+    }
+    .item-sequence-number::before,
+    .employee-sequence-number::before {
+        content: counter(employee-counter);
+    }
+    .item-sequence-number,
+    .employee-sequence-number {
         min-width: 40px;
         text-align: right;
         font-weight: bold;
@@ -335,6 +360,12 @@
                     <div class="row align-items-xl-center g-3 mb-3">
                         {{-- Identity --}}
                         <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
+                            @if(!$isReadOnly)
+                            <div class="form-check mb-0">
+                                <input class="form-check-input employer-select-all" type="checkbox" data-employer-id="{{ $order->id }}" title="{{ __('Select All for this Employer/Project') }}">
+                            </div>
+                            @endif
+
                             <button class="btn btn-link text-decoration-none text-dark p-0 text-start d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary" style="width: 40px; height: 40px;">
                                     @if($order->type === 'independent')
@@ -792,28 +823,8 @@
     }
 
     // --- Dynamic Numbering ---
-    window.recalculateSequenceNumbers = function() {
-        // 1. Employer/Order Cards
-        let orderCount = 1;
-        document.querySelectorAll('.production-order-card-container').forEach(card => {
-            if (card.offsetParent !== null) { // Visible check
-                const numEl = card.querySelector('.employer-sequence-number');
-                if(numEl) numEl.innerText = orderCount++;
-            }
-        });
-
-        // 2. Employee/Item Cards (Per Order)
-        document.querySelectorAll('.order-content-wrapper').forEach(wrapper => {
-            let itemCount = 1;
-            wrapper.querySelectorAll('.item-card-wrapper').forEach(card => {
-                // Check visibility (handles .d-none, .hide-cancelled contexts)
-                if (card.offsetParent !== null) {
-                    const numEl = card.querySelector('.item-sequence-number');
-                    if(numEl) numEl.innerText = itemCount++;
-                }
-            });
-        });
-    };
+    // DEPRECATED: CSS Counters are now used for robust numbering.
+    // function updateSequenceNumbers() { ... }
 
     // --- Lazy Load Accordion ---
     const loadedOrders = {};
@@ -837,14 +848,12 @@
                     container.innerHTML = html;
                     loadedOrders[orderId] = true;
                     if(window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
-                    recalculateSequenceNumbers(); // Update numbers after load
                 })
                 .catch(err => {
                     container.innerHTML = '<div class="text-danger text-center py-3">Failed to load items.</div>';
                 });
             } else {
                  if(window.refreshGlobalSelectionUI) setTimeout(window.refreshGlobalSelectionUI, 100);
-                 setTimeout(recalculateSequenceNumbers, 50); // Ensure visibility calculation works
             }
         }
     });
@@ -863,8 +872,6 @@
                 if (pill) pill.classList.add('filter-active');
             }
         }
-        // Initial Calculation
-        setTimeout(recalculateSequenceNumbers, 100);
 
     // Initial Batch Stats Load
     setTimeout(loadBatchStats, 500);
@@ -929,6 +936,76 @@ window.loadBatchStats = function() {
         }
         window.location.href = url.toString();
     }
+
+    // --- Employer-level Select All ---
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('employer-select-all')) {
+            const orderId = e.target.dataset.employerId;
+            const isChecked = e.target.checked;
+
+            // Find the container for this order to only select visible items within it
+            const container = document.getElementById(`order-content-${orderId}`);
+            if (!container) return;
+
+            const checkboxes = container.querySelectorAll('.employee-checkbox');
+
+            checkboxes.forEach(cb => {
+                // Determine if employee is eligible for selection
+                const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
+
+                // Only select visible, non-cancelled cards
+                const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled'));
+                const status = cardWrapper ? cardWrapper.dataset.status : '';
+                const isPending = status !== 'cancelled' && status !== 'registration_cancelled' && status !== 'renewal_cancelled';
+
+                // Workflow primarily uses status pending or complete. Select active items.
+                if (!isHidden && isPending) {
+                    if(cb.checked !== isChecked) {
+                        cb.checked = isChecked;
+                        cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            });
+        }
+    });
+
+    // --- Sync Employer Select All state when individual employees change ---
+    function updateEmployerCheckboxesState() {
+        document.querySelectorAll('.employer-select-all').forEach(masterCb => {
+            const orderId = masterCb.dataset.employerId;
+            const container = document.getElementById(`order-content-${orderId}`);
+            if (!container) return;
+
+            const allCheckboxes = container.querySelectorAll('.employee-checkbox');
+            // Filter only relevant ones (pending & visible) to check against
+            const relevantCheckboxes = Array.from(allCheckboxes).filter(cb => {
+                const cw = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
+                const isHidden = cw && (cw.classList.contains('d-none') || cw.classList.contains('hide-cancelled'));
+                const status = cw ? cw.dataset.status : '';
+                const isPending = status !== 'cancelled' && status !== 'registration_cancelled' && status !== 'renewal_cancelled';
+                return !isHidden && isPending;
+            });
+
+            if (relevantCheckboxes.length > 0) {
+                const allChecked = relevantCheckboxes.every(cb => cb.checked);
+                masterCb.checked = allChecked;
+                masterCb.indeterminate = !allChecked && relevantCheckboxes.some(cb => cb.checked);
+            } else {
+                masterCb.checked = false;
+                masterCb.indeterminate = false;
+            }
+        });
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('employee-checkbox')) {
+            updateEmployerCheckboxesState();
+        }
+    });
+
+    document.addEventListener('global-selection-updated', function() {
+        updateEmployerCheckboxesState();
+    });
 
     // --- Bulk Actions ---
     document.getElementById('bulk-advanced-export-btn')?.addEventListener('click', function(e) {
@@ -1160,7 +1237,6 @@ window.loadBatchStats = function() {
                 container.innerHTML = html;
                 container.style.opacity = '1';
                 container.style.minHeight = '';
-                recalculateSequenceNumbers();
             });
         }
     };
@@ -1176,7 +1252,6 @@ window.loadBatchStats = function() {
                 const card = document.getElementById(`item-card-${itemId}`);
                 if(card) {
                     card.outerHTML = data.html;
-                    setTimeout(recalculateSequenceNumbers, 50); // Re-calc after DOM update
                 }
             }
         });
@@ -1191,7 +1266,6 @@ window.loadBatchStats = function() {
             card.style.transform = 'scale(0.95)';
             setTimeout(() => {
                 card.remove();
-                recalculateSequenceNumbers();
             }, 300);
         }
     }
@@ -1215,8 +1289,6 @@ window.loadBatchStats = function() {
             icon.classList.remove('bi-eye-slash');
             icon.classList.add('bi-eye');
         }
-        // Wait for CSS transition/repaint
-        setTimeout(recalculateSequenceNumbers, 50);
     }
 
     window.openHistoryModal = function(orderId) {
@@ -1258,7 +1330,6 @@ window.loadBatchStats = function() {
                         const card = document.getElementById(`item-card-${itemId}`);
                         const wrapper = card.closest('.order-content-wrapper');
                         card.remove();
-                        recalculateSequenceNumbers();
 
                         // Check if wrapper is empty
                         if(wrapper && wrapper.querySelectorAll('.item-card-wrapper').length === 0) {

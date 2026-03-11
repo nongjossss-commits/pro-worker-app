@@ -198,7 +198,10 @@ class WorkflowController extends Controller
         if ($activeTab) {
             // Stats should reflect search but NOT the state filter
             $statsQuery = ProductionOrder::where('status', '!=', 'pre_production')
-                ->where('work_type_id', $activeTab->id);
+                ->where('work_type_id', $activeTab->id)
+                ->whereHas('employer', function ($q) {
+                    $q->whereNull('deleted_at');
+                });
 
             if ($request->has('search') && $request->search) {
                 $search = trim($request->search);
@@ -244,9 +247,19 @@ class WorkflowController extends Controller
                 $baseItemQuery = ProductionItem::whereIn('production_order_id', $matchingOrderIds);
 
                 $stats['total_employees'] = (clone $baseItemQuery)->count();
-                $stats['cancelled'] = (clone $baseItemQuery)->where('status', 'cancelled')->count();
+
+                // If the order is cancelled, we need to count all its items as cancelled
+                $stats['cancelled'] = (clone $baseItemQuery)
+                    ->where(function($q) {
+                        $q->where('status', 'cancelled')
+                          ->orWhereHas('order', fn($o) => $o->where('status', 'cancelled'));
+                    })->count();
+
                 $stats['completed'] = (clone $baseItemQuery)->where('status', 'completed')->count();
-                $stats['not_started'] = (clone $baseItemQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
+                $stats['not_started'] = (clone $baseItemQuery)
+                    ->where('status', 'pending')
+                    ->whereHas('order', fn($o) => $o->where('status', '!=', 'cancelled'))
+                    ->doesntHave('completedWorkTypeSteps')->count();
                 $stats['pending_daily_check'] = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
                     ->where(function($q) {
                         $q->whereNull('last_checked_at')
@@ -831,7 +844,11 @@ class WorkflowController extends Controller
      */
     private function calculateTabStats($workType, $isPreProduction)
     {
-        $query = ProductionOrder::where('work_type_id', $workType->id);
+        $query = ProductionOrder::where('work_type_id', $workType->id)
+            ->whereHas('employer', function ($q) {
+                // Ensure employer is not deleted
+                $q->whereNull('deleted_at');
+            });
 
         if ($isPreProduction) {
             $query->where('status', 'pre_production');
@@ -860,13 +877,16 @@ class WorkflowController extends Controller
         ];
 
         foreach ($allOrders as $order) {
+            if ($order->status === 'cancelled') {
+                foreach ($order->items as $item) {
+                    $stats['total_employees']++;
+                    $stats['cancelled']++;
+                }
+                continue;
+            }
+
             foreach ($order->items as $item) {
                 $stats['total_employees']++;
-
-                if ($order->status === 'cancelled') {
-                    $stats['cancelled']++;
-                    continue;
-                }
 
                 if ($item->status === 'cancelled') {
                     $stats['cancelled']++;

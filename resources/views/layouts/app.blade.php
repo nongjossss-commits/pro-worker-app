@@ -1531,21 +1531,42 @@ document.addEventListener('DOMContentLoaded', function () {
         const viewSelectedBadge = document.getElementById('view-selected-count');
         if (viewSelectedBadge) viewSelectedBadge.textContent = count;
 
-        // Sync individual checkboxes
-        if (employeeCheckboxes) {
-            employeeCheckboxes.forEach(cb => {
-                cb.checked = allIds.includes(String(cb.value));
-            });
-        }
+        // Sync individual checkboxes dynamically across the page
+        const currentCheckboxes = document.querySelectorAll('.employee-checkbox');
+        let visibleCount = 0;
+        let visibleCheckedCount = 0;
+
+        currentCheckboxes.forEach(cb => {
+            cb.checked = allIds.includes(String(cb.value));
+
+            // Check if it's visible to determine "Select All" state
+            const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper') || cb.closest('tr');
+            const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none');
+
+            if (!isHidden) {
+                visibleCount++;
+                if (cb.checked) {
+                    visibleCheckedCount++;
+                }
+            }
+        });
 
         // Sync "Select All" checkbox state based on VISIBLE items
-        // If all visible items are in the selected set, check "Select All"
-        if (selectAllCheckbox && employeeCheckboxes.length > 0) {
-            const allVisibleSelected = Array.from(employeeCheckboxes).every(cb => allIds.includes(String(cb.value)));
-            selectAllCheckbox.checked = allVisibleSelected;
-        } else if (selectAllCheckbox) {
-            selectAllCheckbox.checked = false;
+        if (selectAllCheckbox) {
+            if (visibleCount > 0 && visibleCheckedCount === visibleCount) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (visibleCheckedCount > 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
         }
+
+        // Also fire a custom event so other components (like employer-select-all) can update
+        document.dispatchEvent(new Event('global-selection-updated'));
     }
 
     // --- Initialization ---
@@ -1612,18 +1633,28 @@ document.addEventListener('DOMContentLoaded', function () {
         selectAllCheckbox.addEventListener('change', function () {
             // Re-query currently visible checkboxes
             const currentCheckboxes = document.querySelectorAll('.employee-checkbox');
-            const visibleItems = Array.from(currentCheckboxes).map(cb => getEmployeeData(cb));
+
+            const visibleCheckboxes = Array.from(currentCheckboxes).filter(cb => {
+                const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper') || cb.closest('tr');
+                const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none');
+                return !isHidden;
+            });
+
+            const visibleItems = visibleCheckboxes.map(cb => getEmployeeData(cb));
             const visibleIds = visibleItems.map(item => item.id);
 
             if (this.checked) {
                 // Check all visible and add to storage
-                currentCheckboxes.forEach(cb => cb.checked = true);
+                visibleCheckboxes.forEach(cb => cb.checked = true);
                 addItems(visibleItems);
             } else {
                 // Uncheck all visible and remove from storage
-                currentCheckboxes.forEach(cb => cb.checked = false);
+                visibleCheckboxes.forEach(cb => cb.checked = false);
                 removeItemsByIds(visibleIds);
             }
+
+            // Trigger custom event for specific employers
+            document.dispatchEvent(new Event('global-selection-updated'));
         });
     }
 
