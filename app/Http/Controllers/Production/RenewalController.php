@@ -66,7 +66,7 @@ class RenewalController extends Controller
         }
 
         // Clone for different counts
-        $totalEmployees = (clone $statsQuery)->whereIn('status', ['renewal_pending', 'renewal_completed'])->count();
+        $totalEmployees = (clone $statsQuery)->count();
         $totalCancelled = (clone $statsQuery)->where('status', 'renewal_cancelled')->count();
         $totalSaved = (clone $statsQuery)->where('status', 'renewal_completed')->count();
 
@@ -80,7 +80,7 @@ class RenewalController extends Controller
         }
 
         // Step Stats (Optimized via SQL)
-        $stepStatsQuery = (clone $statsQuery)->whereIn('status', ['renewal_pending', 'renewal_completed']);
+        $stepStatsQuery = (clone $statsQuery);
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments
@@ -90,20 +90,20 @@ class RenewalController extends Controller
         }
 
         $totalAppointmentsPending = (clone $appointmentsQuery)
-            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+
             ->whereNotNull('appointment_date')
             ->whereNull('appointment_completed_at')
             ->count();
 
         $totalAppointmentsCompleted = (clone $appointmentsQuery)
-            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+
             ->whereNotNull('appointment_date')
             ->whereNotNull('appointment_completed_at')
             ->count();
 
         // Total Daily Check Pending (Global)
         $totalDailyCheckPending = (clone $statsQuery)
-            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+
             ->where('daily_check_enabled', true)
             ->where(function ($q) {
                 $q->whereNull('last_daily_checked_at')
@@ -149,7 +149,7 @@ class RenewalController extends Controller
         if ($request->has('operator_filter') && $request->operator_filter) {
             $opFilter = $request->operator_filter;
             $employerQuery->whereHas('employees', function($q) use ($opFilter) {
-                $q->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                $q
                   ->where('operator_id', $opFilter);
             });
         }
@@ -158,7 +158,7 @@ class RenewalController extends Controller
         if ($request->has('insurance_filter') && $request->insurance_filter) {
             $insFilter = $request->insurance_filter;
             $employerQuery->whereHas('employees', function($q) use ($insFilter) {
-                $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
+                $q;
                 if ($insFilter === 'none') {
                     $q->where(function($sub) {
                         $sub->whereNull('insurance_type')->orWhere('insurance_type', '');
@@ -201,7 +201,7 @@ class RenewalController extends Controller
 
         // Active Operators for Filter
         $operatorIds = (clone $statsQuery)
-            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+
             ->whereNotNull('operator_id')
             ->distinct()
             ->pluck('operator_id');
@@ -329,7 +329,7 @@ class RenewalController extends Controller
             } elseif ($filter === 'cancelled') {
                  $q->where('status', 'renewal_cancelled');
             } elseif ($filter === 'pending_daily_check') {
-                 $q->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                 $q
                    ->where('daily_check_enabled', true)
                    ->where(function ($sub) {
                        $sub->whereNull('last_daily_checked_at')
@@ -753,7 +753,7 @@ class RenewalController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $employees = $query->whereIn('status', ['renewal_pending', 'renewal_completed'])
+        $employees = $query
             ->whereDoesntHave('productionItems', function($q) use ($financeOrder) {
                 $q->where('production_order_id', $financeOrder->id);
             })
@@ -1104,7 +1104,7 @@ class RenewalController extends Controller
 
         $counts = $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
             ->whereBetween('appointment_date', [$start, $end])
-            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+
             ->whereNull('appointment_completed_at') // Exclude completed appointments
             ->groupBy('date')
             ->get()
@@ -1129,7 +1129,7 @@ class RenewalController extends Controller
         }
 
         $employees = $query->whereDate('appointment_date', $date)
-            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+
             ->whereNull('appointment_completed_at') // Exclude completed
             ->with(['employer'])
             ->get();
@@ -1222,7 +1222,7 @@ class RenewalController extends Controller
                 $this->applySearchToQuery($allQuery, $request->search);
             }
 
-            $allEmployees = $allQuery->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            $allEmployees = $allQuery
                                     ->with('registrationSteps')
                                     ->get();
 
@@ -1280,7 +1280,7 @@ class RenewalController extends Controller
             $empQuery->whereNull('deleted_at');
 
             $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
-                                        ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+
                                         ->with('registrationSteps');
 
             if ($request->has('search') && $request->search) {
