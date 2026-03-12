@@ -20,5 +20,16 @@ class Delegate extends Model
         'delegatePhone',
         'delegateEmail',
         'delegatePhoto',
+        'delegate_doc_other_1',
+        'delegate_doc_other_1_desc',
+        'delegate_doc_other_2',
+        'delegate_doc_other_2_desc',
+        'delegate_doc_other_3',
+        'delegate_doc_other_3_desc',
     ];
+
+    public function addresses()
+    {
+        return $this->morphMany(Address::class, 'addressable');
+    }
 }

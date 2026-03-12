@@ -172,6 +172,40 @@
                         </div>
                         @endif
 
+                        <!-- Section 2.6: Target Importer Selection (Auto-detected) -->
+                        <div class="mb-4" x-show="needsImporter" x-transition>
+                            <label class="form-label fw-bold text-success">Target Importer (บริษัทนำเข้า)</label>
+                            <p class="text-sm text-muted mb-2">
+                                <i class="bi bi-info-circle"></i>
+                                This template contains Importer fields. Please select an Importer.
+                            </p>
+
+                            <input type="hidden" name="target_importer_id" x-model="targetImporterId">
+                            <select class="form-select" x-model="targetImporterId">
+                                <option value="">-- Leave Blank --</option>
+                                @foreach($importers as $importer)
+                                    <option value="{{ $importer->id }}">{{ $importer->importerNameTh }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Section 2.7: Target Delegate Selection (Auto-detected) -->
+                        <div class="mb-4" x-show="needsDelegate" x-transition>
+                            <label class="form-label fw-bold text-info">Target Company Employee (พนักงานบริษัท / Delegate)</label>
+                            <p class="text-sm text-muted mb-2">
+                                <i class="bi bi-info-circle"></i>
+                                This template contains Delegate fields. Please select a Company Employee.
+                            </p>
+
+                            <input type="hidden" name="target_delegate_id" x-model="targetDelegateId">
+                            <select class="form-select" x-model="targetDelegateId">
+                                <option value="">-- Leave Blank --</option>
+                                @foreach($delegates as $delegate)
+                                    <option value="{{ $delegate->id }}">{{ $delegate->delegateNameTh }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <!-- Section 3: Output Option -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">3. Output Destination</label>
@@ -271,9 +305,13 @@
             templates: @json($templates),
             selectedTemplateId: '',
             selectedTemplateType: '',
+            needsImporter: false,
+            needsDelegate: false,
             isLoadingTemplates: false,
             selectedEmployerId: 'global', // Filter
             targetEmployerId: '', // Target (for Data)
+            targetImporterId: '',
+            targetDelegateId: '',
             redirectUrl: @json($redirect_url),
 
             init() {
@@ -294,6 +332,26 @@
                     this.selectedTemplateType = t ? t.type : '';
                     if (this.selectedTemplateType !== 'global') {
                          this.targetEmployerId = ''; // Reset target if not global
+                    }
+
+                    // Check if template needs importer or delegate
+                    this.needsImporter = false;
+                    this.needsDelegate = false;
+
+                    if (t && t.field_mapping) {
+                        let mappings = t.field_mapping;
+                        if (typeof mappings === 'string') {
+                            try { mappings = JSON.parse(mappings); } catch(e) { mappings = []; }
+                        }
+
+                        if (Array.isArray(mappings)) {
+                            mappings.forEach(item => {
+                                if (item.type === 'db' && item.key) {
+                                    if (item.key.startsWith('importer.')) this.needsImporter = true;
+                                    if (item.key.startsWith('delegate.')) this.needsDelegate = true;
+                                }
+                            });
+                        }
                     }
                 });
             },
@@ -323,6 +381,34 @@
                      Swal.fire({
                          title: 'No Target Employer Selected',
                          text: 'You have selected a Global Template but no Target Employer. The employer fields in the document will be left blank. Are you sure?',
+                         icon: 'warning',
+                         showCancelButton: true,
+                         confirmButtonText: 'Yes, leave blank',
+                         cancelButtonText: 'No, let me select'
+                     }).then((result) => {
+                         if (result.isConfirmed) {
+                             this.checkImporterAndDelegate(form);
+                         }
+                     });
+                     return;
+                }
+
+                this.checkImporterAndDelegate(form);
+            },
+
+            checkImporterAndDelegate(form) {
+                let warnings = [];
+                if (this.needsImporter && !this.targetImporterId) {
+                    warnings.push('Importer');
+                }
+                if (this.needsDelegate && !this.targetDelegateId) {
+                    warnings.push('Company Employee (Delegate)');
+                }
+
+                if (warnings.length > 0) {
+                    Swal.fire({
+                         title: 'Missing Selection',
+                         text: `This template requires ${warnings.join(' and ')} information, but you left it blank. Are you sure you want to proceed?`,
                          icon: 'warning',
                          showCancelButton: true,
                          confirmButtonText: 'Yes, leave blank',
@@ -407,7 +493,9 @@
                                 template_id: this.selectedTemplateId,
                                 output_type: 'save_to_slot',
                                 slot_name: this.slotName,
-                                target_employer_id: this.targetEmployerId
+                                target_employer_id: this.targetEmployerId,
+                                target_importer_id: this.targetImporterId,
+                                target_delegate_id: this.targetDelegateId
                             })
                         });
 

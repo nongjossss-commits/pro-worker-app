@@ -24,5 +24,16 @@ class Importer extends Model
         'importerLicenseExpiryDate',
         'importerSignerTh',
         'importerSignerEn',
+        'importer_doc_other_1',
+        'importer_doc_other_1_desc',
+        'importer_doc_other_2',
+        'importer_doc_other_2_desc',
+        'importer_doc_other_3',
+        'importer_doc_other_3_desc',
     ];
+
+    public function addresses()
+    {
+        return $this->morphMany(Address::class, 'addressable');
+    }
 }
