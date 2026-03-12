@@ -33,6 +33,8 @@ class PdfGeneratorService
         // Options: 'output_type' => 'download' | 'save_to_slot' | 'raw_content'
         //          'slot_name' => string (required if save_to_slot)
         //          'target_employer_id' => int|null
+        //          'target_importer_id' => int|null
+        //          'target_delegate_id' => int|null
         //          'use_empty_employer' => bool
 
         $outputType = $options['output_type'] ?? 'download';
@@ -42,6 +44,16 @@ class PdfGeneratorService
         $targetEmployer = null;
         if (!empty($options['target_employer_id'])) {
             $targetEmployer = Employer::find($options['target_employer_id']);
+        }
+
+        $targetImporter = null;
+        if (!empty($options['target_importer_id'])) {
+            $targetImporter = \App\Models\Importer::find($options['target_importer_id']);
+        }
+
+        $targetDelegate = null;
+        if (!empty($options['target_delegate_id'])) {
+            $targetDelegate = \App\Models\Delegate::find($options['target_delegate_id']);
         }
 
         $useEmptyEmployer = $options['use_empty_employer'] ?? false;
@@ -56,7 +68,7 @@ class PdfGeneratorService
 
             foreach ($chunks as $chunkIndex => $chunkEmployees) {
                 try {
-                    $pdfContent = $this->generateChunkedPdf($template, $chunkEmployees, $targetEmployer, $useEmptyEmployer);
+                    $pdfContent = $this->generateChunkedPdf($template, $chunkEmployees, $targetEmployer, $useEmptyEmployer, $targetImporter, $targetDelegate);
 
                     if ($outputType === 'save_to_slot') {
                         // For slots, we still want to save a copy to each employee's profile
@@ -99,7 +111,7 @@ class PdfGeneratorService
             // Standard single employee processing
             foreach ($employees as $employee) {
                 try {
-                    $pdfContent = $this->generateSinglePdf($template, $employee, $targetEmployer, $useEmptyEmployer);
+                    $pdfContent = $this->generateSinglePdf($template, $employee, $targetEmployer, $useEmptyEmployer, $targetImporter, $targetDelegate);
                     $filename = $this->generateFilename($template, $employee);
 
                     if ($outputType === 'save_to_slot') {
@@ -278,7 +290,7 @@ class PdfGeneratorService
         return $content;
     }
 
-    public function generateSinglePdf(PdfTemplate $template, Employee $employee, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false)
+    public function generateSinglePdf(PdfTemplate $template, Employee $employee, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
     {
         $pdf = new Fpdi();
 
@@ -470,7 +482,7 @@ class PdfGeneratorService
                     if ($item['type'] === 'static') {
                         $text = $item['text'] ?? '';
                     } elseif ($item['type'] === 'db') {
-                        $text = $this->resolveValue($employee, $item['key'], $template, $effectiveEmployer);
+                        $text = $this->resolveValue($employee, $item['key'], $template, $effectiveEmployer, $targetImporter, $targetDelegate);
                     }
 
                     if ($text) {
@@ -552,7 +564,7 @@ class PdfGeneratorService
         return $content;
     }
 
-    public function generateChunkedPdf(PdfTemplate $template, Collection $employees, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false)
+    public function generateChunkedPdf(PdfTemplate $template, Collection $employees, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
     {
         $pdf = new Fpdi();
 
@@ -720,7 +732,7 @@ class PdfGeneratorService
                     } elseif ($item['type'] === 'db') {
                         // Fallback to first employee for non-employee specific fields to prevent errors
                         $contextEmployee = $employee ?: $firstEmployee;
-                        $text = $this->resolveValue($contextEmployee, $item['key'], $template, $effectiveEmployer);
+                        $text = $this->resolveValue($contextEmployee, $item['key'], $template, $effectiveEmployer, $targetImporter, $targetDelegate);
                     }
 
                     if ($text) {
@@ -903,7 +915,7 @@ class PdfGeneratorService
         throw new \Exception($errorMsg);
     }
 
-    protected function resolveValue(Employee $employee, $key, PdfTemplate $template = null, ?Employer $effectiveEmployer = null)
+    protected function resolveValue(Employee $employee, $key, PdfTemplate $template = null, ?Employer $effectiveEmployer = null, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
     {
         // 1. Handle Witness Fields
         if (str_starts_with($key, 'witness_')) {
@@ -951,6 +963,56 @@ class PdfGeneratorService
             if (!$effectiveEmployer) return '';
             $subKey = substr($key, 9); // Remove 'employer.'
             return data_get($effectiveEmployer, $subKey) ?? '';
+        }
+
+        // 4.1 Handle Importer Dot Notation
+        if (str_starts_with($key, 'importer.')) {
+            if (!$targetImporter) return '';
+
+            if (str_starts_with($key, 'importer.address_')) {
+                $address = $this->getGenericAddress($targetImporter);
+                if ($key === 'importer.address_th') return $this->formatAddress($address, 'th');
+                if ($key === 'importer.address_en') return $this->formatAddress($address, 'en');
+
+                if (!$address) return '-';
+
+                if (str_starts_with($key, 'importer.address_th.')) {
+                    $field = str_replace('importer.address_th.', '', $key);
+                    return (string) $address->{$field};
+                }
+                if (str_starts_with($key, 'importer.address_en.')) {
+                    $field = str_replace('importer.address_en.', '', $key);
+                    return (string) $address->{$field};
+                }
+            }
+
+            $subKey = substr($key, 9); // Remove 'importer.'
+            return data_get($targetImporter, $subKey) ?? '';
+        }
+
+        // 4.2 Handle Delegate Dot Notation
+        if (str_starts_with($key, 'delegate.')) {
+            if (!$targetDelegate) return '';
+
+            if (str_starts_with($key, 'delegate.address_')) {
+                $address = $this->getGenericAddress($targetDelegate);
+                if ($key === 'delegate.address_th') return $this->formatAddress($address, 'th');
+                if ($key === 'delegate.address_en') return $this->formatAddress($address, 'en');
+
+                if (!$address) return '-';
+
+                if (str_starts_with($key, 'delegate.address_th.')) {
+                    $field = str_replace('delegate.address_th.', '', $key);
+                    return (string) $address->{$field};
+                }
+                if (str_starts_with($key, 'delegate.address_en.')) {
+                    $field = str_replace('delegate.address_en.', '', $key);
+                    return (string) $address->{$field};
+                }
+            }
+
+            $subKey = substr($key, 9); // Remove 'delegate.'
+            return data_get($targetDelegate, $subKey) ?? '';
         }
 
         // 4.5 Backwards Compatibility for 'nature_of_work' mapped to 'job_description'
@@ -1014,6 +1076,17 @@ class PdfGeneratorService
             $address = $employer->addresses()->orderBy('id', 'asc')->first();
         }
 
+        return $address;
+    }
+
+    protected function getGenericAddress($model)
+    {
+        // For models like Importer and Delegate, they might not have is_document_address widely used yet,
+        // but we'll check it anyway, then fallback to first address.
+        $address = $model->addresses()->where('is_document_address', true)->first();
+        if (!$address) {
+            $address = $model->addresses()->orderBy('id', 'asc')->first();
+        }
         return $address;
     }
 

@@ -31,15 +31,21 @@ class DelegateController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'delegateNameTh' => 'required',
-            'delegateNameEn' => 'required',
-            'delegateId' => 'required',
-            'delegateEmployeeId' => 'required',
-            'delegateIssueDate' => 'required|date',
-            'delegateExpiryDate' => 'required|date',
-            'delegatePhone' => 'required',
-            'delegateEmail' => 'required|email',
-            'delegatePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'delegateNameTh' => 'required|string|max:255',
+            'delegateNameEn' => 'nullable|string|max:255',
+            'delegateId' => 'nullable|string|max:255',
+            'delegateEmployeeId' => 'nullable|string|max:255',
+            'delegateIssueDate' => 'nullable|date',
+            'delegateExpiryDate' => 'nullable|date',
+            'delegatePhone' => 'nullable|string|max:255',
+            'delegateEmail' => 'nullable|email|max:255',
+            'delegatePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
+            'delegate_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delegate_doc_other_1_desc' => 'nullable|string|max:255',
+            'delegate_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delegate_doc_other_2_desc' => 'nullable|string|max:255',
+            'delegate_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delegate_doc_other_3_desc' => 'nullable|string|max:255',
         ]);
 
         $data = $request->all();
@@ -49,7 +55,34 @@ class DelegateController extends Controller
             $data['delegatePhoto'] = $path;
         }
 
-        Delegate::create($data);
+        $docFields = ['delegate_doc_other_1', 'delegate_doc_other_2', 'delegate_doc_other_3'];
+        foreach ($docFields as $field) {
+            if ($request->hasFile($field)) {
+                $data[$field] = $request->file($field)->store('delegate_documents', 'public');
+            }
+        }
+
+        $delegate = Delegate::create($data);
+
+        // Process temporary addresses from request
+        if ($request->filled('registered_addresses')) {
+            $addrs = json_decode($request->input('registered_addresses'), true);
+            if (is_array($addrs)) {
+                foreach ($addrs as $addr) {
+                    $addr['type'] = 'registered';
+                    $delegate->addresses()->create($addr);
+                }
+            }
+        }
+        if ($request->filled('workplace_addresses')) {
+            $addrs = json_decode($request->input('workplace_addresses'), true);
+            if (is_array($addrs)) {
+                foreach ($addrs as $addr) {
+                    $addr['type'] = 'workplace';
+                    $delegate->addresses()->create($addr);
+                }
+            }
+        }
 
         return redirect()->route('delegates.index')
                         ->with('success','Delegate created successfully.');
@@ -77,15 +110,21 @@ class DelegateController extends Controller
     public function update(Request $request, Delegate $delegate)
     {
         $request->validate([
-            'delegateNameTh' => 'required',
-            'delegateNameEn' => 'required',
-            'delegateId' => 'required',
-            'delegateEmployeeId' => 'required',
-            'delegateIssueDate' => 'required|date',
-            'delegateExpiryDate' => 'required|date',
-            'delegatePhone' => 'required',
-            'delegateEmail' => 'required|email',
-            'delegatePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'delegateNameTh' => 'required|string|max:255',
+            'delegateNameEn' => 'nullable|string|max:255',
+            'delegateId' => 'nullable|string|max:255',
+            'delegateEmployeeId' => 'nullable|string|max:255',
+            'delegateIssueDate' => 'nullable|date',
+            'delegateExpiryDate' => 'nullable|date',
+            'delegatePhone' => 'nullable|string|max:255',
+            'delegateEmail' => 'nullable|email|max:255',
+            'delegatePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
+            'delegate_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delegate_doc_other_1_desc' => 'nullable|string|max:255',
+            'delegate_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delegate_doc_other_2_desc' => 'nullable|string|max:255',
+            'delegate_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delegate_doc_other_3_desc' => 'nullable|string|max:255',
         ]);
 
         $data = $request->all();
@@ -99,10 +138,55 @@ class DelegateController extends Controller
             $data['delegatePhoto'] = $path;
         }
 
+        $docFields = ['delegate_doc_other_1', 'delegate_doc_other_2', 'delegate_doc_other_3'];
+        foreach ($docFields as $field) {
+            if ($request->hasFile($field)) {
+                if ($delegate->{$field}) {
+                    Storage::disk('public')->delete($delegate->{$field});
+                }
+                $data[$field] = $request->file($field)->store('delegate_documents', 'public');
+            }
+        }
+
         $delegate->update($data);
 
         return redirect()->route('delegates.index')
                         ->with('success','Delegate updated successfully');
+    }
+
+    public function downloadDocumentAsPdf(Request $request, Delegate $delegate, $field)
+    {
+        $allowedFields = [
+            'delegate_doc_other_1',
+            'delegate_doc_other_2',
+            'delegate_doc_other_3'
+        ];
+
+        if (!in_array($field, $allowedFields)) {
+            abort(404, 'Document type not found.');
+        }
+
+        $filePath = $delegate->{$field};
+        $disk = 'public';
+
+        if (!$filePath || !Storage::disk($disk)->exists($filePath)) {
+            abort(404, 'File not found.');
+        }
+
+        $fieldMapping = [
+            'delegate_doc_other_1' => 'Other_1',
+            'delegate_doc_other_2' => 'Other_2',
+            'delegate_doc_other_3' => 'Other_3',
+        ];
+
+        $docName = $fieldMapping[$field] ?? $field;
+        $name = $delegate->delegateNameEn ?: 'Delegate_' . $delegate->id;
+        $name = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $name);
+
+        $filename = "{$docName}_{$name}.pdf";
+        $disposition = $request->input('disposition', 'inline');
+
+        return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition, $filename);
     }
 
     /**

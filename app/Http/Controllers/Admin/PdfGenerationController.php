@@ -60,10 +60,15 @@ class PdfGenerationController extends Controller
         }
         $templates = $query->latest()->get();
 
+        $importers = \App\Models\Importer::select('id', 'importerNameTh', 'importerNameEn')->orderBy('importerNameTh')->get();
+        $delegates = \App\Models\Delegate::select('id', 'delegateNameTh', 'delegateNameEn')->orderBy('delegateNameTh')->get();
+
         return view('pdf_templates.generate_modal', [
             'employees' => $employeeIds,
             'templates' => $templates,
             'employers' => $employers,
+            'importers' => $importers,
+            'delegates' => $delegates,
             'redirect_url' => $redirectUrl
         ]);
     }
@@ -79,6 +84,8 @@ class PdfGenerationController extends Controller
             'output_type' => 'required|in:download,save_to_slot',
             'slot_name' => 'required_if:output_type,save_to_slot',
             'target_employer_id' => 'nullable|exists:employers,id',
+            'target_importer_id' => 'nullable|exists:importers,id',
+            'target_delegate_id' => 'nullable|exists:delegates,id',
         ]);
 
         // Pre-flight check for Zip extension if download mode is selected
@@ -91,13 +98,15 @@ class PdfGenerationController extends Controller
         $outputType = $request->output_type;
         $slotName = $request->slot_name;
         $targetEmployerId = $request->input('target_employer_id');
+        $targetImporterId = $request->input('target_importer_id');
+        $targetDelegateId = $request->input('target_delegate_id');
         $redirectUrl = $request->input('redirect_url', route('employees.index'));
 
         // Force Synchronous Processing for ALL counts
-        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId, $redirectUrl);
+        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId, $targetImporterId, $targetDelegateId, $redirectUrl);
     }
 
-    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId = null, $redirectUrl = null)
+    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId = null, $targetImporterId = null, $targetDelegateId = null, $redirectUrl = null)
     {
         if (!$redirectUrl) {
             $redirectUrl = route('employees.index');
@@ -132,6 +141,8 @@ class PdfGenerationController extends Controller
                     'output_type' => 'save_to_slot',
                     'slot_name' => $slotName,
                     'target_employer_id' => $targetEmployerId,
+                    'target_importer_id' => $targetImporterId,
+                    'target_delegate_id' => $targetDelegateId,
                     'use_empty_employer' => $useEmptyEmployer
                 ]);
 
@@ -163,6 +174,16 @@ class PdfGenerationController extends Controller
                     $targetEmployerModel = Employer::find($targetEmployerId);
                 }
 
+                $targetImporterModel = null;
+                if ($targetImporterId) {
+                    $targetImporterModel = \App\Models\Importer::find($targetImporterId);
+                }
+
+                $targetDelegateModel = null;
+                if ($targetDelegateId) {
+                    $targetDelegateModel = \App\Models\Delegate::find($targetDelegateId);
+                }
+
                 $zipName = 'export_' . date('Ymd_His') . '.zip';
                 $zipPath = storage_path('app/public/temp/' . $zipName);
                 if (!is_dir(dirname($zipPath))) mkdir(dirname($zipPath), 0755, true);
@@ -180,7 +201,7 @@ class PdfGenerationController extends Controller
                         $chunks = $employees->chunk($chunkSize);
                         foreach ($chunks as $chunkIndex => $chunkEmployees) {
                             try {
-                                $content = $this->pdfService->generateChunkedPdf($template, $chunkEmployees, $targetEmployerModel, $useEmptyEmployer);
+                                $content = $this->pdfService->generateChunkedPdf($template, $chunkEmployees, $targetEmployerModel, $useEmptyEmployer, $targetImporterModel, $targetDelegateModel);
                                 $firstEmp = $chunkEmployees->first();
                                 $filename = "chunk_" . ($chunkIndex + 1) . "_" . $this->pdfService->generateFilename($template, $firstEmp);
 
@@ -195,7 +216,7 @@ class PdfGenerationController extends Controller
                         foreach ($employees as $employee) {
                             try {
                                 // Generate Single PDF
-                                $content = $this->pdfService->generateSinglePdf($template, $employee, $targetEmployerModel, $useEmptyEmployer);
+                                $content = $this->pdfService->generateSinglePdf($template, $employee, $targetEmployerModel, $useEmptyEmployer, $targetImporterModel, $targetDelegateModel);
                                 $filename = $this->pdfService->generateFilename($template, $employee);
 
                                 // Add to Zip
