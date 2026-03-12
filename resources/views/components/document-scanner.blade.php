@@ -45,7 +45,13 @@
 
             <!-- VIEW: CAMERA -->
             <div x-show="view === 'camera'" class="w-full h-full relative bg-black flex flex-col">
-                <video x-ref="video" class="w-full h-full object-contain bg-black" autoplay playsinline></video>
+                <div class="relative w-full h-full flex items-center justify-center overflow-hidden">
+                    <video x-ref="video" class="w-full h-full object-contain bg-black" autoplay playsinline></video>
+                    <!-- Live Detection Overlay -->
+                    <svg x-show="liveCorners.length === 4" class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 30;">
+                        <polygon :points="getLivePolygonPoints()" fill="rgba(13, 110, 253, 0.2)" stroke="#0d6efd" stroke-width="3" stroke-dasharray="5,5" />
+                    </svg>
+                </div>
 
                 <!-- Mode Switcher -->
                 <div class="absolute top-4 left-0 right-0 flex justify-center z-50">
@@ -501,6 +507,12 @@
             activeFilter: 'original', // original, bw, magic, gray
             editorSourceCanvas: null, // Store rotated source for preview
 
+            // Live Detection State
+            liveCorners: [],
+            liveDetectionInterval: null,
+            videoDisplayScale: { x: 1, y: 1 },
+            videoOffset: { x: 0, y: 0 },
+
             init() {
                 // Initialize PDF.js worker
                 if (typeof pdfjsLib !== 'undefined') {
@@ -665,12 +677,42 @@
                         const dataUrl = e.target.result;
                         const img = await this.loadImage(dataUrl);
 
+                        let finalCorners = this.getDefaultCorners(img.width, img.height);
+                        let isFound = false;
+                        let finalCropped = dataUrl;
+
+                        // Auto-detect on import if OpenCV is ready
+                        if (typeof cv !== 'undefined' && this.cvLoaded) {
+                            try {
+                                const canvas = document.createElement('canvas');
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0);
+                                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                const src = cv.matFromImageData(imgData);
+
+                                const result = this.detectDocument(src, true);
+                                if (result.found) {
+                                    finalCorners = result.corners;
+                                    isFound = true;
+                                    finalCropped = this.performWarp(src, finalCorners, canvas.width, canvas.height);
+                                } else {
+                                    // Use fallback corners but don't auto-warp if not found confidently
+                                    finalCorners = result.corners;
+                                }
+                                src.delete();
+                            } catch (err) {
+                                console.error("Auto-detect on import failed", err);
+                            }
+                        }
+
                         this.capturedImages.push({
                             id: Date.now() + Math.random(),
                             original: dataUrl,
-                            cropped: dataUrl,
-                            corners: this.getDefaultCorners(img.width, img.height),
-                            isFound: false
+                            cropped: finalCropped,
+                            corners: finalCorners,
+                            isFound: isFound
                         });
                         resolve();
                     };
@@ -718,12 +760,15 @@
                     this.stream = await navigator.mediaDevices.getUserMedia({
                         video: {
                             facingMode: 'environment',
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 }
+                            width: { ideal: 4096 },
+                            height: { ideal: 2160 }
                         },
                         audio: false
                     });
                     this.$refs.video.srcObject = this.stream;
+                    this.$refs.video.onloadedmetadata = () => {
+                        this.startLiveDetection();
+                    };
                 } catch (err) {
                     console.error("Camera Error:", err);
                     alert("Cannot access camera: " + err.message);
@@ -731,6 +776,7 @@
             },
 
             stopCamera() {
+                this.stopLiveDetection();
                 if (this.stream) {
                     this.stream.getTracks().forEach(track => track.stop());
                     this.stream = null;
@@ -741,6 +787,91 @@
                 if (this.capturedImages.length === 0) return false;
                 if (this.scanMode === 'id_card' && this.capturedImages.length < 2) return false;
                 return true;
+            },
+
+            // --- LIVE DETECTION LOGIC ---
+            startLiveDetection() {
+                if (this.liveDetectionInterval) clearInterval(this.liveDetectionInterval);
+
+                // Downscale for performance
+                const processWidth = 400;
+
+                this.liveDetectionInterval = setInterval(() => {
+                    if (!this.cvLoaded || typeof cv === 'undefined' || this.view !== 'camera' || !this.$refs.video || this.$refs.video.readyState !== 4) return;
+
+                    const video = this.$refs.video;
+
+                    // Update display scale & offset mapping (since object-fit: contain is used)
+                    const videoRatio = video.videoWidth / video.videoHeight;
+                    const displayRatio = video.clientWidth / video.clientHeight;
+
+                    let drawWidth = video.clientWidth;
+                    let drawHeight = video.clientHeight;
+                    let offsetX = 0;
+                    let offsetY = 0;
+
+                    if (videoRatio > displayRatio) {
+                        drawHeight = video.clientWidth / videoRatio;
+                        offsetY = (video.clientHeight - drawHeight) / 2;
+                    } else {
+                        drawWidth = video.clientHeight * videoRatio;
+                        offsetX = (video.clientWidth - drawWidth) / 2;
+                    }
+
+                    this.videoDisplayScale = {
+                        x: drawWidth / video.videoWidth,
+                        y: drawHeight / video.videoHeight
+                    };
+                    this.videoOffset = { x: offsetX, y: offsetY };
+
+                    // Process frame
+                    try {
+                        const processHeight = (video.videoHeight / video.videoWidth) * processWidth;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = processWidth;
+                        canvas.height = processHeight;
+                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        ctx.drawImage(video, 0, 0, processWidth, processHeight);
+
+                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const src = cv.matFromImageData(imgData);
+                        const { corners, found } = this.detectDocument(src, false); // Fast mode
+
+                        if (found) {
+                            // Scale corners back to original video dimensions
+                            const scaleX = video.videoWidth / processWidth;
+                            const scaleY = video.videoHeight / processHeight;
+
+                            this.liveCorners = corners.map(c => ({
+                                x: c.x * scaleX,
+                                y: c.y * scaleY
+                            }));
+                        } else {
+                            this.liveCorners = [];
+                        }
+                        src.delete();
+                    } catch (e) {
+                        // Silent fail for live detection
+                    }
+                }, 200); // 5 FPS is enough for guide
+            },
+
+            stopLiveDetection() {
+                if (this.liveDetectionInterval) {
+                    clearInterval(this.liveDetectionInterval);
+                    this.liveDetectionInterval = null;
+                }
+                this.liveCorners = [];
+            },
+
+            getLivePolygonPoints() {
+                if (this.liveCorners.length !== 4) return '';
+                // Map from video resolution to display resolution considering object-fit
+                return this.liveCorners.map(c => {
+                    const dispX = (c.x * this.videoDisplayScale.x) + this.videoOffset.x;
+                    const dispY = (c.y * this.videoDisplayScale.y) + this.videoOffset.y;
+                    return `${dispX},${dispY}`;
+                }).join(' ');
             },
 
             // --- SMART CAPTURE LOGIC ---
@@ -768,18 +899,29 @@
                         // 1. Detect Edges (SMARTER)
                         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         const src = cv.matFromImageData(imgData);
-                        const { corners, found } = this.detectDocument(src);
+                        let cornersToUse = [];
+                        let isFound = false;
+
+                        // Use live corners if they exist and are valid, otherwise detect from the high-res snapshot
+                        if (this.liveCorners.length === 4) {
+                            cornersToUse = [...this.liveCorners];
+                            isFound = true;
+                        } else {
+                            const result = this.detectDocument(src);
+                            cornersToUse = result.corners;
+                            isFound = result.found;
+                        }
 
                         // 2. Warp (Crop)
-                        const croppedDataUrl = this.performWarp(src, corners, canvas.width, canvas.height);
+                        const croppedDataUrl = this.performWarp(src, cornersToUse, canvas.width, canvas.height);
 
                         // 3. Store
                         this.capturedImages.push({
                             id: Date.now(),
                             original: originalDataUrl,
                             cropped: croppedDataUrl,
-                            corners: corners, // Store scaled to original image
-                            isFound: found
+                            corners: cornersToUse, // Store scaled to original image
+                            isFound: isFound
                         });
 
                         src.delete();
@@ -816,7 +958,7 @@
                 }
             },
 
-            detectDocument(src) {
+            detectDocument(src, isHighRes = true) {
                 const width = src.cols;
                 const height = src.rows;
                 let bestCorners = [];
@@ -837,7 +979,7 @@
                     // 1. Preprocessing (Resize for speed & noise reduction)
                     processingSrc = src; // Default alias
                     let scale = 1;
-                    const maxDim = 800;
+                    const maxDim = 600; // Smaller dim for more robust structural detection
 
                     if (Math.max(width, height) > maxDim) {
                         scale = maxDim / Math.max(width, height);
@@ -851,24 +993,24 @@
                     gray = new cv.Mat();
                     cv.cvtColor(processingSrc, gray, cv.COLOR_RGBA2GRAY, 0);
 
-                    // 2. Denoise (Gaussian Blur)
+                    // 2. Denoise (Gaussian Blur or Bilateral)
+                    // Bilateral is better at preserving edges while removing noise
                     blurred = new cv.Mat();
-                    cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+                    cv.bilateralFilter(gray, blurred, 9, 75, 75, cv.BORDER_DEFAULT);
 
-                    // 3. Edge Detection (Canny is generally more structural than simple thresholding)
+                    // 3. Edge Detection (Canny with Otsu's thresholding trick equivalent)
                     edges = new cv.Mat();
-                    // Thresholds: Lower 75, Upper 200 is a standard starting point
-                    cv.Canny(blurred, edges, 75, 200);
+                    cv.Canny(blurred, edges, 30, 150, 3, false);
 
-                    // 4. Dilate to connect broken edges
-                    kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+                    // 4. Morphological Close to connect broken document edges
+                    kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5));
                     dilated = new cv.Mat();
-                    cv.dilate(edges, dilated, kernel);
+                    cv.morphologyEx(edges, dilated, cv.MORPH_CLOSE, kernel);
 
                     // 5. Find Contours
                     contours = new cv.MatVector();
                     hierarchy = new cv.Mat();
-                    cv.findContours(dilated, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                    cv.findContours(dilated, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
                     // 6. Find Best Quadrilateral
                     let maxArea = 0;
@@ -907,7 +1049,17 @@
                         bestCorners = this.sortPoints(bestCandidate);
                         isFound = true;
                     } else {
-                        bestCorners = this.getDefaultCorners(width, height);
+                        // Fallback Intelligence:
+                        // Instead of the extreme edges (which makes it hard to grab),
+                        // place the crop box slightly inwards so user can see/drag handles.
+                        const marginW = width * 0.1;
+                        const marginH = height * 0.1;
+                        bestCorners = [
+                            {x: marginW, y: marginH},
+                            {x: width - marginW, y: marginH},
+                            {x: width - marginW, y: height - marginH},
+                            {x: marginW, y: height - marginH}
+                        ];
                         isFound = false;
                     }
 
@@ -1765,7 +1917,7 @@
                 const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
-                // Calculate Delta
+                // Calculate Delta for edge dragging
                 const dx = clientX - this.previousMousePosition.x;
                 const dy = clientY - this.previousMousePosition.y;
 
@@ -1775,39 +1927,53 @@
                 // Get Canvas Rect to check bounds relative to canvas
                 const canvasRect = this.$refs.cropCanvas.getBoundingClientRect();
 
-                // Helper to move a point with bounds check
-                const movePoint = (idx, deltaX, deltaY) => {
-                     let newX = this.corners[idx].x + deltaX;
-                     let newY = this.corners[idx].y + deltaY;
-
-                     // Clamping
-                     newX = Math.max(0, Math.min(newX, this.canvasWidth));
-                     newY = Math.max(0, Math.min(newY, this.canvasHeight));
-
-                     this.corners[idx] = { x: newX, y: newY };
-                };
-
                 if (this.activeDragIndex !== -1) {
-                    // Moving a Corner: Absolute position calculation is smoother for corners than delta,
-                    // but delta is consistent with edge dragging.
-                    // Let's switch corner dragging to absolute position like before to prevent drift?
-                    // Actually, "snap to mouse" is better for corners.
+                    // Moving a Corner: Calculate absolute position relative to the canvas.
+                    // To handle potential CSS scaling, we calculate the scale factor between
+                    // the actual canvas display size (canvasRect) and its internal resolution (this.canvasWidth).
 
-                    let x = clientX - canvasRect.left;
-                    let y = clientY - canvasRect.top;
+                    const scaleX = this.canvasWidth / canvasRect.width;
+                    const scaleY = this.canvasHeight / canvasRect.height;
+
+                    let x = (clientX - canvasRect.left) * scaleX;
+                    let y = (clientY - canvasRect.top) * scaleY;
+
+                    // Clamping
                     x = Math.max(0, Math.min(x, this.canvasWidth));
                     y = Math.max(0, Math.min(y, this.canvasHeight));
-                    this.corners[this.activeDragIndex] = {x, y};
+
+                    // Directly update ONLY the active corner using array assignment to trigger reactivity safely
+                    const newCorners = [...this.corners];
+                    newCorners[this.activeDragIndex] = { x: x, y: y };
+                    this.corners = newCorners;
 
                 } else if (this.activeDragEdge !== -1) {
                     // Moving an Edge: Apply delta to both endpoints
+                    const scaleX = this.canvasWidth / canvasRect.width;
+                    const scaleY = this.canvasHeight / canvasRect.height;
+
+                    const scaledDx = dx * scaleX;
+                    const scaledDy = dy * scaleY;
+
                     const edgeIdx = this.activeDragEdge;
                     // Edge 0: 0-1, Edge 1: 1-2, Edge 2: 2-3, Edge 3: 3-0
                     const p1 = edgeIdx;
                     const p2 = (edgeIdx + 1) % 4;
 
-                    movePoint(p1, dx, dy);
-                    movePoint(p2, dx, dy);
+                    const newCorners = [...this.corners];
+
+                    [p1, p2].forEach(idx => {
+                        let newX = newCorners[idx].x + scaledDx;
+                        let newY = newCorners[idx].y + scaledDy;
+
+                        // Clamping
+                        newX = Math.max(0, Math.min(newX, this.canvasWidth));
+                        newY = Math.max(0, Math.min(newY, this.canvasHeight));
+
+                        newCorners[idx] = { x: newX, y: newY };
+                    });
+
+                    this.corners = newCorners;
                 }
             },
 
