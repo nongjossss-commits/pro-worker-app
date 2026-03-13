@@ -95,6 +95,8 @@
                     <button type="button" class="btn btn-sm btn-primary add-address-btn"
                             data-bs-toggle="modal"
                             data-bs-target="#addressModal"
+                            data-addressable-id="{{ $importer->id }}"
+                            data-addressable-type="App\Models\Importer"
                             data-type="registered">
                         {{ __('Add Address') }}
                     </button>
@@ -124,6 +126,8 @@
                     <button type="button" class="btn btn-sm btn-primary add-address-btn"
                             data-bs-toggle="modal"
                             data-bs-target="#addressModal"
+                            data-addressable-id="{{ $importer->id }}"
+                            data-addressable-type="App\Models\Importer"
                             data-type="workplace">
                         {{ __('Add Address') }}
                     </button>
@@ -258,6 +262,8 @@ document.addEventListener('DOMContentLoaded', function () {
     addressModalEl.addEventListener('hidden.bs.modal', function () {
         addressForm.reset();
         document.getElementById('address_id').value = '';
+        document.getElementById('addressable_id').value = importerId;
+        document.getElementById('addressable_type').value = 'App\\Models\\Importer';
         document.getElementById('addressFormMethod').value = '';
         document.getElementById('addrDistrict').disabled = true;
         document.getElementById('addrSubDistrict').disabled = true;
