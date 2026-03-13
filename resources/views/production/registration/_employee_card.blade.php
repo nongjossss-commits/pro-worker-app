@@ -75,8 +75,8 @@
     <div class="card-body p-3 pt-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
-            <div class="d-flex align-items-start gap-3 w-100">
-                <div class="d-flex align-items-center gap-3">
+            <div class="d-flex flex-column flex-xl-row align-items-start gap-3 w-100">
+                <div class="d-flex align-items-center gap-3 w-100">
                 @can('edit-employees')
                 {{-- Only show checkbox if Active (Pending) --}}
                 <div class="form-check {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
@@ -100,9 +100,9 @@
                 </div>
                 @endcan
 
-                <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $employee->id }}">
+                <div class="d-flex align-items-start align-items-sm-center flex-column flex-sm-row gap-3 w-100 {{ $overlayClass }}" id="info-container-{{ $employee->id }}">
                     {{-- Avatar --}}
-                    <div class="avatar-container position-relative">
+                    <div class="avatar-container position-relative flex-shrink-0">
                         @if($employee->employeePhoto)
                             <img src="{{ Storage::disk('public')->url($employee->employeePhoto) }}" class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
                         @else
@@ -142,8 +142,8 @@
                     </div>
 
                     {{-- Info --}}
-                    <div>
-                        <div class="fw-bold text-dark">
+                    <div class="w-100 min-w-0">
+                        <div class="fw-bold text-dark text-break">
                              {{-- English Name + Title --}}
                             {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? '-' }}
                         </div>
@@ -191,7 +191,7 @@
 
             {{-- Outsource Login Information --}}
             @can('edit-employees')
-            <div class="ms-md-2" x-data="{
+            <div class="ms-md-2 w-100" style="max-width: 100%;" x-data="{
                 isEditing: false,
                 email: '{{ $employee->email ?? '' }}',
                 originalEmail: '{{ $employee->email ?? '' }}',
@@ -241,7 +241,7 @@
                     });
                 }
             }">
-                <div style="min-width: 250px;">
+                <div class="w-100" style="min-width: 250px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;"><i class="bi bi-lock-fill"></i> {{ __('ข้อมูลการเข้าสู่ระบบ Outsource') }}</small>
 
                     <div x-show="!isEditing" class="d-flex align-items-center gap-2 position-relative">
@@ -310,7 +310,7 @@
                     $isRenewalContext = request()->is('production/renewal*');
                     $modulePath = $isRenewalContext ? 'production/renewal' : 'production/registration';
                 @endphp
-                <div class="mt-2" style="min-width: 250px;" x-data="{
+                <div class="mt-2 w-100" style="min-width: 250px;" x-data="{
                     isEditing: false,
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: '{{ $appValue }}',
@@ -411,7 +411,7 @@
 
             </div>
             @endcan
-            <div class="d-flex flex-column gap-2 ms-md-2">
+            <div class="d-flex flex-column gap-2 ms-md-2 w-100" style="max-width: 100%;">
             {{-- REMARKS SECTION --}}
             @php
                 $isRenewal = request()->is('production/renewal*');
@@ -471,10 +471,10 @@
                     });
                 }
             }">
-                <div style="min-width: 140px; max-width: 250px;">
+                <div class="w-100" style="min-width: 140px; max-width: 100%;">
                     <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
 
-                    <div class="d-flex align-items-start gap-1 mb-2">
+                    <div class="d-flex align-items-start gap-1 mb-2 w-100">
                         <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
                             <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
                                 <span x-text="remarkText || '-'"></span>
@@ -621,9 +621,9 @@
                     });
                 }
             }">
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-end gap-2 w-100">
                     {{-- Field 1: Name List (Renamed to RA) --}}
-                    <div style="min-width: 140px; max-width: 250px; flex-grow: 1;">
+                    <div class="w-100" style="flex-grow: 1;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
                         <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                             <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
@@ -635,21 +635,21 @@
                     </div>
 
                     {{-- Action Buttons --}}
-                    <div class="d-flex gap-1">
-                        <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle mt-3" title="Edit Fields">
+                    <div class="d-flex gap-1 mb-1">
+                        <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Fields">
                             <i class="bi bi-pencil-fill"></i>
                         </button>
-                        <button x-show="isEditing" @click="saveFields()" class="btn btn-sm btn-success rounded-circle mt-3" title="Save Fields">
+                        <button x-show="isEditing" @click="saveFields()" class="btn btn-sm btn-success rounded-circle" title="Save Fields">
                             <i class="bi bi-check-lg"></i>
                         </button>
-                        <button x-show="isEditing" @click="isEditing = false" class="btn btn-sm btn-outline-danger rounded-circle mt-3" title="Cancel">
+                        <button x-show="isEditing" @click="isEditing = false" class="btn btn-sm btn-outline-danger rounded-circle" title="Cancel">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
                 </div>
 
                 {{-- Field 2: Request No --}}
-                <div style="min-width: 140px; max-width: 250px;">
+                <div class="w-100" style="min-width: 140px; max-width: 100%;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
@@ -661,7 +661,7 @@
                 </div>
 
                 {{-- Field 3: Ref ID --}}
-                <div style="min-width: 140px; max-width: 250px;">
+                <div class="w-100" style="min-width: 140px; max-width: 100%;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
@@ -679,7 +679,7 @@
             </div>
 
             {{-- Actions --}}
-            <div class="d-flex gap-2 flex-wrap justify-content-end">
+            <div class="d-flex gap-2 flex-wrap justify-content-end mt-2 mt-md-0 w-100 w-md-auto">
                  {{-- Daily Check --}}
                  <div class="d-flex align-items-center me-2" x-data="{
                     dailyCheckEnabled: {{ $employee->daily_check_enabled ? 'true' : 'false' }},
