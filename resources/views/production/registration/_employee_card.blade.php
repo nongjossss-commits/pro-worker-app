@@ -44,7 +44,7 @@
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
 
     {{-- Sequence Number (Outside Card) --}}
-    <div class="employee-sequence-number me-2 fs-5 fw-bold text-muted opacity-50 text-end" style="min-width: 30px;"></div>
+    <div class="employee-sequence-number me-1 me-md-2 text-muted opacity-50 text-end"></div>
 
     <div class="card {{ $cardClass }} w-100 position-relative">
 
