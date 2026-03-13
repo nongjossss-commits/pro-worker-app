@@ -49,7 +49,11 @@
                     <video x-ref="video" class="w-full h-full object-contain bg-black" autoplay playsinline></video>
                     <!-- Live Detection Overlay -->
                     <svg x-show="liveCorners.length === 4" class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 30;">
-                        <polygon :points="getLivePolygonPoints()" fill="rgba(13, 110, 253, 0.2)" stroke="#0d6efd" stroke-width="3" stroke-dasharray="5,5" />
+                        <polygon :points="getLivePolygonPoints()"
+                                 :fill="isDocumentStable ? 'rgba(25, 135, 84, 0.2)' : 'rgba(255, 193, 7, 0.2)'"
+                                 :stroke="isDocumentStable ? '#198754' : '#ffc107'"
+                                 stroke-width="4"
+                                 stroke-dasharray="5,5" />
                     </svg>
                 </div>
 
@@ -509,6 +513,8 @@
 
             // Live Detection State
             liveCorners: [],
+            liveCornersHistory: [],
+            isDocumentStable: false,
             liveDetectionInterval: null,
             videoDisplayScale: { x: 1, y: 1 },
             videoOffset: { x: 0, y: 0 },
@@ -761,7 +767,8 @@
                         video: {
                             facingMode: 'environment',
                             width: { ideal: 4096 },
-                            height: { ideal: 2160 }
+                            height: { ideal: 2160 },
+                            focusMode: { ideal: "continuous" }
                         },
                         audio: false
                     });
@@ -846,14 +853,55 @@
                                 x: c.x * scaleX,
                                 y: c.y * scaleY
                             }));
+                            this.updateStability(this.liveCorners);
                         } else {
                             this.liveCorners = [];
+                            this.liveCornersHistory = [];
+                            this.isDocumentStable = false;
                         }
                         src.delete();
                     } catch (e) {
                         // Silent fail for live detection
                     }
-                }, 200); // 5 FPS is enough for guide
+                }, 150); // Increased FPS for better stability tracking
+            },
+
+            updateStability(corners) {
+                // Keep history of last 5 frames
+                this.liveCornersHistory.push(corners);
+                if (this.liveCornersHistory.length > 5) {
+                    this.liveCornersHistory.shift();
+                }
+
+                if (this.liveCornersHistory.length < 5) {
+                    this.isDocumentStable = false;
+                    return;
+                }
+
+                // Calculate variance of corners over history
+                let isStable = true;
+                const tolerance = 20; // Maximum pixel movement allowed across 5 frames
+
+                for (let i = 0; i < 4; i++) {
+                    let minX = this.liveCornersHistory[0][i].x;
+                    let maxX = this.liveCornersHistory[0][i].x;
+                    let minY = this.liveCornersHistory[0][i].y;
+                    let maxY = this.liveCornersHistory[0][i].y;
+
+                    for (let j = 1; j < this.liveCornersHistory.length; j++) {
+                        minX = Math.min(minX, this.liveCornersHistory[j][i].x);
+                        maxX = Math.max(maxX, this.liveCornersHistory[j][i].x);
+                        minY = Math.min(minY, this.liveCornersHistory[j][i].y);
+                        maxY = Math.max(maxY, this.liveCornersHistory[j][i].y);
+                    }
+
+                    if ((maxX - minX) > tolerance || (maxY - minY) > tolerance) {
+                        isStable = false;
+                        break;
+                    }
+                }
+
+                this.isDocumentStable = isStable;
             },
 
             stopLiveDetection() {
@@ -862,6 +910,8 @@
                     this.liveDetectionInterval = null;
                 }
                 this.liveCorners = [];
+                this.liveCornersHistory = [];
+                this.isDocumentStable = false;
             },
 
             getLivePolygonPoints() {
