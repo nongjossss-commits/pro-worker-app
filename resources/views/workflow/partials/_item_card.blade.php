@@ -132,9 +132,10 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex flex-column flex-xl-row align-items-start gap-3 w-100">
-                <div class="d-flex align-items-center gap-3 w-100">
+                <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center gap-3 w-100">
+                    <div class="d-flex align-items-center gap-3 w-100">
                 {{-- Checkbox (Optional, for bulk actions if implemented later) --}}
-                <div class="form-check" id="checkbox-container-{{ $item->id }}">
+                <div class="form-check flex-shrink-0" id="checkbox-container-{{ $item->id }}">
                 <input class="form-check-input employee-checkbox"
                            type="checkbox"
                        value="{{ $item->employee_id ?? '' }}"
@@ -153,7 +154,8 @@
                        {{ (!$item->employee_id || $isReadOnly) ? 'disabled' : '' }}>
                 </div>
 
-                <div class="d-flex align-items-start align-items-sm-center flex-column flex-sm-row gap-3 w-100 {{ $overlayClass }}" id="info-container-{{ $item->id }}">
+                {{-- Container for Checkbox + Info on all screen sizes, so they sit together even when outer wrapper stacks --}}
+                <div class="d-flex align-items-start align-items-sm-center flex-row gap-3 w-100 {{ $overlayClass }}" id="info-container-{{ $item->id }}">
                     {{-- Avatar --}}
                     <div class="avatar-container position-relative flex-shrink-0">
                         <img src="{{ $empPhoto }}" class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
@@ -207,9 +209,10 @@
                         </div>
                     </div>
                 </div>
+                </div>
 
                 {{-- Appointment Date & Location --}}
-                <div class="ms-md-4 w-100" style="max-width: 100%;" x-data="{
+                <div class="ms-0 ms-xl-4 w-100" style="max-width: 100%;" x-data="{
                     isEditing: false,
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: '{{ $appValue }}',
@@ -349,7 +352,7 @@
                 </div>
 
                 {{-- NEW CREDENTIALS SECTION --}}
-                <div class="ms-md-4 w-100" style="max-width: 100%;" x-data="{
+                <div class="ms-0 ms-xl-4 w-100" style="max-width: 100%;" x-data="{
                     isEditing: false,
                     email: {{ json_encode($item->employee->email ?? '') }},
                     outsource_code: {{ json_encode($item->employee->outsource_code ?? '') }},
@@ -439,7 +442,7 @@
                 </div>
 
                 {{-- REMARKS & 3 Extra Fields SECTION --}}
-                <div class="ms-md-4 d-flex flex-column gap-2 w-100" style="min-width: 0; max-width: 100%;">
+                <div class="ms-0 ms-xl-4 d-flex flex-column gap-2 w-100" style="min-width: 0; max-width: 100%;">
                     <div class="w-100" style="min-width: 0;" x-data="{
                         isEditing: false,
                         remarkText: {{ json_encode($item->remarks ?? '') }},

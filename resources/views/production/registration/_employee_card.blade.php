@@ -76,10 +76,11 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex flex-column flex-xl-row align-items-start gap-3 w-100">
-                <div class="d-flex align-items-center gap-3 w-100">
+                <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center gap-3 w-100">
+                    <div class="d-flex align-items-center gap-3 w-100">
                 @can('edit-employees')
                 {{-- Only show checkbox if Active (Pending) --}}
-                <div class="form-check {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
+                <div class="form-check flex-shrink-0 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
                     <input class="form-check-input employee-checkbox"
                            type="checkbox"
                            value="{{ $employee->id }}"
@@ -100,7 +101,8 @@
                 </div>
                 @endcan
 
-                <div class="d-flex align-items-start align-items-sm-center flex-column flex-sm-row gap-3 w-100 {{ $overlayClass }}" id="info-container-{{ $employee->id }}">
+                {{-- Container for Checkbox + Info on all screen sizes --}}
+                <div class="d-flex align-items-start align-items-sm-center flex-row gap-3 w-100 {{ $overlayClass }}" id="info-container-{{ $employee->id }}">
                     {{-- Avatar --}}
                     <div class="avatar-container position-relative flex-shrink-0">
                         @if($employee->employeePhoto)
@@ -191,7 +193,7 @@
 
             {{-- Outsource Login Information --}}
             @can('edit-employees')
-            <div class="ms-md-2 w-100" style="max-width: 100%;" x-data="{
+            <div class="ms-0 ms-xl-4 w-100" style="max-width: 100%;" x-data="{
                 isEditing: false,
                 email: '{{ $employee->email ?? '' }}',
                 originalEmail: '{{ $employee->email ?? '' }}',
@@ -411,7 +413,7 @@
 
             </div>
             @endcan
-            <div class="d-flex flex-column gap-2 ms-md-2 w-100" style="max-width: 100%;">
+            <div class="d-flex flex-column gap-2 ms-0 ms-xl-4 w-100" style="max-width: 100%;">
             {{-- REMARKS SECTION --}}
             @php
                 $isRenewal = request()->is('production/renewal*');
