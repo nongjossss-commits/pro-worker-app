@@ -28,12 +28,18 @@
         content: counter(employer-counter);
     }
     .employer-sequence-number {
-        min-width: 50px;
+        min-width: 30px;
         text-align: center;
-        font-size: 2.5rem;
+        font-size: 1.5rem;
         font-weight: bold;
         color: #6c757d;
         opacity: 0.5;
+    }
+    @media (min-width: 768px) {
+        .employer-sequence-number {
+            min-width: 40px;
+            font-size: 2rem;
+        }
     }
 
     /* CSS Counters for Employees (Per Employer) */
@@ -53,10 +59,18 @@
     }
     .item-sequence-number,
     .employee-sequence-number {
-        min-width: 40px;
+        min-width: 25px;
         text-align: right;
         font-weight: bold;
         white-space: nowrap;
+        font-size: 1rem;
+    }
+    @media (min-width: 768px) {
+        .item-sequence-number,
+        .employee-sequence-number {
+            min-width: 35px;
+            font-size: 1.25rem;
+        }
     }
     .filter-active {
         transform: scale(1.05);
