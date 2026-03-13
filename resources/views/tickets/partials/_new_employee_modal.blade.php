@@ -180,6 +180,7 @@
                         <select class="form-select" id="modal_workPermitMOUGroup" x-model="newEmployeeForm.workPermitMOUGroup">
                             <option value="">-- กรุณาเลือก --</option>
                             <option value="MOU">MOU</option>
+                            <option value="MOU 2 ปีหลัง">MOU 2 ปีหลัง</option>
                             <option value="มติต่ออายุในประเทศ">มติต่ออายุในประเทศ</option>
                             <option value="มติขึ้นทะเบียน">มติขึ้นทะเบียน</option>
                             <option value="อื่นๆ">อื่นๆ ระบุ..</option>

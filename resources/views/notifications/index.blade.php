@@ -54,6 +54,7 @@
                         <select name="mou_type" class="form-select form-select-sm">
                             <option value="">-- {{ __('All MOU Types') }} --</option>
                             <option value="MOU" @selected(request('mou_type') == 'MOU')>{{ __('MOU') }}</option>
+                            <option value="MOU 2 ปีหลัง" @selected(request('mou_type') == 'MOU 2 ปีหลัง')>{{ __('MOU 2 Years Later') }}</option>
                             <option value="มติต่ออายุในประเทศ" @selected(request('mou_type') == 'มติต่ออายุในประเทศ')>{{ __('MOU Extension in Country') }}</option>
                             <option value="มติขึ้นทะเบียน" @selected(request('mou_type') == 'มติขึ้นทะเบียน')>{{ __('MOU Registration') }}</option>
                             <option value="อื่นๆ" @selected(request('mou_type') == 'อื่นๆ')>{{ __('Others') }}</option>
