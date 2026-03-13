@@ -1332,7 +1332,11 @@ document.addEventListener('DOMContentLoaded', function () {
             addressForm.reset();
             fields.id.value = '';
             fields.addressable_id.value = targetBtn.dataset.addressableId;
-            fields.addressable_type.value = 'App\\Models\\Employer';
+            if (targetBtn.dataset.addressableType) {
+                fields.addressable_type.value = targetBtn.dataset.addressableType;
+            } else {
+                fields.addressable_type.value = 'App\\Models\\Employer';
+            }
             fields.type.value = targetBtn.dataset.type;
 
             // Re-trigger Alpine's reactivity by firing a change event

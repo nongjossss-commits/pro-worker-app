@@ -14,13 +14,10 @@
                 <div class="row mb-4">
                     <div class="col-md-12 text-center">
                         <label class="form-label d-block text-muted mb-2">Photo</label>
-                        <x-image-cropper
-                            name="delegatePhoto"
-                            :imageUrl="null"
-                            width="150"
-                            height="150"
-                            placeholder="Add Photo"
-                        />
+                        <div class="mb-3">
+                            <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control" accept="image/*" onchange="previewImage(event, 'photoPreview')">
+                        </div>
+                        <img id="photoPreview" src="#" alt="Photo Preview" style="display: none; max-width: 150px; max-height: 150px; margin-top: 10px;" class="img-thumbnail rounded-circle">
                     </div>
                 </div>
 
@@ -333,6 +330,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     addressModalEl.addEventListener('hidden.bs.modal', function () {
         addressForm.reset();
+        document.getElementById('addressable_type').value = 'App\\Models\\Delegate';
         document.getElementById('addrDistrict').disabled = true;
         document.getElementById('addrSubDistrict').disabled = true;
         currentlyEditing = null;
@@ -345,5 +343,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+function previewImage(event, previewId) {
+    const input = event.target;
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById(previewId);
+            preview.src = e.target.result;
+            preview.style.display = 'inline-block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
 </script>
 @endpush

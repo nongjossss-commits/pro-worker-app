@@ -307,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     addressModalEl.addEventListener('hidden.bs.modal', function () {
         addressForm.reset();
+        document.getElementById('addressable_type').value = 'App\\Models\\Importer';
         document.getElementById('addrDistrict').disabled = true;
         document.getElementById('addrSubDistrict').disabled = true;
         currentlyEditing = null;
