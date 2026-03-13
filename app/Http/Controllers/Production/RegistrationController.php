@@ -70,6 +70,9 @@ class RegistrationController extends Controller
             $this->applySearchToQuery($statsQuery, $request->search);
         }
 
+        // Filter by relevant statuses for this menu
+        $statsQuery->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+
         // Clone for different counts
         $totalEmployees = (clone $statsQuery)->count();
         $totalCancelled = (clone $statsQuery)->where('status', 'registration_cancelled')->count();
@@ -96,6 +99,7 @@ class RegistrationController extends Controller
         if (auth()->user()->can('manage-tickets')) {
             $appointmentsQuery->withoutGlobalScope('employerTenancy');
         }
+        $appointmentsQuery->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
 
         $totalAppointmentsPending = (clone $appointmentsQuery)
 
@@ -120,7 +124,6 @@ class RegistrationController extends Controller
 
         // Total Employers (Global, relevant to search)
         $totalEmployers = (clone $statsQuery)
-            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
             ->distinct('employer_id')
             ->count('employer_id');
 
