@@ -302,7 +302,7 @@
                         });
                     }
                 }">
-                    <div class="w-100" style="min-width: 170px;">
+                    <div class="w-100" style="min-width: 0;">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
                             <div class="form-check form-switch" title="{{ __('Mark Appointment Completed') }}">
@@ -310,17 +310,17 @@
                             </div>
                         </div>
 
-                        <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                        <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative w-100"
                              @click="isEditing = true; $nextTick(() => initFlatpickr())"
                              :class="{ 'opacity-50': isAppCompleted }">
 
-                             <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px;">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-calendar-event text-warning me-1"></i>
-                                    <span x-text="displayValue"></span>
-                                    <i x-show="isAppCompleted" class="bi bi-check-circle-fill text-success ms-auto"></i>
+                             <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px; min-width: 0;">
+                                <div class="d-flex align-items-center w-100" style="min-width: 0;">
+                                    <i class="bi bi-calendar-event text-warning me-1 flex-shrink-0"></i>
+                                    <span x-text="displayValue" class="text-truncate flex-grow-1" style="min-width: 0;"></span>
+                                    <i x-show="isAppCompleted" class="bi bi-check-circle-fill text-success ms-auto flex-shrink-0"></i>
                                 </div>
-                                <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
+                                <div x-show="locationValue" class="text-muted text-truncate w-100" style="font-size: 0.7rem; min-width: 0;">
                                     <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
                                 </div>
                              </div>
@@ -331,14 +331,14 @@
                             <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
                         </div>
 
-                        <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
+                        <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; width: calc(100% - 30px); max-width: 300px;">
                              <label class="small fw-bold">Date & Time</label>
                              <div>
-                                <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
+                                <input x-ref="dateInput" type="text" class="form-control form-control-sm w-100" placeholder="Date...">
                              </div>
 
                              <label class="small fw-bold mt-1">Location</label>
-                             <input x-model="locationValue" type="text" class="form-control form-control-sm" placeholder="e.g. Office, Site A">
+                             <input x-model="locationValue" type="text" class="form-control form-control-sm w-100" placeholder="e.g. Office, Site A">
 
                              <div class="d-flex gap-1 mt-2">
                                 <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> Save</button>
@@ -403,34 +403,34 @@
                     }
                 }">
                     {{-- Display Mode --}}
-                    <div x-show="!isEditing" class="align-items-center gap-2" :class="{ 'd-flex': !isEditing }">
-                        <div class="d-flex flex-column gap-1 w-100">
-                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm w-100" style="min-width: 200px;">
-                                <i class="bi bi-envelope text-muted me-1"></i>
-                                <span x-text="email || '-'" class="small text-truncate" style="max-width: 150px;" :title="email"></span>
-                                <button @click="copy($event.currentTarget, email)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Email" x-show="email">
+                    <div x-show="!isEditing" class="align-items-center gap-2 w-100" :class="{ 'd-flex': !isEditing }" style="min-width: 0;">
+                        <div class="d-flex flex-column gap-1 w-100" style="min-width: 0;">
+                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm w-100" style="min-width: 0;">
+                                <i class="bi bi-envelope text-muted me-1 flex-shrink-0"></i>
+                                <span x-text="email || '-'" class="small text-truncate flex-grow-1" style="min-width: 0;" :title="email"></span>
+                                <button @click="copy($event.currentTarget, email)" class="btn btn-link p-0 ms-auto text-secondary flex-shrink-0" title="Copy Email" x-show="email">
                                     <i class="bi bi-clipboard"></i>
                                 </button>
                              </div>
-                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm w-100" style="min-width: 200px;">
-                                <i class="bi bi-key text-muted me-1"></i>
-                                <span x-text="outsource_code || '-'" class="small text-truncate" style="max-width: 150px;" :title="outsource_code"></span>
-                                <button @click="copy($event.currentTarget, outsource_code)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Outsource Code" x-show="outsource_code">
+                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm w-100" style="min-width: 0;">
+                                <i class="bi bi-key text-muted me-1 flex-shrink-0"></i>
+                                <span x-text="outsource_code || '-'" class="small text-truncate flex-grow-1" style="min-width: 0;" :title="outsource_code"></span>
+                                <button @click="copy($event.currentTarget, outsource_code)" class="btn btn-link p-0 ms-auto text-secondary flex-shrink-0" title="Copy Outsource Code" x-show="outsource_code">
                                     <i class="bi bi-clipboard"></i>
                                 </button>
                              </div>
                         </div>
                         @if(!$isReadOnly)
-                        <button @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Credentials">
+                        <button @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" title="Edit Credentials">
                             <i class="bi bi-pencil-fill" style="font-size: 0.7rem;"></i>
                         </button>
                         @endif
                     </div>
 
                     {{-- Edit Mode --}}
-                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" :class="{ 'd-flex': isEditing }" style="display: none; min-width: 220px;">
-                        <input x-model="email" type="text" class="form-control form-control-sm" placeholder="Email">
-                        <input x-model="outsource_code" type="text" class="form-control form-control-sm" placeholder="Outsource Code">
+                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm w-100" :class="{ 'd-flex': isEditing }" style="display: none; min-width: 0;">
+                        <input x-model="email" type="text" class="form-control form-control-sm w-100" placeholder="Email">
+                        <input x-model="outsource_code" type="text" class="form-control form-control-sm w-100" placeholder="Outsource Code">
                         <div class="d-flex gap-1 mt-1">
                             <button @click="save()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i></button>
                             <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
@@ -439,8 +439,8 @@
                 </div>
 
                 {{-- REMARKS & 3 Extra Fields SECTION --}}
-                <div class="ms-md-4 d-flex flex-column gap-2 w-100" style="min-width: 140px; max-width: 100%;">
-                    <div x-data="{
+                <div class="ms-md-4 d-flex flex-column gap-2 w-100" style="min-width: 0; max-width: 100%;">
+                    <div class="w-100" style="min-width: 0;" x-data="{
                         isEditing: false,
                         remarkText: {{ json_encode($item->remarks ?? '') }},
                         tempRemarkText: '',
@@ -492,9 +492,9 @@
                         <div>
                             <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
 
-                            <div class="d-flex align-items-start gap-1">
-                                <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
-                                    <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                            <div class="d-flex align-items-start gap-1 w-100" style="min-width: 0;">
+                                <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100" style="min-width: 0;">
+                                    <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word; min-width: 0;">
                                         <span x-text="remarkText || '-'"></span>
                                     </div>
                                     <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
@@ -519,7 +519,7 @@
                     </div>
 
                     {{-- 3 Extra Fields (Editable) --}}
-                    <div class="d-flex flex-column gap-2" x-data="{
+                    <div class="d-flex flex-column gap-2 w-100" style="min-width: 0;" x-data="{
                         isEditing: false,
                         nameList: '{{ $item->employee->name_list_number ?? '' }}',
                         reqNo: '{{ $item->request_number ?? '' }}',
@@ -614,21 +614,21 @@
                             });
                         }
                     }">
-                        <div class="d-flex align-items-end gap-2 w-100">
+                        <div class="d-flex align-items-end gap-2 w-100" style="min-width: 0;">
                             {{-- Field 1: Name List (Renamed to RA) --}}
-                            <div class="w-100" style="flex-grow: 1;">
+                            <div class="w-100" style="flex-grow: 1; min-width: 0;">
                                 <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
-                                <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                                    <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
+                                <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden w-100" style="min-height: 31px; min-width: 0;">
+                                    <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" style="min-width: 0;" x-text="nameList || '-'"></div>
                                     <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                         <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                     </button>
                                 </div>
-                                <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
+                                <input x-show="isEditing" type="text" class="form-control form-control-sm w-100" x-model="nameList" placeholder="RA No.">
                             </div>
 
                             {{-- Action Buttons --}}
-                            <div class="d-flex gap-1 mb-1">
+                            <div class="d-flex gap-1 mb-1 flex-shrink-0">
                                 <button x-show="!isEditing" @click="isEditing = true" class="btn btn-sm btn-outline-secondary rounded-circle" title="Edit Fields">
                                     <i class="bi bi-pencil-fill"></i>
                                 </button>
@@ -642,27 +642,27 @@
                         </div>
 
                         {{-- Field 2: Request No --}}
-                        <div style="width: 100%;">
+                        <div class="w-100" style="min-width: 0;">
                             <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
-                            <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                                <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
+                            <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden w-100" style="min-height: 31px; min-width: 0;">
+                                <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" style="min-width: 0;" x-text="reqNo || '-'"></div>
                                 <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                     <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                 </button>
                             </div>
-                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
+                            <input x-show="isEditing" type="text" class="form-control form-control-sm w-100" x-model="reqNo" placeholder="Request No.">
                         </div>
 
                         {{-- Field 3: Ref ID --}}
-                        <div style="width: 100%;">
+                        <div class="w-100" style="min-width: 0;">
                             <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
-                            <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                                <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
+                            <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden w-100" style="min-height: 31px; min-width: 0;">
+                                <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" style="min-width: 0;" x-text="refId || '-'"></div>
                                 <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                     <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                 </button>
                             </div>
-                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
+                            <input x-show="isEditing" type="text" class="form-control form-control-sm w-100" x-model="refId" placeholder="Ref ID">
                         </div>
                     </div>
                 </div>
