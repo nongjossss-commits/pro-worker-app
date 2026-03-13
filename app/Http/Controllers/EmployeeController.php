@@ -1447,7 +1447,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'passport_type_cambodia' => ['เล่ม TD' => 'เล่ม TD', 'เล่มอินเตอร์' => 'เล่มอินเตอร์'],
             'insurance_type' => ['ประกันสังคม' => 'ประกันสังคม', 'ประกันโรงพยาบาล' => 'ประกันโรงพยาบาล', 'ประกันเอกชน' => 'ประกันเอกชน'],
             // Note: 'workPermitType' in bulk selection often maps to the MOU Group dropdown in Create/Edit forms
-            'workPermitMOUGroup' => ['MOU' => 'MOU', 'มติต่ออายุในประเทศ' => 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน' => 'มติขึ้นทะเบียน', 'อื่นๆ' => 'อื่นๆ'],
+            'workPermitMOUGroup' => ['MOU' => 'MOU', 'MOU 2 ปีหลัง' => 'MOU 2 ปีหลัง', 'มติต่ออายุในประเทศ' => 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน' => 'มติขึ้นทะเบียน', 'อื่นๆ' => 'อื่นๆ'],
         ];
 
         // Map keys to labels (simplified version of what was in selectFields)

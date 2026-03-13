@@ -105,7 +105,7 @@ class CheckExpiries extends Command
                 $currentNotificationType = $notificationType;
 
                 if ($notificationType === 'work_permit_expiry') {
-                     if ($employee->workPermitMOUGroup === 'MOU') {
+                     if ($employee->workPermitMOUGroup === 'MOU' || $employee->workPermitMOUGroup === 'MOU 2 ปีหลัง') {
                         $currentNotificationType = 'work_permit_mou';
                     } elseif ($employee->workPermitMOUGroup === 'มติต่ออายุในประเทศ') {
                         $currentNotificationType = 'resolution_renewal';
