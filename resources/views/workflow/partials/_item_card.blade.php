@@ -131,7 +131,8 @@
     <div class="card-body p-3 pt-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
-            <div class="d-flex align-items-center gap-3 w-100">
+            <div class="d-flex flex-column flex-xl-row align-items-start gap-3 w-100">
+                <div class="d-flex align-items-center gap-3 w-100">
                 {{-- Checkbox (Optional, for bulk actions if implemented later) --}}
                 <div class="form-check" id="checkbox-container-{{ $item->id }}">
                 <input class="form-check-input employee-checkbox"
@@ -152,9 +153,9 @@
                        {{ (!$item->employee_id || $isReadOnly) ? 'disabled' : '' }}>
                 </div>
 
-                <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $item->id }}">
+                <div class="d-flex align-items-start align-items-sm-center flex-column flex-sm-row gap-3 w-100 {{ $overlayClass }}" id="info-container-{{ $item->id }}">
                     {{-- Avatar --}}
-                    <div class="avatar-container position-relative">
+                    <div class="avatar-container position-relative flex-shrink-0">
                         <img src="{{ $empPhoto }}" class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
 
                         {{-- Status Badges --}}
@@ -167,9 +168,9 @@
                     </div>
 
                     {{-- Info --}}
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                             <div class="fw-bold text-dark">{{ $empNameEn }}</div>
+                    <div class="w-100 min-w-0">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                             <div class="fw-bold text-dark text-break">{{ $empNameEn }}</div>
                              {{-- Resolution Badge --}}
                              @if($mouGroup !== 'N/A')
                                 <span class="badge rounded-pill {{ $mouBadgeClass }} small" style="font-size: 0.65rem;">{{ $mouGroup }}</span>
@@ -208,7 +209,7 @@
                 </div>
 
                 {{-- Appointment Date & Location --}}
-                <div class="ms-md-4" x-data="{
+                <div class="ms-md-4 w-100" style="max-width: 100%;" x-data="{
                     isEditing: false,
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: '{{ $appValue }}',
@@ -301,7 +302,7 @@
                         });
                     }
                 }">
-                    <div style="min-width: 170px;">
+                    <div class="w-100" style="min-width: 170px;">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
                             <div class="form-check form-switch" title="{{ __('Mark Appointment Completed') }}">
@@ -348,7 +349,7 @@
                 </div>
 
                 {{-- NEW CREDENTIALS SECTION --}}
-                <div class="ms-md-4" x-data="{
+                <div class="ms-md-4 w-100" style="max-width: 100%;" x-data="{
                     isEditing: false,
                     email: {{ json_encode($item->employee->email ?? '') }},
                     outsource_code: {{ json_encode($item->employee->outsource_code ?? '') }},
@@ -403,15 +404,15 @@
                 }">
                     {{-- Display Mode --}}
                     <div x-show="!isEditing" class="align-items-center gap-2" :class="{ 'd-flex': !isEditing }">
-                        <div class="d-flex flex-column gap-1">
-                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm" style="min-width: 200px;">
+                        <div class="d-flex flex-column gap-1 w-100">
+                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm w-100" style="min-width: 200px;">
                                 <i class="bi bi-envelope text-muted me-1"></i>
                                 <span x-text="email || '-'" class="small text-truncate" style="max-width: 150px;" :title="email"></span>
                                 <button @click="copy($event.currentTarget, email)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Email" x-show="email">
                                     <i class="bi bi-clipboard"></i>
                                 </button>
                              </div>
-                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm" style="min-width: 200px;">
+                             <div class="d-flex align-items-center gap-1 border rounded px-2 py-1 bg-white shadow-sm w-100" style="min-width: 200px;">
                                 <i class="bi bi-key text-muted me-1"></i>
                                 <span x-text="outsource_code || '-'" class="small text-truncate" style="max-width: 150px;" :title="outsource_code"></span>
                                 <button @click="copy($event.currentTarget, outsource_code)" class="btn btn-link p-0 ms-auto text-secondary" title="Copy Outsource Code" x-show="outsource_code">
@@ -438,7 +439,7 @@
                 </div>
 
                 {{-- REMARKS & 3 Extra Fields SECTION --}}
-                <div class="ms-md-4 d-flex flex-column gap-2" style="min-width: 140px; max-width: 250px;">
+                <div class="ms-md-4 d-flex flex-column gap-2 w-100" style="min-width: 140px; max-width: 100%;">
                     <div x-data="{
                         isEditing: false,
                         remarkText: {{ json_encode($item->remarks ?? '') }},
@@ -613,9 +614,9 @@
                             });
                         }
                     }">
-                        <div class="d-flex align-items-end gap-2">
+                        <div class="d-flex align-items-end gap-2 w-100">
                             {{-- Field 1: Name List (Renamed to RA) --}}
-                            <div style="flex-grow: 1;">
+                            <div class="w-100" style="flex-grow: 1;">
                                 <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
                                 <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                                     <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
@@ -669,7 +670,7 @@
             </div>
 
             {{-- Actions --}}
-            <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center mt-2">
+            <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center mt-2 w-100 w-md-auto">
 
                 @if(!$isReadOnly)
                     @if($isPreProduction)
