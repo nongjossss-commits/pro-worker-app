@@ -680,8 +680,15 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // --- V6: Step 2: Handle email and password mapping & hashing ---
         $data = $validated;
-        $data['email'] = $validated['employeeEmail'] ?? null;
-        unset($data['employeeEmail']);
+
+        // Fix: Only update email if 'employeeEmail' is present in the request
+        // Otherwise, forms that do not contain the email field (like quick inline updates) will clear it out.
+        if (array_key_exists('employeeEmail', $validated)) {
+            $data['email'] = $validated['employeeEmail'];
+            unset($data['employeeEmail']);
+        } else {
+            unset($data['employeeEmail']);
+        }
 
         // Helper to map and upload file
         // REVERTED: Sensitive files are now stored in 'public' disk to prevent 403 Forbidden errors in views.
@@ -720,6 +727,11 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // If it's empty, we should not update the password.
         if (empty($data['password'])) {
             unset($data['password']); // Prevent updating with an empty value
+        }
+
+        // Prevent outsource_code from being cleared out by inline updates
+        if (!array_key_exists('outsource_code', $request->all())) {
+            unset($data['outsource_code']);
         }
 
         $validated = $data;
