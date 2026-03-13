@@ -1078,13 +1078,27 @@ class RegistrationController extends Controller
             $validated['insuranceExpiryDate'] = null;
         }
 
-        $validated['email'] = $validated['employeeEmail'] ?? null;
-        unset($validated['employeeEmail']);
+        // Prevent email from being overwritten with null during partial updates
+        if (array_key_exists('employeeEmail', $validated)) {
+            $validated['email'] = $validated['employeeEmail'];
+            unset($validated['employeeEmail']);
+        } else {
+            unset($validated['employeeEmail']);
+        }
 
         if (!empty($validated['employeePassword'])) {
             $validated['password'] = $validated['employeePassword'];
+        } else if (array_key_exists('employeePassword', $validated) && empty($validated['employeePassword'])) {
+            // Do not clear the password if it's explicitly submitted as empty,
+            // or if it's missing from the form completely.
+            unset($validated['password']);
         }
         unset($validated['employeePassword']);
+
+        // Prevent outsource_code from being cleared out by inline updates
+        if (!array_key_exists('outsource_code', $request->all())) {
+            unset($validated['outsource_code']);
+        }
 
         // File Uploads
         $fileFields = [
